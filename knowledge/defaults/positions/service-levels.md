@@ -31,7 +31,7 @@
 
 ## Related Law
 
-- knowledge/law/areas/data-privacy/overview.md (availability requirements for data processing)
+- knowledge/law/data-privacy/overview.md (availability requirements for data processing)
 
 ## Classification Guide
 

@@ -35,7 +35,7 @@ Be efficient. If the document clearly shows we're reviewing a vendor's SaaS agre
 
 Scan the document text (or matter description) against the trigger conditions in each law area overview file. Check every area:
 
-1. Read each `knowledge/law/areas/*/overview.md` file
+1. Read each `knowledge/law/*/overview.md` file
 2. Check the **Trigger Conditions** section — look for matching keywords, clause types, regulatory references, and relationship patterns
 3. Load ALL areas that match — not just the most obvious one
 4. Within each matching area, check the **Sub-Files** section to determine which specific sub-files to load based on sub-topic triggers

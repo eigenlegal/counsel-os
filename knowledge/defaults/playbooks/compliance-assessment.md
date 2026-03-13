@@ -6,7 +6,7 @@ Use this playbook when evaluating whether a product, service, process, or busine
 ## Prerequisites
 - Clear description of the product, service, or initiative being assessed
 - Identification of applicable jurisdictions
-- Relevant regulatory frameworks identified from knowledge/law/areas/
+- Relevant regulatory frameworks identified from knowledge/law/
 - Internal policies and compliance standards gathered
 - Stakeholder interviews scheduled or completed
 - Prior audit findings or compliance assessments reviewed
@@ -28,7 +28,7 @@ Map applicable regulations to the subject:
 - Map specific requirements to business functions and processes
 - Identify any exemptions or safe harbors that may apply
 - Note upcoming regulatory changes that may affect compliance
-- Cross-reference with knowledge/law/areas/ for detailed requirements
+- Cross-reference with knowledge/law/ for detailed requirements
 
 ### Step 3: Gap Analysis
 Compare current state against requirements:

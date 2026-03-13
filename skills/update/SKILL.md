@@ -55,7 +55,7 @@ git diff --name-only $OLD_VERSION..$NEW_VERSION -- knowledge/law/ knowledge/defa
 Present a clear changelog to the user:
 
 ### New Law Areas
-If any new directories were added under `knowledge/law/areas/`:
+If any new directories were added under `knowledge/law/`:
 ```
 New law areas added:
 - antitrust/ — Competition law, merger review, market allocation

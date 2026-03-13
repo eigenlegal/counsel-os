@@ -8,7 +8,7 @@ Use this playbook when a business stakeholder or executive requests legal analys
 - Identification of the requesting party and audience
 - Understanding of the business context and urgency
 - Relevant facts gathered from stakeholders
-- Applicable law identified from knowledge/law/areas/
+- Applicable law identified from knowledge/law/
 - Privilege considerations assessed (mark as privileged and confidential if appropriate)
 
 ## Process
@@ -35,7 +35,7 @@ Conduct legal research:
 - Review relevant statutes, regulations, and case law
 - Check for recent legislative or regulatory changes
 - Review internal precedent (prior memos on similar topics)
-- Consult knowledge/law/areas/ files for relevant legal frameworks
+- Consult knowledge/law/ files for relevant legal frameworks
 - Identify any pending legislation or regulatory guidance that may affect the analysis
 
 ### Step 4: Analyze

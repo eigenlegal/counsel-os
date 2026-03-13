@@ -6,7 +6,7 @@ Use this playbook when creating or substantially revising an internal company po
 ## Prerequisites
 - Clear understanding of the policy objective and the problem it addresses
 - Identification of the policy sponsor (executive owner)
-- Relevant legal and regulatory requirements identified from knowledge/law/areas/
+- Relevant legal and regulatory requirements identified from knowledge/law/
 - Existing related policies reviewed for consistency and overlap
 - Input gathered from key stakeholders (HR, IT, Compliance, Operations, etc.)
 - Benchmark examples from peer companies or industry standards (if available)

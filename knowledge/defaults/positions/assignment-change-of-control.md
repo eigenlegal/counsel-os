@@ -28,7 +28,7 @@
 
 ## Related Law
 
-- knowledge/law/areas/data-privacy/overview.md (data transfer implications of assignment/change of control)
+- knowledge/law/data-privacy/overview.md (data transfer implications of assignment/change of control)
 
 ## Classification Guide
 

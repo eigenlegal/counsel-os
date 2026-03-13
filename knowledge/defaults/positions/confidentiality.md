@@ -28,7 +28,7 @@
 
 ## Related Law
 
-- knowledge/law/areas/data-privacy/overview.md (intersection of confidentiality and data protection)
+- knowledge/law/data-privacy/overview.md (intersection of confidentiality and data protection)
 
 ## Classification Guide
 

@@ -28,7 +28,7 @@
 
 ## Related Law
 
-- knowledge/law/areas/data-privacy/overview.md
+- knowledge/law/data-privacy/overview.md
 
 ## Classification Guide
 

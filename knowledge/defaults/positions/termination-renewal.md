@@ -27,7 +27,7 @@
 
 ## Related Law
 
-- knowledge/law/areas/data-privacy/overview.md (data return/deletion obligations post-termination)
+- knowledge/law/data-privacy/overview.md (data return/deletion obligations post-termination)
 
 ## Classification Guide
 
