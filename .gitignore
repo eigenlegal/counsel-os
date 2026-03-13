@@ -1,0 +1,9 @@
+.DS_Store
+node_modules/
+browse/dist/
+bun.lock
+
+# User content — never overwritten by product updates
+knowledge/practice/
+knowledge/matters/
+knowledge/memory/

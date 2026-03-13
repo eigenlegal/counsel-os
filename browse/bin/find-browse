@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+# Counsel OS — Find Browse Binary
+# Locates the browse binary for the browse skill.
+# Returns the path to the binary on stdout, or exits with error.
+
+COUNSEL_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+
+# Option 1: Compiled binary in browse/dist/
+COMPILED="$COUNSEL_DIR/browse/dist/browse"
+if [ -x "$COMPILED" ]; then
+    echo "$COMPILED"
+    exit 0
+fi
+
+# Option 2: Binary on system PATH
+if command -v browse &> /dev/null; then
+    command -v browse
+    exit 0
+fi
+
+# Option 3: Via bunx (bun's package runner)
+if command -v bunx &> /dev/null; then
+    echo "bunx"
+    exit 0
+fi
+
+# Option 4: Via npx (Node's package runner)
+if command -v npx &> /dev/null; then
+    echo "npx"
+    exit 0
+fi
+
+# Not found
+echo "ERROR: Browse binary not found." >&2
+echo "" >&2
+echo "To build it:" >&2
+echo "  cd $COUNSEL_DIR && bun install && bun run build" >&2
+echo "" >&2
+echo "Or install bun: https://bun.sh" >&2
+exit 1
