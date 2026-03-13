@@ -1,0 +1,199 @@
+#!/usr/bin/env bash
+set -e
+
+# Counsel OS — Update Script
+# Pulls latest product content (law/ and defaults/) without touching user data.
+
+# Determine the directory where this script lives
+COUNSEL_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$COUNSEL_DIR"
+
+echo "Counsel OS Update"
+echo "================="
+echo ""
+
+# -------------------------------------------------------------------
+# Step 1: Store current version
+# -------------------------------------------------------------------
+
+OLD_VERSION="unknown"
+if [ -f "$COUNSEL_DIR/VERSION" ]; then
+    OLD_VERSION=$(cat "$COUNSEL_DIR/VERSION")
+fi
+echo "Current version: $OLD_VERSION"
+echo ""
+
+# -------------------------------------------------------------------
+# Step 2: Snapshot user content checksums (for safety verification)
+# -------------------------------------------------------------------
+
+PRACTICE_HASH=""
+MATTERS_HASH=""
+MEMORY_HASH=""
+
+if [ -d "$COUNSEL_DIR/knowledge/practice" ]; then
+    PRACTICE_HASH=$(find "$COUNSEL_DIR/knowledge/practice" -type f -exec md5 -q {} \; 2>/dev/null | sort | md5 -q 2>/dev/null || echo "skip")
+fi
+if [ -d "$COUNSEL_DIR/knowledge/matters" ]; then
+    MATTERS_HASH=$(find "$COUNSEL_DIR/knowledge/matters" -type f -exec md5 -q {} \; 2>/dev/null | sort | md5 -q 2>/dev/null || echo "skip")
+fi
+if [ -d "$COUNSEL_DIR/knowledge/memory" ]; then
+    MEMORY_HASH=$(find "$COUNSEL_DIR/knowledge/memory" -type f -exec md5 -q {} \; 2>/dev/null | sort | md5 -q 2>/dev/null || echo "skip")
+fi
+
+# -------------------------------------------------------------------
+# Step 3: Pull latest changes
+# -------------------------------------------------------------------
+
+echo "Pulling latest changes..."
+echo ""
+
+if git rev-parse --is-inside-work-tree &>/dev/null; then
+    # Store current commit for diffing
+    OLD_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "")
+
+    # Fetch and merge
+    git fetch origin 2>&1 | head -5
+    git merge origin/main --no-edit 2>&1 | head -10
+
+    NEW_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "")
+
+    echo ""
+
+    # -------------------------------------------------------------------
+    # Step 4: Show what changed in product content
+    # -------------------------------------------------------------------
+
+    if [ -n "$OLD_COMMIT" ] && [ -n "$NEW_COMMIT" ] && [ "$OLD_COMMIT" != "$NEW_COMMIT" ]; then
+        echo "Changes in product content:"
+        echo "----------------------------"
+
+        # Law area changes
+        LAW_CHANGES=$(git diff --name-status "$OLD_COMMIT".."$NEW_COMMIT" -- knowledge/law/ 2>/dev/null || echo "")
+        if [ -n "$LAW_CHANGES" ]; then
+            echo ""
+            echo "Law areas (knowledge/law/):"
+            echo "$LAW_CHANGES" | while IFS=$'\t' read -r status file; do
+                case "$status" in
+                    A) echo "  + NEW: $file" ;;
+                    M) echo "  ~ UPDATED: $file" ;;
+                    D) echo "  - REMOVED: $file" ;;
+                    *) echo "  ? $status: $file" ;;
+                esac
+            done
+        else
+            echo ""
+            echo "Law areas: no changes"
+        fi
+
+        # Default changes
+        DEFAULT_CHANGES=$(git diff --name-status "$OLD_COMMIT".."$NEW_COMMIT" -- knowledge/defaults/ 2>/dev/null || echo "")
+        if [ -n "$DEFAULT_CHANGES" ]; then
+            echo ""
+            echo "Defaults (knowledge/defaults/):"
+            echo "$DEFAULT_CHANGES" | while IFS=$'\t' read -r status file; do
+                case "$status" in
+                    A) echo "  + NEW: $file" ;;
+                    M) echo "  ~ UPDATED: $file" ;;
+                    D) echo "  - REMOVED: $file" ;;
+                    *) echo "  ? $status: $file" ;;
+                esac
+            done
+        else
+            echo ""
+            echo "Defaults: no changes"
+        fi
+
+        # Skills changes
+        SKILL_CHANGES=$(git diff --name-status "$OLD_COMMIT".."$NEW_COMMIT" -- skills/ 2>/dev/null || echo "")
+        if [ -n "$SKILL_CHANGES" ]; then
+            echo ""
+            echo "Skills (skills/):"
+            echo "$SKILL_CHANGES" | while IFS=$'\t' read -r status file; do
+                case "$status" in
+                    A) echo "  + NEW: $file" ;;
+                    M) echo "  ~ UPDATED: $file" ;;
+                    D) echo "  - REMOVED: $file" ;;
+                    *) echo "  ? $status: $file" ;;
+                esac
+            done
+        fi
+    else
+        echo "Already up to date — no changes pulled."
+    fi
+else
+    echo "WARNING: Not a git repository. Cannot pull updates."
+    echo "To enable updates, ensure this directory is a git repo with a remote configured."
+    exit 1
+fi
+
+echo ""
+
+# -------------------------------------------------------------------
+# Step 5: Show new version
+# -------------------------------------------------------------------
+
+NEW_VERSION="unknown"
+if [ -f "$COUNSEL_DIR/VERSION" ]; then
+    NEW_VERSION=$(cat "$COUNSEL_DIR/VERSION")
+fi
+
+if [ "$OLD_VERSION" != "$NEW_VERSION" ]; then
+    echo "Version: $OLD_VERSION -> $NEW_VERSION"
+else
+    echo "Version: $NEW_VERSION (unchanged)"
+fi
+
+echo ""
+
+# -------------------------------------------------------------------
+# Step 6: Verify user content is untouched
+# -------------------------------------------------------------------
+
+echo "User content safety check:"
+echo "--------------------------"
+
+SAFE=true
+
+if [ -d "$COUNSEL_DIR/knowledge/practice" ]; then
+    NEW_PRACTICE_HASH=$(find "$COUNSEL_DIR/knowledge/practice" -type f -exec md5 -q {} \; 2>/dev/null | sort | md5 -q 2>/dev/null || echo "skip")
+    if [ "$PRACTICE_HASH" != "skip" ] && [ "$NEW_PRACTICE_HASH" != "skip" ] && [ "$PRACTICE_HASH" != "$NEW_PRACTICE_HASH" ]; then
+        echo "  WARNING: knowledge/practice/ was modified by the update!"
+        echo "  -> Restore with: git checkout HEAD~1 -- knowledge/practice/"
+        SAFE=false
+    else
+        echo "  knowledge/practice/ — untouched"
+    fi
+fi
+
+if [ -d "$COUNSEL_DIR/knowledge/matters" ]; then
+    NEW_MATTERS_HASH=$(find "$COUNSEL_DIR/knowledge/matters" -type f -exec md5 -q {} \; 2>/dev/null | sort | md5 -q 2>/dev/null || echo "skip")
+    if [ "$MATTERS_HASH" != "skip" ] && [ "$NEW_MATTERS_HASH" != "skip" ] && [ "$MATTERS_HASH" != "$NEW_MATTERS_HASH" ]; then
+        echo "  WARNING: knowledge/matters/ was modified by the update!"
+        echo "  -> Restore with: git checkout HEAD~1 -- knowledge/matters/"
+        SAFE=false
+    else
+        echo "  knowledge/matters/ — untouched"
+    fi
+fi
+
+if [ -d "$COUNSEL_DIR/knowledge/memory" ]; then
+    NEW_MEMORY_HASH=$(find "$COUNSEL_DIR/knowledge/memory" -type f -exec md5 -q {} \; 2>/dev/null | sort | md5 -q 2>/dev/null || echo "skip")
+    if [ "$MEMORY_HASH" != "skip" ] && [ "$NEW_MEMORY_HASH" != "skip" ] && [ "$MEMORY_HASH" != "$NEW_MEMORY_HASH" ]; then
+        echo "  WARNING: knowledge/memory/ was modified by the update!"
+        echo "  -> Restore with: git checkout HEAD~1 -- knowledge/memory/"
+        SAFE=false
+    else
+        echo "  knowledge/memory/ — untouched"
+    fi
+fi
+
+echo ""
+
+if [ "$SAFE" = true ]; then
+    echo "Update complete. All user content is safe."
+else
+    echo "UPDATE COMPLETE WITH WARNINGS — review the warnings above."
+fi
+
+echo ""

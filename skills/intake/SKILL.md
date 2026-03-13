@@ -1,0 +1,155 @@
+---
+name: intake
+description: "Phase 1: Classify matter, auto-detect applicable law areas, load context, estimate complexity. Use when starting any legal work."
+---
+
+# Intake — Phase 1
+
+You are starting a new legal matter. Your job is to classify it, load all relevant context, and set up the working environment for the subsequent phases (analyze, negotiate, deliver, close).
+
+## Step 1: Accept the Document or Matter
+
+Determine what you are working with. Accept one or more of:
+
+- **File:** A contract, agreement, policy, or legal document provided as a file path. Read the file.
+- **URL:** A link to a document in a data room, portal, or web page. Use `/counsel-os:browse` to extract it.
+- **Pasted text:** Contract text or clauses pasted directly into the conversation. Capture it.
+- **Description:** A verbal description of a legal matter without a specific document (e.g., "We need to draft an NDA for a new partnership discussion with Acme Corp").
+
+If no document is provided, ask the user:
+> What would you like me to work on? You can share a file, paste contract text, provide a URL, or describe the matter.
+
+## Step 2: Gather Context
+
+Ask targeted questions to understand the matter. Do NOT ask all of these — infer what you can from the document and only ask what's missing:
+
+1. **Which side are we on?** Are we the vendor/licensor/service provider, or the customer/licensee/recipient? (Often clear from the document.)
+2. **Urgency?** What's the timeline? Is there a signing deadline?
+3. **Focus areas?** Are there specific clauses or issues the user wants to prioritize? Or is this a full review?
+4. **Deal context?** Is this a new relationship or an existing counterparty? What's the deal value? Is there a counterparty file in `knowledge/matters/counterparties/`?
+5. **Any special instructions?** Anything unusual about this matter?
+
+Be efficient. If the document clearly shows we're reviewing a vendor's SaaS agreement as the customer, don't ask "which side are we on?" — just confirm your understanding.
+
+## Step 3: Auto-Detect Applicable Law Areas
+
+Scan the document text (or matter description) against the trigger conditions in each law area overview file. Check every area:
+
+1. Read each `knowledge/law/areas/*/overview.md` file
+2. Check the **Trigger Conditions** section — look for matching keywords, clause types, regulatory references, and relationship patterns
+3. Load ALL areas that match — not just the most obvious one
+4. Within each matching area, check the **Sub-Files** section to determine which specific sub-files to load based on sub-topic triggers
+
+**Important:** A single contract can trigger multiple law areas. A SaaS agreement might trigger data-privacy, ip-and-technology, and consumer-protection simultaneously. Load them all.
+
+Document which areas matched and why:
+```
+Applicable law areas:
+- data-privacy (keywords: "personal data", "data processing"; loading: gdpr.md, ccpa-cpra.md)
+- ip-and-technology (clause types: "license grant", "IP ownership")
+```
+
+## Step 4: Classify the Matter Type
+
+Based on the document and context, classify into one of these matter types. The matter type determines which playbook to use in the analyze phase:
+
+| Matter Type | Description | Typical Playbook |
+|------------|-------------|-----------------|
+| **contract-review** | Reviewing a contract drafted by the counterparty | `playbooks/contract-review.md` |
+| **nda-triage** | NDA review (mutual or one-way) | `playbooks/nda-triage.md` |
+| **negotiation** | Active negotiation on a deal in progress | `playbooks/negotiation.md` |
+| **compliance** | Compliance assessment or policy review | `playbooks/compliance-review.md` |
+| **dispute** | Dispute, demand letter, or litigation matter | `playbooks/dispute-response.md` |
+| **policy** | Internal policy drafting or review | `playbooks/policy-review.md` |
+| **diligence** | Due diligence review (M&A, investment, vendor) | `playbooks/due-diligence.md` |
+| **governance** | Board resolutions, corporate governance | `playbooks/governance.md` |
+| **memo** | Legal memo or research question | `playbooks/legal-memo.md` |
+| **amendment** | Amendment or modification to existing agreement | `playbooks/amendment-review.md` |
+| **vendor-onboarding** | New vendor evaluation and contracting | `playbooks/vendor-onboarding.md` |
+
+If the matter doesn't fit cleanly, choose the closest match and note the deviation.
+
+## Step 5: Build Effective Positions
+
+For each clause type that is likely relevant to this matter, build the effective position by merging across knowledge layers:
+
+1. **Start with defaults:** Load `knowledge/defaults/positions/<clause-type>.md`
+2. **Overlay practice:** Check `knowledge/practice/positions.md` for overrides. Practice positions win on conflict with defaults.
+3. **Overlay matters:** Check `knowledge/matters/counterparties/<name>.md` for deal-specific overrides. Matters positions win on conflict with practice.
+4. **Check against law:** Cross-reference against all loaded `knowledge/law/` areas. Law constraints ALWAYS win — if a position conflicts with law, flag it as RED and cite the specific regulation.
+
+Document the effective position for each relevant clause type:
+```
+Effective positions:
+- Limitation of liability: 12-month cap (practice override) with data breach carve-out (law requirement: GDPR Art. 82)
+- Indemnification: mutual, capped at contract value (default — practice silent)
+- Data protection: DPA required (law requirement: GDPR Art. 28) with 72-hour breach notification (law floor)
+```
+
+## Step 6: Estimate Complexity
+
+Assign a complexity track based on what you've learned:
+
+### GREEN Track — Simple
+- Standard document type (mutual NDA, template-based agreement)
+- Low dollar value (below the user's GREEN threshold)
+- Known counterparty with established positions
+- No RED law area conflicts
+- Estimated effort: 15-30 minutes
+
+### YELLOW Track — Standard
+- Counterparty paper requiring full review
+- Moderate dollar value
+- Multiple law areas apply
+- Some positions may need negotiation
+- New counterparty (first engagement)
+- Estimated effort: 1-3 hours
+
+### RED Track — Complex
+- High-value or strategic deal
+- Multiple law areas with potential conflicts
+- Non-standard deal structure
+- Counterparty with history of aggressive positions
+- Regulatory complexity (cross-border, multi-jurisdiction)
+- Estimated effort: 3+ hours, may need multiple sessions
+
+## Step 7: Output the Intake Summary
+
+Present the intake summary in this format:
+
+```
+## Intake Summary
+
+**Matter:** [brief description]
+**Type:** [matter type from Step 4]
+**Track:** [GREEN/YELLOW/RED] — [one-line justification]
+**Our role:** [vendor/customer/partner/etc.]
+**Counterparty:** [name, if known]
+**Urgency:** [timeline/deadline]
+
+### Applicable Law Areas
+- [area 1] — [why it matched, which sub-files loaded]
+- [area 2] — [why it matched, which sub-files loaded]
+
+### Effective Positions Loaded
+- [clause type 1]: [summary of effective position and source layer]
+- [clause type 2]: [summary of effective position and source layer]
+
+### Context Loaded
+- [x] Practice profile (identity, principles, voice, thresholds)
+- [x] Default positions for: [list]
+- [x] Law areas: [list]
+- [ ] Counterparty file: [not found / loaded from matters/counterparties/X.md]
+- [ ] Deal file: [not found / loaded from matters/deals/X.md]
+
+### Recommended Next Steps
+1. Proceed to `/counsel-os:analyze` for [full review / focused review on specific clauses]
+2. [Any other recommendations based on what you found]
+```
+
+## Error Handling
+
+- **No document provided:** Ask for one. Don't proceed without something to work on.
+- **Practice files not found:** Suggest running `/counsel-os:setup` first. Proceed with defaults only if the user confirms.
+- **No matching law areas:** Note this explicitly. It's unusual — most contracts touch at least one law area. Double-check.
+- **Counterparty not found:** Note that no prior context exists. Suggest creating a counterparty file after this matter closes.
