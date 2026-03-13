@@ -2,6 +2,7 @@
 node_modules/
 browse/dist/
 bun.lock
+backups/
 
 # User content — never overwritten by product updates
 knowledge/practice/
