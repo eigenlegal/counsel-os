@@ -30,7 +30,7 @@
 
 ## Related Law
 
-- knowledge/law/areas/data-privacy/overview.md (financial data handling)
+- knowledge/law/data-privacy/overview.md (financial data handling)
 
 ## Classification Guide
 

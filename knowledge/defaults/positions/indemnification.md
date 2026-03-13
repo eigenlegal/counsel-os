@@ -25,7 +25,7 @@
 
 ## Related Law
 
-- knowledge/law/areas/data-privacy/overview.md (data breach indemnification and regulatory fines)
+- knowledge/law/data-privacy/overview.md (data breach indemnification and regulatory fines)
 
 ## Classification Guide
 

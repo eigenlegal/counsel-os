@@ -24,7 +24,7 @@
 
 ## Related Law
 
-- knowledge/law/areas/data-privacy/overview.md (data breach liability implications)
+- knowledge/law/data-privacy/overview.md (data breach liability implications)
 
 ## Classification Guide
 

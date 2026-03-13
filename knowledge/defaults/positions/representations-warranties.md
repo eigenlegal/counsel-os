@@ -31,7 +31,7 @@
 
 ## Related Law
 
-- knowledge/law/areas/data-privacy/overview.md (compliance-with-law warranties covering data protection)
+- knowledge/law/data-privacy/overview.md (compliance-with-law warranties covering data protection)
 
 ## Classification Guide
 

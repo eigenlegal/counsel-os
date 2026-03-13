@@ -29,7 +29,7 @@
 
 ## Related Law
 
-- knowledge/law/areas/data-privacy/overview.md (cyber insurance requirements driven by data protection obligations)
+- knowledge/law/data-privacy/overview.md (cyber insurance requirements driven by data protection obligations)
 
 ## Classification Guide
 
