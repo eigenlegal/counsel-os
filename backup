@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+set -e
+
+COUNSEL_DIR="$(cd "$(dirname "$0")" && pwd)"
+BACKUP_DIR="$COUNSEL_DIR/backups"
+TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
+BACKUP_NAME="counsel-os-backup-$TIMESTAMP"
+BACKUP_PATH="$BACKUP_DIR/$BACKUP_NAME"
+
+# ── Check for user content ──────────────────────────────────────────────
+
+has_content=0
+for dir in practice matters memory; do
+  if [ -d "$COUNSEL_DIR/knowledge/$dir" ] && [ "$(find "$COUNSEL_DIR/knowledge/$dir" -type f ! -name '.gitkeep' | head -1)" ]; then
+    has_content=1
+    break
+  fi
+done
+
+if [ "$has_content" -eq 0 ]; then
+  echo "Nothing to back up. Run /counsel-os:setup first to create your practice profile."
+  exit 0
+fi
+
+# ── Create backup ────────────────────────────────────────────────────────
+
+mkdir -p "$BACKUP_PATH"
+
+for dir in practice matters memory; do
+  if [ -d "$COUNSEL_DIR/knowledge/$dir" ]; then
+    cp -r "$COUNSEL_DIR/knowledge/$dir" "$BACKUP_PATH/$dir"
+  fi
+done
+
+# Save metadata
+cat > "$BACKUP_PATH/manifest.json" << MANIFEST
+{
+  "timestamp": "$TIMESTAMP",
+  "version": "$(cat "$COUNSEL_DIR/VERSION" 2>/dev/null || echo "unknown")",
+  "contents": {
+    "practice": $([ -d "$BACKUP_PATH/practice" ] && find "$BACKUP_PATH/practice" -type f ! -name '.gitkeep' | wc -l | tr -d ' ' || echo 0),
+    "matters": $([ -d "$BACKUP_PATH/matters" ] && find "$BACKUP_PATH/matters" -type f ! -name '.gitkeep' | wc -l | tr -d ' ' || echo 0),
+    "memory": $([ -d "$BACKUP_PATH/memory" ] && find "$BACKUP_PATH/memory" -type f ! -name '.gitkeep' | wc -l | tr -d ' ' || echo 0)
+  }
+}
+MANIFEST
+
+echo "Backup created: $BACKUP_PATH"
+echo "  practice: $(cat "$BACKUP_PATH/manifest.json" | grep -o '"practice": [0-9]*' | grep -o '[0-9]*') files"
+echo "  matters:  $(cat "$BACKUP_PATH/manifest.json" | grep -o '"matters": [0-9]*' | grep -o '[0-9]*') files"
+echo "  memory:   $(cat "$BACKUP_PATH/manifest.json" | grep -o '"memory": [0-9]*' | grep -o '[0-9]*') files"
+echo "  version:  $(cat "$COUNSEL_DIR/VERSION" 2>/dev/null || echo "unknown")"

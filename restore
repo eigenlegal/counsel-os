@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+set -e
+
+COUNSEL_DIR="$(cd "$(dirname "$0")" && pwd)"
+BACKUP_DIR="$COUNSEL_DIR/backups"
+
+# ── Find backup to restore ──────────────────────────────────────────────
+
+if [ -n "$1" ]; then
+  # Specific backup provided as argument
+  if [ -d "$BACKUP_DIR/$1" ]; then
+    BACKUP_PATH="$BACKUP_DIR/$1"
+  elif [ -d "$1" ]; then
+    BACKUP_PATH="$1"
+  else
+    echo "Backup not found: $1"
+    echo "Usage: ./restore [backup-name]"
+    echo "       ./restore                  (restores most recent)"
+    exit 1
+  fi
+else
+  # Find most recent backup
+  if [ ! -d "$BACKUP_DIR" ] || [ -z "$(ls -A "$BACKUP_DIR" 2>/dev/null)" ]; then
+    echo "No backups found in $BACKUP_DIR"
+    echo "Run ./backup first to create one."
+    exit 1
+  fi
+  BACKUP_PATH="$(ls -dt "$BACKUP_DIR"/counsel-os-backup-* 2>/dev/null | head -1)"
+  if [ -z "$BACKUP_PATH" ]; then
+    echo "No backups found."
+    exit 1
+  fi
+fi
+
+# ── Show what we're restoring ────────────────────────────────────────────
+
+echo "Restoring from: $(basename "$BACKUP_PATH")"
+
+if [ -f "$BACKUP_PATH/manifest.json" ]; then
+  echo "  backed up at version: $(grep -o '"version": "[^"]*"' "$BACKUP_PATH/manifest.json" | cut -d'"' -f4)"
+  echo "  current version:      $(cat "$COUNSEL_DIR/VERSION" 2>/dev/null || echo "unknown")"
+fi
+
+# ── Check for existing content ───────────────────────────────────────────
+
+has_existing=0
+for dir in practice matters memory; do
+  if [ -d "$COUNSEL_DIR/knowledge/$dir" ] && [ "$(find "$COUNSEL_DIR/knowledge/$dir" -type f ! -name '.gitkeep' | head -1)" ]; then
+    has_existing=1
+    break
+  fi
+done
+
+if [ "$has_existing" -eq 1 ]; then
+  echo ""
+  echo "WARNING: Existing user content found in knowledge/."
+  echo "Restoring will OVERWRITE current practice/, matters/, and memory/ files."
+  echo ""
+  read -p "Continue? (y/N) " confirm
+  if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
+    echo "Restore cancelled."
+    exit 0
+  fi
+fi
+
+# ── Restore ──────────────────────────────────────────────────────────────
+
+for dir in practice matters memory; do
+  if [ -d "$BACKUP_PATH/$dir" ]; then
+    # Ensure target directory exists
+    mkdir -p "$COUNSEL_DIR/knowledge/$dir"
+    # Copy contents (preserve gitkeeps)
+    cp -r "$BACKUP_PATH/$dir/"* "$COUNSEL_DIR/knowledge/$dir/" 2>/dev/null || true
+    echo "  restored: knowledge/$dir/"
+  fi
+done
+
+echo ""
+echo "Restore complete."

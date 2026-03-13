@@ -45,6 +45,16 @@ fi
 # Step 3: Pull latest changes
 # -------------------------------------------------------------------
 
+# -------------------------------------------------------------------
+# Step 2.5: Auto-backup before updating
+# -------------------------------------------------------------------
+
+if [ -x "$COUNSEL_DIR/backup" ]; then
+    echo "Backing up user content before update..."
+    "$COUNSEL_DIR/backup"
+    echo ""
+fi
+
 echo "Pulling latest changes..."
 echo ""
 
