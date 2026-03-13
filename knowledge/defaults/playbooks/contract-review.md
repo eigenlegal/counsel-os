@@ -5,7 +5,7 @@ Use this playbook when reviewing any commercial contract (SaaS, services, licens
 
 ## Prerequisites
 - Load applicable position files from knowledge/defaults/positions/
-- Load relevant legal area files from knowledge/law/areas/
+- Load relevant legal area files from knowledge/law/
 - Identify the contract type and counterparty relationship (vendor, customer, partner)
 - Obtain any prior correspondence or term sheets that inform the deal context
 - Confirm the business owner and their priorities

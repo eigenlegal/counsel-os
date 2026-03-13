@@ -28,7 +28,7 @@
 
 ## Related Law
 
-- knowledge/law/areas/data-privacy/overview.md (data ownership intersects with privacy rights)
+- knowledge/law/data-privacy/overview.md (data ownership intersects with privacy rights)
 
 ## Classification Guide
 

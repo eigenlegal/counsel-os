@@ -29,7 +29,7 @@
 
 ## Related Law
 
-- knowledge/law/areas/data-privacy/overview.md (data processing obligations during force majeure)
+- knowledge/law/data-privacy/overview.md (data processing obligations during force majeure)
 
 ## Classification Guide
 

@@ -29,7 +29,7 @@
 
 ## Related Law
 
-- knowledge/law/areas/data-privacy/overview.md (jurisdictional implications for data disputes)
+- knowledge/law/data-privacy/overview.md (jurisdictional implications for data disputes)
 
 ## Classification Guide
 

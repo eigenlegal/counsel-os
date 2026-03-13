@@ -75,7 +75,7 @@ PRECEDENCE (highest to lowest):
 
 **Step 3: Auto-detect applicable law areas.**
 
-Before analysis, scan the document or matter description against trigger conditions in each `knowledge/law/areas/*/overview.md` file. Load ALL areas that match — not just one. Within each area, load specific sub-files based on the sub-topic triggers in the overview.
+Before analysis, scan the document or matter description against trigger conditions in each `knowledge/law/*/overview.md` file. Load ALL areas that match — not just one. Within each area, load specific sub-files based on the sub-topic triggers in the overview.
 
 **Step 4: Build effective positions.**
 
@@ -83,7 +83,7 @@ For each clause type under review:
 1. Start with `knowledge/defaults/positions/<clause-type>.md`
 2. Overlay `knowledge/practice/positions.md` (practice wins on conflict)
 3. Overlay `knowledge/matters/counterparties/<name>.md` if it exists (matters wins on conflict)
-4. Check against `knowledge/law/areas/*/` constraints (law always wins — flag violations as RED)
+4. Check against `knowledge/law/*/` constraints (law always wins — flag violations as RED)
 
 **Step 5: Execute the appropriate playbook.**
 
