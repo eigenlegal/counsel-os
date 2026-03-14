@@ -79,24 +79,36 @@ else
 fi
 ```
 
-## Step 7: Verify User Content
+## Step 7: Verify and Restore User Content
+
+After the pull, check whether user content is still intact:
 
 ```bash
-# Check that practice/, matters/, memory/ are untouched
 for dir in practice matters memory; do
   if [ -d "$COUNSEL_DIR/knowledge/$dir" ]; then
-    echo "knowledge/$dir/ — present"
+    file_count=$(find "$COUNSEL_DIR/knowledge/$dir" -type f ! -name '.gitkeep' | wc -l | tr -d ' ')
+    echo "knowledge/$dir/ — $file_count files"
+  else
+    echo "knowledge/$dir/ — MISSING"
   fi
 done
 ```
 
-Confirm to the user that their practice data was not modified.
+If any user content directory is missing or empty (0 files, excluding .gitkeep), **restore from the backup created in Step 3**:
+
+```bash
+"$COUNSEL_DIR/restore"
+```
+
+This restores `knowledge/practice/`, `knowledge/matters/`, and `knowledge/memory/` from the backup taken before the upgrade. Tell the user what was restored.
+
+If all directories are present and have files, confirm that user content was not modified — no restore needed.
 
 ## Step 8: Report
 
 Tell the user:
 - What version they're now on
 - What changed (summary)
-- That their practice data is safe
+- That their practice data is safe (or was restored from backup)
 - If a backup was created and where it is
 - Any action needed (e.g., "New position file added for AI/ML clauses — run `/counsel-os:setup` to review")
