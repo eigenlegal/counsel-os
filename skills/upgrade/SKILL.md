@@ -7,66 +7,51 @@ description: "Upgrade Counsel OS to the latest version. Backs up your practice d
 
 Upgrade to the latest version of Counsel OS. This backs up your data, pulls new product content, and shows what changed.
 
+Works in two modes:
+1. **Git repo** (development install) — `git pull` directly
+2. **Plugin cache** (installed via registry) — finds the git source repo, pulls there, then syncs product content into the cache without touching user data
+
 ## Step 1: Find the Install
 
-Determine where Counsel OS is installed:
+Find the Counsel OS directory. Check both the plugin cache and direct install locations:
 
 ```bash
-# Check common locations
+# Check plugin cache first (most common for installed users)
+CACHE_DIR="$(find "$HOME/.claude/plugins/cache" -path "*/counsel-os/*/VERSION" -exec dirname {} \; 2>/dev/null | head -1)"
+
+# Then check common direct install locations
 for dir in \
-  ".claude/plugins/counsel-os" \
-  "$HOME/counsel-os" \
   "$HOME/Desktop/counsel-os" \
+  "$HOME/counsel-os" \
   "$HOME/.claude/plugins/counsel-os"; do
   if [ -f "$dir/VERSION" ]; then
-    echo "FOUND: $dir"
+    DIRECT_DIR="$dir"
     break
   fi
 done
 ```
 
-Set `COUNSEL_DIR` to the found path. If not found, ask the user where it's installed.
+Set `COUNSEL_DIR` to the found path. Prefer the plugin cache path if it exists (that's what Claude Code loads from). If not found, ask the user.
 
-## Step 2: Show Current Version
+## Step 2: Run the Update Script
 
-```bash
-cat "$COUNSEL_DIR/VERSION"
-```
-
-## Step 3: Back Up User Content
+The `update` script handles both git-repo and plugin-cache modes automatically:
 
 ```bash
-"$COUNSEL_DIR/backup"
+"$COUNSEL_DIR/update"
 ```
 
-This snapshots `knowledge/practice/`, `knowledge/matters/`, and `knowledge/memory/` with a timestamp. If the backup script reports "Nothing to back up," that's fine — the user hasn't set up yet.
+The script will:
+- Back up user content (knowledge/practice, knowledge/matters, knowledge/memory)
+- Detect whether it's in a git repo or plugin cache
+- If git repo: `git fetch && git merge origin/main`
+- If plugin cache: find the git source repo, pull there, then rsync product content (skills, knowledge/defaults, knowledge/law, templates, top-level files) into the cache
+- Show what changed
+- Verify user content is untouched
 
-## Step 4: Pull Latest
+If the script can't find the source repo in plugin-cache mode, it will print instructions for creating a `.source-repo` file pointing to the git clone.
 
-```bash
-cd "$COUNSEL_DIR" && git fetch origin && git merge origin/main
-```
-
-If there are merge conflicts, stop and tell the user. Do not force-reset.
-
-## Step 5: Show What Changed
-
-```bash
-# Compare versions
-OLD_VERSION=$(cat "$COUNSEL_DIR/VERSION")
-echo "Updated to: $OLD_VERSION"
-
-# Show changed product content
-cd "$COUNSEL_DIR" && git log --oneline ORIG_HEAD..HEAD
-```
-
-Summarize the changes for the user in plain language:
-- New legal areas added
-- Updated positions or playbooks
-- New skills
-- Bug fixes
-
-## Step 6: Rebuild Browse Binary (if applicable)
+## Step 3: Rebuild Browse Binary (if applicable)
 
 If the browse source changed and Bun is installed:
 
@@ -79,9 +64,9 @@ else
 fi
 ```
 
-## Step 7: Verify and Restore User Content
+## Step 4: Verify User Content
 
-After the pull, check whether user content is still intact:
+After the update, check whether user content is still intact:
 
 ```bash
 for dir in practice matters memory; do
@@ -94,21 +79,17 @@ for dir in practice matters memory; do
 done
 ```
 
-If any user content directory is missing or empty (0 files, excluding .gitkeep), **restore from the backup created in Step 3**:
+If any user content directory is missing or empty (0 files, excluding .gitkeep), restore from the backup:
 
 ```bash
 "$COUNSEL_DIR/restore"
 ```
 
-This restores `knowledge/practice/`, `knowledge/matters/`, and `knowledge/memory/` from the backup taken before the upgrade. Tell the user what was restored.
-
-If all directories are present and have files, confirm that user content was not modified — no restore needed.
-
-## Step 8: Report
+## Step 5: Report
 
 Tell the user:
 - What version they're now on
 - What changed (summary)
 - That their practice data is safe (or was restored from backup)
-- If a backup was created and where it is
-- Any action needed (e.g., "New position file added for AI/ML clauses — run `/counsel-os:setup` to review")
+- Whether the update ran in git-repo or plugin-cache mode
+- Any action needed (e.g., "New position file added — run `/counsel-os:setup` to review")
