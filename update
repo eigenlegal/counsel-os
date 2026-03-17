@@ -13,6 +13,19 @@ set -e
 COUNSEL_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$COUNSEL_DIR"
 
+# Portable content hash (macOS uses md5, Linux uses md5sum)
+# Hashes all files in a directory into a single checksum
+_dir_hash() {
+    local dir="$1"
+    if command -v md5 &>/dev/null; then
+        find "$dir" -type f -print0 | sort -z | xargs -0 md5 -q 2>/dev/null | md5 -q 2>/dev/null || echo "skip"
+    elif command -v md5sum &>/dev/null; then
+        find "$dir" -type f -print0 | sort -z | xargs -0 md5sum 2>/dev/null | awk '{print $1}' | md5sum | awk '{print $1}' || echo "skip"
+    else
+        echo "skip"
+    fi
+}
+
 echo "Counsel OS Update"
 echo "================="
 echo ""
@@ -37,13 +50,13 @@ MATTERS_HASH=""
 MEMORY_HASH=""
 
 if [ -d "$COUNSEL_DIR/knowledge/practice" ]; then
-    PRACTICE_HASH=$(find "$COUNSEL_DIR/knowledge/practice" -type f -exec md5 -q {} \; 2>/dev/null | sort | md5 -q 2>/dev/null || echo "skip")
+    PRACTICE_HASH=$(_dir_hash "$COUNSEL_DIR/knowledge/practice")
 fi
 if [ -d "$COUNSEL_DIR/knowledge/matters" ]; then
-    MATTERS_HASH=$(find "$COUNSEL_DIR/knowledge/matters" -type f -exec md5 -q {} \; 2>/dev/null | sort | md5 -q 2>/dev/null || echo "skip")
+    MATTERS_HASH=$(_dir_hash "$COUNSEL_DIR/knowledge/matters")
 fi
 if [ -d "$COUNSEL_DIR/knowledge/memory" ]; then
-    MEMORY_HASH=$(find "$COUNSEL_DIR/knowledge/memory" -type f -exec md5 -q {} \; 2>/dev/null | sort | md5 -q 2>/dev/null || echo "skip")
+    MEMORY_HASH=$(_dir_hash "$COUNSEL_DIR/knowledge/memory")
 fi
 
 # -------------------------------------------------------------------
@@ -245,7 +258,7 @@ echo "--------------------------"
 SAFE=true
 
 if [ -d "$COUNSEL_DIR/knowledge/practice" ]; then
-    NEW_PRACTICE_HASH=$(find "$COUNSEL_DIR/knowledge/practice" -type f -exec md5 -q {} \; 2>/dev/null | sort | md5 -q 2>/dev/null || echo "skip")
+    NEW_PRACTICE_HASH=$(_dir_hash "$COUNSEL_DIR/knowledge/practice")
     if [ "$PRACTICE_HASH" != "skip" ] && [ "$NEW_PRACTICE_HASH" != "skip" ] && [ "$PRACTICE_HASH" != "$NEW_PRACTICE_HASH" ]; then
         echo "  WARNING: knowledge/practice/ was modified by the update!"
         SAFE=false
@@ -255,7 +268,7 @@ if [ -d "$COUNSEL_DIR/knowledge/practice" ]; then
 fi
 
 if [ -d "$COUNSEL_DIR/knowledge/matters" ]; then
-    NEW_MATTERS_HASH=$(find "$COUNSEL_DIR/knowledge/matters" -type f -exec md5 -q {} \; 2>/dev/null | sort | md5 -q 2>/dev/null || echo "skip")
+    NEW_MATTERS_HASH=$(_dir_hash "$COUNSEL_DIR/knowledge/matters")
     if [ "$MATTERS_HASH" != "skip" ] && [ "$NEW_MATTERS_HASH" != "skip" ] && [ "$MATTERS_HASH" != "$NEW_MATTERS_HASH" ]; then
         echo "  WARNING: knowledge/matters/ was modified by the update!"
         SAFE=false
@@ -265,7 +278,7 @@ if [ -d "$COUNSEL_DIR/knowledge/matters" ]; then
 fi
 
 if [ -d "$COUNSEL_DIR/knowledge/memory" ]; then
-    NEW_MEMORY_HASH=$(find "$COUNSEL_DIR/knowledge/memory" -type f -exec md5 -q {} \; 2>/dev/null | sort | md5 -q 2>/dev/null || echo "skip")
+    NEW_MEMORY_HASH=$(_dir_hash "$COUNSEL_DIR/knowledge/memory")
     if [ "$MEMORY_HASH" != "skip" ] && [ "$NEW_MEMORY_HASH" != "skip" ] && [ "$MEMORY_HASH" != "$NEW_MEMORY_HASH" ]; then
         echo "  WARNING: knowledge/memory/ was modified by the update!"
         SAFE=false
