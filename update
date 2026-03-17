@@ -212,7 +212,15 @@ else
 
     for pfile in "${PRODUCT_FILES[@]}"; do
         if [ -f "$SOURCE_DIR/$pfile" ]; then
-            cp "$SOURCE_DIR/$pfile" "$COUNSEL_DIR/$pfile"
+            if [ "$pfile" = "update" ]; then
+                # Self-update: copy to temp file first, then atomic move.
+                # Overwriting a running bash script corrupts the process.
+                cp "$SOURCE_DIR/$pfile" "$COUNSEL_DIR/$pfile.tmp"
+                mv -f "$COUNSEL_DIR/$pfile.tmp" "$COUNSEL_DIR/$pfile"
+                chmod +x "$COUNSEL_DIR/$pfile"
+            else
+                cp "$SOURCE_DIR/$pfile" "$COUNSEL_DIR/$pfile"
+            fi
         fi
     done
 
