@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -e
+
+COUNSEL_DIR="$(cd "$(dirname "$0")" && pwd)"
+VERSION="$(cat "$COUNSEL_DIR/VERSION" 2>/dev/null || echo "unknown")"
+OUTPUT_DIR="${1:-$(dirname "$COUNSEL_DIR")}"
+OUTPUT_FILE="$OUTPUT_DIR/counsel-os-plugin.zip"
+PLUGIN_NAME="$(basename "$COUNSEL_DIR")"
+
+echo "Exporting Counsel OS v$VERSION as Cowork plugin..."
+
+# ── Build zip from parent directory ──────────────────────────────────────
+
+cd "$(dirname "$COUNSEL_DIR")"
+
+# Remove old export if it exists
+rm -f "$OUTPUT_FILE"
+
+zip -r "$OUTPUT_FILE" "$PLUGIN_NAME/" \
+  -x "$PLUGIN_NAME/.git/*" \
+  -x "$PLUGIN_NAME/.git" \
+  -x "$PLUGIN_NAME/node_modules/*" \
+  -x "$PLUGIN_NAME/browse/dist/*" \
+  -x "$PLUGIN_NAME/backups/*" \
+  -x "$PLUGIN_NAME/bun.lock" \
+  -x "$PLUGIN_NAME/.DS_Store" \
+  -x "$PLUGIN_NAME/**/.DS_Store" \
+  -x "$PLUGIN_NAME/.189d75fefce77e77-00000000.bun-build" \
+  > /dev/null
+
+SIZE="$(du -h "$OUTPUT_FILE" | cut -f1 | tr -d ' ')"
+
+echo ""
+echo "Exported: $OUTPUT_FILE ($SIZE)"
+echo ""
+echo "Includes:"
+echo "  - Product content (law/, defaults/, skills/)"
+echo "  - Your practice profile (practice/)"
+echo "  - Counterparty context (matters/)"
+echo "  - Decision history (memory/)"
+echo ""
+echo "To install in Cowork:"
+echo "  1. Open Claude Desktop → Cowork → Customize"
+echo "  2. Remove the old Counsel OS plugin (if installed)"
+echo "  3. Upload $OUTPUT_FILE"
