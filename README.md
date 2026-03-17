@@ -256,6 +256,35 @@ This:
 
 Backups are stored locally in `backups/` (gitignored). The update script automatically backs up before pulling new content.
 
+### Using Both Claude Code and Cowork
+
+If you use Counsel OS in **Claude Code** as your primary environment and also want it available in **Cowork** (Claude Desktop), here's how they work together.
+
+**Claude Code is the source of truth.** Product updates (`law/`, `defaults/`, skills) pull automatically via `/counsel-os:update` or `./update`. Your user content (`practice/`, `matters/`, `memory/`) accumulates as you work — counterparty context, decision logs, position refinements, and patterns all build up over time.
+
+**Cowork can't self-update.** Plugins in Cowork are static snapshots. To keep Cowork current:
+
+1. Work in Claude Code as usual — update product content, review contracts, refine positions
+2. When you want to sync Cowork, run the export script:
+   ```bash
+   ./export
+   ```
+   This creates `counsel-os-plugin.zip` in the parent directory (or pass a custom output path: `./export /path/to/folder`).
+3. In Claude Desktop → Cowork → Customize, remove the old plugin and upload the new zip
+
+This ensures Cowork gets both the latest product content **and** your accumulated learning — counterparty files, refined positions, decision history, and patterns.
+
+**What syncs:**
+- `knowledge/practice/` — your positions, voice, thresholds, principles
+- `knowledge/matters/` — counterparty context, deal overrides
+- `knowledge/memory/` — decisions, exceptions, patterns
+- `knowledge/law/` and `knowledge/defaults/` — latest product content
+- `skills/` — latest skill definitions
+
+**Recommended cadence:** Re-export to Cowork after any significant batch of work — e.g., after onboarding a new counterparty, updating your positions, or pulling a product update. There's no harm in exporting frequently; it's a fast operation.
+
+> **Note:** Edits made inside Cowork's plugin editor do not flow back to Claude Code. If you edit files in Cowork, manually copy those changes back to your local repo to keep them in sync.
+
 ---
 
 ## How It Works
