@@ -2,9 +2,14 @@
 set -e
 
 # Counsel OS — Update Script
-# Pulls latest product content (law/ and defaults/) without touching user data.
+# Pulls latest product content (law/, defaults/, skills/, templates/) without
+# touching user data (practice/, matters/, memory/).
+#
+# Works in two modes:
+#   1. Git repo (development install) — git fetch && git merge
+#   2. Plugin cache (installed via registry) — find the git source repo,
+#      pull there, then rsync product content into the cache
 
-# Determine the directory where this script lives
 COUNSEL_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$COUNSEL_DIR"
 
@@ -42,10 +47,6 @@ if [ -d "$COUNSEL_DIR/knowledge/memory" ]; then
 fi
 
 # -------------------------------------------------------------------
-# Step 3: Pull latest changes
-# -------------------------------------------------------------------
-
-# -------------------------------------------------------------------
 # Step 2.5: Auto-backup before updating
 # -------------------------------------------------------------------
 
@@ -55,14 +56,43 @@ if [ -x "$COUNSEL_DIR/backup" ]; then
     echo ""
 fi
 
+# -------------------------------------------------------------------
+# Step 3: Determine update mode and pull latest
+# -------------------------------------------------------------------
+
 echo "Pulling latest changes..."
 echo ""
 
+# Product content directories to sync (everything EXCEPT user data)
+PRODUCT_DIRS=(
+    "knowledge/defaults"
+    "knowledge/law"
+    "skills"
+    "templates"
+)
+
+# Top-level product files to sync
+PRODUCT_FILES=(
+    "VERSION"
+    "CLAUDE.md"
+    "CONNECTORS.md"
+    "README.md"
+    "update"
+    "backup"
+    "restore"
+    "setup"
+    "package.json"
+)
+
 if git rev-parse --is-inside-work-tree &>/dev/null; then
-    # Store current commit for diffing
+    # ---------------------------------------------------------------
+    # Mode 1: Git repo — standard git pull
+    # ---------------------------------------------------------------
+    echo "Mode: git repo"
+    echo ""
+
     OLD_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "")
 
-    # Fetch and merge
     git fetch origin 2>&1 | head -5
     git merge origin/main --no-edit 2>&1 | head -10
 
@@ -70,77 +100,126 @@ if git rev-parse --is-inside-work-tree &>/dev/null; then
 
     echo ""
 
-    # -------------------------------------------------------------------
-    # Step 4: Show what changed in product content
-    # -------------------------------------------------------------------
-
     if [ -n "$OLD_COMMIT" ] && [ -n "$NEW_COMMIT" ] && [ "$OLD_COMMIT" != "$NEW_COMMIT" ]; then
         echo "Changes in product content:"
         echo "----------------------------"
 
-        # Law area changes
-        LAW_CHANGES=$(git diff --name-status "$OLD_COMMIT".."$NEW_COMMIT" -- knowledge/law/ 2>/dev/null || echo "")
-        if [ -n "$LAW_CHANGES" ]; then
-            echo ""
-            echo "Law areas (knowledge/law/):"
-            echo "$LAW_CHANGES" | while IFS=$'\t' read -r status file; do
-                case "$status" in
-                    A) echo "  + NEW: $file" ;;
-                    M) echo "  ~ UPDATED: $file" ;;
-                    D) echo "  - REMOVED: $file" ;;
-                    *) echo "  ? $status: $file" ;;
-                esac
-            done
-        else
-            echo ""
-            echo "Law areas: no changes"
-        fi
-
-        # Default changes
-        DEFAULT_CHANGES=$(git diff --name-status "$OLD_COMMIT".."$NEW_COMMIT" -- knowledge/defaults/ 2>/dev/null || echo "")
-        if [ -n "$DEFAULT_CHANGES" ]; then
-            echo ""
-            echo "Defaults (knowledge/defaults/):"
-            echo "$DEFAULT_CHANGES" | while IFS=$'\t' read -r status file; do
-                case "$status" in
-                    A) echo "  + NEW: $file" ;;
-                    M) echo "  ~ UPDATED: $file" ;;
-                    D) echo "  - REMOVED: $file" ;;
-                    *) echo "  ? $status: $file" ;;
-                esac
-            done
-        else
-            echo ""
-            echo "Defaults: no changes"
-        fi
-
-        # Skills changes
-        SKILL_CHANGES=$(git diff --name-status "$OLD_COMMIT".."$NEW_COMMIT" -- skills/ 2>/dev/null || echo "")
-        if [ -n "$SKILL_CHANGES" ]; then
-            echo ""
-            echo "Skills (skills/):"
-            echo "$SKILL_CHANGES" | while IFS=$'\t' read -r status file; do
-                case "$status" in
-                    A) echo "  + NEW: $file" ;;
-                    M) echo "  ~ UPDATED: $file" ;;
-                    D) echo "  - REMOVED: $file" ;;
-                    *) echo "  ? $status: $file" ;;
-                esac
-            done
-        fi
+        for pdir in "${PRODUCT_DIRS[@]}"; do
+            CHANGES=$(git diff --name-status "$OLD_COMMIT".."$NEW_COMMIT" -- "$pdir/" 2>/dev/null || echo "")
+            if [ -n "$CHANGES" ]; then
+                echo ""
+                echo "$pdir/:"
+                echo "$CHANGES" | while IFS=$'\t' read -r status file; do
+                    case "$status" in
+                        A) echo "  + NEW: $file" ;;
+                        M) echo "  ~ UPDATED: $file" ;;
+                        D) echo "  - REMOVED: $file" ;;
+                        *) echo "  ? $status: $file" ;;
+                    esac
+                done
+            fi
+        done
     else
         echo "Already up to date — no changes pulled."
     fi
 else
-    echo "WARNING: Not a git repository. Cannot pull updates."
-    echo "To enable updates, ensure this directory is a git repo with a remote configured."
-    exit 1
+    # ---------------------------------------------------------------
+    # Mode 2: Plugin cache — find git source, pull there, rsync here
+    # ---------------------------------------------------------------
+    echo "Mode: plugin cache (not a git repo)"
+    echo ""
+
+    # Find the git source repo
+    SOURCE_DIR=""
+
+    # Check configurable path first
+    if [ -f "$COUNSEL_DIR/.source-repo" ]; then
+        CONFIGURED=$(cat "$COUNSEL_DIR/.source-repo" | tr -d '[:space:]')
+        if [ -d "$CONFIGURED/.git" ] && [ -f "$CONFIGURED/VERSION" ]; then
+            SOURCE_DIR="$CONFIGURED"
+        fi
+    fi
+
+    # Search known locations
+    if [ -z "$SOURCE_DIR" ]; then
+        for candidate in \
+            "$HOME/Desktop/counsel-os" \
+            "$HOME/counsel-os" \
+            "$HOME/dev/counsel-os" \
+            "$HOME/src/counsel-os" \
+            "$HOME/code/counsel-os" \
+            "$HOME/projects/counsel-os"; do
+            if [ -d "$candidate/.git" ] && [ -f "$candidate/VERSION" ]; then
+                SOURCE_DIR="$candidate"
+                break
+            fi
+        done
+    fi
+
+    if [ -z "$SOURCE_DIR" ]; then
+        echo "ERROR: Cannot find counsel-os git repo to pull from."
+        echo ""
+        echo "The plugin cache at:"
+        echo "  $COUNSEL_DIR"
+        echo "is not a git repo, so we need the source repo to sync from."
+        echo ""
+        echo "To fix this, create a file at:"
+        echo "  $COUNSEL_DIR/.source-repo"
+        echo "containing the absolute path to your counsel-os git clone."
+        echo ""
+        echo "Example:"
+        echo "  echo '$HOME/Desktop/counsel-os' > '$COUNSEL_DIR/.source-repo'"
+        exit 1
+    fi
+
+    echo "Source repo: $SOURCE_DIR"
+    echo ""
+
+    # Pull latest in the source repo
+    echo "Pulling latest in source repo..."
+    (cd "$SOURCE_DIR" && git fetch origin 2>&1 | head -5 && git merge origin/main --no-edit 2>&1 | head -10)
+    echo ""
+
+    # Sync product content from source to cache
+    echo "Syncing product content to plugin cache..."
+    echo ""
+
+    CHANGED_COUNT=0
+
+    for pdir in "${PRODUCT_DIRS[@]}"; do
+        if [ -d "$SOURCE_DIR/$pdir" ]; then
+            # Create target dir if needed
+            mkdir -p "$COUNSEL_DIR/$pdir"
+            # Rsync with delete to remove stale files, but only product dirs
+            rsync -a --delete "$SOURCE_DIR/$pdir/" "$COUNSEL_DIR/$pdir/" 2>/dev/null
+            echo "  synced: $pdir/"
+            CHANGED_COUNT=$((CHANGED_COUNT + 1))
+        fi
+    done
+
+    for pfile in "${PRODUCT_FILES[@]}"; do
+        if [ -f "$SOURCE_DIR/$pfile" ]; then
+            cp "$SOURCE_DIR/$pfile" "$COUNSEL_DIR/$pfile"
+        fi
+    done
+
+    # Sync browse binary if it exists
+    if [ -d "$SOURCE_DIR/browse" ]; then
+        rsync -a "$SOURCE_DIR/browse/" "$COUNSEL_DIR/browse/" 2>/dev/null
+        echo "  synced: browse/"
+    fi
+
+    echo ""
+    echo "Synced $CHANGED_COUNT product directories + top-level files."
+
+    # Save source path for future upgrades
+    echo "$SOURCE_DIR" > "$COUNSEL_DIR/.source-repo"
 fi
 
 echo ""
 
 # -------------------------------------------------------------------
-# Step 5: Show new version
+# Step 4: Show new version
 # -------------------------------------------------------------------
 
 NEW_VERSION="unknown"
@@ -157,7 +236,7 @@ fi
 echo ""
 
 # -------------------------------------------------------------------
-# Step 6: Verify user content is untouched
+# Step 5: Verify user content is untouched
 # -------------------------------------------------------------------
 
 echo "User content safety check:"
@@ -169,7 +248,6 @@ if [ -d "$COUNSEL_DIR/knowledge/practice" ]; then
     NEW_PRACTICE_HASH=$(find "$COUNSEL_DIR/knowledge/practice" -type f -exec md5 -q {} \; 2>/dev/null | sort | md5 -q 2>/dev/null || echo "skip")
     if [ "$PRACTICE_HASH" != "skip" ] && [ "$NEW_PRACTICE_HASH" != "skip" ] && [ "$PRACTICE_HASH" != "$NEW_PRACTICE_HASH" ]; then
         echo "  WARNING: knowledge/practice/ was modified by the update!"
-        echo "  -> Restore with: git checkout HEAD~1 -- knowledge/practice/"
         SAFE=false
     else
         echo "  knowledge/practice/ — untouched"
@@ -180,7 +258,6 @@ if [ -d "$COUNSEL_DIR/knowledge/matters" ]; then
     NEW_MATTERS_HASH=$(find "$COUNSEL_DIR/knowledge/matters" -type f -exec md5 -q {} \; 2>/dev/null | sort | md5 -q 2>/dev/null || echo "skip")
     if [ "$MATTERS_HASH" != "skip" ] && [ "$NEW_MATTERS_HASH" != "skip" ] && [ "$MATTERS_HASH" != "$NEW_MATTERS_HASH" ]; then
         echo "  WARNING: knowledge/matters/ was modified by the update!"
-        echo "  -> Restore with: git checkout HEAD~1 -- knowledge/matters/"
         SAFE=false
     else
         echo "  knowledge/matters/ — untouched"
@@ -191,7 +268,6 @@ if [ -d "$COUNSEL_DIR/knowledge/memory" ]; then
     NEW_MEMORY_HASH=$(find "$COUNSEL_DIR/knowledge/memory" -type f -exec md5 -q {} \; 2>/dev/null | sort | md5 -q 2>/dev/null || echo "skip")
     if [ "$MEMORY_HASH" != "skip" ] && [ "$NEW_MEMORY_HASH" != "skip" ] && [ "$MEMORY_HASH" != "$NEW_MEMORY_HASH" ]; then
         echo "  WARNING: knowledge/memory/ was modified by the update!"
-        echo "  -> Restore with: git checkout HEAD~1 -- knowledge/memory/"
         SAFE=false
     else
         echo "  knowledge/memory/ — untouched"
@@ -204,6 +280,7 @@ if [ "$SAFE" = true ]; then
     echo "Update complete. All user content is safe."
 else
     echo "UPDATE COMPLETE WITH WARNINGS — review the warnings above."
+    echo "Run './restore' to recover from the backup taken before this update."
 fi
 
 echo ""
