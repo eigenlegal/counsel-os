@@ -11,13 +11,65 @@ You are starting a new legal matter. Your job is to classify it, load all releva
 
 Determine what you are working with. Accept one or more of:
 
-- **File:** A contract, agreement, policy, or legal document provided as a file path. Read the file.
+- **File:** A contract, agreement, policy, or legal document provided as a file path. See **File Extraction** below for format-specific handling.
 - **URL:** A link to a document in a data room, portal, or web page. Use `/counsel-os:browse` to extract it.
 - **Pasted text:** Contract text or clauses pasted directly into the conversation. Capture it.
 - **Description:** A verbal description of a legal matter without a specific document (e.g., "We need to draft an NDA for a new partnership discussion with Acme Corp").
 
 If no document is provided, ask the user:
 > What would you like me to work on? You can share a file, paste contract text, provide a URL, or describe the matter.
+
+### File Extraction
+
+Choose the extraction method based on file extension:
+
+| Format | Method |
+|--------|--------|
+| `.pdf` | Use the Read tool directly (native PDF support) |
+| `.txt`, `.md`, `.rtf` | Use the Read tool directly |
+| `.docx` | Use the **Word Document Extraction** process below |
+| `.doc` (legacy) | Ask the user to convert to `.docx` or `.pdf` first |
+
+### Word Document Extraction (.docx)
+
+Word documents are the primary medium for contract negotiation. Tracked changes contain the negotiation history and comments often hold key context from counterparty counsel. **Always extract tracked changes and comments — do not extract only the accepted text.**
+
+**Primary method — pandoc:**
+
+```bash
+pandoc --track-changes=all -f docx -t markdown "<file_path>"
+```
+
+This renders tracked changes and comments inline:
+- Insertions: `{++inserted text++}`
+- Deletions: `{--deleted text--}`
+- Comments: `{>>comment text<<}`
+
+If pandoc is not installed, tell the user:
+> I need `pandoc` to extract tracked changes and comments from Word documents. Install it with `brew install pandoc` (macOS) or `apt-get install pandoc` (Linux), then try again.
+
+**Fallback method — unzip + XML parsing (if pandoc unavailable and user cannot install it):**
+
+```bash
+# Extract the XML from the .docx ZIP archive
+unzip -o "<file_path>" word/document.xml word/comments.xml -d /tmp/docx-extract 2>/dev/null
+
+# Extract main document text with tracked change markers
+# - <w:ins> elements = insertions (added text)
+# - <w:del> elements = deletions (removed text)
+# - Comment references link to word/comments.xml
+```
+
+Then read `/tmp/docx-extract/word/document.xml` and `/tmp/docx-extract/word/comments.xml` to parse:
+- `<w:ins>` blocks — text that was inserted (additions in tracked changes)
+- `<w:del>` blocks — text that was deleted (removals in tracked changes)
+- `<w:commentRangeStart>` / `<w:commentRangeEnd>` — comment anchors
+- In `comments.xml`: `<w:comment>` elements with author, date, and comment text
+
+**After extraction, always report to the user:**
+- Whether tracked changes were found and how many insertions/deletions
+- Whether comments were found, with count and authors
+- If the document had no tracked changes or comments, note that explicitly so the user knows it was checked
 
 ## Step 2: Gather Context
 
