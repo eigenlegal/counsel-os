@@ -1,44 +1,114 @@
 # Product Liability
 
-## Overview
-Product liability law holds manufacturers, distributors, and sellers responsible for injuries caused by defective products. Liability can arise under strict liability, negligence, or breach of warranty theories. Product liability risk management requires attention to product design, manufacturing quality control, warnings and instructions, regulatory compliance, and supply chain agreements.
+## Applicability
+
+Load this file when a matter involves product defect claims, product safety incidents, product design reviews, product launch legal reviews, supply chain liability allocation, or post-sale duty-to-warn obligations. Also load when drafting or reviewing indemnification, warranty, or limitation-of-liability provisions in manufacturing, distribution, or supplier agreements.
 
 ## Key Requirements
-- **Theories of liability:**
-  - **Strict liability (Restatement Third):** A product is defective if it contains a manufacturing defect (departs from intended design), a design defect (foreseeable risk of harm could have been reduced by a reasonable alternative design), or an inadequate warning (foreseeable risk of harm could have been reduced by reasonable instructions or warnings). Strict liability does not require proof of negligence.
-  - **Negligence:** Manufacturer owed a duty of care in the design, manufacture, and warning process, and breached that duty, proximately causing injury. Requires proof that the manufacturer's conduct fell below the standard of a reasonable manufacturer.
-  - **Breach of warranty:** Express warranty (based on manufacturer's affirmations, descriptions, or samples), implied warranty of merchantability (product fit for ordinary purposes), and implied warranty of fitness for a particular purpose (product suitable for buyer's particular use when seller knew of that use). Privity requirements vary by state.
 
-- **Manufacturing defect:** The product departs from its intended design due to an error in the manufacturing process. Strict liability applies — the manufacturer is liable even if it exercised all possible care.
+### Theories of Liability
 
-- **Design defect:** The product's design makes it unreasonably dangerous. Two primary tests: (1) consumer expectations test (product fails to perform as safely as an ordinary consumer would expect), and (2) risk-utility test (foreseeable risks outweigh the product's utility, considering the availability of a reasonable alternative design). Most modern jurisdictions apply the risk-utility test or a combination.
+- **Manufacturing defect**
+  - **Standard:** Strict liability — product departs from its intended design.
+  - **Consequence:** Manufacturer is liable regardless of the care exercised. No negligence showing required. A single unit that deviates from specifications triggers liability for the manufacturer and every entity in the distribution chain. The defect is measured against the manufacturer's own design intent — the product simply did not come out as planned (Restatement Third, Section 2(a)). This is the least contested theory because the manufacturer's own specifications define the benchmark.
 
-- **Failure to warn / inadequate warnings:** A product may be defective due to the absence of adequate warnings or instructions. The adequacy of warnings is evaluated based on: (1) the severity and likelihood of the risk, (2) the obviousness of the risk, (3) the adequacy of the content and format of the warning, and (4) the feasibility of providing an effective warning. Post-sale duty to warn exists when the manufacturer learns of risks after distribution.
+- **Design defect — risk-utility test**
+  - **Standard:** Foreseeable risks of harm outweigh product utility considering the availability of a reasonable alternative design (RAD).
+  - **Consequence:** Manufacturer liable if a RAD existed that would have reduced the foreseeable risks and the omission renders the product not reasonably safe. Majority of modern jurisdictions apply risk-utility (Restatement Third, Section 2(b)). Factors: magnitude and probability of foreseeable risk, instructions and warnings, consumer expectations, relative advantages and disadvantages of the product and alternatives, feasibility and cost of alternative designs, and consumer choice. Plaintiff typically bears the burden of identifying a RAD.
 
-- **Regulatory compliance defense:** Compliance with applicable government regulations is evidence of due care but is generally not a complete defense in product liability actions (except for certain federal preemption situations, such as FDA-approved prescription drug labeling under Wyeth v. Levine limitations).
+- **Design defect — consumer expectations test**
+  - **Standard:** Product fails to perform as safely as an ordinary consumer would expect when used in an intended or reasonably foreseeable manner.
+  - **Consequence:** Available in a minority of states (notably California under Barker v. Lull Engineering, which uses a dual-test approach shifting the burden to the manufacturer under risk-utility). Some states apply consumer expectations for simple products and risk-utility for complex ones. A few states (e.g., Oregon under ORS 30.920) apply a hybrid test. The Restatement Third rejected a standalone consumer expectations test, but several states retain it.
 
-- **Statute of repose:** Many states have statutes of repose that bar product liability claims brought after a specified period (typically 6-15 years) following the product's initial sale or delivery, regardless of when the injury occurred. Distinct from statutes of limitations.
+- **Failure to warn**
+  - **Standard:** Foreseeable risk of harm could have been reduced by reasonable warnings or instructions (Restatement Third, Section 2(c)).
+  - **Consequence:** Adequacy evaluated on content (risk specificity, severity, instructions for safe use), prominence (location, conspicuousness, font size), and comprehensibility (plain language, symbols, bilingual where required). Over-warning can dilute effectiveness, itself a basis for inadequacy (see warnings-labels.md). Must warn of risks from both intended uses and reasonably foreseeable misuses.
 
-- **Supply chain liability:** All entities in the distribution chain (manufacturer, wholesaler, distributor, retailer) may be liable for defective products under strict liability in most jurisdictions. Component part manufacturers are generally liable only if the component itself is defective or if the component manufacturer substantially participated in the design of the integrated product.
+- **Learned intermediary doctrine**
+  - **Standard:** For prescription drugs and medical devices, the duty to warn runs to the prescribing physician, not the end consumer.
+  - **Consequence:** Manufacturer discharges its duty by providing adequate warnings to the prescribing physician via package inserts, physician labeling, and Dear Healthcare Provider letters. Exceptions: direct-to-consumer advertising (NJ, under Perez v. Wyeth Laboratories), mass immunization programs, and contraceptive devices in some jurisdictions. Does not apply to OTC products.
 
-- **CPSC reporting and recalls:** Section 15(b) of the Consumer Product Safety Act requires immediate reporting (within 24 hours) when a company learns its product contains a defect that could create a substantial product hazard. CPSC can order mandatory recalls. Voluntary recalls with CPSC cooperation are the norm and typically involve corrective action plans (refund, repair, replacement).
+- **Negligence**
+  - **Standard:** Manufacturer's conduct fell below the standard of a reasonable manufacturer in design, production, inspection, testing, or warnings.
+  - **Consequence:** Requires proof of duty, breach, causation, and damages. Available in all jurisdictions. Particularly important for professional services associated with products (installation, maintenance) where strict liability may not reach, post-sale negligence (failure to recall or warn), and negligent entrustment.
 
-## Common Contract Issues
-- Supply agreements and component purchase agreements that do not include adequate product liability indemnification, quality specifications, testing requirements, and recall cooperation obligations.
-- Indemnification provisions in distribution agreements that do not clearly allocate product liability risk between manufacturer and distributor.
-- Limitation-of-liability clauses in B2B contracts that may be enforceable between the commercial parties but do not protect against third-party consumer product liability claims.
-- Warranty provisions that do not adequately disclaim implied warranties (where permitted) or that make affirmative representations creating express warranty liability.
-- Missing or inadequate quality control provisions in contract manufacturing agreements (CM, ODM, OEM arrangements).
-- Product liability insurance requirements in supply chain agreements — minimum coverage limits, additional insured endorsements, and product recall coverage.
-- Recall cost allocation provisions — who bears the cost of investigation, notification, remediation, replacement, and regulatory compliance in a recall event.
-- Software and firmware update obligations for connected/IoT products — ongoing duty to patch safety-critical vulnerabilities.
-- Specification and design approval provisions that affect allocation of design defect liability between the specifying party and the manufacturer.
+- **Breach of warranty**
+  - **Standard:** Express warranty (UCC 2-313), implied warranty of merchantability (UCC 2-314 — fit for ordinary purposes), implied warranty of fitness for particular purpose (UCC 2-315).
+  - **Consequence:** Privity requirements vary by state — most have relaxed horizontal privity (injured third parties can sue) but some still require vertical privity. Magnuson-Moss Warranty Act prohibits disclaiming implied warranties when a written warranty is provided for consumer products. Warranty claims may allow recovery of purely economic losses where tort claims would not (economic loss doctrine).
+
+### Defenses and Limitations
+
+- **Comparative fault / contributory negligence**
+  - **Threshold:** Varies by state — pure comparative fault (13 states), modified 50% bar (10 states), modified 51% bar (23 states), pure contributory negligence (4 states + DC: AL, MD, NC, VA).
+  - **Consequence:** Plaintiff's recovery reduced by percentage of fault. In modified states, plaintiff barred if fault exceeds threshold. Whether comparative fault applies to strict liability varies by state. Product misuse may be treated as comparative fault or as a separate defense.
+
+- **Assumption of risk**
+  - **Threshold:** Plaintiff must have known of the specific risk and voluntarily encountered it.
+  - **Consequence:** Complete bar in some jurisdictions (express assumption); in others merged into comparative fault analysis. Express assumption via signed waivers is generally enforceable for recreational activities but not ordinary consumer products. Implied assumption requires subjective knowledge of the specific danger.
+
+- **Statute of limitations**
+  - **Threshold:** Typically 2-3 years from date of injury or discovery (varies by state and theory; 4 years for UCC warranty claims).
+  - **Consequence:** Claim time-barred if not filed within period. Discovery rule tolls the statute in most jurisdictions. Tolled for minors until reaching age of majority. Fraudulent concealment may toll.
+
+- **Statute of repose**
+  - **Threshold:** 6-15 years from date of first sale or delivery (e.g., CT 10 years, NC 12 years, OR 8 years, IN 10 years, TN 10 years).
+  - **Consequence:** Absolute bar on claims after the repose period, regardless of when injury occurred. No tolling, no discovery rule. Distinct from statutes of limitations — repose runs from the product's first sale, not from the injury. Some states exempt fraud or intentional concealment. Not all states have product liability statutes of repose.
+
+- **Federal preemption**
+  - **Threshold:** Federal regulatory scheme occupies the field or directly conflicts with state law claims.
+  - **Consequence:** Express preemption: National Childhood Vaccine Injury Act (design defect claims for vaccines), FIFRA (state labeling requirements for pesticides). Implied preemption: Riegel v. Medtronic (2008) — Class III PMA medical devices preempt state tort claims imposing different requirements. Does not apply to 510(k) devices (Medtronic v. Lohr, 1996). Prescription drugs: FDA approval does not preempt failure-to-warn claims where the manufacturer could have unilaterally strengthened the label (Wyeth v. Levine, 2009).
+
+- **Regulatory compliance defense**
+  - **Threshold:** Product complied with all applicable government safety standards at time of manufacture.
+  - **Consequence:** Evidence of due care but not a complete defense (majority rule). A few states provide statutory regulatory compliance defenses: MI (rebuttable presumption), NJ (rebuttable presumption if FDA-approved), TX (limited defense for drugs). Industry standards (ANSI, ASTM, UL, ISO) are relevant but not dispositive.
+
+- **State-of-the-art defense**
+  - **Threshold:** The risk was not known or knowable given the state of scientific and technical knowledge at the time of manufacture.
+  - **Consequence:** Available in some states — manufacturer not liable for risks undiscoverable at time of sale. Particularly relevant to failure-to-warn claims. Does not protect against manufacturing defects (strict liability regardless of knowledge). Some states reject this defense entirely in strict liability.
+
+### Damages
+
+- **Compensatory — economic loss**
+  - **Threshold:** Property damage, medical expenses, lost wages, loss of earning capacity, cost of repair or replacement.
+  - **Consequence:** Recoverable in all product liability actions with personal injury or property damage. Economic loss doctrine bars recovery in tort for purely economic losses without physical harm — must proceed under warranty or contract theory.
+
+- **Compensatory — personal injury**
+  - **Threshold:** Physical injury to the plaintiff.
+  - **Consequence:** Pain and suffering, emotional distress (with physical injury), disfigurement, disability, loss of enjoyment of life, loss of consortium. Some states cap non-economic damages (CO $642K adjusted, OH $350K-$500K). Medical monitoring costs recoverable in some jurisdictions without present injury if toxic exposure creates significantly increased disease risk.
+
+- **Punitive damages**
+  - **Threshold:** Malice, fraud, willful misconduct, conscious disregard for safety, or reckless indifference.
+  - **Consequence:** Available in most states. Caps vary: TX (2x economic + non-economic up to $750K or $200K), NJ (5x compensatory or $350K), VA ($350K). Some states prohibit in product liability (NH, WA limited). Due process limits: BMW v. Gore (1996) and State Farm v. Campbell (2003) — single-digit ratio guideline. Many states require clear and convincing evidence. Some states allocate a portion to the state (OR 60%, GA 75%).
+
+### Class Actions and Mass Torts
+
+- **Class certification**
+  - **Threshold:** Rule 23(a) — numerosity, commonality, typicality, adequacy; Rule 23(b)(3) — predominance and superiority.
+  - **Consequence:** Product defect classes often defeated on predominance due to individual causation and damages issues. Most succeed only as settlement classes or issue classes (Rule 23(c)(4)). Certification for injunctive relief under Rule 23(b)(2) may be more attainable (recall, corrective advertising).
+
+- **Multidistrict litigation (MDL)**
+  - **Threshold:** Civil actions with common fact questions pending in different districts, transferred by JPML under 28 U.S.C. Section 1407.
+  - **Consequence:** Consolidated before a single judge for pretrial proceedings. Bellwether trials test liability theories and assess case values. Primary mechanism for managing mass product liability litigation. Most cases settle; remainder remanded for trial.
+
+- **Successor liability**
+  - **Threshold:** Company acquires another company's product line or assets.
+  - **Consequence:** General rule: asset purchaser does not assume predecessor's liabilities. Exceptions: express or implied assumption, fraudulent transfer, mere continuation, and product-line exception (adopted in some states). Critical in M&A due diligence for manufacturing companies.
 
 ## Interaction with Other Areas
-- **Consumer Protection:** Product liability claims often accompany consumer protection claims (UDAP, breach of warranty, false advertising). Consumer class actions frequently combine product defect theories with consumer protection statutory claims.
-- **Insurance:** Product liability insurance (CGL, product liability specific policies, product recall insurance) is essential for managing financial exposure. Coverage triggers, exclusions, and limits must be carefully analyzed.
-- **IP and Technology:** Software embedded in products creates product liability exposure for software defects that cause physical injury. IoT and connected device security vulnerabilities may give rise to product liability claims.
-- **Data Privacy:** Connected products that collect personal data create both product liability risk (if data security failures lead to harm) and data privacy compliance obligations.
-- **International Trade:** Products exported to foreign markets must comply with local product safety regulations (EU CE marking, UK UKCA marking, China CCC certification) and may be subject to foreign product liability regimes.
-- **Employment:** Workplace product injuries may involve workers' compensation (for employer-manufactured products used by employees), OSHA reporting, and potential employer liability for providing defective equipment.
-- **Litigation:** Product liability claims frequently involve complex litigation (class actions, MDL, mass torts), expert testimony (design engineers, medical experts), and document-intensive discovery.
+
+- **Consumer Protection:** Product liability claims frequently accompany UDAP and consumer class action claims. Deceptive advertising about product safety supports both theories.
+- **Recalls (recalls.md):** A recall does not eliminate tort liability — it may mitigate damages but serves as evidence of a known defect. Failure to recall after learning of a defect may support punitive damages.
+- **Warnings and Labels (warnings-labels.md):** Failure-to-warn claims depend on the adequacy analysis in warnings-labels.md. Post-sale duty to warn interacts with recall obligations.
+- **Consumer Product Safety (consumer-product-safety.md):** CPSC Section 15(b) reporting is triggered by the same defect analysis underlying product liability. CPSC enforcement actions and consent decrees are discoverable.
+- **Insurance:** CGL policies cover product liability (Products-Completed Operations hazard) but exclude recall costs. Punitive damages coverage varies by state.
+- **Data Privacy:** Connected/IoT products with security vulnerabilities causing physical harm create product liability exposure alongside data breach obligations.
+- **International Trade:** Export markets impose separate product safety regimes (EU Product Liability Directive, EU General Product Safety Regulation 2023).
+- **Litigation:** MDL, class actions, expert testimony (Daubert), extensive document discovery, and privilege issues are common in product liability.
+
+## Sources
+
+- Restatement (Third) of Torts: Products Liability (1998), Sections 1-21 — https://www.ali.org/publications/show/torts-products-liability/
+- Cornell LII — Products Liability: https://www.law.cornell.edu/wex/products_liability
+- Consumer Product Safety Act, 15 U.S.C. Sections 2051-2089 — https://www.cpsc.gov/Regulations-Laws--Standards/Statutes
+- UCC Article 2 (Sales), Sections 2-313 through 2-318 — https://www.law.cornell.edu/ucc/2
+- Wyeth v. Levine, 555 U.S. 555 (2009); Riegel v. Medtronic, 552 U.S. 312 (2008); BMW v. Gore, 517 U.S. 559 (1996)
