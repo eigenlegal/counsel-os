@@ -573,7 +573,7 @@ All files that cover a single topic stay at their current path and get expanded 
 - `law/antitrust/competition-law.md` → split into `horizontal-restraints.md`, `vertical-restraints.md`, `monopolization.md`
 - `law/insurance/coverage-types.md` → split into `commercial-general-liability.md`, `professional-liability.md`, `cyber-liability.md`, `directors-officers.md`, `employment-practices.md`
 - `law/financial-services/compliance-licensing.md` → split into `banking-regulation.md`, `lending.md`, `fintech.md`
-- `law/consumer-protection/state-consumer-laws.md` (note: file name stays but content may redistribute to area-specific files)
+- `law/consumer-protection/state-consumer-laws.md` — deepened in place (not split, but content significantly expanded with state-by-state comparison)
 
 ### Files That Get Renamed (old file deleted)
 
