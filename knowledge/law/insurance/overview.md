@@ -11,7 +11,13 @@ Load this area when the document or matter involves ANY of the following:
 
 ## Sub-Files
 
-- `coverage-types.md` — Common insurance coverage types and their application. Load when: insurance procurement, coverage analysis, insurance requirements in contracts, or coverage disputes are involved.
+- `commercial-general-liability.md` — CGL (ISO CG 00 01): Coverage A/B/C, key exclusions, additional insured endorsements, occurrence trigger, duty to defend. Load when: bodily injury/property damage claims, commercial lease insurance requirements, vendor/contractor insurance provisions, additional insured issues.
+- `professional-liability.md` — E&O and professional liability: claims-made trigger, retroactive dates, tail/ERP, Tech E&O, consent to settle, defense costs inside/outside limits. Load when: professional services agreements, technology/SaaS contracts, malpractice claims.
+- `cyber-liability.md` — Cyber/privacy insurance: first-party (breach response, BI, ransomware) and third-party (regulatory defense, PCI fines, media). Load when: data breaches, ransomware, cyber insurance requirements, privacy regulatory proceedings.
+- `directors-officers.md` — D&O liability: Side A/B/C coverage, fraud exclusion, insured-vs-insured, severability, allocation. Load when: corporate governance, securities litigation, derivative suits, executive indemnification.
+- `employment-practices.md` — EPLI: discrimination, harassment, wrongful termination, retaliation, wage/hour exclusion, third-party coverage. Load when: employment claims, workplace harassment, termination disputes.
+- `coverage-analysis.md` — Cross-cutting analysis: claims-made vs. occurrence triggers, excess/umbrella, aggregates, subrogation, additional insured priority, certificates, SIR vs. deductible, other insurance coordination. Load when: evaluating coverage adequacy, analyzing which policy responds, reviewing insurance requirements in contracts.
+- `claims-procedures.md` — Claims handling: notice requirements, cooperation, defense counsel selection, reservation of rights, coverage litigation, hammer clauses, proof of loss. Load when: reporting claims, responding to ROR letters, coverage disputes, settlement negotiations under insurance policies.
 
 ## Key Constraints
 
