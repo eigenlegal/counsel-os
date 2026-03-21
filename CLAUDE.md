@@ -130,25 +130,38 @@ skills/                                    # Pipeline skills
 
 knowledge/
   law/                                     # Layer 1: Hard constraints (PRODUCT CONTENT)
-    areas/
-      data-privacy/                        # GDPR, CCPA, HIPAA, state privacy, international
-      consumer-protection/                 # FTC, state UDAP, auto-renewal, financial consumer
-      corporate/                           # Entity types, governance, M&A
-      employment/                          # At-will, contractors, non-competes
-      ip-and-technology/                   # Patents, trade secrets, SaaS, open source
-      securities/                          # Exemptions, equity issuance
-      financial-services/                  # Payments, licensing, KYC/AML
-      litigation/                          # Demand letters, subpoenas, regulatory, litigation holds
-      antitrust/                           # Competition law
-      insurance/                           # Coverage types
-      international-trade/                 # Sanctions, export controls
-      product-counseling/                  # Product liability
+    data-privacy/                          # GDPR, CCPA, COPPA, state privacy, international, breach notification, transfers, DPAs
+    consumer-protection/                   # FTC/UDAP, TCPA, CAN-SPAM, auto-renewal, dark patterns, endorsements, Magnuson-Moss
+    corporate/                             # Entity formation, fiduciary duties, governance, M&A, investment, shareholder agreements
+    employment/                            # At-will, contractors, non-competes, wage-and-hour, discrimination, benefits, severance, immigration
+    ip-and-technology/                     # Patents, trademarks, copyrights, trade secrets, SaaS, open source, domain names
+    securities/                            # Exemptions, equity issuance, blue sky, insider trading, public company, crowdfunding
+    financial-services/                    # Payments, KYC/AML, banking, lending, fintech, cryptocurrency, PCI DSS
+    litigation/                            # Demand letters, subpoenas, e-discovery, settlement, class actions, arbitration, privilege
+    antitrust/                             # Horizontal/vertical restraints, monopolization, merger review, state antitrust
+    insurance/                             # CGL, professional liability, cyber, D&O, EPLI, coverage analysis, claims procedures
+    international-trade/                   # Sanctions, export controls, customs, anti-boycott, CFIUS, anti-corruption (FCPA)
+    product-counseling/                    # Product liability, recalls, warnings/labels, consumer product safety
+    ai-and-automation/                     # EU AI Act, US state AI laws, algorithmic accountability, training data, model ownership
+    tax/                                   # Sales tax/VAT, withholding, transfer pricing, international tax, equity compensation
+    real-estate/                           # Commercial leases, zoning, construction, environmental covenants, easements, transactions
+    environmental-esg/                     # Climate disclosure, environmental liability, ESG reporting, sustainability, due diligence
+    bankruptcy-restructuring/              # Automatic stay, executory contracts, preferences, IP in bankruptcy, safe harbors
+    government-contracts/                  # FAR/DFAR, procurement, compliance certifications, FOIA, sovereign immunity
+    healthcare/                            # HIPAA, Stark Law, Anti-Kickback, provider agreements, FDA, telehealth
+    advertising-media/                     # Advertising standards, content licensing, right of publicity, influencer, defamation
+    nonprofit/                             # Tax-exempt status, charitable solicitation, donor restrictions, UBIT, governance
+    cybersecurity/                         # NIST frameworks, SEC cyber disclosure, CMMC, state breach laws, incident response
+    white-collar-investigations/           # Internal investigations, whistleblower, DOJ cooperation, compliance programs, FCPA enforcement
+    accessibility/                         # ADA Title III, Section 508, WCAG, website accessibility litigation, state laws
+    franchise/                             # FTC Franchise Rule, state franchise laws, franchise agreements, relationship laws
+    labor-relations/                       # NLRA, collective bargaining, union organizing, strikes and lockouts
 
   defaults/                                # Layer 4: Market standards (PRODUCT CONTENT)
-    positions/                             # Default clause positions (13 types)
-    playbooks/                             # Step-by-step processes (11 playbooks)
-    checklists/                            # Completeness checks (6 checklists)
-    clause-library/                        # Proven clause language (6 categories)
+    positions/                             # Default clause positions (24 types)
+    playbooks/                             # Step-by-step processes (17 playbooks)
+    checklists/                            # Completeness checks (14 checklists)
+    clause-library/                        # Proven clause language (14 categories)
 
   practice/                                # Layer 3: Your judgment (USER CONTENT, .gitignored)
     identity.md                            # Organization, entities, team
