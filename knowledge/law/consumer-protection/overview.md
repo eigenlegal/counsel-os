@@ -4,23 +4,32 @@
 
 Load this area when the document or matter involves ANY of the following:
 
-**Keywords:** consumer, end user, subscriber, customer, terms of service, terms and conditions, user agreement, refund policy, return policy, warranty, guarantee, deceptive practices, unfair practices, unconscionable, adhesion contract, clickwrap, browsewrap, fine print, hidden fees, automatic renewal, auto-renewal, free trial, negative option, cancellation, chargebacks, advertising claims, endorsements, testimonials, made in USA, price gouging, bait and switch, dark patterns, money-back guarantee, satisfaction guarantee
-**Clause types:** limitation of liability in consumer contracts, mandatory arbitration clauses in consumer agreements, class action waivers, unilateral modification clauses, automatic renewal clauses, cancellation/termination provisions in consumer contracts, warranty disclaimers in consumer products, forum selection clauses in consumer agreements, liquidated damages in consumer contracts
-**Regulatory references:** FTC Act Section 5, FTC Guides (Endorsement Guides, Green Guides, Made in USA), ROSCA (Restore Online Shoppers' Confidence Act), EFTA, Magnuson-Moss Warranty Act, CAN-SPAM Act, TCPA, Telemarketing Sales Rule, state UDAP statutes, state consumer protection acts, Uniform Commercial Code Article 2 (consumer goods), Consumer Financial Protection Act, state auto-renewal laws (e.g., California ARL)
-**Relationship patterns:** B2C product or service agreements, subscription services, SaaS with individual users, mobile app terms, e-commerce transactions, marketplace platforms, direct-to-consumer sales, free trial offers, loyalty programs, consumer lending, consumer warranty programs
+**Keywords:** consumer, end user, subscriber, customer, terms of service, terms and conditions, user agreement, refund policy, return policy, warranty, guarantee, deceptive practices, unfair practices, unconscionable, adhesion contract, clickwrap, browsewrap, fine print, hidden fees, automatic renewal, auto-renewal, free trial, negative option, cancellation, chargebacks, advertising claims, endorsements, testimonials, made in USA, price gouging, bait and switch, dark patterns, money-back guarantee, satisfaction guarantee, robocall, telemarketing, text message marketing, ATDS, do not call, commercial email, spam, opt-out, unsubscribe, influencer, sponsored content, material connection, warranty disclaimer, implied warranty, full warranty, limited warranty
 
-## Sub-Files
+**Clause types:** limitation of liability in consumer contracts, mandatory arbitration clauses in consumer agreements, class action waivers, unilateral modification clauses, automatic renewal clauses, cancellation/termination provisions in consumer contracts, warranty disclaimers in consumer products, forum selection clauses in consumer agreements, liquidated damages in consumer contracts, consent-to-contact clauses, marketing opt-in provisions, electronic communication consent, endorsement and testimonial obligations, influencer disclosure requirements
 
-- `ftc-udap.md` — Federal Trade Commission Act Section 5 and unfair/deceptive acts or practices. Load when: advertising claims, marketing practices, endorsements, consumer-facing product claims, or FTC enforcement risk is involved.
-- `state-consumer-laws.md` — State-level consumer protection statutes and unfair trade practices acts. Load when: consumer-facing business operates in specific states, state AG enforcement is a concern, or state-specific consumer rights are at issue.
-- `auto-renewal.md` — Automatic renewal, negative option, and subscription billing requirements. Load when: subscription services, recurring billing, free trials, auto-renewal terms, or cancellation procedures are involved.
+**Regulatory references:** FTC Act Section 5, FTC Guides (Endorsement Guides, Green Guides, Made in USA), ROSCA (Restore Online Shoppers' Confidence Act), EFTA, Magnuson-Moss Warranty Act, CAN-SPAM Act, TCPA, Telemarketing Sales Rule, state UDAP statutes, state consumer protection acts, Uniform Commercial Code Article 2 (consumer goods), Consumer Financial Protection Act, state auto-renewal laws (e.g., California ARL), FTC Click-to-Cancel Rule, FTC Negative Option Rule, EU Digital Services Act, state mini-TCPA laws
 
-## Key Constraints
+**Relationship patterns:** B2C product or service agreements, subscription services, SaaS with individual users, mobile app terms, e-commerce transactions, marketplace platforms, direct-to-consumer sales, free trial offers, loyalty programs, consumer lending, consumer warranty programs, influencer/affiliate marketing agreements, telemarketing vendor agreements, email marketing service agreements
 
-These are non-overridable legal requirements from this area. They cannot be modified by practice/ or matters/ overrides.
+## Sub-File Loading
 
-- Deceptive acts or practices are prohibited under FTC Act Section 5 and state UDAP statutes regardless of contract terms; no contract provision can authorize deception.
-- Automatic renewal and negative option offers must comply with ROSCA and applicable state auto-renewal laws, including clear disclosure, affirmative consent, and easy cancellation mechanisms.
-- Warranty disclaimers in consumer goods must comply with Magnuson-Moss Warranty Act requirements; disclaimers of implied warranties are prohibited if any written warranty is given.
-- Mandatory arbitration clauses and class action waivers in consumer contracts must satisfy unconscionability standards under applicable state law and may be subject to federal or state prohibitions in certain sectors.
-- Material terms cannot be buried in fine print or imposed through post-transaction modifications without adequate notice and consent.
+- `ftc-udap.md` — Load when: advertising claims, marketing practices, FTC enforcement risk, unfair or deceptive practices allegations, consumer-facing product claims, health or environmental marketing claims, Made in USA claims, or native advertising is involved.
+- `state-consumer-laws.md` — Load when: consumer-facing business operates in specific states, state AG enforcement is a concern, state-specific consumer rights are at issue, treble damages or fee-shifting exposure exists, or multi-state consumer class action risk is present.
+- `auto-renewal.md` — Load when: subscription services, recurring billing, free trials, auto-renewal terms, cancellation procedures, negative option offers, or click-to-cancel compliance is involved.
+- `tcpa.md` — Load when: telemarketing calls, marketing text messages (SMS/MMS), automated dialing systems, prerecorded voice messages, do-not-call compliance, or consent-to-contact clauses are involved.
+- `can-spam.md` — Load when: commercial email marketing, transactional email, opt-out/unsubscribe mechanisms, email service provider agreements, or bulk email compliance is involved.
+- `magnuson-moss.md` — Load when: consumer product warranties, warranty disclaimers, implied warranty limitations, extended warranty or service contracts, or warranty-related litigation risk is involved.
+- `dark-patterns.md` — Load when: user interface design requirements, cancellation flow design, consent mechanisms, deceptive design allegations, manipulative checkout flows, or regulatory compliance for digital products is involved.
+- `endorsements-testimonials.md` — Load when: influencer marketing, affiliate programs, sponsored content, product reviews, testimonials in advertising, celebrity endorsements, employee advocacy programs, or material connection disclosures are involved.
+
+## Quick Reference
+
+- **ftc-udap.md** — Federal prohibition on unfair/deceptive acts; deception and unfairness standards; enforcement powers and civil penalties.
+- **state-consumer-laws.md** — State UDAP statutes with private rights of action, treble damages, and AG enforcement across all 50 states.
+- **auto-renewal.md** — ROSCA, FTC Click-to-Cancel Rule, and state auto-renewal laws governing subscriptions and negative option offers.
+- **tcpa.md** — Federal and state rules on telemarketing calls, texts, ATDS use, consent requirements, and per-violation penalties.
+- **can-spam.md** — Federal requirements for commercial email including opt-out, header accuracy, and transactional message exemptions.
+- **magnuson-moss.md** — Federal warranty act governing written and implied warranties for consumer products, disclaimers, and remedies.
+- **dark-patterns.md** — FTC, state, and EU enforcement against manipulative design in digital interfaces and consent flows.
+- **endorsements-testimonials.md** — FTC Endorsement Guides on material connections, influencer disclosures, and testimonial substantiation.
