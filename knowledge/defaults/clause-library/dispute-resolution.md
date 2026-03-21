@@ -84,3 +84,54 @@ Exclusive jurisdiction is preferred over non-exclusive to avoid parallel proceed
 
 ### Notes
 The injunctive relief carve-out is critical in any agreement with arbitration or mandatory escalation procedures. Vendor-Favorable language adding notice requirements and burden-of-proof conditions to injunctive relief undermines its purpose as emergency protection. Resist provisions that impose preconditions to seeking equitable relief.
+
+## Class Action Waiver
+
+### Standard
+> To the fullest extent permitted by applicable law, each party agrees that any dispute resolution proceeding (whether in arbitration, litigation, or otherwise) shall be conducted solely on an individual basis and not as a class, consolidated, or representative action. Neither party may serve as a class representative or participate as a member of a class of claimants with respect to any claim arising under or relating to this Agreement. Each party expressly waives any right to file or participate in a class action, class-wide arbitration, private attorney general action, or any proceeding where either party acts or proposes to act in a representative capacity. If any court or arbitrator determines that this class action waiver is unenforceable as to a particular claim, that claim shall be severed and proceed individually, and the waiver shall remain enforceable as to all other claims.
+
+### Aggressive (Customer-Favorable)
+> Each party irrevocably waives any right to commence, join, or participate in any class action, collective action, consolidated action, representative action, or private attorney general action against the other party arising out of or relating to this Agreement. This waiver applies in all forums, including arbitration, litigation, and administrative proceedings. This waiver shall survive the expiration or termination of this Agreement. If this waiver is found unenforceable as to any particular claim or request for relief, then that claim or request for relief shall be severed and resolved in an individual proceeding, and this waiver shall be enforced as to all remaining claims.
+
+### Vendor-Favorable
+> CUSTOMER AGREES THAT ANY DISPUTE WITH VENDOR SHALL BE RESOLVED ON AN INDIVIDUAL BASIS ONLY. CUSTOMER WAIVES ANY RIGHT TO BRING OR PARTICIPATE IN A CLASS ACTION, CLASS-WIDE ARBITRATION, OR REPRESENTATIVE ACTION AGAINST VENDOR. This waiver applies to all claims, whether in contract, tort, statute, or otherwise, and whether for damages, injunctive relief, or any other remedy.
+
+### Minimum Acceptable
+> Each party agrees that any dispute arising under this Agreement shall be resolved on an individual basis and not in a class, collective, or representative proceeding. Each party waives any right to participate in a class action related to this Agreement.
+
+### Notes
+Class action waivers are standard in commercial B2B agreements and generally enforceable. Vendor-Favorable language making the waiver one-sided (only binding on Customer) should be rejected; insist on mutuality. Note that class action waivers may not be enforceable in all jurisdictions (particularly the EU and certain US consumer protection contexts), though in B2B enterprise agreements enforceability is generally not an issue. The severability fallback in the Standard and Aggressive versions is important insurance against partial unenforceability.
+
+## Expert Determination
+
+### Standard
+> Any dispute relating to technical matters, including the calculation of service levels, SLA compliance, acceptance testing results, or the measurement of performance metrics ("Technical Dispute"), shall be submitted to an independent expert mutually agreed upon by the parties (the "Expert"). If the parties cannot agree on an Expert within fifteen (15) days, either party may request the appointing authority designated in this Agreement to appoint one. The Expert shall have relevant technical qualifications and at least ten (10) years of industry experience. The Expert shall render a written determination within thirty (30) days of appointment, which shall be final and binding on the parties absent manifest error. Each party shall bear its own costs of participating in the expert determination, and the Expert's fees shall be shared equally unless the Expert determines that one party's position was without reasonable basis, in which case the Expert may allocate all fees to that party.
+
+### Aggressive (Customer-Favorable)
+> Any Technical Dispute shall be resolved by an independent expert selected from a pre-approved panel identified in Exhibit [X]. If the parties cannot agree on an expert from the panel within ten (10) days, Customer may select from the panel. The expert shall have relevant technical expertise, hold applicable industry certifications, and have no prior relationship with either party within the preceding three (3) years. Each party shall submit a written position and supporting evidence within fifteen (15) days. The expert shall issue a reasoned written determination within twenty (20) days, which shall be final and binding absent fraud or manifest error. The non-prevailing party shall bear the expert's fees and the prevailing party's reasonable costs, including consulting fees. Either party may appeal to arbitration or litigation within thirty (30) days only on grounds of fraud, manifest error, or the expert exceeding the scope of the referral.
+
+### Vendor-Favorable
+> Disputes relating to SLA calculations, uptime measurements, or other technical performance metrics shall be resolved by Vendor's designated technical team based on Vendor's monitoring systems and methodology. If Customer disagrees with Vendor's determination, Customer may request review by a mutually agreed independent expert at Customer's expense. The expert's determination shall be advisory and non-binding. Vendor's monitoring data shall be presumed accurate unless the expert demonstrates clear error.
+
+### Minimum Acceptable
+> Technical disputes, including SLA calculations and acceptance testing, shall be submitted to an independent expert mutually agreed by the parties. The expert's written determination shall be final and binding absent manifest error. The expert's fees shall be shared equally.
+
+### Notes
+Expert determination is faster and cheaper than arbitration for technical disputes and keeps technical questions out of the hands of non-technical arbitrators or judges. Vendor-Favorable language where Vendor's own team makes the determination and any independent review is merely "advisory" provides no meaningful recourse. Push for binding expert determination with a qualified, independent expert. The pre-approved panel approach in the Aggressive version avoids delays in expert selection. Cost-shifting to the non-prevailing party (Aggressive version) discourages frivolous positions.
+
+## Attorneys' Fees & Costs
+
+### Standard
+> In any arbitration, litigation, or other proceeding to enforce or interpret this Agreement, the prevailing party shall be entitled to recover its reasonable attorneys' fees and costs from the non-prevailing party, in addition to any other relief to which it may be entitled. For purposes of this provision, "prevailing party" means the party that substantially obtains the relief sought, as determined by the court or arbitrator. Each party shall bear its own costs during any pre-litigation negotiation or mediation period.
+
+### Aggressive (Customer-Favorable)
+> In any proceeding arising out of or relating to this Agreement (including arbitration, litigation, mediation, or expert determination), the prevailing party shall recover from the non-prevailing party all reasonable attorneys' fees, expert witness fees, consultant costs, e-discovery costs, and other expenses incurred in connection with the proceeding, including fees incurred in any appeal or in enforcing or collecting any judgment or award. The court or arbitrator shall award fees and costs as part of any final judgment or award. If a party obtains a judgment or award of at least seventy-five percent (75%) of the damages sought (or successfully defends against at least seventy-five percent (75%) of the damages sought by the other party), that party shall be deemed the prevailing party for purposes of this provision.
+
+### Vendor-Favorable
+> Each party shall bear its own attorneys' fees and costs in connection with any dispute arising under this Agreement, regardless of outcome. Notwithstanding the foregoing, if Customer initiates a proceeding and does not prevail, Customer shall reimburse Vendor for Vendor's reasonable attorneys' fees and costs incurred in defending against such proceeding. Vendor shall be entitled to recover its reasonable attorneys' fees and costs incurred in enforcing Customer's payment obligations.
+
+### Minimum Acceptable
+> The prevailing party in any proceeding arising under this Agreement shall be entitled to recover its reasonable attorneys' fees and costs from the non-prevailing party.
+
+### Notes
+The "American Rule" (each side bears its own costs) is the default in US litigation absent a contractual or statutory fee-shifting provision. A prevailing-party fee provision incentivizes meritorious claims and discourages frivolous ones. Vendor-Favorable language with one-sided fee-shifting (Customer pays if it loses, but Vendor never pays) should be rejected as fundamentally asymmetric. The Aggressive version with a 75% threshold for "prevailing" provides clarity and avoids disputes about who prevailed in mixed-outcome cases. For arbitration, note that AAA and JAMS rules generally allow the arbitrator to allocate fees regardless of contract language, so the contract provision primarily governs litigation.

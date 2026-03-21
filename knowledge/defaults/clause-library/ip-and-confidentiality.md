@@ -84,3 +84,54 @@ The standard exclusions are well-established and should not be negotiated. The V
 
 ### Notes
 Vendor-Favorable language imposing strict usage limitations with automatic excess fees and "material breach" characterization for overages is aggressive. Push for a reasonable true-up process rather than treating overages as breach. Ensure the license scope aligns with the pricing model and covers affiliate use where needed.
+
+## Feedback & Suggestions
+
+### Standard
+> If Customer provides Vendor with suggestions, enhancement requests, recommendations, or other feedback regarding the Services ("Feedback"), Customer grants Vendor a non-exclusive, perpetual, irrevocable, worldwide, royalty-free, fully paid-up, sublicensable, and transferable license to use, reproduce, modify, create derivative works from, distribute, and otherwise exploit such Feedback for any purpose without restriction, attribution, or compensation to Customer. Customer acknowledges that Vendor may have ideas similar to Feedback and that this provision does not create any obligation for Vendor to implement any Feedback.
+
+### Aggressive (Customer-Favorable)
+> Vendor acknowledges that Customer may, from time to time, voluntarily provide suggestions, ideas, or feedback regarding the Services ("Feedback"). To the extent Customer provides Feedback, Customer grants Vendor a non-exclusive, royalty-free license to use such Feedback solely for the purpose of improving the Services generally available to all customers. Vendor shall not: (a) use Feedback to develop a separate product or service that competes with Customer's business; (b) disclose that specific Feedback originated from Customer; or (c) use Feedback in a manner that reveals Customer's Confidential Information, business strategy, or proprietary processes. Feedback shall not include any Customer Data, trade secrets, or proprietary methodologies, and any such materials provided by Customer in connection with Feedback shall remain Customer's Confidential Information and shall not be treated as Feedback. Nothing in this Agreement shall be construed as requiring Customer to provide Feedback.
+
+### Vendor-Favorable
+> Any Feedback, ideas, suggestions, feature requests, or materials submitted by Customer through any channel (including support tickets, product forums, beta programs, advisory boards, or informal communications) shall become the sole and exclusive property of Vendor. Customer irrevocably assigns to Vendor all right, title, and interest in all Feedback, including all intellectual property rights. Customer waives any moral rights in Feedback to the fullest extent permitted by law. Vendor may use Feedback for any purpose without restriction, attribution, or compensation.
+
+### Minimum Acceptable
+> Customer grants Vendor a non-exclusive, royalty-free license to use Feedback provided by Customer for the purpose of improving the Services. Feedback shall not include Customer's Confidential Information or trade secrets.
+
+### Notes
+Vendor-Favorable language assigning full ownership of all Feedback -- especially when the definition sweeps in support tickets, advisory board input, and "informal communications" -- is overreaching. Push back on assignment in favor of a license. Ensure the Feedback definition excludes Confidential Information, trade secrets, and Customer Data. The Aggressive version's restriction on using Feedback to develop competing products is appropriate when Customer operates in a market adjacent to Vendor's. Standard language with a broad license is the most common market approach and is generally acceptable for most SaaS agreements.
+
+## Residuals
+
+### Standard
+> Nothing in this Agreement shall restrict either party from using the general knowledge, skills, experience, ideas, concepts, know-how, and techniques that are retained in the unaided memories of its personnel who had authorized access to the other party's Confidential Information during the course of this Agreement ("Residuals"), provided that this right does not constitute a license to any patent, copyright, or trade secret and shall not excuse any breach of the confidentiality obligations herein. "Unaided memory" means information retained in a person's mind without reference to Confidential Information in tangible or electronic form. This Residuals provision shall not apply to: (a) Customer Personal Data or any data subject to Data Protection Laws; (b) source code, algorithms, or proprietary formulas; or (c) information that is clearly marked or identified as a trade secret.
+
+### Aggressive (Customer-Favorable)
+> This Agreement does not include a residuals clause. All Confidential Information, regardless of how it is retained or recalled, remains subject to the confidentiality obligations set forth herein for the full duration of the confidentiality period. Neither party may use or disclose the other party's Confidential Information based on unaided memory or any other basis outside the express permissions granted in this Agreement.
+
+### Vendor-Favorable
+> Each party shall be free to use for any purpose the Residuals resulting from access to the other party's Confidential Information. "Residuals" means information retained in the unaided memories of the Receiving Party's personnel who had access to Confidential Information, regardless of whether such information constitutes trade secrets or was marked as confidential. Neither party shall have any obligation to limit the scope of work assignments of personnel who have had access to the other party's Confidential Information.
+
+### Minimum Acceptable
+> Either party may use Residuals -- general knowledge, ideas, and concepts retained in the unaided memories of its personnel -- provided that this right does not extend to trade secrets, source code, personal data, or information specifically identified as subject to enhanced protection.
+
+### Notes
+Residuals clauses are among the most controversial provisions in IP-heavy agreements. Vendor-Favorable language with a broad Residuals definition that explicitly includes trade secrets and removes any obligation to restrict work assignments effectively creates a loophole in the entire confidentiality framework. Reject residuals clauses entirely (Aggressive position) when dealing with highly proprietary information, source code, or algorithms. If a residuals clause must be accepted, insist on: (a) narrow definition limited to general knowledge and concepts; (b) explicit exclusion of trade secrets, source code, personal data, and proprietary formulas; (c) no permission to intentionally memorize; and (d) no waiver of the obligation to restrict work assignments. The Standard version with robust carve-outs represents a reasonable middle ground.
+
+## Trademark & Brand Usage
+
+### Standard
+> Neither party may use the other party's name, logo, or trademarks without prior written consent. Notwithstanding the foregoing, Vendor may identify Customer as a customer of Vendor in Vendor's customer lists and marketing materials (e.g., "Company X is a customer of Vendor"), provided that Vendor does not imply endorsement by Customer and uses Customer's trademarks in accordance with Customer's trademark usage guidelines. Customer may revoke this permission at any time upon written notice. Any use of a party's trademarks shall comply with such party's trademark guidelines and shall inure to the benefit of the trademark owner. Upon termination of this Agreement, each party shall promptly cease all use of the other party's trademarks.
+
+### Aggressive (Customer-Favorable)
+> Vendor shall not use Customer's name, logo, trademarks, or any reference to Customer's identity in any marketing materials, case studies, press releases, presentations, website content, social media, or any other public or private communication without Customer's prior written consent for each specific use. Customer may withhold consent for any reason. Any approved use shall: (a) comply strictly with Customer's brand guidelines as provided to Vendor; (b) be subject to Customer's right to review and approve the specific content prior to publication; (c) be revocable by Customer at any time upon written notice, in which case Vendor shall remove such materials within five (5) business days; and (d) not imply endorsement, partnership, or affiliation beyond the actual customer relationship. Vendor shall submit all proposed uses to Customer at least fifteen (15) business days before intended publication. Customer grants no trademark license under this Agreement.
+
+### Vendor-Favorable
+> Customer grants Vendor a non-exclusive, royalty-free license to use Customer's name, logo, and trademarks during the Term for purposes of identifying Customer as a Vendor customer in marketing materials, case studies, presentations, press releases, and on Vendor's website. Vendor may develop case studies based on Customer's use of the Services, subject to Customer's review and approval (not to be unreasonably withheld or delayed). If Customer does not respond to a review request within ten (10) business days, approval shall be deemed given. Vendor may continue to reference Customer for a period of twelve (12) months following termination.
+
+### Minimum Acceptable
+> Neither party may use the other party's trademarks without prior written consent. Vendor may identify Customer by name in customer lists, provided no endorsement is implied. Any approved use must comply with the trademark owner's guidelines and shall cease upon termination or revocation of consent.
+
+### Notes
+Vendor-Favorable language with deemed approval after 10 business days of silence and a 12-month post-termination usage right gives Vendor significant marketing latitude. Push back on deemed-approval mechanisms and any post-termination usage rights. The Aggressive version with per-use approval and 15-day advance submission is appropriate for regulated industries or companies with strict brand management. Standard language permitting customer-list inclusion is the most common market approach and is generally acceptable. Always ensure brand usage rights terminate upon Agreement termination.
