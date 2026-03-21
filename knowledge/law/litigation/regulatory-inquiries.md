@@ -1,40 +1,82 @@
 # Regulatory Inquiries and Government Investigations
 
-## Overview
-Regulatory inquiries range from routine examinations to formal enforcement investigations conducted by federal and state agencies. Responses require careful coordination of legal strategy, document production, witness preparation, and privilege protection. The stakes are high: regulatory proceedings can result in consent orders, civil penalties, disgorgement, injunctions, and referral for criminal prosecution.
+## Applicability
+
+Load when any matter involves government investigations, regulatory examinations, enforcement actions, consent decrees, agency subpoenas or CIDs, Wells notices, voluntary self-disclosure, cooperation agreements, or parallel proceedings (civil/criminal/regulatory). Also load when evaluating regulatory cooperation provisions in contracts or D&O/regulatory liability insurance coverage.
 
 ## Key Requirements
-- **Types of regulatory proceedings:**
-  - **Informal inquiries:** Information requests, voluntary interview requests, and informal examinations. While nominally voluntary, non-cooperation may escalate to formal proceedings.
-  - **Civil Investigative Demands (CIDs):** Formal compulsory process issued by agencies such as the FTC, DOJ (Antitrust Division), CFPB, and state AGs. Require production of documents, answers to interrogatories, or oral testimony under oath.
-  - **Formal investigations/subpoenas:** SEC formal orders of investigation, IRS summonses, CFTC subpoenas, and similar agency-specific compulsory process.
-  - **Regulatory examinations:** Scheduled or for-cause examinations by banking regulators (OCC, FDIC, Federal Reserve, state banking departments), SEC (registered entities), FINRA, state insurance departments, and other industry-specific regulators.
-  - **Enforcement actions:** Administrative proceedings, civil enforcement actions filed in court, and referrals to DOJ for criminal prosecution.
 
-- **Response strategy:** Upon receiving a regulatory inquiry: (1) preserve all potentially relevant documents immediately, (2) identify the scope and nature of the inquiry, (3) assess whether the inquiry is routine or suggests an enforcement concern, (4) engage appropriate counsel (internal and external), (5) evaluate privilege and self-incrimination issues, (6) coordinate witness preparation, (7) negotiate scope and timeline with the agency if possible.
+### Types of Regulatory Proceedings
 
-- **Privilege considerations:** Attorney-client privilege and work product doctrine apply in regulatory proceedings. However, voluntary disclosure to a government agency may waive privilege as to other parties (though DOJ's policy has evolved on this). Selective waiver is not universally recognized. Joint defense agreements may be appropriate when multiple parties share common interests.
+- **Informal inquiries**: Voluntary information requests, interview requests, informal examinations; nominally voluntary but non-cooperation typically escalates to formal process
+- **Civil Investigative Demands (CIDs)**: Formal compulsory process from FTC, DOJ (Antitrust Division), CFPB, state AGs; require document production, interrogatory answers, or oral testimony under oath
+- **Formal investigations/subpoenas**: SEC formal orders of investigation, IRS summonses, CFTC subpoenas, EPA information requests (CERCLA 104(e)), agency-specific compulsory process
+- **Regulatory examinations**: Scheduled or for-cause examinations by banking regulators (OCC, FDIC, Fed), SEC (registered entities), FINRA, state insurance departments
+- **Enforcement actions**: Administrative proceedings, civil actions filed in court, cease-and-desist orders, referrals to DOJ for criminal prosecution
 
-- **Cooperation and self-reporting:** Many agencies provide credit for voluntary self-reporting and cooperation (DOJ's Corporate Enforcement Policy, SEC cooperation credit, CFPB responsible conduct analysis). Benefits can include reduced penalties, deferred prosecution agreements (DPAs), and non-prosecution agreements (NPAs). Cooperation involves timely disclosure of relevant facts, preservation and production of documents, identification of individuals involved, and making witnesses available.
+### Agency-Specific Timelines
 
-- **Consent decrees and consent orders:** Regulatory matters frequently resolve through negotiated agreements (consent decrees, consent orders, assurances of voluntary compliance). These impose ongoing obligations (compliance programs, monitoring, reporting, injunctive terms) that are judicially enforceable. Violation of a consent decree can result in contempt sanctions and additional penalties.
+- **SEC Wells process** / **Timeline**: After staff completes investigation, issues Wells notice; target has **30 days** to submit Wells submission arguing against enforcement / **Consequence**: Failure to submit Wells response waives opportunity to persuade staff before Commissioners vote on enforcement action
+- **DOJ Corporate Enforcement Policy** / **Timeline**: Voluntary self-disclosure should occur "reasonably promptly" after discovery; no fixed deadline but delay undermines credit / **Consequence**: Timely voluntary disclosure with full cooperation can result in declination of prosecution
+- **FTC CIDs** / **Timeline**: Typically 30-60 days to comply; 20 days to file petition to quash with the FTC / **Consequence**: Failure to comply may result in FTC enforcement action in federal court; court may impose civil penalties up to $50,120/day
+- **CFPB CIDs** / **Timeline**: Compliance deadline set in CID (typically 30-45 days); petition to modify or set aside within 20 days of service / **Consequence**: Non-compliance may result in enforcement petition in federal district court
+- **State AG investigations** / **Timeline**: Varies by state; typically 30-60 days for document requests / **Consequence**: Non-compliance may result in civil contempt, penalties, or escalation to enforcement action
 
-- **Parallel proceedings:** Regulatory investigations may proceed in parallel with criminal investigations (DOJ), private civil litigation, or investigations by multiple agencies. Coordination of responses across parallel proceedings requires careful strategic planning, particularly regarding the timing of disclosures and the potential for self-incrimination.
+### Cooperation vs. Adversarial Strategy
 
-## Common Contract Issues
-- Regulatory cooperation provisions in contracts (vendor agreements, partnership agreements) that require parties to cooperate in regulatory proceedings affecting the business relationship.
-- Regulatory examination rights that financial regulators require in third-party agreements with supervised institutions.
-- Indemnification provisions covering regulatory investigation costs, penalties, and remediation expenses.
-- Insurance coverage analysis for regulatory proceedings — D&O policies, E&O policies, and regulatory liability coverage may be implicated.
-- Consent decree compliance obligations that must be reflected in ongoing business operations and third-party contracts.
-- Representations and warranties regarding regulatory compliance status, pending investigations, and absence of enforcement actions.
-- Notification obligations to counterparties, investors, or regulators when subject to investigation or enforcement.
+**Cooperation benefits** (when appropriate):
+- DOJ: Presumption of declination under Corporate Enforcement Policy for voluntary self-disclosure + full cooperation + timely remediation
+- SEC: Cooperation credit may reduce sanctions; Seaboard Report (Release No. 34-44969) framework evaluates self-policing, self-reporting, remediation, cooperation
+- DPAs and NPAs: Available only when company demonstrates genuine cooperation
+- Reduced monitoring obligations and penalty amounts
+
+**Adversarial posture** (when appropriate):
+- When Fifth Amendment concerns exist for individuals
+- When parallel criminal investigation creates self-incrimination risk
+- When the agency's legal theory is legally unsupported
+- When cooperation would require waiver of privilege with no commensurate benefit
+
+### Privilege Considerations
+
+- **Upjohn Co. v. United States (449 U.S. 383, 1981)** / **Threshold**: Attorney-client privilege in corporate context extends to communications between counsel and all employees (not just "control group") when made for purpose of obtaining legal advice / **Consequence**: Properly protected Upjohn communications are immune from compelled disclosure
+- **Selective waiver** / **Threshold**: Disclosing privileged material to a government agency may waive privilege as to all other parties; selective waiver recognized in very few circuits (8th Circuit only, *Diversified Industries*) / **Consequence**: Disclosure to SEC/DOJ likely waives privilege in subsequent private litigation in most jurisdictions
+- **DOJ policy (revised)** / **Threshold**: DOJ policy states it will not request privilege waiver as a condition of cooperation credit / **Consequence**: Companies can cooperate by disclosing facts without disclosing privileged communications, but the line between facts and privileged communications requires careful management
+
+### Parallel Proceedings
+
+- Regulatory investigations may run simultaneously with criminal investigations (DOJ), private civil litigation, and multi-agency investigations
+- **Stay of civil proceedings**: Courts may stay civil discovery pending resolution of parallel criminal investigation to protect Fifth Amendment rights (*SEC v. Dresser Industries*)
+- **Cross-agency information sharing**: Agencies share information under MOUs; information provided to one agency may reach another
+- **Strategic sequencing**: Statements to one agency may be used by another; coordinate across all proceedings before making any disclosure
+
+### Voluntary Disclosure and Self-Reporting
+
+- **Mandatory self-reporting**: Some regimes require it (e.g., OFAC sanctions violations, SOX Section 302 certifications, banking SARs)
+- **Voluntary self-reporting programs**: DOJ Corporate Enforcement Policy, SEC cooperation framework, FCPA Pilot Program (now permanent), antitrust leniency program (first-in-the-door immunity)
+- **Cost-benefit analysis**: Weigh potential benefits (declination, reduced penalties) against risks (creating a roadmap for enforcement, waiving privilege, private litigation exposure)
+
+### Consent Decrees and Consent Orders
+
+- **Enforcement** / **Threshold**: Consent decrees are judicially enforceable; consent orders are agency-enforceable / **Consequence**: Violation triggers contempt (consent decree) or additional penalties and enhanced enforcement (consent order)
+- **Duration** / **Threshold**: Typically 5-20 years; some are indefinite / **Consequence**: Long-tail compliance obligations affecting business operations and M&A transactions
+- **Ongoing obligations**: Compliance programs, independent monitors, periodic reporting, audit rights, injunctive terms
+- **Successors and assigns**: Consent decree obligations typically bind successors; must be analyzed in M&A due diligence
 
 ## Interaction with Other Areas
-- **Litigation (Litigation Holds):** Regulatory inquiries trigger immediate document preservation obligations.
-- **Litigation (Subpoenas):** CIDs and regulatory subpoenas have agency-specific procedural requirements distinct from judicial subpoenas.
-- **Consumer Protection:** FTC and state AG consumer protection investigations often proceed as CIDs or informal investigations before escalating to enforcement.
-- **Financial Services:** Banking and financial services regulatory examinations are ongoing compliance obligations, not discrete litigation events; however, examination findings can lead to enforcement.
-- **Data Privacy:** Data protection authority investigations (GDPR supervisory authorities, state AG privacy enforcement) follow data-protection-specific procedural frameworks.
-- **Antitrust:** DOJ Antitrust Division and FTC competition investigations use CIDs and may involve coordinated international enforcement with foreign competition authorities.
-- **Securities:** SEC investigations follow specific procedural rules (formal order of investigation, Wells process, administrative proceedings) with distinct response strategies.
+
+- **Litigation (Litigation Holds)**: Any regulatory inquiry triggers immediate document preservation obligations
+- **Litigation (Subpoenas)**: CIDs and regulatory subpoenas follow agency-specific procedural rules distinct from FRCP 45
+- **Litigation (Privilege)**: Upjohn protections, selective waiver risks, and DOJ privilege policy must be managed throughout
+- **Consumer Protection**: FTC and state AG consumer protection investigations typically begin as CIDs before escalating to enforcement
+- **Financial Services**: Banking regulatory examinations are ongoing compliance obligations; examination findings can escalate to enforcement
+- **Data Privacy**: Data protection authority investigations (GDPR supervisory authorities, FTC privacy enforcement) follow sector-specific frameworks
+- **Antitrust**: DOJ Antitrust Division and FTC competition investigations use CIDs; leniency program offers first-in immunity
+- **Securities**: SEC investigations follow formal order process, Wells procedure, and administrative/civil enforcement pathways
+
+## Sources
+
+- SEC Seaboard Report, Release No. 34-44969 (cooperation framework): https://www.sec.gov/litigation/investreport/34-44969.htm
+- DOJ Corporate Enforcement Policy (Justice Manual 9-47.120): https://www.justice.gov/jm/jm-9-47000-corporate-fraud
+- *Upjohn Co. v. United States*, 449 U.S. 383 (1981): https://www.law.cornell.edu/supremecourt/text/449/383
+- FTC Act Section 20 (CID authority): https://www.law.cornell.edu/uscode/text/15/57b-1
+- Federal Rules of Criminal Procedure, Rule 6(e) (grand jury secrecy): https://www.law.cornell.edu/rules/frcrmp/rule_6
