@@ -11,7 +11,11 @@ Load this area when the document or matter involves ANY of the following:
 
 ## Sub-Files
 
-- `competition-law.md` — Substantive antitrust and competition law principles. Load when: agreements between competitors, market dominance issues, merger review, vertical restraints, or DOJ/FTC competition enforcement is involved.
+- `horizontal-restraints.md` — Sherman Act Section 1 per se violations and rule of reason horizontal agreements. Load when: price-fixing, bid rigging, market allocation, group boycotts, no-poach/wage-fixing agreements, competitor collaborations, joint ventures, information exchanges, or standard-setting organizations are involved.
+- `vertical-restraints.md` — Vertical agreements between parties at different distribution levels. Load when: resale price maintenance (RPM), exclusive dealing, tying/bundling, MFN/price parity clauses, territorial/customer restrictions, or refusal to deal issues are involved.
+- `monopolization.md` — Sherman Act Section 2 monopolization, attempted monopolization, and conspiracy to monopolize. Load when: dominant firm conduct, predatory pricing, exclusive dealing by a monopolist, essential facilities, or market power above 50% is involved.
+- `merger-review.md` — HSR Act pre-merger notification and Clayton Act Section 7 substantive merger review. Load when: mergers, acquisitions, joint venture formations, or other business combinations may meet HSR thresholds or raise competitive concerns. Covers filing requirements, waiting periods, HHI analysis, remedies, and gun-jumping.
+- `state-antitrust.md` — State attorney general enforcement and state antitrust statutes. Load when: multistate business operations, state AG investigations, indirect purchaser claims, state-specific antitrust standards (e.g., state RPM rules diverging from federal law), or state merger challenges are involved.
 
 ## Key Constraints
 
