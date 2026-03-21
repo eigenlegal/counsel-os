@@ -314,35 +314,49 @@ knowledge/
 
 ### Auto-Detection of Applicable Law
 
-Each legal area in `knowledge/law/` has an `overview.md` with trigger conditions — keywords, clause types, and regulatory references that indicate when it applies. During intake, the system scans your document against all 12 areas and loads every match.
+Each legal area in `knowledge/law/` has an `overview.md` with trigger conditions — keywords, clause types, and regulatory references that indicate when it applies. During intake, the system scans your document against all 26 areas and loads every match.
 
 Current areas:
 
 | Area | What It Covers |
 |------|---------------|
-| Data Privacy | GDPR, CCPA/CPRA, US state privacy, international transfers |
-| Consumer Protection | FTC/UDAP, state consumer laws, auto-renewal |
-| Corporate | Entity types, governance, M&A |
-| Employment | At-will, contractor classification, non-competes |
-| IP & Technology | Patents, trade secrets, SaaS, open source |
-| Securities | Exemptions, equity issuance |
-| Financial Services | Payments, licensing, KYC/AML |
-| Litigation | Demand letters, subpoenas, regulatory inquiries, litigation holds |
-| Antitrust | Competition law |
-| Insurance | Coverage types and requirements |
-| International Trade | Sanctions, export controls |
-| Product Counseling | Product liability |
+| Data Privacy | GDPR, CCPA/CPRA, COPPA, state privacy, international, breach notification, transfers, DPAs |
+| Consumer Protection | FTC/UDAP, TCPA, CAN-SPAM, auto-renewal, dark patterns, endorsements, Magnuson-Moss |
+| Corporate | Entity formation, fiduciary duties, governance, M&A, investment transactions, shareholder agreements |
+| Employment | At-will, contractors, non-competes, wage-and-hour, discrimination, benefits, severance, immigration |
+| IP & Technology | Patents, trademarks, copyrights, trade secrets, SaaS, open source, domain names |
+| Securities | Exemptions, equity issuance, blue sky laws, insider trading, public company, crowdfunding |
+| Financial Services | Payments, KYC/AML, banking, lending, fintech, cryptocurrency, PCI DSS |
+| Litigation | Demand letters, subpoenas, e-discovery, settlement, class actions, arbitration, privilege |
+| Antitrust | Horizontal/vertical restraints, monopolization, merger review, state antitrust |
+| Insurance | CGL, professional liability, cyber, D&O, EPLI, coverage analysis, claims procedures |
+| International Trade | Sanctions, export controls, customs, anti-boycott, CFIUS, anti-corruption (FCPA) |
+| Product Counseling | Product liability, recalls, warnings/labels, consumer product safety |
+| AI & Automation | EU AI Act, US state AI laws, algorithmic accountability, training data, model ownership |
+| Tax | Sales tax/VAT, withholding, transfer pricing, international tax, equity compensation |
+| Real Estate | Commercial leases, zoning, construction, environmental covenants, easements, transactions |
+| Environmental & ESG | Climate disclosure, environmental liability, ESG reporting, sustainability, due diligence |
+| Bankruptcy & Restructuring | Automatic stay, executory contracts, preferences, IP in bankruptcy, safe harbors |
+| Government Contracts | FAR/DFAR, procurement, compliance certifications, FOIA, sovereign immunity |
+| Healthcare | HIPAA, Stark Law, Anti-Kickback, provider agreements, FDA, telehealth |
+| Advertising & Media | Advertising standards, content licensing, right of publicity, influencer, defamation |
+| Nonprofit | Tax-exempt status, charitable solicitation, donor restrictions, UBIT, governance |
+| Cybersecurity | NIST frameworks, SEC cyber disclosure, CMMC, state breach laws, incident response |
+| White Collar & Investigations | Internal investigations, whistleblower, DOJ cooperation, compliance programs |
+| Accessibility | ADA Title III, Section 508, WCAG, website accessibility litigation, state laws |
+| Franchise | FTC Franchise Rule, state franchise laws, franchise agreements, relationship laws |
+| Labor Relations | NLRA, collective bargaining, union organizing, strikes and lockouts |
 
 Multiple areas apply simultaneously and compound — a fintech SaaS contract triggers data privacy AND financial services AND consumer protection.
 
 ### What's Included
 
 **Product content (updated by us):**
-- 12 legal areas with auto-detection trigger conditions
-- 13 market-standard clause positions
-- 11 playbooks with step-by-step processes
-- 6 checklists for completeness
-- 6 clause library categories with standard/aggressive/minimum language
+- 26 legal areas with auto-detection trigger conditions
+- 24 market-standard clause positions
+- 17 playbooks with step-by-step processes
+- 14 checklists for completeness
+- 14 clause library categories with standard/aggressive/vendor-favorable/minimum language
 
 **You provide:**
 - Your organization context
