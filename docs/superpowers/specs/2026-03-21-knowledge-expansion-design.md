@@ -20,7 +20,7 @@ User content layers (`practice/`, `matters/`, `memory/`) and skills are not in s
 
 | Layer | Files | Avg Lines | Standard |
 |-------|-------|-----------|----------|
-| Law/ | ~200 files across 26 areas | 100-150 | Specific thresholds, timelines, consequences, source links |
+| Law/ | ~188 files across 26 areas | 100-150 | Specific thresholds, timelines, consequences, source links |
 | Positions/ | ~24 | 50-60 | Numeric classification guides, practical guidance, common traps |
 | Clause library/ | ~14 | 80-100 | Standard/aggressive/vendor-favorable/minimum variants with actual language |
 | Checklists/ | ~14 | 100-120 | Priority tiers (must-check / should-check / nice-to-check) |
@@ -46,16 +46,40 @@ Interpretive content — how the law plays out in contract review, what counterp
 
 Every law/ file includes a `## Sources` section with links to official primary sources: Cornell LII (US Code), EUR-Lex (EU), eCFR (federal regulations), official agency sites. Focus on stable, free URLs. Accept that some will go stale — link maintenance is part of the `/counsel-os:update` cycle. Defaults/ files don't need source links since they express positions, not law.
 
-### Existing Files: Deepen or Split
+### Existing Files: Deepen, Split, or Rename
 
 - Files that cover one topic: deepened in place (same path, more content)
 - Files that cover multiple topics: split into separate files, original deleted
+- Files that need renaming: renamed and deepened (old file deleted)
 - Overview.md files: updated to route to new sub-files
 - No path changes for files that stay intact (avoids breaking references)
 
+### Content Delineation Across Areas
+
+When a topic spans multiple areas, each file covers the legal requirements relevant to that area's trigger context:
+- `international-trade/anti-corruption.md` covers the statute: elements, safe harbors, books-and-records requirements
+- `white-collar-investigations/fcpa-enforcement.md` covers enforcement procedure: DOJ/SEC cooperation, monitors, DPAs/NPAs
+- `data-privacy/breach-notification.md` covers privacy breach notification obligations by jurisdiction
+- `cybersecurity/state-breach-laws.md` covers security breach notification triggers, timelines, and AG reporting
+- `consumer-protection/endorsements-testimonials.md` covers FTC enforcement standards for endorsements
+- `advertising-media/influencer-disclosures.md` covers platform-specific rules and practical compliance
+
+Each file's `## Interaction with Other Areas` section must cross-reference related files in other areas.
+
+### HIPAA Cross-Area Treatment
+
+HIPAA currently appears in `data-privacy/overview.md` triggers. After this expansion:
+- HIPAA privacy-specific requirements (Privacy Rule, data subject rights) remain referenced in `data-privacy/` triggers with a cross-reference to `healthcare/hipaa-compliance.md`
+- The comprehensive HIPAA file (Privacy Rule, Security Rule, BAAs, enforcement) lives in `healthcare/hipaa-compliance.md`
+- `data-privacy/overview.md` sub-file loading section adds: "If HIPAA applies → load `healthcare/hipaa-compliance.md`"
+
+### Law/ Template Boundary
+
+The law/ template's `## Key Requirements` section is limited to statutory and regulatory obligations. Do not include contract negotiation advice, counterparty tactics, or position recommendations — those belong in `defaults/positions/`. The test: "Could this sentence be cited to a statute or regulation?" If yes, it belongs in law/. If no, it belongs in defaults/.
+
 ---
 
-## Law/ Structure — 26 Areas, ~200 Files
+## Law/ Structure — 26 Areas, ~188 Files
 
 ### File Template
 
@@ -98,7 +122,7 @@ One-sentence summary of each sub-file for orientation.
 ### Complete File Tree
 
 ```
-knowledge/law/areas/
+knowledge/law/
 
   data-privacy/                          EXISTING — DECOMPOSED
     overview.md                          trigger conditions + sub-file routing
@@ -406,7 +430,7 @@ Key changes to existing files:
 - `subcontractors-subprocessors.md` — approval, flowdown, liability, notification
 - `acceptable-use.md` — restrictions, enforcement, consequences, carve-outs
 - `compliance-certifications.md` — regulatory representations, ongoing obligations
-- `warranty-disclaimers.md` — AS-IS, implied warranty exclusions, limitation
+- `warranties-disclaimers.md` — AS-IS, implied warranty exclusions, limitation
 - `ai-data-use.md` — training restrictions, model ownership, output rights
 - `most-favored-nation.md` — pricing parity, scope, verification, duration
 - `non-solicitation.md` — employees, customers, duration, geographic scope
@@ -538,16 +562,22 @@ Files:
 ### Files That Get Deepened In Place (same path, more content)
 
 All files that cover a single topic stay at their current path and get expanded to meet the new depth standard. Examples:
-- `law/areas/data-privacy/gdpr.md` — 32 lines → ~120 lines
-- `law/areas/employment/non-competes.md` — 39 lines → ~130 lines
+- `law/data-privacy/gdpr.md` — 32 lines → ~120 lines
+- `law/employment/non-competes.md` — 39 lines → ~130 lines
 - `defaults/positions/limitation-of-liability.md` — 35 lines → ~55 lines
 
 ### Files That Get Split (original deleted after redistribution)
 
-- `law/areas/ip-and-technology/patents-copyrights-trademarks.md` → split into `patents.md`, `trademarks.md`, `copyrights.md`
-- `law/areas/corporate/ma-investment.md` → split into `mergers-acquisitions.md`, `investment-transactions.md`
-- `law/areas/antitrust/competition-law.md` → split into `horizontal-restraints.md`, `vertical-restraints.md`, `monopolization.md`
-- `law/areas/insurance/coverage-types.md` → split into `commercial-general-liability.md`, `professional-liability.md`, `cyber-liability.md`, `directors-officers.md`, `employment-practices.md`
+- `law/ip-and-technology/patents-copyrights-trademarks.md` → split into `patents.md`, `trademarks.md`, `copyrights.md`
+- `law/corporate/ma-investment.md` → split into `mergers-acquisitions.md`, `investment-transactions.md`
+- `law/antitrust/competition-law.md` → split into `horizontal-restraints.md`, `vertical-restraints.md`, `monopolization.md`
+- `law/insurance/coverage-types.md` → split into `commercial-general-liability.md`, `professional-liability.md`, `cyber-liability.md`, `directors-officers.md`, `employment-practices.md`
+- `law/financial-services/compliance-licensing.md` → split into `banking-regulation.md`, `lending.md`, `fintech.md`
+- `law/consumer-protection/state-consumer-laws.md` (note: file name stays but content may redistribute to area-specific files)
+
+### Files That Get Renamed (old file deleted)
+
+- `law/corporate/entity-types.md` → renamed to `entity-formation.md` and deepened
 
 ### Overview.md Files Updated
 
@@ -561,9 +591,88 @@ All 12 existing overview.md files get updated to route to new sub-files. 14 new 
 - **Practice/** — user content, not touched
 - **Matters/** — user content, not touched
 - **Memory/** — user content, not touched
-- **Templates/** — will need updating after this work to match new knowledge structure (follow-on task)
 - **5-layer architecture** — no changes to precedence rules or merge logic
-- **CLAUDE.md** — knowledge map section will need updating to reflect new structure (follow-on task)
+
+---
+
+## Implementation Sequence
+
+Work proceeds in four phases with clear dependencies:
+
+### Phase 1: Deepen existing law/ files and update overview.md routing
+- Update all 12 existing overview.md files first (they define trigger routing for new sub-files)
+- Deepen existing law/ sub-files to meet the new depth standard
+- Split files that cover multiple topics (patents-copyrights-trademarks.md, etc.)
+- This phase is prerequisite for Phase 2 since new sub-files need routing in overview.md
+
+### Phase 2: Create new sub-files within existing law/ areas
+- Add new sub-files to existing areas (e.g., coppa.md in data-privacy, wage-and-hour.md in employment)
+- Can be parallelized across areas — each area is independent
+
+### Phase 3: Create new law/ areas
+- Write overview.md with trigger conditions first for each new area
+- Then write sub-files
+- Can be parallelized across areas
+
+### Phase 4: Deepen and create defaults/ files
+- Depends on law/ being substantially complete (positions reference law/ requirements)
+- Deepen existing position, clause library, checklist, and playbook files
+- Create new defaults/ files
+- Can be parallelized across file types (positions, clause library, checklists, playbooks are independent)
+
+Within each phase, work can be parallelized across areas since areas are independent of each other.
+
+---
+
+## Quality Validation
+
+Each file must meet these acceptance criteria before being considered complete:
+
+### Law/ files
+- At least 3 specific requirements with numeric thresholds or timelines
+- At least 2 primary source links in `## Sources`
+- At least 1 cross-reference in `## Interaction with Other Areas`
+- Specific consequences for violation (fine amounts, private right of action, criminal penalty)
+- No position recommendations or contract negotiation advice (those belong in defaults/)
+- 100-150 lines
+
+### Overview.md files
+- Trigger conditions cover keywords, clause types, and regulatory references
+- Sub-file loading rules map specific triggers to specific sub-files
+- Quick reference covers every sub-file in the area
+- 30-40 lines
+
+### Position files
+- GREEN/YELLOW/RED classification uses specific numbers, not qualitative terms
+- At least 2 escalation triggers that require no judgment
+- Practical Guidance section references specific law/ requirements
+- Common Traps section with at least 2 examples
+- 50-60 lines
+
+### Clause library files
+- Actual clause language for all variants (standard, aggressive, vendor-favorable, minimum)
+- Notes explaining when to use each variant
+- 80-100 lines
+
+### Checklists
+- Every item assigned to a priority tier (Must-Check, Should-Check, Nice-to-Check)
+- Must-Check items include brief rationale
+- 100-120 lines
+
+### Playbooks
+- Cross-references to which position files and checklists to load at each step
+- Decision points where the process branches
+- 100-130 lines
+
+---
+
+## Follow-On Tasks
+
+These are out of scope for this spec but must happen after implementation:
+
+1. **Update CLAUDE.md Knowledge Map** — the Knowledge Map section lists area descriptions and file paths that will be stale after this expansion. Must reflect all 26 areas and new defaults/ files.
+2. **Update templates/** — setup templates should match the new knowledge structure so new users get the right scaffolding.
+3. **Update intake skill routing** — the intake skill scans overview.md files for triggers. Verify it correctly discovers and loads all 26 areas, especially new areas and cross-area references (e.g., HIPAA routing from data-privacy to healthcare).
 
 ---
 
@@ -572,11 +681,11 @@ All 12 existing overview.md files get updated to route to new sub-files. 14 new 
 | What | From | To |
 |------|------|----|
 | Law areas | 12 | 26 |
-| Law files | 43 | ~200 |
+| Law files (including overview.md) | 43 | ~188 |
 | Position files | 13 | ~24 |
 | Clause library files | 6 | ~14 |
 | Checklist files | 6 | ~14 |
 | Playbook files | 11 | ~17 |
-| **Total files** | **85** | **~270** |
+| **Total files** | **79** | **~257** |
 | Avg law/ file depth | 33 lines | 100-150 lines |
 | Source links | None | Every law/ file |
