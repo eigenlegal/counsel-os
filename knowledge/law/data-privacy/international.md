@@ -1,31 +1,131 @@
 # International Privacy Laws (Non-US, Non-EU)
 
-## Overview
-Many jurisdictions outside the United States and European Union have enacted comprehensive data protection and privacy laws. These laws impose distinct requirements on data collection, processing, cross-border transfers, and individual rights that must be addressed when operating in or targeting residents of these jurisdictions.
+## Applicability
+
+This file covers comprehensive data protection laws outside the United States and European Union. Load when parties, data subjects, or data processing activities are located in or target individuals in the jurisdictions below. Each jurisdiction's law operates independently — compliance with GDPR or CCPA does not guarantee compliance with these regimes.
 
 ## Key Requirements
-- **Canada (PIPEDA / provincial laws):** Personal Information Protection and Electronic Documents Act applies to private-sector organizations collecting, using, or disclosing personal information in the course of commercial activities. Requires meaningful consent, limits collection to purposes a reasonable person would consider appropriate, and requires breach notification to the Privacy Commissioner and affected individuals when there is a real risk of significant harm. Quebec's Law 25 adds stricter requirements including privacy impact assessments and default privacy settings.
-- **Brazil (LGPD):** Lei Geral de Protecao de Dados closely mirrors GDPR. Requires lawful basis for processing, data protection officer appointment, data protection impact assessments, and breach notification to the ANPD. Ten legal bases for processing including consent, legitimate interest, and contract performance. Cross-border transfers require adequacy findings, SCCs, or other mechanisms.
-- **South Africa (POPIA):** Protection of Personal Information Act requires responsible parties to process personal information lawfully, with consent or other justification. Requires registration with the Information Regulator. Cross-border transfers limited to jurisdictions with adequate protection or with consent/contractual necessity.
-- **Singapore (PDPA):** Personal Data Protection Act requires consent for collection, use, and disclosure with a Do Not Call Registry. Mandatory breach notification to the PDPC within 3 days if the breach is notifiable. Data protection officer appointment required. No data localization requirement but cross-border transfer restrictions apply.
-- **Australia (Privacy Act 1988 / APPs):** Australian Privacy Principles govern handling of personal information by organizations with annual turnover exceeding AUD 3 million (and some smaller entities). Mandatory data breach notification scheme. Cross-border disclosure requires reasonable steps to ensure overseas recipients comply with APPs.
-- **Japan (APPI):** Act on Protection of Personal Information requires consent for third-party provision of personal data, restricts cross-border transfers, and requires reporting of data breaches to the PPC. Mutual adequacy recognition with the EU.
-- **South Korea (PIPA):** Personal Information Protection Act imposes strict consent requirements, mandatory breach notification, and restrictions on cross-border transfers. Substantial penalties for non-compliance.
-- **India (DPDPA 2023):** Digital Personal Data Protection Act requires consent or legitimate use basis, data fiduciary obligations, breach notification, and restrictions on cross-border transfers to non-notified jurisdictions. Significant data principal rights including correction and erasure.
-- **China (PIPL):** Personal Information Protection Law requires consent or other lawful basis, mandatory security assessments for cross-border transfers, data localization for critical information infrastructure operators, and significant fines for non-compliance. Requires personal information protection impact assessments for sensitive PI processing, automated decision-making, cross-border transfers, and other specified scenarios.
 
-## Common Contract Issues
-- Cross-border transfer mechanisms must be jurisdiction-specific — SCCs acceptable under one law may not satisfy another's requirements.
-- Data localization requirements (China, Russia, certain sectors in India) may conflict with centralized data processing arrangements and require local infrastructure.
-- Consent standards vary significantly — some jurisdictions require explicit opt-in consent for any processing, while others permit implied consent or legitimate interest bases.
-- Breach notification timelines are jurisdiction-specific and often shorter than GDPR's 72 hours (e.g., Singapore's 3-day requirement, some jurisdictions requiring notification "immediately").
-- Varying DPO/representative requirements — some jurisdictions require local representatives or locally appointed data protection officers.
-- Contracts may need to be governed by or comply with local law requirements that cannot be overridden by choice-of-law clauses.
-- Mandatory regulatory filings or registrations before processing begins in certain jurisdictions.
+### Canada — PIPEDA and Provincial Laws
+
+- **Statute:** Personal Information Protection and Electronic Documents Act (S.C. 2000, c. 5). Applies to private-sector organizations collecting, using, or disclosing personal information in the course of commercial activities across provincial or national borders, or within provinces without substantially similar legislation.
+- **Provincial override:** Quebec's Law 25 (modernizing private-sector privacy law, fully effective September 2024), Alberta PIPA, and British Columbia PIPA are deemed "substantially similar" and apply in place of PIPEDA for intra-provincial commercial activities.
+- **Consent:** Meaningful consent required — must be reasonable for the purpose, and individuals must understand what they are consenting to. Implied consent permitted for non-sensitive information where purposes would be obvious to a reasonable person. **Explicit consent** required for sensitive information (health, financial, children's data).
+- **Breach notification:** Mandatory reporting to the **Privacy Commissioner of Canada** and notification to affected individuals when there is a **real risk of significant harm** (RROSH). Notification must be given **as soon as feasible** after the breach. Organizations must maintain records of all breaches for **24 months**.
+- **Cross-border transfers:** No outright prohibition, but the transferring organization remains accountable. Must use contractual or other means to provide a comparable level of protection. Quebec Law 25 requires a **privacy impact assessment** before transferring personal information outside Quebec and prohibits transfers to jurisdictions without adequate protection unless contractual safeguards are in place.
+- **Penalties:** Maximum fine of **CAD $100,000** per violation under PIPEDA. Quebec Law 25 penalties up to **CAD $25 million** or **4% of worldwide turnover**.
+- **GDPR adequacy:** Canada has an EU adequacy decision for PIPEDA-covered transfers (commercial activities only; does not cover employee data or provincial-law-only processing).
+
+### Brazil — LGPD
+
+- **Statute:** Lei Geral de Proteção de Dados (Law No. 13,709/2018, effective September 2020). Enforced by the Autoridade Nacional de Proteção de Dados (ANPD).
+- **Scope:** Applies to any processing of personal data carried out in Brazil, directed at individuals in Brazil, or where personal data was collected in Brazil — regardless of where the processor is located.
+- **Lawful bases:** Ten legal bases including consent, legitimate interest, contract performance, legal/regulatory obligation, exercise of rights in judicial/administrative proceedings, protection of life, health protection, research, credit protection, and regular exercise of rights.
+- **Data protection officer:** Appointment of a DPO (encarregado) is required for all controllers. The ANPD may establish complementary rules, including exemptions for small processing agents.
+- **Breach notification:** Controllers must notify the ANPD and affected data subjects within a **reasonable timeframe** when the breach may cause relevant risk or damage. The ANPD recommends notification within **2 business days** of becoming aware of the breach.
+- **Cross-border transfers:** Permitted to countries with adequate protection (as determined by the ANPD), under SCCs, BCRs, cooperation agreements, or with specific and prominent consent.
+- **Penalties:** Administrative fines up to **2% of revenue in Brazil** per violation, capped at **BRL 50 million** (~USD 10 million) per violation. Also includes publicization of the infraction, blocking or deletion of data, and daily fines.
+- **Data subject rights:** Confirmation of processing, access, correction, anonymization/blocking/deletion of unnecessary or excessive data, portability, information about sharing, revocation of consent, and the right to petition the ANPD.
+
+### Singapore — PDPA
+
+- **Statute:** Personal Data Protection Act 2012 (No. 26 of 2012), as amended in 2020. Enforced by the Personal Data Protection Commission (PDPC).
+- **Consent:** Required for collection, use, and disclosure. Deemed consent provisions for reasonable expectations and contractual necessity (2020 amendments). Legitimate interests exception added in 2020 for business improvement, operational efficiency, and similar purposes (with conditions).
+- **Do Not Call Registry:** Organizations must check the DNC Registry before sending marketing messages to Singapore telephone numbers.
+- **Breach notification:** Mandatory notification to the PDPC within **3 calendar days** of assessing that the breach is notifiable (significant harm to individuals or affecting 500+ individuals). Must assess within **30 calendar days** of becoming aware of the breach. Affected individuals must be notified as soon as practicable.
+- **Cross-border transfers:** Permitted if the recipient is bound by legally enforceable obligations (contractual or otherwise) to provide a comparable standard of protection. No adequacy framework — relies on contractual or binding corporate rules.
+- **Penalties:** Financial penalties up to **SGD 1 million** or **10% of annual turnover** in Singapore (whichever is higher, for organizations with turnover exceeding SGD 10 million). Criminal liability for egregious mishandling of personal data.
+- **Data protection officer:** Mandatory appointment of at least one DPO.
+
+### China — PIPL
+
+- **Statute:** Personal Information Protection Law (effective November 1, 2021). Administered by the Cyberspace Administration of China (CAC).
+- **Scope:** Extraterritorial — applies to processing of personal information of individuals within China, even by organizations outside China, when processing is for the purpose of providing products/services to or analyzing/assessing behavior of individuals within China.
+- **Consent:** Separate consent required for processing sensitive personal information, cross-border transfers, public disclosure, and provision to third parties. Consent must be informed, voluntary, and explicit for sensitive processing.
+- **Cross-border transfers:** Require one of: (a) security assessment organized by the CAC (mandatory for critical information infrastructure operators and processors handling personal information of **1 million+ individuals** or transferring information of **100,000+ individuals** or **10,000+ individuals' sensitive PI** cumulatively since January 1 of the prior year), (b) personal information protection certification, (c) standard contract filed with the CAC, or (d) other conditions per laws/regulations.
+- **Data localization:** Critical information infrastructure operators (CIIOs) and processors handling personal information reaching CAC-specified volume thresholds must store personal information within China. Cross-border transfer requires security assessment.
+- **Breach notification:** Must immediately notify the relevant department and affected individuals when a breach occurs or is likely to occur. Notice must include the types of information involved, cause, potential harm, remedial measures, and contact information.
+- **Penalties:** Fines up to **RMB 50 million** (~USD 7 million) or **5% of prior year's annual revenue** for serious violations. Responsible individuals may be fined **RMB 100,000 to 1 million** and prohibited from serving as director, supervisor, or senior manager. Business licenses may be revoked.
+- **Data subject rights:** Right to know, decide, restrict, refuse, access, copy, correct, delete personal information, and request explanation of automated decision-making rules.
+
+### Australia — Privacy Act 1988 / APPs
+
+- **Statute:** Privacy Act 1988 (Cth), including the Australian Privacy Principles (APPs). Enforced by the Office of the Australian Information Commissioner (OAIC).
+- **Scope:** Applies to Australian government agencies and organizations with annual turnover exceeding **AUD 3 million**. Also applies to smaller organizations in health services, trading in personal information, credit reporting, Commonwealth contracts, and employee records of organizations otherwise covered.
+- **Consent:** Not always required — the APPs use a broader framework based on reasonable expectations and primary/related secondary purposes. Consent required for sensitive information (health, genetic, biometric, criminal record, race/ethnicity, political opinions, religion, sexual orientation, trade union membership).
+- **Breach notification (Notifiable Data Breaches scheme):** Mandatory notification to the OAIC and affected individuals when an eligible data breach occurs — where unauthorized access or disclosure is **likely to result in serious harm**. Must notify **as soon as practicable** after becoming aware. Assessment must be completed within **30 days** of suspecting a breach.
+- **Cross-border disclosure (APP 8):** Before disclosing personal information overseas, the disclosing entity must take **reasonable steps** to ensure the overseas recipient does not breach the APPs. The disclosing entity is accountable for breaches by the overseas recipient unless an exception applies (e.g., consent, legal requirement, Cloud Act).
+- **Penalties:** Civil penalties up to **AUD 50 million**, or **3 times the benefit obtained**, or **30% of adjusted turnover** — whichever is greatest (2022 amendments).
+- **Ongoing reform:** The Privacy Act Review Report (2023) proposes significant reforms including a statutory tort for serious invasions of privacy, expanded coverage to small businesses, and stronger enforcement. Monitor for legislative implementation.
+
+### Japan — APPI
+
+- **Statute:** Act on Protection of Personal Information (Act No. 57 of 2003, as amended 2020/2022). Enforced by the Personal Information Protection Commission (PPC).
+- **Cross-border transfers:** Provision to a third party in a foreign country requires one of: (a) consent after informing the individual of the destination country's regime, (b) transfer to a country recognized by the PPC as having equivalent protections (EU/UK recognized), (c) transfer to a recipient with an equivalent system (BCR equivalent, APEC CBPR).
+- **Breach notification:** Mandatory reporting to the PPC and notification to affected individuals when a breach involves sensitive personal information, involves potential property damage, involves wrongful intent, or affects **1,000+ individuals**. Must report **promptly** (preliminary) and within **30 days** (or 60 days for wrongful intent breaches).
+- **Penalties:** Criminal penalties for database misuse — imprisonment up to **1 year** or fine up to **JPY 500,000** for individuals; fines up to **JPY 100 million** for corporations. Administrative orders backed by criminal penalties for non-compliance.
+- **EU adequacy:** Mutual adequacy recognition between Japan and the EU (2019), with supplementary rules for data received from the EU.
+
+### South Korea — PIPA
+
+- **Statute:** Personal Information Protection Act (Act No. 16930, as amended 2023). Enforced by the Personal Information Protection Commission (PIPC).
+- **Consent:** Strict consent requirements with specific disclosure obligations. Separate consent required for third-party provision, cross-border transfers, and processing beyond the collected purpose.
+- **Breach notification:** Must notify affected individuals **without delay** and report to the PIPC when a breach affects **1,000+ individuals** or involves sensitive/unique identification information.
+- **Cross-border transfers:** 2023 amendments permit transfers based on (a) consent, (b) transfer to countries/international organizations with adequate protections recognized by the PIPC, (c) contractual safeguards, or (d) PIPC-approved certification.
+- **Penalties:** Fines up to **3% of related revenue** or **KRW 2 billion** (~USD 1.5 million). Criminal penalties including imprisonment up to **5 years** for certain violations.
+- **EU adequacy:** South Korea received an EU adequacy decision in December 2021.
+
+### India — DPDP Act 2023
+
+- **Statute:** Digital Personal Data Protection Act, 2023 (Act No. 22 of 2023). Enforced by the Data Protection Board of India (once constituted).
+- **Scope:** Applies to processing of digital personal data within India, and to processing outside India if related to offering goods/services or profiling individuals in India.
+- **Lawful basis:** Consent (free, specific, informed, unconditional, unambiguous, with clear affirmative action) or "legitimate uses" (specified purposes such as employment, medical emergency, state functions).
+- **Consent manager:** A registered consent manager may manage consent on behalf of data principals (a new concept in global privacy law).
+- **Cross-border transfers:** Permitted to all countries except those specifically restricted by the Central Government via notification. The government may blacklist specific countries but has not yet done so as of early 2026.
+- **Breach notification:** Data fiduciaries must notify the Data Protection Board and affected data principals of any personal data breach. Timelines to be specified in rules (not yet finalized as of early 2026).
+- **Penalties:** Fines up to **INR 250 crore** (~USD 30 million) per violation for failure to take reasonable security safeguards. Other violations carry fines up to **INR 50-200 crore** depending on the obligation breached. **No private right of action** — enforcement through the Data Protection Board only.
+- **Significant data fiduciaries:** Entities designated by the government face additional obligations including DPO appointment, independent audit, and data protection impact assessments.
 
 ## Interaction with Other Areas
-- **Data Privacy (GDPR):** GDPR adequacy decisions enable smoother EU data transfers to recognized jurisdictions (Japan, South Korea, UK, etc.); non-adequate jurisdictions require SCCs or other mechanisms even when local law is robust.
-- **International Trade:** Data localization requirements interact with trade agreements and sanctions; cross-border data flows may implicate export control and sanctions considerations.
-- **Corporate:** International corporate structures (subsidiaries, branches, joint ventures) must account for each jurisdiction's data protection requirements in intra-group data sharing agreements.
-- **Financial Services:** Many jurisdictions impose sector-specific data protection requirements for financial institutions that layer on top of general privacy laws.
-- **Employment:** Employee data handling across international operations must comply with local employment and privacy law intersections, which vary significantly by jurisdiction.
+
+- **Data Privacy (GDPR):** EU adequacy decisions enable smoother data transfers to recognized jurisdictions (Japan, South Korea, Canada for commercial data, UK, New Zealand, etc.). Non-adequate jurisdictions require SCCs or other mechanisms even when local law is robust. PIPL and LGPD have structural similarities to GDPR but with significant differences in cross-border transfer mechanisms.
+- **International Trade:** Data localization requirements (China, Russia, certain sectors in India/Vietnam) interact with trade agreements and sanctions. Cross-border data flows may implicate export control and sanctions considerations. US-China tech restrictions may affect data transfer architectures.
+- **Corporate:** International corporate structures (subsidiaries, branches, joint ventures) must account for each jurisdiction's data protection requirements in intra-group data sharing agreements. PIPL and PIPA require specific contractual frameworks for intra-group transfers.
+- **Financial Services:** Many jurisdictions impose sector-specific data protection requirements for financial institutions that layer on top of general privacy laws (e.g., Singapore's MAS guidelines, Japan's FSA requirements, India's RBI data localization for payments).
+- **Employment:** Employee data handling across international operations must comply with local employment and privacy law intersections. In particular, Korean and Japanese laws have strict requirements for employee consent, and Chinese law requires separate consent for cross-border HR data transfers.
+
+### International Breach Notification Comparison
+
+| Jurisdiction | Authority Timeline | Individual Timeline | Harm Threshold |
+|-------------|-------------------|-------------------|----------------|
+| Canada (PIPEDA) | As soon as feasible | As soon as feasible | Real risk of significant harm |
+| Brazil (LGPD) | Reasonable (2 biz days recommended) | Reasonable timeframe | Relevant risk or damage |
+| Singapore (PDPA) | **3 calendar days** after assessment | As soon as practicable | Significant harm or 500+ individuals |
+| Australia (APPs) | As soon as practicable | As soon as practicable | Likely serious harm |
+| Japan (APPI) | Promptly + **30 days** full report | Promptly | Sensitive PI, 1,000+ individuals, or wrongful intent |
+| South Korea (PIPA) | Without delay | Without delay | 1,000+ individuals or sensitive data |
+| China (PIPL) | Immediately | Immediately | Any breach or likely breach |
+| India (DPDP) | Per rules (TBD) | Per rules (TBD) | Any personal data breach |
+
+### International Cross-Border Transfer Mechanisms
+
+| Jurisdiction | Adequacy Framework | Contractual Mechanism | Other Mechanisms |
+|-------------|-------------------|----------------------|------------------|
+| Canada (PIPEDA) | No formal framework | Contractual accountability | Transferor remains accountable |
+| Brazil (LGPD) | ANPD adequacy (pending) | SCCs (pending ANPD approval) | Specific and prominent consent |
+| Singapore (PDPA) | No formal framework | Legally enforceable obligations | BCR equivalents |
+| China (PIPL) | No outbound adequacy | CAC standard contract | Security assessment, certification |
+| Japan (APPI) | PPC-recognized countries | Equivalent system at recipient | Consent with destination disclosure |
+| South Korea (PIPA) | PIPC-recognized countries | Contractual safeguards | PIPC-approved certification |
+| India (DPDP) | Blacklist model (all except restricted) | Not yet specified | Government restriction by notification |
+
+## Sources
+
+- [PIPEDA Full Text — Justice Laws, Canada](https://laws-lois.justice.gc.ca/eng/acts/P-8.6/) — Personal Information Protection and Electronic Documents Act
+- [LGPD Full Text — Planalto, Brazil](https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm) — Lei Geral de Proteção de Dados (Portuguese)
+- [PDPA Full Text — Singapore Statutes Online](https://sso.agc.gov.sg/Act/PDPA2012) — Personal Data Protection Act 2012
+- [PIPL Full Text — NPC Observer](https://www.npcobserver.com/legislation/personal-information-protection-law/) — English translation of China's Personal Information Protection Law
+- [Privacy Act 1988 — Federal Register of Legislation, Australia](https://www.legislation.gov.au/Details/C2023C00130) — Including Australian Privacy Principles
+- [APPI — PPC Japan](https://www.ppc.go.jp/en/legal/) — Act on Protection of Personal Information (English)
+- [PIPA — PIPC South Korea](https://www.pipc.go.kr/np/cop/bbs/selectBoardList.do?bbsId=BS074&mCode=C020010000) — Personal Information Protection Act
+- [DPDP Act 2023 — India Code](https://www.indiacode.nic.in/handle/123456789/19833) — Digital Personal Data Protection Act
