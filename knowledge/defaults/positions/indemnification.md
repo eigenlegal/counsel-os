@@ -1,36 +1,39 @@
-# Indemnification
+# Indemnification — Position
 
 ## Market Standard
-
-**Typical position:** Mutual indemnification for third-party claims arising from (a) IP infringement, (b) breach of confidentiality, and (c) gross negligence or willful misconduct. Vendor indemnifies for IP infringement of its product/service. Customer indemnifies for misuse of the service or customer-provided content/data.
-
-**Acceptable range:** Indemnification obligations may be limited to third-party claims only (not first-party losses). Vendor IP indemnification should include a cure path (modify, replace, procure license, or terminate with refund). Customer indemnification for data/content provided is standard. A reasonable cap on indemnification (often 2x the general liability cap or a separate super-cap) is increasingly common.
-
-**Escalate if:**
-- Indemnification is entirely one-sided (customer indemnifies vendor but not vice versa)
-- Vendor refuses to indemnify for IP infringement of its own product
-- No defense obligation accompanies the indemnity (indemnitor should defend and hold harmless)
-- Indemnification covers first-party losses beyond third-party claims without appropriate limits
-- Indemnification obligations are fully uncapped with no insurance backing
-- No notice or cooperation requirements for the indemnified party
-
-## Key Considerations
-
-- Indemnification should include both the duty to defend and the duty to indemnify (pay damages)
-- The indemnifying party should have the right to control the defense, with consent rights for settlements that impose non-monetary obligations on the indemnified party
-- Notice requirements should be reasonable — late notice should reduce but not eliminate the obligation
-- IP indemnification cure paths should include an ultimate termination-with-refund option
-- Consider whether indemnification covers regulatory fines and penalties (varies by jurisdiction; some are uninsurable)
-- Employee solicitation and poaching indemnities are non-standard and should be resisted unless specifically relevant
-
-## Related Law
-
-- knowledge/law/data-privacy/overview.md (data breach indemnification and regulatory fines)
+Mutual indemnification for third-party claims arising from (a) IP infringement, (b) breach of confidentiality, and (c) gross negligence or willful misconduct. Vendor indemnifies for IP infringement of its product/service. Customer indemnifies for misuse of the service or customer-provided content/data. Indemnifying party defends, holds harmless, and pays damages. Cap on indemnification is typically 2x the general liability cap or a separate super-cap.
 
 ## Classification Guide
+- **GREEN**: Mutual indemnification for IP infringement, confidentiality breach, and willful misconduct; vendor IP indemnity with cure path (modify, replace, license, or terminate with full refund); defense obligation included; standard notice and cooperation requirements; late notice reduces but does not eliminate obligation; super-cap of 2-3x the general liability cap.
+- **YELLOW**: Asymmetric indemnification moderately favoring vendor; no cure path for IP infringement; broad first-party indemnification obligations beyond third-party claims; uncapped indemnification without insurance backing; no right to control defense; notice requirements that extinguish obligation entirely.
+- **RED**: Entirely one-sided indemnification (customer only); vendor refuses IP infringement indemnity; uncapped indemnification for broad categories including consequential damages; indemnification for regulatory fines in jurisdictions where uninsurable; no defense obligation; vendor controls settlement including right to admit liability on customer's behalf.
 
-**GREEN:** Mutual indemnification for IP infringement, confidentiality breach, and willful misconduct; vendor IP indemnity with cure path; standard notice and cooperation requirements; defense obligation included; reasonable cap or super-cap.
+## Escalate If
+- Indemnification is entirely one-sided (customer indemnifies vendor but not vice versa).
+- Vendor refuses to indemnify for IP infringement of its own product.
+- No defense obligation accompanies the indemnity.
+- Indemnification covers first-party losses beyond third-party claims without appropriate limits.
+- Indemnification is fully uncapped with no insurance backing.
+- No notice or cooperation requirements for the indemnified party.
+- Settlement rights allow the indemnitor to admit liability or agree to injunctions binding the indemnified party without consent.
 
-**YELLOW:** Asymmetric indemnification favoring vendor; no cure path for IP infringement; broad first-party indemnification obligations; no cap on indemnification; weak notice requirements; no right to control defense.
+## Practical Guidance
+- Indemnification and limitation of liability interact closely — ensure carve-outs align. If IP indemnification is carved out from the liability cap, confirm the indemnification section reflects that.
+- The duty to defend is often more valuable than the duty to indemnify. Defense costs in IP litigation can exceed damages. Make sure both are included.
+- IP indemnification cure paths should end with a termination-and-refund option, not just "modify or replace." If the vendor cannot cure the infringement, you need an exit.
+- Regulatory fines present a gray area — some jurisdictions treat them as uninsurable penalties. Be cautious about accepting indemnification obligations for regulatory fines.
+- For vendor IP indemnification, confirm coverage extends to the combination of vendor's product with customer's systems (combination claims are a common gap).
 
-**RED:** Entirely one-sided indemnification (customer only); vendor refuses IP infringement indemnity; uncapped indemnification for broad categories including consequential damages; indemnification for regulatory fines in jurisdictions where this shifts uninsurable risk; no defense obligation.
+## Key Negotiation Points
+1. **Scope** — third-party claims only vs. first-party losses; limit to third-party claims where possible.
+2. **IP cure path** — modify, replace, license, or terminate with refund; all four options should be present.
+3. **Defense control** — indemnifying party controls defense but cannot settle without indemnified party's consent for non-monetary terms.
+4. **Cap on indemnification** — 2-3x the general liability cap is market; fully uncapped indemnification is aggressive.
+5. **Notice mechanics** — prompt notice required but late notice only reduces the obligation proportionate to prejudice, not eliminates it.
+
+## Common Traps
+- **"Indemnify and hold harmless" without "defend"** — omitting the defense obligation means you may need to fund your own defense and seek reimbursement later.
+- **Settlement consent that requires "not to be unreasonably withheld"** — sounds fair, but allows the indemnitor to pressure acceptance of unfavorable settlements.
+- **Indemnification triggered by "allegations" rather than "third-party claims"** — broadens the trigger beyond actual lawsuits to any allegation, dramatically expanding scope.
+- **Sole remedy language** — "indemnification is the indemnified party's sole and exclusive remedy" cuts off other contractual rights like breach of warranty claims.
+- **Combination claims exclusion** — vendor excludes infringement arising from combination with other products, which is how most infringement claims actually arise.
