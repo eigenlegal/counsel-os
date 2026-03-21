@@ -2,70 +2,85 @@
 
 ## IP Ownership — Work Product
 
-### Standard Language
-> All work product, deliverables, and materials created by Vendor specifically for Customer under a Statement of Work ("Custom Deliverables") shall be owned by Customer. Vendor hereby assigns, and shall cause its personnel to assign, to Customer all right, title, and interest in and to such Custom Deliverables, including all intellectual property rights therein. Vendor retains all right, title, and interest in and to its pre-existing intellectual property, tools, methodologies, and know-how ("Vendor IP"). To the extent any Vendor IP is incorporated in or necessary to use the Custom Deliverables, Vendor hereby grants Customer a perpetual, irrevocable, non-exclusive, worldwide, royalty-free, fully paid-up license to use such Vendor IP solely as incorporated in or necessary to use the Custom Deliverables.
+### Standard
+> All work product and deliverables created by Vendor specifically for Customer under a Statement of Work ("Custom Deliverables") shall be owned by Customer. Vendor hereby assigns to Customer all right, title, and interest in such Custom Deliverables, including all intellectual property rights. Vendor retains all right, title, and interest in its pre-existing intellectual property, tools, and methodologies ("Vendor IP"). To the extent Vendor IP is incorporated in or necessary to use the Custom Deliverables, Vendor grants Customer a perpetual, irrevocable, non-exclusive, worldwide, royalty-free license to use such Vendor IP solely as incorporated in or necessary to use the Custom Deliverables.
 
-### Aggressive Language
-> All work product, deliverables, inventions, discoveries, improvements, and materials conceived, created, developed, or reduced to practice by Vendor or its personnel in connection with the performance of Services under this Agreement ("Work Product") shall be and remain the sole and exclusive property of Customer. Vendor hereby irrevocably assigns, and shall cause its employees, contractors, and agents to irrevocably assign, to Customer all right, title, and interest worldwide in and to such Work Product, including all patent, copyright, trade secret, trademark, and other intellectual property rights therein. Such assignment is effective upon creation of the Work Product and requires no further action. To the extent any assignment is not effective under applicable law, Vendor hereby grants Customer an exclusive, irrevocable, perpetual, worldwide, royalty-free license to all Work Product. Vendor waives, and shall cause its personnel to waive, all moral rights in the Work Product to the fullest extent permitted by law. Vendor shall execute and deliver any documents and take any actions reasonably requested by Customer to perfect Customer's ownership of the Work Product.
+### Aggressive (Customer-Favorable)
+> All work product, inventions, discoveries, improvements, and materials conceived or created by Vendor in connection with the Services ("Work Product") shall be the sole and exclusive property of Customer. Vendor irrevocably assigns to Customer all worldwide right, title, and interest, including all patent, copyright, trade secret, and trademark rights. Such assignment is effective upon creation. To the extent any assignment is not effective under applicable law, Vendor grants Customer an exclusive, irrevocable, perpetual, worldwide, royalty-free license. Vendor waives all moral rights to the fullest extent permitted by law. Vendor shall execute documents reasonably requested to perfect Customer's ownership.
+
+### Vendor-Favorable
+> Vendor retains all right, title, and interest in and to the Services, all deliverables, and all intellectual property developed in connection with this Agreement, including all modifications, improvements, and derivative works. Customer is granted a non-exclusive, non-transferable, non-sublicensable license to use deliverables solely for Customer's internal business purposes during the Term. Upon termination, Customer's license to deliverables shall terminate, except for fully paid deliverables expressly designated as perpetual in the applicable Statement of Work.
 
 ### Minimum Acceptable
-> Vendor grants Customer a perpetual, irrevocable, non-exclusive, worldwide, royalty-free license to use, modify, and distribute all deliverables created under a Statement of Work. Vendor retains ownership of its pre-existing intellectual property and any generalized tools or methodologies.
+> Vendor grants Customer a perpetual, irrevocable, non-exclusive, worldwide, royalty-free license to use, modify, and distribute all deliverables created under a Statement of Work. Vendor retains ownership of its pre-existing intellectual property and generalized tools or methodologies.
 
 ### Notes
-Standard language provides clear assignment with a license-back for Vendor pre-existing IP — this is the most common market approach. Aggressive language includes belt-and-suspenders provisions (assignment + fallback license, moral rights waiver, further assurances) appropriate for high-value custom development. Minimum Acceptable grants a license instead of ownership — use only when the business team accepts vendor ownership of deliverables.
+Standard language with assignment plus license-back for Vendor IP is the most common market approach. Vendor-Favorable language retaining all IP and granting only a limited use license is typical of vendor paper -- push for assignment of custom work product at minimum. Aggressive language with belt-and-suspenders (assignment + fallback license, moral rights waiver, further assurances) is appropriate for high-value custom development.
 
 ## Customer Data Ownership
 
-### Standard Language
-> As between the parties, Customer retains all right, title, and interest in and to Customer Data, including all intellectual property rights therein. "Customer Data" means all data, content, and information provided by or on behalf of Customer or its users to the Services, and all data generated by the Services that is derived from or attributable to Customer's use. Nothing in this Agreement shall be construed as transferring any ownership interest in Customer Data to Vendor.
+### Standard
+> As between the parties, Customer retains all right, title, and interest in Customer Data, including all intellectual property rights. "Customer Data" means all data provided by or on behalf of Customer to the Services, and all data generated by the Services derived from Customer's use. Nothing in this Agreement transfers ownership of Customer Data to Vendor.
 
-### Aggressive Language
-> Customer is and shall remain the sole and exclusive owner of all Customer Data. "Customer Data" includes, without limitation: (a) all data, content, files, and information uploaded, submitted, or transmitted by Customer or its authorized users to or through the Services; (b) all data generated, derived, or collected by the Services from Customer's use, including usage data, metadata, logs, and analytics attributable to Customer; and (c) all outputs, results, and reports generated by the Services using Customer Data as an input. Vendor acquires no right, title, license, or interest in Customer Data except the limited right to process Customer Data solely as necessary to provide the Services in accordance with this Agreement. Vendor shall not use Customer Data (including in aggregated or anonymized form) for any purpose other than providing the Services to Customer without Customer's prior written consent.
+### Aggressive (Customer-Favorable)
+> Customer is the sole and exclusive owner of all Customer Data, including: (a) all data uploaded or transmitted by Customer or its users; (b) all data generated, derived, or collected by the Services from Customer's use, including usage data, metadata, logs, and analytics; and (c) all outputs and reports generated using Customer Data as input. Vendor acquires no right except to process Customer Data solely to provide the Services. Vendor shall not use Customer Data (including in aggregated or anonymized form) for any other purpose without Customer's prior written consent.
+
+### Vendor-Favorable
+> As between the parties, Customer owns Customer Data uploaded to the Services. Vendor shall own all aggregated, anonymized, or statistical data derived from Customer's use of the Services ("Service Data"), and may use Service Data for any lawful business purpose, including improving the Services, benchmarking, and developing new products. Vendor shall own all usage data, telemetry, and performance metrics generated by the Services.
 
 ### Minimum Acceptable
 > As between the parties, Customer owns all Customer Data. Vendor may use Customer Data solely to provide the Services under this Agreement.
 
 ### Notes
-The Aggressive version is particularly important for AI/ML-era agreements where vendors may seek to use customer data to train models or improve their products. It explicitly covers derived data, outputs, and aggregated/anonymized use. The Standard version is appropriate for most commercial agreements. Ensure the definition of "Customer Data" is comprehensive.
+Vendor-Favorable language carving out ownership of aggregated, anonymized, and derived data is increasingly common and can be acceptable for non-sensitive data if the anonymization is robust. However, push back on broad "Service Data" definitions that capture Customer-attributable insights. The Aggressive version is critical for AI/ML-era agreements where vendors may use customer data to train models.
 
 ## Confidentiality Obligations
 
-### Standard Language
-> Each party (as "Receiving Party") agrees to: (a) hold the other party's (the "Disclosing Party") Confidential Information in strict confidence; (b) not disclose such Confidential Information to any third party except to its employees, contractors, and advisors who have a need to know and are bound by confidentiality obligations at least as protective as those herein; and (c) not use such Confidential Information for any purpose other than performing its obligations or exercising its rights under this Agreement. The Receiving Party shall protect the Disclosing Party's Confidential Information using at least the same degree of care it uses to protect its own confidential information, but in no event less than reasonable care.
+### Standard
+> Each party ("Receiving Party") agrees to: (a) hold the other party's ("Disclosing Party") Confidential Information in strict confidence; (b) not disclose to third parties except to employees, contractors, and advisors bound by confidentiality obligations at least as protective; and (c) not use for any purpose other than performing under this Agreement. The Receiving Party shall protect Confidential Information using at least the same degree of care as its own confidential information, but no less than reasonable care.
 
-### Aggressive Language
-> Each party (as "Receiving Party") shall: (a) hold all Confidential Information of the other party (the "Disclosing Party") in the strictest confidence; (b) restrict access to Confidential Information to those employees, contractors, and professional advisors who have a demonstrable need to know, have been informed of the confidential nature of such information, and are bound by written confidentiality obligations at least as restrictive as this Agreement; (c) implement and maintain appropriate technical and organizational safeguards to prevent unauthorized access, use, or disclosure; (d) not disclose, publish, or disseminate Confidential Information to any third party without the Disclosing Party's prior written consent; (e) use Confidential Information solely for the purpose of performing obligations or exercising rights under this Agreement; and (f) promptly notify the Disclosing Party of any unauthorized access, use, or disclosure. The Receiving Party's obligations under this section shall survive termination for a period of five (5) years, or indefinitely with respect to trade secrets.
+### Aggressive (Customer-Favorable)
+> Each party ("Receiving Party") shall: (a) hold all Confidential Information in strictest confidence; (b) restrict access to those with a demonstrable need to know who are bound by written confidentiality obligations at least as restrictive; (c) implement appropriate technical and organizational safeguards; (d) not disclose to any third party without prior written consent; (e) use solely for performing under this Agreement; and (f) promptly notify the Disclosing Party of any unauthorized access or disclosure. Obligations survive for five (5) years after termination, or indefinitely for trade secrets.
+
+### Vendor-Favorable
+> Each party shall maintain the confidentiality of the other party's Confidential Information using commercially reasonable measures. The Receiving Party may disclose Confidential Information to its employees, contractors, advisors, affiliates, and potential acquirers who have a need to know, provided such recipients are bound by confidentiality obligations. The Receiving Party's obligations shall terminate three (3) years after the expiration or termination of this Agreement.
 
 ### Minimum Acceptable
-> Each party shall maintain the confidentiality of the other party's Confidential Information and shall not disclose it to third parties or use it for purposes other than performing under this Agreement. Each party shall exercise reasonable care in protecting such information.
+> Each party shall maintain the confidentiality of the other party's Confidential Information and shall not disclose it to third parties or use it for purposes other than performing under this Agreement. Each party shall exercise reasonable care.
 
 ### Notes
-Standard language covers the essential obligations for most commercial agreements. Aggressive language adds technical safeguards requirements, written obligations for recipients, prompt breach notification, and a specific survival period. The Minimum Acceptable is brief but covers the core obligations. Always pair confidentiality provisions with a robust definition of "Confidential Information" and standard exclusions.
+Vendor-Favorable language with "commercially reasonable measures" and a short survival period (3 years) provides weaker protection. Push for "at least the same degree of care as its own" plus a floor of "reasonable care." Disclosure to potential acquirers without consent is concerning -- require prior notice and additional NDA obligations. Always pair with robust definitions and standard exclusions.
 
 ## Confidentiality Exclusions
 
-### Standard Language
-> The obligations of confidentiality shall not apply to information that: (a) is or becomes publicly available through no fault of the Receiving Party; (b) was rightfully in the Receiving Party's possession before receipt from the Disclosing Party, as evidenced by the Receiving Party's records; (c) is independently developed by the Receiving Party without reference to or use of the Disclosing Party's Confidential Information; (d) is rightfully received from a third party without restriction on disclosure; or (e) is required to be disclosed by law, regulation, or court order, provided that the Receiving Party gives the Disclosing Party prompt written notice (to the extent legally permitted) and cooperates with the Disclosing Party's efforts to obtain a protective order or other appropriate remedy.
+### Standard
+> Obligations of confidentiality shall not apply to information that: (a) is or becomes publicly available without fault of the Receiving Party; (b) was in the Receiving Party's possession before receipt, as evidenced by its records; (c) is independently developed without reference to Confidential Information; (d) is rightfully received from a third party without restriction; or (e) is required to be disclosed by law, provided the Receiving Party gives prompt written notice and cooperates with efforts to obtain a protective order.
 
-### Aggressive Language
-> [Same as Standard — this is one area where the standard language is already well-established and should not be narrowed by either party. Resist attempts to add additional exclusions, such as a "residuals" clause.]
+### Aggressive (Customer-Favorable)
+> [Same as Standard. These exclusions are well-established and should not be narrowed. Resist attempts to add a "residuals" clause permitting use of retained ideas or concepts.]
+
+### Vendor-Favorable
+> Obligations of confidentiality shall not apply to information that: (a) is or becomes publicly available; (b) was previously known to the Receiving Party; (c) is independently developed; (d) is received from a third party without restriction; (e) is required to be disclosed by law or regulation; or (f) is retained in the unaided memories of the Receiving Party's personnel who had access to such information ("Residuals"), and such personnel may use such Residuals for any purpose without restriction.
 
 ### Minimum Acceptable
 > Confidential Information does not include information that is publicly available, independently developed, previously known, or rightfully received from a third party.
 
 ### Notes
-The standard exclusions are well-established and should not typically be negotiated. Resist attempts to broaden the exclusions (e.g., adding a residuals clause that permits use of "ideas retained in unaided memory"). The compelled disclosure exclusion should always include a notice requirement and cooperation obligation.
+The standard exclusions are well-established and should not be negotiated. The Vendor-Favorable residuals clause (item (f)) is a significant carve-out that effectively allows a party to use any information its employees can remember. Reject residuals clauses in nearly all circumstances. The compelled disclosure exclusion should always include notice and cooperation obligations.
 
 ## License Grant (SaaS)
 
-### Standard Language
-> Subject to the terms and conditions of this Agreement and payment of all applicable fees, Vendor grants Customer a non-exclusive, non-transferable (except as permitted under the assignment provisions of this Agreement), worldwide right to access and use the Services during the Term for Customer's internal business purposes, in accordance with the documentation and the applicable Order Form. Customer may permit its employees, contractors, and agents to access the Services as authorized users, provided that Customer is responsible for their compliance with this Agreement.
+### Standard
+> Subject to the terms of this Agreement and payment of applicable fees, Vendor grants Customer a non-exclusive, non-transferable, worldwide right to access and use the Services during the Term for Customer's internal business purposes, in accordance with the documentation and Order Form. Customer may permit its employees, contractors, and agents to access the Services as authorized users.
 
-### Aggressive Language
-> Subject to payment of all applicable fees, Vendor grants Customer a non-exclusive, worldwide right to access and use the Services during the Term for Customer's and its Affiliates' internal and external business purposes, including for the benefit of Customer's clients where the Services are used in the delivery of Customer's products or services to its clients. Customer may designate authorized users, including employees, contractors, agents, and consultants of Customer and its Affiliates. Customer may permit its Affiliates to use the Services under this Agreement without executing separate agreements, provided that Customer is responsible for its Affiliates' compliance. The license granted herein may not be sublicensed except as expressly permitted in the applicable Order Form.
+### Aggressive (Customer-Favorable)
+> Subject to payment of applicable fees, Vendor grants Customer a non-exclusive, worldwide right to access and use the Services during the Term for Customer's and its Affiliates' internal and external business purposes, including for the benefit of Customer's clients. Customer may designate authorized users including employees, contractors, and consultants of Customer and its Affiliates. Affiliates may use the Services without executing separate agreements.
+
+### Vendor-Favorable
+> Subject to the terms of this Agreement and timely payment of all fees, Vendor grants Customer a limited, non-exclusive, non-transferable, non-sublicensable right to access and use the Services during the Term solely for Customer's internal business purposes and solely within the territory specified in the Order Form. Customer's use is limited to the number of authorized users, transaction volumes, or other usage metrics specified in the Order Form. Any use exceeding the permitted scope shall constitute a material breach and shall be subject to Vendor's then-current excess usage fees.
 
 ### Minimum Acceptable
 > Vendor grants Customer a non-exclusive right to access and use the Services during the Term in accordance with the Order Form.
 
 ### Notes
-Standard language is appropriate for most SaaS subscriptions with named-user or seat-based pricing. Aggressive language extends rights to affiliates and external business use — appropriate for enterprise deals where the SaaS platform is used in customer-facing operations. Ensure the license scope aligns with the pricing model.
+Vendor-Favorable language imposing strict usage limitations with automatic excess fees and "material breach" characterization for overages is aggressive. Push for a reasonable true-up process rather than treating overages as breach. Ensure the license scope aligns with the pricing model and covers affiliate use where needed.
