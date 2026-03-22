@@ -75,8 +75,7 @@ Updated law areas:
 If new position files were added under `knowledge/defaults/positions/`:
 ```
 New default positions:
-- ai-provisions.md — Standard positions for AI/ML clauses in contracts
-- data-sharing.md — Data partnership and sharing agreement positions
+- [filename].md — [description of what positions it covers]
 ```
 
 ### Updated Default Positions
@@ -87,16 +86,22 @@ Updated default positions:
 - indemnification.md — Added new market-standard counter-language
 ```
 
-### New Playbooks, Checklists, Clause Library
+### New or Updated Playbooks, Checklists, Clause Library
+
+For each category, list new or changed files with a brief description. Pay attention to:
+- **New clause library categories** — new files in `knowledge/defaults/clause-library/` represent entirely new clause types with standard language and vendor-favorable variants.
+- **Priority tier additions to checklists** — if checklists gained priority tier guidance (Tier 1/2/3), note this as a structural change that affects how the analyze phase assigns priority.
+- **New playbooks** — new files in `knowledge/defaults/playbooks/` mean new matter types can now be handled with step-by-step guidance.
+
 ```
 New playbooks:
-- ai-vendor-review.md — Review process for AI/ML vendor agreements
+- [filename].md — [description]
 
 Updated checklists:
-- saas-agreement.md — Added AI-specific review items
+- [filename].md — [what changed, e.g., "Added priority tier guidance"]
 
 New clause library entries:
-- clause-library/ai-provisions/ — Standard AI use, training data, and output ownership clauses
+- [filename].md — [clause types covered]
 ```
 
 ### Version Change
