@@ -161,7 +161,7 @@ knowledge/
     positions/                             # Default clause positions (24 types)
     playbooks/                             # Step-by-step processes (17 playbooks)
     checklists/                            # Completeness checks (14 checklists)
-    clause-library/                        # Proven clause language (14 categories)
+    clause-library/                        # Proven clause language (21 categories)
 
   practice/                                # Layer 3: Your judgment (USER CONTENT, .gitignored)
     identity.md                            # Organization, entities, team
