@@ -105,21 +105,13 @@ Applicable law areas:
 
 Based on the document and context, classify into one of these matter types. The matter type determines which playbook to use in the analyze phase:
 
-| Matter Type | Description | Typical Playbook |
-|------------|-------------|-----------------|
-| **contract-review** | Reviewing a contract drafted by the counterparty | `playbooks/contract-review.md` |
-| **nda-triage** | NDA review (mutual or one-way) | `playbooks/nda-triage.md` |
-| **negotiation** | Active negotiation on a deal in progress | `playbooks/negotiation.md` |
-| **compliance** | Compliance assessment or policy review | `playbooks/compliance-review.md` |
-| **dispute** | Dispute, demand letter, or litigation matter | `playbooks/dispute-response.md` |
-| **policy** | Internal policy drafting or review | `playbooks/policy-review.md` |
-| **diligence** | Due diligence review (M&A, investment, vendor) | `playbooks/due-diligence.md` |
-| **governance** | Board resolutions, corporate governance | `playbooks/governance.md` |
-| **memo** | Legal memo or research question | `playbooks/legal-memo.md` |
-| **amendment** | Amendment or modification to existing agreement | `playbooks/amendment-review.md` |
-| **vendor-onboarding** | New vendor evaluation and contracting | `playbooks/vendor-onboarding.md` |
+Classify into the matter type that best fits the document or matter. The matter type determines which playbook to load in the analyze phase.
 
-If the matter doesn't fit cleanly, choose the closest match and note the deviation.
+To find the matching playbook, look for a file in `knowledge/defaults/playbooks/` whose name corresponds to the matter type (e.g., a contract review maps to `playbooks/contract-review.md`, an NDA maps to `playbooks/nda-triage.md`).
+
+Common matter types include: contract-review, nda-triage, negotiation, compliance, dispute, policy, diligence, governance, memo, amendment, vendor-onboarding — but the available playbooks may expand over time, so always check what's in the directory.
+
+If the matter doesn't fit cleanly, choose the closest match and note the deviation. If no playbook exists for the matter type, proceed with the general analysis framework and note the gap.
 
 ## Step 5: Build Effective Positions
 

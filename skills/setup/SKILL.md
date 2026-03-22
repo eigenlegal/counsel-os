@@ -183,6 +183,15 @@ Write the completed `voice.md` and confirm.
 > Are there specific clause types that always trigger escalation regardless of
 > deal value? (e.g., unlimited liability, non-competes, exclusivity)
 
+### Law constraint floors:
+
+After the user sets their thresholds, cross-reference against loaded `knowledge/law/` areas. Law constraints create hard floors that override user thresholds — for example, if law/ requires 72-hour breach notification, a threshold that accepts 5-day notification windows is invalid regardless of deal value.
+
+Flag any conflicts:
+> **Note:** Your threshold for [X] would allow positions that conflict with
+> [law area] requirements. The law constraint sets a hard floor of [Y] that
+> overrides this threshold. I've adjusted accordingly.
+
 Write the completed `thresholds.md` and confirm.
 
 ## Step 7: Optional — Ingest Past Contracts

@@ -69,7 +69,23 @@ fi
 echo ""
 
 # -------------------------------------------------------------------
-# Step 2: Build browse binary (if bun is installed and source exists)
+# Step 2: Check for pandoc (needed for .docx tracked changes extraction)
+# -------------------------------------------------------------------
+
+if command -v pandoc &> /dev/null; then
+    PANDOC_VERSION=$(pandoc --version | head -1)
+    echo "pandoc found: $PANDOC_VERSION"
+else
+    echo "WARNING: pandoc is not installed."
+    echo "  -> pandoc is needed to extract tracked changes and comments from Word documents (.docx)."
+    echo "  -> Install with: brew install pandoc (macOS) or apt-get install pandoc (Linux)"
+    echo "  -> Without pandoc, .docx extraction will fall back to XML parsing (less reliable)."
+fi
+
+echo ""
+
+# -------------------------------------------------------------------
+# Step 3: Build browse binary (if bun is installed and source exists)
 # -------------------------------------------------------------------
 
 BROWSE_SRC="$COUNSEL_DIR/browse/src"
@@ -95,7 +111,7 @@ fi
 echo ""
 
 # -------------------------------------------------------------------
-# Step 3: Summary
+# Step 4: Summary
 # -------------------------------------------------------------------
 
 echo "Setup Complete"

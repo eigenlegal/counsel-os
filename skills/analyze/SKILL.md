@@ -20,35 +20,17 @@ Before starting analysis, verify:
 
 ## Step 1: Load the Playbook
 
-Based on the matter type from intake, load the matching playbook from `knowledge/defaults/playbooks/`:
+Based on the matter type from intake, load the matching playbook from `knowledge/defaults/playbooks/`. Look for a file whose name corresponds to the matter type (e.g., `playbooks/contract-review.md` for a contract review, `playbooks/nda-triage.md` for an NDA).
 
-| Matter Type | Playbook |
-|------------|----------|
-| contract-review | `playbooks/contract-review.md` |
-| nda-triage | `playbooks/nda-triage.md` |
-| negotiation | `playbooks/negotiation.md` |
-| compliance | `playbooks/compliance-review.md` |
-| dispute | `playbooks/dispute-response.md` |
-| policy | `playbooks/policy-review.md` |
-| diligence | `playbooks/due-diligence.md` |
-| governance | `playbooks/governance.md` |
-| memo | `playbooks/legal-memo.md` |
-| amendment | `playbooks/amendment-review.md` |
-| vendor-onboarding | `playbooks/vendor-onboarding.md` |
-
-If the playbook file doesn't exist yet, proceed with the general analysis framework below. Note the gap for future content development.
+If the playbook file doesn't exist for this matter type, proceed with the general analysis framework below. Note the gap for future content development.
 
 ## Step 2: Load Applicable Checklists
 
-Check `knowledge/defaults/checklists/` for checklists matching the matter type. Load them to ensure completeness — checklists catch items that might be missed in clause-by-clause review.
+Check `knowledge/defaults/checklists/` for checklists matching the matter type. Load all that apply — checklists catch items that might be missed in clause-by-clause review.
 
-Common checklists:
-- `checklists/saas-agreement.md` — for SaaS/cloud service agreements
-- `checklists/nda.md` — for NDAs
-- `checklists/vendor-agreement.md` — for vendor/procurement contracts
-- `checklists/employment.md` — for employment agreements
-- `checklists/data-processing.md` — for DPAs
-- `checklists/corporate-transaction.md` — for M&A and investment docs
+Look for a checklist file whose name corresponds to the matter type or document type (e.g., `checklists/saas-agreement.md` for a SaaS deal, `checklists/nda.md` for an NDA). Multiple checklists may apply to a single matter.
+
+**Priority tiers in checklists:** Checklists include priority tier guidance (Tier 1 / Tier 2 / Tier 3) for each item. Use these tiers as input when assigning priority in Step 3f — if a checklist marks an item as Tier 1, treat a gap in that area as higher priority than one the checklist marks as Tier 3.
 
 ## Step 3: Execute Clause-by-Clause Analysis
 
