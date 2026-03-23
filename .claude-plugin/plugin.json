@@ -1,7 +1,7 @@
 {
   "name": "counsel-os",
   "description": "Legal operating system — a pipeline-based legal practice tool with 5-layer knowledge system, auto-detection of applicable law, and institutional memory. For solo practitioners, law firms, and in-house counsel.",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "author": {
     "name": "Eigen Legal"
   }

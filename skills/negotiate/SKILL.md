@@ -41,7 +41,7 @@ Draft the specific language change. This should be:
 - **Anchored to our effective position:** Propose what we actually want, not a pre-compromised middle ground
 - **Legally sound:** Check against loaded law area requirements
 
-Pull counter-language from `knowledge/defaults/clause-library/` where available. The clause library contains proven language that has been accepted in past negotiations.
+Pull counter-language from `knowledge/defaults/clause-library.md` where available. The clause library contains proven language that has been accepted in past negotiations.
 
 Format:
 ```

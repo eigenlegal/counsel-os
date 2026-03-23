@@ -72,7 +72,7 @@ Updated law areas:
 ```
 
 ### New Default Positions
-If new position files were added under `knowledge/defaults/positions/`:
+If new position sections were added to `knowledge/defaults/positions.md`:
 ```
 New default positions:
 - [filename].md — [description of what positions it covers]
@@ -89,9 +89,9 @@ Updated default positions:
 ### New or Updated Playbooks, Checklists, Clause Library
 
 For each category, list new or changed files with a brief description. Pay attention to:
-- **New clause library categories** — new files in `knowledge/defaults/clause-library/` represent entirely new clause types with standard language and vendor-favorable variants.
-- **Priority tier additions to checklists** — if checklists gained priority tier guidance (Tier 1/2/3), note this as a structural change that affects how the analyze phase assigns priority.
-- **New playbooks** — new files in `knowledge/defaults/playbooks/` mean new matter types can now be handled with step-by-step guidance.
+- **New clause library categories** — new sections in `knowledge/defaults/clause-library.md` represent entirely new clause types with standard language and vendor-favorable variants.
+- **Priority tier additions to checklists** — if `knowledge/defaults/checklists.md` gained priority tier guidance (Tier 1/2/3), note this as a structural change that affects how the analyze phase assigns priority.
+- **New playbooks** — new sections in `knowledge/defaults/playbooks.md` mean new matter types can now be handled with step-by-step guidance.
 
 ```
 New playbooks:
@@ -115,7 +115,7 @@ This is the critical step. Review whether any updated defaults affect the user's
 
 ### Position Conflict Check
 
-For each updated file in `knowledge/defaults/positions/`:
+For each updated section in `knowledge/defaults/positions.md`:
 1. Read the updated default position
 2. Check if `knowledge/practice/positions.md` has an override for this clause type
 3. If yes: compare the practice override against the new default

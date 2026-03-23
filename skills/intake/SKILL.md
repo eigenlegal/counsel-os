@@ -107,9 +107,9 @@ Based on the document and context, classify into one of these matter types. The 
 
 Classify into the matter type that best fits the document or matter. The matter type determines which playbook to load in the analyze phase.
 
-To find the matching playbook, look for a file in `knowledge/defaults/playbooks/` whose name corresponds to the matter type (e.g., a contract review maps to `playbooks/contract-review.md`, an NDA maps to `playbooks/nda-triage.md`).
+To find the matching playbook, look for a section heading in `knowledge/defaults/playbooks.md` that corresponds to the matter type (e.g., a contract review maps to "## Contract Review", an NDA maps to "## Nda Triage").
 
-Common matter types include: contract-review, nda-triage, negotiation, compliance, dispute, policy, diligence, governance, memo, amendment, vendor-onboarding — but the available playbooks may expand over time, so always check what's in the directory.
+Common matter types include: contract-review, nda-triage, negotiation, compliance, dispute, policy, diligence, governance, memo, amendment, vendor-onboarding — but the available playbooks may expand over time, so always check the file's section headings.
 
 If the matter doesn't fit cleanly, choose the closest match and note the deviation. If no playbook exists for the matter type, proceed with the general analysis framework and note the gap.
 
@@ -117,7 +117,7 @@ If the matter doesn't fit cleanly, choose the closest match and note the deviati
 
 For each clause type that is likely relevant to this matter, build the effective position by merging across knowledge layers:
 
-1. **Start with defaults:** Load `knowledge/defaults/positions/<clause-type>.md`
+1. **Start with defaults:** Load the relevant clause type section from `knowledge/defaults/positions.md`
 2. **Overlay practice:** Check `knowledge/practice/positions.md` for overrides. Practice positions win on conflict with defaults.
 3. **Overlay matters:** Check `knowledge/matters/counterparties/<name>.md` for deal-specific overrides. Matters positions win on conflict with practice.
 4. **Check against law:** Cross-reference against all loaded `knowledge/law/` areas. Law constraints ALWAYS win — if a position conflicts with law, flag it as RED and cite the specific regulation.

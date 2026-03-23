@@ -1,6 +1,6 @@
 # Practice Positions
 
-This file overrides entries in `knowledge/defaults/positions/`. For any clause type listed here, your position takes precedence over the market-standard default. If a clause type is NOT listed here, the default position applies.
+This file overrides entries in `knowledge/defaults/positions.md`. For any clause type listed here, your position takes precedence over the market-standard default. If a clause type is NOT listed here, the default position applies.
 
 Format for each position:
 
