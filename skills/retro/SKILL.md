@@ -156,7 +156,27 @@ Reason: [gap identified during the period]
 Priority: [high/medium/low]
 ```
 
-## Step 8: Save Retro Snapshot
+## Step 8: Knowledge Base Health Audit
+
+The retro audits the health of the knowledge base but does NOT perform maintenance directly — that's the close skill's job. Flag issues here; fix them via `/counsel-os:close`.
+
+### Log Bloat
+- Count entries in `decisions.md`, `exceptions.md`, and `patterns.md`
+- If any log exceeds 30 entries, flag: "Decision log has [N] entries. Run `/counsel-os:close` to prune superseded and non-precedent entries."
+
+### Counterparty File Size
+- Check line counts on all counterparty files
+- If any executed counterparty file exceeds ~100 lines, flag: "[Counterparty] file is [N] lines with no active deals. Run `/counsel-os:close` to compress and move detailed history to the deal folder."
+
+### Missing Agreement Summaries
+- For each counterparty marked "Executed," check if the user has a detailed agreement summary in their deal folder
+- If not, flag: "No detailed agreement summary found for [counterparty]. Consider generating one via `/counsel-os:close`."
+
+### Stale Index Entries
+- Check `_index.md` for counterparties still listed as "Negotiating" that may have been executed or abandoned
+- Flag any mismatches
+
+## Step 9: Save Retro Snapshot
 
 Offer to save the retro results for future comparison:
 

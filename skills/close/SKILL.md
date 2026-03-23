@@ -216,6 +216,80 @@ For each update the user approves:
 - [Any pending items, future review dates, or process improvements]
 ```
 
+## Step 5: Scale Management
+
+As matters accumulate, the knowledge base needs to stay lean enough for Claude to load efficiently. Run these checks at the end of every close.
+
+### 5a. Prune Decision and Exception Logs
+
+Review `decisions.md` and `exceptions.md` for entries that are no longer load-bearing:
+
+- **Superseded decisions:** A later decision on the same clause type with the same counterparty replaces the earlier one. Remove the older entry.
+- **Non-precedent exceptions:** Entries marked as low precedent risk that haven't been cited in any subsequent matter can be removed after 6 months.
+- **Duplicate patterns:** If a pattern entry in `patterns.md` restates something already captured in a counterparty file's negotiation notes, remove the pattern entry.
+
+For each proposed removal, show the entry and explain why it's safe to remove. Always ask before deleting.
+
+### 5b. Compress Executed Counterparty Files
+
+When marking a counterparty as executed with no active deals:
+
+1. Check if the counterparty file exceeds ~100 lines
+2. If so, offer to move detailed negotiation history (round-by-round notes, drafting details, tactical observations) to a summary document in the user's deal folder
+3. Keep only the **operating summary** in the counterparty file: relationship metadata, entity map, agreement structure, agreed positions table, key flags, and negotiation style notes
+
+```
+The Turnkey counterparty file is [N] lines. Want me to move the detailed
+negotiation history to your deal folder and keep just the operating summary here?
+
+Counterparty file keeps: entity map, agreement structure, agreed positions, flags
+Deal folder gets: full negotiation history, round-by-round notes, tactical details
+```
+
+### 5c. Detailed Agreement Summary & Negotiation History
+
+After marking a matter as executed, offer to generate a comprehensive deal summary for the deal folder. This is separate from the counterparty file's operating summary — it's the full record.
+
+```
+Want me to generate a detailed deal summary for the deal folder? This includes:
+1. Negotiation history — how we got here
+2. Full agreement summary — what the executed agreement says
+```
+
+If yes, generate a single document with two parts:
+
+**Part 1: Negotiation History**
+
+Review all available redline versions, conversation context, and the decisions/exceptions logged for this matter. Produce a chronological account:
+
+- Timeline of rounds (dates, who sent what)
+- Key issues raised at each round and how they were resolved
+- What we asked for, what we got, what we conceded, and why
+- Turning points — where leverage shifted or positions changed
+- Final open items and how they closed
+
+This is the institutional memory of *how* the deal got done — useful for renewals, similar future negotiations, and onboarding anyone who needs context.
+
+**Part 2: Executed Agreement Summary**
+
+Full clause-by-clause walkthrough of the final executed agreement:
+
+- Section-by-section summary of what each provision says (plain language, not just restating the legal text)
+- Flag any non-standard or unusual provisions
+- Note where the agreement deviates from practice positions
+- Cross-reference to exceptions log entries where applicable
+- Highlight any time-sensitive obligations (notice periods, renewal deadlines, reporting requirements)
+
+Save the combined document to the user's deal folder (not in the knowledge base). The counterparty file in `knowledge/matters/counterparties/` keeps only the operating summary.
+
+### 5d. Index Health Check
+
+Check `_index.md`:
+- Are all counterparty statuses current?
+- Are there counterparties listed as "Negotiating" that should be "Executed" or "Archived"?
+- Is the active deals table accurate?
+- Flag if the index exceeds 100 lines and suggest consolidating inactive counterparties.
+
 ## Running Close Independently
 
 The close skill can also be invoked outside the pipeline to:
