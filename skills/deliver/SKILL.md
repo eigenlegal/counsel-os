@@ -56,7 +56,7 @@ If the user requests a specific format, use that instead. Common requests:
 
 ## Step 2: Apply Voice Styling
 
-Load `knowledge/practice/voice.md` and apply the user's preferences:
+Load `practice/voice.md` and apply the user's preferences:
 
 1. **Tone:** Match the specified tone (e.g., professional but approachable, formal, direct)
 2. **Structure:** Follow structure patterns (e.g., executive summary first, bullets over paragraphs)
