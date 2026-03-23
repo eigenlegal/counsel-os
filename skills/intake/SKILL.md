@@ -88,7 +88,7 @@ Ask targeted questions to understand the matter. Do NOT ask all of these — inf
 1. **Which side are we on?** Are we the vendor/licensor/service provider, or the customer/licensee/recipient? (Often clear from the document.)
 2. **Urgency?** What's the timeline? Is there a signing deadline?
 3. **Focus areas?** Are there specific clauses or issues the user wants to prioritize? Or is this a full review?
-4. **Deal context?** Is this a new relationship or an existing counterparty? What's the deal value? Is there a counterparty file in `knowledge/matters/counterparties/`?
+4. **Deal context?** Is this a new relationship or an existing counterparty? What's the deal value? Is there a counterparty file in `matters/counterparties/`?
 5. **Any special instructions?** Anything unusual about this matter?
 
 Be efficient. If the document clearly shows we're reviewing a vendor's SaaS agreement as the customer, don't ask "which side are we on?" — just confirm your understanding.
@@ -128,8 +128,8 @@ If the matter doesn't fit cleanly, choose the closest match and note the deviati
 For each clause type that is likely relevant to this matter, build the effective position by merging across knowledge layers:
 
 1. **Start with defaults:** Load the relevant clause type section from `knowledge/defaults/positions.md`
-2. **Overlay practice:** Check `knowledge/practice/positions.md` for overrides. Practice positions win on conflict with defaults.
-3. **Overlay matters:** Check `knowledge/matters/counterparties/<name>.md` for deal-specific overrides. Matters positions win on conflict with practice.
+2. **Overlay practice:** Check `practice/positions.md` for overrides. Practice positions win on conflict with defaults.
+3. **Overlay matters:** Check `matters/counterparties/<name>.md` for deal-specific overrides. Matters positions win on conflict with practice.
 4. **Check against law:** Cross-reference against all loaded `knowledge/law/` areas. Law constraints ALWAYS win — if a position conflicts with law, flag it as RED and cite the specific regulation.
 
 Document the effective position for each relevant clause type:
