@@ -119,7 +119,7 @@ This is the most detailed step. Walk through each default position and ask for o
 
 ### Walk through each default position:
 
-For each file in `knowledge/defaults/positions/`:
+For each clause type section in `knowledge/defaults/positions.md`:
 1. Read the default position
 2. Present a summary to the user
 3. Ask: "Does this match your practice, or do you have different standards?"

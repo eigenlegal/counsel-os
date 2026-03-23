@@ -155,7 +155,7 @@ Suggested starting point:
 **Auto-escalate:** [suggested triggers]
 ```
 
-### 2f. Clause Language — `knowledge/defaults/clause-library/`
+### 2f. Clause Language — `knowledge/defaults/clause-library.md`
 
 Did any particularly effective clause language emerge?
 
