@@ -74,6 +74,8 @@ PRODUCT_FILES=(
     "restore"
     "setup"
     "package.json"
+    "config.md"
+    ".claude-plugin/plugin.json"
 )
 
 if git rev-parse --is-inside-work-tree &>/dev/null; then
