@@ -21,17 +21,17 @@ This ensures both Claude Code and Cowork can access the same knowledge base via 
 
 Check whether the user's content directories already exist:
 
-1. **`knowledge/practice/`** — Does it exist? Are the files populated or empty templates?
-2. **`knowledge/matters/`** — Does it exist? Is `_index.md` populated?
-3. **`knowledge/memory/`** — Does it exist? Are the log files created?
+1. **`practice/`** — Does it exist in the Obsidian vault? Are the files populated or empty templates?
+2. **`matters/`** — Does it exist? Is `_index.md` populated?
+3. **`memory/`** — Does it exist? Are the log files created?
 
 ### If directories don't exist:
 
-Copy from templates:
+Copy templates to the Obsidian vault:
 ```
-templates/practice/ → knowledge/practice/
-templates/matters/  → knowledge/matters/
-templates/memory/   → knowledge/memory/
+templates/practice/ → {user_data_path}/practice/
+templates/matters/  → {user_data_path}/matters/
+templates/memory/   → {user_data_path}/memory/
 ```
 
 Run the setup script if available:
@@ -51,7 +51,7 @@ The user has already completed setup. Ask:
 > (B) Start fresh (this will overwrite your current settings)
 > (C) Just check that everything looks good
 
-## Step 2: Identity — `knowledge/practice/identity.md`
+## Step 2: Identity — `practice/identity.md`
 
 Walk through each section conversationally. Don't dump all questions at once — ask 2-3 at a time.
 
@@ -76,7 +76,7 @@ Walk through each section conversationally. Don't dump all questions at once —
 After gathering responses, write the completed `identity.md` file and show the user:
 > Here's your identity profile. Anything you'd like to change?
 
-## Step 3: Principles — `knowledge/practice/principles.md`
+## Step 3: Principles — `practice/principles.md`
 
 ### Legal philosophy:
 > Now let's calibrate your legal philosophy. This determines how I approach every matter.
@@ -113,7 +113,7 @@ After gathering responses, write the completed `identity.md` file and show the u
 
 Write the completed `principles.md` and confirm.
 
-## Step 4: Positions — `knowledge/practice/positions.md`
+## Step 4: Positions — `practice/positions.md`
 
 This is the most detailed step. Walk through each default position and ask for overrides.
 
@@ -151,7 +151,7 @@ After completing all positions:
 > Here are your position overrides. For any clause type not listed, the market-standard
 > default will apply. Want to adjust anything?
 
-## Step 5: Voice — `knowledge/practice/voice.md`
+## Step 5: Voice — `practice/voice.md`
 
 ### Quick calibration:
 > Let's set your writing style preferences. These affect how I draft memos,
@@ -172,7 +172,7 @@ After completing all positions:
 
 Write the completed `voice.md` and confirm.
 
-## Step 6: Thresholds — `knowledge/practice/thresholds.md`
+## Step 6: Thresholds — `practice/thresholds.md`
 
 ### Review tracks:
 > Last major section: escalation thresholds. These determine which matters I flag
@@ -248,6 +248,6 @@ Your Counsel OS practice profile is configured:
 You're ready to go. Start with `/counsel-os:intake` on your next contract or matter.
 
 To update your profile later, you can either:
-- Edit the files directly in knowledge/practice/
+- Edit the files directly in the Obsidian vault (Counsel OS/practice/)
 - Run `/counsel-os:setup` again to walk through the guided process
 ```
