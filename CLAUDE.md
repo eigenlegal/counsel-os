@@ -75,7 +75,7 @@ PRECEDENCE (highest to lowest):
 
 **Step 3: Auto-detect applicable law areas.**
 
-Before analysis, scan the document or matter description against trigger conditions in each `knowledge/law/*/overview.md` file. Load ALL areas that match — not just one. Within each area, load specific sub-files based on the sub-topic triggers in the overview.
+Before analysis, scan the document or matter description against trigger conditions in each `knowledge/law/<area>.md` file. Each law area is a single consolidated file. Load ALL areas that match — not just one.
 
 **Step 4: Build effective positions.**
 
@@ -83,7 +83,7 @@ For each clause type under review:
 1. Start with `knowledge/defaults/positions/<clause-type>.md`
 2. Overlay `knowledge/practice/positions.md` (practice wins on conflict)
 3. Overlay `knowledge/matters/counterparties/<name>.md` if it exists (matters wins on conflict)
-4. Check against `knowledge/law/*/` constraints (law always wins — flag violations as RED)
+4. Check against `knowledge/law/*.md` constraints (law always wins — flag violations as RED)
 
 **Step 5: Execute the appropriate playbook.**
 
@@ -130,32 +130,13 @@ skills/                                    # Pipeline skills
 
 knowledge/
   law/                                     # Layer 1: Hard constraints (PRODUCT CONTENT)
-    data-privacy/                          # GDPR, CCPA, COPPA, state privacy, international, breach notification, transfers, DPAs
-    consumer-protection/                   # FTC/UDAP, TCPA, CAN-SPAM, auto-renewal, dark patterns, endorsements, Magnuson-Moss
-    corporate/                             # Entity formation, fiduciary duties, governance, M&A, investment, shareholder agreements
-    employment/                            # At-will, contractors, non-competes, wage-and-hour, discrimination, benefits, severance, immigration
-    ip-and-technology/                     # Patents, trademarks, copyrights, trade secrets, SaaS, open source, domain names
-    securities/                            # Exemptions, equity issuance, blue sky, insider trading, public company, crowdfunding
-    financial-services/                    # Payments, KYC/AML, banking, lending, fintech, cryptocurrency, PCI DSS
-    litigation/                            # Demand letters, subpoenas, e-discovery, settlement, class actions, arbitration, privilege
-    antitrust/                             # Horizontal/vertical restraints, monopolization, merger review, state antitrust
-    insurance/                             # CGL, professional liability, cyber, D&O, EPLI, coverage analysis, claims procedures
-    international-trade/                   # Sanctions, export controls, customs, anti-boycott, CFIUS, anti-corruption (FCPA)
-    product-counseling/                    # Product liability, recalls, warnings/labels, consumer product safety
-    ai-and-automation/                     # EU AI Act, US state AI laws, algorithmic accountability, training data, model ownership
-    tax/                                   # Sales tax/VAT, withholding, transfer pricing, international tax, equity compensation
-    real-estate/                           # Commercial leases, zoning, construction, environmental covenants, easements, transactions
-    environmental-esg/                     # Climate disclosure, environmental liability, ESG reporting, sustainability, due diligence
-    bankruptcy-restructuring/              # Automatic stay, executory contracts, preferences, IP in bankruptcy, safe harbors
-    government-contracts/                  # FAR/DFAR, procurement, compliance certifications, FOIA, sovereign immunity
-    healthcare/                            # HIPAA, Stark Law, Anti-Kickback, provider agreements, FDA, telehealth
-    advertising-media/                     # Advertising standards, content licensing, right of publicity, influencer, defamation
-    nonprofit/                             # Tax-exempt status, charitable solicitation, donor restrictions, UBIT, governance
-    cybersecurity/                         # NIST frameworks, SEC cyber disclosure, CMMC, state breach laws, incident response
-    white-collar-investigations/           # Internal investigations, whistleblower, DOJ cooperation, compliance programs, FCPA enforcement
-    accessibility/                         # ADA Title III, Section 508, WCAG, website accessibility litigation, state laws
-    franchise/                             # FTC Franchise Rule, state franchise laws, franchise agreements, relationship laws
-    labor-relations/                       # NLRA, collective bargaining, union organizing, strikes and lockouts
+    <area>.md                              # Each law area is a single consolidated file (26 areas)
+                                           # Areas: accessibility, advertising-media, ai-and-automation, antitrust,
+                                           # bankruptcy-restructuring, consumer-protection, corporate, cybersecurity,
+                                           # data-privacy, employment, environmental-esg, financial-services, franchise,
+                                           # government-contracts, healthcare, insurance, international-trade,
+                                           # ip-and-technology, labor-relations, litigation, nonprofit,
+                                           # product-counseling, real-estate, securities, tax, white-collar-investigations
 
   defaults/                                # Layer 4: Market standards (PRODUCT CONTENT)
     positions/                             # Default clause positions (24 types)
