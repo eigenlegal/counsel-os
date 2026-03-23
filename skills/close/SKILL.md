@@ -36,7 +36,7 @@ Summarize what was done in this matter:
 
 Review the work product and conversation for updates worth capturing. For each potential update, determine the category and show what would change. **Always ask for approval before writing anything.**
 
-### 2a. Decisions — `knowledge/memory/decisions.md`
+### 2a. Decisions — `memory/decisions.md`
 
 Did the user make a significant legal decision during this matter?
 
@@ -60,7 +60,7 @@ Proposed entry:
 **Decided by:** [who]
 ```
 
-### 2b. Exceptions — `knowledge/memory/exceptions.md`
+### 2b. Exceptions — `memory/exceptions.md`
 
 Did the user deviate from their standard positions?
 
@@ -85,7 +85,7 @@ Proposed entry:
 **One-time or precedent:** [assessment]
 ```
 
-### 2c. Patterns — `knowledge/memory/patterns.md`
+### 2c. Patterns — `memory/patterns.md`
 
 Did anything notable emerge that's worth tracking?
 
@@ -109,7 +109,7 @@ Proposed entry:
 **Implication:** [what it means for future work]
 ```
 
-### 2d. New Counterparty — `knowledge/matters/counterparties/`
+### 2d. New Counterparty — `matters/counterparties/`
 
 Is this a counterparty we haven't dealt with before?
 
@@ -118,7 +118,7 @@ If no counterparty file exists, propose creating one:
 ```
 This is our first matter with [counterparty]. Should I create a counterparty file?
 
-Proposed file: knowledge/matters/counterparties/[name].md
+Proposed file: matters/counterparties/[name].md
 
 # [Counterparty Name]
 
@@ -149,7 +149,7 @@ Proposed additions:
 - Notes: [any new observations]
 ```
 
-### 2e. Position Gap — `knowledge/practice/positions.md`
+### 2e. Position Gap — `practice/positions.md`
 
 Did this matter expose a clause type not covered in the user's positions?
 

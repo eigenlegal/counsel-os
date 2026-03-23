@@ -26,7 +26,7 @@ Before starting negotiation preparation, verify:
 
 2. **Effective positions are loaded.** You need the merged positions to know what to propose.
 
-3. **Voice preferences are loaded.** Redline comments and negotiation memos should match the user's preferred tone and style from `knowledge/practice/voice.md`.
+3. **Voice preferences are loaded.** Redline comments and negotiation memos should match the user's preferred tone and style from `practice/voice.md`.
 
 ## Step 1: Identify Negotiation Items
 

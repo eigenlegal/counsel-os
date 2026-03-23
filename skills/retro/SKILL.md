@@ -24,18 +24,18 @@ This ensures both Claude Code and Cowork can access the same knowledge base via 
 Read all available data sources:
 
 ### Memory Files
-1. **`knowledge/memory/decisions.md`** — All logged decisions with rationale and outcomes
-2. **`knowledge/memory/exceptions.md`** — All deviations from standard positions
-3. **`knowledge/memory/patterns.md`** — Previously captured observations and insights
+1. **`memory/decisions.md`** — All logged decisions with rationale and outcomes
+2. **`memory/exceptions.md`** — All deviations from standard positions
+3. **`memory/patterns.md`** — Previously captured observations and insights
 
 ### Matter Files
-4. **All files in `knowledge/matters/counterparties/`** — Counterparty history, agreed positions, and notes
-5. **All files in `knowledge/matters/deals/`** — Deal-specific context and outcomes (if any remain from active matters)
-6. **`knowledge/matters/_index.md`** — Counterparty registry and relationship categories
+4. **All files in `matters/counterparties/`** — Counterparty history, agreed positions, and notes
+5. **All files in `matters/deals/`** — Deal-specific context and outcomes (if any remain from active matters)
+6. **`matters/_index.md`** — Counterparty registry and relationship categories
 
 ### Practice Files (for comparison)
-7. **`knowledge/practice/positions.md`** — Current standard positions (to compare against actual decisions)
-8. **`knowledge/practice/thresholds.md`** — Current escalation criteria (to assess if thresholds are calibrated correctly)
+7. **`practice/positions.md`** — Current standard positions (to compare against actual decisions)
+8. **`practice/thresholds.md`** — Current escalation criteria (to assess if thresholds are calibrated correctly)
 
 If any files are empty or don't exist, note the gap but continue with available data. The retro is most valuable when there's enough data to identify patterns (typically after 10+ matters).
 
@@ -191,10 +191,10 @@ The retro audits the health of the knowledge base but does NOT perform maintenan
 Offer to save the retro results for future comparison:
 
 ```
-Should I save this retro snapshot? It will be stored in knowledge/memory/ for trend
+Should I save this retro snapshot? It will be stored in memory/ for trend
 tracking in future retros.
 
-Proposed file: knowledge/memory/retro-[YYYY-MM-DD].md
+Proposed file: memory/retro-[YYYY-MM-DD].md
 ```
 
 The snapshot should include:

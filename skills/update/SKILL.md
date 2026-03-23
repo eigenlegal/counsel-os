@@ -30,7 +30,7 @@ Execute the update script:
 The update script will:
 1. Pull the latest changes from the remote repository
 2. Show which files changed in `knowledge/law/` and `knowledge/defaults/`
-3. Verify that `knowledge/practice/`, `knowledge/matters/`, and `knowledge/memory/` were not modified
+3. Confirm user data in Obsidian vault is unaffected
 
 If the update script doesn't exist or fails, perform the update manually:
 
@@ -117,7 +117,7 @@ This is the critical step. Review whether any updated defaults affect the user's
 
 For each updated section in `knowledge/defaults/positions.md`:
 1. Read the updated default position
-2. Check if `knowledge/practice/positions.md` has an override for this clause type
+2. Check if `practice/positions.md` (in the Obsidian vault) has an override for this clause type
 3. If yes: compare the practice override against the new default
 4. Flag if the update changes the baseline that the practice position was built on
 
@@ -153,27 +153,7 @@ For each new file (not just updated):
 2. Note if it's relevant to the user's practice (based on their identity and matter history)
 3. Suggest reviewing if relevant
 
-## Step 5: Safety Verification
-
-Verify that user content was not modified:
-
-```bash
-# These directories should have NO changes from the update
-git diff --name-only HEAD~1..HEAD -- knowledge/practice/ knowledge/matters/ knowledge/memory/
-```
-
-If any user content files were modified, **alert the user immediately:**
-
-```
-WARNING: The update modified files in your practice data:
-- knowledge/practice/positions.md was changed
-
-This should NOT happen. Your practice data is protected from product updates.
-Please review the changes and restore from backup if needed:
-  git checkout HEAD~1 -- knowledge/practice/positions.md
-```
-
-## Step 6: Output the Update Summary
+## Step 5: Output the Update Summary
 
 ```
 ## Update Summary
@@ -193,10 +173,8 @@ Please review the changes and restore from backup if needed:
 - [N] new law constraints to be aware of
 - No conflicts detected / [N] conflicts require attention
 
-### User Content Status
-- [x] knowledge/practice/ — untouched
-- [x] knowledge/matters/ — untouched
-- [x] knowledge/memory/ — untouched
+### User Content
+User data lives in Obsidian vault — not affected by product updates.
 
 ### Recommended Actions
 1. [Review updated position X against your practice override]
