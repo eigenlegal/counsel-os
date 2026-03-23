@@ -290,7 +290,16 @@ Full clause-by-clause walkthrough of the final executed agreement:
 - Cross-reference to exceptions log entries where applicable
 - Highlight any time-sensitive obligations (notice periods, renewal deadlines, reporting requirements)
 
-Save the combined document to the user's deal folder (not in the knowledge base). The counterparty file in `knowledge/matters/counterparties/` keeps only the operating summary.
+Ask the user where to save the summary:
+
+```
+Where should I save the deal summary?
+- Current directory: [show current working directory]
+- Obsidian vault: Counsel OS/deals/[counterparty-name]/
+- Other: specify a path
+```
+
+Default suggestion is the current working directory. Save to wherever the user specifies. The counterparty file in the Obsidian vault keeps only the operating summary.
 
 ### 5d. Index Health Check
 

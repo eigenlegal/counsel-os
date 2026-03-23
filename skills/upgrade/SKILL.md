@@ -42,12 +42,12 @@ The `update` script handles both git-repo and plugin-cache modes automatically:
 ```
 
 The script will:
-- Back up user content (knowledge/practice, knowledge/matters, knowledge/memory)
 - Detect whether it's in a git repo or plugin cache
 - If git repo: `git fetch && git merge origin/main`
 - If plugin cache: find the git source repo, pull there, then rsync product content (skills, knowledge/defaults, knowledge/law, templates, top-level files) into the cache
 - Show what changed
-- Verify user content is untouched
+
+User data lives in the Obsidian vault at `/Users/jackwang/Documents/Obsidian Vault/Counsel OS/` and is not affected by product updates.
 
 If the script can't find the source repo in plugin-cache mode, it will print instructions for creating a `.source-repo` file pointing to the git clone.
 
@@ -66,20 +66,21 @@ fi
 
 ## Step 4: Verify User Content
 
-After the update, check whether user content is still intact:
+After the update, verify user data in the Obsidian vault is intact:
 
 ```bash
+USER_DATA="/Users/jackwang/Documents/Obsidian Vault/Counsel OS"
 for dir in practice matters memory; do
-  if [ -d "$COUNSEL_DIR/knowledge/$dir" ]; then
-    file_count=$(find "$COUNSEL_DIR/knowledge/$dir" -type f ! -name '.gitkeep' | wc -l | tr -d ' ')
-    echo "knowledge/$dir/ — $file_count files"
+  if [ -d "$USER_DATA/$dir" ]; then
+    file_count=$(find "$USER_DATA/$dir" -type f ! -name '.gitkeep' | wc -l | tr -d ' ')
+    echo "$dir/ — $file_count files"
   else
-    echo "knowledge/$dir/ — MISSING"
+    echo "$dir/ — MISSING"
   fi
 done
 ```
 
-If any user content directory is missing or empty (0 files, excluding .gitkeep), restore from the backup:
+User data should not be affected by product updates (it lives outside the plugin cache). If anything is missing, restore from backup:
 
 ```bash
 "$COUNSEL_DIR/restore"
@@ -90,6 +91,6 @@ If any user content directory is missing or empty (0 files, excluding .gitkeep),
 Tell the user:
 - What version they're now on
 - What changed (summary)
-- That their practice data is safe (or was restored from backup)
+- That their practice data in the Obsidian vault is unaffected
 - Whether the update ran in git-repo or plugin-cache mode
 - Any action needed (e.g., "New position file added — run `/counsel-os:setup` to review")
