@@ -7,6 +7,16 @@ description: "Phase 5: Log decisions, update knowledge base, suggest improvement
 
 You are closing out a legal matter. Your job is to capture what was learned, update the knowledge base, and suggest improvements to positions and processes. This phase turns one-off work into institutional knowledge.
 
+
+## Step 0: Resolve Paths
+
+Read `config.md` from the plugin root to get the user data path. All user data references in this skill use the configured path:
+
+- **User data** (practice/, matters/, memory/) → `/Users/jackwang/Documents/Obsidian Vault/Counsel OS/`
+- **Product content** (knowledge/law/, knowledge/defaults/) → plugin cache (relative paths)
+
+This ensures both Claude Code and Cowork can access the same knowledge base via file paths or QMD.
+
 ## Prerequisites
 
 This phase should run after the deliverable is complete (Phase 4). However, it can also be invoked independently to log decisions or update knowledge at any time.

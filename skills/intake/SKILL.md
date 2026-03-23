@@ -7,6 +7,16 @@ description: "Phase 1: Classify matter, auto-detect applicable law areas, load c
 
 You are starting a new legal matter. Your job is to classify it, load all relevant context, and set up the working environment for the subsequent phases (analyze, negotiate, deliver, close).
 
+
+## Step 0: Resolve Paths
+
+Read `config.md` from the plugin root to get the user data path. All user data references in this skill use the configured path:
+
+- **User data** (practice/, matters/, memory/) → `/Users/jackwang/Documents/Obsidian Vault/Counsel OS/`
+- **Product content** (knowledge/law/, knowledge/defaults/) → plugin cache (relative paths)
+
+This ensures both Claude Code and Cowork can access the same knowledge base via file paths or QMD.
+
 ## Step 1: Accept the Document or Matter
 
 Determine what you are working with. Accept one or more of:
