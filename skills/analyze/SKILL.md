@@ -20,13 +20,13 @@ Before starting analysis, verify:
 
 ## Step 1: Load the Playbook
 
-Based on the matter type from intake, load the matching playbook from `knowledge/defaults/playbooks/`. Look for a file whose name corresponds to the matter type (e.g., `playbooks/contract-review.md` for a contract review, `playbooks/nda-triage.md` for an NDA).
+Based on the matter type from intake, load the matching playbook section from `knowledge/defaults/playbooks.md`. Look for a heading that corresponds to the matter type (e.g., "## Contract Review" for a contract review, "## Nda Triage" for an NDA).
 
 If the playbook file doesn't exist for this matter type, proceed with the general analysis framework below. Note the gap for future content development.
 
 ## Step 2: Load Applicable Checklists
 
-Check `knowledge/defaults/checklists/` for checklists matching the matter type. Load all that apply — checklists catch items that might be missed in clause-by-clause review.
+Check `knowledge/defaults/checklists.md` for checklist sections matching the matter type. Load all that apply — checklists catch items that might be missed in clause-by-clause review.
 
 Look for a checklist file whose name corresponds to the matter type or document type (e.g., `checklists/saas-agreement.md` for a SaaS deal, `checklists/nda.md` for an NDA). Multiple checklists may apply to a single matter.
 

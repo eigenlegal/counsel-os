@@ -80,14 +80,14 @@ Before analysis, scan the document or matter description against trigger conditi
 **Step 4: Build effective positions.**
 
 For each clause type under review:
-1. Start with `knowledge/defaults/positions/<clause-type>.md`
+1. Start with the relevant clause type section in `knowledge/defaults/positions.md`
 2. Overlay `knowledge/practice/positions.md` (practice wins on conflict)
 3. Overlay `knowledge/matters/counterparties/<name>.md` if it exists (matters wins on conflict)
 4. Check against `knowledge/law/*.md` constraints (law always wins — flag violations as RED)
 
 **Step 5: Execute the appropriate playbook.**
 
-Load the playbook from `knowledge/defaults/playbooks/` that matches the matter type. Follow it step by step. Reference checklists, clause library, and comparison tables as needed.
+Load the matching playbook section from `knowledge/defaults/playbooks.md`. Follow it step by step. Reference `knowledge/defaults/checklists.md` and `knowledge/defaults/clause-library.md` as needed.
 
 ---
 
@@ -106,7 +106,7 @@ Suggest knowledge updates when relevant. Always ask before making changes.
 
 You can update the knowledge base at any time:
 - "Update the liability position" → edit `knowledge/practice/positions.md`
-- "Add this clause to the library" → edit the relevant file in `knowledge/defaults/clause-library/`
+- "Add this clause to the library" → edit the relevant section in `knowledge/defaults/clause-library.md`
 - "Create a context file for [counterparty]" → create new file in `knowledge/matters/counterparties/`
 - "Log this decision" → append to `knowledge/memory/decisions.md`
 
@@ -139,15 +139,15 @@ knowledge/
                                            # product-counseling, real-estate, securities, tax, white-collar-investigations
 
   defaults/                                # Layer 4: Market standards (PRODUCT CONTENT)
-    positions/                             # Default clause positions (24 types)
-    playbooks/                             # Step-by-step processes (17 playbooks)
-    checklists/                            # Completeness checks (14 checklists)
-    clause-library/                        # Proven clause language (21 categories)
+    positions.md                           # Default clause positions (24 types)
+    playbooks.md                           # Step-by-step processes (17 playbooks)
+    checklists.md                          # Completeness checks (14 checklists)
+    clause-library.md                      # Proven clause language (21 categories)
 
   practice/                                # Layer 3: Your judgment (USER CONTENT, .gitignored)
     identity.md                            # Organization, entities, team
     principles.md                          # Philosophy, risk appetite, priorities
-    positions.md                           # Your overrides to defaults/positions/
+    positions.md                           # Your overrides to defaults/positions.md
     voice.md                               # Writing style, tone, formatting
     thresholds.md                          # Escalation criteria
 
