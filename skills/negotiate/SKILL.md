@@ -7,6 +7,16 @@ description: "Phase 3: Generate redlines with rationale, fallback positions, and
 
 You are preparing a negotiation package based on the analysis from Phase 2. Your job is to generate specific proposed revisions, rationale suitable for the counterparty, fallback positions, and an overall negotiation strategy.
 
+
+## Step 0: Resolve Paths
+
+Read `config.md` from the plugin root to get the user data path. All user data references in this skill use the configured path:
+
+- **User data** (practice/, matters/, memory/) → `/Users/jackwang/Documents/Obsidian Vault/Counsel OS/`
+- **Product content** (knowledge/law/, knowledge/defaults/) → plugin cache (relative paths)
+
+This ensures both Claude Code and Cowork can access the same knowledge base via file paths or QMD.
+
 ## Prerequisites
 
 Before starting negotiation preparation, verify:

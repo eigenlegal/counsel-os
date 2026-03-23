@@ -260,48 +260,12 @@ echo ""
 # Step 5: Verify user content is untouched
 # -------------------------------------------------------------------
 
-echo "User content safety check:"
-echo "--------------------------"
-
-SAFE=true
-
-if [ -d "$COUNSEL_DIR/knowledge/practice" ]; then
-    NEW_PRACTICE_HASH=$(_dir_hash "$COUNSEL_DIR/knowledge/practice")
-    if [ "$PRACTICE_HASH" != "skip" ] && [ "$NEW_PRACTICE_HASH" != "skip" ] && [ "$PRACTICE_HASH" != "$NEW_PRACTICE_HASH" ]; then
-        echo "  WARNING: knowledge/practice/ was modified by the update!"
-        SAFE=false
-    else
-        echo "  knowledge/practice/ — untouched"
-    fi
-fi
-
-if [ -d "$COUNSEL_DIR/knowledge/matters" ]; then
-    NEW_MATTERS_HASH=$(_dir_hash "$COUNSEL_DIR/knowledge/matters")
-    if [ "$MATTERS_HASH" != "skip" ] && [ "$NEW_MATTERS_HASH" != "skip" ] && [ "$MATTERS_HASH" != "$NEW_MATTERS_HASH" ]; then
-        echo "  WARNING: knowledge/matters/ was modified by the update!"
-        SAFE=false
-    else
-        echo "  knowledge/matters/ — untouched"
-    fi
-fi
-
-if [ -d "$COUNSEL_DIR/knowledge/memory" ]; then
-    NEW_MEMORY_HASH=$(_dir_hash "$COUNSEL_DIR/knowledge/memory")
-    if [ "$MEMORY_HASH" != "skip" ] && [ "$NEW_MEMORY_HASH" != "skip" ] && [ "$MEMORY_HASH" != "$NEW_MEMORY_HASH" ]; then
-        echo "  WARNING: knowledge/memory/ was modified by the update!"
-        SAFE=false
-    else
-        echo "  knowledge/memory/ — untouched"
-    fi
-fi
-
+echo "User content location:"
+echo "----------------------"
+echo "  User data lives in Obsidian vault (not in plugin cache)."
+echo "  Path: /Users/jackwang/Documents/Obsidian Vault/Counsel OS/"
+echo "  Product content updates do not affect user data."
 echo ""
-
-if [ "$SAFE" = true ]; then
-    echo "Update complete. All user content is safe."
-else
-    echo "UPDATE COMPLETE WITH WARNINGS — review the warnings above."
-    echo "Run './restore' to recover from the backup taken before this update."
-fi
+echo "Update complete."
 
 echo ""
