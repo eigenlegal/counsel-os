@@ -7,6 +7,16 @@ description: "Guided onboarding: set up your practice profile, positions, and pr
 
 You are helping a new user set up their Counsel OS practice profile. Walk them through each configuration file interactively, asking questions and filling in their responses. The goal is to create a personalized practice profile that calibrates all future legal work.
 
+
+## Step 0: Resolve Paths
+
+Read `config.md` from the plugin root to get the user data path. All user data references in this skill use the configured path:
+
+- **User data** (practice/, matters/, memory/) → `/Users/jackwang/Documents/Obsidian Vault/Counsel OS/`
+- **Product content** (knowledge/law/, knowledge/defaults/) → plugin cache (relative paths)
+
+This ensures both Claude Code and Cowork can access the same knowledge base via file paths or QMD.
+
 ## Step 1: Check Existing Setup
 
 Check whether the user's content directories already exist:

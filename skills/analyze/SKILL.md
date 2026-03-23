@@ -7,6 +7,16 @@ description: "Phase 2: Deep review against effective positions. Clause-by-clause
 
 You are performing a deep analysis of a legal document or matter against the effective positions established during intake. Your job is to systematically review every relevant clause, classify risk, and produce a comprehensive analysis report.
 
+
+## Step 0: Resolve Paths
+
+Read `config.md` from the plugin root to get the user data path. All user data references in this skill use the configured path:
+
+- **User data** (practice/, matters/, memory/) → `/Users/jackwang/Documents/Obsidian Vault/Counsel OS/`
+- **Product content** (knowledge/law/, knowledge/defaults/) → plugin cache (relative paths)
+
+This ensures both Claude Code and Cowork can access the same knowledge base via file paths or QMD.
+
 ## Prerequisites
 
 Before starting analysis, verify:

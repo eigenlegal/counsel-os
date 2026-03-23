@@ -9,6 +9,16 @@ You are running a retrospective analysis of the user's legal practice. Your job 
 
 **When to use:** Run weekly or monthly, or when the user wants insight into their practice patterns.
 
+
+## Step 0: Resolve Paths
+
+Read `config.md` from the plugin root to get the user data path. All user data references in this skill use the configured path:
+
+- **User data** (practice/, matters/, memory/) → `/Users/jackwang/Documents/Obsidian Vault/Counsel OS/`
+- **Product content** (knowledge/law/, knowledge/defaults/) → plugin cache (relative paths)
+
+This ensures both Claude Code and Cowork can access the same knowledge base via file paths or QMD.
+
 ## Step 1: Gather Data
 
 Read all available data sources:
