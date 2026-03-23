@@ -7,11 +7,14 @@ TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 BACKUP_NAME="counsel-os-backup-$TIMESTAMP"
 BACKUP_PATH="$BACKUP_DIR/$BACKUP_NAME"
 
+# User data lives in Obsidian vault
+USER_DATA="/Users/jackwang/Documents/Obsidian Vault/Counsel OS"
+
 # ── Check for user content ──────────────────────────────────────────────
 
 has_content=0
 for dir in practice matters memory; do
-  if [ -d "$COUNSEL_DIR/knowledge/$dir" ] && [ "$(find "$COUNSEL_DIR/knowledge/$dir" -type f ! -name '.gitkeep' | head -1)" ]; then
+  if [ -d "$USER_DATA/$dir" ] && [ "$(find "$USER_DATA/$dir" -type f ! -name '.gitkeep' | head -1)" ]; then
     has_content=1
     break
   fi
@@ -27,8 +30,8 @@ fi
 mkdir -p "$BACKUP_PATH"
 
 for dir in practice matters memory; do
-  if [ -d "$COUNSEL_DIR/knowledge/$dir" ]; then
-    cp -r "$COUNSEL_DIR/knowledge/$dir" "$BACKUP_PATH/$dir"
+  if [ -d "$USER_DATA/$dir" ]; then
+    cp -r "$USER_DATA/$dir" "$BACKUP_PATH/$dir"
   fi
 done
 
@@ -37,6 +40,7 @@ cat > "$BACKUP_PATH/manifest.json" << MANIFEST
 {
   "timestamp": "$TIMESTAMP",
   "version": "$(cat "$COUNSEL_DIR/VERSION" 2>/dev/null || echo "unknown")",
+  "source": "$USER_DATA",
   "contents": {
     "practice": $([ -d "$BACKUP_PATH/practice" ] && find "$BACKUP_PATH/practice" -type f ! -name '.gitkeep' | wc -l | tr -d ' ' || echo 0),
     "matters": $([ -d "$BACKUP_PATH/matters" ] && find "$BACKUP_PATH/matters" -type f ! -name '.gitkeep' | wc -l | tr -d ' ' || echo 0),
@@ -46,6 +50,7 @@ cat > "$BACKUP_PATH/manifest.json" << MANIFEST
 MANIFEST
 
 echo "Backup created: $BACKUP_PATH"
+echo "  source:   $USER_DATA"
 echo "  practice: $(cat "$BACKUP_PATH/manifest.json" | grep -o '"practice": [0-9]*' | grep -o '[0-9]*') files"
 echo "  matters:  $(cat "$BACKUP_PATH/manifest.json" | grep -o '"matters": [0-9]*' | grep -o '[0-9]*') files"
 echo "  memory:   $(cat "$BACKUP_PATH/manifest.json" | grep -o '"memory": [0-9]*' | grep -o '[0-9]*') files"
