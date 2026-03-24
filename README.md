@@ -13,7 +13,7 @@ Built for solo practitioners, law firms, and in-house counsel.
 git clone https://github.com/jw2856/counsel-os.git ~/counsel-os
 cd ~/counsel-os
 
-# Run setup (copies templates, optionally builds browser)
+# Run setup (seeds knowledge into your vault, optionally builds browser)
 ./setup
 
 # Start Claude Code
@@ -21,7 +21,8 @@ claude
 ```
 
 The setup script:
-- Copies template files into `knowledge/practice/`, `knowledge/matters/`, and `knowledge/memory/`
+- Seeds legal framework content (law areas, default positions, playbooks, checklists, clause library) into your configured legal root
+- Copies practice templates (identity, principles, positions, voice, thresholds) and memory logs
 - If [Bun](https://bun.sh/) is installed, builds the headless browser binary for `/counsel-os:browse`
 - Does not overwrite existing files if you've already customized
 
@@ -36,12 +37,6 @@ The setup script:
 
 > **Note:** The `/counsel-os:browse` skill (headless browser) is not available in Cowork since it requires CLI access. All other skills work identically.
 
-To edit files after installing in Cowork:
-1. Go to **Cowork** → **Customize** and find the Counsel OS plugin
-2. Click **Edit** to open the plugin editor
-3. Navigate to `knowledge/practice/` and edit your profile files
-4. Changes save automatically and take effect in your next conversation
-
 ### As a Claude Code Plugin
 
 ```bash
@@ -54,20 +49,17 @@ Or symlink manually to use from any directory:
 ln -s ~/counsel-os ~/.claude/plugins/counsel-os
 ```
 
-### Install Into a Specific Project
-
-```bash
-cp -r ~/counsel-os /path/to/your/project/.claude/plugins/counsel-os
-cd /path/to/your/project/.claude/plugins/counsel-os && ./setup
-```
-
-The skills are then available when you open Claude Code in that project.
-
 ---
 
 ## Setup
 
-After installing, run the guided onboarding:
+After installing, configure `config.md` in the plugin root to point to your legal root — the folder where Counsel OS manages its framework content:
+
+```markdown
+legal_root: /path/to/your/vault/Counsel OS
+```
+
+Then run the guided onboarding:
 
 ```
 /counsel-os:setup
@@ -83,7 +75,7 @@ This walks you through 5 files interactively:
 | `voice.md` | Writing style, tone, formality by audience | ~2 min |
 | `thresholds.md` | Escalation criteria, dollar tiers, auto-approval rules | ~2 min |
 
-You can also edit these files directly in `knowledge/practice/`.
+You can also edit these files directly in `{legal_root}/practice/`.
 
 **Optional:** Provide 3-5 past contracts during setup and the system will analyze them to infer your actual positions — often more accurate than describing them in the abstract.
 
@@ -111,6 +103,7 @@ Intake does:
 - Auto-detects which legal areas apply (data privacy, employment, IP, etc.)
 - Classifies the matter type (contract review, NDA triage, compliance, etc.)
 - Loads your effective positions (merging all 5 knowledge layers)
+- Discovers counterparty context via QMD search
 - Estimates complexity (simple/standard/complex)
 - Recommends which phases to run next
 
@@ -155,7 +148,7 @@ Intake does:
 
 - Suggests knowledge updates based on the work just completed
 - Logs decisions, exceptions, and patterns to `memory/`
-- Creates or updates counterparty files in `matters/`
+- Creates or updates counterparty entity files (discovered via QMD, stored wherever you keep them)
 - Identifies gaps in your positions and suggests additions
 - You approve each update before it's written
 
@@ -236,15 +229,14 @@ Or from the command line:
 ```
 
 This:
-1. Automatically backs up your user content first
-2. Pulls the latest `law/` and `defaults/` content
-3. Shows what changed (new regulations, updated positions, new playbooks)
-4. Verifies your `practice/`, `matters/`, and `memory/` are untouched
+1. Pulls the latest plugin methodology (skills, CLAUDE.md, scripts)
+2. Shows what changed in law/ and defaults/ upstream for your review
+3. You decide what to apply to your vault — the plugin never overwrites your content
 
 ### Backup and Restore
 
 ```bash
-# Back up your practice data
+# Back up your legal root (law, defaults, practice, memory)
 ./backup
 
 # Restore from the most recent backup
@@ -254,67 +246,62 @@ This:
 ./restore counsel-os-backup-20260313-143022
 ```
 
-Backups are stored locally in `backups/` (gitignored). The update script automatically backs up before pulling new content.
-
-### Using Both Claude Code and Cowork
-
-If you use Counsel OS in **Claude Code** as your primary environment and also want it available in **Cowork** (Claude Desktop), here's how they work together.
-
-**Claude Code is the source of truth.** Product updates (`law/`, `defaults/`, skills) pull automatically via `/counsel-os:update` or `./update`. Your user content (`practice/`, `matters/`, `memory/`) accumulates as you work — counterparty context, decision logs, position refinements, and patterns all build up over time.
-
-**Cowork can't self-update.** Plugins in Cowork are static snapshots. To keep Cowork current:
-
-1. Work in Claude Code as usual — update product content, review contracts, refine positions
-2. When you want to sync Cowork, run the export script:
-   ```bash
-   ./export
-   ```
-   This creates `counsel-os-plugin.zip` in the parent directory (or pass a custom output path: `./export /path/to/folder`).
-3. In Claude Desktop → Cowork → Customize, remove the old plugin and upload the new zip
-
-This ensures Cowork gets both the latest product content **and** your accumulated learning — counterparty files, refined positions, decision history, and patterns.
-
-**What syncs:**
-- `knowledge/practice/` — your positions, voice, thresholds, principles
-- `knowledge/matters/` — counterparty context, deal overrides
-- `knowledge/memory/` — decisions, exceptions, patterns
-- `knowledge/law/` and `knowledge/defaults/` — latest product content
-- `skills/` — latest skill definitions
-
-**Recommended cadence:** Re-export to Cowork after any significant batch of work — e.g., after onboarding a new counterparty, updating your positions, or pulling a product update. There's no harm in exporting frequently; it's a fast operation.
-
-> **Note:** Edits made inside Cowork's plugin editor do not flow back to Claude Code. If you edit files in Cowork, manually copy those changes back to your local repo to keep them in sync.
+Backups are stored locally in `backups/` (gitignored). Entity files (company/counterparty files) are part of your vault and should be backed up via your vault's own backup mechanism (Obsidian Sync, git, etc.).
 
 ---
 
 ## How It Works
 
+### Architecture
+
+Counsel OS separates **methodology** (how to do legal work) from **knowledge** (what you know).
+
+**The plugin provides methodology + tooling:**
+- 10 pipeline skills (intake → analyze → negotiate → deliver → close + utilities)
+- Operating instructions (CLAUDE.md) with merge rules and discovery logic
+- Headless browser for document extraction
+- Shell scripts for setup, backup, restore, update
+
+**Your vault provides all knowledge:**
+- Legal framework (law areas, default positions, playbooks, checklists, clause library)
+- Practice profile (identity, principles, positions, voice, thresholds)
+- Institutional memory (decisions, exceptions, patterns)
+- Entity files (companies, counterparties) — wherever you keep them
+
+The plugin discovers content through two mechanisms:
+1. **Legal root** — A configured path where Counsel OS manages framework content
+2. **QMD search** — Entity files are found by content search, not folder paths
+
+This means the plugin works with any vault structure. You organize your files however you want — Counsel OS finds what it needs.
+
 ### 5-Layer Knowledge System
 
 ```
-knowledge/
+{legal_root}/
 ├── law/          Layer 1 — Hard constraints (regulations, statutes)
 ├── defaults/     Layer 2 — Market-standard positions and playbooks
 ├── practice/     Layer 3 — YOUR judgment and standards
-├── matters/      Layer 4 — Per-deal and per-counterparty overrides
 └── memory/       Layer 5 — Accumulated decisions and patterns
+
+{anywhere in your vault}/
+└── <company>.md  Layer 4 — Per-deal and per-counterparty overrides
 ```
 
 **Precedence rules:**
 
 | Priority | Layer | Can be overridden? | Who manages it |
 |----------|-------|--------------------|----------------|
-| Highest | `law/` | Never — hard legal constraints | Product updates |
-| 2 | `matters/` | Per-deal only | You (through `/counsel-os:close`) |
+| Highest | `law/` | Never — hard legal constraints | Seeded by plugin, customizable by you |
+| 2 | Entity files | Per-deal only | You (through `/counsel-os:close` or directly) |
 | 3 | `practice/` | Your standards | You (through `/counsel-os:setup`) |
-| 4 | `defaults/` | Market defaults | Product updates |
+| 4 | `defaults/` | Market defaults | Seeded by plugin, customizable by you |
 | Lowest | `memory/` | Context only — informs, doesn't override | Automatic (through `/counsel-os:close`) |
 
-**Example:** Your standard liability cap is 12 months (`practice/`). The market default is also 12 months (`defaults/`). But for Acme Corp you've pre-approved 24 months (`matters/counterparties/acme-corp.md`). When reviewing an Acme contract, the system uses 24 months — but if GDPR requires a specific data processing provision (`law/`), that's non-negotiable regardless.
+**Example:** Your standard liability cap is 12 months (`practice/`). The market default is also 12 months (`defaults/`). But for Acme Corp you've pre-approved 24 months (in your Acme Corp entity file). When reviewing an Acme contract, the system uses 24 months — but if GDPR requires a specific data processing provision (`law/`), that's non-negotiable regardless.
 
 ### Auto-Detection of Applicable Law
 
-Each legal area in `knowledge/law/` has an `overview.md` with trigger conditions — keywords, clause types, and regulatory references that indicate when it applies. During intake, the system scans your document against all 26 areas and loads every match.
+Each legal area in `law/` has trigger conditions — keywords, clause types, and regulatory references that indicate when it applies. During intake, the system scans your document against all 26 areas and loads every match.
 
 Current areas:
 
@@ -351,17 +338,19 @@ Multiple areas apply simultaneously and compound — a fintech SaaS contract tri
 
 ### What's Included
 
-**Product content (updated by us):**
+**Seed content (seeded into your vault on first setup):**
 - 26 legal areas with auto-detection trigger conditions
 - 24 market-standard clause positions
 - 17 playbooks with step-by-step processes
 - 14 checklists for completeness
-- 14 clause library categories with standard/aggressive/vendor-favorable/minimum language
+- 21 clause library categories with standard/aggressive/vendor-favorable/minimum language
+
+Once seeded, you own all of this content. Customize law areas, rewrite playbooks, add your own clause language — it's your vault.
 
 **You provide:**
 - Your organization context
 - Your legal principles and risk appetite
-- Your standard positions (overrides to our defaults)
+- Your standard positions (overrides to the seeded defaults)
 - Your counterparty context (built over time through use)
 
 ---
@@ -370,18 +359,25 @@ Multiple areas apply simultaneously and compound — a fintech SaaS contract tri
 
 ### Adding Counterparty Context
 
-After working with a counterparty, `/counsel-os:close` offers to create a context file:
+After working with a counterparty, `/counsel-os:close` offers to create an entity file. You choose where to save it — Counsel OS discovers it via QMD search wherever it lives.
 
-```
-knowledge/matters/counterparties/acme-corp.md
-```
-
-This file stores:
+The entity file stores:
 - Relationship history and notes
 - Position overrides specific to this counterparty
 - Past negotiation patterns ("Acme always pushes for 24-month caps")
 
-Next time you review an Acme contract, these overrides load automatically.
+For Counsel OS to discover entity files, add frontmatter:
+
+```yaml
+---
+counsel-os-type: counterparty
+counsel-os-category: Partner
+counsel-os-tier: 1
+counsel-os-status: executed
+---
+```
+
+Next time you review a contract from that counterparty, the overrides load automatically.
 
 ### Updating Your Positions
 
@@ -395,16 +391,22 @@ You approve each change. Over time, your positions reflect your actual practice.
 
 ### Adding New Legal Areas
 
-Create a new directory in `knowledge/law/` with an `overview.md`:
+Create a new `.md` file in `{legal_root}/law/`:
 
 ```
-knowledge/law/ai-and-automation/
-  overview.md       ← trigger conditions for when this area applies
-  eu-ai-act.md      ← specific regulation
-  us-state-ai.md    ← state-level AI laws
+{legal_root}/law/new-area.md
 ```
 
-The intake skill will automatically detect and load it — no other changes needed.
+Include trigger conditions at the top. The intake skill will automatically detect and load it — no other changes needed.
+
+### Structure-Agnostic Design
+
+Counsel OS doesn't impose a folder structure on your vault. The plugin needs two things:
+
+1. **A legal root path** (in `config.md`) — where it manages framework content (law/, defaults/, practice/, memory/)
+2. **Frontmatter on entity files** — so QMD can discover them wherever they live
+
+Everything else is up to you. Keep companies in `Companies/`, `Clients/`, or scattered across your vault — as long as they have `counsel-os-type` frontmatter, the skills will find them.
 
 ---
 

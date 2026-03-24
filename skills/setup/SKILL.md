@@ -1,57 +1,119 @@
 ---
 name: setup
-description: "Guided onboarding: set up your practice profile, positions, and preferences. Run once to get started."
+description: "Guided onboarding: configure your legal root, seed content, and set up your practice profile. Run once to get started."
 ---
 
 # Setup — Guided Onboarding
 
-You are helping a new user set up their Counsel OS practice profile. Walk them through each configuration file interactively, asking questions and filling in their responses. The goal is to create a personalized practice profile that calibrates all future legal work.
+You are helping a user set up Counsel OS from scratch. This single skill handles everything: choosing where to store content, seeding the legal framework, and walking through practice profile configuration. The goal is to go from zero to a working Counsel OS in one session.
 
 
-## Step 0: Resolve Paths
+## Step 0: Detect Environment
 
-Read `config.md` from the plugin root to get the user data path. All user data references in this skill use the configured path:
+Determine whether you're running in **Claude Code** (CLI) or **Cowork** (Claude Desktop):
 
-- **User data** (practice/, matters/, memory/) → `/Users/jackwang/Documents/Obsidian Vault/Counsel OS/`
-- **Product content** (knowledge/law/, knowledge/defaults/) → plugin cache (relative paths)
+- **Claude Code**: You have shell access (Bash tool), can write to external paths, and QMD is available for entity discovery. Follow the full setup flow below.
+- **Cowork**: No shell access. Follow the same setup flow, but skip the browse binary build and pandoc check in Step 2. Everything else (path selection, content seeding, practice onboarding) works the same — content still lives in the user's vault.
 
-This ensures both Claude Code and Cowork can access the same knowledge base via file paths or QMD.
+To detect: try to use the Bash tool with a simple command like `echo ok`. If it works, you're in Claude Code. If it's unavailable, you're in Cowork.
 
-## Step 1: Check Existing Setup
+## Step 1: Determine Legal Root (Claude Code only)
 
-Check whether the user's content directories already exist:
+Check if a legal root is already configured:
 
-1. **`practice/`** — Does it exist in the Obsidian vault? Are the files populated or empty templates?
-2. **`matters/`** — Does it exist? Is `_index.md` populated?
-3. **`memory/`** — Does it exist? Are the log files created?
+1. Read `config.local.md` from the plugin root (if it exists)
+2. Fall back to `config.md`
+3. Look for `legal_root:` value
 
-### If directories don't exist:
+### If legal_root is set and the directory exists:
 
-Copy templates to the Obsidian vault:
-```
-templates/practice/ → {user_data_path}/practice/
-templates/matters/  → {user_data_path}/matters/
-templates/memory/   → {user_data_path}/memory/
-```
-
-Run the setup script if available:
-```bash
-./setup
-```
-
-### If directories exist but files are unpopulated:
-
-The files exist but contain only template placeholders. Proceed with the interactive walkthrough below.
-
-### If directories exist and files are populated:
-
-The user has already completed setup. Ask:
-> Your practice profile is already configured. Would you like to:
+Check if it's already populated (has law/, defaults/, practice/, memory/ with content). If so, ask:
+> Your Counsel OS is already set up at `{legal_root}`. Would you like to:
 > (A) Review and update your existing profile
 > (B) Start fresh (this will overwrite your current settings)
 > (C) Just check that everything looks good
 
-## Step 2: Identity — `practice/identity.md`
+### If legal_root is set but the directory doesn't exist:
+
+Confirm the path and proceed to seeding:
+> I'll create the Counsel OS framework at `{legal_root}`. Does that look right?
+
+### If legal_root is empty or not configured:
+
+Ask the user where to store the framework content:
+> Where should Counsel OS store its framework content? This folder will contain your law areas, default positions, practice profile, and memory.
+>
+> If you use Obsidian, a good choice is a top-level folder in your vault (e.g., `~/Documents/Obsidian Vault/Counsel OS`).
+> If you don't use Obsidian, any folder works (e.g., `~/legal/counsel-os`).
+
+After the user provides a path, write it to `config.local.md`:
+
+```markdown
+# Counsel OS Configuration (Local Override)
+
+## Legal Root
+legal_root: {user's path}
+
+## Entity Discovery
+discovery: qmd
+entity_properties:
+  type_field: counsel-os-type
+  values: [counterparty, vendor, customer, prospect]
+
+## QMD Collection
+collection: obsidian
+```
+
+## Step 2: Seed Content
+
+Create the directory structure and seed all content from the plugin into `{legal_root}`:
+
+### Law areas (from plugin `knowledge/law/`)
+Copy all 26 law area files. Add frontmatter if not present:
+```yaml
+---
+counsel-os-type: law-area
+counsel-os-version: "{plugin version from VERSION file}"
+---
+```
+
+### Defaults (from plugin `knowledge/defaults/`)
+Copy positions.md, playbooks.md, checklists.md, clause-library.md. Add frontmatter if not present.
+
+### Practice (from plugin `templates/practice/`)
+Copy identity.md, principles.md, positions.md, voice.md, thresholds.md. Add frontmatter:
+```yaml
+---
+counsel-os-type: practice
+---
+```
+
+### Memory (from plugin `templates/memory/`)
+Copy patterns.md. Add frontmatter:
+```yaml
+---
+counsel-os-type: memory-patterns
+---
+```
+
+### Build browse binary
+If the plugin has `browse/src/` but no `browse/dist/browse`, try to build it:
+1. Check if `bun` is available: `command -v bun`
+2. If yes: run `cd {plugin_root} && bun install && bun run build`
+3. If no: note that the browse skill won't be available and suggest installing bun
+
+### Pandoc check
+Check if pandoc is installed (`command -v pandoc`). If not, note:
+> pandoc is not installed. You'll need it to extract tracked changes from Word documents. Install with `brew install pandoc` (macOS) or `apt-get install pandoc` (Linux).
+
+Report what was seeded and built:
+> Counsel OS framework seeded at `{legal_root}`:
+> - law/ — 26 legal area files
+> - defaults/ — positions, playbooks, checklists, clause library
+> - practice/ — templates ready for configuration
+> - memory/ — patterns log ready
+
+## Step 3: Identity — `{legal_root}/practice/identity.md`
 
 Walk through each section conversationally. Don't dump all questions at once — ask 2-3 at a time.
 
@@ -76,7 +138,7 @@ Walk through each section conversationally. Don't dump all questions at once —
 After gathering responses, write the completed `identity.md` file and show the user:
 > Here's your identity profile. Anything you'd like to change?
 
-## Step 3: Principles — `practice/principles.md`
+## Step 4: Principles — `{legal_root}/practice/principles.md`
 
 ### Legal philosophy:
 > Now let's calibrate your legal philosophy. This determines how I approach every matter.
@@ -113,7 +175,7 @@ After gathering responses, write the completed `identity.md` file and show the u
 
 Write the completed `principles.md` and confirm.
 
-## Step 4: Positions — `practice/positions.md`
+## Step 5: Positions — `{legal_root}/practice/positions.md`
 
 This is the most detailed step. Walk through each default position and ask for overrides.
 
@@ -129,7 +191,7 @@ This is the most detailed step. Walk through each default position and ask for o
 
 ### Walk through each default position:
 
-For each clause type section in `knowledge/defaults/positions.md`:
+For each clause type section in `{legal_root}/defaults/positions.md`:
 1. Read the default position
 2. Present a summary to the user
 3. Ask: "Does this match your practice, or do you have different standards?"
@@ -151,7 +213,7 @@ After completing all positions:
 > Here are your position overrides. For any clause type not listed, the market-standard
 > default will apply. Want to adjust anything?
 
-## Step 5: Voice — `practice/voice.md`
+## Step 6: Voice — `{legal_root}/practice/voice.md`
 
 ### Quick calibration:
 > Let's set your writing style preferences. These affect how I draft memos,
@@ -172,7 +234,7 @@ After completing all positions:
 
 Write the completed `voice.md` and confirm.
 
-## Step 6: Thresholds — `practice/thresholds.md`
+## Step 7: Thresholds — `{legal_root}/practice/thresholds.md`
 
 ### Review tracks:
 > Last major section: escalation thresholds. These determine which matters I flag
@@ -195,7 +257,7 @@ Write the completed `voice.md` and confirm.
 
 ### Law constraint floors:
 
-After the user sets their thresholds, cross-reference against loaded `knowledge/law/` areas. Law constraints create hard floors that override user thresholds — for example, if law/ requires 72-hour breach notification, a threshold that accepts 5-day notification windows is invalid regardless of deal value.
+After the user sets their thresholds, cross-reference against loaded `{legal_root}/law/` areas. Law constraints create hard floors that override user thresholds — for example, if law/ requires 72-hour breach notification, a threshold that accepts 5-day notification windows is invalid regardless of deal value.
 
 Flag any conflicts:
 > **Note:** Your threshold for [X] would allow positions that conflict with
@@ -204,7 +266,7 @@ Flag any conflicts:
 
 Write the completed `thresholds.md` and confirm.
 
-## Step 7: Optional — Ingest Past Contracts
+## Step 8: Optional — Ingest Past Contracts
 
 Offer to analyze past work product to auto-infer positions:
 
@@ -223,31 +285,33 @@ If the user provides past contracts:
 3. Flag any gaps: "Your signed contracts show you've accepted X, but your stated position is Y. Want to adjust?"
 4. Offer to update positions based on findings
 
-## Step 8: Verification
+## Step 9: Verification
 
-Run a quick validation to make sure everything is properly configured:
+Run a quick validation:
 
-1. **Files exist check:** Verify all practice/, matters/, and memory/ files are present
-2. **Content check:** Verify each file has content (not just template placeholders)
+1. **Files exist check:** Verify law/, defaults/, practice/, memory/ are all present and populated
+2. **Content check:** Verify practice files have real content (not just template placeholders)
 3. **Consistency check:** Verify positions don't conflict with each other or with law/ constraints
-4. **Quick test:** Run a mini intake on a sample scenario to verify the system works end-to-end
+4. **Config check:** Verify `config.local.md` has the correct legal_root path
 
 ```
 ## Setup Complete
 
-Your Counsel OS practice profile is configured:
+Your Counsel OS is configured:
 
+- [x] Legal root: {legal_root}
 - [x] identity.md — [organization name], [team size] team members
 - [x] principles.md — [risk appetite] risk appetite, [priority framework summary]
 - [x] positions.md — [N] position overrides, [M] using defaults
 - [x] voice.md — [tone summary]
 - [x] thresholds.md — GREEN under $[X], RED over $[Y]
-- [x] _index.md — matters routing configured
-- [x] memory files — decision, exception, and pattern logs ready
+- [x] law/ — [N] law areas seeded
+- [x] defaults/ — positions, playbooks, checklists, clause library seeded
+- [x] memory/ — patterns log ready
 
 You're ready to go. Start with `/counsel-os:intake` on your next contract or matter.
 
 To update your profile later, you can either:
-- Edit the files directly in the Obsidian vault (Counsel OS/practice/)
+- Edit the files directly in {legal_root}/practice/
 - Run `/counsel-os:setup` again to walk through the guided process
 ```

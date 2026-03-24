@@ -10,12 +10,13 @@ You are performing a deep analysis of a legal document or matter against the eff
 
 ## Step 0: Resolve Paths
 
-Read `config.md` from the plugin root to get the user data path. All user data references in this skill use the configured path:
+Read `config.local.md` (if it exists) or `config.md` from the plugin root to get:
 
-- **User data** (practice/, matters/, memory/) → `/Users/jackwang/Documents/Obsidian Vault/Counsel OS/`
-- **Product content** (knowledge/law/, knowledge/defaults/) → plugin cache (relative paths)
+- **Legal root** (`{legal_root}`) — contains law/, defaults/, practice/, memory/
+- **Entity discovery** — QMD query on `counsel-os-type` frontmatter property
+- **Specific entity lookup** — QMD search for company name + `counsel-os-type` value
 
-This ensures both Claude Code and Cowork can access the same knowledge base via file paths or QMD.
+All framework content (law areas, default positions, practice files, memory) is read from `{legal_root}/`. Entity files (companies, counterparties) are discovered via QMD queries — they can live anywhere in the user's vault.
 
 ## Prerequisites
 
@@ -30,13 +31,13 @@ Before starting analysis, verify:
 
 ## Step 1: Load the Playbook
 
-Based on the matter type from intake, load the matching playbook section from `knowledge/defaults/playbooks.md`. Look for a heading that corresponds to the matter type (e.g., "## Contract Review" for a contract review, "## Nda Triage" for an NDA).
+Based on the matter type from intake, load the matching playbook section from `{legal_root}/defaults/playbooks.md`. Look for a heading that corresponds to the matter type (e.g., "## Contract Review" for a contract review, "## Nda Triage" for an NDA).
 
 If the playbook file doesn't exist for this matter type, proceed with the general analysis framework below. Note the gap for future content development.
 
 ## Step 2: Load Applicable Checklists
 
-Check `knowledge/defaults/checklists.md` for checklist sections matching the matter type. Load all that apply — checklists catch items that might be missed in clause-by-clause review.
+Check `{legal_root}/defaults/checklists.md` for checklist sections matching the matter type. Load all that apply — checklists catch items that might be missed in clause-by-clause review.
 
 Look for a checklist file whose name corresponds to the matter type or document type (e.g., `checklists/saas-agreement.md` for a SaaS deal, `checklists/nda.md` for an NDA). Multiple checklists may apply to a single matter.
 

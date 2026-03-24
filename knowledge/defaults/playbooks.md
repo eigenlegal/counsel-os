@@ -188,7 +188,7 @@ Use this playbook when modifying the terms of an existing agreement through a fo
 - Business approval for the proposed changes
 - Verification that the original agreement permits amendments (check the amendments clause for requirements such as written form, authorized signatories)
 - Confirmation that the original agreement is still in effect (not expired or terminated)
-- Check `knowledge/matters/counterparties/<name>.md` for any relevant counterparty context
+- Check `the counterparty entity file (discovered via QMD)` for any relevant counterparty context
 
 ## Process
 
@@ -289,7 +289,7 @@ Before sending to the counterparty:
 - File the executed amendment with the original agreement in the contract management system. Update the contract lineage document.
 - Update any internal tracking systems (CRM, finance, procurement) to reflect the new terms
 - Notify affected internal stakeholders (e.g., if SLAs changed, notify operations; if pricing changed, notify finance)
-- If the amendment represents a deviation from standard positions, consider logging in `knowledge/memory/exceptions.md`
+- If the amendment represents a deviation from standard positions, consider updating the entity file with the deviation
 
 ## Output Format
 A formal amendment document containing:
@@ -631,7 +631,7 @@ Use this playbook when reviewing any commercial contract (SaaS, services, licens
 - Identify the contract type and counterparty relationship (vendor, customer, partner)
 - Obtain any prior correspondence or term sheets that inform the deal context
 - Confirm the business owner and their priorities
-- Check `knowledge/matters/counterparties/` for any existing counterparty context file
+- Check `entity files (discovered via QMD)` for any existing counterparty context file
 
 ## Process
 
@@ -691,7 +691,7 @@ For each major clause category, load the specific position file, compare the con
 
 **Decision — Overlay Practice Positions:**
 - After loading default positions, check `knowledge/practice/positions.md` for any overrides. Practice positions supersede defaults.
-- Check `knowledge/matters/counterparties/<name>.md` for deal-specific overrides. Counterparty overrides supersede practice positions.
+- Check `the counterparty entity file (discovered via QMD)` for deal-specific overrides. Counterparty overrides supersede practice positions.
 
 ### Step 5: Legal Compliance Check
 Scan the contract against applicable legal requirements. Auto-detect which `knowledge/law/` areas apply:
@@ -732,7 +732,7 @@ For each identified issue:
 - Share the issues list with the business owner. Walk through RED items first, then YELLOW.
 - Identify which issues are Tier 1 (must-have) vs. Tier 2/3 (negotiation leverage)
 - Agree on the negotiation strategy before sending the redline
-- Document any business-approved deviations from standard positions. If a deviation is approved, note it for potential logging in `knowledge/memory/exceptions.md`.
+- Document any business-approved deviations from standard positions. If a deviation is approved, note it for potential updating the entity file with the deviation.
 - If the contract is High Risk, confirm executive approval before sending the redline.
 
 ## Output Format
@@ -870,7 +870,7 @@ Track the dispute through resolution:
 - Report status to leadership: weekly for Critical, biweekly for High, monthly for Medium
 - Document settlement negotiations and all offers/counteroffers (mark as privileged; notify insurer of any settlement discussions)
 - If the dispute escalates to formal proceedings, engage outside counsel and transition to a litigation management framework
-- Post-resolution: conduct a lessons-learned review. Consider logging the outcome in `knowledge/memory/decisions.md` and updating `knowledge/memory/patterns.md` if the dispute reveals a systemic issue.
+- Post-resolution: conduct a lessons-learned review. Consider logging the outcome in the entity file (via QMD discovery) and updating `knowledge/memory/patterns.md` if the dispute reveals a systemic issue.
 
 ## Output Format
 1. **Triage Assessment:** Severity, exposure estimate (range), response deadline, privilege designation, insurance coverage status
@@ -1192,7 +1192,7 @@ Execute the termination meeting and follow-up:
 - If the employee signs the release: process severance payment after the revocation period expires
 - If the employee does not sign the release within the consideration period: assess whether to extend the offer, increase severance, or proceed without a release
 - Document the termination in the personnel file
-- Consider logging the decision in `knowledge/memory/decisions.md` if the termination involved unusual circumstances or deviations from standard practice
+- Consider logging the decision in the entity file (via QMD discovery) if the termination involved unusual circumstances or deviations from standard practice
 
 ## Output Format
 1. **Termination Assessment Memo:** Basis, risk factors, restrictive covenant analysis, WARN/adverse impact analysis (privileged)
@@ -1417,7 +1417,7 @@ Articulate the precise legal question(s) to be answered:
 - Identify the relevant jurisdiction(s)
 - Confirm scope: narrow question (single issue, clear law) vs. comprehensive analysis (multiple issues, ambiguous law)
 - Confirm timeline: when does the business need the answer?
-- Check whether this is a recurring issue — search `knowledge/memory/decisions.md` for prior analysis on the same or similar topic
+- Check whether this is a recurring issue — search the entity file (via QMD discovery) for prior analysis on the same or similar topic
 
 **Decision — Memo Type:**
 - **Quick-Turn Advice:** Single question, clear answer, low complexity. Skip formal memo format; deliver as a structured email. Target: 2-4 hours.
@@ -1440,7 +1440,7 @@ Conduct legal research following this source hierarchy:
 2. **Counsel OS law files:** `knowledge/law/` area files (synthesized legal frameworks)
 3. **Regulatory guidance:** Agency interpretations, no-action letters, advisory opinions, FAQ documents
 4. **Persuasive authority:** Case law from other jurisdictions, Restatements, treatises
-5. **Internal precedent:** Prior memos in `knowledge/memory/decisions.md`, established internal positions in `knowledge/practice/positions.md`
+5. **Internal precedent:** Prior memos in the entity file (via QMD discovery), established internal positions in `knowledge/practice/positions.md`
 6. **Secondary sources:** Law review articles, practice guides, CLE materials
 7. **Industry practice:** Market surveys, peer company approaches, industry association guidance
 
@@ -1505,7 +1505,7 @@ Write the memo following the IRAC-based output format below.
 - Deliver to the requesting party with an offer to discuss. Verbal walk-through is recommended for Complex memos.
 - File in the legal department's knowledge management system
 - Calendar any follow-up actions or deadlines identified in the memo
-- Consider logging the key decision in `knowledge/memory/decisions.md` for future reference
+- Consider logging the key decision in the entity file (via QMD discovery) for future reference
 
 ## Output Format
 ```
@@ -1732,7 +1732,7 @@ Use this playbook when receiving or initiating a Non-Disclosure Agreement (NDA).
 - Identify the business purpose for the NDA (vendor evaluation, partnership discussion, M&A, employment)
 - Determine the direction of disclosure: mutual, one-way (disclosing), or one-way (receiving)
 - Confirm whether we have a standard NDA template to propose as an alternative
-- Check `knowledge/matters/counterparties/<name>.md` for any prior NDA history or standing instructions
+- Check `the counterparty entity file (discovered via QMD)` for any prior NDA history or standing instructions
 
 ## Process
 
@@ -1803,7 +1803,7 @@ Based on the triage, classify the NDA:
 - 4+ YELLOW flags
 - Non-standard provisions present (exclusivity, IP assignment, liquidated damages)
 - M&A, competitive intelligence, or government counterparty context
-- Counterparty file in `knowledge/matters/counterparties/` flags special handling
+- Counterparty file in `entity files (discovered via QMD)` flags special handling
 → **Proceed to Step 4 for detailed review.** Total time: 2-4 hours.
 
 ### Step 4: Full Review (If Required)
@@ -1858,7 +1858,7 @@ Use this playbook when preparing for and conducting contract negotiations with a
 - Knowledge of counterparty's likely positions and constraints
 - Load relevant position files from `knowledge/defaults/positions.md`
 - Load relevant clause library files from `knowledge/defaults/clause-library.md`
-- Check `knowledge/matters/counterparties/<name>.md` for prior negotiation history and known counterparty patterns
+- Check `the counterparty entity file (discovered via QMD)` for prior negotiation history and known counterparty patterns
 
 ## Process
 
@@ -1957,7 +1957,7 @@ Before execution, conduct a final verification pass:
 - Run the contract through `checklists/contract-review.md` one final time
 - Obtain necessary internal approvals per the signing authority matrix
 - Verify signing authority for the counterparty (officer, authorized representative)
-- If the final terms deviate from standard positions, document the deviations for potential logging in `knowledge/memory/exceptions.md`
+- If the final terms deviate from standard positions, document the deviations for potential updating the entity file with the deviation
 
 ## Output Format
 1. **Negotiation Prep Memo:** Summary of strategy, priorities, BATNA, and walk-away threshold
@@ -2462,7 +2462,7 @@ Track the investigation through resolution:
 - Monitor for parallel proceedings, related litigation (class actions often follow regulatory actions), and media coverage
 - Reassess the cooperation strategy as facts develop
 - Negotiate resolution (consent order, settlement, no-action, closing letter) with counsel's guidance
-- Post-resolution: implement any agreed compliance enhancements; conduct a lessons-learned review; consider updating `knowledge/memory/decisions.md` and `knowledge/memory/patterns.md`
+- Post-resolution: implement any agreed compliance enhancements; conduct a lessons-learned review; consider updating the entity file (via QMD discovery) and `knowledge/memory/patterns.md`
 
 ## Output Format
 1. **Initial Assessment Memo:** Classification, scope, urgency, deadline, regulatory body profile, parallel proceedings check
@@ -2493,7 +2493,7 @@ Use this playbook when engaging a new vendor or renewing/expanding a relationshi
 - Vendor identified and initial discussions completed
 - Vendor onboarding checklist prepared: load `checklists/vendor-onboarding.md`
 - Risk tier determined based on data access, spend, and business criticality
-- Check `knowledge/matters/counterparties/<name>.md` for any prior vendor relationship history
+- Check `the counterparty entity file (discovered via QMD)` for any prior vendor relationship history
 
 ## Process
 
