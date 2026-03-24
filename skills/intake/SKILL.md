@@ -10,12 +10,13 @@ You are starting a new legal matter. Your job is to classify it, load all releva
 
 ## Step 0: Resolve Paths
 
-Read `config.md` from the plugin root to get the user data path. All user data references in this skill use the configured path:
+Read `config.local.md` (if it exists) or `config.md` from the plugin root to get:
 
-- **User data** (practice/, matters/, memory/) → `/Users/jackwang/Documents/Obsidian Vault/Counsel OS/`
-- **Product content** (knowledge/law/, knowledge/defaults/) → plugin cache (relative paths)
+- **Legal root** (`{legal_root}`) — contains law/, defaults/, practice/, memory/
+- **Entity discovery** — QMD query on `counsel-os-type` frontmatter property
+- **Specific entity lookup** — QMD search for company name + `counsel-os-type` value
 
-This ensures both Claude Code and Cowork can access the same knowledge base via file paths or QMD.
+All framework content (law areas, default positions, practice files, memory) is read from `{legal_root}/`. Entity files (companies, counterparties) are discovered via QMD queries — they can live anywhere in the user's vault.
 
 ## Step 1: Accept the Document or Matter
 
@@ -88,7 +89,7 @@ Ask targeted questions to understand the matter. Do NOT ask all of these — inf
 1. **Which side are we on?** Are we the vendor/licensor/service provider, or the customer/licensee/recipient? (Often clear from the document.)
 2. **Urgency?** What's the timeline? Is there a signing deadline?
 3. **Focus areas?** Are there specific clauses or issues the user wants to prioritize? Or is this a full review?
-4. **Deal context?** Is this a new relationship or an existing counterparty? What's the deal value? Is there a counterparty file in `matters/counterparties/`?
+4. **Deal context?** Is this a new relationship or an existing counterparty? What's the deal value? Use a QMD query to check for an existing entity file.
 5. **Any special instructions?** Anything unusual about this matter?
 
 Be efficient. If the document clearly shows we're reviewing a vendor's SaaS agreement as the customer, don't ask "which side are we on?" — just confirm your understanding.
@@ -97,7 +98,7 @@ Be efficient. If the document clearly shows we're reviewing a vendor's SaaS agre
 
 Scan the document text (or matter description) against the trigger conditions in each law area overview file. Check every area:
 
-1. Read each `knowledge/law/<area>.md` file (each law area is a single consolidated file containing overview and all sub-topics)
+1. Read each `{legal_root}/law/<area>.md` file (each law area is a single consolidated file containing overview and all sub-topics)
 2. Check the **Trigger Conditions** section — look for matching keywords, clause types, regulatory references, and relationship patterns
 3. Load ALL areas that match — not just the most obvious one
 4. Within each matching area, reference the relevant sections of the consolidated file based on the specific sub-topics triggered
@@ -117,7 +118,7 @@ Based on the document and context, classify into one of these matter types. The 
 
 Classify into the matter type that best fits the document or matter. The matter type determines which playbook to load in the analyze phase.
 
-To find the matching playbook, look for a section heading in `knowledge/defaults/playbooks.md` that corresponds to the matter type (e.g., a contract review maps to "## Contract Review", an NDA maps to "## Nda Triage").
+To find the matching playbook, look for a section heading in `{legal_root}/defaults/playbooks.md` that corresponds to the matter type (e.g., a contract review maps to "## Contract Review", an NDA maps to "## Nda Triage").
 
 Common matter types include: contract-review, nda-triage, negotiation, compliance, dispute, policy, diligence, governance, memo, amendment, vendor-onboarding — but the available playbooks may expand over time, so always check the file's section headings.
 
@@ -127,10 +128,10 @@ If the matter doesn't fit cleanly, choose the closest match and note the deviati
 
 For each clause type that is likely relevant to this matter, build the effective position by merging across knowledge layers:
 
-1. **Start with defaults:** Load the relevant clause type section from `knowledge/defaults/positions.md`
-2. **Overlay practice:** Check `practice/positions.md` for overrides. Practice positions win on conflict with defaults.
-3. **Overlay matters:** Check `matters/counterparties/<name>.md` for deal-specific overrides. Matters positions win on conflict with practice.
-4. **Check against law:** Cross-reference against all loaded `knowledge/law/` areas. Law constraints ALWAYS win — if a position conflicts with law, flag it as RED and cite the specific regulation.
+1. **Start with defaults:** Load the relevant clause type section from `{legal_root}/defaults/positions.md`
+2. **Overlay practice:** Check `{legal_root}/practice/positions.md` for overrides. Practice positions win on conflict with defaults.
+3. **Overlay entity:** Use a QMD query to find the counterparty's entity file and check for deal-specific overrides. Entity overrides win on conflict with practice.
+4. **Check against law:** Cross-reference against all loaded `{legal_root}/law/` areas. Law constraints ALWAYS win — if a position conflicts with law, flag it as RED and cite the specific regulation.
 
 Document the effective position for each relevant clause type:
 ```
@@ -193,8 +194,8 @@ Present the intake summary in this format:
 - [x] Practice profile (identity, principles, voice, thresholds)
 - [x] Default positions for: [list]
 - [x] Law areas: [list]
-- [ ] Counterparty file: [not found / loaded from matters/counterparties/X.md]
-- [ ] Deal file: [not found / loaded from matters/deals/X.md]
+- [ ] Counterparty entity file: [not found / loaded via QMD query]
+- [ ] Deal file: [not found / loaded from entity's folder]
 
 ### Recommended Next Steps
 1. Proceed to `/counsel-os:analyze` for [full review / focused review on specific clauses]

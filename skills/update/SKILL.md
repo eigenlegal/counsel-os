@@ -9,6 +9,16 @@ You are updating the Counsel OS product content (law areas, default positions, p
 
 **When to use:** Run periodically (weekly or monthly) to get the latest legal content updates — new law areas, updated regulatory guidance, improved default positions, new playbooks.
 
+## Step 0: Resolve Paths
+
+Read `config.local.md` (if it exists) or `config.md` from the plugin root to get:
+
+- **Legal root** (`{legal_root}`) — contains law/, defaults/, practice/, memory/
+- **Entity discovery** — QMD query on `counsel-os-type` frontmatter property
+- **Specific entity lookup** — QMD search for company name + `counsel-os-type` value
+
+All framework content (law areas, default positions, practice files, memory) is read from `{legal_root}/`. Entity files (companies, counterparties) are discovered via QMD queries — they can live anywhere in the user's vault.
+
 ## Step 1: Check Current Version
 
 Read the current `VERSION` file:
@@ -29,8 +39,8 @@ Execute the update script:
 
 The update script will:
 1. Pull the latest changes from the remote repository
-2. Show which files changed in `knowledge/law/` and `knowledge/defaults/`
-3. Confirm user data in Obsidian vault is unaffected
+2. Show which files changed in `{legal_root}/law/` and `{legal_root}/defaults/`
+3. Confirm user data in `{legal_root}` is unaffected
 
 If the update script doesn't exist or fails, perform the update manually:
 
@@ -47,7 +57,7 @@ NEW_VERSION=$(cat VERSION)
 echo "Updated from $OLD_VERSION to $NEW_VERSION"
 
 # Show changed files in product content directories
-git diff --name-only $OLD_VERSION..$NEW_VERSION -- knowledge/law/ knowledge/defaults/
+git diff --name-only $OLD_VERSION..$NEW_VERSION -- law/ defaults/
 ```
 
 ## Step 3: Show What Changed
@@ -55,7 +65,7 @@ git diff --name-only $OLD_VERSION..$NEW_VERSION -- knowledge/law/ knowledge/defa
 Present a clear changelog to the user:
 
 ### New Law Areas
-If any new directories were added under `knowledge/law/`:
+If any new law area files were added under `{legal_root}/law/`:
 ```
 New law areas added:
 - antitrust/ — Competition law, merger review, market allocation
@@ -72,7 +82,7 @@ Updated law areas:
 ```
 
 ### New Default Positions
-If new position sections were added to `knowledge/defaults/positions.md`:
+If new position sections were added to `{legal_root}/defaults/positions.md`:
 ```
 New default positions:
 - [filename].md — [description of what positions it covers]
@@ -89,9 +99,9 @@ Updated default positions:
 ### New or Updated Playbooks, Checklists, Clause Library
 
 For each category, list new or changed files with a brief description. Pay attention to:
-- **New clause library categories** — new sections in `knowledge/defaults/clause-library.md` represent entirely new clause types with standard language and vendor-favorable variants.
-- **Priority tier additions to checklists** — if `knowledge/defaults/checklists.md` gained priority tier guidance (Tier 1/2/3), note this as a structural change that affects how the analyze phase assigns priority.
-- **New playbooks** — new sections in `knowledge/defaults/playbooks.md` mean new matter types can now be handled with step-by-step guidance.
+- **New clause library categories** — new sections in `{legal_root}/defaults/clause-library.md` represent entirely new clause types with standard language and vendor-favorable variants.
+- **Priority tier additions to checklists** — if `{legal_root}/defaults/checklists.md` gained priority tier guidance (Tier 1/2/3), note this as a structural change that affects how the analyze phase assigns priority.
+- **New playbooks** — new sections in `{legal_root}/defaults/playbooks.md` mean new matter types can now be handled with step-by-step guidance.
 
 ```
 New playbooks:
@@ -115,9 +125,9 @@ This is the critical step. Review whether any updated defaults affect the user's
 
 ### Position Conflict Check
 
-For each updated section in `knowledge/defaults/positions.md`:
+For each updated section in `{legal_root}/defaults/positions.md`:
 1. Read the updated default position
-2. Check if `practice/positions.md` (in the Obsidian vault) has an override for this clause type
+2. Check if `{legal_root}/practice/positions.md` has an override for this clause type
 3. If yes: compare the practice override against the new default
 4. Flag if the update changes the baseline that the practice position was built on
 
@@ -134,7 +144,7 @@ Impact check:
 
 ### Law Constraint Check
 
-For each updated file in `knowledge/law/`:
+For each updated file in `{legal_root}/law/`:
 1. Check if the update introduces new constraints
 2. Check if any practice positions now conflict with updated law requirements
 3. Flag any conflicts as urgent — law always wins
@@ -142,7 +152,7 @@ For each updated file in `knowledge/law/`:
 ```
 URGENT: Updated data-privacy/ccpa-cpra.md introduces new requirements for
 AI-generated profiling decisions. Your current data protection position in
-practice/positions.md does not address this. Review and update your position
+{legal_root}/practice/positions.md does not address this. Review and update your position
 before your next matter involving California consumer data.
 ```
 
@@ -174,7 +184,7 @@ For each new file (not just updated):
 - No conflicts detected / [N] conflicts require attention
 
 ### User Content
-User data lives in Obsidian vault — not affected by product updates.
+User data lives in `{legal_root}` — not affected by product updates.
 
 ### Recommended Actions
 1. [Review updated position X against your practice override]

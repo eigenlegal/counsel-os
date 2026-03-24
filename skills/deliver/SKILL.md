@@ -10,12 +10,13 @@ You are packaging the final work product for delivery. Your job is to format the
 
 ## Step 0: Resolve Paths
 
-Read `config.md` from the plugin root to get the user data path. All user data references in this skill use the configured path:
+Read `config.local.md` (if it exists) or `config.md` from the plugin root to get:
 
-- **User data** (practice/, matters/, memory/) → `/Users/jackwang/Documents/Obsidian Vault/Counsel OS/`
-- **Product content** (knowledge/law/, knowledge/defaults/) → plugin cache (relative paths)
+- **Legal root** (`{legal_root}`) — contains law/, defaults/, practice/, memory/
+- **Entity discovery** — QMD query on `counsel-os-type` frontmatter property
+- **Specific entity lookup** — QMD search for company name + `counsel-os-type` value
 
-This ensures both Claude Code and Cowork can access the same knowledge base via file paths or QMD.
+All framework content (law areas, default positions, practice files, memory) is read from `{legal_root}/`. Entity files (companies, counterparties) are discovered via QMD queries — they can live anywhere in the user's vault.
 
 ## Prerequisites
 
@@ -56,7 +57,7 @@ If the user requests a specific format, use that instead. Common requests:
 
 ## Step 2: Apply Voice Styling
 
-Load `practice/voice.md` and apply the user's preferences:
+Load `{legal_root}/practice/voice.md` and apply the user's preferences:
 
 1. **Tone:** Match the specified tone (e.g., professional but approachable, formal, direct)
 2. **Structure:** Follow structure patterns (e.g., executive summary first, bullets over paragraphs)

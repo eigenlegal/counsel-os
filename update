@@ -2,13 +2,15 @@
 set -e
 
 # Counsel OS — Update Script
-# Pulls latest product content (law/, defaults/, skills/, templates/) without
-# touching user data (practice/, matters/, memory/).
+# Pulls latest plugin methodology (skills/, CLAUDE.md, scripts) and shows
+# what changed in product content (law/, defaults/) for user review.
+# All knowledge now lives in the user's vault — this script does NOT
+# auto-overwrite vault content.
 #
 # Works in two modes:
 #   1. Git repo (development install) — git fetch && git merge
 #   2. Plugin cache (installed via registry) — find the git source repo,
-#      pull there, then rsync product content into the cache
+#      pull there, then rsync plugin content into the cache
 
 COUNSEL_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$COUNSEL_DIR"
@@ -42,11 +44,12 @@ echo "Current version: $OLD_VERSION"
 echo ""
 
 # -------------------------------------------------------------------
-# Step 2: User data is in Obsidian vault — no cache backup needed
+# Step 2: All knowledge lives in user's vault — plugin updates are methodology only
 # -------------------------------------------------------------------
 
-# User data lives at: /Users/jackwang/Documents/Obsidian Vault/Counsel OS/
-# Product updates do not touch it. Backup via Obsidian sync or ./backup script.
+# All knowledge lives in the user's vault (configured in config.md).
+# Plugin updates only affect methodology (skills, CLAUDE.md, scripts).
+# Law/ and defaults/ changes are shown as diffs for the user to review.
 
 # -------------------------------------------------------------------
 # Step 3: Determine update mode and pull latest
@@ -64,6 +67,8 @@ PRODUCT_DIRS=(
 )
 
 # Top-level product files to sync
+# NOTE: config.md is intentionally EXCLUDED — it contains user-specific
+# settings (legal_root) that must not be overwritten by updates.
 PRODUCT_FILES=(
     "VERSION"
     "CLAUDE.md"
@@ -73,8 +78,8 @@ PRODUCT_FILES=(
     "backup"
     "restore"
     "setup"
+    "export"
     "package.json"
-    "config.md"
     ".claude-plugin/plugin.json"
 )
 
@@ -241,11 +246,63 @@ echo ""
 # Step 5: Verify user content is untouched
 # -------------------------------------------------------------------
 
-echo "User content location:"
-echo "----------------------"
-echo "  User data lives in Obsidian vault (not in plugin cache)."
-echo "  Path: /Users/jackwang/Documents/Obsidian Vault/Counsel OS/"
-echo "  Product content updates do not affect user data."
+# -------------------------------------------------------------------
+# Step 5: Check for law/ and defaults/ changes to apply to vault
+# -------------------------------------------------------------------
+
+LEGAL_ROOT=""
+if [ -f "$COUNSEL_DIR/config.local.md" ]; then
+    LEGAL_ROOT=$(grep "^legal_root:" "$COUNSEL_DIR/config.local.md" | sed 's/^legal_root: *//')
+fi
+if [ -z "$LEGAL_ROOT" ] && [ -f "$COUNSEL_DIR/config.md" ]; then
+    LEGAL_ROOT=$(grep "^legal_root:" "$COUNSEL_DIR/config.md" | sed 's/^legal_root: *//')
+fi
+
+if [ -n "$LEGAL_ROOT" ] && [ -d "$LEGAL_ROOT" ]; then
+    echo "Vault sync check:"
+    echo "-----------------"
+    echo "  Legal root: $LEGAL_ROOT"
+    echo ""
+
+    VAULT_DIFFS=0
+    for content_dir in law defaults; do
+        if [ -d "$COUNSEL_DIR/knowledge/$content_dir" ] && [ -d "$LEGAL_ROOT/$content_dir" ]; then
+            # Compare plugin seed content against vault copy
+            CHANGED_FILES=""
+            for f in "$COUNSEL_DIR/knowledge/$content_dir/"*.md; do
+                fname=$(basename "$f")
+                vault_file="$LEGAL_ROOT/$content_dir/$fname"
+                if [ -f "$vault_file" ]; then
+                    # Strip frontmatter from vault file before comparing
+                    # (vault files have counsel-os frontmatter that seed files may not)
+                    if ! diff -q <(sed '/^---$/,/^---$/d' "$f") <(sed '/^---$/,/^---$/d' "$vault_file") &>/dev/null; then
+                        CHANGED_FILES="$CHANGED_FILES $fname"
+                        VAULT_DIFFS=$((VAULT_DIFFS + 1))
+                    fi
+                else
+                    CHANGED_FILES="$CHANGED_FILES $fname (NEW)"
+                    VAULT_DIFFS=$((VAULT_DIFFS + 1))
+                fi
+            done
+            if [ -n "$CHANGED_FILES" ]; then
+                echo "  $content_dir/ has upstream changes:$CHANGED_FILES"
+            fi
+        fi
+    done
+
+    if [ "$VAULT_DIFFS" -eq 0 ]; then
+        echo "  No upstream changes to law/ or defaults/ — vault is current."
+    else
+        echo ""
+        echo "  $VAULT_DIFFS file(s) differ between plugin seed and your vault."
+        echo "  Review with: diff <plugin>/knowledge/<dir>/<file> <vault>/<dir>/<file>"
+        echo "  Apply changes you want manually, or run /counsel-os:update for guided review."
+    fi
+else
+    echo "Knowledge location:"
+    echo "  config.md has no legal_root set — cannot check vault sync."
+fi
+
 echo ""
 echo "Update complete."
 

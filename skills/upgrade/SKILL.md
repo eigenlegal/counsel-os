@@ -11,6 +11,16 @@ Works in two modes:
 1. **Git repo** (development install) — `git pull` directly
 2. **Plugin cache** (installed via registry) — finds the git source repo, pulls there, then syncs product content into the cache without touching user data
 
+## Step 0: Resolve Paths
+
+Read `config.local.md` (if it exists) or `config.md` from the plugin root to get:
+
+- **Legal root** (`{legal_root}`) — contains law/, defaults/, practice/, memory/
+- **Entity discovery** — QMD query on `counsel-os-type` frontmatter property
+- **Specific entity lookup** — QMD search for company name + `counsel-os-type` value
+
+All framework content (law areas, default positions, practice files, memory) is read from `{legal_root}/`. Entity files (companies, counterparties) are discovered via QMD queries — they can live anywhere in the user's vault.
+
 ## Step 1: Find the Install
 
 Find the Counsel OS directory. Check both the plugin cache and direct install locations:
@@ -47,7 +57,7 @@ The script will:
 - If plugin cache: find the git source repo, pull there, then rsync product content (skills, knowledge/defaults, knowledge/law, templates, top-level files) into the cache
 - Show what changed
 
-User data lives in the Obsidian vault at `/Users/jackwang/Documents/Obsidian Vault/Counsel OS/` and is not affected by product updates.
+User data lives in `{legal_root}` (from config.md) and is not affected by product updates.
 
 If the script can't find the source repo in plugin-cache mode, it will print instructions for creating a `.source-repo` file pointing to the git clone.
 
@@ -66,11 +76,11 @@ fi
 
 ## Step 4: Verify User Content
 
-After the update, verify user data in the Obsidian vault is intact:
+After the update, verify user data in `{legal_root}` is intact:
 
 ```bash
-USER_DATA="/Users/jackwang/Documents/Obsidian Vault/Counsel OS"
-for dir in practice matters memory; do
+USER_DATA="$LEGAL_ROOT"  # from config.md
+for dir in practice memory law defaults; do
   if [ -d "$USER_DATA/$dir" ]; then
     file_count=$(find "$USER_DATA/$dir" -type f ! -name '.gitkeep' | wc -l | tr -d ' ')
     echo "$dir/ — $file_count files"
@@ -91,6 +101,6 @@ User data should not be affected by product updates (it lives outside the plugin
 Tell the user:
 - What version they're now on
 - What changed (summary)
-- That their practice data in the Obsidian vault is unaffected
+- That their practice data in `{legal_root}` is unaffected
 - Whether the update ran in git-repo or plugin-cache mode
 - Any action needed (e.g., "New position file added — run `/counsel-os:setup` to review")

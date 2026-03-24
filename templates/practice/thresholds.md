@@ -85,11 +85,11 @@ Example:
 
 Example:
 > **Tier 1 — Strategic partners:** Full review regardless of value. Relationship
-> context from matters/counterparties/ always loaded. GC involved in negotiation
+> context from the counterparty entity file always loaded. GC involved in negotiation
 > strategy. Examples: top 10 customers, key technology partners.
 >
 > **Tier 2 — Known counterparties:** Standard review process. Check
-> matters/counterparties/ for history and prior positions. Examples: established
+> the counterparty entity file for history and prior positions. Examples: established
 > vendors, repeat customers.
 >
 > **Tier 3 — New counterparties:** Yellow track minimum. Extra diligence on
