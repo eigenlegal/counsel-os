@@ -1,193 +1,155 @@
 ---
 name: update
-description: "Pull latest product content (law/ and defaults/) without touching your practice data. Run periodically."
+description: "Pull latest plugin and sync content updates to your vault. One command handles everything."
 ---
 
-# Update — Pull Latest Content
+# Update — Pull Plugin + Sync Content
 
-You are updating the Counsel OS product content (law areas, default positions, playbooks, checklists, and clause library) to the latest version without touching the user's practice data, matters, or memory.
+This skill handles both plugin updates (methodology) and content syncing (law areas, default positions) in one step. Run periodically to stay current.
 
-**When to use:** Run periodically (weekly or monthly) to get the latest legal content updates — new law areas, updated regulatory guidance, improved default positions, new playbooks.
 
 ## Step 0: Resolve Paths
 
 Read `config.local.md` (if it exists) or `config.md` from the plugin root to get:
 
 - **Legal root** (`{legal_root}`) — contains law/, defaults/, practice/, memory/
-- **Entity discovery** — QMD query on `counsel-os-type` frontmatter property
-- **Specific entity lookup** — QMD search for company name + `counsel-os-type` value
+- **Plugin root** — where the plugin lives (the directory containing this skill)
 
-All framework content (law areas, default positions, practice files, memory) is read from `{legal_root}/`. Entity files (companies, counterparties) are discovered via QMD queries — they can live anywhere in the user's vault.
+## Step 1: Pull Plugin Update
 
-## Step 1: Check Current Version
-
-Read the current `VERSION` file:
-
-```bash
-cat VERSION
-```
-
-Note the current version for comparison after the update.
-
-## Step 2: Run the Update Script
-
-Execute the update script:
-
-```bash
-./update
-```
-
-The update script will:
-1. Pull the latest changes from the remote repository
-2. Show which files changed in `{legal_root}/law/` and `{legal_root}/defaults/`
-3. Confirm user data in `{legal_root}` is unaffected
-
-If the update script doesn't exist or fails, perform the update manually:
+This updates the plugin's methodology — skills, CLAUDE.md, scripts. Your vault content is not touched.
 
 ```bash
 # Store current version
 OLD_VERSION=$(cat VERSION)
 
-# Pull latest changes
+# Pull latest
 git fetch origin
 git merge origin/main --no-edit
 
 # Show new version
 NEW_VERSION=$(cat VERSION)
-echo "Updated from $OLD_VERSION to $NEW_VERSION"
-
-# Show changed files in product content directories
-git diff --name-only $OLD_VERSION..$NEW_VERSION -- law/ defaults/
 ```
 
-## Step 3: Show What Changed
-
-Present a clear changelog to the user:
-
-### New Law Areas
-If any new law area files were added under `{legal_root}/law/`:
-```
-New law areas added:
-- antitrust/ — Competition law, merger review, market allocation
-- insurance/ — Coverage types, claims, policy review
+If the plugin is not a git repo (installed via plugin cache), find the source repo and sync:
+```bash
+./update
 ```
 
-### Updated Law Areas
-If existing law area files were modified:
-```
-Updated law areas:
-- data-privacy/ccpa-cpra.md — Updated for 2026 CPRA enforcement changes
-- data-privacy/overview.md — Added new trigger conditions for health data
-- employment/non-competes.md — Updated for FTC non-compete rule
-```
+Report what changed:
+> **Plugin updated: v{old} → v{new}**
+> - Skills: [list any changed skill files]
+> - CLAUDE.md: [changed/unchanged]
+> - Scripts: [list any changed scripts]
 
-### New Default Positions
-If new position sections were added to `{legal_root}/defaults/positions.md`:
+If already up to date:
+> Plugin is current (v{version}). Checking content sync...
+
+## Step 2: Compare Content
+
+Now compare the plugin's seed content (`knowledge/law/` and `knowledge/defaults/`) against your vault copies (`{legal_root}/law/` and `{legal_root}/defaults/`).
+
+For each file in the plugin's `knowledge/law/` and `knowledge/defaults/`:
+1. Read the plugin seed version
+2. Read the vault version at `{legal_root}/law/{file}` or `{legal_root}/defaults/{file}`
+3. Compare content (ignoring frontmatter — the vault copy has `counsel-os-*` frontmatter that the seed may not)
+4. Classify as: **unchanged**, **upstream updated** (plugin has newer content), **locally customized** (vault differs from seed but seed unchanged), or **both changed** (conflict)
+
+Also check for **new files** — files in the plugin seed that don't exist in the vault.
+
+## Step 3: Present Changes
+
+Show the user what's different, organized by action needed:
+
+### New content (not yet in your vault)
 ```
-New default positions:
-- [filename].md — [description of what positions it covers]
-```
-
-### Updated Default Positions
-If existing position files were modified:
-```
-Updated default positions:
-- limitation-of-liability.md — Updated classification guide for data breach carve-outs
-- indemnification.md — Added new market-standard counter-language
-```
-
-### New or Updated Playbooks, Checklists, Clause Library
-
-For each category, list new or changed files with a brief description. Pay attention to:
-- **New clause library categories** — new sections in `{legal_root}/defaults/clause-library.md` represent entirely new clause types with standard language and vendor-favorable variants.
-- **Priority tier additions to checklists** — if `{legal_root}/defaults/checklists.md` gained priority tier guidance (Tier 1/2/3), note this as a structural change that affects how the analyze phase assigns priority.
-- **New playbooks** — new sections in `{legal_root}/defaults/playbooks.md` mean new matter types can now be handled with step-by-step guidance.
-
-```
-New playbooks:
-- [filename].md — [description]
-
-Updated checklists:
-- [filename].md — [what changed, e.g., "Added priority tier guidance"]
-
-New clause library entries:
-- [filename].md — [clause types covered]
+New files available:
+- law/new-area.md — [brief description of what it covers]
+- defaults/new-file.md — [brief description]
 ```
 
-### Version Change
+For each new file, ask: "Add this to your vault?"
+
+### Updated content (upstream changed, you haven't customized)
 ```
-Version: 0.1.0 → 0.2.0
+Updated upstream (safe to apply):
+- law/data-privacy.md — [summary of what changed]
+- defaults/positions.md — [summary: added AI data use position, updated liability guidance]
 ```
 
-## Step 4: Check for Practice Impacts
+For each, ask: "Apply this update to your vault?" Then overwrite the vault copy (preserving frontmatter).
 
-This is the critical step. Review whether any updated defaults affect the user's practice positions.
+### Conflicts (both upstream and local changes)
+```
+Conflicts (you customized, upstream also changed):
+- law/financial-services.md
+  Your changes: [summary of local modifications]
+  Upstream changes: [summary of new content]
+```
 
-### Position Conflict Check
+For each conflict, show a summary of both sides and ask:
+> This file has both local customizations and upstream changes. Options:
+> (A) Keep your version (skip upstream changes)
+> (B) Take upstream version (lose your customizations)
+> (C) Let me merge them — I'll combine your customizations with the upstream changes
 
+If user picks (C), read both versions, merge intelligently (keep local customizations, add new upstream content), and show the merged result for approval before writing.
+
+### Unchanged
+Don't list these individually, just note:
+> [N] files unchanged — your vault is current.
+
+## Step 4: Apply Approved Changes
+
+For each change the user approved:
+1. Read the vault file to preserve frontmatter
+2. Replace the content body with the new/merged content
+3. Update the `counsel-os-version` in frontmatter to the current plugin version
+4. Write the file
+
+For new files:
+1. Copy from plugin seed to vault
+2. Add `counsel-os-*` frontmatter with current version
+3. Write the file
+
+## Step 5: Check Practice Impact
+
+After syncing, check whether any updated defaults affect the user's practice:
+
+### Position impact
 For each updated section in `{legal_root}/defaults/positions.md`:
-1. Read the updated default position
-2. Check if `{legal_root}/practice/positions.md` has an override for this clause type
-3. If yes: compare the practice override against the new default
-4. Flag if the update changes the baseline that the practice position was built on
+1. Check if `{legal_root}/practice/positions.md` has an override for this clause type
+2. If the default changed underneath an existing override, flag it:
+> **Heads up:** The default for [clause type] changed. Your practice override still applies, but you may want to review it against the new baseline.
+
+### Law constraint impact
+For each updated law area:
+1. Check if any practice positions now conflict with new requirements
+2. Flag urgently if so:
+> **Action needed:** Updated [law area] introduces new requirements that affect your [clause type] position. Review before your next matter in this area.
+
+## Step 6: Summary
 
 ```
-Impact check:
-- limitation-of-liability.md was updated. Your practice override exists for this
-  clause type. Review the changes to ensure your override still makes sense against
-  the new default.
+## Update Complete
 
-  Default changed: Added "AI-generated output liability" as a new carve-out category.
-  Your override: Silent on AI output liability.
-  Recommendation: Consider adding an AI output liability position to your practice overrides.
-```
+**Plugin:** v{old} → v{new} [or "already current"]
+**Content synced:** [N] files updated, [N] new files added, [N] skipped
 
-### Law Constraint Check
+### Changes Applied
+- law/data-privacy.md — updated
+- law/new-area.md — added (new)
+- defaults/positions.md — updated
 
-For each updated file in `{legal_root}/law/`:
-1. Check if the update introduces new constraints
-2. Check if any practice positions now conflict with updated law requirements
-3. Flag any conflicts as urgent — law always wins
-
-```
-URGENT: Updated data-privacy/ccpa-cpra.md introduces new requirements for
-AI-generated profiling decisions. Your current data protection position in
-{legal_root}/practice/positions.md does not address this. Review and update your position
-before your next matter involving California consumer data.
-```
-
-### New Content Review
-
-For each new file (not just updated):
-1. Summarize what was added
-2. Note if it's relevant to the user's practice (based on their identity and matter history)
-3. Suggest reviewing if relevant
-
-## Step 5: Output the Update Summary
-
-```
-## Update Summary
-
-**Previous version:** [old version]
-**Current version:** [new version]
-**Date:** [date]
-
-### Changes
-- [N] law area files updated
-- [N] new law areas added
-- [N] default positions updated
-- [N] new playbooks/checklists/clause library entries
+### Skipped
+- law/financial-services.md — kept your local version
 
 ### Practice Impact
-- [N] practice positions may need review (see details above)
-- [N] new law constraints to be aware of
-- No conflicts detected / [N] conflicts require attention
+- [N] practice positions to review (see above)
+- [N] law constraint changes to be aware of
+- [or] No practice impact — all updates are backward compatible
 
-### User Content
-User data lives in `{legal_root}` — not affected by product updates.
-
-### Recommended Actions
-1. [Review updated position X against your practice override]
-2. [Consider adding a position for new clause type Y]
-3. [No action needed — all updates are backward compatible]
+### Next Steps
+1. [Review practice position X against updated default]
+2. [or] No action needed — you're current
 ```
