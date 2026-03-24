@@ -295,8 +295,7 @@ if [ -n "$LEGAL_ROOT" ] && [ -d "$LEGAL_ROOT" ]; then
     else
         echo ""
         echo "  $VAULT_DIFFS file(s) differ between plugin seed and your vault."
-        echo "  Review with: diff <plugin>/knowledge/<dir>/<file> <vault>/<dir>/<file>"
-        echo "  Apply changes you want manually, or run /counsel-os:update for guided review."
+        echo "  Run /counsel-os:update in Claude Code for guided review and sync."
     fi
 else
     echo "Knowledge location:"
