@@ -1,8 +1,18 @@
 # Counsel OS Configuration
 
-## User Data Path
-user_data_path: /Users/jackwang/Documents/Obsidian Vault/Counsel OS
+## Legal Root
+legal_root:
+
+## Entity Discovery
+discovery: qmd
+entity_properties:
+  type_field: counsel-os-type
+  values: [counterparty, vendor, customer, prospect]
+
+## QMD Collection
+collection: obsidian
 
 ## Path Resolution
-- User data (practice/, matters/, memory/) → read/write from user_data_path
-- Product content (law/, defaults/, clause-library/, playbooks/, checklists/) → read from plugin cache (knowledge/)
+- Legal framework (law/, defaults/, practice/, memory/) → read/write from legal_root
+- Entity files (companies, counterparties) → discovered via QMD query on counsel-os-type frontmatter
+- For a specific entity: QMD search for company name + counsel-os-type value

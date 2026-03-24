@@ -3,9 +3,8 @@ node_modules/
 browse/dist/
 bun.lock
 backups/
-
-# User content — never overwritten by product updates
-knowledge/practice/
-knowledge/matters/
-knowledge/memory/
 *.bun-build
+config.local.md
+
+# knowledge/ is kept as seed content / templates only
+# All live content is in the user's vault (configured via config.md or config.local.md)

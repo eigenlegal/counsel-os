@@ -2,9 +2,9 @@
 
 ## Identity
 
-[Your Name], [Your Title] at [Your Organization]. [1-2 sentence description of your legal philosophy]. Full principles in `knowledge/practice/principles.md`.
+[Your Name], [Your Title] at [Your Organization]. [1-2 sentence description of your legal philosophy]. Full principles in `practice/principles.md` (at your legal root).
 
-[Brief description of your organization and what it does]. Full context in `knowledge/practice/identity.md`.
+[Brief description of your organization and what it does]. Full context in `practice/identity.md`.
 
 ---
 
@@ -17,25 +17,25 @@ Counsel OS uses a 5-layer knowledge hierarchy with explicit precedence. You MUST
 ```
 PRECEDENCE (highest to lowest):
 
-1. knowledge/law/        — Hard constraints. NEVER override. If a practice
+1. law/                  — Hard constraints. NEVER override. If a practice
                            position or deal term conflicts with law/, flag
                            it as RED and cite the specific regulation. Do
                            not suggest compliant alternatives that water
                            down the requirement.
 
-2. knowledge/matters/    — Deal-specific overrides. If a counterparty file
+2. Entity files          — Deal-specific overrides. If a counterparty file
                            says "accept 24-month liability cap", that beats
                            the practice default — but ONLY for that
-                           counterparty/deal.
+                           counterparty/deal. Discovered via QMD query.
 
-3. knowledge/practice/   — The lawyer's standard positions. If
+3. practice/             — The lawyer's standard positions. If
                            practice/positions.md says "our standard is
                            12-month cap", that beats defaults/.
 
-4. knowledge/defaults/   — Market-standard positions that ship with the
-                           product. Used when practice/ is silent on a topic.
+4. defaults/             — Market-standard positions. Used when practice/
+                           is silent on a topic.
 
-5. knowledge/memory/     — Context for pattern recognition. Inform, don't
+5. memory/               — Context for pattern recognition. Inform, don't
                            override. "We've accepted this 3 times before"
                            is useful context but doesn't change the standard.
 ```
@@ -50,14 +50,21 @@ PRECEDENCE (highest to lowest):
 
 ---
 
+### Path Resolution
+
+Read `config.local.md` (if it exists) or `config.md` from the plugin root to find:
+
+- **Legal root** — The folder where Counsel OS manages framework content (law/, defaults/, practice/, memory/). All paths below are relative to this root.
+- **Entity discovery** — Company/counterparty files are discovered via QMD queries on `counsel-os-type` frontmatter properties. Entity files can live anywhere in the user's vault.
+
 ### Before ANY Legal Work
 
-**Step 1: Always load these files.**
-- `knowledge/practice/identity.md` — Who you are and your organization
-- `knowledge/practice/principles.md` — How you think, prioritize, and communicate
-- `knowledge/practice/positions.md` — Your standard positions (overrides defaults/)
-- `knowledge/practice/voice.md` — Writing voice, tone, and formatting
-- `knowledge/practice/thresholds.md` — Escalation criteria
+**Step 1: Load practice files from `{legal_root}/practice/`.**
+- `practice/identity.md` — Who you are and your organization
+- `practice/principles.md` — How you think, prioritize, and communicate
+- `practice/positions.md` — Your standard positions (overrides defaults/)
+- `practice/voice.md` — Writing voice, tone, and formatting
+- `practice/thresholds.md` — Escalation criteria
 
 **Step 2: Identify the phase and load the matching skill.**
 
@@ -75,40 +82,40 @@ PRECEDENCE (highest to lowest):
 
 **Step 3: Auto-detect applicable law areas.**
 
-Before analysis, scan the document or matter description against trigger conditions in each `knowledge/law/<area>.md` file. Each law area is a single consolidated file. Load ALL areas that match — not just one.
+Before analysis, scan the document or matter description against trigger conditions in each `{legal_root}/law/<area>.md` file. Each law area is a single consolidated file with a `counsel-os-type: law-area` frontmatter property. Load ALL areas that match — not just one.
 
 **Step 4: Build effective positions.**
 
 For each clause type under review:
-1. Start with the relevant clause type section in `knowledge/defaults/positions.md`
-2. Overlay `knowledge/practice/positions.md` (practice wins on conflict)
-3. Overlay `knowledge/matters/counterparties/<name>.md` if it exists (matters wins on conflict)
-4. Check against `knowledge/law/*.md` constraints (law always wins — flag violations as RED)
+1. Start with the relevant clause type section in `{legal_root}/defaults/positions.md`
+2. Overlay `{legal_root}/practice/positions.md` (practice wins on conflict)
+3. Query QMD for the counterparty's entity file (search for company name + `counsel-os-type` in [counterparty, vendor, customer]). If found, overlay any agreed positions from that file (entity overrides win on conflict with practice)
+4. Check against `{legal_root}/law/*.md` constraints (law always wins — flag violations as RED)
 
 **Step 5: Execute the appropriate playbook.**
 
-Load the matching playbook section from `knowledge/defaults/playbooks.md`. Follow it step by step. Reference `knowledge/defaults/checklists.md` and `knowledge/defaults/clause-library.md` as needed.
+Load the matching playbook section from `{legal_root}/defaults/playbooks.md`. Follow it step by step. Reference `{legal_root}/defaults/checklists.md` and `{legal_root}/defaults/clause-library.md` as needed.
 
 ---
 
 ### After Completing Work
 
-Suggest knowledge updates when relevant. Always ask before making changes.
+Suggest knowledge updates when relevant. Always ask before making changes. Use QMD to discover the correct file to update.
 
 - **Standards gap**: "This review surfaced a clause type not covered in your positions — should I add it?"
 - **Clause language**: "This counter-language worked well — should I add it to the clause library?"
-- **Decision made**: "Should I log this decision in memory/decisions.md?"
-- **Exception granted**: "We deviated from standard on X — should I log this in memory/exceptions.md?"
-- **Pattern observed**: "Should I capture this insight in memory/patterns.md?"
-- **New counterparty**: "Should I create a context file for this counterparty?"
+- **Deal outcomes**: "Should I update the [counterparty] file with the agreed positions, decisions, and exceptions from this deal?" → Discover entity file via QMD, update in place.
+- **Practice pattern**: "Should I capture this insight in memory/patterns.md?" → Only for cross-cutting practice-level observations, not entity-specific details.
+- **New counterparty**: "Should I create a context file for this counterparty?" → Ask the user where to save it and add `counsel-os-type` frontmatter.
 
 ### Updating Knowledge
 
 You can update the knowledge base at any time:
-- "Update the liability position" → edit `knowledge/practice/positions.md`
-- "Add this clause to the library" → edit the relevant section in `knowledge/defaults/clause-library.md`
-- "Create a context file for [counterparty]" → create new file in `knowledge/matters/counterparties/`
-- "Log this decision" → append to `knowledge/memory/decisions.md`
+- "Update the liability position" → edit `{legal_root}/practice/positions.md`
+- "Add this clause to the library" → edit `{legal_root}/defaults/clause-library.md`
+- "Create a context file for [counterparty]" → ask user for save location, create file with `counsel-os-type` frontmatter
+- "Update [counterparty] file" → discover via QMD, update in place
+- "Log this decision" → update the entity file via QMD discovery
 
 Always confirm the edit before writing. Show what will change.
 
@@ -117,49 +124,40 @@ Always confirm the edit before writing. Show what will change.
 ## Knowledge Map
 
 ```
-skills/                                    # Pipeline skills
-  intake/SKILL.md                          # /counsel-os:intake — Phase 1
-  analyze/SKILL.md                         # /counsel-os:analyze — Phase 2
-  negotiate/SKILL.md                       # /counsel-os:negotiate — Phase 3
-  deliver/SKILL.md                         # /counsel-os:deliver — Phase 4
-  close/SKILL.md                           # /counsel-os:close — Phase 5
-  browse/SKILL.md                          # /counsel-os:browse — Utility
-  retro/SKILL.md                           # /counsel-os:retro — Utility
-  setup/SKILL.md                           # /counsel-os:setup — Config
-  update/SKILL.md                          # /counsel-os:update — Config
+Plugin (methodology + tooling):
+  skills/                                    # Pipeline skills
+    intake/SKILL.md                          # /counsel-os:intake — Phase 1
+    analyze/SKILL.md                         # /counsel-os:analyze — Phase 2
+    negotiate/SKILL.md                       # /counsel-os:negotiate — Phase 3
+    deliver/SKILL.md                         # /counsel-os:deliver — Phase 4
+    close/SKILL.md                           # /counsel-os:close — Phase 5
+    browse/SKILL.md                          # /counsel-os:browse — Utility
+    retro/SKILL.md                           # /counsel-os:retro — Utility
+    setup/SKILL.md                           # /counsel-os:setup — Config
+    update/SKILL.md                          # /counsel-os:update — Config
 
-knowledge/
-  law/                                     # Layer 1: Hard constraints (PRODUCT CONTENT)
-    <area>.md                              # Each law area is a single consolidated file (26 areas)
-                                           # Areas: accessibility, advertising-media, ai-and-automation, antitrust,
-                                           # bankruptcy-restructuring, consumer-protection, corporate, cybersecurity,
-                                           # data-privacy, employment, environmental-esg, financial-services, franchise,
-                                           # government-contracts, healthcare, insurance, international-trade,
-                                           # ip-and-technology, labor-relations, litigation, nonprofit,
-                                           # product-counseling, real-estate, securities, tax, white-collar-investigations
+User's vault (all knowledge — discovered via config.md + QMD):
+  {legal_root}/
+    law/                                     # Layer 1: Hard constraints (26 areas)
+      <area>.md                              # counsel-os-type: law-area
+    defaults/                                # Layer 4: Market standards
+      positions.md                           # counsel-os-type: default-positions (24 types)
+      playbooks.md                           # counsel-os-type: playbook (17 playbooks)
+      checklists.md                          # counsel-os-type: checklist (14 checklists)
+      clause-library.md                      # counsel-os-type: clause-library (21 categories)
+    practice/                                # Layer 3: Your judgment
+      identity.md                            # counsel-os-type: practice
+      principles.md                          # counsel-os-type: practice
+      positions.md                           # counsel-os-type: practice
+      voice.md                               # counsel-os-type: practice
+      thresholds.md                          # counsel-os-type: practice
+    memory/                                  # Layer 5: Institutional learning
+      patterns.md                            # counsel-os-type: memory-patterns
+      retro-*.md                             # Practice analytics snapshots
 
-  defaults/                                # Layer 4: Market standards (PRODUCT CONTENT)
-    positions.md                           # Default clause positions (24 types)
-    playbooks.md                           # Step-by-step processes (17 playbooks)
-    checklists.md                          # Completeness checks (14 checklists)
-    clause-library.md                      # Proven clause language (21 categories)
-
-  practice/                                # Layer 3: Your judgment (USER CONTENT, .gitignored)
-    identity.md                            # Organization, entities, team
-    principles.md                          # Philosophy, risk appetite, priorities
-    positions.md                           # Your overrides to defaults/positions.md
-    voice.md                               # Writing style, tone, formatting
-    thresholds.md                          # Escalation criteria
-
-  matters/                                 # Layer 2: Per-deal overrides (USER CONTENT, .gitignored)
-    _index.md                              # Routing hints, counterparty registry
-    counterparties/                        # Per-counterparty context and overrides
-    deals/                                 # Active deal-specific context
-
-  memory/                                  # Layer 5: Institutional learning (USER CONTENT, .gitignored)
-    decisions.md                           # Decision log with rationale
-    exceptions.md                          # Deviations from standards
-    patterns.md                            # Insights and observed patterns
+  {anywhere in vault}/                       # Layer 2: Entity-specific overrides
+    <company>.md                             # counsel-os-type: counterparty | vendor | customer | prospect
+                                             # Discovered via QMD query, not folder paths
 ```
 
 ## Output Standards

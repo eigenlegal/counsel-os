@@ -7,31 +7,43 @@ TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 BACKUP_NAME="counsel-os-backup-$TIMESTAMP"
 BACKUP_PATH="$BACKUP_DIR/$BACKUP_NAME"
 
-# User data lives in Obsidian vault
-USER_DATA="/Users/jackwang/Documents/Obsidian Vault/Counsel OS"
+# Read legal root: config.local.md first, then config.md
+LEGAL_ROOT=""
+if [ -f "$COUNSEL_DIR/config.local.md" ]; then
+    LEGAL_ROOT=$(grep "^legal_root:" "$COUNSEL_DIR/config.local.md" | sed 's/^legal_root: *//')
+fi
+if [ -z "$LEGAL_ROOT" ] && [ -f "$COUNSEL_DIR/config.md" ]; then
+    LEGAL_ROOT=$(grep "^legal_root:" "$COUNSEL_DIR/config.md" | sed 's/^legal_root: *//')
+fi
 
-# ── Check for user content ──────────────────────────────────────────────
+if [ -z "$LEGAL_ROOT" ] || [ ! -d "$LEGAL_ROOT" ]; then
+  echo "Legal root not found. Check config.md."
+  echo "  Expected: legal_root: /path/to/your/vault/Legal"
+  exit 1
+fi
+
+# ── Check for content ──────────────────────────────────────────────
 
 has_content=0
-for dir in practice matters memory; do
-  if [ -d "$USER_DATA/$dir" ] && [ "$(find "$USER_DATA/$dir" -type f ! -name '.gitkeep' | head -1)" ]; then
+for dir in practice memory law defaults; do
+  if [ -d "$LEGAL_ROOT/$dir" ] && [ "$(find "$LEGAL_ROOT/$dir" -type f ! -name '.gitkeep' | head -1)" ]; then
     has_content=1
     break
   fi
 done
 
 if [ "$has_content" -eq 0 ]; then
-  echo "Nothing to back up. Run /counsel-os:setup first to create your practice profile."
+  echo "Nothing to back up. Run /counsel-os:setup first."
   exit 0
 fi
 
-# ── Create backup ────────────────────────────────────────────────────────
+# ── Create backup ────────────────────────────────────────────────────
 
 mkdir -p "$BACKUP_PATH"
 
-for dir in practice matters memory; do
-  if [ -d "$USER_DATA/$dir" ]; then
-    cp -r "$USER_DATA/$dir" "$BACKUP_PATH/$dir"
+for dir in practice memory law defaults; do
+  if [ -d "$LEGAL_ROOT/$dir" ]; then
+    cp -r "$LEGAL_ROOT/$dir" "$BACKUP_PATH/$dir"
   fi
 done
 
@@ -40,18 +52,20 @@ cat > "$BACKUP_PATH/manifest.json" << MANIFEST
 {
   "timestamp": "$TIMESTAMP",
   "version": "$(cat "$COUNSEL_DIR/VERSION" 2>/dev/null || echo "unknown")",
-  "source": "$USER_DATA",
+  "source": "$LEGAL_ROOT",
   "contents": {
     "practice": $([ -d "$BACKUP_PATH/practice" ] && find "$BACKUP_PATH/practice" -type f ! -name '.gitkeep' | wc -l | tr -d ' ' || echo 0),
-    "matters": $([ -d "$BACKUP_PATH/matters" ] && find "$BACKUP_PATH/matters" -type f ! -name '.gitkeep' | wc -l | tr -d ' ' || echo 0),
-    "memory": $([ -d "$BACKUP_PATH/memory" ] && find "$BACKUP_PATH/memory" -type f ! -name '.gitkeep' | wc -l | tr -d ' ' || echo 0)
+    "memory": $([ -d "$BACKUP_PATH/memory" ] && find "$BACKUP_PATH/memory" -type f ! -name '.gitkeep' | wc -l | tr -d ' ' || echo 0),
+    "law": $([ -d "$BACKUP_PATH/law" ] && find "$BACKUP_PATH/law" -type f ! -name '.gitkeep' | wc -l | tr -d ' ' || echo 0),
+    "defaults": $([ -d "$BACKUP_PATH/defaults" ] && find "$BACKUP_PATH/defaults" -type f ! -name '.gitkeep' | wc -l | tr -d ' ' || echo 0)
   }
 }
 MANIFEST
 
 echo "Backup created: $BACKUP_PATH"
-echo "  source:   $USER_DATA"
-echo "  practice: $(cat "$BACKUP_PATH/manifest.json" | grep -o '"practice": [0-9]*' | grep -o '[0-9]*') files"
-echo "  matters:  $(cat "$BACKUP_PATH/manifest.json" | grep -o '"matters": [0-9]*' | grep -o '[0-9]*') files"
-echo "  memory:   $(cat "$BACKUP_PATH/manifest.json" | grep -o '"memory": [0-9]*' | grep -o '[0-9]*') files"
+echo "  source:   $LEGAL_ROOT"
+echo "  practice: $(grep -o '"practice": [0-9]*' "$BACKUP_PATH/manifest.json" | grep -o '[0-9]*') files"
+echo "  memory:   $(grep -o '"memory": [0-9]*' "$BACKUP_PATH/manifest.json" | grep -o '[0-9]*') files"
+echo "  law:      $(grep -o '"law": [0-9]*' "$BACKUP_PATH/manifest.json" | grep -o '[0-9]*') files"
+echo "  defaults: $(grep -o '"defaults": [0-9]*' "$BACKUP_PATH/manifest.json" | grep -o '[0-9]*') files"
 echo "  version:  $(cat "$COUNSEL_DIR/VERSION" 2>/dev/null || echo "unknown")"

@@ -10,12 +10,13 @@ You are preparing a negotiation package based on the analysis from Phase 2. Your
 
 ## Step 0: Resolve Paths
 
-Read `config.md` from the plugin root to get the user data path. All user data references in this skill use the configured path:
+Read `config.local.md` (if it exists) or `config.md` from the plugin root to get:
 
-- **User data** (practice/, matters/, memory/) → `/Users/jackwang/Documents/Obsidian Vault/Counsel OS/`
-- **Product content** (knowledge/law/, knowledge/defaults/) → plugin cache (relative paths)
+- **Legal root** (`{legal_root}`) — contains law/, defaults/, practice/, memory/
+- **Entity discovery** — QMD query on `counsel-os-type` frontmatter property
+- **Specific entity lookup** — QMD search for company name + `counsel-os-type` value
 
-This ensures both Claude Code and Cowork can access the same knowledge base via file paths or QMD.
+All framework content (law areas, default positions, practice files, memory) is read from `{legal_root}/`. Entity files (companies, counterparties) are discovered via QMD queries — they can live anywhere in the user's vault.
 
 ## Prerequisites
 
@@ -26,7 +27,7 @@ Before starting negotiation preparation, verify:
 
 2. **Effective positions are loaded.** You need the merged positions to know what to propose.
 
-3. **Voice preferences are loaded.** Redline comments and negotiation memos should match the user's preferred tone and style from `practice/voice.md`.
+3. **Voice preferences are loaded.** Redline comments and negotiation memos should match the user's preferred tone and style from `{legal_root}/practice/voice.md`.
 
 ## Step 1: Identify Negotiation Items
 
@@ -51,7 +52,7 @@ Draft the specific language change. This should be:
 - **Anchored to our effective position:** Propose what we actually want, not a pre-compromised middle ground
 - **Legally sound:** Check against loaded law area requirements
 
-Pull counter-language from `knowledge/defaults/clause-library.md` where available. The clause library contains proven language that has been accepted in past negotiations.
+Pull counter-language from `{legal_root}/defaults/clause-library.md` where available. The clause library contains proven language that has been accepted in past negotiations.
 
 Format:
 ```

@@ -10,12 +10,13 @@ You are closing out a legal matter. Your job is to capture what was learned, upd
 
 ## Step 0: Resolve Paths
 
-Read `config.md` from the plugin root to get the user data path. All user data references in this skill use the configured path:
+Read `config.local.md` (if it exists) or `config.md` from the plugin root to get:
 
-- **User data** (practice/, matters/, memory/) → `/Users/jackwang/Documents/Obsidian Vault/Counsel OS/`
-- **Product content** (knowledge/law/, knowledge/defaults/) → plugin cache (relative paths)
+- **Legal root** (`{legal_root}`) — contains law/, defaults/, practice/, memory/
+- **Entity discovery** — QMD query on `counsel-os-type` frontmatter property
+- **Specific entity lookup** — QMD search for company name + `counsel-os-type` value
 
-This ensures both Claude Code and Cowork can access the same knowledge base via file paths or QMD.
+All framework content (law areas, default positions, practice files, memory) is read from `{legal_root}/`. Entity files (companies, counterparties) are discovered via QMD queries — they can live anywhere in the user's vault.
 
 ## Prerequisites
 
@@ -34,97 +35,86 @@ Summarize what was done in this matter:
 
 ## Step 2: Identify Knowledge Updates
 
-Review the work product and conversation for updates worth capturing. For each potential update, determine the category and show what would change. **Always ask for approval before writing anything.**
+Review the work product and conversation for updates worth capturing. Route each update to the correct location. **Always ask for approval before writing anything.**
 
-### 2a. Decisions — `memory/decisions.md`
+**Routing principle:** Entity-specific information goes in the entity's company file. Only cross-cutting practice-level insights go in memory/.
 
-Did the user make a significant legal decision during this matter?
+### 2a. Entity File Update — Decisions, Exceptions, and Deal History
+
+Did the user make decisions, accept exceptions, or close a deal? These belong in the **entity's company file** (discovered via QMD), not in memory/.
 
 Look for:
 - Accepted terms that deviate from standard positions
 - Chose between competing approaches
 - Made a judgment call on risk
-- Approved an exception
+- Approved an exception or concession
+- Negotiation outcomes and agreed positions
 
-For each decision found, propose an entry:
+For each finding, propose an update to the entity file:
 
 ```
-I noticed you accepted [specific term]. Should I log this decision?
+I'll update the [counterparty] file with the outcome of this matter.
 
-Proposed entry:
-### [DATE] — [Brief Decision Title]
-**Matter:** [counterparty/deal]
-**Decision:** [what was decided]
-**Rationale:** [why]
-**Risk accepted:** [any risk consciously accepted]
-**Decided by:** [who]
+Proposed additions:
+- Agreed Positions: [new/updated positions from this deal]
+- Notable Differences: [deviations from practice standards, with Exception flag]
+- Negotiation Notes: [style, key wins, key concessions, rounds]
+- History: [DATE] — [matter type] — [outcome summary]
+- Flags: [any follow-up items, renewal leverage points, operational concerns]
 ```
 
-### 2b. Exceptions — `memory/exceptions.md`
+This keeps all entity-specific context — decisions, exceptions, deal terms, negotiation history — in one place where it will be found automatically on the next matter with this counterparty.
 
-Did the user deviate from their standard positions?
+### 2b. Practice Patterns — `{legal_root}/memory/patterns.md`
+
+Did anything emerge that applies **across deals**, not just to this entity? These are practice-level insights.
 
 Look for:
-- Accepted terms below the practice standard
-- Agreed to terms normally marked as RED
-- Made a one-time concession
-- Overrode a default position for a specific reason
+- Gaps in practice positions exposed by this deal (clause types with no standard)
+- Process improvements (e.g., "verify NDA entity matches contracting entity at intake")
+- Market trends (e.g., "SLA credits as sole remedy is market standard for infrastructure vendors")
+- Recurring pushback patterns across multiple counterparties
 
-For each exception found, propose an entry:
-
-```
-You deviated from your standard on [clause type] — accepting [what] instead of [standard].
-Should I log this as an exception?
-
-Proposed entry:
-### [DATE] — [Brief Exception Title]
-**Matter:** [counterparty/deal]
-**Standard position:** [what the standard says]
-**What we accepted:** [the actual term]
-**Why:** [justification]
-**One-time or precedent:** [assessment]
-```
-
-### 2c. Patterns — `memory/patterns.md`
-
-Did anything notable emerge that's worth tracking?
-
-Look for:
-- Counterparty negotiation behaviors worth remembering
-- Clause types that keep coming up
-- Market trends observed
-- Process insights (what worked well or poorly)
-- Recurring pushback on specific positions
+**Do NOT log here:**
+- Entity-specific negotiation behaviors (goes in the entity file's Negotiation Notes)
+- This deal's specific decisions or exceptions (goes in the entity file)
 
 For each pattern found, propose an entry:
 
 ```
-I noticed [observation]. Should I capture this as a pattern?
+I noticed [observation]. Should I capture this as a practice pattern?
 
 Proposed entry:
 ### [DATE] — [Pattern Title]
-**Category:** [negotiation/counterparty/clause/process/market trend]
+**Category:** [clause gap / process / market trend]
 **Observation:** [what you noticed]
 **Evidence:** [specific examples]
-**Implication:** [what it means for future work]
+**Implication:** [what this means for future work]
+**Action:** [update positions / update intake process / monitoring]
 ```
 
-### 2d. New Counterparty — `matters/counterparties/`
+### 2d. New Counterparty Entity
 
-Is this a counterparty we haven't dealt with before?
+Is this a counterparty we haven't dealt with before? Use a QMD query to check for an existing entity file.
 
-If no counterparty file exists, propose creating one:
+If no entity file exists, propose creating one. Ask the user where to save the file:
 
 ```
-This is our first matter with [counterparty]. Should I create a counterparty file?
+This is our first matter with [counterparty]. Should I create an entity file?
 
-Proposed file: matters/counterparties/[name].md
+Where should I save it? (e.g., a folder in your vault for this company)
+
+Proposed file content:
+
+---
+counsel-os-type: counterparty
+counsel-os-tier: [1/2/3/4]
+counsel-os-category: [customer/vendor/partner]
+---
 
 # [Counterparty Name]
 
 ## Relationship
-- Category: [customer/vendor/partner]
-- Tier: [1/2/3/4]
 - Primary contact: [if known]
 - Our relationship owner: [if known]
 
@@ -138,10 +128,10 @@ Proposed file: matters/counterparties/[name].md
 [negotiation style, known preferences, pushback patterns]
 ```
 
-If a counterparty file already exists, propose updates:
+If an entity file already exists (found via QMD), propose updates:
 
 ```
-Should I update the counterparty file for [name] with the outcome of this matter?
+Should I update the entity file for [name] with the outcome of this matter?
 
 Proposed additions:
 - History: [new entry]
@@ -149,7 +139,7 @@ Proposed additions:
 - Notes: [any new observations]
 ```
 
-### 2e. Position Gap — `practice/positions.md`
+### 2e. Position Gap — `{legal_root}/practice/positions.md`
 
 Did this matter expose a clause type not covered in the user's positions?
 
@@ -165,7 +155,7 @@ Suggested starting point:
 **Auto-escalate:** [suggested triggers]
 ```
 
-### 2f. Clause Language — `knowledge/defaults/clause-library.md`
+### 2f. Clause Language — `{legal_root}/defaults/clause-library.md`
 
 Did any particularly effective clause language emerge?
 
@@ -195,7 +185,8 @@ For each update the user approves:
 4. Confirm the write was successful
 
 **Important:**
-- Append to existing files (decisions.md, exceptions.md, patterns.md) — never overwrite
+- Append to existing files (patterns.md, retros) — never overwrite
+- Update entity files in place (add sections, update history)
 - Create new files for new counterparties
 - Edit existing files for position updates and clause library additions
 - Always show the diff before writing
@@ -210,10 +201,9 @@ For each update the user approves:
 **Duration:** [time from intake to close]
 
 ### Knowledge Updates
-- [x] Decision logged: [title] → memory/decisions.md
-- [x] Exception logged: [title] → memory/exceptions.md
+- [x] Entity file updated: [counterparty] — agreed positions, deal history, flags
 - [ ] Pattern captured: [title] → declined by user
-- [x] Counterparty file created: [name] → matters/counterparties/[name].md
+- [x] Entity file created: [name] → [user-specified path]
 - [ ] Position gap: [clause type] → user will add manually later
 
 ### Matter Statistics
@@ -232,7 +222,7 @@ As matters accumulate, the knowledge base needs to stay lean enough for Claude t
 
 ### 5a. Prune Decision and Exception Logs
 
-Review `decisions.md` and `exceptions.md` for entries that are no longer load-bearing:
+Review `patterns.md` for entries that are no longer load-bearing:
 
 - **Superseded decisions:** A later decision on the same clause type with the same counterparty replaces the earlier one. Remove the older entry.
 - **Non-precedent exceptions:** Entries marked as low precedent risk that haven't been cited in any subsequent matter can be removed after 6 months.
@@ -295,19 +285,19 @@ Ask the user where to save the summary:
 ```
 Where should I save the deal summary?
 - Current directory: [show current working directory]
-- Obsidian vault: Counsel OS/deals/[counterparty-name]/
+- Legal root: {legal_root}/deals/[counterparty-name]/
 - Other: specify a path
 ```
 
-Default suggestion is the current working directory. Save to wherever the user specifies. The counterparty file in the Obsidian vault keeps only the operating summary.
+Default suggestion is the current working directory. Save to wherever the user specifies. The entity file keeps only the operating summary.
 
-### 5d. Index Health Check
+### 5d. Entity Health Audit
 
-Check `_index.md`:
-- Are all counterparty statuses current?
-- Are there counterparties listed as "Negotiating" that should be "Executed" or "Archived"?
-- Is the active deals table accurate?
-- Flag if the index exceeds 100 lines and suggest consolidating inactive counterparties.
+Run a QMD query for all files with `counsel-os-type` frontmatter to audit entity status:
+- Are all entity statuses current? (Check `counsel-os-status` values)
+- Are there entities marked as "Negotiating" that should be "Executed" or "Archived"?
+- Are there entity files missing required frontmatter properties (`counsel-os-type`, `counsel-os-tier`)?
+- Flag any entities with stale or inconsistent metadata.
 
 ## Running Close Independently
 

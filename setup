@@ -1,132 +1,19 @@
 #!/usr/bin/env bash
-set -e
 
-# Counsel OS — Setup Script
-# Copies templates to knowledge/ directories if they don't exist,
-# and optionally builds the browse binary.
-
-# Determine the directory where this script lives
-COUNSEL_DIR="$(cd "$(dirname "$0")" && pwd)"
+# Counsel OS — Setup
+# All setup is handled by /counsel-os:setup inside Claude Code.
 
 echo "Counsel OS Setup"
 echo "================"
 echo ""
-echo "Plugin directory: $COUNSEL_DIR"
+echo "Start Claude Code and run:"
 echo ""
-
-# -------------------------------------------------------------------
-# Step 1: Copy templates to knowledge/ if they don't exist
-# -------------------------------------------------------------------
-
-TEMPLATES_DIR="$COUNSEL_DIR/templates"
-KNOWLEDGE_DIR="$COUNSEL_DIR/knowledge"
-
-# Practice files
-if [ ! -d "$KNOWLEDGE_DIR/practice" ]; then
-    echo "Creating knowledge/practice/ from templates..."
-    cp -r "$TEMPLATES_DIR/practice" "$KNOWLEDGE_DIR/practice"
-    echo "  -> Copied practice templates (identity, principles, positions, voice, thresholds)"
-else
-    echo "knowledge/practice/ already exists — skipping"
-    # Check if files are still template placeholders
-    POPULATED=0
-    for f in identity.md principles.md positions.md voice.md thresholds.md; do
-        if [ -f "$KNOWLEDGE_DIR/practice/$f" ]; then
-            if grep -q "\[YOUR.*HERE\]" "$KNOWLEDGE_DIR/practice/$f" 2>/dev/null; then
-                POPULATED=$((POPULATED + 1))
-            fi
-        fi
-    done
-    if [ "$POPULATED" -gt 0 ]; then
-        echo "  -> Note: $POPULATED file(s) still contain template placeholders. Run /counsel-os:setup to complete configuration."
-    fi
-fi
-
-# Matters files
-if [ ! -d "$KNOWLEDGE_DIR/matters" ] || [ ! -f "$KNOWLEDGE_DIR/matters/_index.md" ]; then
-    echo "Creating knowledge/matters/ from templates..."
-    mkdir -p "$KNOWLEDGE_DIR/matters"
-    cp "$TEMPLATES_DIR/matters/_index.md" "$KNOWLEDGE_DIR/matters/_index.md" 2>/dev/null || true
-    mkdir -p "$KNOWLEDGE_DIR/matters/counterparties"
-    mkdir -p "$KNOWLEDGE_DIR/matters/deals"
-    # Preserve .gitkeep files
-    touch "$KNOWLEDGE_DIR/matters/counterparties/.gitkeep"
-    touch "$KNOWLEDGE_DIR/matters/deals/.gitkeep"
-    echo "  -> Copied matters templates (index, counterparties/, deals/)"
-else
-    echo "knowledge/matters/ already exists — skipping"
-fi
-
-# Memory files
-if [ ! -d "$KNOWLEDGE_DIR/memory" ]; then
-    echo "Creating knowledge/memory/ from templates..."
-    cp -r "$TEMPLATES_DIR/memory" "$KNOWLEDGE_DIR/memory"
-    echo "  -> Copied memory templates (decisions, exceptions, patterns)"
-else
-    echo "knowledge/memory/ already exists — skipping"
-fi
-
+echo "  /counsel-os:setup"
 echo ""
-
-# -------------------------------------------------------------------
-# Step 2: Check for pandoc (needed for .docx tracked changes extraction)
-# -------------------------------------------------------------------
-
-if command -v pandoc &> /dev/null; then
-    PANDOC_VERSION=$(pandoc --version | head -1)
-    echo "pandoc found: $PANDOC_VERSION"
-else
-    echo "WARNING: pandoc is not installed."
-    echo "  -> pandoc is needed to extract tracked changes and comments from Word documents (.docx)."
-    echo "  -> Install with: brew install pandoc (macOS) or apt-get install pandoc (Linux)"
-    echo "  -> Without pandoc, .docx extraction will fall back to XML parsing (less reliable)."
-fi
-
+echo "This handles everything:"
+echo "  - Choose where to store your framework content"
+echo "  - Seed law areas, positions, playbooks, checklists, clause library"
+echo "  - Build the browse binary (if bun is installed)"
+echo "  - Walk you through configuring your practice profile"
 echo ""
-
-# -------------------------------------------------------------------
-# Step 3: Build browse binary (if bun is installed and source exists)
-# -------------------------------------------------------------------
-
-BROWSE_SRC="$COUNSEL_DIR/browse/src"
-BROWSE_DIST="$COUNSEL_DIR/browse/dist"
-
-if [ -d "$BROWSE_SRC" ]; then
-    if command -v bun &> /dev/null; then
-        echo "Building browse binary with bun..."
-        cd "$COUNSEL_DIR"
-        bun install
-        bun run build
-        echo "  -> Browse binary built at $BROWSE_DIST/browse"
-    else
-        echo "Browse source found but bun is not installed."
-        echo "  -> Install bun (https://bun.sh) and run 'bun run build' to build the browse binary."
-        echo "  -> Or use npx: 'npx playwright install chromium'"
-    fi
-else
-    echo "Browse source not found — skipping binary build"
-    echo "  -> The browse skill will use system playwright if available"
-fi
-
-echo ""
-
-# -------------------------------------------------------------------
-# Step 4: Summary
-# -------------------------------------------------------------------
-
-echo "Setup Complete"
-echo "=============="
-echo ""
-echo "Directory structure:"
-echo "  knowledge/"
-[ -d "$KNOWLEDGE_DIR/practice" ]  && echo "    practice/     — Your legal profile and positions"
-[ -d "$KNOWLEDGE_DIR/matters" ]   && echo "    matters/      — Per-deal and counterparty context"
-[ -d "$KNOWLEDGE_DIR/memory" ]    && echo "    memory/       — Decision and pattern logs"
-[ -d "$KNOWLEDGE_DIR/law" ]       && echo "    law/          — Legal constraints (product content)"
-[ -d "$KNOWLEDGE_DIR/defaults" ]  && echo "    defaults/     — Market-standard positions (product content)"
-echo ""
-echo "Next steps:"
-echo "  1. Run /counsel-os:setup for guided profile configuration"
-echo "  2. Or edit the files in knowledge/practice/ directly"
-echo "  3. Then start your first matter with /counsel-os:intake"
-echo ""
+echo "Takes about 15 minutes."

@@ -12,30 +12,28 @@ You are running a retrospective analysis of the user's legal practice. Your job 
 
 ## Step 0: Resolve Paths
 
-Read `config.md` from the plugin root to get the user data path. All user data references in this skill use the configured path:
+Read `config.local.md` (if it exists) or `config.md` from the plugin root to get:
 
-- **User data** (practice/, matters/, memory/) → `/Users/jackwang/Documents/Obsidian Vault/Counsel OS/`
-- **Product content** (knowledge/law/, knowledge/defaults/) → plugin cache (relative paths)
+- **Legal root** (`{legal_root}`) — contains law/, defaults/, practice/, memory/
+- **Entity discovery** — QMD query on `counsel-os-type` frontmatter property
+- **Specific entity lookup** — QMD search for company name + `counsel-os-type` value
 
-This ensures both Claude Code and Cowork can access the same knowledge base via file paths or QMD.
+All framework content (law areas, default positions, practice files, memory) is read from `{legal_root}/`. Entity files (companies, counterparties) are discovered via QMD queries — they can live anywhere in the user's vault.
 
 ## Step 1: Gather Data
 
 Read all available data sources:
 
 ### Memory Files
-1. **`memory/decisions.md`** — All logged decisions with rationale and outcomes
-2. **`memory/exceptions.md`** — All deviations from standard positions
-3. **`memory/patterns.md`** — Previously captured observations and insights
+1. **`{legal_root}/memory/patterns.md`** — Cross-cutting practice-level observations and insights
+2. **`{legal_root}/memory/retro-*.md`** — Previous retro snapshots for trend comparison
 
-### Matter Files
-4. **All files in `matters/counterparties/`** — Counterparty history, agreed positions, and notes
-5. **All files in `matters/deals/`** — Deal-specific context and outcomes (if any remain from active matters)
-6. **`matters/_index.md`** — Counterparty registry and relationship categories
+### Entity Files
+4. **All entity files discovered via QMD** — Run a QMD query on `counsel-os-type` frontmatter to find all counterparty, company, and deal entity files. These contain history, agreed positions, and notes.
 
 ### Practice Files (for comparison)
-7. **`practice/positions.md`** — Current standard positions (to compare against actual decisions)
-8. **`practice/thresholds.md`** — Current escalation criteria (to assess if thresholds are calibrated correctly)
+5. **`{legal_root}/practice/positions.md`** — Current standard positions (to compare against actual decisions)
+6. **`{legal_root}/practice/thresholds.md`** — Current escalation criteria (to assess if thresholds are calibrated correctly)
 
 If any files are empty or don't exist, note the gap but continue with available data. The retro is most valuable when there's enough data to identify patterns (typically after 10+ matters).
 
@@ -68,7 +66,7 @@ From decisions and exceptions logs:
 
 ### Position Effectiveness
 
-For each position in `practice/positions.md`:
+For each position in `{legal_root}/practice/positions.md`:
 - How often was the standard position accepted without modification?
 - How often was it negotiated down to the fallback position?
 - How often was an exception granted?
@@ -171,8 +169,8 @@ Priority: [high/medium/low]
 The retro audits the health of the knowledge base but does NOT perform maintenance directly — that's the close skill's job. Flag issues here; fix them via `/counsel-os:close`.
 
 ### Log Bloat
-- Count entries in `decisions.md`, `exceptions.md`, and `patterns.md`
-- If any log exceeds 30 entries, flag: "Decision log has [N] entries. Run `/counsel-os:close` to prune superseded and non-precedent entries."
+- Count entries in `patterns.md`
+- If patterns.md exceeds 30 entries, flag: "Patterns log has [N] entries. Consider pruning entries that have been acted on (positions updated, process changed)."
 
 ### Counterparty File Size
 - Check line counts on all counterparty files
@@ -182,9 +180,9 @@ The retro audits the health of the knowledge base but does NOT perform maintenan
 - For each counterparty marked "Executed," check if the user has a detailed agreement summary in their deal folder
 - If not, flag: "No detailed agreement summary found for [counterparty]. Consider generating one via `/counsel-os:close`."
 
-### Stale Index Entries
-- Check `_index.md` for counterparties still listed as "Negotiating" that may have been executed or abandoned
-- Flag any mismatches
+### Stale Entity Metadata
+- Run a QMD query for all entity files and check for counterparties still marked as "Negotiating" that may have been executed or abandoned
+- Flag any mismatches in `counsel-os-status` frontmatter
 
 ## Step 9: Save Retro Snapshot
 
