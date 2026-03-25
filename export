@@ -20,13 +20,14 @@ zip -r "$OUTPUT_FILE" "$PLUGIN_NAME/" \
   -x "$PLUGIN_NAME/.git/*" \
   -x "$PLUGIN_NAME/.git" \
   -x "$PLUGIN_NAME/node_modules/*" \
-  -x "$PLUGIN_NAME/browse/dist/*" \
+  -x "$PLUGIN_NAME/browse/*" \
   -x "$PLUGIN_NAME/backups/*" \
   -x "$PLUGIN_NAME/knowledge/*" \
+  -x "$PLUGIN_NAME/docs/*" \
   -x "$PLUGIN_NAME/bun.lock" \
   -x "$PLUGIN_NAME/.DS_Store" \
   -x "$PLUGIN_NAME/**/.DS_Store" \
-  -x "$PLUGIN_NAME/.189d75fefce77e77-00000000.bun-build" \
+  -x "$PLUGIN_NAME/*.bun-build" \
   > /dev/null
 
 SIZE="$(du -h "$OUTPUT_FILE" | cut -f1 | tr -d ' ')"
@@ -37,7 +38,7 @@ echo ""
 echo "Includes:"
 echo "  - Plugin methodology (skills/, CLAUDE.md)"
 echo "  - Templates (templates/)"
-echo "  - Tooling (browse/, scripts)"
+echo "  - Scripts (setup, update, backup, restore)"
 echo "  - Local config (config.local.md)"
 echo ""
 echo "Does NOT include:"
