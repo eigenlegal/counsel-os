@@ -1,6 +1,6 @@
 ---
 counsel-os-type: law-area
-counsel-os-version: "0.3.1"
+counsel-os-version: "0.3.2"
 ---
 
 ## Anti Corruption
