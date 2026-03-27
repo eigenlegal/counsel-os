@@ -82,7 +82,7 @@ Read `config.local.md` (if it exists) or `config.md` from the plugin root to fin
 
 **Step 3: Auto-detect applicable law areas.**
 
-Before analysis, scan the document or matter description against trigger conditions in each `{legal_root}/law/<area>.md` file. Each law area is a single consolidated file with a `counsel-os-type: law-area` frontmatter property. Load ALL areas that match — not just one.
+Before analysis, scan the document or matter description against trigger conditions in each `{legal_root}/law/<area>/_overview.md` file. Each law area is a folder containing `_overview.md` (trigger conditions, sub-file loading rules, key constraints) and individual sub-topic files. All files use `counsel-os-type: law-area` frontmatter. Load ALL areas that match — not just one.
 
 **Step 4: Build effective positions.**
 
@@ -90,7 +90,7 @@ For each clause type under review:
 1. Start with the relevant clause type section in `{legal_root}/defaults/positions.md`
 2. Overlay `{legal_root}/practice/positions.md` (practice wins on conflict)
 3. Query QMD for the counterparty's entity file (search for company name + `counsel-os-type` in [counterparty, vendor, customer]). If found, overlay any agreed positions from that file (entity overrides win on conflict with practice)
-4. Check against `{legal_root}/law/*.md` constraints (law always wins — flag violations as RED)
+4. Check against `{legal_root}/law/<area>/_overview.md` constraints (law always wins — flag violations as RED)
 
 **Step 5: Execute the appropriate playbook.**
 
@@ -139,7 +139,9 @@ Plugin (methodology + tooling):
 User's vault (all knowledge — discovered via config.md + QMD):
   {legal_root}/
     law/                                     # Layer 1: Hard constraints (26 areas)
-      <area>.md                              # counsel-os-type: law-area
+      <area>/                                # One folder per law area
+        _overview.md                         # Trigger conditions, sub-file rules, key constraints
+        <sub-topic>.md                       # Individual sub-topic files (counsel-os-type: law-area)
     defaults/                                # Layer 4: Market standards
       positions.md                           # counsel-os-type: default-positions (24 types)
       playbooks.md                           # counsel-os-type: playbook (17 playbooks)
