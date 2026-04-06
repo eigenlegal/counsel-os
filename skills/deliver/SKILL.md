@@ -177,6 +177,70 @@ We have reviewed the [document type] and propose the following revisions, organi
 **Recommendation:** [proceed / revise / escalate]
 ```
 
+## Step 3b: Word Tracked Changes Output
+
+When the matter involves a negotiation and the source document was a .docx file, check if Word tracked changes output is available.
+
+### Capability Detection
+
+Run these checks:
+
+1. **Source is .docx:** The original document path from the conversation ends in `.docx`
+2. **python-docx available:** Run `python3 -c "import docx"` — exits 0
+3. **Word installed:** `/Applications/Microsoft Word.app` exists
+4. **User name available:** `{legal_root}/practice/identity.md` contains a name that isn't a bracket placeholder like `[YOUR NAME HERE]`
+
+### Tier Selection
+
+| Tier | Requirements | Action |
+|------|-------------|--------|
+| Full | All four checks pass | Offer tracked changes .docx with comments, all attributed to user |
+| Partial | Checks 1+2 pass, check 3 fails | Offer clean modified .docx. Tell user: "Word isn't available for automated Compare. You can open both files in Word and run Review > Compare to generate tracked changes." |
+| Markdown | Check 1 or 2 fails | Skip this step — proceed with markdown output from Step 3 |
+
+If Full or Partial tier is available, ask the user:
+
+> I can generate a Word document with tracked changes attributed to [user's name]. The redline comments will appear as Word comments from you. Would you like me to generate this?
+
+If they decline, skip to Step 4.
+
+### Pipeline Execution
+
+**A. Extract pairs.** From the negotiate output, collect all Current/Proposed pairs and counterparty-facing rationale. Write to a temp JSON file at `/tmp/counsel-os-redlines-{timestamp}.json`:
+
+```json
+[
+  {
+    "current": "exact current language from negotiate output",
+    "proposed": "exact proposed language from negotiate output",
+    "comment": "counterparty-facing rationale, or null if none",
+    "author": "User's Name from identity.md"
+  }
+]
+```
+
+**B. Apply changes.** Run the apply script:
+
+```bash
+python3 {plugin_root}/scripts/apply_redlines.py "{original.docx}" "/tmp/counsel-os-redlines-{timestamp}.json" "/tmp/counsel-os-modified-{timestamp}.docx"
+```
+
+Parse the JSON output. Report any skipped items to the user — these need to be applied manually in Word.
+
+**C. Word Compare (Full tier only).** Run the compare script:
+
+```bash
+{plugin_root}/scripts/word_compare.sh "{original.docx}" "/tmp/counsel-os-modified-{timestamp}.docx" "{author_name}" "{output_path}"
+```
+
+Default output path: `{original_dir}/{original_name}-redline-{YYYY-MM-DD}.docx`
+
+**D. Report results.** Tell the user:
+- Where the file was saved
+- How many changes were applied vs. skipped
+- Any items that need manual attention
+- Suggest: "Review the tracked changes in Word, then run `/counsel-os:close` to log this matter."
+
 ## Step 4: Connected Service Delivery
 
 If connected services are available (check `CONNECTORS.md` and `.mcp.json`), offer to deliver through them:
