@@ -177,6 +177,36 @@ We have reviewed the [document type] and propose the following revisions, organi
 **Recommendation:** [proceed / revise / escalate]
 ```
 
+## Step 3a: Clean Document Format (Optional)
+
+When python-docx is available and the source is a .docx file, the user can optionally reformat the document to professional standards before (or instead of) applying tracked changes.
+
+### When to offer
+
+- The user explicitly requests clean formatting ("clean it up", "reformat", "professional format")
+- The user is producing a final agreement (not a redline)
+- The user asks for a clean version of an existing .docx
+
+### Execution
+
+```bash
+python3 {plugin_root}/scripts/clean_format.py "{input.docx}" "{output_dir}/counsel-os-clean-{timestamp}.docx"
+```
+
+Parse the JSON output. Report the formatting summary to the user (paragraphs, headings detected, lists converted).
+
+### Integration with redline pipeline
+
+If clean format is used WITH tracked changes (Step 3b):
+1. The clean-formatted document becomes the base for `apply_redlines.py`
+2. `word_compare.sh` compares the **original** (unformatted) against the clean+revised document
+3. Tracked changes reflect both formatting and content changes
+
+If clean format is used WITHOUT tracked changes:
+1. The clean-formatted document IS the deliverable
+2. Skip Step 3b
+3. Report the output path
+
 ## Step 3b: Word Tracked Changes Output
 
 When the matter involves a negotiation and the source document was a .docx file, check if Word tracked changes output is available.
@@ -200,9 +230,13 @@ Run these checks:
 
 If Full or Partial tier is available, ask the user:
 
-> I can generate a Word document with tracked changes attributed to [user's name]. The redline comments will appear as Word comments from you. Would you like me to generate this?
+> I can generate the Word output in two styles:
+> (A) **Preserve formatting** — keeps the original styles with tracked changes showing content edits only (standard for redlines)
+> (B) **Clean format** — reformats to professional standards (10pt Calibri, consistent headings, native numbered lists) with tracked changes showing both format and content changes
+>
+> Option A is standard for redlines. Option B is better when the source document has inconsistent formatting.
 
-If they decline, skip to Step 4.
+If they decline both, skip to Step 4.
 
 ### Pipeline Execution
 
