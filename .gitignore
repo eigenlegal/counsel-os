@@ -6,7 +6,8 @@ backups/
 *.bun-build
 config.local.md
 
-# knowledge/ is tracked as seed content / templates
-# Users with real data should either:
-#   1. Point legal_root to an external vault via config.local.md, or
-#   2. Add knowledge/practice/, knowledge/matters/, knowledge/memory/ to a local .gitignore
+# Seed content (law/, defaults/) is tracked; user-specific content is not.
+# /setup copies seed templates to the user's vault on first run.
+knowledge/practice/
+knowledge/matters/
+knowledge/memory/
