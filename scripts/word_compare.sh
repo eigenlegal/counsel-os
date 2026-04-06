@@ -42,6 +42,9 @@ echo "  Modified: $MODIFIED"
 echo "  Author:   $AUTHOR"
 echo "  Output:   $OUTPUT"
 
+# NOTE: All paths must be in user-accessible directories (e.g. ~/Desktop, ~/Documents).
+# macOS sandboxing prevents Word from accessing /tmp or /private/tmp.
+
 osascript << ENDSCRIPT
 tell application "Microsoft Word"
     activate
