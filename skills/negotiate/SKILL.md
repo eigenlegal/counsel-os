@@ -210,3 +210,9 @@ Once the user has completed the negotiation:
 - If revisions were accepted: Proceed to `/counsel-os:deliver` to package the final output
 - If further negotiation is needed: Update the analysis with new counterparty positions and iterate
 - After the deal closes: Run `/counsel-os:close` to log decisions and update knowledge
+
+### Prompt for Deliver
+
+If the source document was a .docx file, prompt the user after outputting the redline package:
+
+> The source is a Word document. Would you like me to continue to `/counsel-os:deliver` to generate a Word file with tracked changes? I can also apply professional formatting if the source document needs cleanup.
