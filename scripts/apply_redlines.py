@@ -17,7 +17,6 @@ The redlines.json file should contain an array of objects:
 
 import json
 import sys
-from copy import deepcopy
 from pathlib import Path
 
 from docx import Document
