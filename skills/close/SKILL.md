@@ -191,7 +191,39 @@ For each update the user approves:
 - Edit existing files for position updates and clause library additions
 - Always show the diff before writing
 
-## Step 4: Output the Close Summary
+## Step 4: Commit Knowledge Updates
+
+After writing all approved updates, check if `{legal_root}` is a git repo:
+
+```bash
+git -C {legal_root} rev-parse --is-inside-work-tree 2>/dev/null
+```
+
+### If it's a git repo:
+
+Stage and commit all changes with a descriptive message:
+
+```bash
+cd {legal_root}
+git add -A
+git commit -m "Close: [matter name] — [brief summary of updates]"
+```
+
+The commit message should reflect what changed, e.g.:
+- `"Close: Acme MSA — updated liability position, logged data processing exception"`
+- `"Close: Vendor NDA triage — created BigCo entity file, added MFN pattern"`
+
+If a remote is configured, offer to push:
+
+> Knowledge updates committed. Want me to push to your remote backup?
+
+Only push if they confirm. Do not auto-push.
+
+### If it's not a git repo:
+
+Skip silently. The user chose not to use version control during setup.
+
+## Step 5: Output the Close Summary
 
 ```
 ## Close Summary
@@ -216,7 +248,7 @@ For each update the user approves:
 - [Any pending items, future review dates, or process improvements]
 ```
 
-## Step 5: Scale Management
+## Step 6: Scale Management
 
 As matters accumulate, the knowledge base needs to stay lean enough for Claude to load efficiently. Run these checks at the end of every close.
 
