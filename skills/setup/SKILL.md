@@ -285,7 +285,58 @@ If the user provides past contracts:
 3. Flag any gaps: "Your signed contracts show you've accepted X, but your stated position is Y. Want to adjust?"
 4. Offer to update positions based on findings
 
-## Step 9: Verification
+## Step 9: Version Control
+
+Offer to set up git for the user's legal knowledge:
+
+> Your legal knowledge — positions, counterparty history, decision patterns — is valuable and worth tracking. Want me to set up version control for your legal root?
+>
+> This creates a private git repo in `{legal_root}` so you can see how your practice evolves over time. Every time you close a matter and update your knowledge, the changes are committed automatically.
+
+### If yes:
+
+```bash
+cd {legal_root}
+git init
+```
+
+Create `{legal_root}/.gitignore`:
+```
+.DS_Store
+*.tmp
+*~
+```
+
+Initial commit:
+```bash
+git add -A
+git commit -m "Initial Counsel OS knowledge base"
+```
+
+Then ask:
+
+> Want to connect this to a private GitHub repo for backup? This is optional — local git works fine on its own.
+>
+> **Important:** Your legal knowledge may contain privileged information. If you connect to GitHub, use a **private** repository.
+
+### If they want a remote:
+
+```bash
+# If they have an existing repo:
+git remote add origin {their-repo-url}
+git push -u origin main
+
+# If they want to create one:
+gh repo create {repo-name} --private
+git remote add origin {repo-url}
+git push -u origin main
+```
+
+### If no:
+
+Skip — no version control. The backup/restore scripts still work as a safety net.
+
+## Step 10: Verification
 
 Run a quick validation:
 
