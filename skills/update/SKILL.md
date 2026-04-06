@@ -128,7 +128,39 @@ For each updated law area:
 2. Flag urgently if so:
 > **Action needed:** Updated [law area] introduces new requirements that affect your [clause type] position. Review before your next matter in this area.
 
-## Step 6: Summary
+## Step 6: Version Control Check
+
+Check if `{legal_root}` is a git repo:
+
+```bash
+git -C {legal_root} rev-parse --is-inside-work-tree 2>/dev/null
+```
+
+### If NOT a git repo:
+
+This is an existing user who set up before version control was available. Offer it once:
+
+> **New in v0.4.0:** You can now version-control your legal knowledge base. This tracks changes to your positions, counterparty files, and decision history — so you can see how your practice evolves over time.
+>
+> Want me to set it up? (This initializes a git repo in your legal root. Optionally connects to a private GitHub repo for backup.)
+
+If yes, follow the same flow as `/setup` Step 9 (git init, .gitignore, initial commit, optional remote).
+
+If no, skip. Don't ask again on future updates.
+
+### If already a git repo:
+
+If content was synced in Steps 2-4, commit the changes:
+
+```bash
+cd {legal_root}
+git add -A
+git commit -m "Update: synced law/ and defaults/ to plugin v{new_version}"
+```
+
+If remote exists, offer to push.
+
+## Step 7: Summary
 
 ```
 ## Update Complete
