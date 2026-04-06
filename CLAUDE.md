@@ -129,12 +129,15 @@ Plugin (methodology + tooling):
     intake/SKILL.md                          # /counsel-os:intake — Phase 1
     analyze/SKILL.md                         # /counsel-os:analyze — Phase 2
     negotiate/SKILL.md                       # /counsel-os:negotiate — Phase 3
-    deliver/SKILL.md                         # /counsel-os:deliver — Phase 4
+    deliver/SKILL.md                         # /counsel-os:deliver — Phase 4 (includes Step 3b: Word tracked changes)
     close/SKILL.md                           # /counsel-os:close — Phase 5
     browse/SKILL.md                          # /counsel-os:browse — Utility
     retro/SKILL.md                           # /counsel-os:retro — Utility
     setup/SKILL.md                           # /counsel-os:setup — Config
     update/SKILL.md                          # /counsel-os:update — Config
+  scripts/                                   # Automation scripts
+    apply_redlines.py                        # Apply text replacements + comments to .docx via python-docx
+    word_compare.sh                          # Drive Word Compare via AppleScript for tracked changes
 
 User's vault (all knowledge — discovered via config.md + QMD):
   {legal_root}/
@@ -169,6 +172,7 @@ User's vault (all knowledge — discovered via config.md + QMD):
 - Prioritize by tier: **Tier 1** (must-have) → **Tier 2** (strong preference) → **Tier 3** (nice-to-have)
 - All internal memos are **privileged attorney-client communication** unless stated otherwise
 - **Cite the knowledge layer** when making a classification — show which layer determined the rating
+- **Word tracked changes:** When delivering negotiation redlines on a .docx source, `/deliver` Step 3b auto-detects Word + python-docx and offers tracked changes output attributed to the user. Temp files must go alongside the original document (not `/tmp` — macOS sandbox blocks Word from `/tmp`).
 
 ## Document Sources
 
