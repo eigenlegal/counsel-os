@@ -129,7 +129,7 @@ Plugin (methodology + tooling):
     intake/SKILL.md                          # /counsel-os:intake — Phase 1
     analyze/SKILL.md                         # /counsel-os:analyze — Phase 2
     negotiate/SKILL.md                       # /counsel-os:negotiate — Phase 3
-    deliver/SKILL.md                         # /counsel-os:deliver — Phase 4 (includes Step 3b: Word tracked changes)
+    deliver/SKILL.md                         # /counsel-os:deliver — Phase 4 (Step 3a: clean format, Step 3b: Word tracked changes)
     close/SKILL.md                           # /counsel-os:close — Phase 5
     browse/SKILL.md                          # /counsel-os:browse — Utility
     retro/SKILL.md                           # /counsel-os:retro — Utility
@@ -137,6 +137,8 @@ Plugin (methodology + tooling):
     update/SKILL.md                          # /counsel-os:update — Config
   scripts/                                   # Automation scripts
     apply_redlines.py                        # Apply text replacements + comments to .docx via python-docx
+    clean_format.py                          # Reformat .docx to professional standards (10pt Calibri, multilevel numbering)
+    legal-template.docx                      # Style template for clean_format.py
     word_compare.sh                          # Drive Word Compare via AppleScript for tracked changes
 
 User's vault (all knowledge — discovered via config.md + QMD):
