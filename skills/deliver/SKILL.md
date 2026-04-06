@@ -206,7 +206,7 @@ If they decline, skip to Step 4.
 
 ### Pipeline Execution
 
-**A. Extract pairs.** From the negotiate output, collect all Current/Proposed pairs and counterparty-facing rationale. Write to a temp JSON file at `/tmp/counsel-os-redlines-{timestamp}.json`:
+**A. Extract pairs.** From the negotiate output, collect all Current/Proposed pairs and counterparty-facing rationale. Write to a temp JSON file in the same directory as the original document (`{original_dir}/counsel-os-redlines-{timestamp}.json`). **Important:** Do NOT use `/tmp` — macOS sandboxing prevents Word from accessing `/tmp`.
 
 ```json
 [
@@ -222,7 +222,7 @@ If they decline, skip to Step 4.
 **B. Apply changes.** Run the apply script:
 
 ```bash
-python3 {plugin_root}/scripts/apply_redlines.py "{original.docx}" "/tmp/counsel-os-redlines-{timestamp}.json" "/tmp/counsel-os-modified-{timestamp}.docx"
+python3 {plugin_root}/scripts/apply_redlines.py "{original.docx}" "{original_dir}/counsel-os-redlines-{timestamp}.json" "{original_dir}/counsel-os-modified-{timestamp}.docx"
 ```
 
 Parse the JSON output. Report any skipped items to the user — these need to be applied manually in Word.
@@ -230,7 +230,7 @@ Parse the JSON output. Report any skipped items to the user — these need to be
 **C. Word Compare (Full tier only).** Run the compare script:
 
 ```bash
-{plugin_root}/scripts/word_compare.sh "{original.docx}" "/tmp/counsel-os-modified-{timestamp}.docx" "{author_name}" "{output_path}"
+{plugin_root}/scripts/word_compare.sh "{original.docx}" "{original_dir}/counsel-os-modified-{timestamp}.docx" "{author_name}" "{output_path}"
 ```
 
 Default output path: `{original_dir}/{original_name}-redline-{YYYY-MM-DD}.docx`
