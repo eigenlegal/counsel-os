@@ -54,7 +54,7 @@ Scan the subject against trigger conditions to identify which `knowledge/law/` a
 - **E-commerce / Retail:** `law/consumer-protection/`, `law/data-privacy/`, `law/advertising-media/`, `law/international-trade/`
 - **Manufacturing:** `law/environmental-esg/`, `law/employment/`, `law/product-counseling/`, `law/international-trade/`
 
-For each identified law area, load the `overview.md` file and then load specific sub-files based on the sub-topic triggers described in each overview.
+For each identified law area, load the `_overview.md` file and then load specific sub-files based on the sub-topic triggers described in each overview.
 
 Map applicable regulations to the subject:
 - Identify all applicable statutes and regulations

@@ -57,7 +57,7 @@ For each key legal principle, note:
 - The date (to assess currency)
 - Any pending legislation or regulatory changes that could alter the analysis
 
-Load the relevant `knowledge/law/` sub-files based on the subject matter. Use the trigger conditions in each area's `overview.md` to determine which specific sub-files to load.
+Load the relevant `knowledge/law/` sub-files based on the subject matter. Use the trigger conditions in each area's `_overview.md` to determine which specific sub-files to load.
 
 ### Step 4: Analyze — Apply IRAC Structure
 Apply the law to the facts using the IRAC (Issue, Rule, Application, Conclusion) framework for each question:
