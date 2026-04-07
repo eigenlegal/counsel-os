@@ -159,7 +159,7 @@ For internal use, includes strategy and fallback positions:
 
 **Matter:** [matter name]
 **Date:** [date]
-**Prepared by:** Counsel OS
+**Prepared by:** [user's name from identity.md]
 
 ### Strategy Overview
 [2-3 paragraph summary of the negotiation approach, lead issues, and overall posture]
