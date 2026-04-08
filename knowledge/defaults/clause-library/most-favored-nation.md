@@ -1,8 +1,7 @@
 ---
 counsel-os-type: clause-library
-counsel-os-version: "0.3.1"
+content-version: "2026-04-08"
 ---
-
 ## Most Favored Nation
 
 # Most Favored Nation — Clause Library

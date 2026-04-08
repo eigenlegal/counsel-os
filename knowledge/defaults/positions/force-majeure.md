@@ -1,8 +1,7 @@
 ---
 counsel-os-type: default-positions
-counsel-os-version: "0.3.1"
+content-version: "2026-04-08"
 ---
-
 ## Force Majeure
 
 # Force Majeure — Position

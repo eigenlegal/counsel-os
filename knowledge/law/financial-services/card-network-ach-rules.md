@@ -1,8 +1,7 @@
 ---
 counsel-os-type: law-area
-counsel-os-version: "0.3.2"
+content-version: "2026-04-08"
 ---
-
 ## Card Network Ach Rules
 
 # Card Network and ACH Operating Rules

@@ -1,8 +1,7 @@
 ---
 counsel-os-type: clause-library-index
-counsel-os-version: "0.3.1"
+content-version: "2026-04-08"
 ---
-
 # Clause Library
 
 - [[acceptable-use|Acceptable Use]]

@@ -69,11 +69,11 @@ collection: obsidian
 Create the directory structure and seed all content from the plugin into `{legal_root}`:
 
 ### Law areas (from plugin `knowledge/law/`)
-Copy all 26 law area files. Add frontmatter if not present:
+Copy all 26 law area directories with their files. Frontmatter is already present in the plugin seed files (including `counsel-os-type` and `content-version`). If frontmatter is missing for any reason, add:
 ```yaml
 ---
 counsel-os-type: law-area
-counsel-os-version: "{plugin version from VERSION file}"
+content-version: "{date from plugin's .content-versions.json for that group}"
 ---
 ```
 
