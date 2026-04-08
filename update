@@ -50,7 +50,7 @@ echo ""
 
 # Product content directories to sync (everything EXCEPT user data)
 PRODUCT_DIRS=(
-    "knowledge/defaults"
+    "knowledge/practice-seed"
     "knowledge/law"
     "skills"
     "templates"

@@ -12,7 +12,7 @@ You are preparing a negotiation package based on the analysis from Phase 2. Your
 
 Read `config.local.md` (if it exists) or `config.md` from the plugin root to get:
 
-- **Legal root** (`{legal_root}`) — contains law/, defaults/, practice/, memory/
+- **Legal root** (`{legal_root}`) — contains law/, practice/, matters/, memory/
 - **Entity discovery** — QMD query on `counsel-os-type` frontmatter property
 - **Specific entity lookup** — QMD search for company name + `counsel-os-type` value
 
@@ -27,7 +27,7 @@ Before starting negotiation preparation, verify:
 
 2. **Effective positions are loaded.** You need the merged positions to know what to propose.
 
-3. **Voice preferences are loaded.** Redline comments and negotiation memos should match the user's preferred tone and style from `{legal_root}/practice/voice.md`.
+3. **Voice preferences are loaded.** Redline comments and negotiation memos should match the user's preferred tone and style from `{legal_root}/practice/profile.md`.
 
 ## Step 0b: Load Matter File
 
@@ -61,7 +61,7 @@ Draft the specific language change. This should be:
 - **Anchored to our effective position:** Propose what we actually want, not a pre-compromised middle ground
 - **Legally sound:** Check against loaded law area requirements
 
-Pull counter-language from `{legal_root}/defaults/clause-library.md` where available. The clause library contains proven language that has been accepted in past negotiations.
+Pull counter-language from `{legal_root}/practice/library/` where available. The clause library contains proven language that has been accepted in past negotiations. Consult `{legal_root}/practice/standards/{clause-type}.md` for Key Negotiation Points and Common Traps.
 
 Format:
 ```
@@ -168,7 +168,7 @@ For internal use, includes strategy and fallback positions:
 
 **Matter:** [matter name]
 **Date:** [date]
-**Prepared by:** [user's name from identity.md]
+**Prepared by:** [user's name from profile.md]
 
 ### Strategy Overview
 [2-3 paragraph summary of the negotiation approach, lead issues, and overall posture]

@@ -12,7 +12,7 @@ You are performing a deep analysis of a legal document or matter against the eff
 
 Read `config.local.md` (if it exists) or `config.md` from the plugin root to get:
 
-- **Legal root** (`{legal_root}`) — contains law/, defaults/, practice/, memory/
+- **Legal root** (`{legal_root}`) — contains law/, practice/, matters/, memory/
 - **Entity discovery** — QMD query on `counsel-os-type` frontmatter property
 - **Specific entity lookup** — QMD search for company name + `counsel-os-type` value
 
@@ -27,7 +27,7 @@ Before starting analysis, verify:
 
 2. **Practice files are loaded.** You should already have the user's identity, principles, positions, voice, and thresholds from intake. If not, load them now.
 
-3. **Effective positions are built.** You need the merged positions from defaults + practice + matters + law constraints.
+3. **Effective positions are built.** You need the merged positions from practice/standards/ + entity overrides + law constraints.
 
 ## Step 0b: Load Matter File
 
@@ -43,17 +43,15 @@ When a matter file is loaded:
 - Use the law areas from the matter's `## Context` section
 - Use the document references from the matter's `## Documents` section
 
-## Step 1: Load the Playbook
+## Step 1: Load the Method
 
-Based on the matter type from intake, load the matching playbook section from `{legal_root}/defaults/playbooks.md`. Look for a heading that corresponds to the matter type (e.g., "## Contract Review" for a contract review, "## Nda Triage" for an NDA).
+Based on the matter type from intake, load the matching method file from `{legal_root}/practice/methods/`. Look for a file that corresponds to the matter type (e.g., `contract-review.md` for a contract review, `nda-triage.md` for an NDA).
 
-If the playbook file doesn't exist for this matter type, proceed with the general analysis framework below. Note the gap for future content development.
+If no method file exists for this matter type, proceed with the general analysis framework below. Note the gap for future content development.
 
 ## Step 2: Load Applicable Checklists
 
-Check `{legal_root}/defaults/checklists.md` for checklist sections matching the matter type. Load all that apply — checklists catch items that might be missed in clause-by-clause review.
-
-Look for a checklist file whose name corresponds to the matter type or document type (e.g., `checklists/saas-agreement.md` for a SaaS deal, `checklists/nda.md` for an NDA). Multiple checklists may apply to a single matter.
+If the method file loaded in Step 1 contains a `## Checklist` section, use it for completeness tracking. Additional document-type-specific checklists may exist in `{legal_root}/practice/methods/` (e.g., `saas-agreement.md` for SaaS deals). Load all that apply — checklists catch items that might be missed in clause-by-clause review.
 
 **Priority tiers in checklists:** Checklists include priority tier guidance (Tier 1 / Tier 2 / Tier 3) for each item. Use these tiers as input when assigning priority in Step 3f — if a checklist marks an item as Tier 1, treat a gap in that area as higher priority than one the checklist marks as Tier 3.
 
@@ -69,7 +67,7 @@ Map each clause to a known clause type (e.g., limitation of liability, indemnifi
 
 For each clause, compare the actual language against the effective position:
 
-- **What does our position say?** (from the merged defaults + practice + matters positions)
+- **What does our position say?** (from practice/standards/ + entity overrides)
 - **What does the document say?** (the actual clause language)
 - **Where's the gap?** (identify specific deviations)
 
