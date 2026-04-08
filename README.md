@@ -1,6 +1,6 @@
 # Counsel OS
 
-A legal operating system for Claude. Review contracts, triage NDAs, negotiate redlines, assess compliance, and more — all grounded in your standards, your playbooks, and your judgment.
+A legal operating system for Claude. Review contracts, triage NDAs, negotiate redlines, assess compliance, and more — all grounded in your standards, your methods, and your judgment.
 
 Built for solo practitioners, law firms, and in-house counsel.
 
@@ -21,8 +21,8 @@ claude
 ```
 
 The setup script:
-- Seeds legal framework content (law areas, default positions, playbooks, checklists, clause library) into your configured legal root
-- Copies practice templates (identity, principles, positions, voice, thresholds) and memory logs
+- Seeds legal framework content (law areas) and practice content (standards, methods, clause library) into your configured legal root
+- Copies practice profile template and memory logs
 - If [Bun](https://bun.sh/) is installed, builds the headless browser binary for `/counsel-os:browse`
 - Does not overwrite existing files if you've already customized
 
@@ -65,15 +65,12 @@ Then run the guided onboarding:
 /counsel-os:setup
 ```
 
-This walks you through 5 files interactively:
+This walks you through setup interactively:
 
-| File | What It Configures | Time |
+| Step | What It Configures | Time |
 |------|--------------------|------|
-| `identity.md` | Your organization, entities, team, regulatory posture | ~3 min |
-| `principles.md` | Legal philosophy, risk appetite, negotiation style | ~3 min |
-| `positions.md` | Your standard clause positions (overrides to market defaults) | ~5 min |
-| `voice.md` | Writing style, tone, formality by audience | ~2 min |
-| `thresholds.md` | Escalation criteria, dollar tiers, auto-approval rules | ~2 min |
+| `profile.md` | Your organization, legal philosophy, risk appetite, writing style, escalation criteria | ~5 min |
+| Standards customization | Review and adjust the 24 standard clause positions for your practice | ~10 min |
 
 You can also edit these files directly in `{legal_root}/practice/`.
 
@@ -102,7 +99,7 @@ Intake does:
 - Accepts documents (PDF, DOCX, URL, pasted text, or plain description)
 - Auto-detects which legal areas apply (data privacy, employment, IP, etc.)
 - Classifies the matter type (contract review, NDA triage, compliance, etc.)
-- Loads your effective positions (merging all 5 knowledge layers)
+- Loads your effective positions (merging all knowledge layers)
 - Discovers counterparty context via QMD search
 - Estimates complexity (simple/standard/complex)
 - Recommends which phases to run next
@@ -113,7 +110,7 @@ Intake does:
 /counsel-os:analyze
 ```
 
-- Runs the matching playbook (contract review, NDA triage, etc.)
+- Runs the matching method (contract review, NDA triage, etc.)
 - Clause-by-clause analysis against your effective positions
 - Classifies each finding: **GREEN** (acceptable), **YELLOW** (negotiate), **RED** (escalate)
 - Any conflict with `law/` is automatically RED regardless of other layers
@@ -137,7 +134,7 @@ Intake does:
 ```
 
 - Packages the output in the right format (memo, redline, analysis report)
-- Applies your writing style from `voice.md`
+- Applies your writing style from `profile.md`
 - Posts to connected services (Slack, Google Drive, etc.) if configured
 
 #### Phase 5: Close
@@ -230,13 +227,13 @@ Or from the command line:
 
 This:
 1. Pulls the latest plugin methodology (skills, CLAUDE.md, scripts)
-2. Shows what changed in law/ and defaults/ upstream for your review
+2. Shows what changed in law/ upstream and offers new practice content for your review
 3. You decide what to apply to your vault — the plugin never overwrites your content
 
 ### Backup and Restore
 
 ```bash
-# Back up your legal root (law, defaults, practice, memory)
+# Back up your legal root (law, practice, matters, memory)
 ./backup
 
 # Restore from the most recent backup
@@ -263,8 +260,9 @@ Counsel OS separates **methodology** (how to do legal work) from **knowledge** (
 - Shell scripts for setup, backup, restore, update
 
 **Your vault provides all knowledge:**
-- Legal framework (law areas, default positions, playbooks, checklists, clause library)
-- Practice profile (identity, principles, positions, voice, thresholds)
+- Legal framework (law areas)
+- Practice profile, standards, methods, and clause library
+- Matter state (persistent per-engagement files)
 - Institutional memory (decisions, exceptions, patterns)
 - Entity files (companies, counterparties) — wherever you keep them
 
@@ -274,17 +272,17 @@ The plugin discovers content through two mechanisms:
 
 This means the plugin works with any vault structure. You organize your files however you want — Counsel OS finds what it needs.
 
-### 5-Layer Knowledge System
+### 4-Layer Knowledge System
 
 ```
 {legal_root}/
 ├── law/          Layer 1 — Hard constraints (regulations, statutes)
-├── defaults/     Layer 2 — Market-standard positions and playbooks
-├── practice/     Layer 3 — YOUR judgment and standards
-└── memory/       Layer 5 — Accumulated decisions and patterns
+├── practice/     Layer 2 — YOUR standards, methods, library, and profile
+├── matters/      Persistent state per engagement
+└── memory/       Layer 4 — Accumulated decisions and patterns
 
 {anywhere in your vault}/
-└── <company>.md  Layer 4 — Per-deal and per-counterparty overrides
+└── <company>.md  Layer 3 — Per-deal and per-counterparty overrides (discovered via QMD)
 ```
 
 **Precedence rules:**
@@ -294,10 +292,9 @@ This means the plugin works with any vault structure. You organize your files ho
 | Highest | `law/` | Never — hard legal constraints | Seeded by plugin, customizable by you |
 | 2 | Entity files | Per-deal only | You (through `/counsel-os:close` or directly) |
 | 3 | `practice/` | Your standards | You (through `/counsel-os:setup`) |
-| 4 | `defaults/` | Market defaults | Seeded by plugin, customizable by you |
 | Lowest | `memory/` | Context only — informs, doesn't override | Automatic (through `/counsel-os:close`) |
 
-**Example:** Your standard liability cap is 12 months (`practice/`). The market default is also 12 months (`defaults/`). But for Acme Corp you've pre-approved 24 months (in your Acme Corp entity file). When reviewing an Acme contract, the system uses 24 months — but if GDPR requires a specific data processing provision (`law/`), that's non-negotiable regardless.
+**Example:** Your standard liability cap is 12 months (`practice/standards/`). But for Acme Corp you've pre-approved 24 months (in your Acme Corp entity file). When reviewing an Acme contract, the system uses 24 months — but if GDPR requires a specific data processing provision (`law/`), that's non-negotiable regardless.
 
 ### Auto-Detection of Applicable Law
 
@@ -340,17 +337,15 @@ Multiple areas apply simultaneously and compound — a fintech SaaS contract tri
 
 **Seed content (seeded into your vault on first setup):**
 - 26 legal areas with auto-detection trigger conditions
-- 24 market-standard clause positions
-- 17 playbooks with step-by-step processes
-- 14 checklists for completeness
-- 21 clause library categories with standard/aggressive/vendor-favorable/minimum language
+- 24 standard clause positions (in `practice/standards/`)
+- Method files with integrated checklists (in `practice/methods/`)
+- 21 clause library categories with standard/aggressive/vendor-favorable/minimum language (in `practice/library/`)
 
-Once seeded, you own all of this content. Customize law areas, rewrite playbooks, add your own clause language — it's your vault.
+Once seeded, you own all of this content. Customize law areas, rewrite methods, add your own clause language — it's your vault.
 
 **You provide:**
-- Your organization context
-- Your legal principles and risk appetite
-- Your standard positions (overrides to the seeded defaults)
+- Your practice profile (organization, philosophy, risk appetite, voice, escalation criteria)
+- Customizations to the seeded standards for your practice
 - Your counterparty context (built over time through use)
 
 ---
@@ -383,11 +378,11 @@ Next time you review a contract from that counterparty, the overrides load autom
 
 As you work, the system learns. After each matter, close suggests updates:
 
-- "Your positions don't cover most-favored-nation clauses — should I add one?"
+- "Your standards don't cover most-favored-nation clauses — should I add one to `practice/standards/`?"
 - "You've accepted 24-month caps 3 times now — should I update your standard?"
-- "This counter-language worked well — should I add it to the clause library?"
+- "This counter-language worked well — should I add it to `practice/library/`?"
 
-You approve each change. Over time, your positions reflect your actual practice.
+You approve each change. Over time, your standards reflect your actual practice.
 
 ### Adding New Legal Areas
 
@@ -403,7 +398,7 @@ Include trigger conditions at the top. The intake skill will automatically detec
 
 Counsel OS doesn't impose a folder structure on your vault. The plugin needs two things:
 
-1. **A legal root path** (in `config.md`) — where it manages framework content (law/, defaults/, practice/, memory/)
+1. **A legal root path** (in `config.md`) — where it manages framework content (law/, practice/, matters/, memory/)
 2. **Frontmatter on entity files** — so QMD can discover them wherever they live
 
 Everything else is up to you. Keep companies in `Companies/`, `Clients/`, or scattered across your vault — as long as they have `counsel-os-type` frontmatter, the skills will find them.
@@ -418,6 +413,6 @@ MIT
 
 ## Built by Eigen Legal
 
-Counsel OS is a free, open source tool built by [Eigen Legal](https://eigenlegal.com). We help law firms and in-house legal teams build custom AI workflows — trained on your standards, your playbooks, and your judgment.
+Counsel OS is a free, open source tool built by [Eigen Legal](https://eigenlegal.com). We help law firms and in-house legal teams build custom AI workflows — trained on your standards, your methods, and your judgment.
 
 Want a custom version built for your practice? [Book a free consultation](https://eigenlegal.com)
