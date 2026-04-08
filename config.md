@@ -7,10 +7,14 @@ legal_root:
 discovery: qmd
 entity_properties:
   type_field: counsel-os-type
-  values: [counterparty, vendor, customer, prospect]
+  values: [counterparty, vendor, customer, prospect, matter]
 
 ## QMD Collection
 collection: obsidian
+
+## Matters
+matters_path: matters
+# Relative to legal_root. New matter files are created here during intake.
 
 ## Path Resolution
 - Legal framework (law/, defaults/, practice/, memory/) → read/write from legal_root

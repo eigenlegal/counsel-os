@@ -29,6 +29,20 @@ Before starting analysis, verify:
 
 3. **Effective positions are built.** You need the merged positions from defaults + practice + matters + law constraints.
 
+## Step 0b: Load Matter File
+
+Check for a matter file from the intake phase:
+
+1. If the user referenced a specific matter ID, use QMD `get` to load it directly by path or ID.
+2. Otherwise, search QMD for `counsel-os-type: matter` + the counterparty name from the conversation. Prefer matters with `stage: intake` or `stage: analyze`.
+3. If found, read the matter file. It contains the intake summary, effective positions, law areas, and document references — use these instead of relying solely on conversation history.
+4. If no matter file exists, proceed normally using conversation context. The matter system is optional.
+
+When a matter file is loaded:
+- Use the effective positions from the matter's `## Effective Positions` section
+- Use the law areas from the matter's `## Context` section
+- Use the document references from the matter's `## Documents` section
+
 ## Step 1: Load the Playbook
 
 Based on the matter type from intake, load the matching playbook section from `{legal_root}/defaults/playbooks.md`. Look for a heading that corresponds to the matter type (e.g., "## Contract Review" for a contract review, "## Nda Triage" for an NDA).
@@ -181,6 +195,43 @@ Present the analysis in this format:
 2. [If escalation needed:] Escalate [specific items] per thresholds
 3. [If clean:] Proceed to `/counsel-os:deliver` to package the analysis
 ```
+
+## Step 7: Update Matter File
+
+If a matter file was loaded in Step 0b, update it with the analysis results:
+
+1. **Update frontmatter:** Set `stage: analyze` and `updated: {today's date}`.
+
+2. **Populate the working section.** For contract-review matters, replace the empty `## Findings` section with:
+
+```markdown
+## Findings
+
+### RED — Requires Action
+1. **{Clause name} ({Section ref})** — {one-line issue summary} — Tier {1/2}
+   Source: {position deviation / law conflict / missing provision}
+
+### YELLOW — Needs Attention
+1. **{Clause name} ({Section ref})** — {one-line issue summary} — Tier {2/3}
+
+### GREEN — Acceptable
+{Count} clauses acceptable as drafted.
+
+### Risk Summary
+- **Overall:** {LOW/MEDIUM/HIGH}
+- RED: {count}, YELLOW: {count}, GREEN: {count}
+- **Recommendation:** {Proceed / Proceed with revisions / Escalate / Do not proceed}
+```
+
+For other matter types, populate the corresponding working section (Compliance Matrix, Analysis, etc.) with the equivalent structured output.
+
+3. **Update `## Open Issues`** with any missing provisions identified in Step 4.
+
+4. **Update `## Next Action`:**
+   - If RED or YELLOW items exist: `Proceed to /counsel-os:negotiate.`
+   - If all GREEN: `Proceed to /counsel-os:deliver.`
+
+If no matter file exists, skip this step.
 
 ## Special Situations
 
