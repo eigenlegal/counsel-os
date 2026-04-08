@@ -1,6 +1,6 @@
 {
   "name": "counsel-os",
-  "version": "0.4.8",
+  "version": "0.5.0",
   "description": "Legal operating system for Claude — contract review, negotiation, and practice management",
   "scripts": {
     "build": "bun build --compile browse/src/cli.ts --outfile browse/dist/browse",

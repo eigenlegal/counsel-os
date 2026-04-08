@@ -176,6 +176,7 @@ Present the intake summary in this format:
 ## Intake Summary
 
 **Matter:** [brief description]
+**Matter ID:** [matter-id from Step 8, if created]
 **Type:** [matter type from Step 4]
 **Track:** [GREEN/YELLOW/RED] — [one-line justification]
 **Our role:** [vendor/customer/partner/etc.]
@@ -201,6 +202,104 @@ Present the intake summary in this format:
 1. Proceed to `/counsel-os:analyze` for [full review / focused review on specific clauses]
 2. [Any other recommendations based on what you found]
 ```
+
+## Step 8: Create or Resume Matter File
+
+After completing the intake summary, persist the matter state so it survives across conversations.
+
+### 8a. Check for Existing Matter
+
+Search QMD for an existing matter file: query `counsel-os-type: matter` + the counterparty name (if known).
+
+- **Active matter found** (frontmatter `stage` is not `closed`):
+  > I found an existing matter for [counterparty]: **[matter-id]** (stage: [stage]).
+  > Would you like to:
+  > (A) **Resume** this matter (update it with the new context)
+  > (B) **Create a new matter** (this is a separate engagement)
+
+  If resuming: read the existing matter file, update any changed fields (documents, context, effective positions), and proceed. Do not create a new file.
+
+- **Only closed matters found:** Note the prior context but proceed to create a new matter.
+- **No matters found:** Proceed to create a new matter.
+
+### 8b. Generate Matter ID
+
+Format: `YYYY-MM-{counterparty-slug}-{type-slug}`
+
+- `YYYY-MM`: current year and month
+- `counterparty-slug`: lowercase, hyphenated counterparty name (e.g., `acme-corp`). Use `internal` if no counterparty.
+- `type-slug`: short form of the matter type (e.g., `msa` for contract-review of an MSA, `nda` for nda-triage, `compliance`, `memo`, `governance`, etc.)
+
+If the ID would collide with an existing file at the target path, append `-2`, `-3`, etc.
+
+### 8c. Create the Matter File
+
+Read `matters_path` from config (default: `matters`). Create the file at `{legal_root}/{matters_path}/{matter-id}.md`.
+
+Write the matter file with this structure:
+
+```markdown
+---
+counsel-os-type: matter
+matter-id: {generated-id}
+type: {matter-type from Step 4}
+stage: intake
+counterparty: {counterparty name, if known}
+created: {YYYY-MM-DD}
+updated: {YYYY-MM-DD}
+---
+
+# {Counterparty Name} — {Document/Matter Description}
+
+## Parties
+- **Counterparty:** [[{Counterparty Name}]] ({role: vendor/customer/partner})
+- **Our entity:** {organization name from identity.md}
+
+## Documents
+- {filename} (received {YYYY-MM-DD})
+
+## Context
+- **Our role:** {vendor/customer/etc.}
+- **Track:** {GREEN/YELLOW/RED} — {justification}
+- **Urgency:** {timeline from Step 2}
+- **Law areas:** {comma-separated list from Step 3}
+
+## Effective Positions
+{For each relevant clause type, one line: clause type — effective position — source layer}
+
+{TYPE-SPECIFIC WORKING SECTIONS — see below}
+
+## Decisions
+{Empty — populated as decisions are made during analyze/negotiate}
+
+## Open Issues
+{Any open items identified during intake, or empty}
+
+## Next Action
+Proceed to `/counsel-os:analyze`.
+
+## Generated Outputs
+{Empty — populated by deliver phase}
+```
+
+**Type-specific working sections** — insert the appropriate empty sections based on the `type` field:
+
+| Matter type | Sections to insert |
+|---|---|
+| contract-review, nda-triage, vendor-onboarding | `## Findings` |
+| board-action, governance | `## Resolution` + `## Approval Chain` |
+| compliance | `## Compliance Matrix` |
+| advisory, memo | `## Analysis` + `## Recommendation` |
+| dispute | `## Response Strategy` |
+| Default (any other type) | `## Findings` |
+
+### 8d. Confirm Creation
+
+Tell the user:
+
+> Matter file created: `{legal_root}/{matters_path}/{matter-id}.md`
+> Stage: **intake** (complete)
+> Next: `/counsel-os:analyze`
 
 ## Error Handling
 

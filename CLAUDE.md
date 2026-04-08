@@ -70,15 +70,27 @@ Read `config.local.md` (if it exists) or `config.md` from the plugin root to fin
 
 | Skill | Phase | What It Does |
 |-------|-------|-------------|
-| `/counsel-os:intake` | Phase 1 | Classify matter, load context, detect applicable law, estimate complexity |
-| `/counsel-os:analyze` | Phase 2 | Deep review against effective positions (merged from all layers) |
-| `/counsel-os:negotiate` | Phase 3 | Generate redlines with rationale, fallback positions, and strategy |
-| `/counsel-os:deliver` | Phase 4 | Package output, apply voice styling, post to connected services |
-| `/counsel-os:close` | Phase 5 | Log decisions, update knowledge, suggest improvements |
+| `/counsel-os:intake` | Phase 1 | Classify matter, load context, detect applicable law, estimate complexity. **Creates matter file.** |
+| `/counsel-os:analyze` | Phase 2 | Deep review against effective positions (merged from all layers). **Updates matter with findings.** |
+| `/counsel-os:negotiate` | Phase 3 | Generate redlines with rationale, fallback positions, and strategy. **Updates matter with negotiation items.** |
+| `/counsel-os:deliver` | Phase 4 | Package output, apply voice styling, post to connected services. **Updates matter with generated outputs.** |
+| `/counsel-os:close` | Phase 5 | Log decisions, update knowledge, suggest improvements. **Finalizes matter (stage: closed).** |
 | `/counsel-os:browse` | Utility | Document extraction from portals via headless browser |
 | `/counsel-os:retro` | Utility | Practice analytics from decision history |
 | `/counsel-os:setup` | Config | Guided onboarding for new users |
 | `/counsel-os:update` | Config | Pull latest product content (law/ + defaults/) |
+
+### Matter Files
+
+Every legal task lives inside a matter — a plain markdown file with `counsel-os-type: matter` frontmatter, stored in `{legal_root}/matters/`.
+
+**Lifecycle:** Created at intake → updated by analyze, negotiate, deliver → finalized at close.
+
+**Stage enum:** `intake` → `analyze` → `negotiate` → `deliver` → `closed`
+
+**Discovery:** QMD query for `counsel-os-type: matter` + counterparty name. If a non-closed matter exists for the same counterparty, offer to resume before creating a new one.
+
+**Backwards compatible:** If no matter file exists (older workflows, standalone usage), all skills fall back to conversation context.
 
 **Step 3: Auto-detect applicable law areas.**
 
@@ -161,6 +173,8 @@ User's vault (all knowledge — discovered via config.md + QMD):
     memory/                                  # Layer 5: Institutional learning
       patterns.md                            # counsel-os-type: memory-patterns
       retro-*.md                             # Practice analytics snapshots
+    matters/                                 # Persistent state per engagement
+      {matter-id}.md                         # counsel-os-type: matter (created at intake, updated each phase)
 
   {anywhere in vault}/                       # Layer 2: Entity-specific overrides
     <company>.md                             # counsel-os-type: counterparty | vendor | customer | prospect

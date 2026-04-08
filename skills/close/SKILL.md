@@ -22,16 +22,28 @@ All framework content (law areas, default positions, practice files, memory) is 
 
 This phase should run after the deliverable is complete (Phase 4). However, it can also be invoked independently to log decisions or update knowledge at any time.
 
+## Step 0b: Load Matter File
+
+Check for a matter file:
+
+1. If the user referenced a specific matter ID, load it via QMD.
+2. Otherwise, search QMD for `counsel-os-type: matter` + the counterparty name. Prefer matters with `stage: deliver`, then `negotiate`, then `analyze`.
+3. If found, the matter file becomes the primary data source for the close summary — it contains the complete history of this matter (type, counterparty, track, dates, findings, negotiation items, decisions, and generated outputs).
+4. If no matter file exists, proceed using conversation context (current behavior).
+
 ## Step 1: Review the Matter
 
 Summarize what was done in this matter:
 
-- **Matter type:** [from intake]
+- **Matter type:** [from intake or matter file]
+- **Matter ID:** [from matter file, if available]
 - **Counterparty:** [if applicable]
 - **Track:** [GREEN/YELLOW/RED]
 - **Phases completed:** [intake, analyze, negotiate, deliver]
 - **Key outcomes:** [what was the result — deal signed, redlines sent, memo delivered, etc.]
-- **Duration:** [how long the matter took]
+- **Duration:** [how long the matter took — use created/updated dates from matter file if available]
+
+If a matter file was loaded in Step 0b, pull this information directly from the matter file's frontmatter and sections. Only ask the user for information not captured in the matter file (e.g., whether the deal was actually signed, the final outcome).
 
 ## Step 2: Identify Knowledge Updates
 
@@ -247,6 +259,24 @@ Skip silently. The user chose not to use version control during setup.
 ### Suggested Follow-ups
 - [Any pending items, future review dates, or process improvements]
 ```
+
+## Step 5b: Finalize Matter File
+
+If a matter file was loaded in Step 0b, finalize it:
+
+1. **Update frontmatter:** Set `stage: closed` and `updated: {today's date}`.
+2. **Add the final decision** to `## Decisions`:
+   ```
+   - **{YYYY-MM-DD}:** Matter closed. {outcome summary — e.g., "MSA executed", "redlines accepted", "deal declined"}.
+   ```
+3. **Resolve `## Open Issues`:** Mark all items as resolved, or note any that remain open with context.
+4. **Update `## Next Action`:** Set to `Closed.`
+5. **Cross-reference with entity file:** When updating the entity file in Step 2a/3, include a link to the matter:
+   ```
+   - {DATE}: {matter type} — {outcome} (see [[{matter-id}]])
+   ```
+
+If no matter file exists, skip this step.
 
 ## Step 6: Scale Management
 

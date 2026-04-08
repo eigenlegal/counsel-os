@@ -26,6 +26,23 @@ Before delivering, verify you have completed the necessary prior phases:
 - For **memos and research:** The substantive work is complete.
 - For **compliance reviews:** The compliance assessment is finalized.
 
+## Step 0b: Load Matter File
+
+Check for a matter file:
+
+1. If the user referenced a specific matter ID, load it via QMD.
+2. Otherwise, search QMD for `counsel-os-type: matter` + the counterparty name. Prefer matters with `stage: negotiate`, then `analyze`, then `deliver`.
+3. If found, read the matter file for context — parties, documents, findings, negotiation items, and effective positions.
+4. If no matter file exists, proceed using conversation context.
+
+When a matter file is loaded:
+- Use `## Parties` for attribution in deliverables
+- Use `## Findings` and `## Negotiation` for content
+- Use the `type` frontmatter to select the default output format in Step 1
+
+**Stage transition warning:** If the matter's current stage is `intake` (skipping analyze), warn:
+> This matter hasn't been analyzed yet (stage: intake). Would you like to run `/counsel-os:analyze` first?
+
 ## Step 1: Determine Output Format
 
 Based on the matter type and user preferences, select the appropriate output format:
@@ -310,6 +327,19 @@ Before final delivery:
 2. **Confirm:** "This is ready to deliver. Would you like any changes before I finalize?"
 3. **Deliver:** Post/save/output in the requested format
 4. **Suggest close:** "The deliverable is complete. Would you like me to run `/counsel-os:close` to log this matter and capture any lessons learned?"
+
+## Step 6: Update Matter File
+
+If a matter file was loaded in Step 0b, update it:
+
+1. **Update frontmatter:** Set `stage: deliver` and `updated: {today's date}`.
+2. **Add entries to `## Generated Outputs`:**
+   ```
+   - {output-filename} ({YYYY-MM-DD}) — {format: analysis report / redline package / memo / etc.}
+   ```
+3. **Update `## Next Action`:** `Deliverable complete. Run /counsel-os:close to finalize.`
+
+If no matter file exists, skip this step.
 
 ## Privilege Marking
 

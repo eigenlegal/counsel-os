@@ -29,6 +29,15 @@ Before starting negotiation preparation, verify:
 
 3. **Voice preferences are loaded.** Redline comments and negotiation memos should match the user's preferred tone and style from `{legal_root}/practice/voice.md`.
 
+## Step 0b: Load Matter File
+
+Check for a matter file:
+
+1. If the user referenced a specific matter ID, load it via QMD.
+2. Otherwise, search QMD for `counsel-os-type: matter` + the counterparty name. Prefer matters with `stage: analyze` or `stage: negotiate`.
+3. If found, read the matter file. The `## Findings` section contains the analysis results — use these as your negotiation inputs. The `## Effective Positions` section has the merged positions.
+4. If no matter file exists, proceed using conversation context.
+
 ## Step 1: Identify Negotiation Items
 
 From the analysis report, collect all YELLOW and RED findings. These are your negotiation items. For each item, you already have:
@@ -203,6 +212,34 @@ Ask the user which format they prefer:
 > (C) **Both** — the internal memo for your strategy, plus a clean redline for the counterparty?
 
 If the user has already indicated a preference (e.g., "give me redlines"), proceed with that format.
+
+## Step 6: Update Matter File
+
+If a matter file was loaded in Step 0b, update it:
+
+1. **Update frontmatter:** Set `stage: negotiate` and `updated: {today's date}`.
+
+2. **Add a `## Negotiation` section** after `## Findings` (or update it if resuming):
+
+```markdown
+## Negotiation
+
+### Items Proposed
+| # | Clause | Tier | Primary Position | Fallback |
+|---|--------|------|-----------------|----------|
+| 1 | {clause name} | {1/2/3} | {one-line summary} | {one-line summary} |
+
+### Strategy
+- **Lead issues:** {list}
+- **Concession candidates:** {list}
+- **Sequencing:** {brief approach}
+```
+
+3. **Update `## Next Action`:** `Awaiting counterparty response. After resolution, proceed to /counsel-os:deliver.`
+
+4. **Log any user decisions** to `## Decisions` with date stamp and deviation notes.
+
+If no matter file exists, skip this step.
 
 ## After Negotiation
 
