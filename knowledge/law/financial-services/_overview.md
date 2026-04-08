@@ -3,6 +3,7 @@ counsel-os-type: law-area
 counsel-os-version: "0.3.2"
 ---
 
+
 ## Overview
 
 # Financial Services
@@ -18,7 +19,10 @@ Load this area when the document or matter involves ANY of the following:
 
 ## Sub-Files
 
-- `payments-money-transmission.md` — Payment processing and money transmission regulation. Load when: payment services, money transmission, stored value, mobile payments, payment facilitation, marketplace payment flows, ACH/NACHA, or card network compliance are involved.
+- `payments-money-transmission.md` — Payment processing and money transmission regulation (entry point). Load when: payment services, money transmission, stored value, mobile payments, payment facilitation, marketplace payment flows, or money transmission exemption analysis are involved. Routes to specialized sub-files for deep-dive requirements.
+- `state-mtl-requirements.md` — State-by-state money transmitter licensing requirements (all 50 states + DC + territories). Load when: state-specific licensing analysis, multi-state licensing strategy, bond/net worth calculations, new-state expansion, state examination preparation, or MTMA adoption status are involved.
+- `federal-payments-regulation.md` — Comprehensive federal regulatory requirements for payments companies (FinCEN/BSA, CFPB/Reg E, OFAC, 18 U.S.C. 1960, third-party risk management, FTC). Load when: federal compliance analysis, MSB program design, CFPB supervisory matters, OFAC screening, remittance transfer requirements, or federal criminal exposure assessment are involved.
+- `card-network-ach-rules.md` — Card network operating rules (Visa, Mastercard) and ACH/NACHA requirements. Load when: PayFac compliance, merchant acquiring, card network fines, NACHA operating rules, ACH origination, return rates, same-day ACH, third-party sender obligations, or real-time payments (RTP/FedNow) are involved.
 - `kyc-aml.md` — Know Your Customer and Anti-Money Laundering requirements. Load when: customer onboarding, identity verification, transaction monitoring, suspicious activity reporting, sanctions compliance, beneficial ownership, or BSA program requirements are involved.
 - `banking-regulation.md` — Bank charters, supervision, and BaaS oversight. Load when: bank partnerships, BaaS arrangements, de novo bank formation, capital requirements, FDIC insurance, regulatory examinations, third-party risk management, or CRA obligations are involved.
 - `lending.md` — Consumer and commercial lending regulation. Load when: loan origination, credit disclosures (TILA/Reg Z), fair lending (ECOA/Reg B), interest rates, usury, state lending licenses, CFPB authority, BNPL, earned wage access, or mortgage lending are involved.
@@ -40,5 +44,3 @@ These are non-overridable legal requirements from this area. They cannot be modi
 - Convertible virtual currency exchange and transmission constitutes money transmission under federal law (FinCEN FIN-2019-G001) and requires MSB registration and state licensing.
 - OFAC sanctions screening is a strict liability obligation — no minimum transaction threshold and no intent requirement for civil penalties.
 - Banks must maintain minimum capital ratios under Basel III (4.5% CET1, 6% Tier 1, 8% Total Capital) with prompt corrective action for non-compliance.
-
----
