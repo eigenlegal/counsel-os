@@ -12,7 +12,7 @@ You are starting a new legal matter. Your job is to classify it, load all releva
 
 Read `config.local.md` (if it exists) or `config.md` from the plugin root to get:
 
-- **Legal root** (`{legal_root}`) — contains law/, defaults/, practice/, memory/
+- **Legal root** (`{legal_root}`) — contains law/, practice/, matters/, memory/
 - **Entity discovery** — QMD query on `counsel-os-type` frontmatter property
 - **Specific entity lookup** — QMD search for company name + `counsel-os-type` value
 
@@ -114,30 +114,27 @@ Applicable law areas:
 
 ## Step 4: Classify the Matter Type
 
-Based on the document and context, classify into one of these matter types. The matter type determines which playbook to use in the analyze phase:
+Based on the document and context, classify into the matter type that best fits. The matter type determines which method to load in the analyze phase.
 
-Classify into the matter type that best fits the document or matter. The matter type determines which playbook to load in the analyze phase.
+To find the matching method, look for a method file in `{legal_root}/practice/methods/` that corresponds to the matter type (e.g., a contract review maps to `contract-review.md`, an NDA maps to `nda-triage.md`).
 
-To find the matching playbook, look for a section heading in `{legal_root}/defaults/playbooks.md` that corresponds to the matter type (e.g., a contract review maps to "## Contract Review", an NDA maps to "## Nda Triage").
+Common matter types include: contract-review, nda-triage, negotiation, compliance, dispute, policy, diligence, governance, memo, amendment, vendor-onboarding — but the available methods may expand over time, so always check what files exist in the directory.
 
-Common matter types include: contract-review, nda-triage, negotiation, compliance, dispute, policy, diligence, governance, memo, amendment, vendor-onboarding — but the available playbooks may expand over time, so always check the file's section headings.
-
-If the matter doesn't fit cleanly, choose the closest match and note the deviation. If no playbook exists for the matter type, proceed with the general analysis framework and note the gap.
+If the matter doesn't fit cleanly, choose the closest match and note the deviation. If no method file exists for the matter type, proceed with the general analysis framework and note the gap.
 
 ## Step 5: Build Effective Positions
 
 For each clause type that is likely relevant to this matter, build the effective position by merging across knowledge layers:
 
-1. **Start with defaults:** Load the relevant clause type section from `{legal_root}/defaults/positions.md`
-2. **Overlay practice:** Check `{legal_root}/practice/positions.md` for overrides. Practice positions win on conflict with defaults.
-3. **Overlay entity:** Use a QMD query to find the counterparty's entity file and check for deal-specific overrides. Entity overrides win on conflict with practice.
-4. **Check against law:** Cross-reference against all loaded `{legal_root}/law/` areas. Law constraints ALWAYS win — if a position conflicts with law, flag it as RED and cite the specific regulation.
+1. **Load your standard:** Load `{legal_root}/practice/standards/{clause-type}.md` — the `## Our Position` section defines your standard.
+2. **Overlay entity:** Use a QMD query to find the counterparty's entity file and check for deal-specific overrides. Entity overrides win on conflict with your standard.
+3. **Check against law:** Cross-reference against all loaded `{legal_root}/law/` areas. Law constraints ALWAYS win — if a position conflicts with law, flag it as RED and cite the specific regulation.
 
 Document the effective position for each relevant clause type:
 ```
 Effective positions:
-- Limitation of liability: 12-month cap (practice override) with data breach carve-out (law requirement: GDPR Art. 82)
-- Indemnification: mutual, capped at contract value (default — practice silent)
+- Limitation of liability: 12-month cap (practice/standards/limitation-of-liability.md) with data breach carve-out (law requirement: GDPR Art. 82)
+- Indemnification: mutual, capped at contract value (practice/standards/indemnification.md)
 - Data protection: DPA required (law requirement: GDPR Art. 28) with 72-hour breach notification (law floor)
 ```
 

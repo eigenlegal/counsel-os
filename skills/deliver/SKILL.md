@@ -12,7 +12,7 @@ You are packaging the final work product for delivery. Your job is to format the
 
 Read `config.local.md` (if it exists) or `config.md` from the plugin root to get:
 
-- **Legal root** (`{legal_root}`) — contains law/, defaults/, practice/, memory/
+- **Legal root** (`{legal_root}`) — contains law/, practice/, matters/, memory/
 - **Entity discovery** — QMD query on `counsel-os-type` frontmatter property
 - **Specific entity lookup** — QMD search for company name + `counsel-os-type` value
 
@@ -74,7 +74,7 @@ If the user requests a specific format, use that instead. Common requests:
 
 ## Step 2: Apply Voice Styling
 
-Load `{legal_root}/practice/voice.md` and apply the user's preferences:
+Load the ## Voice section from `{legal_root}/practice/profile.md` and apply the user's preferences:
 
 1. **Tone:** Match the specified tone (e.g., professional but approachable, formal, direct)
 2. **Structure:** Follow structure patterns (e.g., executive summary first, bullets over paragraphs)
@@ -82,7 +82,7 @@ Load `{legal_root}/practice/voice.md` and apply the user's preferences:
 4. **Formality:** Calibrate to the audience (internal memo vs. counterparty communication vs. board materials)
 5. **Risk language:** Use the correct GREEN/YELLOW/RED language calibration
 
-If `voice.md` doesn't exist or is empty, use these defaults:
+If `profile.md` doesn't exist or has no ## Voice section, use these defaults:
 - Professional, measured tone
 - Lead with the bottom line
 - Use plain English
@@ -97,7 +97,7 @@ If `voice.md` doesn't exist or is empty, use these defaults:
 # [Matter Name] — Analysis Report
 
 **Date:** [date]
-**Prepared by:** [user's name from identity.md] with Counsel OS
+**Prepared by:** [user's name from profile.md] with Counsel OS
 **Classification:** PRIVILEGED AND CONFIDENTIAL — ATTORNEY-CLIENT COMMUNICATION
 
 ## Executive Summary
@@ -235,7 +235,7 @@ Run these checks:
 1. **Source is .docx:** The original document path from the conversation ends in `.docx`
 2. **python-docx available:** Run `python3 -c "import docx"` — exits 0
 3. **Word installed:** `/Applications/Microsoft Word.app` exists
-4. **User name available:** `{legal_root}/practice/identity.md` contains a name that isn't a bracket placeholder like `[YOUR NAME HERE]`
+4. **User name available:** `{legal_root}/practice/profile.md` contains a name that isn't a bracket placeholder like `[YOUR NAME HERE]`
 
 ### Tier Selection
 
@@ -265,7 +265,7 @@ If they decline both, skip to Step 4.
     "current": "exact current language from negotiate output",
     "proposed": "exact proposed language from negotiate output",
     "comment": "counterparty-facing rationale, or null if none",
-    "author": "User's Name from identity.md"
+    "author": "User's Name from profile.md"
   }
 ]
 ```

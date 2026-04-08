@@ -12,7 +12,7 @@ You are closing out a legal matter. Your job is to capture what was learned, upd
 
 Read `config.local.md` (if it exists) or `config.md` from the plugin root to get:
 
-- **Legal root** (`{legal_root}`) — contains law/, defaults/, practice/, memory/
+- **Legal root** (`{legal_root}`) — contains law/, practice/, matters/, memory/
 - **Entity discovery** — QMD query on `counsel-os-type` frontmatter property
 - **Specific entity lookup** — QMD search for company name + `counsel-os-type` value
 
@@ -151,15 +151,15 @@ Proposed additions:
 - Notes: [any new observations]
 ```
 
-### 2e. Position Gap — `{legal_root}/practice/positions.md`
+### 2e. Position Gap — `{legal_root}/practice/standards/`
 
 Did this matter expose a clause type not covered in the user's positions?
 
 ```
 Your positions don't cover [clause type], but it came up in this matter.
-Should I add a position entry for it?
+Should I create a new file in practice/standards/ for the uncovered clause type?
 
-Suggested starting point:
+Suggested starting point for practice/standards/{clause-type}.md:
 ## [Clause Type]
 **Our standard:** [based on what you did in this matter]
 **We'll accept:** [based on flexibility shown]
@@ -167,7 +167,7 @@ Suggested starting point:
 **Auto-escalate:** [suggested triggers]
 ```
 
-### 2f. Clause Language — `{legal_root}/defaults/clause-library.md`
+### 2f. Clause Language — `{legal_root}/practice/library/`
 
 Did any particularly effective clause language emerge?
 
@@ -179,7 +179,7 @@ Look for:
 ```
 The counter-language we used for [clause type] was accepted. Should I add it to the clause library?
 
-Proposed addition to [clause-library file]:
+Proposed addition to practice/library/:
 ## [Clause Variant Name]
 **Use when:** [situation description]
 **Language:**
