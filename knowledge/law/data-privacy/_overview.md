@@ -26,11 +26,15 @@ Load this area when the document or matter involves ANY of the following:
 | `coppa.md` | Product or service is directed to children under 13, collects data from children, or involves age verification or parental consent |
 | `consent-mechanics.md` | Agreement addresses consent collection, cookie consent, opt-in/opt-out mechanisms, consent withdrawal, or granular consent for multiple processing purposes |
 | `breach-notification.md` | Agreement contains breach notification clauses, incident response provisions, or regulatory notification timelines |
+| `us-breach-notification-50-state.md` | Multi-state breach response requires state-by-state notification assessment, or specific state breach notification requirements must be determined (timelines, AG notification thresholds, PI definitions, risk-of-harm exemptions) |
 | `cross-border-transfers.md` | Data flows across national borders, SCCs or BCRs are referenced, adequacy decisions are relied on, or Transfer Impact Assessments are required |
 | `data-subject-rights.md` | Agreement addresses consumer/data subject request handling, access rights, deletion rights, portability, or objection mechanisms |
 | `data-processing-agreements.md` | A DPA, data protection addendum, or service provider agreement governing personal data processing is being drafted or reviewed |
+| `glba-privacy.md` | A financial institution's privacy practices, GLBA Privacy Rule or Safeguards Rule compliance, GLBA-CCPA/GDPR interaction, or determining whether a fintech qualifies as a "financial institution" under GLBA |
+| `payments-data-localization.md` | Cross-border payment data flows, payment data storage requirements by jurisdiction (India RBI, China PBOC, Russia, Indonesia, Vietnam, Nigeria), or payment gateway architecture decisions involving data residency |
+| `financial-sector-privacy-regulators.md` | Financial institution data incident notification to banking regulators (OCC/Fed/FDIC 36h rule), NY DFS cybersecurity regulation (23 NYCRR 500), CFPB Section 1033 open banking, SEC Reg S-P, FinCEN retention vs. deletion rights, or CIRCIA critical infrastructure reporting |
 
-**Cross-area loading:** If HIPAA applies (healthcare data, covered entity, business associate) → also load `healthcare/hipaa-compliance.md` if available, and flag HIPAA-GDPR interaction if EU health data is involved. If GLBA applies (financial institution data) → also load `financial-services/compliance-licensing.md`. If FERPA applies (student education records) → flag FERPA-COPPA interaction for ed-tech platforms.
+**Cross-area loading:** If HIPAA applies (healthcare data, covered entity, business associate) → also load `healthcare/hipaa-compliance.md` if available, and flag HIPAA-GDPR interaction if EU health data is involved. If GLBA applies (financial institution data) → also load `glba-privacy.md` and `financial-sector-privacy-regulators.md`. If FERPA applies (student education records) → flag FERPA-COPPA interaction for ed-tech platforms. If payment data localization is involved → also load `law/financial-services/payments-money-transmission.md` for licensing context.
 
 ## Quick Reference
 
@@ -41,6 +45,10 @@ Load this area when the document or matter involves ANY of the following:
 - **coppa.md** — Children's data: under-13 threshold, verifiable parental consent, operator obligations, FTC enforcement
 - **consent-mechanics.md** — Consent requirements across jurisdictions: freely given, specific, informed, granular, withdrawal rights
 - **breach-notification.md** — Cross-jurisdiction breach timelines: GDPR 72 hours, HIPAA 60 days, state-by-state AG notification thresholds
+- **us-breach-notification-50-state.md** — All 50 states + DC + territories: notification triggers, timelines, AG thresholds, PI definitions, risk-of-harm exemptions, encryption safe harbors, credit monitoring requirements
 - **cross-border-transfers.md** — Transfer mechanisms: SCCs (2021), adequacy decisions, Schrems II supplementary measures, TIAs, APEC CBPR
 - **data-subject-rights.md** — Rights by jurisdiction: access, deletion, portability, objection with response timelines and exceptions
 - **data-processing-agreements.md** — Mandatory DPA clauses: GDPR Art. 28, CCPA service provider requirements, state-law DPA provisions
+- **glba-privacy.md** — GLBA Financial Privacy Rule, FTC Safeguards Rule (2023 amendments), GLBA-CCPA interaction (entity vs. data-level exemption), GLBA-GDPR interaction
+- **payments-data-localization.md** — Payment-specific data localization: India RBI, China PBOC, Russia 152-FZ, Indonesia BI/OJK, Vietnam SBV, Nigeria CBN, architecture implications
+- **financial-sector-privacy-regulators.md** — Financial sector notification cascade: OCC/Fed/FDIC 36h, NY DFS 72h, card networks 24h, CFPB Section 1033, SEC Reg S-P, CIRCIA, FinCEN retention conflicts
