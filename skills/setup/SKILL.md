@@ -27,7 +27,7 @@ Check if a legal root is already configured:
 
 ### If legal_root is set and the directory exists:
 
-Check if it's already populated (has law/, defaults/, practice/, memory/ with content). If so, ask:
+Check if it's already populated (has law/, practice/, memory/ with content). If so, ask:
 > Your Counsel OS is already set up at `{legal_root}`. Would you like to:
 > (A) Review and update your existing profile
 > (B) Start fresh (this will overwrite your current settings)
@@ -58,7 +58,7 @@ legal_root: {user's path}
 discovery: qmd
 entity_properties:
   type_field: counsel-os-type
-  values: [counterparty, vendor, customer, prospect]
+  values: [counterparty, vendor, customer, prospect, matter]
 
 ## QMD Collection
 collection: obsidian
@@ -77,16 +77,17 @@ content-version: "{date from plugin's .content-versions.json for that group}"
 ---
 ```
 
-### Defaults (from plugin `knowledge/defaults/`)
-Copy positions.md, playbooks.md, checklists.md, clause-library.md. Add frontmatter if not present.
+### Practice (from plugin `knowledge/practice-seed/` and `templates/practice/`)
+Copy the full practice seed into `{legal_root}/practice/`:
+- `knowledge/practice-seed/profile.md` → `practice/profile.md`
+- `knowledge/practice-seed/standards/` → `practice/standards/` (24 position files, pre-filled with market standards)
+- `knowledge/practice-seed/methods/` → `practice/methods/` (method files with integrated checklists)
+- `knowledge/practice-seed/library/` → `practice/library/` (clause language categories)
 
-### Practice (from plugin `templates/practice/`)
-Copy identity.md, principles.md, positions.md, voice.md, thresholds.md. Add frontmatter:
-```yaml
----
-counsel-os-type: practice
----
-```
+All files should already have `counsel-os-type: practice` frontmatter from the seed.
+
+### Matters directory
+Create `{legal_root}/matters/` (empty — populated during intake).
 
 ### Memory (from plugin `templates/memory/`)
 Copy patterns.md. Add frontmatter:
@@ -109,164 +110,97 @@ Check if pandoc is installed (`command -v pandoc`). If not, note:
 Report what was seeded and built:
 > Counsel OS framework seeded at `{legal_root}`:
 > - law/ — 26 legal area files
-> - defaults/ — positions, playbooks, checklists, clause library
-> - practice/ — templates ready for configuration
+> - practice/ — profile template, 24 standards, methods, clause library
+> - matters/ — ready for intake
 > - memory/ — patterns log ready
 
-## Step 3: Identity — `{legal_root}/practice/identity.md`
+## Step 3: Practice Profile — `{legal_root}/practice/profile.md`
 
-Walk through each section conversationally. Don't dump all questions at once — ask 2-3 at a time.
+Walk through the profile conversationally. Don't dump all questions at once — ask 2-3 at a time. All answers go into sections of `practice/profile.md`.
 
-### Opening questions:
+### Identity (## Identity section):
 > Let's start with the basics about your organization.
 > 1. What's your organization's full legal name?
 > 2. What does your organization do? (Brief description — industry, products/services, stage)
 > 3. Are you in-house counsel, outside counsel, or something else?
 
-### Follow-up based on answers:
-> Now let me understand your legal team:
+Follow up:
 > 4. Who's on the legal team? (Names, titles, and areas of responsibility)
-> 5. Do you use outside counsel? If so, for what areas?
-> 6. Who has signing authority, and at what thresholds?
+> 5. What legal entities does your organization operate through?
+> 6. What regulatory frameworks apply? (SOC 2, HIPAA, GDPR, PCI, etc.)
 
-### Entity and regulatory:
-> A few more structural questions:
-> 7. What legal entities does your organization operate through? (Jurisdictions, entity types)
-> 8. What regulatory frameworks apply to your business? (SOC 2, HIPAA, GDPR, PCI, FedRAMP, etc.)
-> 9. Any other business context that shapes your legal work? (Stage, funding, strategic priorities)
-
-After gathering responses, write the completed `identity.md` file and show the user:
-> Here's your identity profile. Anything you'd like to change?
-
-## Step 4: Principles — `{legal_root}/practice/principles.md`
-
-### Legal philosophy:
-> Now let's calibrate your legal philosophy. This determines how I approach every matter.
+### Principles (## Principles section):
+> Now let's calibrate your legal philosophy.
 >
-> How would you describe your overall approach to legal work? For example:
+> How would you describe your overall approach? For example:
 > - "We're business enablers — find the path to yes while managing risk"
 > - "We're protective — better to over-flag than miss something"
 > - "We're pragmatic — focus energy on material issues, accept market terms on the rest"
 
-### Risk appetite:
 > On a spectrum from conservative to aggressive, where do you fall?
-> - **Conservative:** Flag everything, prefer walking away over accepting risk
-> - **Moderate:** Accept market-standard risk, push on material issues
-> - **Aggressive:** Move fast, accept more risk for speed, only escalate true dealbreakers
->
-> Most in-house teams are moderate. Where are you?
+> When you can't negotiate everything, what do you fight for first?
 
-### Priorities:
-> When you can't negotiate everything (which is most of the time), what do you fight for first?
-> Rank these by priority for your practice, or tell me your own framework:
-> - IP ownership and assignment
-> - Data protection and privacy
-> - Limitation of liability
-> - Indemnification
-> - Termination rights
-> - Confidentiality
-> - Warranty and representations
-> - Governing law
+### Voice (## Voice section):
+> Let's set your writing style preferences.
+> 1. **Tone:** How should legal work product sound? (e.g., "professional but approachable")
+> 2. **Structure:** Bullets or paragraphs? Executive summary first?
+> 3. **Formality by audience:** Different levels for internal vs. counterparty vs. board?
+> 4. **Any language pet peeves?**
 
-### Negotiation and communication:
-> Two more questions:
-> 1. How do you prefer to negotiate? (Full redline, comments summary, call-first, etc.)
-> 2. How do you communicate legal advice internally? (Memos, Slack, email, verbal, etc.)
+Optional: "If you have a memo or redline that represents your ideal style, share it and I'll calibrate from it."
 
-Write the completed `principles.md` and confirm.
+### Escalation Thresholds (## Escalation Thresholds section):
+> Last section: escalation thresholds.
+> 1. **GREEN track (auto-approval):** What can proceed with minimal review?
+> 2. **YELLOW track (single review):** What needs one reviewer?
+> 3. **RED track (full review):** What needs senior/committee review?
+> 4. **Dollar thresholds:** Under $X = auto-approve, etc.
+> 5. **Always-escalate clauses:** Specific types that always trigger escalation?
 
-## Step 5: Positions — `{legal_root}/practice/positions.md`
+After the user sets thresholds, cross-reference against `{legal_root}/law/` areas. Flag any conflicts where user thresholds would allow positions that violate law constraints.
 
-This is the most detailed step. Walk through each default position and ask for overrides.
+Write the completed `profile.md` with all four sections and confirm:
+> Here's your practice profile. Anything you'd like to change?
+
+## Step 4: Standards — `{legal_root}/practice/standards/`
+
+Walk through the key position files and let the user customize the `## Our Position` section.
 
 ### Approach:
-> Now let's set your standard positions. I'll show you each default market-standard
-> position and you can tell me if your standard differs.
+> Your positions have been seeded with market standards. Let's walk through the
+> key ones and adjust for your practice.
 >
-> For each clause type, I need to know:
-> - **Your standard:** What you typically propose
+> For each clause type, the file has a starting position. I need to know:
+> - **Your standard:** What you typically propose (may match the seed or differ)
 > - **What you'll accept:** Your flexibility range
 > - **What you won't accept:** Your hard limits
 > - **Auto-escalate triggers:** What always gets flagged regardless
 
-### Walk through each default position:
+### Walk through key positions:
 
-For each clause type section in `{legal_root}/defaults/positions.md`:
-1. Read the default position
+For each major clause type in `{legal_root}/practice/standards/`:
+1. Read the seeded `## Our Position` section
 2. Present a summary to the user
 3. Ask: "Does this match your practice, or do you have different standards?"
-4. If different: capture their position in the override format
-5. If same: note that defaults apply (no override needed)
+4. If different: update the `## Our Position` section in the file
+5. If same: confirm and move on
 
 ```
 > **Limitation of Liability**
-> The market default is: mutual cap at 12 months of fees, standard consequential
+> Your starting position is: mutual cap at 12 months of fees, standard consequential
 > damages exclusion, carve-outs for IP, data breach, confidentiality, and willful
 > misconduct.
 >
 > Does this match your standard, or do you have different thresholds?
 ```
 
-Repeat for each clause type. Only write overrides for positions where the user differs from defaults.
+Prioritize the most impactful positions first (limitation of liability, indemnification, data protection, IP ownership, termination). The user can always refine others later.
 
-After completing all positions:
-> Here are your position overrides. For any clause type not listed, the market-standard
-> default will apply. Want to adjust anything?
+After completing the walkthrough:
+> Your positions are set. You can refine any of them later by editing the files
+> in practice/standards/ directly.
 
-## Step 6: Voice — `{legal_root}/practice/voice.md`
-
-### Quick calibration:
-> Let's set your writing style preferences. These affect how I draft memos,
-> redlines, and communications.
->
-> 1. **Tone:** How should legal work product sound? (e.g., "professional but
->    approachable," "formal and precise," "direct and concise")
-> 2. **Structure:** Bullets or paragraphs? Executive summary first? How do you
->    prefer findings organized?
-> 3. **Formality by audience:** Different levels for internal vs. counterparty
->    vs. board? Walk me through it.
-> 4. **Any language pet peeves?** Words or phrases you love or hate?
-
-### Optional — style by example:
-> If you have a memo or redline that represents your ideal style, share it and
-> I'll calibrate from it. This is often easier than describing your preferences
-> in the abstract.
-
-Write the completed `voice.md` and confirm.
-
-## Step 7: Thresholds — `{legal_root}/practice/thresholds.md`
-
-### Review tracks:
-> Last major section: escalation thresholds. These determine which matters I flag
-> for review and at what level.
->
-> 1. **GREEN track (auto-approval):** What types of matters can proceed with
->    minimal review? (e.g., mutual NDAs, standard templates under $X)
-> 2. **YELLOW track (single review):** What needs one reviewer? (e.g., counterparty
->    paper under $X, first deal with new counterparty)
-> 3. **RED track (full review):** What needs senior/committee review? (e.g., deals
->    over $X, strategic partnerships, government contracts)
-
-### Dollar thresholds:
-> What are your dollar-based escalation tiers?
-> Example: Under $25K = auto-approve, $25K-$100K = single reviewer, etc.
-
-### Always-escalate clauses:
-> Are there specific clause types that always trigger escalation regardless of
-> deal value? (e.g., unlimited liability, non-competes, exclusivity)
-
-### Law constraint floors:
-
-After the user sets their thresholds, cross-reference against loaded `{legal_root}/law/` areas. Law constraints create hard floors that override user thresholds — for example, if law/ requires 72-hour breach notification, a threshold that accepts 5-day notification windows is invalid regardless of deal value.
-
-Flag any conflicts:
-> **Note:** Your threshold for [X] would allow positions that conflict with
-> [law area] requirements. The law constraint sets a hard floor of [Y] that
-> overrides this threshold. I've adjusted accordingly.
-
-Write the completed `thresholds.md` and confirm.
-
-## Step 8: Optional — Ingest Past Contracts
+## Step 5: Optional — Ingest Past Contracts
 
 Offer to analyze past work product to auto-infer positions:
 
@@ -285,7 +219,7 @@ If the user provides past contracts:
 3. Flag any gaps: "Your signed contracts show you've accepted X, but your stated position is Y. Want to adjust?"
 4. Offer to update positions based on findings
 
-## Step 9: Version Control
+## Step 6: Version Control
 
 Offer to set up git for the user's legal knowledge:
 
@@ -336,12 +270,12 @@ git push -u origin main
 
 Skip — no version control. The backup/restore scripts still work as a safety net.
 
-## Step 10: Verification
+## Step 7: Verification
 
 Run a quick validation:
 
-1. **Files exist check:** Verify law/, defaults/, practice/, memory/ are all present and populated
-2. **Content check:** Verify practice files have real content (not just template placeholders)
+1. **Files exist check:** Verify law/, practice/ (with profile.md, standards/, methods/, library/), matters/, memory/ are all present and populated
+2. **Content check:** Verify profile.md has real content (not just template placeholders)
 3. **Consistency check:** Verify positions don't conflict with each other or with law/ constraints
 4. **Config check:** Verify `config.local.md` has the correct legal_root path
 
@@ -351,13 +285,12 @@ Run a quick validation:
 Your Counsel OS is configured:
 
 - [x] Legal root: {legal_root}
-- [x] identity.md — [organization name], [team size] team members
-- [x] principles.md — [risk appetite] risk appetite, [priority framework summary]
-- [x] positions.md — [N] position overrides, [M] using defaults
-- [x] voice.md — [tone summary]
-- [x] thresholds.md — GREEN under $[X], RED over $[Y]
+- [x] profile.md — [organization name], [risk appetite], [tone], [thresholds]
+- [x] standards/ — [N] positions customized, [M] using market defaults
+- [x] methods/ — [N] method files seeded
+- [x] library/ — clause library seeded
 - [x] law/ — [N] law areas seeded
-- [x] defaults/ — positions, playbooks, checklists, clause library seeded
+- [x] matters/ — ready for intake
 - [x] memory/ — patterns log ready
 
 You're ready to go. Start with `/counsel-os:intake` on your next contract or matter.

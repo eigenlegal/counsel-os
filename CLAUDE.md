@@ -2,17 +2,17 @@
 
 ## Identity
 
-[Your Name], [Your Title] at [Your Organization]. [1-2 sentence description of your legal philosophy]. Full principles in `practice/principles.md` (at your legal root).
+[Your Name], [Your Title] at [Your Organization]. [1-2 sentence description of your legal philosophy]. Full profile in `practice/profile.md` (at your legal root).
 
-[Brief description of your organization and what it does]. Full context in `practice/identity.md`.
+[Brief description of your organization and what it does]. Full context in `practice/profile.md`.
 
 ---
 
 ## Operating Instructions
 
-### The 5-Layer Knowledge System
+### The 4-Layer Knowledge System
 
-Counsel OS uses a 5-layer knowledge hierarchy with explicit precedence. You MUST understand and apply these merge rules before any legal work.
+Counsel OS uses a 4-layer knowledge hierarchy with explicit precedence. You MUST understand and apply these merge rules before any legal work.
 
 ```
 PRECEDENCE (highest to lowest):
@@ -28,14 +28,12 @@ PRECEDENCE (highest to lowest):
                            the practice default — but ONLY for that
                            counterparty/deal. Discovered via QMD query.
 
-3. practice/             — The lawyer's standard positions. If
-                           practice/positions.md says "our standard is
-                           12-month cap", that beats defaults/.
+3. practice/             — All practice content — positions, methods,
+                           library, and your professional profile. If
+                           practice/standards/ defines your positions,
+                           that is the authoritative source.
 
-4. defaults/             — Market-standard positions. Used when practice/
-                           is silent on a topic.
-
-5. memory/               — Context for pattern recognition. Inform, don't
+4. memory/               — Context for pattern recognition. Inform, don't
                            override. "We've accepted this 3 times before"
                            is useful context but doesn't change the standard.
 ```
@@ -54,17 +52,13 @@ PRECEDENCE (highest to lowest):
 
 Read `config.local.md` (if it exists) or `config.md` from the plugin root to find:
 
-- **Legal root** — The folder where Counsel OS manages framework content (law/, defaults/, practice/, memory/). All paths below are relative to this root.
+- **Legal root** — The folder where Counsel OS manages framework content (law/, practice/, memory/). All paths below are relative to this root.
 - **Entity discovery** — Company/counterparty files are discovered via QMD queries on `counsel-os-type` frontmatter properties. Entity files can live anywhere in the user's vault.
 
 ### Before ANY Legal Work
 
 **Step 1: Load practice files from `{legal_root}/practice/`.**
-- `practice/identity.md` — Who you are and your organization
-- `practice/principles.md` — How you think, prioritize, and communicate
-- `practice/positions.md` — Your standard positions (overrides defaults/)
-- `practice/voice.md` — Writing voice, tone, and formatting
-- `practice/thresholds.md` — Escalation criteria
+- `practice/profile.md` — Identity, principles, voice, and escalation thresholds
 
 **Step 2: Identify the phase and load the matching skill.**
 
@@ -78,7 +72,7 @@ Read `config.local.md` (if it exists) or `config.md` from the plugin root to fin
 | `/counsel-os:browse` | Utility | Document extraction from portals via headless browser |
 | `/counsel-os:retro` | Utility | Practice analytics from decision history |
 | `/counsel-os:setup` | Config | Guided onboarding for new users |
-| `/counsel-os:update` | Config | Pull latest product content (law/ + defaults/) |
+| `/counsel-os:update` | Config | Pull latest product content (law/) |
 
 ### Matter Files
 
@@ -99,14 +93,13 @@ Before analysis, scan the document or matter description against trigger conditi
 **Step 4: Build effective positions.**
 
 For each clause type under review:
-1. Start with the relevant clause type section in `{legal_root}/defaults/positions.md`
-2. Overlay `{legal_root}/practice/positions.md` (practice wins on conflict)
-3. Query QMD for the counterparty's entity file (search for company name + `counsel-os-type` in [counterparty, vendor, customer]). If found, overlay any agreed positions from that file (entity overrides win on conflict with practice)
-4. Check against `{legal_root}/law/<area>/_overview.md` constraints (law always wins — flag violations as RED)
+1. Load the relevant standard from `{legal_root}/practice/standards/{clause-type}.md` — the ## Our Position section
+2. Query QMD for the counterparty's entity file (search for company name + `counsel-os-type` in [counterparty, vendor, customer]). If found, overlay any agreed positions from that file (entity overrides win on conflict with practice)
+3. Check against `{legal_root}/law/<area>/_overview.md` constraints (law always wins — flag violations as RED)
 
 **Step 5: Execute the appropriate playbook.**
 
-Load the matching playbook section from `{legal_root}/defaults/playbooks.md`. Follow it step by step. Reference `{legal_root}/defaults/checklists.md` and `{legal_root}/defaults/clause-library.md` as needed.
+Load the matching method from `{legal_root}/practice/methods/`. Follow it step by step. Reference `{legal_root}/practice/library/` as needed.
 
 ---
 
@@ -123,8 +116,8 @@ Suggest knowledge updates when relevant. Always ask before making changes. Use Q
 ### Updating Knowledge
 
 You can update the knowledge base at any time:
-- "Update the liability position" → edit `{legal_root}/practice/positions.md`
-- "Add this clause to the library" → edit `{legal_root}/defaults/clause-library.md`
+- "Update the liability position" → edit `{legal_root}/practice/standards/limitation-of-liability.md`
+- "Add this clause to the library" → edit `{legal_root}/practice/library/`
 - "Create a context file for [counterparty]" → ask user for save location, create file with `counsel-os-type` frontmatter
 - "Update [counterparty] file" → discover via QMD, update in place
 - "Log this decision" → update the entity file via QMD discovery
@@ -159,22 +152,16 @@ User's vault (all knowledge — discovered via config.md + QMD):
       <area>/                                # One folder per law area
         _overview.md                         # Trigger conditions, sub-file rules, key constraints
         <sub-topic>.md                       # Individual sub-topic files (counsel-os-type: law-area)
-    defaults/                                # Layer 4: Market standards
-      positions.md                           # counsel-os-type: default-positions (24 types)
-      playbooks.md                           # counsel-os-type: playbook (17 playbooks)
-      checklists.md                          # counsel-os-type: checklist (14 checklists)
-      clause-library.md                      # counsel-os-type: clause-library (21 categories)
-    practice/                                # Layer 3: Your judgment
-      identity.md                            # counsel-os-type: practice
-      principles.md                          # counsel-os-type: practice
-      positions.md                           # counsel-os-type: practice
-      voice.md                               # counsel-os-type: practice
-      thresholds.md                          # counsel-os-type: practice
-    memory/                                  # Layer 5: Institutional learning
-      patterns.md                            # counsel-os-type: memory-patterns
-      retro-*.md                             # Practice analytics snapshots
+    practice/                                # Layer 3: Your practice (user-owned)
+      profile.md                             # Identity, voice, principles, thresholds
+      standards/                             # Positions, compliance thresholds, risk tolerances (24 topics)
+      methods/                               # How you approach different matter types (playbooks + checklists)
+      library/                               # Reusable materials — clause language, templates, forms
     matters/                                 # Persistent state per engagement
       {matter-id}.md                         # counsel-os-type: matter (created at intake, updated each phase)
+    memory/                                  # Layer 4: Institutional learning
+      patterns.md                            # counsel-os-type: memory-patterns
+      retro-*.md                             # Practice analytics snapshots
 
   {anywhere in vault}/                       # Layer 2: Entity-specific overrides
     <company>.md                             # counsel-os-type: counterparty | vendor | customer | prospect
