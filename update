@@ -2,31 +2,22 @@
 set -e
 
 # Counsel OS — Update Script
-# Pulls latest plugin methodology (skills/, CLAUDE.md, scripts) and shows
-# what changed in product content (law/, defaults/) for user review.
-# All knowledge now lives in the user's vault — this script does NOT
-# auto-overwrite vault content.
+# Pulls latest product content (law/, defaults/, skills/, templates/) without
+# touching user data (practice/, matters/, memory/).
 #
 # Works in two modes:
 #   1. Git repo (development install) — git fetch && git merge
 #   2. Plugin cache (installed via registry) — find the git source repo,
-#      pull there, then rsync plugin content into the cache
+#      pull there, then sync into a versioned subdirectory. Updates
+#      installed_plugins.json so Claude Code picks up the new version.
+#      Keeps the last 3 versions for rollback; prunes older ones.
 
 COUNSEL_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$COUNSEL_DIR"
 
-# Portable content hash (macOS uses md5, Linux uses md5sum)
-# Hashes all files in a directory into a single checksum
-_dir_hash() {
-    local dir="$1"
-    if command -v md5 &>/dev/null; then
-        find "$dir" -type f -print0 | sort -z | xargs -0 md5 -q 2>/dev/null | md5 -q 2>/dev/null || echo "skip"
-    elif command -v md5sum &>/dev/null; then
-        find "$dir" -type f -print0 | sort -z | xargs -0 md5sum 2>/dev/null | awk '{print $1}' | md5sum | awk '{print $1}' || echo "skip"
-    else
-        echo "skip"
-    fi
-}
+INSTALLED_PLUGINS="$HOME/.claude/plugins/installed_plugins.json"
+PLUGIN_KEY="counsel-os@jack-plugins"
+KEEP_VERSIONS=3
 
 echo "Counsel OS Update"
 echo "================="
@@ -44,12 +35,11 @@ echo "Current version: $OLD_VERSION"
 echo ""
 
 # -------------------------------------------------------------------
-# Step 2: All knowledge lives in user's vault — plugin updates are methodology only
+# Step 2: User data is in Obsidian vault — no cache backup needed
 # -------------------------------------------------------------------
 
-# All knowledge lives in the user's vault (configured in config.md).
-# Plugin updates only affect methodology (skills, CLAUDE.md, scripts).
-# Law/ and defaults/ changes are shown as diffs for the user to review.
+# User data lives in the Obsidian vault (not in plugin cache).
+# Product updates do not touch it. Backup via Obsidian sync or ./backup script.
 
 # -------------------------------------------------------------------
 # Step 3: Determine update mode and pull latest
@@ -67,25 +57,23 @@ PRODUCT_DIRS=(
 )
 
 # Top-level product files to sync
-# NOTE: config.md is intentionally EXCLUDED — it contains user-specific
-# settings (legal_root) that must not be overwritten by updates.
 PRODUCT_FILES=(
     "VERSION"
     "CLAUDE.md"
     "CONNECTORS.md"
     "README.md"
-    "update"
     "backup"
     "restore"
     "setup"
     "export"
     "package.json"
+    "config.md"
     ".claude-plugin/plugin.json"
 )
 
 if git rev-parse --is-inside-work-tree &>/dev/null; then
     # ---------------------------------------------------------------
-    # Mode 1: Git repo — standard git pull
+    # Mode 1: Git repo — standard git pull (development install)
     # ---------------------------------------------------------------
     echo "Mode: git repo"
     echo ""
@@ -123,7 +111,7 @@ if git rev-parse --is-inside-work-tree &>/dev/null; then
     fi
 else
     # ---------------------------------------------------------------
-    # Mode 2: Plugin cache — find git source, pull there, rsync here
+    # Mode 2: Plugin cache — versioned directory layout
     # ---------------------------------------------------------------
     echo "Mode: plugin cache (not a git repo)"
     echo ""
@@ -131,7 +119,6 @@ else
     # Find the git source repo
     SOURCE_DIR=""
 
-    # Check configurable path first
     if [ -f "$COUNSEL_DIR/.source-repo" ]; then
         CONFIGURED=$(cat "$COUNSEL_DIR/.source-repo" | tr -d '[:space:]')
         if [ -d "$CONFIGURED/.git" ] && [ -f "$CONFIGURED/VERSION" ]; then
@@ -139,7 +126,6 @@ else
         fi
     fi
 
-    # Search known locations
     if [ -z "$SOURCE_DIR" ]; then
         for candidate in \
             "$HOME/Desktop/counsel-os" \
@@ -167,7 +153,7 @@ else
         echo "containing the absolute path to your counsel-os git clone."
         echo ""
         echo "Example:"
-        echo "  echo '$HOME/Desktop/counsel-os' > '$COUNSEL_DIR/.source-repo'"
+        echo "  echo '\$HOME/Desktop/counsel-os' > '$COUNSEL_DIR/.source-repo'"
         exit 1
     fi
 
@@ -179,18 +165,30 @@ else
     (cd "$SOURCE_DIR" && git fetch origin 2>&1 | head -5 && git merge origin/main --no-edit 2>&1 | head -10)
     echo ""
 
-    # Sync product content from source to cache
-    echo "Syncing product content to plugin cache..."
+    # Read new version from source
+    NEW_VERSION=$(cat "$SOURCE_DIR/VERSION" | tr -d '[:space:]')
+
+    if [ -z "$NEW_VERSION" ]; then
+        echo "ERROR: Could not read VERSION from source repo."
+        exit 1
+    fi
+
+    VERSION_DIR="$COUNSEL_DIR/$NEW_VERSION"
+
+    # ---------------------------------------------------------------
+    # Sync into versioned directory
+    # ---------------------------------------------------------------
+    echo "Syncing to versioned directory: $NEW_VERSION/"
     echo ""
+
+    mkdir -p "$VERSION_DIR"
 
     CHANGED_COUNT=0
 
     for pdir in "${PRODUCT_DIRS[@]}"; do
         if [ -d "$SOURCE_DIR/$pdir" ]; then
-            # Create target dir if needed
-            mkdir -p "$COUNSEL_DIR/$pdir"
-            # Rsync with delete to remove stale files, but only product dirs
-            rsync -a --delete "$SOURCE_DIR/$pdir/" "$COUNSEL_DIR/$pdir/" 2>/dev/null
+            mkdir -p "$VERSION_DIR/$pdir"
+            rsync -a --delete "$SOURCE_DIR/$pdir/" "$VERSION_DIR/$pdir/" 2>/dev/null
             echo "  synced: $pdir/"
             CHANGED_COUNT=$((CHANGED_COUNT + 1))
         fi
@@ -198,29 +196,135 @@ else
 
     for pfile in "${PRODUCT_FILES[@]}"; do
         if [ -f "$SOURCE_DIR/$pfile" ]; then
-            if [ "$pfile" = "update" ]; then
-                # Self-update: copy to temp file first, then atomic move.
-                # Overwriting a running bash script corrupts the process.
-                cp "$SOURCE_DIR/$pfile" "$COUNSEL_DIR/$pfile.tmp"
-                mv -f "$COUNSEL_DIR/$pfile.tmp" "$COUNSEL_DIR/$pfile"
-                chmod +x "$COUNSEL_DIR/$pfile"
-            else
-                cp "$SOURCE_DIR/$pfile" "$COUNSEL_DIR/$pfile"
-            fi
+            mkdir -p "$VERSION_DIR/$(dirname "$pfile")"
+            cp "$SOURCE_DIR/$pfile" "$VERSION_DIR/$pfile"
         fi
     done
 
-    # Sync browse binary if it exists
+    # Sync scripts directory
+    if [ -d "$SOURCE_DIR/scripts" ]; then
+        rsync -a --delete "$SOURCE_DIR/scripts/" "$VERSION_DIR/scripts/" 2>/dev/null
+        echo "  synced: scripts/"
+    fi
+
+    # Sync docs directory
+    if [ -d "$SOURCE_DIR/docs" ]; then
+        rsync -a --delete "$SOURCE_DIR/docs/" "$VERSION_DIR/docs/" 2>/dev/null
+        echo "  synced: docs/"
+    fi
+
+    # Sync browse directory
     if [ -d "$SOURCE_DIR/browse" ]; then
-        rsync -a "$SOURCE_DIR/browse/" "$COUNSEL_DIR/browse/" 2>/dev/null
+        rsync -a "$SOURCE_DIR/browse/" "$VERSION_DIR/browse/" 2>/dev/null
         echo "  synced: browse/"
+    fi
+
+    # Copy config.local.md if it exists in the previous version
+    # (user-specific config that should carry forward)
+    if [ -f "$COUNSEL_DIR/config.local.md" ] && [ ! -f "$VERSION_DIR/config.local.md" ]; then
+        cp "$COUNSEL_DIR/config.local.md" "$VERSION_DIR/config.local.md"
+        echo "  carried forward: config.local.md"
+    fi
+
+    # Install node_modules if package.json has dependencies
+    if [ -f "$VERSION_DIR/package.json" ] && command -v bun &>/dev/null; then
+        if grep -q '"dependencies"' "$VERSION_DIR/package.json"; then
+            echo ""
+            echo "Installing dependencies..."
+            (cd "$VERSION_DIR" && bun install --frozen-lockfile 2>/dev/null || bun install 2>/dev/null) | tail -3
+        fi
     fi
 
     echo ""
     echo "Synced $CHANGED_COUNT product directories + top-level files."
 
-    # Save source path for future upgrades
+    # ---------------------------------------------------------------
+    # Update installed_plugins.json
+    # ---------------------------------------------------------------
+    if [ -f "$INSTALLED_PLUGINS" ]; then
+        echo ""
+        echo "Updating installed_plugins.json..."
+
+        # Use python3 (available on macOS) for reliable JSON editing
+        python3 - "$INSTALLED_PLUGINS" "$PLUGIN_KEY" "$VERSION_DIR" "$NEW_VERSION" << 'PYEOF'
+import json, sys
+from datetime import datetime, timezone
+
+plugins_file = sys.argv[1]
+plugin_key = sys.argv[2]
+new_path = sys.argv[3]
+new_version = sys.argv[4]
+
+with open(plugins_file, 'r') as f:
+    data = json.load(f)
+
+if plugin_key in data.get('plugins', {}):
+    entries = data['plugins'][plugin_key]
+    if entries:
+        entries[0]['installPath'] = new_path
+        entries[0]['version'] = new_version
+        entries[0]['lastUpdated'] = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.000Z')
+        with open(plugins_file, 'w') as f:
+            json.dump(data, f, indent=2)
+        print(f"  Updated: installPath -> {new_path}")
+        print(f"  Updated: version -> {new_version}")
+    else:
+        print("  WARNING: Plugin entry is empty — cannot update.")
+else:
+    print(f"  WARNING: '{plugin_key}' not found in installed_plugins.json.")
+    print("  Skills may not load. Re-install the plugin to fix.")
+PYEOF
+    else
+        echo ""
+        echo "WARNING: $INSTALLED_PLUGINS not found — cannot update install path."
+        echo "Skills may not load until installed_plugins.json is fixed."
+    fi
+
+    # ---------------------------------------------------------------
+    # Update root-level VERSION (for next run's OLD_VERSION)
+    # ---------------------------------------------------------------
+    echo "$NEW_VERSION" > "$COUNSEL_DIR/VERSION"
+
+    # Self-update: copy the update script from source to root
+    # (atomic move to avoid corrupting a running script)
+    if [ -f "$SOURCE_DIR/update" ]; then
+        cp "$SOURCE_DIR/update" "$COUNSEL_DIR/update.tmp"
+        mv -f "$COUNSEL_DIR/update.tmp" "$COUNSEL_DIR/update"
+        chmod +x "$COUNSEL_DIR/update"
+    fi
+
+    # Save source path for future updates
     echo "$SOURCE_DIR" > "$COUNSEL_DIR/.source-repo"
+
+    # ---------------------------------------------------------------
+    # Prune old versions (keep last N)
+    # ---------------------------------------------------------------
+    echo ""
+    echo "Checking for old versions to prune..."
+
+    # Find versioned directories (pattern: digits and dots)
+    VERSIONS=()
+    for d in "$COUNSEL_DIR"/*/; do
+        dirname=$(basename "$d")
+        if [[ "$dirname" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            VERSIONS+=("$dirname")
+        fi
+    done
+
+    # Sort versions (lexicographic works for semver with consistent formatting)
+    IFS=$'\n' SORTED=($(printf '%s\n' "${VERSIONS[@]}" | sort -V)); unset IFS
+
+    if [ ${#SORTED[@]} -gt $KEEP_VERSIONS ]; then
+        PRUNE_COUNT=$(( ${#SORTED[@]} - KEEP_VERSIONS ))
+        echo "  Found ${#SORTED[@]} versions, keeping last $KEEP_VERSIONS."
+        for ((i=0; i<PRUNE_COUNT; i++)); do
+            OLD_DIR="$COUNSEL_DIR/${SORTED[$i]}"
+            echo "  Pruning: ${SORTED[$i]}/"
+            rm -rf "$OLD_DIR"
+        done
+    else
+        echo "  ${#SORTED[@]} version(s) found — nothing to prune."
+    fi
 fi
 
 echo ""
@@ -246,63 +350,10 @@ echo ""
 # Step 5: Verify user content is untouched
 # -------------------------------------------------------------------
 
-# -------------------------------------------------------------------
-# Step 5: Check for law/ and defaults/ changes to apply to vault
-# -------------------------------------------------------------------
-
-LEGAL_ROOT=""
-if [ -f "$COUNSEL_DIR/config.local.md" ]; then
-    LEGAL_ROOT=$(grep "^legal_root:" "$COUNSEL_DIR/config.local.md" | sed 's/^legal_root: *//')
-fi
-if [ -z "$LEGAL_ROOT" ] && [ -f "$COUNSEL_DIR/config.md" ]; then
-    LEGAL_ROOT=$(grep "^legal_root:" "$COUNSEL_DIR/config.md" | sed 's/^legal_root: *//')
-fi
-
-if [ -n "$LEGAL_ROOT" ] && [ -d "$LEGAL_ROOT" ]; then
-    echo "Vault sync check:"
-    echo "-----------------"
-    echo "  Legal root: $LEGAL_ROOT"
-    echo ""
-
-    VAULT_DIFFS=0
-    for content_dir in law defaults; do
-        if [ -d "$COUNSEL_DIR/knowledge/$content_dir" ] && [ -d "$LEGAL_ROOT/$content_dir" ]; then
-            # Compare plugin seed content against vault copy
-            CHANGED_FILES=""
-            for f in "$COUNSEL_DIR/knowledge/$content_dir/"*.md; do
-                fname=$(basename "$f")
-                vault_file="$LEGAL_ROOT/$content_dir/$fname"
-                if [ -f "$vault_file" ]; then
-                    # Strip frontmatter from vault file before comparing
-                    # (vault files have counsel-os frontmatter that seed files may not)
-                    if ! diff -q <(sed '/^---$/,/^---$/d' "$f") <(sed '/^---$/,/^---$/d' "$vault_file") &>/dev/null; then
-                        CHANGED_FILES="$CHANGED_FILES $fname"
-                        VAULT_DIFFS=$((VAULT_DIFFS + 1))
-                    fi
-                else
-                    CHANGED_FILES="$CHANGED_FILES $fname (NEW)"
-                    VAULT_DIFFS=$((VAULT_DIFFS + 1))
-                fi
-            done
-            if [ -n "$CHANGED_FILES" ]; then
-                echo "  $content_dir/ has upstream changes:$CHANGED_FILES"
-            fi
-        fi
-    done
-
-    if [ "$VAULT_DIFFS" -eq 0 ]; then
-        echo "  No upstream changes to law/ or defaults/ — vault is current."
-    else
-        echo ""
-        echo "  $VAULT_DIFFS file(s) differ between plugin seed and your vault."
-        echo "  Run /counsel-os:update in Claude Code for guided review and sync."
-    fi
-else
-    echo "Knowledge location:"
-    echo "  config.md has no legal_root set — cannot check vault sync."
-fi
-
+echo "User content location:"
+echo "----------------------"
+echo "  User data lives in Obsidian vault (not in plugin cache)."
+echo "  Product content updates do not affect user data."
 echo ""
-echo "Update complete."
-
+echo "Update complete. Restart Claude Code to pick up new skills."
 echo ""
