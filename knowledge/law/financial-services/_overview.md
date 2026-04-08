@@ -1,9 +1,7 @@
 ---
 counsel-os-type: law-area
-counsel-os-version: "0.3.2"
+content-version: "2026-04-08"
 ---
-
-
 ## Overview
 
 # Financial Services

@@ -49,11 +49,12 @@ If already up to date:
 
 Now compare the plugin's seed content (`knowledge/law/` and `knowledge/defaults/`) against your vault copies (`{legal_root}/law/` and `{legal_root}/defaults/`).
 
-For each file in the plugin's `knowledge/law/` and `knowledge/defaults/`:
-1. Read the plugin seed version
-2. Read the vault version at `{legal_root}/law/{file}` or `{legal_root}/defaults/{file}`
-3. Compare content (ignoring frontmatter — the vault copy has `counsel-os-*` frontmatter that the seed may not)
-4. Classify as: **unchanged**, **upstream updated** (plugin has newer content), **locally customized** (vault differs from seed but seed unchanged), or **both changed** (conflict)
+For each content group (subdir of `knowledge/law/` and `knowledge/defaults/`):
+1. Read the plugin's `content-version` date from any `.md` file's frontmatter in that group
+2. Read the vault's `content-version` date from the corresponding file at `{legal_root}/law/{area}/` or `{legal_root}/defaults/{area}/`
+3. If dates match → skip this group (unchanged)
+4. If the vault file has `counsel-os-version` instead of `content-version` (pre-migration vault) → fall through to full content diff for that group
+5. If dates differ or vault file is missing → compare file content (ignoring frontmatter) and classify as: **upstream updated** (plugin has newer content), **locally customized** (vault differs from seed but seed unchanged), or **both changed** (conflict)
 
 Also check for **new files** — files in the plugin seed that don't exist in the vault.
 
@@ -102,14 +103,14 @@ Don't list these individually, just note:
 ## Step 4: Apply Approved Changes
 
 For each change the user approved:
-1. Read the vault file to preserve frontmatter
+1. Read the vault file to preserve any local frontmatter fields
 2. Replace the content body with the new/merged content
-3. Update the `counsel-os-version` in frontmatter to the current plugin version
+3. Update `content-version` in frontmatter to match the plugin's `content-version` date for that group. Remove `counsel-os-version` if present (pre-migration field).
 4. Write the file
 
 For new files:
 1. Copy from plugin seed to vault
-2. Add `counsel-os-*` frontmatter with current version
+2. Frontmatter should already contain `counsel-os-type` and `content-version` from the plugin seed
 3. Write the file
 
 ## Step 5: Check Practice Impact
