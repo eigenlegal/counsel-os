@@ -106,6 +106,43 @@ When a breach affects individuals in multiple jurisdictions simultaneously:
 - **US State laws:** Several states require businesses to maintain breach logs or records. Even where not explicitly required, maintaining detailed breach records is a best practice for demonstrating compliance with "reasonableness" and "without unreasonable delay" standards.
 - **HIPAA:** Covered entities and business associates must maintain documentation of breaches and notifications for **6 years** from the date of creation or the date when the documentation was last in effect.
 
+### Financial Sector Breach Notification Tiers
+
+Financial institutions face a cascade of notification obligations with compressed timelines. These are separate from and additional to state consumer breach notification:
+
+| Timeline | Obligation | Authority | Trigger |
+|----------|-----------|-----------|---------|
+| **ASAP** | Notify bank partner(s) | Contractual / 12 C.F.R. Part 53 | Computer-security incident materially disrupting covered services for 4+ hours (bank service providers) |
+| **24 hours** | Notify card networks | Visa/Mastercard operating rules | Suspected compromise of payment card data (PAN, track data, CVV) |
+| **24 hours** | Report ransom payment | NY DFS 23 NYCRR 500.17(b) | Making any extortion/ransom payment |
+| **24 hours** | Report ransom payment | CISA (CIRCIA, once effective) | Making any ransom payment related to a covered cyber incident |
+| **36 hours** | Notify primary federal regulator | OCC/Fed/FDIC Joint Rule (2022) | "Notification incident" — material disruption to banking operations, business lines, or financial stability |
+| **72 hours** | Notify NY DFS Superintendent | 23 NYCRR 500.17(a) | Cybersecurity event requiring notification to any government body OR reasonably likely to materially harm operations |
+| **72 hours** | Notify EU supervisory authority | GDPR Art. 33 | Personal data breach (unless unlikely to result in risk to data subjects) |
+| **72 hours** | Notify CISA | CIRCIA (once final rule effective) | Covered cyber incident at a critical infrastructure entity |
+
+**Breach triage decision tree for a fintech:**
+1. **Hour 0-4:** Activate incident response plan. Determine scope: does it involve payment card data? Banking systems? EU personal data? Engage legal counsel and cyber insurance carrier (check policy notice window — typically 48-72 hours).
+2. **Hour 4-24:** If payment card data compromised → notify acquiring bank and card networks. If ransom payment made or contemplated → prepare NY DFS and CISA notifications. Notify bank partners if you are a bank service provider.
+3. **Hour 24-36:** If the incident materially disrupts banking operations → file federal regulator notification (OCC/Fed/FDIC). This is a brief alert, not a detailed report.
+4. **Hour 36-72:** If NY DFS-licensed → file NY DFS notification. If GDPR applies → file supervisory authority notification (or document why notification is not required). If CIRCIA applies → file CISA notification.
+5. **Day 3-30:** Prepare state AG notifications (per `us-breach-notification-50-state.md`). Prepare consumer notifications. Complete SEC Reg S-P individual notifications (if applicable, 30-day deadline). Begin credit monitoring arrangements.
+
+See `financial-sector-privacy-regulators.md` for detailed requirements of each financial regulator's notification regime.
+
+### CIRCIA — Cyber Incident Reporting for Critical Infrastructure
+
+- **Authority:** Cyber Incident Reporting for Critical Infrastructure Act of 2022. CISA NPRM published April 2024; final rule expected 2025-2026.
+- **Scope:** Covered entities in designated critical infrastructure sectors, including financial services. Size and significance thresholds defined in the proposed rule.
+- **Requirements (proposed):** Report covered cyber incidents to CISA within **72 hours** of reasonable belief. Report ransom payments within **24 hours**. Submit supplemental reports for materially new information.
+- **Current status:** Voluntary until final rule is effective. Many financial sector entities already report voluntarily under existing CISA programs.
+- **Relationship to other obligations:** CIRCIA includes provisions for satisfying the requirement through reports to other federal agencies (potential harmonization with banking regulator notifications).
+- **Source:** [CISA CIRCIA Page](https://www.cisa.gov/topics/cyber-threats-and-advisories/information-sharing/cyber-incident-reporting-critical-infrastructure-act-2022-circia)
+
+### 50-State Reference
+
+For complete state-by-state breach notification requirements (all 50 states + DC + territories) including trigger definitions, timelines, AG notification thresholds, credit monitoring obligations, risk of harm exemptions, and encryption safe harbors, see `us-breach-notification-50-state.md`.
+
 ### Insurance and Cost Considerations
 
 - **Average breach cost:** The cost of a data breach varies by jurisdiction, industry, and scale. Breach response costs include investigation, notification, credit monitoring, legal fees, regulatory fines, and reputational damage. US healthcare breaches consistently rank among the most expensive.
@@ -114,7 +151,9 @@ When a breach affects individuals in multiple jurisdictions simultaneously:
 
 ## Interaction with Other Areas
 
-- **Financial Services:** GLBA Safeguards Rule and banking regulators (OCC, FDIC, Fed) impose sector-specific breach notification requirements for financial institutions. Computer security incidents affecting banking organizations require notification to the appropriate federal banking agency within **36 hours** (2022 OCC/Fed/FDIC rule). These are independent of and additional to state breach notification laws.
+- **Financial Services:** GLBA Safeguards Rule and banking regulators impose sector-specific notification requirements. See `financial-sector-privacy-regulators.md` for full details on OCC/Fed/FDIC 36-hour rule, NY DFS 72-hour rule, card network 24-hour notification, and CIRCIA.
+- **Data Privacy (50-State Breach):** Complete state-by-state reference. See `us-breach-notification-50-state.md`.
+- **Data Privacy (GLBA):** GLBA Safeguards Rule incident response program requirements. See `glba-privacy.md`.
 - **Consumer Protection:** State AG enforcement of breach notification statutes overlaps with consumer protection authority. AGs frequently pursue both breach notification violations and unfair/deceptive practices claims arising from the same incident.
 - **Employment:** Employee data breaches trigger notification obligations under both general breach notification statutes and, in some jurisdictions, specific employee notification requirements. HIPAA applies to employee health plan data.
 - **Data Privacy (GDPR, CCPA):** Breach notification obligations under GDPR and state laws are independent of, and additional to, any contractual notification obligations in DPAs. Contractual timelines must be at least as fast as regulatory timelines.

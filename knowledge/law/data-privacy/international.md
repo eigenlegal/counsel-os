@@ -125,6 +125,100 @@ This file covers comprehensive data protection laws outside the United States an
 | South Korea (PIPA) | PIPC-recognized countries | Contractual safeguards | PIPC-approved certification |
 | India (DPDP) | Blacklist model (all except restricted) | Not yet specified | Government restriction by notification |
 
+## Additional Jurisdictions — Reference Only
+
+The following jurisdictions have enacted data protection laws relevant to cross-border payment and technology operations. Entries provide statute, regulator, and authoritative source for further research. Substantive analysis should be conducted case-by-case.
+
+### Mexico
+- **Statute:** Federal Law on Protection of Personal Data Held by Private Parties (LFPDPPP, 2010) + Regulations (2011)
+- **Regulator:** Instituto Nacional de Transparencia, Acceso a la Información y Protección de Datos Personales (INAI)
+- **Key note:** Consent-based model with comprehensive data subject rights. Cross-border transfers require consent or binding contractual obligations. Relevant for US-Mexico payment corridors and remittance services.
+- **Source:** [LFPDPPP (Spanish)](https://www.diputados.gob.mx/LeyesBiblio/pdf/LFPDPPP.pdf) | [INAI](https://home.inai.org.mx/)
+
+### South Africa
+- **Statute:** Protection of Personal Information Act (POPIA, 2013, effective July 1, 2021)
+- **Regulator:** Information Regulator
+- **Key note:** GDPR-influenced framework with 8 conditions for lawful processing. Cross-border transfers permitted to adequate countries or with appropriate safeguards. 72-hour breach notification to the Information Regulator. Relevant for African payment corridors.
+- **Source:** [POPIA Full Text](https://www.gov.za/documents/protection-personal-information-act) | [Information Regulator](https://inforegulator.org.za/)
+
+### UAE
+- **Statute:** Federal Decree-Law No. 45/2021 on Personal Data Protection (effective January 2, 2022) + Executive Regulations
+- **Regulator:** UAE Data Office (under the Cabinet)
+- **Key note:** Applies to processing of personal data in the UAE. DIFC and ADGM free zones have separate, GDPR-aligned data protection laws. Central Bank of UAE imposes additional financial data requirements. Cross-border transfers require adequate safeguards.
+- **Source:** [UAE PDPL](https://u.ae/en/about-the-uae/digital-uae/data/data-protection-laws) | [DIFC Data Protection Law](https://www.difc.ae/business/laws-regulations/data-protection/)
+
+### Saudi Arabia
+- **Statute:** Personal Data Protection Law (PDPL, Royal Decree M/19, effective September 14, 2023, with 2-year compliance grace period to September 2025)
+- **Regulator:** Saudi Data and Artificial Intelligence Authority (SDAIA)
+- **Key note:** Consent-based model. Data localization: personal data must be transferred and stored inside Saudi Arabia unless transfer abroad meets PDPL conditions (adequacy, sufficient safeguards, or limited exceptions). SAMA (Saudi Central Bank) imposes additional requirements on financial institutions.
+- **Source:** [SDAIA](https://sdaia.gov.sa/) | [PDPL Text (Arabic)](https://laws.boe.gov.sa/)
+
+### Nigeria
+- **Statute:** Nigeria Data Protection Act (NDPA, 2023, replacing NDPR 2019)
+- **Regulator:** Nigeria Data Protection Commission (NDPC)
+- **Key note:** Consent and legitimate interest bases. Transfer impact assessment required before cross-border transfers. CBN imposes additional payment data storage requirements. Relevant for West African payment corridors. Fines up to 2% of annual gross revenue.
+- **Source:** [NDPC](https://ndpc.gov.ng/) | [NDPA 2023](https://ndpc.gov.ng/Files/Nigeria_Data_Protection_Act_2023.pdf)
+
+### Kenya
+- **Statute:** Data Protection Act, 2019 (effective November 25, 2019)
+- **Regulator:** Office of the Data Protection Commissioner (ODPC)
+- **Key note:** GDPR-influenced framework. Cross-border transfers permitted to adequate countries or with appropriate safeguards (including binding corporate rules and contractual clauses). Relevant for East African payment corridors. Fines up to KES 5 million or 1% of annual turnover.
+- **Source:** [DPA 2019](http://kenyalaw.org/kl/fileadmin/pdfdownloads/Acts/2019/TheDataProtectionAct__No24of2019.pdf) | [ODPC](https://www.odpc.go.ke/)
+
+### Israel
+- **Statute:** Protection of Privacy Law, 5741-1981 (PPL) + Privacy Protection Regulations (Data Security), 5777-2017. Comprehensive reform bill pending.
+- **Regulator:** Privacy Protection Authority (PPA)
+- **Key note:** EU adequacy decision holder (since 2011). Cross-border transfers to non-adequate countries require consent or contractual safeguards. Israel is a significant tech hub with strong data protection enforcement. Financial sector subject to additional Bank of Israel guidelines.
+- **Source:** [PPA](https://www.gov.il/en/departments/the_privacy_protection_authority) | [PPL Text](https://www.gov.il/en/departments/legalInfo/legislation)
+
+### Thailand
+- **Statute:** Personal Data Protection Act B.E. 2562 (PDPA, effective June 1, 2022)
+- **Regulator:** Personal Data Protection Committee (PDPC)
+- **Key note:** GDPR-influenced framework with consent, contract, and legitimate interest bases. Cross-border transfers require adequate safeguards. Bank of Thailand imposes additional requirements on financial institution data handling. Fines up to THB 5 million.
+- **Source:** [PDPA Text (English)](https://thaipdpa.com/) | [PDPC](https://www.pdpc.or.th/)
+
+### Indonesia
+- **Statute:** Personal Data Protection Law (UU PDP, Law No. 27/2022, effective October 17, 2024, with 2-year transition from enactment in October 2022)
+- **Regulator:** Ministry of Communication and Information Technology (Kominfo); dedicated supervisory body pending establishment
+- **Key note:** Consent and legitimate interest bases. Cross-border transfers permitted to adequate countries or with adequate safeguards. Bank Indonesia and OJK impose additional financial sector data requirements including domestic storage. See `payments-data-localization.md`.
+- **Source:** [UU PDP (Bahasa Indonesia)](https://peraturan.bpk.go.id/Details/229798/uu-no-27-tahun-2022) | [Kominfo](https://www.kominfo.go.id/)
+
+### Vietnam
+- **Statute:** Decree 13/2023/ND-CP on Personal Data Protection (effective July 1, 2023)
+- **Regulator:** Ministry of Public Security (MPS)
+- **Key note:** Transfer impact assessment and MPS filing required within 60 days of processing for cross-border transfers. State Bank of Vietnam imposes additional payment data storage requirements. See `payments-data-localization.md`.
+- **Source:** [Decree 13/2023](https://thuvienphapluat.vn/van-ban/Cong-nghe-thong-tin/Nghi-dinh-13-2023-ND-CP-bao-ve-du-lieu-ca-nhan-357384.aspx) | [MPS](https://bocongan.gov.vn/)
+
+### Taiwan
+- **Statute:** Personal Data Protection Act (PDPA, amended 2015)
+- **Regulator:** National Development Council (NDC) for general coordination; sector-specific regulators enforce
+- **Key note:** Financial Supervisory Commission (FSC) imposes additional cloud and outsourcing restrictions on financial institutions. Cross-border transfers may be restricted by the relevant central authority if the destination country lacks adequate protection. Fines up to TWD 15 million.
+- **Source:** [PDPA Text (English)](https://law.moj.gov.tw/ENG/LawClass/LawAll.aspx?pcode=I0050021)
+
+### Colombia
+- **Statute:** Ley 1581 de 2012 (Statutory Law on Data Protection) + Decree 1377/2013
+- **Regulator:** Superintendencia de Industria y Comercio (SIC)
+- **Key note:** Consent-based model. Cross-border transfers to adequate countries (SIC maintains a list) or with contractual obligations. The SIC has been active in enforcement. Relevant for Latin American payment corridors.
+- **Source:** [Ley 1581 (Spanish)](https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=49981) | [SIC](https://www.sic.gov.co/)
+
+### Argentina
+- **Statute:** Personal Data Protection Law 25.326 (2000) + Draft reform bill pending
+- **Regulator:** Agencia de Acceso a la Información Pública (AAIP)
+- **Key note:** EU adequacy decision holder (grandfathered under Directive 95/46/EC, under review). Consent-based model. Cross-border transfers to adequate countries or with contractual safeguards. The current law is outdated; reform bill would bring it closer to GDPR.
+- **Source:** [Law 25.326 (Spanish)](https://www.argentina.gob.ar/normativa/nacional/ley-25326-64790) | [AAIP](https://www.argentina.gob.ar/aaip)
+
+### Philippines
+- **Statute:** Data Privacy Act of 2012 (Republic Act No. 10173)
+- **Regulator:** National Privacy Commission (NPC)
+- **Key note:** GDPR-influenced framework. Cross-border transfers permitted with adequate safeguards or consent. NPC is an active regulator with growing enforcement. Bangko Sentral ng Pilipinas (BSP) imposes additional financial sector data requirements.
+- **Source:** [DPA 2012](https://www.privacy.gov.ph/data-privacy-act/) | [NPC](https://www.privacy.gov.ph/)
+
+### Malaysia
+- **Statute:** Personal Data Protection Act 2010 (PDPA, effective November 15, 2013)
+- **Regulator:** Department of Personal Data Protection (JPDP)
+- **Key note:** Cross-border transfer restrictions (Section 129) — transfers only to countries gazetted by the Minister. List has been limited, creating practical challenges. Bank Negara Malaysia imposes additional financial data requirements. Amendment bill pending that would modernize the law.
+- **Source:** [PDPA 2010](https://www.pdp.gov.my/) | [JPDP](https://www.pdp.gov.my/)
+
 ## Sources
 
 - [PIPEDA Full Text — Justice Laws, Canada](https://laws-lois.justice.gc.ca/eng/acts/P-8.6/) — Personal Information Protection and Electronic Documents Act
