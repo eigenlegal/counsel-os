@@ -1,8 +1,7 @@
 ---
 counsel-os-type: playbook
-counsel-os-version: "0.3.1"
+content-version: "2026-04-08"
 ---
-
 # Playbooks Index
 
 Step-by-step processes for common legal workflows. Each playbook includes: When to Use, Prerequisites, Process, Output Format, and Calibration.

@@ -1,8 +1,7 @@
 ---
 counsel-os-type: checklist
-counsel-os-version: "0.3.1"
+content-version: "2026-04-08"
 ---
-
 ## Ip Assignment
 
 # IP Assignment Checklist
