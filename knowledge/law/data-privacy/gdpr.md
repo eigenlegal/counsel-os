@@ -105,6 +105,56 @@ See `data-subject-rights.md` for cross-jurisdiction rights comparison.
 
 See `cross-border-transfers.md` for detailed transfer mechanism guidance.
 
+### Legitimate Interests Assessment (LIA) Framework
+
+When relying on legitimate interests (Art. 6(1)(f)) as the lawful basis, controllers must conduct and document a three-part balancing test:
+
+- **Step 1 — Purpose test:** Identify the legitimate interest pursued by the controller or a third party. The interest must be real and present (not speculative), lawful, and clearly articulated. Common legitimate interests for fintechs: fraud prevention and detection, network and information security, transaction monitoring for AML compliance, direct marketing to existing customers, and improving service quality.
+- **Step 2 — Necessity test:** Is the processing necessary for the identified purpose? Could the purpose be achieved with less intrusive means? If the same objective can be accomplished with less personal data or with anonymized data, the processing fails this step.
+- **Step 3 — Balancing test:** Weigh the controller's legitimate interests against the data subject's interests, rights, and freedoms. Factors include: reasonable expectations of the data subject (would they expect this processing?), nature of the data (special categories weigh heavily against the controller), impact on the data subject (what are the consequences?), relationship between the controller and the data subject (closer relationships support reasonable expectations), safeguards applied (pseudonymization, access controls, transparency), and whether the data subject is a child or vulnerable person.
+- **Documentation:** The LIA must be documented in writing before processing begins and updated when circumstances change. Maintain the LIA alongside the RoPA entry for the processing activity. Be prepared to produce it on request from the supervisory authority.
+- **EDPB guidance:** EDPB Opinion 1/2024 and the Article 29 Working Party Opinion 06/2014 provide the authoritative framework. The CJEU has consistently held that legitimate interests requires a case-by-case assessment.
+- **Fintech-specific applications:** Fraud detection scoring is generally supported as a legitimate interest, but must be balanced against the individual's rights (especially Art. 22 if automated decisions produce legal effects). Transaction monitoring for AML is typically supported under Art. 6(1)(c) (legal obligation) rather than legitimate interests, but supplementary monitoring beyond legal requirements falls under 6(1)(f).
+
+### Automated Decision-Making in Fintech Context (Article 22)
+
+- **The rule:** Data subjects have the right not to be subject to decisions based solely on automated processing, including profiling, that produce "legal effects" or "similarly significant effects."
+- **What qualifies in fintech:** Credit application denial, account closure or restriction, fraud flag leading to transaction block or account freeze, automated KYC rejection, insurance premium determination, and algorithmic pricing that materially affects the individual. The EDPB considers denial of financial services to be a "similarly significant effect."
+- **What does NOT qualify:** Automated suggestions or recommendations that a human reviews before acting, personalization of a user interface, and internal risk scoring that does not directly affect the individual without human intervention.
+- **Exceptions (Art. 22(2)):** Automated decisions are permitted if (a) necessary for entering into or performing a contract, (b) authorized by EU or member state law, or (c) based on explicit consent. In all cases, the controller must implement "suitable measures to safeguard the data subject's rights and freedoms and legitimate interests, at least the right to obtain human intervention, to express their point of view, and to contest the decision."
+- **Meaningful human review:** The exception for "contract performance" (common for credit decisions) requires meaningful human intervention — not a rubber stamp. The human reviewer must have authority to override the automated decision, access to the relevant data, and genuine ability to exercise judgment.
+- **Transparency:** Art. 13(2)(f) and 14(2)(g) require controllers to inform data subjects about the existence of automated decision-making, meaningful information about the logic involved, and the significance and envisaged consequences. This does not require disclosing the algorithm, but must explain the factors considered and potential outcomes in understandable terms.
+
+### UK GDPR Divergence
+
+- **Current status:** The UK GDPR is retained EU law as amended by the UK Data Protection Act 2018 and subsequent UK legislation. Post-Brexit, the UK regime is substantively similar but increasingly diverging.
+- **Key divergences:**
+  - **Transfer mechanisms:** The UK uses the International Data Transfer Agreement (IDTA) and UK Addendum to EU SCCs, replacing the EU SCC modules for UK transfers. The UK has its own adequacy assessment process and has granted adequacy to additional countries not recognized by the EU.
+  - **UK-US Data Bridge:** The UK established the UK Extension to the EU-US Data Privacy Framework, allowing UK-US transfers for DPF-certified organizations. Operationally similar to the EU-US DPF but legally distinct.
+  - **ICO enforcement approach:** The ICO has taken a more risk-based, pragmatic approach to enforcement compared to some EU DPAs. ICO reprimand letters and enforcement notices are used more frequently than fines for first-time violations.
+  - **Research exemption:** The UK has broader exemptions for scientific research processing, particularly under the Data Protection Act 2018 Schedule 2.
+  - **Cookie consent:** The UK's Privacy and Electronic Communications Regulations (PECR) still require cookie consent, but the ICO has signaled a more flexible approach than some EU DPAs.
+  - **Data Protection and Digital Information Bill (DPDI):** The UK government has proposed reforms that would further diverge from EU GDPR, including replacing DPIAs with a "record of assessments" system, relaxing some aspects of the legitimate interests balancing test for recognized legitimate interests, and reducing the scope of Art. 22 automated decision-making rights. Status should be verified — the bill has been reintroduced across parliamentary sessions.
+- **EU adequacy decision for the UK:** The European Commission granted the UK an adequacy decision (effective June 28, 2021) with a sunset clause requiring review by June 2025. If adequacy is revoked or not renewed, EU-UK data transfers would require SCCs or other transfer mechanisms. Monitor the renewal status.
+- **Practical approach:** Maintain compliance with both EU GDPR and UK GDPR as separate regimes. Use EU SCCs with UK Addendum for combined EU/UK transfers. Designate a UK representative if required (Art. 27 equivalent).
+
+### ePrivacy Directive and Cookie Consent
+
+- **Authority:** Directive 2002/58/EC (ePrivacy Directive), as amended by Directive 2009/136/EC. Implemented through national laws of each EU member state (e.g., UK PECR, German TTDSG, French Loi Informatique et Libertés).
+- **Scope:** Covers the processing of personal data in the electronic communications sector. Most relevant provisions: cookie consent (Art. 5(3)) and direct marketing (Art. 13).
+- **Cookie consent rule (Art. 5(3)):** Storing information or accessing information already stored on a user's terminal equipment (cookies, tracking pixels, device fingerprinting, local storage) requires prior informed consent — UNLESS the storage/access is strictly necessary for the provision of a service explicitly requested by the user. This is separate from GDPR consent — both must be satisfied.
+- **Strictly necessary exemption:** Session cookies for authentication, shopping cart cookies, load balancing cookies, and first-party analytics cookies configured to minimize data collection are generally considered strictly necessary. Advertising cookies, third-party tracking, and cross-site analytics are NOT strictly necessary and require consent.
+- **ePrivacy Regulation (replacement):** The proposed ePrivacy Regulation has been under negotiation since 2017. If adopted, it would replace the ePrivacy Directive with directly applicable EU-wide rules. Key proposed changes include browser-based consent settings, expanded scope to OTT communications, and harmonized rules on metadata processing. Status should be monitored — negotiations have repeatedly stalled.
+- **Interaction with GDPR:** ePrivacy provides lex specialis (specific rules) for electronic communications. Where ePrivacy applies, it takes precedence over GDPR's general provisions. Where ePrivacy is silent, GDPR applies. Cookie consent (ePrivacy) and lawful basis for processing the collected data (GDPR) are separate requirements.
+
+### EDPB One-Stop-Shop and Lead Supervisory Authority
+
+- **One-stop-shop mechanism (Art. 56):** For cross-border processing, a single "lead supervisory authority" (LSA) coordinates enforcement across all EU/EEA member states where the controller or processor operates. The LSA is determined by the location of the controller's "main establishment" — the place of central administration, or (if processing decisions are made elsewhere) the establishment where those decisions are made.
+- **Determining the LSA:** If a company has its EU headquarters in Ireland, the Irish Data Protection Commission (DPC) is likely the LSA. If a company has separate entities making independent processing decisions in multiple member states, multiple LSAs may apply to different processing activities.
+- **Cooperation procedure (Art. 60):** The LSA must cooperate with "concerned" supervisory authorities (CSAs) in other member states where data subjects are substantially affected. The LSA drafts a decision, shares it with CSAs, and CSAs may raise "relevant and reasoned objections." If objections cannot be resolved, the dispute goes to the EDPB for a binding decision (Art. 65).
+- **Practical impact:** The one-stop-shop simplifies enforcement but does not eliminate interaction with multiple DPAs. Data subjects can still complain to their local DPA (Art. 77). Local DPAs can take urgent action (Art. 66). The LSA determination can be contested. For a fintech with EU operations, proactively establishing the main establishment and engaging with the LSA is advisable.
+- **Notable enforcement:** The EDPB dispute resolution mechanism has been used in significant cases, including overriding the Irish DPC's proposed penalties for Meta (resulting in substantially higher fines). The mechanism demonstrates that the LSA does not have unchecked discretion.
+
 ### Fines and Enforcement (Article 83)
 
 Two tiers of administrative fines:
@@ -129,3 +179,8 @@ Two tiers of administrative fines:
 - [EDPB Guidelines and Recommendations](https://edpb.europa.eu/our-work-tools/general-guidance/guidelines-recommendations-best-practices_en) — Authoritative interpretive guidance
 - [UK GDPR and Data Protection Act 2018](https://www.legislation.gov.uk/ukpga/2018/12/contents/enacted) — UK regime post-Brexit
 - [CJEU Schrems II Decision (C-311/18)](https://curia.europa.eu/juris/liste.jsf?num=C-311/18) — Invalidation of Privacy Shield, SCC guidance
+- [Art. 29 WP Opinion 06/2014 on Legitimate Interests](https://ec.europa.eu/justice/article-29/documentation/opinion-recommendation/files/2014/wp217_en.pdf) — Authoritative LIA framework
+- [EDPB Guidelines on Automated Decision-Making and Profiling](https://edpb.europa.eu/our-work-tools/general-guidance/guidelines-recommendations-best-practices_en) — Art. 22 interpretation
+- [ICO UK GDPR Guidance](https://ico.org.uk/for-organisations/guide-to-data-protection/guide-to-the-general-data-protection-regulation-gdpr/) — UK-specific guidance and divergence
+- [ePrivacy Directive 2002/58/EC](https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX%3A32002L0058) — Cookie consent and electronic communications
+- [EDPB Art. 65 Dispute Resolution Decisions](https://edpb.europa.eu/our-work-tools/consistency-findings/binding-decisions_en) — One-stop-shop dispute outcomes
