@@ -45,6 +45,118 @@ Report what changed:
 If already up to date:
 > Plugin is current (v{version}). Checking content sync...
 
+## Step 1b: Migrate from v0.5.x → v0.6.0 (one-time)
+
+Check if the vault has the old structure. If ALL of these are true, run the migration:
+- `{legal_root}/defaults/` exists
+- `{legal_root}/practice/standards/` does NOT exist
+
+If migration is not needed (already on the new structure), skip to Step 2.
+
+### Migration overview
+
+Tell the user:
+> Your vault uses the old 5-layer structure (defaults/ + separate practice files). v0.6.0 consolidates everything into practice/. I'll migrate your vault now — your customizations are preserved.
+
+### 1b-a. Consolidate practice profile
+
+Read these files and merge into a single `{legal_root}/practice/profile.md`:
+- `{legal_root}/practice/identity.md` → `## Identity` section
+- `{legal_root}/practice/principles.md` → `## Principles` section
+- `{legal_root}/practice/voice.md` → `## Voice` section
+- `{legal_root}/practice/thresholds.md` → `## Escalation Thresholds` section
+
+Write the merged file with frontmatter:
+```yaml
+---
+counsel-os-type: practice
+---
+```
+
+Keep the old files until the user confirms the migration looks good.
+
+### 1b-b. Seed practice/standards/ from defaults/positions/
+
+Copy every file from `{legal_root}/defaults/positions/` → `{legal_root}/practice/standards/`. These become user-owned.
+
+Update frontmatter in each: `counsel-os-type: default-positions` → `counsel-os-type: practice`.
+
+### 1b-c. Merge user position overrides into standards/
+
+Read `{legal_root}/practice/positions.md` (the old override file). For each `## Clause Type` section that has real content (not just `[TO BE DEVELOPED]` placeholders):
+
+1. Find the matching file in `{legal_root}/practice/standards/` by clause type name
+2. If the standards file has an `## Our Position` section, replace it with the user's override content
+3. If not, add `## Our Position` at the top (after the title) with the user's content
+
+Format the merged section:
+```markdown
+## Our Position
+**Our standard:** [from user's positions.md]
+**We'll accept:** [from user's positions.md]
+**We won't accept:** [from user's positions.md]
+**Auto-escalate:** [from user's positions.md]
+
+[Any additional notes the user had under this clause type]
+```
+
+### 1b-d. Seed practice/methods/ from defaults/playbooks/ + defaults/checklists/
+
+Copy playbook files from `{legal_root}/defaults/playbooks/` → `{legal_root}/practice/methods/`.
+
+For checklists:
+- If a checklist matches a playbook name (contract-review, due-diligence, vendor-onboarding), append the checklist content to the corresponding method file with a `---` separator
+- If a checklist has no matching playbook, copy it as a standalone file to `{legal_root}/practice/methods/`
+
+Update frontmatter in all: `counsel-os-type: playbook` or `counsel-os-type: checklist` → `counsel-os-type: practice`.
+
+### 1b-e. Seed practice/library/ from defaults/clause-library/
+
+Copy `{legal_root}/defaults/clause-library/` → `{legal_root}/practice/library/`.
+
+Update frontmatter: `counsel-os-type: clause-library` → `counsel-os-type: practice`.
+
+### 1b-f. Create matters/ directory
+
+```bash
+mkdir -p "{legal_root}/matters"
+```
+
+### 1b-g. Report and confirm
+
+Show the user a summary:
+```
+## Migration Complete (v0.5.x → v0.6.0)
+
+Practice profile:
+- [x] profile.md created — consolidated from identity.md, principles.md, voice.md, thresholds.md
+
+Standards (practice/standards/):
+- [x] {N} position files migrated from defaults/positions/
+- [x] {M} user overrides merged from practice/positions.md
+
+Methods (practice/methods/):
+- [x] {N} playbook files migrated
+- [x] {M} checklists merged or added
+
+Library (practice/library/):
+- [x] {N} clause library files migrated
+
+Old files preserved:
+- defaults/ — still exists (will be removed after confirmation)
+- practice/identity.md, principles.md, voice.md, thresholds.md, positions.md — still exist
+```
+
+Ask: "Everything look good? Can I remove the old defaults/ directory and the old separate practice files?"
+
+If yes:
+```bash
+rm -rf "{legal_root}/defaults"
+rm "{legal_root}/practice/identity.md" "{legal_root}/practice/principles.md" "{legal_root}/practice/voice.md" "{legal_root}/practice/thresholds.md" "{legal_root}/practice/positions.md"
+```
+
+If no: keep everything, let the user fix issues manually.
+
 ## Step 2: Compare Content
 
 Compare content from two sources:
