@@ -45,7 +45,7 @@ Report what changed:
 If already up to date:
 > Plugin is current (v{version}). Checking content sync...
 
-## Step 1b: Migrate from v0.5.x → v0.6.0 (one-time)
+## Step 1b: Migrate from v0.5.x → v0.6.1 (one-time)
 
 Check if the vault has the old structure. If ALL of these are true, run the migration:
 - `{legal_root}/defaults/` exists
@@ -56,7 +56,7 @@ If migration is not needed (already on the new structure), skip to Step 2.
 ### Migration overview
 
 Tell the user:
-> Your vault uses the old 5-layer structure (defaults/ + separate practice files). v0.6.0 consolidates everything into practice/. I'll migrate your vault now — your customizations are preserved.
+> Your vault uses the old 5-layer structure (defaults/ + separate practice files). v0.6.1 consolidates everything into practice/. I'll migrate your vault now — your customizations are preserved.
 
 ### 1b-a. Consolidate practice profile
 
@@ -126,7 +126,7 @@ mkdir -p "{legal_root}/matters"
 
 Show the user a summary:
 ```
-## Migration Complete (v0.5.x → v0.6.0)
+## Migration Complete (v0.5.x → v0.6.1)
 
 Practice profile:
 - [x] profile.md created — consolidated from identity.md, principles.md, voice.md, thresholds.md
