@@ -45,6 +45,35 @@ Report what changed:
 If already up to date:
 > Plugin is current (v{version}). Checking content sync...
 
+### Sync plugin cache (if version changed)
+
+If the version changed, update the Claude Code plugin cache so skills load from the new version:
+
+```bash
+# Find the cache directory
+CACHE_BASE="$HOME/.claude/plugins/cache/jack-plugins/counsel-os"
+
+# Remove old version caches
+for dir in "$CACHE_BASE"/*/; do
+  version=$(basename "$dir")
+  if [ "$version" != "$NEW_VERSION" ]; then
+    rm -rf "$dir"
+  fi
+done
+
+# Copy current plugin to new versioned cache
+mkdir -p "$CACHE_BASE/$NEW_VERSION"
+cp -R {plugin_root}/* "$CACHE_BASE/$NEW_VERSION/"
+```
+
+Then update `~/.claude/plugins/installed_plugins.json` — find the `counsel-os@jack-plugins` entry and set:
+- `installPath` → the new cache path
+- `version` → the new version
+- `lastUpdated` → today's date
+
+Tell the user:
+> Plugin cache updated to v{new}. Restart Claude Code to load the new skills.
+
 ## Step 1b: Migrate from v0.5.x → v0.6.1 (one-time)
 
 Check if the vault has the old structure. If ALL of these are true, run the migration:
