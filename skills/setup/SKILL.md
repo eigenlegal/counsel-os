@@ -86,8 +86,21 @@ Copy the full practice seed into `{legal_root}/practice/`:
 
 All files should already have `counsel-os-type: practice` frontmatter from the seed.
 
+### CLAUDE.md (from plugin root)
+Copy `CLAUDE.md` from the plugin root to `{legal_root}/CLAUDE.md`. This is the orchestrator — it teaches the LLM what primitives are available and how to route user requests. It loads automatically when the user works from their legal root directory.
+
+### Primitives (from plugin `primitives/`)
+Copy all 5 primitive files to `{legal_root}/primitives/`:
+- `primitives/read.md` → `primitives/read.md`
+- `primitives/research.md` → `primitives/research.md`
+- `primitives/evaluate.md` → `primitives/evaluate.md`
+- `primitives/draft.md` → `primitives/draft.md`
+- `primitives/remember.md` → `primitives/remember.md`
+
+These are the instruction files the LLM reads when doing legal work. They're synced from the plugin on update.
+
 ### Matters directory
-Create `{legal_root}/matters/` (empty — populated during intake).
+Create `{legal_root}/matters/` (empty — populated when substantive work begins).
 
 ### Memory (from plugin `templates/memory/`)
 Copy patterns.md. Add frontmatter:
@@ -274,10 +287,11 @@ Skip — no version control. The backup/restore scripts still work as a safety n
 
 Run a quick validation:
 
-1. **Files exist check:** Verify law/, practice/ (with profile.md, standards/, methods/, library/), matters/, memory/ are all present and populated
+1. **Files exist check:** Verify CLAUDE.md, primitives/, law/, practice/ (with profile.md, standards/, methods/, library/), matters/, memory/ are all present and populated
 2. **Content check:** Verify profile.md has real content (not just template placeholders)
 3. **Consistency check:** Verify positions don't conflict with each other or with law/ constraints
 4. **Config check:** Verify `config.local.md` has the correct legal_root path
+5. **Working directory check:** Confirm the user knows to start Claude Code from `{legal_root}` (or a parent directory) so CLAUDE.md loads automatically
 
 ```
 ## Setup Complete
@@ -285,17 +299,22 @@ Run a quick validation:
 Your Counsel OS is configured:
 
 - [x] Legal root: {legal_root}
+- [x] CLAUDE.md — orchestrator (loads automatically when you work from this directory)
+- [x] primitives/ — 5 instruction files (read, research, evaluate, draft, remember)
 - [x] profile.md — [organization name], [risk appetite], [tone], [thresholds]
 - [x] standards/ — [N] positions customized, [M] using market defaults
-- [x] methods/ — [N] method files seeded
+- [x] methods/ — [N] reference guides seeded
 - [x] library/ — clause library seeded
 - [x] law/ — [N] law areas seeded
-- [x] matters/ — ready for intake
+- [x] matters/ — ready
 - [x] memory/ — patterns log ready
 
-You're ready to go. Start with `/counsel-os:intake` on your next contract or matter.
+You're ready to go. Start Claude Code from {legal_root} and just say what you need:
+- "Review this contract"
+- "Is this clause ok?"
+- "What's our position on indemnification?"
+- "Draft a response to their redline"
 
-To update your profile later, you can either:
-- Edit the files directly in {legal_root}/practice/
-- Run `/counsel-os:setup` again to walk through the guided process
+To update your profile later, edit the files in {legal_root}/practice/ or run `/counsel-os:setup` again.
+To pull plugin updates, run `/counsel-os:update`.
 ```
