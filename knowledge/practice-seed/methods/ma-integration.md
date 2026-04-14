@@ -9,13 +9,13 @@ Use this playbook for post-closing legal integration following a completed acqui
 
 ## Prerequisites
 - Executed acquisition agreement (merger agreement, stock purchase agreement, or asset purchase agreement)
-- Due diligence report and findings: load `playbooks/due-diligence.md` output
+- Due diligence report and findings: load `methods/due-diligence.md` output
 - Closing deliverables and consents tracker
 - Post-closing covenants and obligations from the acquisition agreement
 - Integration team identified (legal, HR, IT, Finance, Operations, Compliance)
 - Integration timeline and milestones from the deal team
 - Load `knowledge/law/corporate/` for entity structure matters
-- Load `checklists/due-diligence.md` for reference to open items
+- Load `methods/due-diligence.md` for reference to open items
 
 ## Process
 
@@ -108,7 +108,7 @@ Align employment arrangements across the combined entity:
 - Determine whether employees will receive new employment agreements with the buyer or continue under existing terms
 - Harmonize compensation structures: salary bands, bonus programs, commission plans
 - Harmonize benefits: health insurance, retirement plans (401(k) merger or parallel plans), PTO policies, equity plans
-- Assess WARN Act implications if any workforce reductions are planned (see `playbooks/employment-termination.md`)
+- Assess WARN Act implications if any workforce reductions are planned (see `methods/employment-termination.md`)
 - Address immigration status: verify work authorization for all acquired employees; assess H-1B transfer requirements
 - Conduct employee communication: explain changes, timelines, and points of contact
 
@@ -118,7 +118,7 @@ Align employment arrangements across the combined entity:
 - **Hybrid approach:** Assume existing agreements for most employees; issue new agreements for executives and key employees with updated terms.
 
 ### Step 6: Consolidate IP Portfolio
-Integrate the intellectual property assets. Cross-reference `playbooks/ip-portfolio-management.md`:
+Integrate the intellectual property assets. Cross-reference `methods/ip-portfolio-management.md`:
 
 **IP Integration Actions:**
 - Record assignments of all acquired IP with the relevant registries (USPTO, WIPO, Copyright Office)

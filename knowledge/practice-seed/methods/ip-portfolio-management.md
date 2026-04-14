@@ -91,7 +91,7 @@ Assess the financial dimension of the IP portfolio:
 **Licensing Exposure:**
 - Total annual licensing expense (inbound licenses)
 - Identify licenses approaching expiration or renewal — negotiate early
-- Assess assignability of key inbound licenses (critical for M&A scenarios). Load `positions/assignment-change-of-control.md`.
+- Assess assignability of key inbound licenses (critical for M&A scenarios). Load `practice/standards/assignment-change-of-control.md`.
 - Identify any "change of control" triggers in inbound licenses that would affect an acquisition
 - Open-source compliance exposure: identify any copyleft-licensed components in proprietary products that could create forced disclosure obligations
 
@@ -166,7 +166,7 @@ If the IP review is in preparation for M&A due diligence or financing:
 - Review all inbound and outbound licenses for assignability and change-of-control provisions
 - Identify any IP-related litigation or threatened claims
 - Assess open-source usage and compliance
-- Reference `playbooks/due-diligence.md` for the complete DD process
+- Reference `methods/due-diligence.md` for the complete DD process
 
 ## Output Format
 1. **IP Inventory Report:** Comprehensive list of all IP assets by category, with registration details, status, and maintenance dates

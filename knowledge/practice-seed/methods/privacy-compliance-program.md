@@ -13,7 +13,7 @@ Use this playbook when building a new privacy compliance program from the ground
 - Identification of applicable jurisdictions where the company operates or has data subjects
 - Load `knowledge/law/data-privacy/` — load all sub-files relevant to the applicable jurisdictions
 - Load `knowledge/law/cybersecurity/` for security requirements
-- Load `positions/data-protection.md` for contractual data protection standards
+- Load `practice/standards/data-protection.md` for contractual data protection standards
 - Budget and staffing plan for the privacy program
 - Current state assessment: what privacy measures exist today (if any)?
 
@@ -136,7 +136,7 @@ Create a documented incident response plan for personal data breaches:
 ### Step 6: Vendor DPA Audit
 Ensure all vendors processing personal data have adequate contractual protections:
 
-**DPA Audit Process:** Load `positions/data-protection.md`.
+**DPA Audit Process:** Load `practice/standards/data-protection.md`.
 - From the data inventory (Step 1), identify all vendors/sub-processors who process personal data on the company's behalf
 - For each vendor, verify: (1) a DPA or equivalent data protection terms exist in the contract, (2) the DPA meets the requirements of the applicable law (GDPR Article 28, CCPA service provider provisions)
 - For GDPR: verify the DPA includes: subject matter and duration of processing, nature and purpose, types of personal data, categories of data subjects, controller's obligations and rights, processor's obligations (security, sub-processors, cooperation, deletion/return, audit)

@@ -101,7 +101,7 @@ Assess the legal basis for the data used to train, fine-tune, or operate the AI 
 - Personal data used for training without adequate legal basis → remediate (obtain consent, conduct legitimate interest assessment, or anonymize)
 
 ### Step 5: Draft AI Acceptable Use Policy
-Create an internal policy governing the use of AI across the organization. Follow `playbooks/policy-drafting.md` for the drafting process.
+Create an internal policy governing the use of AI across the organization. Follow `methods/policy-drafting.md` for the drafting process.
 
 **Policy Content:**
 - **Approved AI tools:** List of AI systems approved for use, with any restrictions (e.g., "ChatGPT approved for drafting assistance; not approved for processing confidential data or personal data")
@@ -109,7 +109,7 @@ Create an internal policy governing the use of AI across the organization. Follo
 - **Data input restrictions:** What types of data may and may not be input into AI systems (personal data, trade secrets, attorney-client privileged information, source code, financial data)
 - **Output review requirements:** All AI-generated content intended for external use must be reviewed by a human before publication/distribution
 - **Disclosure requirements:** When AI involvement must be disclosed (customer interactions, generated content, automated decisions)
-- **Procurement requirements:** New AI vendors must go through the standard vendor onboarding process (`playbooks/vendor-onboarding.md`) with additional AI-specific assessments
+- **Procurement requirements:** New AI vendors must go through the standard vendor onboarding process (`methods/vendor-onboarding.md`) with additional AI-specific assessments
 - **Incident reporting:** How to report AI failures, biased outputs, or unexpected behaviors
 
 ### Step 6: Implement Human Oversight

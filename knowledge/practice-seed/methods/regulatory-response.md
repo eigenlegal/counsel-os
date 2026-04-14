@@ -18,7 +18,7 @@ Use this playbook when the company receives a regulatory investigation notice, s
   - State AG → varies by subject (consumer protection, privacy, antitrust)
   - OSHA → `law/employment/`
   - EPA → `law/environmental-esg/`
-- Load `checklists/litigation-hold.md` for document preservation
+- Load `methods/litigation-hold.md` for document preservation
 - Outside counsel identified and available (specialized regulatory counsel strongly recommended for all but routine inquiries)
 - D&O insurance and regulatory investigation coverage reviewed
 - Board notification requirements assessed
@@ -49,7 +49,7 @@ Within 24 hours of receiving the communication, conduct an initial assessment:
 - If there is any indication of a parallel criminal investigation (DOJ involvement, grand jury subpoena, FBI contact): immediately engage white-collar defense counsel. Do not respond to any inquiry — civil or criminal — without coordinated counsel advice. The Fifth Amendment and joint defense considerations become critical.
 
 ### Step 2: Preserve Documents
-Immediately upon receipt. Load `checklists/litigation-hold.md`:
+Immediately upon receipt. Load `methods/litigation-hold.md`:
 - Issue a litigation hold notice to all potentially relevant custodians within 24 hours
 - Scope the hold broadly initially — it can be narrowed later, but spoliation cannot be undone
 - Preserve all potentially relevant documents, communications, and electronic records
