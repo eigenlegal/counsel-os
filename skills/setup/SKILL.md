@@ -214,8 +214,8 @@ Offer to analyze past work product to auto-infer positions:
 > rather than aspirational standards.
 
 If the user provides past contracts:
-1. Run `/counsel-os:intake` on each one (abbreviated — classification and position extraction only)
-2. Compare extracted positions against the positions just configured
+1. Read each one (extract terms, parties, key provisions)
+2. Evaluate the key clauses against the positions just configured
 3. Flag any gaps: "Your signed contracts show you've accepted X, but your stated position is Y. Want to adjust?"
 4. Offer to update positions based on findings
 
