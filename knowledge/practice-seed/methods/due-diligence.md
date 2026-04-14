@@ -8,7 +8,7 @@ content-version: "2026-04-08"
 Use this playbook when conducting legal due diligence on a target company in connection with a potential acquisition, merger, investment, or strategic partnership. Also applicable to vendor due diligence for critical/strategic vendor relationships.
 
 ## Prerequisites
-- Signed NDA with the target/counterparty (see `playbooks/nda-triage.md` — use M&A NDA review criteria)
+- Signed NDA with the target/counterparty (see `methods/nda-triage.md` — use M&A NDA review criteria)
 - Access to the data room or document repository
 - Deal team identified (legal, finance, tax, HR, IT, operations)
 - Timeline and key milestones established (signing, closing, long-stop date)
@@ -23,28 +23,28 @@ Set up the due diligence framework. Assign workstream leads and load the relevan
 
 | Workstream | Checklist / Reference | Key Law Areas |
 |---|---|---|
-| Corporate/Governance | `checklists/due-diligence.md` §Corporate | `law/corporate/` |
-| Contracts | `checklists/due-diligence.md` §Contracts | `positions/assignment-change-of-control.md` |
-| IP | `checklists/due-diligence.md` §IP | `law/ip-and-technology/` |
-| Litigation & Disputes | `checklists/due-diligence.md` §Litigation | `law/litigation/` |
-| Employment | `checklists/due-diligence.md` §Employment | `law/employment/` |
-| Regulatory/Compliance | `checklists/due-diligence.md` §Regulatory | Varies by industry |
-| Data Privacy & Security | `checklists/due-diligence.md` §Privacy | `law/data-privacy/`, `law/cybersecurity/` |
-| Real Estate & Assets | `checklists/due-diligence.md` §Assets | `law/real-estate/` |
-| Tax | `checklists/due-diligence.md` §Tax | `law/tax/` |
-| Insurance | `checklists/due-diligence.md` §Insurance | `law/insurance/` |
-| Environmental | `checklists/due-diligence.md` §Environmental | `law/environmental-esg/` |
+| Corporate/Governance | `methods/due-diligence.md` §Corporate | `law/corporate/` |
+| Contracts | `methods/due-diligence.md` §Contracts | `practice/standards/assignment-change-of-control.md` |
+| IP | `methods/due-diligence.md` §IP | `law/ip-and-technology/` |
+| Litigation & Disputes | `methods/due-diligence.md` §Litigation | `law/litigation/` |
+| Employment | `methods/due-diligence.md` §Employment | `law/employment/` |
+| Regulatory/Compliance | `methods/due-diligence.md` §Regulatory | Varies by industry |
+| Data Privacy & Security | `methods/due-diligence.md` §Privacy | `law/data-privacy/`, `law/cybersecurity/` |
+| Real Estate & Assets | `methods/due-diligence.md` §Assets | `law/real-estate/` |
+| Tax | `methods/due-diligence.md` §Tax | `law/tax/` |
+| Insurance | `methods/due-diligence.md` §Insurance | `law/insurance/` |
+| Environmental | `methods/due-diligence.md` §Environmental | `law/environmental-esg/` |
 
 Operational setup:
-- Create a document request list organized by workstream, referencing `checklists/due-diligence.md` line items
+- Create a document request list organized by workstream, referencing `methods/due-diligence.md` line items
 - Establish a tracking system for documents requested, received, and reviewed (spreadsheet or deal management tool)
 - Set up regular deal team check-ins (at least 2x/week during active diligence)
 - Assign a single point of contact for data room access requests
 
 **Decision — Scope by Deal Type:**
-- **Full Acquisition:** All workstreams active. Load complete `checklists/due-diligence.md`.
+- **Full Acquisition:** All workstreams active. Load complete `methods/due-diligence.md`.
 - **Minority Investment:** Focus on Corporate/Governance, Contracts (material only), IP, Litigation, Financial. Skip Employment deep-dive unless the target has significant workforce issues.
-- **Vendor Due Diligence:** Focus on Data Privacy, Security, Contracts, Financial stability, Insurance. Use `checklists/vendor-onboarding.md` instead of full DD checklist.
+- **Vendor Due Diligence:** Focus on Data Privacy, Security, Contracts, Financial stability, Insurance. Use `methods/vendor-onboarding.md` instead of full DD checklist.
 - **Asset Purchase:** Focus on the specific assets being acquired. Emphasize IP chain-of-title, contract assignability, and environmental (if physical assets).
 
 ### Step 2: Document Collection
@@ -67,7 +67,7 @@ For each workstream, conduct a thorough review. Load the corresponding law area 
 - Verify capitalization table against the company's records and any 409A valuations
 - Identify any outstanding options, warrants, convertible instruments, or anti-dilution provisions
 
-**Contracts:** (Load `positions/assignment-change-of-control.md`)
+**Contracts:** (Load `practice/standards/assignment-change-of-control.md`)
 - Identify all material contracts (by value, strategic importance, or risk) — apply the materiality threshold
 - Review change of control / assignment provisions: will the deal trigger consents?
 - Identify contracts with termination-on-change-of-control provisions — quantify revenue at risk

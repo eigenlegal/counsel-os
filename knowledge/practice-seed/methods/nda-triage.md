@@ -28,7 +28,7 @@ Determine if the NDA is:
 - If the counterparty template has significant issues (3+ RED flags), propose our template instead. This is faster than negotiating a heavily marked-up counterparty form.
 
 ### Step 2: Rapid Triage (5-Minute Assessment)
-Run through the following six critical checks against `positions/confidentiality.md`:
+Run through the following six critical checks against `practice/standards/confidentiality.md`:
 
 1. **Mutual vs. One-Way:** Is the NDA mutual? If one-way, does the direction match our needs?
    - **GREEN:** Mutual NDA, or one-way matching our disclosure direction
@@ -76,7 +76,7 @@ Based on the triage, classify the NDA:
 
 **MINOR EDITS Criteria:**
 - Zero RED flags
-- 1-3 YELLOW flags that are addressable with standard counter-language from `clause-library/ip-and-confidentiality.md`
+- 1-3 YELLOW flags that are addressable with standard counter-language from `practice/library/ip-and-confidentiality.md`
 - No non-standard provisions beyond a reasonable non-solicitation
 → **Make targeted edits and send back.** Do not escalate. Total time: 30-60 minutes.
 
@@ -90,8 +90,8 @@ Based on the triage, classify the NDA:
 
 ### Step 4: Full Review (If Required)
 Apply the complete confidentiality position file analysis:
-- Compare all provisions against `positions/confidentiality.md` classification guide, item by item
-- Draft a redline using counter-language from `clause-library/ip-and-confidentiality.md`
+- Compare all provisions against `practice/standards/confidentiality.md` classification guide, item by item
+- Draft a redline using counter-language from `practice/library/ip-and-confidentiality.md`
 - For each RED item, provide: (1) the issue, (2) the risk, (3) specific alternative language
 - Flag any provisions that require business input (e.g., non-solicitation period, standstill scope)
 - If the counterparty's NDA is significantly non-standard (5+ issues), propose substituting our template

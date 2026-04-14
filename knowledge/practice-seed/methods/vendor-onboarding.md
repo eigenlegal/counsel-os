@@ -52,7 +52,7 @@ Based on the risk tier, conduct the appropriate level of diligence:
 - Business continuity and disaster recovery plans. Confirm RTO/RPO align with your requirements.
 - Data processing assessment: types of data processed, processing purposes, data retention schedule, deletion procedures, sub-processor list
 - Sub-processor review: who are the vendor's material sub-processors? Where do they process data? Are they contractually bound to equivalent protections?
-- Insurance coverage verification: commercial general liability, professional liability/E&O, cyber liability. Confirm coverage limits meet your minimum requirements per `positions/insurance-requirements.md`.
+- Insurance coverage verification: commercial general liability, professional liability/E&O, cyber liability. Confirm coverage limits meet your minimum requirements per `practice/standards/insurance-requirements.md`.
 - Financial stability assessment: D&B report, annual report, or financial statements
 - Reference checks: contact 2-3 existing customers in similar industry/use case
 - On-site or virtual assessment (for vendors handling highly sensitive data or providing critical infrastructure)
@@ -60,7 +60,7 @@ Based on the risk tier, conduct the appropriate level of diligence:
 **Tier 2 — Standard Assessment:**
 - Security questionnaire (abbreviated — focus on top 20 questions covering encryption, access control, incident response, data handling)
 - SOC 2 Type II report or ISO 27001 certification (review opinion letter and exceptions summary)
-- Privacy policy review and DPA adequacy assessment. Load `positions/data-protection.md`.
+- Privacy policy review and DPA adequacy assessment. Load `practice/standards/data-protection.md`.
 - Insurance certificate confirming adequate coverage
 - Basic financial assessment (public information, D&B rating)
 
@@ -77,33 +77,33 @@ Based on the risk tier, conduct the appropriate level of diligence:
 Execute the appropriate contract(s). The contract package varies by tier:
 
 **Tier 1 Contract Package:**
-- NDA (if not already in place — see `playbooks/nda-triage.md`)
-- Master Services Agreement (MSA) or SaaS Agreement — apply `playbooks/contract-review.md` with full position-file review
-- Data Processing Agreement (DPA) — required if personal data is processed. Load `positions/data-protection.md`.
+- NDA (if not already in place — see `methods/nda-triage.md`)
+- Master Services Agreement (MSA) or SaaS Agreement — apply `methods/contract-review.md` with full position-file review
+- Data Processing Agreement (DPA) — required if personal data is processed. Load `practice/standards/data-protection.md`.
 - Order Form / Statement of Work — specific scope, pricing, SLAs, and deliverables
 - Business Associate Agreement (BAA) — required if HIPAA applies. Load `law/healthcare/`.
-- SLA Exhibit — with measurable uptime, response time, and remedies. Load `positions/service-levels.md`.
+- SLA Exhibit — with measurable uptime, response time, and remedies. Load `practice/standards/service-levels.md`.
 
 **Tier 2 Contract Package:**
 - NDA (if needed)
-- MSA or SaaS Agreement — apply `playbooks/contract-review.md` with standard review depth
+- MSA or SaaS Agreement — apply `methods/contract-review.md` with standard review depth
 - DPA (if personal data is involved)
 - Order Form / SOW
 
 **Tier 3 Contract Package:**
 - Review vendor's standard terms (click-through or order form)
-- Focus review on: limitation of liability (`positions/limitation-of-liability.md`), data handling, auto-renewal terms (`positions/termination-renewal.md`), and governing law (`positions/dispute-resolution.md`)
+- Focus review on: limitation of liability (`practice/standards/limitation-of-liability.md`), data handling, auto-renewal terms (`practice/standards/termination-renewal.md`), and governing law (`practice/standards/dispute-resolution.md`)
 - NDA only if confidential information will be shared
 
 **Key focus areas for all vendor contracts** (load corresponding position files):
 | Provision | Position File | Priority by Tier |
 |---|---|---|
-| Data protection & security | `positions/data-protection.md` | Tier 1: Critical. Tier 2: High. Tier 3: If applicable. |
-| Limitation of liability | `positions/limitation-of-liability.md` | All tiers: High. Ensure carve-outs for data breaches and IP infringement. |
-| Indemnification | `positions/indemnification.md` | Tier 1: Critical. Tier 2: High. Tier 3: Standard. |
-| Termination rights | `positions/termination-renewal.md` | All tiers: High. Ensure convenience termination and transition assistance. |
-| Service levels | `positions/service-levels.md` | Tier 1: Critical. Tier 2: High. Tier 3: N/A. |
-| Insurance requirements | `positions/insurance-requirements.md` | Tier 1: Critical. Tier 2: Standard. Tier 3: If applicable. |
+| Data protection & security | `practice/standards/data-protection.md` | Tier 1: Critical. Tier 2: High. Tier 3: If applicable. |
+| Limitation of liability | `practice/standards/limitation-of-liability.md` | All tiers: High. Ensure carve-outs for data breaches and IP infringement. |
+| Indemnification | `practice/standards/indemnification.md` | Tier 1: Critical. Tier 2: High. Tier 3: Standard. |
+| Termination rights | `practice/standards/termination-renewal.md` | All tiers: High. Ensure convenience termination and transition assistance. |
+| Service levels | `practice/standards/service-levels.md` | Tier 1: Critical. Tier 2: High. Tier 3: N/A. |
+| Insurance requirements | `practice/standards/insurance-requirements.md` | Tier 1: Critical. Tier 2: Standard. Tier 3: If applicable. |
 | Audit rights | — | Tier 1: Required. Tier 2: Recommended. Tier 3: N/A. |
 | Sub-contracting restrictions | — | Tier 1: Required (prior written consent). Tier 2: Notice required. Tier 3: N/A. |
 
@@ -178,7 +178,7 @@ Establish a vendor management cadence by tier:
 3. **Contract Package:** Executed agreements filed in contract management system
 4. **Approval Record:** Sign-offs from all required approvers with dates
 5. **Vendor Registry Entry:** Complete metadata record for ongoing management
-6. **Onboarding Checklist:** Completed `checklists/vendor-onboarding.md` confirming all steps are done
+6. **Onboarding Checklist:** Completed `methods/vendor-onboarding.md` confirming all steps are done
 
 ## Calibration
 - **Simple (Tier 3):** Routine vendor, no data access, low spend. Abbreviated process. Target: 1-2 weeks.
