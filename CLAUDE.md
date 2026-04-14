@@ -41,6 +41,8 @@ Match the user's request to primitives. This is guidance, not rigid rules — us
 | "Update the [counterparty] file" | remember --entity |
 | "Close this matter" | remember --matter (stage → closed) → remember --entity → remember --knowledge |
 
+**Full document reviews require coverage checking.** When the user asks to review an entire document (not just a single clause), load the relevant method file from `practice/methods/` (e.g., `contract-review.md` for contracts, `nda-triage.md` for NDAs). The method file is a coverage checklist — use it to verify you've evaluated all relevant clause types, run compliance checks, and checked for missing provisions. Don't present findings until you've verified coverage.
+
 For complex or unfamiliar requests, propose a plan before executing:
 > "I'll read the document, check each clause against your positions and applicable law, and summarize the findings. Want me to focus on anything specific?"
 
