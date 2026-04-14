@@ -166,7 +166,7 @@ Priority: [high/medium/low]
 
 ## Step 8: Knowledge Base Health Audit
 
-The retro audits the health of the knowledge base but does NOT perform maintenance directly — that's the close skill's job. Flag issues here; fix them via `/counsel-os:close`.
+The retro audits the health of the knowledge base but does NOT perform maintenance directly. Flag issues here; the user can fix them by asking to update entity files or practice standards (the `remember` primitive handles this).
 
 ### Log Bloat
 - Count entries in `patterns.md`
@@ -174,11 +174,11 @@ The retro audits the health of the knowledge base but does NOT perform maintenan
 
 ### Counterparty File Size
 - Check line counts on all counterparty files
-- If any executed counterparty file exceeds ~100 lines, flag: "[Counterparty] file is [N] lines with no active deals. Run `/counsel-os:close` to compress and move detailed history to the deal folder."
+- If any executed counterparty file exceeds ~100 lines, flag: "[Counterparty] file is [N] lines with no active deals. Consider compressing and moving detailed history to the deal folder."
 
 ### Missing Agreement Summaries
 - For each counterparty marked "Executed," check if the user has a detailed agreement summary in their deal folder
-- If not, flag: "No detailed agreement summary found for [counterparty]. Consider generating one via `/counsel-os:close`."
+- If not, flag: "No detailed agreement summary found for [counterparty]. Consider generating one."
 
 ### Stale Entity Metadata
 - Run a QMD query for all entity files and check for counterparties still marked as "Negotiating" that may have been executed or abandoned
