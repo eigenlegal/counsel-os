@@ -32,8 +32,8 @@ Read all available data sources:
 4. **All entity files discovered via QMD** — Run a QMD query on `counsel-os-type` frontmatter to find all counterparty, company, and deal entity files. These contain history, agreed positions, and notes.
 
 ### Practice Files (for comparison)
-5. **`{legal_root}/practice/positions.md`** — Current standard positions (to compare against actual decisions)
-6. **`{legal_root}/practice/thresholds.md`** — Current escalation criteria (to assess if thresholds are calibrated correctly)
+5. **`{legal_root}/practice/standards/`** — Current standard positions (to compare against actual decisions)
+6. **`{legal_root}/practice/profile.md`** — Current escalation criteria (## Escalation Thresholds section)
 
 If any files are empty or don't exist, note the gap but continue with available data. The retro is most valuable when there's enough data to identify patterns (typically after 10+ matters).
 
@@ -52,7 +52,7 @@ Count and categorize:
 
 If timestamps are available in the logs:
 - Average time from intake to close, by track
-- Compare against turnaround expectations in thresholds.md
+- Compare against turnaround expectations in profile.md (## Escalation Thresholds section)
 - Identify bottlenecks
 
 ## Step 3: Analyze — Clause Patterns
@@ -66,7 +66,7 @@ From decisions and exceptions logs:
 
 ### Position Effectiveness
 
-For each position in `{legal_root}/practice/positions.md`:
+For each position file in `{legal_root}/practice/standards/`:
 - How often was the standard position accepted without modification?
 - How often was it negotiated down to the fallback position?
 - How often was an exception granted?
@@ -77,7 +77,7 @@ For each position in `{legal_root}/practice/positions.md`:
 Compare actual accepted terms against stated positions:
 - Are you consistently accepting terms below your stated standard?
 - Are there positions that have informally shifted?
-- Has your risk appetite changed in practice even if positions.md hasn't been updated?
+- Has your risk appetite changed in practice even if your standards haven't been updated?
 
 ## Step 4: Analyze — Counterparty Trends
 

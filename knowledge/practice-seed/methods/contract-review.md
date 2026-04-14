@@ -24,12 +24,12 @@ Classify the contract by type, value, and risk tier:
 - **Risk Tier:** Low (<$100K ACV, standard terms), Medium ($100K-$1M ACV or non-standard terms), High (>$1M ACV, strategic relationship, or significant data processing)
 
 **Decision — Depth of Review:**
-- If **Low Risk AND standard contract type** (simple SaaS subscription, routine procurement): skip Steps 2-3, go directly to Step 4 with abbreviated review. Focus only on the five highest-impact position files: `positions/limitation-of-liability.md`, `positions/data-protection.md`, `positions/indemnification.md`, `positions/termination-renewal.md`, `positions/ip-ownership.md`. Target: 1-2 hours.
+- If **Low Risk AND standard contract type** (simple SaaS subscription, routine procurement): skip Steps 2-3, go directly to Step 4 with abbreviated review. Focus only on the five highest-impact position files: `practice/standards/limitation-of-liability.md`, `practice/standards/data-protection.md`, `practice/standards/indemnification.md`, `practice/standards/termination-renewal.md`, `practice/standards/ip-ownership.md`. Target: 1-2 hours.
 - If **Medium Risk**: complete all steps. Full position-file comparison. Target: 4-8 hours.
 - If **High Risk**: complete all steps with deep analysis. Cross-reference `knowledge/law/` areas. Engage subject-matter experts. Consider board/executive approval requirements. Target: 1-3 days.
 
 ### Step 2: Structural Review
-Verify the contract contains all necessary components. Load `checklists/contract-review.md` and check each item:
+Verify the contract contains all necessary components. Load `methods/contract-review.md` and check each item:
 - Parties correctly identified (legal entity names, jurisdiction of incorporation). Verify against public records if unfamiliar counterparty.
 - Recitals/background accurately describe the relationship
 - Definitions section is complete and internally consistent. Flag defined terms that are used but not defined, or defined but not used.
@@ -44,9 +44,9 @@ Verify the contract contains all necessary components. Load `checklists/contract
 ### Step 3: Commercial Terms Review
 Evaluate core commercial terms against business requirements:
 - Scope of services/license matches what was negotiated. Compare against any proposal, SOW, or term sheet.
-- Pricing, payment terms, and fee structure align with the proposal. Load `positions/fees-payment.md` for payment term standards.
-- Term length and renewal mechanics are acceptable. Load `positions/termination-renewal.md` for auto-renewal and notice period standards.
-- SLAs and performance standards meet operational requirements. Load `positions/service-levels.md` for SLA benchmarks.
+- Pricing, payment terms, and fee structure align with the proposal. Load `practice/standards/fees-payment.md` for payment term standards.
+- Term length and renewal mechanics are acceptable. Load `practice/standards/termination-renewal.md` for auto-renewal and notice period standards.
+- SLAs and performance standards meet operational requirements. Load `practice/standards/service-levels.md` for SLA benchmarks.
 - Acceptance criteria for deliverables are defined (for services/development contracts)
 - Change order process is workable and requires mutual written agreement
 
@@ -55,24 +55,24 @@ For each major clause category, load the specific position file, compare the con
 
 | Clause Category | Position File to Load | Clause Library Reference |
 |---|---|---|
-| Limitation of Liability | `positions/limitation-of-liability.md` | `clause-library/liability-and-indemnification.md` |
-| Indemnification | `positions/indemnification.md` | `clause-library/liability-and-indemnification.md` |
-| Termination & Renewal | `positions/termination-renewal.md` | `clause-library/termination-and-renewal.md` |
-| Data Protection | `positions/data-protection.md` | `clause-library/data-protection.md` |
-| Confidentiality | `positions/confidentiality.md` | `clause-library/ip-and-confidentiality.md` |
-| IP Ownership | `positions/ip-ownership.md` | `clause-library/ip-and-confidentiality.md` |
-| Dispute Resolution | `positions/dispute-resolution.md` | `clause-library/dispute-resolution.md` |
-| Assignment & Change of Control | `positions/assignment-change-of-control.md` | — |
-| Force Majeure | `positions/force-majeure.md` | — |
-| Insurance Requirements | `positions/insurance-requirements.md` | — |
-| Representations & Warranties | `positions/representations-warranties.md` | — |
-| Fees & Payment | `positions/fees-payment.md` | — |
-| Service Levels | `positions/service-levels.md` | `clause-library/sla-and-performance.md` |
+| Limitation of Liability | `practice/standards/limitation-of-liability.md` | `practice/library/liability-and-indemnification.md` |
+| Indemnification | `practice/standards/indemnification.md` | `practice/library/liability-and-indemnification.md` |
+| Termination & Renewal | `practice/standards/termination-renewal.md` | `practice/library/termination-and-renewal.md` |
+| Data Protection | `practice/standards/data-protection.md` | `practice/library/data-protection.md` |
+| Confidentiality | `practice/standards/confidentiality.md` | `practice/library/ip-and-confidentiality.md` |
+| IP Ownership | `practice/standards/ip-ownership.md` | `practice/library/ip-and-confidentiality.md` |
+| Dispute Resolution | `practice/standards/dispute-resolution.md` | `practice/library/dispute-resolution.md` |
+| Assignment & Change of Control | `practice/standards/assignment-change-of-control.md` | — |
+| Force Majeure | `practice/standards/force-majeure.md` | — |
+| Insurance Requirements | `practice/standards/insurance-requirements.md` | — |
+| Representations & Warranties | `practice/standards/representations-warranties.md` | — |
+| Fees & Payment | `practice/standards/fees-payment.md` | — |
+| Service Levels | `practice/standards/service-levels.md` | `practice/library/sla-and-performance.md` |
 
 **For each clause:** (1) Read the contract language, (2) compare against the position file classification guide, (3) assign GREEN/YELLOW/RED, (4) if YELLOW or RED, pull recommended counter-language from the clause library.
 
 **Decision — Overlay Practice Positions:**
-- After loading default positions, check `knowledge/practice/positions.md` for any overrides. Practice positions supersede defaults.
+- After loading default positions, check `practice/standards/` (directory with per-topic files) for any overrides. Practice positions supersede defaults.
 - Check `the counterparty entity file (discovered via QMD)` for deal-specific overrides. Counterparty overrides supersede practice positions.
 
 ### Step 5: Legal Compliance Check
@@ -101,7 +101,7 @@ For each identified issue:
 1. State the clause reference (section number) and quote the current language
 2. Identify the risk classification (RED/YELLOW/GREEN) and cite which layer determined it (law/, practice/, or entity files)
 3. Explain the concern in plain language
-4. Propose specific alternative language from `clause-library/` or draft custom language
+4. Propose specific alternative language from `practice/library/` or draft custom language
 5. Assign priority tier: Tier 1 (must-have), Tier 2 (strong preference), Tier 3 (nice-to-have)
 
 **Tactical sub-steps for preparing the redline:**

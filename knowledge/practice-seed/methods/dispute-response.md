@@ -10,11 +10,11 @@ Use this playbook when the company receives a demand letter, threat of litigatio
 ## Prerequisites
 - The dispute communication (demand letter, notice, complaint, inquiry)
 - Relevant contracts and agreements with the counterparty
-- Load position files: `positions/dispute-resolution.md`, `positions/limitation-of-liability.md`, `positions/indemnification.md`
-- Load clause library: `clause-library/dispute-resolution.md`
+- Load position files: `practice/standards/dispute-resolution.md`, `practice/standards/limitation-of-liability.md`, `practice/standards/indemnification.md`
+- Load clause library: `practice/library/dispute-resolution.md`
 - Internal facts gathered from the business team
 - Insurance policies reviewed for potential coverage (CGL, E&O, D&O, cyber)
-- Litigation hold assessment completed or in progress (see `checklists/litigation-hold.md`)
+- Litigation hold assessment completed or in progress (see `methods/litigation-hold.md`)
 - Outside counsel identified (if needed)
 
 ## Process
@@ -40,7 +40,7 @@ Assess the dispute immediately upon receipt. Complete within 24 hours of receivi
 - Do not forward the dispute communication broadly — limit distribution to need-to-know
 
 ### Step 2: Preserve Evidence
-Immediately upon identifying a potential dispute. Load `checklists/litigation-hold.md`:
+Immediately upon identifying a potential dispute. Load `methods/litigation-hold.md`:
 - Issue a litigation hold notice to all relevant custodians within 24 hours
 - Identify custodians: anyone who may have relevant documents or communications (business owners, technical staff, executives)
 - Preserve all relevant documents, communications, and electronic records
@@ -64,7 +64,7 @@ Conduct an internal investigation:
 - Identify potential counterclaims or set-off rights
 
 ### Step 4: Legal Analysis
-Analyze the dispute on the merits. Load `positions/dispute-resolution.md` and relevant `law/litigation/` files:
+Analyze the dispute on the merits. Load `practice/standards/dispute-resolution.md` and relevant `law/litigation/` files:
 - Review the applicable contract provisions: breach definition, cure rights, remedies, dispute resolution mechanism, notice requirements
 - Identify applicable legal theories and defenses (statute of limitations, waiver, estoppel, failure to mitigate)
 - Assess the counterparty's likely damages claim and our maximum exposure

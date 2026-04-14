@@ -46,7 +46,7 @@ Conduct legal research following this source hierarchy:
 2. **Counsel OS law files:** `knowledge/law/` area files (synthesized legal frameworks)
 3. **Regulatory guidance:** Agency interpretations, no-action letters, advisory opinions, FAQ documents
 4. **Persuasive authority:** Case law from other jurisdictions, Restatements, treatises
-5. **Internal precedent:** Prior memos in the entity file (via QMD discovery), established internal positions in `knowledge/practice/positions.md`
+5. **Internal precedent:** Prior memos in the entity file (via QMD discovery), established internal positions in `practice/standards/` (directory with per-topic files)
 6. **Secondary sources:** Law review articles, practice guides, CLE materials
 7. **Industry practice:** Market surveys, peer company approaches, industry association guidance
 

@@ -48,14 +48,14 @@ Document precisely what is changing:
 | Section | Current Language | Proposed Language | Reason for Change |
 |---|---|---|---|
 | 4.1 (Term) | "12-month initial term" | "24-month initial term" | Business requests extension |
-| 7.2 (Liability) | "Cap of $100,000" | "Cap equal to 12 months of fees" | Aligns with `positions/limitation-of-liability.md` |
+| 7.2 (Liability) | "Cap of $100,000" | "Cap equal to 12 months of fees" | Aligns with `practice/standards/limitation-of-liability.md` |
 
 - For modified provisions, prepare a comparison showing current language vs. proposed language
 - Assess whether the changes require corresponding updates to other provisions:
   - Changing scope → may affect pricing, SLAs, liability cap, insurance requirements
   - Changing term → may affect pricing, renewal mechanics, termination notice periods
-  - Changing data processing → may require DPA amendment; check `positions/data-protection.md`
-  - Adding parties → may require assignment/novation analysis; check `positions/assignment-change-of-control.md`
+  - Changing data processing → may require DPA amendment; check `practice/standards/data-protection.md`
+  - Adding parties → may require assignment/novation analysis; check `practice/standards/assignment-change-of-control.md`
 - Determine whether the changes trigger any consent or notification requirements (e.g., notice to affected third parties, sub-processors, regulatory filings)
 - Cross-reference each change against the relevant position file to ensure the amended term meets current standards
 
@@ -108,7 +108,7 @@ Before sending to the counterparty:
 
 ### Step 5: Negotiate and Execute
 - Share the draft amendment with the counterparty with a cover note explaining the changes and business rationale
-- Track any counterparty changes through the negotiation process — apply the negotiation playbook (`playbooks/negotiation.md`) if the counterparty proposes material counter-edits
+- Track any counterparty changes through the negotiation process — apply the negotiation playbook (`methods/negotiation.md`) if the counterparty proposes material counter-edits
 - Once agreed, execute with wet or electronic signatures per the original agreement's requirements
 - Verify the effective date: is the amendment effective upon signing, or on a specified future date?
 - File the executed amendment with the original agreement in the contract management system. Update the contract lineage document.

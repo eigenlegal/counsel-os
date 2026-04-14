@@ -8,7 +8,7 @@ content-version: "2026-04-08"
 Use this playbook when preparing for and conducting contract negotiations with a counterparty. This applies to both initial deal negotiations and renegotiations of existing agreements.
 
 ## Prerequisites
-- Completed contract review (see `playbooks/contract-review.md`)
+- Completed contract review (see `methods/contract-review.md`)
 - Issues list with prioritized items (RED/YELLOW/GREEN with tier assignments)
 - Business owner alignment on must-haves vs. nice-to-haves
 - Understanding of the deal dynamics: leverage, alternatives, timeline, relationship importance
@@ -40,25 +40,25 @@ Create a concession tracker:
 ### Step 2: Issue Prioritization
 Categorize all open issues into tiers. Load position files for classification guidance:
 - **Tier 1 — Must Have:** Deal-breakers if not resolved. Non-negotiable legal or business requirements.
-  - Examples: liability cap within acceptable range (`positions/limitation-of-liability.md`), data protection compliance (`positions/data-protection.md`), IP ownership of custom work (`positions/ip-ownership.md`)
+  - Examples: liability cap within acceptable range (`practice/standards/limitation-of-liability.md`), data protection compliance (`practice/standards/data-protection.md`), IP ownership of custom work (`practice/standards/ip-ownership.md`)
   - These are non-negotiable. If the counterparty cannot accept any Tier 1 item, escalate to senior leadership before conceding.
 - **Tier 2 — Important:** Strong preference but room for creative solutions.
-  - Examples: SLA levels (`positions/service-levels.md`), termination convenience rights (`positions/termination-renewal.md`), indemnification scope (`positions/indemnification.md`)
+  - Examples: SLA levels (`practice/standards/service-levels.md`), termination convenience rights (`practice/standards/termination-renewal.md`), indemnification scope (`practice/standards/indemnification.md`)
   - Fallback positions are available from the position files.
 - **Tier 3 — Nice to Have:** Preferred but expendable as trade currency.
-  - Examples: governing law preference (`positions/dispute-resolution.md`), audit frequency, notice periods, force majeure breadth (`positions/force-majeure.md`)
+  - Examples: governing law preference (`practice/standards/dispute-resolution.md`), audit frequency, notice periods, force majeure breadth (`practice/standards/force-majeure.md`)
   - These are concession chips. Plan which ones to concede and in what order.
 
 ### Step 3: Draft the Redline
 Prepare the redline with a strategic approach:
 - Include all Tier 1 and Tier 2 positions in the initial redline
 - Include selected Tier 3 positions as negotiation currency — plan to concede 2-3 of these early to build goodwill
-- Pull proposed language from `clause-library/` files where available. Use proven language rather than drafting from scratch.
+- Pull proposed language from `practice/library/` files where available. Use proven language rather than drafting from scratch.
 - Add comments explaining the rationale for significant changes. Frame in terms of mutual benefit or market standard, not "our policy requires."
 
 **Tactical sub-steps for preparing the redline:**
 1. Work section by section through the contract, marking changes in track changes
-2. For each RED item: propose complete replacement language from `clause-library/`; add a comment citing the specific concern
+2. For each RED item: propose complete replacement language from `practice/library/`; add a comment citing the specific concern
 3. For each YELLOW item: propose targeted edits (not full rewrites); add a comment with a brief rationale
 4. Accept GREEN items explicitly — showing acceptance builds credibility
 5. Review the redline in full before sending. Verify that your changes do not create internal inconsistencies (e.g., changing a definition in one place but not another).
@@ -111,7 +111,7 @@ Before execution, conduct a final verification pass:
 - Verify all negotiated changes are accurately reflected in the final draft. Compare against the concession tracker line by line.
 - Confirm no provisions were inadvertently changed or omitted during turn-tracking
 - Conduct a final read-through for internal consistency (defined terms, cross-references, exhibit alignment)
-- Run the contract through `checklists/contract-review.md` one final time
+- Run the contract through `methods/contract-review.md` one final time
 - Obtain necessary internal approvals per the signing authority matrix
 - Verify signing authority for the counterparty (officer, authorized representative)
 - If the final terms deviate from standard positions, document the deviations for potential updating the entity file with the deviation
