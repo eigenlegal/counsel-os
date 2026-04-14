@@ -186,29 +186,6 @@ rm "{legal_root}/practice/identity.md" "{legal_root}/practice/principles.md" "{l
 
 If no: keep everything, let the user fix issues manually.
 
-## Step 1c: Sync CLAUDE.md and Primitives
-
-These are plugin-managed files at the legal root — safe to overwrite (users don't customize them).
-
-### CLAUDE.md
-Compare the plugin's `CLAUDE.md` against `{legal_root}/CLAUDE.md`. If different, overwrite the vault copy:
-```bash
-cp {plugin_root}/CLAUDE.md "{legal_root}/CLAUDE.md"
-```
-
-If `{legal_root}/CLAUDE.md` doesn't exist (pre-v0.7.0 setup), create it and tell the user:
-> Added CLAUDE.md to your legal root. This is the orchestrator that enables natural language legal work. Start Claude Code from `{legal_root}` and just say what you need — no slash commands required.
-
-### Primitives
-Compare the plugin's `primitives/` against `{legal_root}/primitives/`. Overwrite with the plugin versions:
-```bash
-mkdir -p "{legal_root}/primitives"
-cp {plugin_root}/primitives/*.md "{legal_root}/primitives/"
-```
-
-If `{legal_root}/primitives/` doesn't exist, create it and note:
-> Added primitives/ to your legal root (5 instruction files: read, research, evaluate, draft, remember).
-
 ## Step 2: Compare Content
 
 Compare content from two sources:
