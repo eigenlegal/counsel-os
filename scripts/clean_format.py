@@ -4,8 +4,9 @@
 Usage:
     python3 clean_format.py <input.docx> <output.docx> [--template <template.docx>]
 
-Applies uniform 10pt Calibri, justified body text, bold headings with proper
-spacing, native Word multilevel numbering (1, 1.1, 1.1.1), and 1-inch margins.
+Applies uniform 11pt Times New Roman, justified body text, bold headings with
+proper spacing, native Word multilevel numbering (1, 1.1, 1.1.1), and 1-inch
+margins. Straight quotes are converted to curly (smart) quotes.
 The default template is legal-template.docx in the same directory as this script.
 """
 
@@ -19,6 +20,9 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
+
+DEFAULT_FONT = "Times New Roman"
+DEFAULT_SIZE = Pt(11)
 
 # ---------------------------------------------------------------------------
 # Numbering — multilevel 1 / 1.1 / 1.1.1
@@ -259,13 +263,72 @@ def strip_number_prefix(text: str) -> str:
 # Document building
 # ---------------------------------------------------------------------------
 
+
+def _smartquotes(text: str) -> str:
+    """Convert straight quotes to curly (smart) quotes."""
+    result = []
+    for i, ch in enumerate(text):
+        if ch == '"':
+            if i == 0 or text[i - 1] in " \t\n\r([":
+                result.append("\u201c")
+            else:
+                result.append("\u201d")
+        elif ch == "'":
+            if i == 0 or text[i - 1] in " \t\n\r([":
+                result.append("\u2018")
+            else:
+                result.append("\u2019")
+        else:
+            result.append(ch)
+    return "".join(result)
+
+
+def _remove_paragraph_border(paragraph):
+    """Remove all paragraph borders (line under/over/beside)."""
+    pPr = paragraph._element.get_or_add_pPr()
+    existing = pPr.find(qn("w:pBdr"))
+    if existing is not None:
+        pPr.remove(existing)
+    pBdr = OxmlElement("w:pBdr")
+    for side in ("top", "left", "bottom", "right"):
+        border = OxmlElement(f"w:{side}")
+        border.set(qn("w:val"), "none")
+        border.set(qn("w:sz"), "0")
+        border.set(qn("w:space"), "0")
+        border.set(qn("w:color"), "auto")
+        pBdr.append(border)
+    pPr.append(pBdr)
+
+
+def _set_style_defaults(doc):
+    """Set default font and remove title border on document styles."""
+    for style_name in ("Normal", "Title", "Heading 1", "Heading 2", "Heading 3"):
+        try:
+            style = doc.styles[style_name]
+            style.font.name = DEFAULT_FONT
+            style.font.size = DEFAULT_SIZE
+        except KeyError:
+            pass
+    # Remove bottom border from Title style
+    try:
+        title_style = doc.styles["Title"]
+        pPr = title_style.element.get_or_add_pPr()
+        existing_bdr = pPr.find(qn("w:pBdr"))
+        if existing_bdr is not None:
+            pPr.remove(existing_bdr)
+    except (KeyError, AttributeError):
+        pass
+
+
 def copy_runs(source_paragraph, dest_paragraph):
     """Copy runs preserving bold/italic/underline only."""
     for src_run in source_paragraph.runs:
         text = src_run.text
         if not text:
             continue
-        dest_run = dest_paragraph.add_run(text)
+        dest_run = dest_paragraph.add_run(_smartquotes(text))
+        dest_run.font.name = DEFAULT_FONT
+        dest_run.font.size = DEFAULT_SIZE
         dest_run.bold = src_run.bold
         dest_run.italic = src_run.italic
         dest_run.underline = src_run.underline
@@ -287,7 +350,9 @@ def copy_runs_strip_prefix(source_paragraph, dest_paragraph, strip_fn):
             first = False
         if not run_text:
             continue
-        dest_run = dest_paragraph.add_run(run_text)
+        dest_run = dest_paragraph.add_run(_smartquotes(run_text))
+        dest_run.font.name = DEFAULT_FONT
+        dest_run.font.size = DEFAULT_SIZE
         dest_run.bold = src_run.bold
         dest_run.italic = src_run.italic
         dest_run.underline = src_run.underline
@@ -346,6 +411,9 @@ def build_clean_document(source_path, template_path):
         section.top_margin = Inches(1.0)
         section.bottom_margin = Inches(1.0)
 
+    # Set default font on styles and remove title border
+    _set_style_defaults(dest)
+
     # Create numbering definition
     num_id = create_numbering(dest)
 
@@ -384,6 +452,7 @@ def build_clean_document(source_path, template_path):
                 results["headings_detected"] += 1
                 dest_para = dest.add_paragraph(style="Title")
                 copy_runs(src_para, dest_para)
+                _remove_paragraph_border(dest_para)
 
             elif cls == "heading":
                 results["headings_detected"] += 1
