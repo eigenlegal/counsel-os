@@ -200,11 +200,8 @@ counsel-os/
 
 ## Open questions
 
-### 1. Continuous learning thresholds
-The `remember --knowledge` mode detects patterns ("you've accepted this 3 times"). What are the thresholds? How does it avoid being annoying? Deferred until there's enough matter history to test against.
-
-### 2. Non-contract matter types
+### 1. Non-contract matter types
 The architecture supports any matter type — advisory, compliance, governance, regulatory. Method files exist for 29 types. But real-world testing has focused on contract review. Needs validation on other types.
 
-### 3. Multi-document operations
+### 2. Multi-document operations
 "Review all 12 contracts in this data room." Is this a loop over single reviews, or a different execution model? Not yet designed.
