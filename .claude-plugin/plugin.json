@@ -1,7 +1,7 @@
 {
   "name": "counsel-os",
   "description": "Legal operating system — primitives-based legal practice tool with 4-layer knowledge system, auto-detection of applicable law, and institutional memory. For solo practitioners, law firms, and in-house counsel.",
-  "version": "0.7.4",
+  "version": "0.7.5",
   "author": {
     "name": "Eigen Legal"
   }
