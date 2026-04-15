@@ -217,10 +217,10 @@ Look for:
    **We won't accept:** [based on RED flags identified]
    ```
 
-2. **Position drift.** Did the user consistently accept terms below their stated standard?
+2. **Position drift.** Did the user accept terms below their stated standard? Does this seem like a deliberate choice rather than a concession?
    ```
-   You've accepted [specific term] in [N] matters now. Your standard says [X].
-   Should I update practice/standards/{clause-type}.md to reflect your actual practice?
+   You accepted [specific term] here, and your standard says [X].
+   Should I update practice/standards/{clause-type}.md to reflect this?
    ```
 
 3. **Effective counter-language.** Did clause language work well in negotiation?
