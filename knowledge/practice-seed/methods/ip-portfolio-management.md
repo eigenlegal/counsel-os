@@ -118,11 +118,11 @@ Conduct periodic audits of open-source usage with scanning tools. Implement an o
 
 ## Protection Gap Checklist
 
-- [ ] Core technology or products without patent protection — assess patentability
-- [ ] Key brand names or logos without trademark registration — file applications
-- [ ] Employee/contractor IP assignment gaps — remediate immediately
-- [ ] Trade secrets without adequate protection measures — implement NDAs, access controls, exit interview procedures
-- [ ] Software without copyright registration — register key software before any infringement claim (registration is prerequisite for statutory damages)
+- Core technology or products without patent protection — assess patentability
+- Key brand names or logos without trademark registration — file applications
+- Employee/contractor IP assignment gaps — remediate immediately
+- Trade secrets without adequate protection measures — implement NDAs, access controls, exit interview procedures
+- Software without copyright registration — register key software before any infringement claim (registration is prerequisite for statutory damages)
 
 ---
 
