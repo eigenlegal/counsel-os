@@ -96,12 +96,12 @@ If the target had no formal compliance program: implement the buyer's program im
 Hybrid approach: assume existing agreements for most employees; issue new agreements for executives and key employees with updated terms.
 
 ### Employment Integration Checklist
-- [ ] Review all acquired employee offer letters and employment agreements (at-will status, non-competes, non-solicitation, IP assignment, severance)
-- [ ] Harmonize compensation structures (salary bands, bonus programs, commission plans)
-- [ ] Harmonize benefits (health insurance, retirement plans, PTO, equity)
-- [ ] Assess WARN Act implications if workforce reductions are planned
-- [ ] Verify work authorization for all acquired employees; assess H-1B transfer requirements
-- [ ] Conduct employee communication (explain changes, timelines, points of contact)
+- Review all acquired employee offer letters and employment agreements (at-will status, non-competes, non-solicitation, IP assignment, severance)
+- Harmonize compensation structures (salary bands, bonus programs, commission plans)
+- Harmonize benefits (health insurance, retirement plans, PTO, equity)
+- Assess WARN Act implications if workforce reductions are planned
+- Verify work authorization for all acquired employees; assess H-1B transfer requirements
+- Conduct employee communication (explain changes, timelines, points of contact)
 
 ---
 
