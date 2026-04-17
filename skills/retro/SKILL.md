@@ -15,10 +15,9 @@ You are running a retrospective analysis of the user's legal practice. Your job 
 Read `config.local.md` (if it exists) or `config.md` from the plugin root to get:
 
 - **Legal root** (`{legal_root}`) — contains law/, practice/, matters/, memory/
-- **Entity discovery** — QMD query on `counsel-os-type` frontmatter property
-- **Specific entity lookup** — QMD search for company name + `counsel-os-type` value
+- **Entity discovery** — enumerate and look up entity/matter files using the Entity and Matter Lookup procedure in counsel/SKILL.md
 
-All framework content (law areas, default positions, practice files, memory) is read from `{legal_root}/`. Entity files (companies, counterparties) are discovered via QMD queries — they can live anywhere in the user's vault.
+All framework content (law areas, default positions, practice files, memory) is read from `{legal_root}/`. Entity files (companies, counterparties) are discovered via the Entity and Matter Lookup procedure — in qmd mode they can live anywhere in the vault; in filesystem mode they live under `{legal_root}/{entities_path}/`.
 
 ## Step 1: Gather Data
 
@@ -29,7 +28,7 @@ Read all available data sources:
 2. **`{legal_root}/memory/retro-*.md`** — Previous retro snapshots for trend comparison
 
 ### Entity Files
-4. **All entity files discovered via QMD** — Run a QMD query on `counsel-os-type` frontmatter to find all counterparty, company, and deal entity files. These contain history, agreed positions, and notes.
+4. **Enumerate all entity files** — Use the Entity and Matter Lookup procedure in counsel/SKILL.md to enumerate files with `counsel-os-type` in [counterparty, vendor, customer, prospect]. These contain history, agreed positions, and notes.
 
 ### Practice Files (for comparison)
 5. **`{legal_root}/practice/standards/`** — Current standard positions (to compare against actual decisions)
@@ -181,7 +180,7 @@ The retro audits the health of the knowledge base but does NOT perform maintenan
 - If not, flag: "No detailed agreement summary found for [counterparty]. Consider generating one."
 
 ### Stale Entity Metadata
-- Run a QMD query for all entity files and check for counterparties still marked as "Negotiating" that may have been executed or abandoned
+- Enumerate all entity files (Entity and Matter Lookup) and check for counterparties still marked as "Negotiating" that may have been executed or abandoned
 - Flag any mismatches in `counsel-os-status` frontmatter
 
 ## Step 9: Save Retro Snapshot
