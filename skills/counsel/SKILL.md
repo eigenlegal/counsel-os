@@ -105,13 +105,21 @@ Read `config.local.md` (if it exists) or `config.md` from the plugin root to fin
 
 When a primitive needs to find an entity (counterparty, vendor, customer, prospect) or matter file, use this procedure. The primitive specifies the **name** and **type**; this section defines **how** the search runs.
 
-**Inputs:** a name (company or matter identifier) and a `counsel-os-type` value — one of: `counterparty`, `vendor`, `customer`, `prospect`, `matter`.
+**Inputs:** a `counsel-os-type` value — one of: `counterparty`, `vendor`, `customer`, `prospect`, `matter` — and optionally a `name` (company or matter identifier).
 
-**Output:** zero or more file paths, or `not found`.
+**Output:** zero or more file paths. When looking up by name, may return `not found`.
+
+**Two use cases:**
+1. **Lookup by name + type** — find one specific entity or matter (used by the primitives during research/evaluate/remember)
+2. **Enumerate by type** — list all files of a given type, no name filter (used by retro/analytics)
 
 ### If `discovery: qmd`
 
-Run a QMD query in the configured `collection:` for frontmatter `counsel-os-type: {type}` matching the name. QMD returns file paths anywhere in the user's vault. Example: `qmd search --frontmatter "counsel-os-type:{type}" --name "{name}"`.
+Run a QMD query in the configured `collection:` for frontmatter `counsel-os-type: {type}`. Add a name filter when looking up a specific entity; omit it to enumerate.
+- Lookup: `qmd search --frontmatter "counsel-os-type:{type}" --name "{name}"`
+- Enumerate: `qmd search --frontmatter "counsel-os-type:{type}"`
+
+QMD returns file paths anywhere in the user's vault.
 
 ### If `discovery: filesystem`
 
@@ -119,11 +127,11 @@ Pick the directory by type:
 - `type: matter` → search `{legal_root}/{matters_path}/` (default: `matters`)
 - any other type → search `{legal_root}/{entities_path}/` (default: `entities`)
 
-Use Grep to find files with `counsel-os-type: {type}` in frontmatter, then filter by `{name}` (in filename or content). If the directory doesn't exist, return `not found`.
+Use Grep to find files with `counsel-os-type: {type}` in frontmatter. For lookup, also filter by `{name}` (in filename or content). For enumerate, return all matches. If the directory doesn't exist, return an empty set.
 
 ### Not found
 
-Return `not found` cleanly — the entity or matter simply hasn't been captured yet. Don't invent details. Downstream primitives can propose creating one via `remember`.
+When looking up by name and no file matches, return `not found` cleanly — the entity or matter simply hasn't been captured yet. Don't invent details. Downstream primitives can propose creating one via `remember`.
 
 ---
 
