@@ -65,7 +65,7 @@ Read and understand a document. Handles .docx (pandoc with tracked changes), .pd
 
 ### research
 
-Find context from the knowledge system. Modes: `--law` (trigger conditions), `--position` (practice/standards/), `--entity` (QMD query), `--matter` (existing state), `--library` (clause language), `--method` (reference guide). Builds effective positions by merging the 4 knowledge layers.
+Find context from the knowledge system. Modes: `--law` (trigger conditions), `--position` (practice/standards/), `--entity` (entity lookup), `--matter` (existing state), `--library` (clause language), `--method` (reference guide). Builds effective positions by merging the 4 knowledge layers. The entity and matter search mechanism is defined once in `skills/counsel/SKILL.md` (Entity and Matter Lookup) and branches on `discovery:` config between QMD and filesystem modes.
 
 ### evaluate
 
@@ -132,7 +132,7 @@ Persist state and propose knowledge updates. Modes: `--matter` (automatic — cr
 PRECEDENCE (highest to lowest):
 
 1. law/          — Hard constraints. Never override. Cite specifically.
-2. Entity files  — Deal-specific overrides. QMD-discovered.
+2. Entity files  — Deal-specific overrides. Discovered via entity lookup (qmd or filesystem).
 3. practice/     — User's standards, methods, library, profile.
 4. memory/       — Institutional learning. Inform, don't override.
 ```
