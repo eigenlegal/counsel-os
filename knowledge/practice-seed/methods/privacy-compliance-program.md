@@ -63,19 +63,19 @@ Mandatory under GDPR Article 35; recommended as best practice in all jurisdictio
 
 Combined GDPR + CCPA for maximum coverage:
 
-- [ ] Identity and contact details of the controller/business
-- [ ] DPO contact information (if appointed)
-- [ ] Categories of personal data collected
-- [ ] Purposes of processing and legal basis for each purpose
-- [ ] Categories of recipients (third parties who receive the data)
-- [ ] Cross-border transfers and the safeguards in place (SCCs, adequacy decisions, BCRs)
-- [ ] Retention periods (or criteria for determining retention)
-- [ ] Data subject rights and how to exercise them
-- [ ] Right to lodge a complaint with a supervisory authority
-- [ ] Whether providing data is a statutory/contractual requirement
-- [ ] Automated decision-making and profiling (if applicable)
-- [ ] CCPA-specific: categories of data sold or shared; right to opt out; do-not-sell link; financial incentive programs
-- [ ] CCPA-specific: metrics on data subject requests (if >10M consumers)
+- Identity and contact details of the controller/business
+- DPO contact information (if appointed)
+- Categories of personal data collected
+- Purposes of processing and legal basis for each purpose
+- Categories of recipients (third parties who receive the data)
+- Cross-border transfers and the safeguards in place (SCCs, adequacy decisions, BCRs)
+- Retention periods (or criteria for determining retention)
+- Data subject rights and how to exercise them
+- Right to lodge a complaint with a supervisory authority
+- Whether providing data is a statutory/contractual requirement
+- Automated decision-making and profiling (if applicable)
+- CCPA-specific: categories of data sold or shared; right to opt out; do-not-sell link; financial incentive programs
+- CCPA-specific: metrics on data subject requests (if >10M consumers)
 
 Drafting guidelines: use clear, plain language (GDPR requires "concise, transparent, intelligible and easily accessible"); layer the policy with executive summary at top; include "Last Updated" date; maintain separate children's privacy policy if processing children's data.
 
