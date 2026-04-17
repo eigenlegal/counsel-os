@@ -26,7 +26,10 @@ The setup script:
 - If [Bun](https://bun.sh/) is installed, builds the headless browser binary for `/counsel-os:browse`
 - Does not overwrite existing files if you've already customized
 
-**Requirements:** Git. Bun is optional (only needed for the `/counsel-os:browse` browser skill).
+**Requirements:** Git. Optional tools:
+- **Bun** — for the `/counsel-os:browse` browser skill
+- **pandoc** — for extracting tracked changes from Word documents
+- **QMD** — for entity discovery across your whole vault. Without QMD, entity files live under `{legal_root}/entities/` and are discovered via filesystem search. Setup auto-detects what you have and configures accordingly.
 
 ### Claude Desktop (Cowork)
 
@@ -100,7 +103,7 @@ Intake does:
 - Auto-detects which legal areas apply (data privacy, employment, IP, etc.)
 - Classifies the matter type (contract review, NDA triage, compliance, etc.)
 - Loads your effective positions (merging all knowledge layers)
-- Discovers counterparty context via QMD search
+- Discovers counterparty context via the configured entity lookup (QMD or filesystem)
 - Estimates complexity (simple/standard/complex)
 - Recommends which phases to run next
 
@@ -145,7 +148,7 @@ Intake does:
 
 - Suggests knowledge updates based on the work just completed
 - Logs decisions, exceptions, and patterns to `memory/`
-- Creates or updates counterparty entity files (discovered via QMD, stored wherever you keep them)
+- Creates or updates counterparty entity files (discovered via entity lookup — anywhere in your vault with QMD, or under `{legal_root}/entities/` without)
 - Identifies gaps in your positions and suggests additions
 - You approve each update before it's written
 
@@ -268,9 +271,11 @@ Counsel OS separates **methodology** (how to do legal work) from **knowledge** (
 
 The plugin discovers content through two mechanisms:
 1. **Legal root** — A configured path where Counsel OS manages framework content
-2. **QMD search** — Entity files are found by content search, not folder paths
+2. **Entity lookup** — Two modes, auto-selected at setup:
+   - **QMD mode** (preferred): entity files are found by content search and can live anywhere in your vault
+   - **Filesystem mode** (fallback when QMD isn't installed): entity files live under `{legal_root}/entities/` and are discovered via grep
 
-This means the plugin works with any vault structure. You organize your files however you want — Counsel OS finds what it needs.
+With QMD the plugin works with any vault structure — organize files however you want, and the skills find them. Without QMD you trade that flexibility for zero setup dependencies.
 
 ### 4-Layer Knowledge System
 
@@ -281,8 +286,8 @@ This means the plugin works with any vault structure. You organize your files ho
 ├── matters/      Persistent state per engagement
 └── memory/       Layer 4 — Accumulated decisions and patterns
 
-{anywhere in your vault}/
-└── <company>.md  Layer 3 — Per-deal and per-counterparty overrides (discovered via QMD)
+{anywhere in your vault, or {legal_root}/entities/ without QMD}/
+└── <company>.md  Layer 3 — Per-deal and per-counterparty overrides (discovered via entity lookup)
 ```
 
 **Precedence rules:**
@@ -354,7 +359,7 @@ Once seeded, you own all of this content. Customize law areas, rewrite methods, 
 
 ### Adding Counterparty Context
 
-After working with a counterparty, `/counsel-os:close` offers to create an entity file. You choose where to save it — Counsel OS discovers it via QMD search wherever it lives.
+After working with a counterparty, `/counsel-os:close` offers to create an entity file. With QMD you choose where to save it — Counsel OS discovers it wherever it lives. Without QMD, entity files go under `{legal_root}/entities/`.
 
 The entity file stores:
 - Relationship history and notes
@@ -399,9 +404,9 @@ Include trigger conditions at the top. The intake skill will automatically detec
 Counsel OS doesn't impose a folder structure on your vault. The plugin needs two things:
 
 1. **A legal root path** (in `config.md`) — where it manages framework content (law/, practice/, matters/, memory/)
-2. **Frontmatter on entity files** — so QMD can discover them wherever they live
+2. **Frontmatter on entity files** — so the entity lookup can discover them
 
-Everything else is up to you. Keep companies in `Companies/`, `Clients/`, or scattered across your vault — as long as they have `counsel-os-type` frontmatter, the skills will find them.
+With QMD, entity files can live anywhere — keep companies in `Companies/`, `Clients/`, or scattered across your vault. Without QMD, entity files live under `{legal_root}/entities/`. Either way, as long as files have `counsel-os-type` frontmatter, the skills will find them.
 
 ---
 
