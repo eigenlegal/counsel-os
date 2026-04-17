@@ -28,6 +28,7 @@ zip -r "$OUTPUT_FILE" "$PLUGIN_NAME/" \
   -x "$PLUGIN_NAME/.DS_Store" \
   -x "$PLUGIN_NAME/**/.DS_Store" \
   -x "$PLUGIN_NAME/*.bun-build" \
+  -x "$PLUGIN_NAME/CLAUDE.md" \
   > /dev/null
 
 SIZE="$(du -h "$OUTPUT_FILE" | cut -f1 | tr -d ' ')"
@@ -39,7 +40,7 @@ echo "Includes:"
 echo "  - Primitives (primitives/)"
 echo "  - Skills (skills/ — counsel, browse, retro, setup, update, export)"
 echo "  - Scripts (scripts/)"
-echo "  - Config (config.md, config.local.md, CLAUDE.md)"
+echo "  - Config (config.md, config.local.md)"
 echo ""
 echo "Does NOT include:"
 echo "  - Knowledge content (law/, practice-seed/)"

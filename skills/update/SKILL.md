@@ -17,7 +17,7 @@ Read `config.local.md` (if it exists) or `config.md` from the plugin root to get
 
 ## Step 1: Pull Plugin Update
 
-This updates the plugin's methodology — skills, CLAUDE.md, scripts. Your vault content is not touched.
+This updates the plugin's methodology — skills, primitives, scripts. Your vault content is not touched.
 
 ```bash
 # Store current version
@@ -39,7 +39,7 @@ If the plugin is not a git repo (installed via plugin cache), find the source re
 Report what changed:
 > **Plugin updated: v{old} → v{new}**
 > - Skills: [list any changed skill files]
-> - CLAUDE.md: [changed/unchanged]
+> - Primitives: [list any changed primitive files]
 > - Scripts: [list any changed scripts]
 
 If already up to date:

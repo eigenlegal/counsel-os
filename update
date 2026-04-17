@@ -59,7 +59,6 @@ PRODUCT_DIRS=(
 # Top-level product files to sync
 PRODUCT_FILES=(
     "VERSION"
-    "CLAUDE.md"
     "CONNECTORS.md"
     "README.md"
     "backup"
