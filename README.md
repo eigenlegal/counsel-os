@@ -226,7 +226,7 @@ Or from the command line:
 ```
 
 This:
-1. Pulls the latest plugin methodology (skills, CLAUDE.md, scripts)
+1. Pulls the latest plugin methodology (skills, primitives, scripts)
 2. Shows what changed in law/ upstream and offers new practice content for your review
 3. You decide what to apply to your vault — the plugin never overwrites your content
 
@@ -255,7 +255,7 @@ Counsel OS separates **methodology** (how to do legal work) from **knowledge** (
 
 **The plugin provides methodology + tooling:**
 - 10 pipeline skills (intake → analyze → negotiate → deliver → close + utilities)
-- Operating instructions (CLAUDE.md) with merge rules and discovery logic
+- 5 primitives (read, research, evaluate, draft, remember) with merge rules and discovery logic
 - Headless browser for document extraction
 - Shell scripts for setup, backup, restore, update
 

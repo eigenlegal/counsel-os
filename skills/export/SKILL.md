@@ -26,9 +26,10 @@ cd "$SOURCE_DIR" && ./export
 
 This creates `counsel-os-plugin.zip` in the parent directory of the source repo. The zip includes only what Cowork needs:
 - Skills (methodology)
+- Primitives
 - Templates
 - Browse tooling
-- CLAUDE.md, config.local.md, config.md
+- config.local.md, config.md
 - Top-level scripts and metadata
 
 It excludes `knowledge/` (seed content — 170+ files that live in the vault, not the plugin).
