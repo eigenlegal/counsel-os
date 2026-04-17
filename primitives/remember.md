@@ -69,7 +69,7 @@ Do NOT create a matter for:
 
 ### Check for existing matters
 
-Before creating, search QMD for `counsel-os-type: matter` + the counterparty name.
+Before creating, look up `counsel-os-type: matter` + the counterparty name using the Entity and Matter Lookup procedure in counsel/SKILL.md.
 
 - **Active matter found** (stage is not `closed`): Resume it. Read the file, update with new context.
 - **Only closed matters found:** Note the prior context. Create a new matter.
@@ -163,7 +163,7 @@ After working on a matter, look for entity-specific information worth preserving
 
 ### Finding the entity file
 
-Query QMD for the company name with `counsel-os-type` in [counterparty, vendor, customer, prospect].
+Look up the company name with `counsel-os-type` in [counterparty, vendor, customer, prospect] using the Entity and Matter Lookup procedure in counsel/SKILL.md.
 
 **If found:** Propose additions to the existing file. Show exactly what will be added.
 
