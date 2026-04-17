@@ -12,12 +12,29 @@ You are helping a user set up Counsel OS from scratch. This single skill handles
 
 Determine whether you're running in **Claude Code** (CLI) or **Cowork** (Claude Desktop):
 
-- **Claude Code**: You have shell access (Bash tool), can write to external paths, and QMD is available for entity discovery. Follow the full setup flow below.
+- **Claude Code**: You have shell access (Bash tool), can write to external paths, and can detect optional tools (QMD, bun, pandoc). Follow the full setup flow below.
 - **Cowork**: No shell access. Follow the same setup flow, but skip the browse binary build and pandoc check in Step 2. Everything else (path selection, content seeding, practice onboarding) works the same — content still lives in the user's vault.
 
 To detect: try to use the Bash tool with a simple command like `echo ok`. If it works, you're in Claude Code. If it's unavailable, you're in Cowork.
 
-## Step 1: Determine Legal Root (Claude Code only)
+## Step 1: Detect Optional Dependencies (Claude Code only)
+
+Before writing config, detect what the user has installed. This determines how entity discovery is configured.
+
+```bash
+command -v qmd >/dev/null 2>&1 && echo "HAS_QMD: yes" || echo "HAS_QMD: no"
+```
+
+Record the result. You'll use it in Step 1b when writing `config.local.md`.
+
+If QMD is missing, tell the user:
+> I don't see QMD installed. QMD is a content-indexing tool that lets Counsel OS find counterparty and matter files anywhere in your vault — not just inside the legal root. Without it, entity files need to live under `{legal_root}/entities/` so they can be found via filesystem search.
+>
+> You can install QMD later (https://github.com/qmd-tools/qmd) and re-run `/counsel-os:setup` to switch. Want to proceed with filesystem discovery for now?
+
+If they proceed: set `DISCOVERY_MODE=filesystem`. If they want to stop and install QMD first: pause setup.
+
+## Step 1b: Determine Legal Root (Claude Code only)
 
 Check if a legal root is already configured:
 
@@ -46,7 +63,15 @@ Ask the user where to store the framework content:
 > If you use Obsidian, a good choice is a top-level folder in your vault (e.g., `~/Documents/Obsidian Vault/Counsel OS`).
 > If you don't use Obsidian, any folder works (e.g., `~/legal/counsel-os`).
 
-After the user provides a path, write it to `config.local.md`:
+After the user provides a path, detect whether it looks like an Obsidian vault:
+
+```bash
+[ -d "{user's path}/.obsidian" ] || [ -d "$(dirname '{user's path}')/.obsidian" ] && echo "IS_OBSIDIAN: yes" || echo "IS_OBSIDIAN: no"
+```
+
+Then write `config.local.md` with the discovery mode from Step 1. Pick ONE of the two templates below:
+
+### If `DISCOVERY_MODE=qmd` (QMD is installed):
 
 ```markdown
 # Counsel OS Configuration (Local Override)
@@ -61,8 +86,29 @@ entity_properties:
   values: [counterparty, vendor, customer, prospect, matter]
 
 ## QMD Collection
-collection: obsidian
+collection: {obsidian if IS_OBSIDIAN=yes, otherwise ask the user what QMD collection to use}
 ```
+
+### If `DISCOVERY_MODE=filesystem` (QMD is missing):
+
+```markdown
+# Counsel OS Configuration (Local Override)
+
+## Legal Root
+legal_root: {user's path}
+
+## Entity Discovery
+discovery: filesystem
+entities_path: entities
+# Relative to legal_root. Entity files (counterparties, vendors, customers, prospects)
+# live under {legal_root}/entities/ and are discovered via filesystem grep on the
+# counsel-os-type frontmatter field.
+entity_properties:
+  type_field: counsel-os-type
+  values: [counterparty, vendor, customer, prospect, matter]
+```
+
+Also create `{legal_root}/entities/` as part of Step 2 when in filesystem mode.
 
 ## Step 2: Seed Content
 
@@ -88,6 +134,9 @@ All files should already have `counsel-os-type: practice` frontmatter from the s
 
 ### Matters directory
 Create `{legal_root}/matters/` (empty — populated when substantive work begins).
+
+### Entities directory (filesystem discovery only)
+If `DISCOVERY_MODE=filesystem`, create `{legal_root}/entities/` (empty — populated when `/counsel` closes a matter and proposes an entity file).
 
 ### Memory (from plugin `templates/memory/`)
 Copy patterns.md. Add frontmatter:

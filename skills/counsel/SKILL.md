@@ -47,7 +47,7 @@ For complex or unfamiliar requests, propose a plan before executing:
 
 ### When to Load Primitive Files
 
-- **Simple requests** (lookups, quick checks): You may not need the full primitive file. If you know how to do a QMD query or check a position, just do it.
+- **Simple requests** (lookups, quick checks): You may not need the full primitive file. If you know how to run an entity lookup or check a position, just do it.
 - **Substantive work** (full reviews, redlines, compliance checks): Read the relevant primitive files for the detailed mode-specific instructions. `evaluate.md` in particular has the full position-checking and compliance-checking methodology.
 - **Document output** (.docx redlines, tracked changes): Read `draft.md` for the script pipeline instructions.
 
@@ -69,7 +69,8 @@ PRECEDENCE (highest to lowest):
 2. Entity files          — Deal-specific overrides. If a counterparty file
                            says "accept 24-month liability cap", that beats
                            the practice default — but ONLY for that
-                           counterparty/deal. Discovered via QMD query.
+                           counterparty/deal. Discovered via Entity and
+                           Matter Lookup.
 
 3. practice/             — All practice content — positions, methods,
                            library, and your professional profile. If
@@ -96,7 +97,33 @@ PRECEDENCE (highest to lowest):
 Read `config.local.md` (if it exists) or `config.md` from the plugin root to find:
 
 - **Legal root** — The folder where Counsel OS manages framework content (law/, practice/, memory/). All paths below are relative to this root.
-- **Entity discovery** — Company/counterparty files are discovered via QMD queries on `counsel-os-type` frontmatter properties. Entity files can live anywhere in the user's vault.
+- **Entity discovery** — How to find company, counterparty, and matter files. The mechanism depends on `discovery:` in config. See **Entity and Matter Lookup** below.
+
+---
+
+## Entity and Matter Lookup
+
+When a primitive needs to find an entity (counterparty, vendor, customer, prospect) or matter file, use this procedure. The primitive specifies the **name** and **type**; this section defines **how** the search runs.
+
+**Inputs:** a name (company or matter identifier) and a `counsel-os-type` value — one of: `counterparty`, `vendor`, `customer`, `prospect`, `matter`.
+
+**Output:** zero or more file paths, or `not found`.
+
+### If `discovery: qmd`
+
+Run a QMD query in the configured `collection:` for frontmatter `counsel-os-type: {type}` matching the name. QMD returns file paths anywhere in the user's vault. Example: `qmd search --frontmatter "counsel-os-type:{type}" --name "{name}"`.
+
+### If `discovery: filesystem`
+
+Pick the directory by type:
+- `type: matter` → search `{legal_root}/{matters_path}/` (default: `matters`)
+- any other type → search `{legal_root}/{entities_path}/` (default: `entities`)
+
+Use Grep to find files with `counsel-os-type: {type}` in frontmatter, then filter by `{name}` (in filename or content). If the directory doesn't exist, return `not found`.
+
+### Not found
+
+Return `not found` cleanly — the entity or matter simply hasn't been captured yet. Don't invent details. Downstream primitives can propose creating one via `remember`.
 
 ---
 
@@ -106,7 +133,7 @@ Every substantive legal task lives inside a matter — a plain markdown file wit
 
 **When to create:** When the user starts substantive work involving a specific document or engagement. NOT for quick lookups, general questions, or one-off research.
 
-**Discovery:** QMD query for `counsel-os-type: matter` + counterparty name. If a non-closed matter exists for the same counterparty, resume it rather than creating a new one.
+**Discovery:** Look up by name + `counsel-os-type: matter` using the Entity and Matter Lookup procedure above. If a non-closed matter exists for the same counterparty, resume it rather than creating a new one.
 
 **Stage:** `intake` → `working` → `closed`. Advance from intake to working when substantive analysis or drafting begins. Advance to closed when the user says to close or work is complete.
 
@@ -143,7 +170,7 @@ After completing work, the `remember` primitive proposes knowledge updates. The 
 You can update knowledge at any time, not just at close:
 - "Update the liability position" → edit `practice/standards/limitation-of-liability.md`
 - "Add this clause to the library" → edit `practice/library/`
-- "Update the Acme file" → discover via QMD, propose changes
+- "Update the Acme file" → look up via Entity and Matter Lookup, propose changes
 - Always confirm before writing.
 
 ---
@@ -169,7 +196,7 @@ Plugin (methodology + tooling):
     legal-template.docx                        # Style template for clean_format.py
     word_compare.sh                            # Drive Word Compare via AppleScript
 
-User's vault (all knowledge — discovered via config.md + QMD):
+User's vault (all knowledge — discovered via config + Entity and Matter Lookup):
   {legal_root}/
     law/                                       # Layer 1: Hard constraints (26 areas)
       <area>/                                  # One folder per law area
@@ -186,9 +213,9 @@ User's vault (all knowledge — discovered via config.md + QMD):
       patterns.md                              # Cross-cutting practice patterns
       retro-*.md                               # Practice analytics snapshots
 
-  {anywhere in vault}/                         # Layer 2: Entity-specific overrides
+  {anywhere in vault, or {legal_root}/entities/ in filesystem mode}/  # Layer 2: Entity-specific overrides
     <company>.md                               # counsel-os-type: counterparty | vendor | customer | prospect
-                                               # Discovered via QMD query, not folder paths
+                                               # Discovered via Entity and Matter Lookup (qmd or filesystem)
 ```
 
 ## Output Standards

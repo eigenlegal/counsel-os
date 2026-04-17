@@ -18,8 +18,8 @@ Find context from the knowledge system.
 - `practice/library/` — clause language variants
 - `practice/profile.md` — identity, principles, voice, thresholds
 - `law/` — hard legal constraints with trigger conditions
-- Entity files — discovered via QMD query (can live anywhere in the vault)
-- Matter files — discovered via QMD query in `matters/`
+- Entity files — discovered via the Entity and Matter Lookup procedure in counsel/SKILL.md
+- Matter files — discovered via the Entity and Matter Lookup procedure in counsel/SKILL.md
 
 ## Produces
 
@@ -33,9 +33,9 @@ The requested context, ready for use by evaluate, draft, or direct answer to the
 
 Read `config.local.md` (if it exists) or `config.md` from the plugin root to find:
 - **Legal root** (`{legal_root}`) — contains law/, practice/, matters/, memory/
-- **Entity discovery** — QMD queries on `counsel-os-type` frontmatter
+- **Entity discovery** — per the Entity and Matter Lookup procedure in counsel/SKILL.md
 
-All practice content is at `{legal_root}/`. Entity files are discovered via QMD — they can live anywhere in the vault.
+All practice content is at `{legal_root}/`. Entity files are discovered via the Entity and Matter Lookup procedure in counsel/SKILL.md.
 
 ### The knowledge layers
 
@@ -92,7 +92,7 @@ Load the standard for a specific clause type.
 When research is followed by evaluate, assemble the **effective position** by merging layers:
 
 1. Load practice/standards/{clause-type}.md — the baseline
-2. Query QMD for the counterparty's entity file. If found, check for deal-specific overrides. Entity overrides supersede practice for this deal.
+2. Look up the counterparty's entity file using the Entity and Matter Lookup procedure in counsel/SKILL.md. If found, check for deal-specific overrides. Entity overrides supersede practice for this deal.
 3. Note any law/ constraints that set a floor or ceiling. Law always wins.
 
 Report the effective position with source attribution:
@@ -112,7 +112,7 @@ Find counterparty context and history.
 
 ### Instructions
 
-1. **Query QMD.** Search for the company name with `counsel-os-type` in [counterparty, vendor, customer, prospect].
+1. **Look up the entity.** Use the Entity and Matter Lookup procedure in counsel/SKILL.md to find a file matching the company name with `counsel-os-type` in [counterparty, vendor, customer, prospect].
 
 2. **If found, read the entity file.** Extract:
    - Relationship overview and history
@@ -123,7 +123,7 @@ Find counterparty context and history.
 
 3. **If not found,** report: "No entity file found for [name]. This appears to be a new counterparty." The system can offer to create one after the work is complete (via remember --entity).
 
-4. **Check for related matters.** Query QMD for `counsel-os-type: matter` + the counterparty name. Report any open or closed matters for additional context.
+4. **Check for related matters.** Look up matters via the same procedure with `counsel-os-type: matter` + the counterparty name. Report any open or closed matters for additional context.
 
 ---
 
@@ -133,7 +133,7 @@ Find existing matter state.
 
 ### Instructions
 
-1. **Query QMD.** Search for `counsel-os-type: matter` + the counterparty name (if known) or matter description.
+1. **Look up the matter.** Use the Entity and Matter Lookup procedure in counsel/SKILL.md to find a file matching `counsel-os-type: matter` + the counterparty name (if known) or matter description.
 
 2. **Prefer active matters.** Look for matters with stage `intake` or `working`. If found:
    - Read the matter file
