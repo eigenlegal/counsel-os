@@ -36,6 +36,6 @@ templates/memory/    — Seed template for patterns.md
 
 ## Testing
 
-Install locally with `--plugin-dir .` or sync to the plugin cache at `~/.claude/plugins/cache/jack-plugins/counsel-os/{version}/`. Restart Claude Code after cache changes.
+Install locally with `--plugin-dir .` or sync to the plugin cache at `~/.claude/plugins/cache/{marketplace}/counsel-os/{version}/` (marketplace is `eigen-legal` for the published plugin, or `jack-plugins` for local dev). Restart Claude Code after cache changes.
 
 Test from a directory OTHER than this repo to verify the counsel skill activates via the plugin system (not project-level CLAUDE.md).

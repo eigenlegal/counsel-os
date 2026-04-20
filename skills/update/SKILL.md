@@ -50,23 +50,27 @@ If already up to date:
 If the version changed, update the Claude Code plugin cache so skills load from the new version:
 
 ```bash
-# Find the cache directory
-CACHE_BASE="$HOME/.claude/plugins/cache/jack-plugins/counsel-os"
+# Find the cache directory — works for any marketplace name (eigen-legal, jack-plugins, etc.)
+CACHE_BASE=$(ls -d "$HOME/.claude/plugins/cache/"*/counsel-os 2>/dev/null | head -1)
 
-# Remove old version caches
-for dir in "$CACHE_BASE"/*/; do
-  version=$(basename "$dir")
-  if [ "$version" != "$NEW_VERSION" ]; then
-    rm -rf "$dir"
-  fi
-done
+if [ -z "$CACHE_BASE" ]; then
+  echo "Plugin cache not found — skill may be running outside a plugin install. Skipping cache sync."
+else
+  # Remove old version caches
+  for dir in "$CACHE_BASE"/*/; do
+    version=$(basename "$dir")
+    if [ "$version" != "$NEW_VERSION" ]; then
+      rm -rf "$dir"
+    fi
+  done
 
-# Copy current plugin to new versioned cache
-mkdir -p "$CACHE_BASE/$NEW_VERSION"
-cp -R {plugin_root}/* "$CACHE_BASE/$NEW_VERSION/"
+  # Copy current plugin to new versioned cache
+  mkdir -p "$CACHE_BASE/$NEW_VERSION"
+  cp -R {plugin_root}/* "$CACHE_BASE/$NEW_VERSION/"
+fi
 ```
 
-Then update `~/.claude/plugins/installed_plugins.json` — find the `counsel-os@jack-plugins` entry and set:
+Then update `~/.claude/plugins/installed_plugins.json` — find the `counsel-os@*` entry (marketplace name varies: `eigen-legal` for end users, `jack-plugins` for the maintainer) and set:
 - `installPath` → the new cache path
 - `version` → the new version
 - `lastUpdated` → today's date
