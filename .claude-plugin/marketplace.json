@@ -1,0 +1,13 @@
+{
+  "name": "eigen-legal",
+  "owner": {
+    "name": "Eigen Legal"
+  },
+  "plugins": [
+    {
+      "name": "counsel-os",
+      "source": ".",
+      "description": "Legal operating system — primitives-based legal practice tool with 4-layer knowledge system, auto-detection of applicable law, and institutional memory. For solo practitioners, law firms, and in-house counsel."
+    }
+  ]
+}
