@@ -16,8 +16,23 @@ COUNSEL_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$COUNSEL_DIR"
 
 INSTALLED_PLUGINS="$HOME/.claude/plugins/installed_plugins.json"
-PLUGIN_KEY="counsel-os@jack-plugins"
 KEEP_VERSIONS=3
+
+# Auto-detect plugin key by matching any "counsel-os@<marketplace>" entry
+# (works for eigen-legal, jack-plugins, or any custom marketplace name)
+PLUGIN_KEY=""
+if [ -f "$INSTALLED_PLUGINS" ] && command -v python3 &>/dev/null; then
+    PLUGIN_KEY=$(python3 -c "
+import json, sys
+with open('$INSTALLED_PLUGINS') as f:
+    data = json.load(f)
+for key in data.get('plugins', {}):
+    if key.startswith('counsel-os@'):
+        print(key)
+        break
+")
+fi
+PLUGIN_KEY="${PLUGIN_KEY:-counsel-os@eigen-legal}"
 
 echo "Counsel OS Update"
 echo "================="

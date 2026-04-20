@@ -42,15 +42,14 @@ The setup script:
 
 ### As a Claude Code Plugin
 
-```bash
-# If distributed via the plugin marketplace
-claude plugin add counsel-os
+In Claude Code, add this repo as a marketplace and install:
+
+```
+/plugin marketplace add jw2856/counsel-os
+/plugin install counsel-os@eigen-legal
 ```
 
-Or symlink manually to use from any directory:
-```bash
-ln -s ~/counsel-os ~/.claude/plugins/counsel-os
-```
+Claude Code caches the plugin under `~/.claude/plugins/cache/eigen-legal/counsel-os/{version}/` and loads its skills automatically. Updates flow through `/counsel-os:update`.
 
 ---
 
