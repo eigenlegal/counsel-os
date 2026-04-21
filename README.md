@@ -82,100 +82,24 @@ You can also edit these files directly in `{legal_root}/practice/`.
 
 ## Usage
 
-### The Pipeline
+### Legal Work
 
-Every legal matter flows through phases. Run them in order, or skip to what you need.
-
-#### Phase 1: Intake
+There is no pipeline and no slash-command-per-phase. You describe what you need in plain language and the `/counsel-os:counsel` skill auto-activates. It composes five primitives — `read`, `research`, `evaluate`, `draft`, `remember` — based on your intent.
 
 ```
-/counsel-os:intake path/to/contract.pdf
+> Review this NDA: path/to/nda.pdf
+> Is a 36-month liability cap acceptable?
+> What did we agree with Acme last time?
+> Draft a response to section 7.3 — they want uncapped indemnity
+> Summarize this MSA for the CFO
+> Create a redline of this agreement
+> Is this compliant with GDPR?
+> Close this matter
 ```
 
-Or describe the matter:
-```
-/counsel-os:intake "NDA from Acme Corp, standard bilateral, they sent their paper, need it back by Friday"
-```
+The counsel skill handles intake, analysis, negotiation language, delivery, and closeout as one continuous conversation. It auto-detects applicable law areas, loads your effective positions (merging law → entity → practice → memory), and proposes knowledge updates as it works.
 
-Intake does:
-- Accepts documents (PDF, DOCX, URL, pasted text, or plain description)
-- Auto-detects which legal areas apply (data privacy, employment, IP, etc.)
-- Classifies the matter type (contract review, NDA triage, compliance, etc.)
-- Loads your effective positions (merging all knowledge layers)
-- Discovers counterparty context via the configured entity lookup (QMD or filesystem)
-- Estimates complexity (simple/standard/complex)
-- Recommends which phases to run next
-
-#### Phase 2: Analyze
-
-```
-/counsel-os:analyze
-```
-
-- Runs the matching method (contract review, NDA triage, etc.)
-- Clause-by-clause analysis against your effective positions
-- Classifies each finding: **GREEN** (acceptable), **YELLOW** (negotiate), **RED** (escalate)
-- Any conflict with `law/` is automatically RED regardless of other layers
-- Produces risk assessment with severity and priority tiers
-
-#### Phase 3: Negotiate
-
-```
-/counsel-os:negotiate
-```
-
-- For each YELLOW and RED finding: current language, proposed revision, rationale, fallback position
-- Pulls proven counter-language from the clause library where available
-- Prioritizes: Tier 1 (must-have), Tier 2 (strong preference), Tier 3 (nice-to-have)
-- Builds a negotiation strategy: lead issues, concession candidates, sequencing
-
-#### Phase 4: Deliver
-
-```
-/counsel-os:deliver
-```
-
-- Packages the output in the right format (memo, redline, analysis report)
-- Applies your writing style from `profile.md`
-- Posts to connected services (Slack, Google Drive, etc.) if configured
-
-#### Phase 5: Close
-
-```
-/counsel-os:close
-```
-
-- Suggests knowledge updates based on the work just completed
-- Logs decisions, exceptions, and patterns to `memory/`
-- Creates or updates counterparty entity files (discovered via entity lookup — anywhere in your vault with QMD, or under `{legal_root}/entities/` without)
-- Identifies gaps in your positions and suggests additions
-- You approve each update before it's written
-
-### Quick Workflows
-
-Not every matter needs all 5 phases. Common shortcuts:
-
-```bash
-# Quick NDA triage — intake classifies and analyze runs the NDA checklist
-/counsel-os:intake path/to/nda.pdf
-/counsel-os:analyze
-
-# Contract review with redlines
-/counsel-os:intake path/to/agreement.pdf
-/counsel-os:analyze
-/counsel-os:negotiate
-
-# Just need a legal memo
-/counsel-os:intake "Can we do X under Y regulation?"
-/counsel-os:analyze
-
-# Full pipeline for a complex deal
-/counsel-os:intake path/to/msa.pdf
-/counsel-os:analyze
-/counsel-os:negotiate
-/counsel-os:deliver
-/counsel-os:close
-```
+For document outputs (redlines, memos), it runs scripts to produce `.docx` with tracked changes or formatted markdown as appropriate.
 
 ### Utility Skills
 
@@ -256,8 +180,8 @@ Backups are stored locally in `backups/` (gitignored). Entity files (company/cou
 Counsel OS separates **methodology** (how to do legal work) from **knowledge** (what you know).
 
 **The plugin provides methodology + tooling:**
-- 10 pipeline skills (intake → analyze → negotiate → deliver → close + utilities)
-- 5 primitives (read, research, evaluate, draft, remember) with merge rules and discovery logic
+- 6 skills: `counsel` (the orchestrator), `browse`, `retro`, `setup`, `update`, `export`
+- 5 primitives (read, research, evaluate, draft, remember) that `counsel` composes dynamically based on intent
 - Headless browser for document extraction
 - Shell scripts for setup, backup, restore, update
 
@@ -294,15 +218,15 @@ With QMD the plugin works with any vault structure — organize files however yo
 | Priority | Layer | Can be overridden? | Who manages it |
 |----------|-------|--------------------|----------------|
 | Highest | `law/` | Never — hard legal constraints | Seeded by plugin, customizable by you |
-| 2 | Entity files | Per-deal only | You (through `/counsel-os:close` or directly) |
-| 3 | `practice/` | Your standards | You (through `/counsel-os:setup`) |
-| Lowest | `memory/` | Context only — informs, doesn't override | Automatic (through `/counsel-os:close`) |
+| 2 | Entity files | Per-deal only | You (via `remember`, proposed by counsel at close) |
+| 3 | `practice/` | Your standards | You (through `/counsel-os:setup` or direct edits) |
+| Lowest | `memory/` | Context only — informs, doesn't override | Automatic (via `remember` when counsel proposes) |
 
 **Example:** Your standard liability cap is 12 months (`practice/standards/`). But for Acme Corp you've pre-approved 24 months (in your Acme Corp entity file). When reviewing an Acme contract, the system uses 24 months — but if GDPR requires a specific data processing provision (`law/`), that's non-negotiable regardless.
 
 ### Auto-Detection of Applicable Law
 
-Each legal area in `law/` has trigger conditions — keywords, clause types, and regulatory references that indicate when it applies. During intake, the system scans your document against all 26 areas and loads every match.
+Each legal area in `law/` has trigger conditions — keywords, clause types, and regulatory references that indicate when it applies. When you bring a document to counsel, the `research` primitive scans it against all 26 areas and loads every match.
 
 Current areas:
 
@@ -358,7 +282,7 @@ Once seeded, you own all of this content. Customize law areas, rewrite methods, 
 
 ### Adding Counterparty Context
 
-After working with a counterparty, `/counsel-os:close` offers to create an entity file. With QMD you choose where to save it — Counsel OS discovers it wherever it lives. Without QMD, entity files go under `{legal_root}/entities/`.
+After working with a counterparty, counsel proposes creating an entity file (via `remember`). With QMD you choose where to save it — Counsel OS discovers it wherever it lives. Without QMD, entity files go under `{legal_root}/entities/`.
 
 The entity file stores:
 - Relationship history and notes
@@ -380,7 +304,7 @@ Next time you review a contract from that counterparty, the overrides load autom
 
 ### Updating Your Positions
 
-As you work, the system learns. After each matter, close suggests updates:
+As you work, the system learns. Counsel proactively suggests updates mid-matter and at close:
 
 - "Your standards don't cover most-favored-nation clauses — should I add one to `practice/standards/`?"
 - "You've accepted 24-month caps 3 times now — should I update your standard?"
@@ -396,7 +320,7 @@ Create a new `.md` file in `{legal_root}/law/`:
 {legal_root}/law/new-area.md
 ```
 
-Include trigger conditions at the top. The intake skill will automatically detect and load it — no other changes needed.
+Include trigger conditions at the top. The `research` primitive will automatically detect and load it — no other changes needed.
 
 ### Structure-Agnostic Design
 
