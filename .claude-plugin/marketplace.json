@@ -6,7 +6,10 @@
   "plugins": [
     {
       "name": "counsel-os",
-      "source": ".",
+      "source": {
+        "source": "github",
+        "repo": "jw2856/counsel-os"
+      },
       "description": "Legal operating system — primitives-based legal practice tool with 4-layer knowledge system, auto-detection of applicable law, and institutional memory. For solo practitioners, law firms, and in-house counsel."
     }
   ]
