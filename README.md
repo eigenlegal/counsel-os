@@ -19,7 +19,11 @@ No terminal required.
 
 The setup skill walks you through choosing a folder for your legal content, seeds the 26 law areas and practice content into it, and configures your practice profile through chat. No file editing, no terminal commands.
 
-> **Note:** The `/counsel-os:browse` skill (headless browser for portals and document extraction) requires CLI access and isn't available in Cowork. All other skills work identically.
+> **Note:** Two features require Claude Code's CLI access and aren't available in Cowork:
+> - **`/counsel-os:browse`** — headless browser for portals and document extraction
+> - **Native Word `.docx` redlines with tracked changes** — counsel can produce a real Microsoft Word file with tracked changes attributed to you and counterparty-facing comments, ready to drop into your Review/Accept workflow. Requires python-docx + AppleScript driving Word's Compare. Cowork produces markdown redlines instead — same edits, different format.
+>
+> All other skills work identically.
 
 ### Claude Code with local install — recommended for developers
 
@@ -106,7 +110,7 @@ There is no pipeline and no slash-command-per-phase. You describe what you need 
 
 The counsel skill handles intake, analysis, negotiation language, delivery, and closeout as one continuous conversation. It auto-detects applicable law areas, loads your effective positions (merging law → entity → practice → memory), and proposes knowledge updates as it works.
 
-For document outputs (redlines, memos), it runs scripts to produce `.docx` with tracked changes or formatted markdown as appropriate.
+**Word tracked-changes redlines (Claude Code only).** When you ask counsel to redline a contract, it produces a native Microsoft Word `.docx` with tracked changes attributed to you, plus counterparty-facing comments explaining the rationale for each edit. Opens straight into Word's Review pane — Accept, Reject, and reply work like any other tracked-changes file from a colleague. The pipeline uses python-docx to apply edits and AppleScript driving Word's Compare to produce the final tracked-changes document. Memos, summaries, and emails come back as formatted markdown. Cowork users get markdown redlines instead.
 
 ### Utility Skills
 
