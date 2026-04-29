@@ -9,12 +9,11 @@ PLUGIN_NAME="$(basename "$COUNSEL_DIR")"
 
 echo "Exporting Counsel OS v$VERSION as Cowork plugin..."
 
-# ── Build zip from parent directory ──────────────────────────────────────
-
-cd "$(dirname "$COUNSEL_DIR")"
-rm -f "$OUTPUT_FILE"
-
-# Build a clean zip — only what Cowork needs.
+# ── Build zip with files at the archive ROOT (no wrapper directory) ──────
+# Cowork expects .claude-plugin/plugin.json at the zip root.
+# This matches Anthropic's official cowork-plugin-customizer recipe:
+#   https://github.com/anthropics/knowledge-work-plugins
+#
 # Excludes:
 #   - User-specific config and local dev settings (config.local.md, .claude/, .mcp.json)
 #   - VCS metadata (.git, .gitignore, .source-repo, .content-versions.json)
@@ -23,36 +22,40 @@ rm -f "$OUTPUT_FILE"
 #   - CLI-only shell scripts (setup, update, backup, restore, export — none run in Cowork)
 #   - The Claude Code marketplace manifest (.claude-plugin/marketplace.json)
 #   - Maintainer-only docs (CLAUDE.md)
-zip -r "$OUTPUT_FILE" "$PLUGIN_NAME/" \
-  -x "$PLUGIN_NAME/.git/*" \
-  -x "$PLUGIN_NAME/.git" \
-  -x "$PLUGIN_NAME/.gitignore" \
-  -x "$PLUGIN_NAME/.claude/*" \
-  -x "$PLUGIN_NAME/.claude" \
-  -x "$PLUGIN_NAME/.mcp.json" \
-  -x "$PLUGIN_NAME/.source-repo" \
-  -x "$PLUGIN_NAME/.content-versions.json" \
-  -x "$PLUGIN_NAME/.claude-plugin/marketplace.json" \
-  -x "$PLUGIN_NAME/node_modules/*" \
-  -x "$PLUGIN_NAME/browse/*" \
-  -x "$PLUGIN_NAME/browse" \
-  -x "$PLUGIN_NAME/scripts/*" \
-  -x "$PLUGIN_NAME/scripts" \
-  -x "$PLUGIN_NAME/backups/*" \
-  -x "$PLUGIN_NAME/backups" \
-  -x "$PLUGIN_NAME/docs/*" \
-  -x "$PLUGIN_NAME/docs" \
-  -x "$PLUGIN_NAME/bun.lock" \
-  -x "$PLUGIN_NAME/*.bun-build" \
-  -x "$PLUGIN_NAME/.DS_Store" \
-  -x "$PLUGIN_NAME/**/.DS_Store" \
-  -x "$PLUGIN_NAME/CLAUDE.md" \
-  -x "$PLUGIN_NAME/config.local.md" \
-  -x "$PLUGIN_NAME/setup" \
-  -x "$PLUGIN_NAME/update" \
-  -x "$PLUGIN_NAME/backup" \
-  -x "$PLUGIN_NAME/restore" \
-  -x "$PLUGIN_NAME/export" \
+
+cd "$COUNSEL_DIR"
+rm -f "$OUTPUT_FILE"
+
+zip -r "$OUTPUT_FILE" . \
+  -x ".git/*" \
+  -x ".git" \
+  -x ".gitignore" \
+  -x ".claude/*" \
+  -x ".claude" \
+  -x ".mcp.json" \
+  -x ".source-repo" \
+  -x ".content-versions.json" \
+  -x ".claude-plugin/marketplace.json" \
+  -x "node_modules/*" \
+  -x "browse/*" \
+  -x "browse" \
+  -x "scripts/*" \
+  -x "scripts" \
+  -x "backups/*" \
+  -x "backups" \
+  -x "docs/*" \
+  -x "docs" \
+  -x "bun.lock" \
+  -x "*.bun-build" \
+  -x ".DS_Store" \
+  -x "**/.DS_Store" \
+  -x "CLAUDE.md" \
+  -x "config.local.md" \
+  -x "setup" \
+  -x "update" \
+  -x "backup" \
+  -x "restore" \
+  -x "export" \
   > /dev/null
 
 SIZE="$(du -h "$OUTPUT_FILE" | cut -f1 | tr -d ' ')"
