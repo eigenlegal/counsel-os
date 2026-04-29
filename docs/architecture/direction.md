@@ -43,7 +43,6 @@ The skill's SKILL.md contains the full orchestrator: primitive index, intent rou
 | `/counsel-os:retro` | Practice analytics — decision patterns, position drift |
 | `/counsel-os:setup` | Guided onboarding — configure vault, seed content |
 | `/counsel-os:update` | Sync — pull latest plugin, sync law/ and practice-seed/ |
-| `/counsel-os:export` | Package plugin for Cowork (Claude Desktop) |
 
 ---
 

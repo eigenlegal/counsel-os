@@ -10,7 +10,7 @@ This is the source repo for the Counsel OS plugin for Claude Code. It provides a
 
 ```
 primitives/          — The 5 instruction files the LLM follows
-skills/              — Plugin skills (counsel, browse, retro, setup, update, export)
+skills/              — Plugin skills (counsel, browse, retro, setup, update)
 knowledge/law/       — 26 law area reference files (plugin-managed)
 knowledge/practice-seed/  — Starting content seeded to user vaults
 scripts/             — Automation (apply_redlines, clean_format, word_compare)
