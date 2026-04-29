@@ -34,13 +34,13 @@ If QMD is missing, tell the user:
 
 If they proceed: set `DISCOVERY_MODE=filesystem`. If they want to stop and install QMD first: pause setup.
 
-## Step 1b: Determine Legal Root (Claude Code only)
+## Step 1b: Determine Legal Root
 
-Check if a legal root is already configured:
+Check if a legal root is already configured. **`config.local.md` is optional** — fresh installs only have `config.md` (the shipped default), and that's normal. Don't report `config.local.md` as missing; it's expected to be absent on first setup.
 
-1. Read `config.local.md` from the plugin root (if it exists)
-2. Fall back to `config.md`
-3. Look for `legal_root:` value
+1. Read `config.local.md` from the plugin root *if present* (user-specific override). Skip silently if absent.
+2. Read `config.md` from the plugin root (always present — shipped with the plugin).
+3. Look for `legal_root:` value in whichever was found. If neither has a value, treat as unconfigured and ask the user where to put their legal root (see "If legal_root is empty or not configured" below).
 
 ### If legal_root is set and the directory exists:
 
