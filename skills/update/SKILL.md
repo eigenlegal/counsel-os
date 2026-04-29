@@ -50,7 +50,7 @@ If already up to date:
 If the version changed, update the Claude Code plugin cache so skills load from the new version:
 
 ```bash
-# Find the cache directory — works for any marketplace name (eigen-legal, jack-plugins, etc.)
+# Find the cache directory — works for any marketplace name (eigenlegal, jack-plugins, etc.)
 CACHE_BASE=$(ls -d "$HOME/.claude/plugins/cache/"*/counsel-os 2>/dev/null | head -1)
 
 if [ -z "$CACHE_BASE" ]; then
@@ -70,7 +70,7 @@ else
 fi
 ```
 
-Then update `~/.claude/plugins/installed_plugins.json` — find the `counsel-os@*` entry (marketplace name varies: `eigen-legal` for end users, `jack-plugins` for the maintainer) and set:
+Then update `~/.claude/plugins/installed_plugins.json` — find the `counsel-os@*` entry (marketplace name varies: `eigenlegal` for end users, `jack-plugins` for the maintainer) and set:
 - `installPath` → the new cache path
 - `version` → the new version
 - `lastUpdated` → today's date
