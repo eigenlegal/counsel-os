@@ -245,6 +245,22 @@ The plugin discovers content through two mechanisms:
 
 **Example:** Your standard liability cap is 12 months (`practice/standards/`). But for Acme Corp you've pre-approved 24 months (in your Acme Corp entity file). When reviewing an Acme contract, the system uses 24 months — but if GDPR requires a specific data processing provision (`law/`), that's non-negotiable regardless.
 
+### Continuous Learning
+
+Counsel OS gets smarter as you use it. The `remember` primitive watches your work and proposes updates to your knowledge base — not just at the end of a matter, but whenever it notices something worth capturing.
+
+What gets proposed, when:
+
+- **Mid-matter, opportunistically** — *"You're accepting a 24-month liability cap here, but your standard is 12 months. Want me to flag this as a deal-specific override on the Acme entity file?"*
+- **When a pattern emerges** — *"You've accepted 24-month caps with this counterparty 3 times now. Want to update your standard for them, or update your practice default?"*
+- **When a gap shows up** — *"Your standards don't cover most-favored-nation clauses, but this contract has one. Want me to add a position to `practice/standards/`?"*
+- **When language works** — *"This counter-language landed cleanly. Want me to add it to `practice/library/` as a vendor-favorable variant?"*
+- **At matter close** — proposes a counterparty file with deal history, position overrides, and negotiation notes you can refer to next time.
+
+You approve every change. Nothing gets written to your knowledge without consent. Over time, your `practice/` reflects your actual practice, your entity files capture relationship-specific context, and your `memory/patterns.md` accumulates cross-cutting observations that inform future work.
+
+This is the loop that makes Counsel OS valuable beyond a one-shot review: every matter you close makes the next one a little sharper.
+
 ### Auto-Detection of Applicable Law
 
 Each legal area in `law/` has trigger conditions — keywords, clause types, and regulatory references that indicate when it applies. When you bring a document to counsel, the `research` primitive scans it against all 26 areas and loads every match.
@@ -325,13 +341,7 @@ Next time you review a contract from that counterparty, the overrides load autom
 
 ### Updating Your Positions
 
-As you work, the system learns. Counsel proactively suggests updates mid-matter and at close:
-
-- "Your standards don't cover most-favored-nation clauses — should I add one to `practice/standards/`?"
-- "You've accepted 24-month caps 3 times now — should I update your standard?"
-- "This counter-language worked well — should I add it to `practice/library/`?"
-
-You approve each change. Over time, your standards reflect your actual practice.
+You can edit `practice/standards/` and `practice/library/` files directly any time — they're plain markdown in your vault. But you usually won't need to: counsel proactively suggests updates as it works (see [Continuous Learning](#continuous-learning) above for how this loop runs).
 
 ### Adding New Legal Areas
 
