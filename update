@@ -19,7 +19,7 @@ INSTALLED_PLUGINS="$HOME/.claude/plugins/installed_plugins.json"
 KEEP_VERSIONS=3
 
 # Auto-detect plugin key by matching any "counsel-os@<marketplace>" entry
-# (works for eigen-legal, jack-plugins, or any custom marketplace name)
+# (works for eigenlegal, jack-plugins, or any custom marketplace name)
 PLUGIN_KEY=""
 if [ -f "$INSTALLED_PLUGINS" ] && command -v python3 &>/dev/null; then
     PLUGIN_KEY=$(python3 -c "
@@ -32,7 +32,7 @@ for key in data.get('plugins', {}):
         break
 ")
 fi
-PLUGIN_KEY="${PLUGIN_KEY:-counsel-os@eigen-legal}"
+PLUGIN_KEY="${PLUGIN_KEY:-counsel-os@eigenlegal}"
 
 echo "Counsel OS Update"
 echo "================="
