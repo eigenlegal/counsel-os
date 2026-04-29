@@ -233,12 +233,11 @@ else
         echo "  synced: browse/"
     fi
 
-    # Copy config.local.md if it exists in the previous version
-    # (user-specific config that should carry forward)
-    if [ -f "$COUNSEL_DIR/config.local.md" ] && [ ! -f "$VERSION_DIR/config.local.md" ]; then
-        cp "$COUNSEL_DIR/config.local.md" "$VERSION_DIR/config.local.md"
-        echo "  carried forward: config.local.md"
-    fi
+    # Per-user config (config.local.md) used to live in the plugin tree and
+    # had to be carried forward across version directories. As of v0.8.2 it
+    # lives in the user's vault at {legal_root}/config.md, so there's nothing
+    # to migrate here. Older installs may still have a stale config.local.md
+    # in the plugin tree — it's harmless and ignored by the skills.
 
     # Install node_modules if package.json has dependencies
     if [ -f "$VERSION_DIR/package.json" ] && command -v bun &>/dev/null; then

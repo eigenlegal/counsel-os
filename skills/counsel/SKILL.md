@@ -92,46 +92,115 @@ PRECEDENCE (highest to lowest):
 
 ---
 
-## Path Resolution
+## Finding the Legal Root
 
-Read `config.local.md` (if it exists) or `config.md` from the plugin root to find:
+The user's per-user configuration lives in their vault at `{legal_root}/config.md`. The plugin tree itself never carries user state. To find `{legal_root}` on each session, follow this procedure before doing any path-based work.
 
-- **Legal root** — The folder where Counsel OS manages framework content (law/, practice/, memory/). All paths below are relative to this root.
-- **Entity discovery** — How to find company, counterparty, and matter files. The mechanism depends on `discovery:` in config. See **Entity and Matter Lookup** below.
+**Procedure (in order — stop at the first hit):**
+
+1. **Check the pointer file** at `~/.counsel-os/legal-root` (Claude Code only — Cowork's sandbox doesn't have home-dir access). The pointer is a single line containing an absolute path. If it exists:
+   - Verify `{path}/config.md` still exists. If yes → use it (and skip to step 5).
+   - If the file or directory is gone (user moved their vault), the pointer is stale — fall through to step 2.
+
+2. **Glob from the working location.** In Claude Code, start from the current working directory and walk up to ~3 parent levels looking for `config.md`. In Cowork, scan from the connected workspace root to ~3 levels deep. Read each candidate for a line matching `legal_root: <path>`.
+
+3. **Glob known vault locations** (Claude Code only — Cowork already covers this via step 2). Check these conventional paths for a `config.md` containing `legal_root:`:
+   - `~/Documents/Obsidian Vault/*/config.md`
+   - `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/*/*/config.md` (iCloud Obsidian)
+   - `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/*/config.md`
+   - `~/Dropbox/Obsidian/*/config.md`
+   - `~/legal/*/config.md`
+   - `~/counsel-os/config.md`
+   - `~/Documents/Counsel OS/config.md`
+
+4. **Resolve based on what was found across steps 2–3:**
+   - **Exactly one match** → use it. The directory containing the matched `config.md` is `{legal_root}` (the file's `legal_root:` line should agree; if they conflict, prefer the file's actual location and warn the user).
+   - **Multiple matches** → ask the user which legal root to use ("I see Counsel OS configs at A and B — which one?"). Rare; would mean multiple installations.
+   - **Zero matches** → ask the user explicitly: *"I don't see a Counsel OS legal root configured. Run `/counsel-os:setup` to set one up, or tell me where your existing legal root is."*
+
+5. **Write the pointer file** (Claude Code only, after resolving via steps 2–4). This caches the resolution for the next session so we don't re-scan:
+   ```bash
+   mkdir -p ~/.counsel-os
+   echo "{resolved legal_root}" > ~/.counsel-os/legal-root
+   ```
+   In Cowork this step is skipped — the workspace-relative scan in step 2 is fast enough that no caching is needed.
+
+6. **Read overrides from the resolved config.** After finding `{legal_root}/config.md`, read it for any optional overrides (`entities_path`, `matters_path`, `entity_properties`). Use defaults for anything not set.
+
+7. **Cache for the session.** Once resolved, treat `{legal_root}` and the overrides as fixed for the rest of the session — don't re-run discovery on every primitive call.
+
+**Defaults if not overridden:**
+- `entities_path` → `entities`
+- `matters_path` → `matters`
+- `entity_properties.type_field` → `counsel-os-type`
+- `entity_properties.values` → `[counterparty, vendor, customer, prospect, matter]`
+
+**The plugin's own `config.md`** (in the plugin tree) is documentation only — never read it for values. The user's `{legal_root}/config.md` is the only authoritative source.
+
+**Why the pointer file isn't the source of truth:** the pointer at `~/.counsel-os/legal-root` is a per-machine performance cache, not configuration. The vault's `config.md` is canonical. If they disagree (rare), trust the vault — and rewrite the pointer.
 
 ---
 
-## Entity and Matter Lookup
+## Path Resolution
 
-When a primitive needs to find an entity (counterparty, vendor, customer, prospect) or matter file, use this procedure. The primitive specifies the **name** and **type**; this section defines **how** the search runs.
+After resolving `{legal_root}` (above), framework paths are:
 
-**Inputs:** a `counsel-os-type` value — one of: `counterparty`, `vendor`, `customer`, `prospect`, `matter` — and optionally a `name` (company or matter identifier).
+- `law/` → `{legal_root}/law/`
+- `practice/` → `{legal_root}/practice/` (with `standards/`, `methods/`, `library/`, and `profile.md`)
+- `memory/` → `{legal_root}/memory/`
+- `matters/` → `{legal_root}/{matters_path}/`
+- `entities/` (filesystem fallback) → `{legal_root}/{entities_path}/`
 
-**Output:** zero or more file paths. When looking up by name, may return `not found`.
+Knowledge-base search is runtime-detected — see **Knowledge Base Search** below.
 
-**Two use cases:**
-1. **Lookup by name + type** — find one specific entity or matter (used by the primitives during research/evaluate/remember)
-2. **Enumerate by type** — list all files of a given type, no name filter (used by retro/analytics)
+---
 
-### If `discovery: qmd`
+## Knowledge Base Search
 
-Run a QMD query in the configured `collection:` for frontmatter `counsel-os-type: {type}`. Add a name filter when looking up a specific entity; omit it to enumerate.
-- Lookup: `qmd search --frontmatter "counsel-os-type:{type}" --name "{name}"`
-- Enumerate: `qmd search --frontmatter "counsel-os-type:{type}"`
+Whenever a primitive needs to find content in the user's vault — entity files, matters, past memos, prior decisions, related precedent, similar clause language — use this procedure. The same mechanism applies to every search; the primitive supplies the inputs (frontmatter type, name, free-text query), and this section defines **how** the search runs.
 
-QMD returns file paths anywhere in the user's vault.
+**Inputs (any combination):**
+- `counsel-os-type` — `counterparty`, `vendor`, `customer`, `prospect`, `matter`, `practice`, `law-area`, `memory-patterns`, `memory-decision`, etc.
+- `name` — a specific identifier (company, matter, file)
+- `query` — free-text or semantic search ("similar facts to...", "past redlines on indemnification")
 
-### If `discovery: filesystem`
+**Output:** zero or more file paths, with optional ranked relevance. When looking up by name, may return `not found`.
 
-Pick the directory by type:
-- `type: matter` → search `{legal_root}/{matters_path}/` (default: `matters`)
-- any other type → search `{legal_root}/{entities_path}/` (default: `entities`)
+**Use cases this covers:**
+1. **Find a specific file by name + type** — e.g. find the Acme counterparty file (used by research/evaluate/remember when entering a matter)
+2. **Enumerate by type** — list all files of a given type, no name filter (used by retro/analytics, by setup verification)
+3. **Find related content** — search past matters, memos, decisions, drafts on similar facts/clauses (used by research before reading a law area, by evaluate to find precedent for a clause position, by draft to find similar past work product)
 
-Use Grep to find files with `counsel-os-type: {type}` in frontmatter. For lookup, also filter by `{name}` (in filename or content). For enumerate, return all matches. If the directory doesn't exist, return an empty set.
+### Search mechanism
+
+Pick at call time based on what's available in the session:
+
+**If a content-index MCP tool is connected** (e.g. QMD's `query` / `get` / `multi_get` — typically exposed as `mcp__qmd__query` etc.), use it for every knowledge-base search. The index supports frontmatter filters, full-text query, and (with QMD) hybrid semantic ranking. It returns file paths from anywhere in the vault — content doesn't need to live under a fixed directory.
+
+How to invoke (QMD's `query` tool):
+- Lookup by name + type: filter on `counsel-os-type: {type}`, query `{name}`
+- Enumerate: filter on `counsel-os-type: {type}`, no query
+- Find related: filter on relevant types (e.g. `matter`, `memory-decision`), query free-text describing what you're looking for
+
+After getting paths back, use the index's `get` / `multi_get` to retrieve content, or fall back to Read.
+
+**Otherwise, fall back to filesystem search.** Use Grep on the relevant scope:
+- `type: matter` → `{legal_root}/{matters_path}/`
+- entity types → `{legal_root}/{entities_path}/`
+- `practice`, `memory-*`, `law-area` → `{legal_root}/practice/`, `{legal_root}/memory/`, `{legal_root}/law/` respectively
+- "Find related" use cases (no specific type) → grep across the whole legal root for keyword matches
+
+For all filesystem searches, filter by frontmatter type when applicable, and by name/keyword in filename or content. If a directory doesn't exist, return empty.
+
+The choice is not a configuration setting — check what tools are available in the current session and prefer the index whenever present. Both runtimes (Claude Code, Cowork) follow identical logic; the only difference is whether the user has connected QMD or another index.
+
+### When to search vs read directly
+
+If you already know the exact path of a file (e.g. you need `{legal_root}/law/employment.md` because the user is asking about employment law), just Read it. Knowledge Base Search is for cases where you need to **find** something — by type, by name, or by relatedness — not retrieve a known path.
 
 ### Not found
 
-When looking up by name and no file matches, return `not found` cleanly — the entity or matter simply hasn't been captured yet. Don't invent details. Downstream primitives can propose creating one via `remember`.
+When looking up by name and no file matches, return `not found` cleanly — the entity, matter, or precedent simply hasn't been captured yet. Don't invent details. Downstream primitives can propose creating one via `remember`.
 
 ---
 
@@ -141,7 +210,7 @@ Every substantive legal task lives inside a matter — a plain markdown file wit
 
 **When to create:** When the user starts substantive work involving a specific document or engagement. NOT for quick lookups, general questions, or one-off research.
 
-**Discovery:** Look up by name + `counsel-os-type: matter` using the Entity and Matter Lookup procedure above. If a non-closed matter exists for the same counterparty, resume it rather than creating a new one.
+**Discovery:** Look up by name + `counsel-os-type: matter` using the Knowledge Base Search procedure above. If a non-closed matter exists for the same counterparty, resume it rather than creating a new one.
 
 **Stage:** `intake` → `working` → `closed`. Advance from intake to working when substantive analysis or drafting begins. Advance to closed when the user says to close or work is complete.
 
@@ -178,7 +247,7 @@ After completing work, the `remember` primitive proposes knowledge updates. The 
 You can update knowledge at any time, not just at close:
 - "Update the liability position" → edit `practice/standards/limitation-of-liability.md`
 - "Add this clause to the library" → edit `practice/library/`
-- "Update the Acme file" → look up via Entity and Matter Lookup, propose changes
+- "Update the Acme file" → look up via Knowledge Base Search, propose changes
 - Always confirm before writing.
 
 ---
@@ -204,7 +273,7 @@ Plugin (methodology + tooling):
     legal-template.docx                        # Style template for clean_format.py
     word_compare.sh                            # Drive Word Compare via AppleScript
 
-User's vault (all knowledge — discovered via config + Entity and Matter Lookup):
+User's vault (all knowledge — discovered via config + Knowledge Base Search):
   {legal_root}/
     law/                                       # Layer 1: Hard constraints (26 areas)
       <area>/                                  # One folder per law area
@@ -221,9 +290,9 @@ User's vault (all knowledge — discovered via config + Entity and Matter Lookup
       patterns.md                              # Cross-cutting practice patterns
       retro-*.md                               # Practice analytics snapshots
 
-  {anywhere in vault, or {legal_root}/entities/ in filesystem mode}/  # Layer 2: Entity-specific overrides
+  {anywhere in vault, or {legal_root}/entities/ when no index tool is available}/  # Layer 2: Entity-specific overrides
     <company>.md                               # counsel-os-type: counterparty | vendor | customer | prospect
-                                               # Discovered via Entity and Matter Lookup (qmd or filesystem)
+                                               # Discovered via Knowledge Base Search (content index if connected, else filesystem)
 ```
 
 ## Output Standards

@@ -8,11 +8,12 @@ Plugins are **tool-agnostic** — they describe workflows in terms of categories
 
 ## Connectors for this plugin
 
-| Category | Placeholder | Included servers | Other options |
-|----------|-------------|-----------------|---------------|
+| Category | Placeholder | Recommended | Other options |
+|----------|-------------|-------------|---------------|
 | Chat | `~~chat` | — (use native connection) | Slack, Microsoft Teams |
 | Cloud storage | `~~cloud storage` | — (use native connection) | Google Drive, Box, Dropbox, SharePoint |
 | Office suite | `~~office suite` | — (use native connection) | Microsoft 365, Google Workspace |
+| Content index | `~~content index` | [QMD](https://github.com/tobi/qmd) | Any MCP server exposing `query` over markdown frontmatter |
 
 All connectors use whatever is natively connected in your environment (Claude Desktop, Claude Code, etc.) rather than plugin-managed MCP servers.
 
@@ -21,3 +22,4 @@ All connectors use whatever is natively connected in your environment (Claude De
 - **~~chat**: Receive contract review requests, post results and summaries to channels, notify stakeholders
 - **~~cloud storage**: Access agreements stored in cloud drives, pull contracts for review, save outputs
 - **~~office suite**: Read and edit Word documents for redlining, access email for context, calendar for deadlines
+- **~~content index**: Discover counterparty, vendor, customer, prospect, and matter files anywhere in your vault by querying frontmatter (`counsel-os-type`) instead of relying on a fixed directory layout. Without it, Counsel OS falls back to filesystem grep under `{legal_root}/entities/` and `{legal_root}/matters/`.

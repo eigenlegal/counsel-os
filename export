@@ -9,53 +9,34 @@ PLUGIN_NAME="$(basename "$COUNSEL_DIR")"
 
 echo "Exporting Counsel OS v$VERSION as Cowork plugin..."
 
-# ── Build zip with files at the archive ROOT (no wrapper directory) ──────
-# Cowork expects .claude-plugin/plugin.json at the zip root.
-# This matches Anthropic's official cowork-plugin-customizer recipe:
-#   https://github.com/anthropics/knowledge-work-plugins
-#
-# Excludes:
-#   - User-specific config and local dev settings (config.local.md, .claude/, .mcp.json)
-#   - VCS metadata (.git, .gitignore, .source-repo, .content-versions.json)
-#   - Build artifacts (node_modules, bun.lock, *.bun-build, browse/)
-#   - Backups, docs (not needed at runtime)
-#   - CLI-only shell scripts (setup, update, backup, restore, export — none run in Cowork)
-#   - The Claude Code marketplace manifest (.claude-plugin/marketplace.json)
-#   - Maintainer-only docs (CLAUDE.md)
+# ── Build zip matching v0.7.13's working recipe ──────────────────────────
+# Wrap everything in `counsel-os/` and exclude only the things v0.7.13 did:
+# build artifacts, VCS metadata, knowledge/ (large; users seed via /setup),
+# and macOS noise. Past iterations added more exclusions trying to "fix"
+# Cowork upload failures — none of those attempts worked, and each one
+# diverged us further from the empirically-known-good shape. Keeping it
+# minimal until there's evidence a specific exclusion actually helps.
 
-cd "$COUNSEL_DIR"
+cd "$(dirname "$COUNSEL_DIR")"
 rm -f "$OUTPUT_FILE"
 
-zip -r "$OUTPUT_FILE" . \
-  -x ".git/*" \
-  -x ".git" \
-  -x ".gitignore" \
-  -x ".claude/*" \
-  -x ".claude" \
-  -x ".mcp.json" \
-  -x ".source-repo" \
-  -x ".content-versions.json" \
-  -x ".claude-plugin/marketplace.json" \
-  -x "node_modules/*" \
-  -x "browse/*" \
-  -x "browse" \
-  -x "scripts/*" \
-  -x "scripts" \
-  -x "backups/*" \
-  -x "backups" \
-  -x "docs/*" \
-  -x "docs" \
-  -x "bun.lock" \
-  -x "*.bun-build" \
-  -x ".DS_Store" \
-  -x "**/.DS_Store" \
-  -x "CLAUDE.md" \
-  -x "config.local.md" \
-  -x "setup" \
-  -x "update" \
-  -x "backup" \
-  -x "restore" \
-  -x "export" \
+zip -r "$OUTPUT_FILE" "$PLUGIN_NAME/" \
+  -x "$PLUGIN_NAME/.git/*" \
+  -x "$PLUGIN_NAME/.git" \
+  -x "$PLUGIN_NAME/node_modules/*" \
+  -x "$PLUGIN_NAME/browse/*" \
+  -x "$PLUGIN_NAME/backups/*" \
+  -x "$PLUGIN_NAME/knowledge/matters/*" \
+  -x "$PLUGIN_NAME/knowledge/practice/*" \
+  -x "$PLUGIN_NAME/knowledge/memory/*" \
+  -x "$PLUGIN_NAME/docs/*" \
+  -x "$PLUGIN_NAME/bun.lock" \
+  -x "$PLUGIN_NAME/.DS_Store" \
+  -x "$PLUGIN_NAME/**/.DS_Store" \
+  -x "$PLUGIN_NAME/*.bun-build" \
+  -x "$PLUGIN_NAME/CLAUDE.md" \
+  -x "$PLUGIN_NAME/.claude/*" \
+  -x "$PLUGIN_NAME/config.local.md" \
   > /dev/null
 
 SIZE="$(du -h "$OUTPUT_FILE" | cut -f1 | tr -d ' ')"
@@ -63,20 +44,11 @@ SIZE="$(du -h "$OUTPUT_FILE" | cut -f1 | tr -d ' ')"
 echo ""
 echo "Exported: $OUTPUT_FILE ($SIZE)"
 echo ""
-echo "Includes:"
-echo "  - Plugin manifest (.claude-plugin/plugin.json)"
-echo "  - Primitives (primitives/)"
-echo "  - Skills (skills/ — counsel, browse, retro, setup, update, export)"
-echo "  - Knowledge (knowledge/law/, knowledge/practice-seed/)"
-echo "  - Templates (templates/)"
-echo "  - Default config (config.md)"
-echo ""
-echo "Excludes:"
-echo "  - User-specific config (config.local.md, .claude/settings.local.json, .mcp.json)"
-echo "  - CLI shell scripts (setup, update, backup, restore, export — Cowork can't run them)"
-echo "  - scripts/ (Python redline pipeline — Claude Code only; Cowork uses markdown redlines)"
-echo "  - Browse binary/source (CLI-only)"
-echo "  - Dev metadata (.git, .gitignore, .content-versions.json, .source-repo)"
+echo "Includes: .claude-plugin/, primitives/, skills/, knowledge/law/,"
+echo "          knowledge/practice-seed/, templates/, config.md, etc."
+echo "Excludes: .git/, node_modules/, browse/, backups/, docs/, bun.lock,"
+echo "          *.bun-build, .DS_Store, CLAUDE.md, .claude/, config.local.md,"
+echo "          knowledge/{matters,practice,memory}/ (user state, gitignored)"
 echo ""
 echo "To install in Cowork:"
 echo "  1. Open Claude Desktop → Cowork → Customize → Browse plugins"

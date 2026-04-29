@@ -12,50 +12,26 @@ You are helping a user set up Counsel OS from scratch. This single skill handles
 
 Determine whether you're running in **Claude Code** (CLI) or **Cowork** (Claude Desktop):
 
-- **Claude Code**: You have shell access (Bash tool), can write to external paths, and can detect optional tools (QMD, bun, pandoc). Follow the full setup flow below.
+- **Claude Code**: You have shell access (Bash tool), can write to external paths, and can detect optional tools (bun, pandoc). Follow the full setup flow below.
 - **Cowork**: No shell access. Follow the same setup flow, but skip the browse binary build and pandoc check in Step 2. Everything else (path selection, content seeding, practice onboarding) works the same — content still lives in the user's vault.
 
 To detect: try to use the Bash tool with a simple command like `echo ok`. If it works, you're in Claude Code. If it's unavailable, you're in Cowork.
 
-## Step 1: Detect Optional Dependencies (Claude Code only)
+## Step 1: Determine Legal Root
 
-Before writing config, detect what the user has installed. This determines how entity discovery is configured.
+Check if a legal root is already configured by running the **Finding the Legal Root** procedure in `skills/counsel/SKILL.md`. That procedure looks for an existing `config.md` (with a `legal_root:` line) near the working location and reports back what it finds.
 
-```bash
-command -v qmd >/dev/null 2>&1 && echo "HAS_QMD: yes" || echo "HAS_QMD: no"
-```
+**Do not** read `config.local.md` from the plugin root — that file is no longer used. Per-user configuration lives in the user's vault at `{legal_root}/config.md`.
 
-Record the result. You'll use it in Step 1b when writing `config.local.md`.
+### If an existing legal root was found:
 
-If QMD is missing, tell the user:
-> I don't see QMD installed. QMD is a content-indexing tool that lets Counsel OS find counterparty and matter files anywhere in your vault — not just inside the legal root. Without it, entity files need to live under `{legal_root}/entities/` so they can be found via filesystem search.
->
-> You can install QMD later (https://github.com/qmd-tools/qmd) and re-run `/counsel-os:setup` to switch. Want to proceed with filesystem discovery for now?
-
-If they proceed: set `DISCOVERY_MODE=filesystem`. If they want to stop and install QMD first: pause setup.
-
-## Step 1b: Determine Legal Root
-
-Check if a legal root is already configured. **`config.local.md` is optional** — fresh installs only have `config.md` (the shipped default), and that's normal. Don't report `config.local.md` as missing; it's expected to be absent on first setup.
-
-1. Read `config.local.md` from the plugin root *if present* (user-specific override). Skip silently if absent.
-2. Read `config.md` from the plugin root (always present — shipped with the plugin).
-3. Look for `legal_root:` value in whichever was found. If neither has a value, treat as unconfigured and ask the user where to put their legal root (see "If legal_root is empty or not configured" below).
-
-### If legal_root is set and the directory exists:
-
-Check if it's already populated (has law/, practice/, memory/ with content). If so, ask:
+Check if it's already populated (has `law/`, `practice/`, `memory/` with content). If so, ask:
 > Your Counsel OS is already set up at `{legal_root}`. Would you like to:
 > (A) Review and update your existing profile
 > (B) Start fresh (this will overwrite your current settings)
 > (C) Just check that everything looks good
 
-### If legal_root is set but the directory doesn't exist:
-
-Confirm the path and proceed to seeding:
-> I'll create the Counsel OS framework at `{legal_root}`. Does that look right?
-
-### If legal_root is empty or not configured:
+### If no existing legal root was found:
 
 Ask the user where to store the framework content:
 > Where should Counsel OS store its framework content? This folder will contain your law areas, default positions, practice profile, and memory.
@@ -63,52 +39,45 @@ Ask the user where to store the framework content:
 > If you use Obsidian, a good choice is a top-level folder in your vault (e.g., `~/Documents/Obsidian Vault/Counsel OS`).
 > If you don't use Obsidian, any folder works (e.g., `~/legal/counsel-os`).
 
-After the user provides a path, detect whether it looks like an Obsidian vault:
+In Claude Code, after the user provides a path, detect whether it looks like an Obsidian vault:
 
 ```bash
 [ -d "{user's path}/.obsidian" ] || [ -d "$(dirname '{user's path}')/.obsidian" ] && echo "IS_OBSIDIAN: yes" || echo "IS_OBSIDIAN: no"
 ```
 
-Then write `config.local.md` with the discovery mode from Step 1. Pick ONE of the two templates below:
+(In Cowork, skip this detection — the workspace is the user's vault by definition.)
 
-### If `DISCOVERY_MODE=qmd` (QMD is installed):
-
-```markdown
-# Counsel OS Configuration (Local Override)
-
-## Legal Root
-legal_root: {user's path}
-
-## Entity Discovery
-discovery: qmd
-entity_properties:
-  type_field: counsel-os-type
-  values: [counterparty, vendor, customer, prospect, matter]
-
-## QMD Collection
-collection: {obsidian if IS_OBSIDIAN=yes, otherwise ask the user what QMD collection to use}
-```
-
-### If `DISCOVERY_MODE=filesystem` (QMD is missing):
+Then write the user's config file at `{legal_root}/config.md`:
 
 ```markdown
-# Counsel OS Configuration (Local Override)
+# Counsel OS Configuration
 
-## Legal Root
 legal_root: {user's path}
 
-## Entity Discovery
-discovery: filesystem
-entities_path: entities
-# Relative to legal_root. Entity files (counterparties, vendors, customers, prospects)
-# live under {legal_root}/entities/ and are discovered via filesystem grep on the
-# counsel-os-type frontmatter field.
-entity_properties:
-  type_field: counsel-os-type
-  values: [counterparty, vendor, customer, prospect, matter]
+# Optional overrides (defaults shown — uncomment to customize):
+# entities_path: entities
+# matters_path: matters
+# entity_properties:
+#   type_field: counsel-os-type
+#   values: [counterparty, vendor, customer, prospect, matter]
 ```
 
-Also create `{legal_root}/entities/` as part of Step 2 when in filesystem mode.
+This file is the authoritative source of per-user configuration. It travels with the user's vault (sync, git, machine swap), and both runtimes find it via the bootstrap procedure on subsequent sessions.
+
+**Do not** write to the plugin's `config.md` or to a `config.local.md` in the plugin tree. The plugin tree is read-only in some runtimes (Cowork) and shouldn't carry user state regardless.
+
+**Also write the pointer file** (Claude Code only) so subsequent sessions can skip the scan:
+
+```bash
+mkdir -p ~/.counsel-os
+printf '%s' "{user's path}" > ~/.counsel-os/legal-root
+```
+
+The pointer is a per-machine performance cache; the vault's `config.md` is canonical. In Cowork, skip this step — the sandbox doesn't allow home-dir writes, and Cowork's workspace-relative scan in step 2 of the bootstrap is fast enough without it.
+
+Entity discovery is runtime-detected — if a content-index MCP tool is connected (QMD recommended; see CONNECTORS.md), it's used automatically and entity files can live anywhere in the vault. Otherwise the counsel skill falls back to grepping `{legal_root}/{entities_path}/`. No setup-time choice required.
+
+Also create `{legal_root}/entities/` as part of Step 2 — it serves as the filesystem fallback location and is harmless to create regardless of whether the user later connects QMD.
 
 ## Step 2: Seed Content
 
@@ -135,8 +104,8 @@ All files should already have `counsel-os-type: practice` frontmatter from the s
 ### Matters directory
 Create `{legal_root}/matters/` (empty — populated when substantive work begins).
 
-### Entities directory (filesystem discovery only)
-If `DISCOVERY_MODE=filesystem`, create `{legal_root}/entities/` (empty — populated when `/counsel` closes a matter and proposes an entity file).
+### Entities directory
+Create `{legal_root}/entities/` (empty — populated when `/counsel` closes a matter and proposes an entity file). Used as the filesystem fallback when no content-index tool is connected.
 
 ### Memory (from plugin `templates/memory/`)
 Copy patterns.md. Add frontmatter:
@@ -326,7 +295,7 @@ Run a quick validation:
 1. **Files exist check:** Verify law/, practice/ (with profile.md, standards/, methods/, library/), matters/, memory/ are all present and populated
 2. **Content check:** Verify profile.md has real content (not just template placeholders)
 3. **Consistency check:** Verify positions don't conflict with each other or with law/ constraints
-4. **Config check:** Verify `config.local.md` has the correct legal_root path
+4. **Config check:** Verify `{legal_root}/config.md` exists and contains the correct `legal_root:` path
 
 ```
 ## Setup Complete
