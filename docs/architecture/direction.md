@@ -65,7 +65,7 @@ Read and understand a document. Handles .docx (pandoc with tracked changes), .pd
 
 ### research
 
-Find context from the knowledge system. Modes: `--law` (trigger conditions), `--position` (practice/standards/), `--entity` (entity lookup), `--matter` (existing state), `--library` (clause language), `--method` (reference guide). Builds effective positions by merging the 4 knowledge layers. The entity and matter search mechanism is defined once in `skills/counsel/SKILL.md` (Entity and Matter Lookup) and branches on `discovery:` config between QMD and filesystem modes.
+Find context from the knowledge system. Modes: `--law` (trigger conditions), `--position` (practice/standards/), `--entity` (entity lookup), `--matter` (existing state), `--library` (clause language), `--method` (reference guide). Builds effective positions by merging the 4 knowledge layers. All knowledge-base searches go through one runtime-detected mechanism defined in `skills/counsel/SKILL.md` (Knowledge Base Search): if a content-index MCP tool (e.g. QMD) is connected in the session, use it for vault-wide search; otherwise fall back to filesystem grep. No `discovery:` config setting — the choice is per-session, not per-install.
 
 ### evaluate
 
@@ -181,8 +181,7 @@ counsel-os/
     legal-template.docx          # Style template
 
   templates/memory/              # Seed template for patterns.md
-  config.md                      # Default config
-  config.local.md                # User config override
+  config.md                      # Plugin config docs (per-user config lives at {legal_root}/config.md in the user's vault)
 ```
 
 ---

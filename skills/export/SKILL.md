@@ -26,15 +26,15 @@ done
 cd "$SOURCE_DIR" && ./export
 ```
 
-This creates `counsel-os-plugin.zip` in the parent directory of the source repo. The zip includes only what Cowork needs:
+This creates `counsel-os-plugin.zip` in the parent directory of the source repo.
+
+**Cowork direct-upload status (April 2026):** Direct upload to Cowork is currently broken on Anthropic's side — see open issues [#40414](https://github.com/anthropics/claude-code/issues/40414) (`.plugin` extension rejected) and [#40772](https://github.com/anthropics/claude-code/issues/40772) (both `.zip` and `.plugin` fail). The supported install path is **marketplace add**: in Cowork → Customize → Plugins, paste `https://github.com/eigenlegal/counsel-os` as a marketplace source. The export zip is still useful for offline/air-gapped distribution. The zip includes only what Cowork needs:
 - Skills (methodology)
 - Primitives
 - Templates
 - Browse tooling
-- config.local.md, config.md
-- Top-level scripts and metadata
-
-It excludes `knowledge/` (seed content — 170+ files that live in the vault, not the plugin).
+- `config.md` (plugin documentation; per-user config lives in the user's vault, not in the plugin)
+- Plugin manifest, top-level scripts, knowledge seed content
 
 Report the output path and file size to the user. Remind them:
 > Upload this to Claude Desktop → Cowork → Customize → Browse plugins.

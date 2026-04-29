@@ -14,7 +14,7 @@ Assess a clause, provision, or document against standards and/or law.
 ## Consults
 
 - `practice/standards/{clause-type}.md` — the ## Our Position section and ## Classification Guide
-- Entity file (via Entity and Matter Lookup in counsel/SKILL.md) — for counterparty-specific overrides that supersede practice standards
+- Entity file (via Knowledge Base Search in counsel/SKILL.md) — for counterparty-specific overrides that supersede practice standards
 - `law/` area files — hard constraints that always win
 - `practice/profile.md` ## Escalation Thresholds — what must be flagged regardless
 - `practice/methods/{type}.md` — for full reviews, guidance on what clause types to prioritize
@@ -53,7 +53,7 @@ When evaluating any clause, apply the knowledge layers in strict order:
 Before evaluating a clause, assemble the effective position:
 
 1. Read `practice/standards/{clause-type}.md` — the ## Our Position section
-2. Look up the counterparty's entity file using the Entity and Matter Lookup procedure in counsel/SKILL.md. If found, check for agreed positions or deal-specific overrides on this clause type. Entity overrides win on conflict with practice.
+2. Look up the counterparty's entity file using the Knowledge Base Search procedure in counsel/SKILL.md. If found, check for agreed positions or deal-specific overrides on this clause type. Entity overrides win on conflict with practice.
 3. Cross-reference against loaded law/ areas. Note any regulatory floors or ceilings.
 
 The effective position is: practice standard, adjusted by entity overrides, bounded by law constraints.

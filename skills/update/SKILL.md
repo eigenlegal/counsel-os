@@ -10,7 +10,7 @@ This skill handles both plugin updates (methodology) and content syncing (law ar
 
 ## Step 0: Resolve Paths
 
-Read `config.local.md` (if it exists) or `config.md` from the plugin root to get:
+Resolve `{legal_root}` via the Finding the Legal Root procedure in `skills/counsel/SKILL.md`.
 
 - **Legal root** (`{legal_root}`) — contains law/, practice/, matters/, memory/
 - **Plugin root** — where the plugin lives (the directory containing this skill)
@@ -77,6 +77,57 @@ Then update `~/.claude/plugins/installed_plugins.json` — find the `counsel-os@
 
 Tell the user:
 > Plugin cache updated to v{new}. Restart Claude Code to load the new skills.
+
+## Step 1c: Migrate plugin-tree config to vault config (one-time, v0.8.1 → v0.8.2)
+
+Before v0.8.2, per-user configuration lived in the plugin tree at `{plugin_root}/config.local.md`. As of v0.8.2 it lives in the user's vault at `{legal_root}/config.md` (so it survives plugin updates and works in read-only-plugin runtimes like Cowork).
+
+Detect whether the user is on the old layout. If ALL of these are true, run the migration:
+
+- `{plugin_root}/config.local.md` exists (legacy file)
+- `{legal_root}/config.md` does NOT exist (new file not yet written)
+
+If the legacy file exists but you don't yet know `{legal_root}` (because the bootstrap procedure failed to find a vault config), parse the legacy `config.local.md` to extract `legal_root:` — this is the one and only case where reading the plugin-tree config is allowed, specifically for migration.
+
+### Migration steps
+
+1. **Read the legacy config** at `{plugin_root}/config.local.md` and extract:
+   - `legal_root:` (required)
+   - `entities_path:` (optional override)
+   - `matters_path:` (optional override)
+   - `entity_properties:` (optional override)
+   - **Discard:** `discovery:`, `collection:`, and any QMD-specific fields. These are no longer config — knowledge-base search is runtime-detected as of v0.8.1.
+
+2. **Write `{legal_root}/config.md`** with just `legal_root:` plus any overrides that genuinely differed from the new defaults. Use this template:
+
+   ```markdown
+   # Counsel OS Configuration
+
+   legal_root: {extracted path}
+
+   # Optional overrides (defaults shown — uncomment to customize):
+   # entities_path: entities
+   # matters_path: matters
+   # entity_properties:
+   #   type_field: counsel-os-type
+   #   values: [counterparty, vendor, customer, prospect, matter]
+   ```
+
+3. **Write the bootstrap pointer** (Claude Code only — skip in Cowork):
+   ```bash
+   mkdir -p ~/.counsel-os
+   printf '%s' "{extracted legal_root}" > ~/.counsel-os/legal-root
+   ```
+   This lets subsequent sessions skip the directory scan. See "Finding the Legal Root" in `skills/counsel/SKILL.md` for how the pointer is used.
+
+4. **Tell the user what happened:**
+   > **Migrated config to v0.8.2 layout.** Per-user config now lives at `{legal_root}/config.md` instead of in the plugin tree. The legacy file at `{plugin_root}/config.local.md` is no longer used and can be deleted (it's harmless to leave for now — the skills ignore it).
+
+5. **Do not auto-delete `{plugin_root}/config.local.md`.** The plugin tree may be read-only (Cowork) and even when writable, deleting things in there during an update is the kind of thing users want to control. Leave it; it's inert.
+
+After migration, continue with Step 2 below — the user is now on the v0.8.2 architecture.
+
+---
 
 ## Step 1b: Migrate from v0.5.x → v0.6.1 (one-time)
 
