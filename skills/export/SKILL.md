@@ -9,7 +9,9 @@ Create a zip of the plugin for uploading to Claude Desktop's Cowork mode.
 
 ## What to do
 
-**Important:** Run the export script from the **source repo** (e.g., `~/Desktop/counsel-os/`), not from the plugin cache. The script uses the directory name as the zip's root folder — running from the cache produces a folder named `0.3.2/` instead of `counsel-os/`, which breaks Cowork.
+**Important:** Run the export script from the **source repo** (e.g., `~/Desktop/counsel-os/`), not from the plugin cache. Running from the cache may package an incomplete or version-specific snapshot.
+
+The script zips the plugin contents at the archive root (matching Anthropic's official `cowork-plugin-customizer` recipe — Cowork expects `.claude-plugin/plugin.json` at the zip root, not nested inside a wrapper directory).
 
 Find the source repo and run:
 
