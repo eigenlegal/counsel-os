@@ -200,12 +200,26 @@ Counsel OS separates **methodology** (how to do legal work) from **knowledge** (
 - Entity files (companies, counterparties) — wherever you keep them
 
 The plugin discovers content through two mechanisms:
-1. **Legal root** — A configured path where Counsel OS manages framework content
-2. **Entity lookup** — Two modes, auto-selected at setup:
-   - **QMD mode** (preferred): entity files are found by content search and can live anywhere in your vault
-   - **Filesystem mode** (fallback when QMD isn't installed): entity files live under `{legal_root}/entities/` and are discovered via grep
 
-With QMD the plugin works with any vault structure — organize files however you want, and the skills find them. Without QMD you trade that flexibility for zero setup dependencies.
+1. **Legal root** — A configured folder in your vault where Counsel OS manages framework content: `law/`, `practice/`, `matters/`, `memory/`.
+
+2. **Entity lookup** — When you ask about a counterparty, vendor, or matter, Counsel OS finds the relevant note from your vault and merges it into the legal context. The discovery mechanism is auto-selected at setup based on what you have installed:
+
+   - **QMD mode (recommended)** — pulls from your existing notes wherever they live.
+
+     If you have [QMD](https://github.com/qmd-tools/qmd) installed, Counsel OS finds notes by frontmatter, **anywhere in your Obsidian vault** — not just inside the legal root. Tag any note as a counterparty:
+
+     ```yaml
+     ---
+     counsel-os-type: counterparty
+     ---
+     ```
+
+     Now when you ask *"what did we agree with Acme?"*, counsel pulls in your Acme note from wherever it lives — `Companies/Acme.md`, `Clients/2025/Acme.md`, scattered across your vault, doesn't matter. Your existing meeting notes, deal history, and counterparty research stay where you already keep them, and get pulled into legal work automatically. The legal root stays small and focused; the relationship knowledge lives in your vault, organized your way.
+
+     Supported types: `counterparty`, `vendor`, `customer`, `prospect`, `matter`.
+
+   - **Filesystem mode (fallback when QMD isn't installed)** — entity files live at a fixed location, `{legal_root}/entities/`, discovered via grep on the same `counsel-os-type` frontmatter. Same metadata, less structural flexibility — you have to put files in the entities folder for them to be found.
 
 ### 4-Layer Knowledge System
 
@@ -328,15 +342,6 @@ Create a new `.md` file in `{legal_root}/law/`:
 ```
 
 Include trigger conditions at the top. The `research` primitive will automatically detect and load it — no other changes needed.
-
-### Structure-Agnostic Design
-
-Counsel OS doesn't impose a folder structure on your vault. The plugin needs two things:
-
-1. **A legal root path** (in `config.md`) — where it manages framework content (law/, practice/, matters/, memory/)
-2. **Frontmatter on entity files** — so the entity lookup can discover them
-
-With QMD, entity files can live anywhere — keep companies in `Companies/`, `Clients/`, or scattered across your vault. Without QMD, entity files live under `{legal_root}/entities/`. Either way, as long as files have `counsel-os-type` frontmatter, the skills will find them.
 
 ---
 
