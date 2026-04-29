@@ -12,23 +12,45 @@ echo "Exporting Counsel OS v$VERSION as Cowork plugin..."
 # ── Build zip from parent directory ──────────────────────────────────────
 
 cd "$(dirname "$COUNSEL_DIR")"
-
-# Remove old export if it exists
 rm -f "$OUTPUT_FILE"
 
+# Build a clean zip — only what Cowork needs.
+# Excludes:
+#   - User-specific config and local dev settings (config.local.md, .claude/, .mcp.json)
+#   - VCS metadata (.git, .gitignore, .source-repo, .content-versions.json)
+#   - Build artifacts (node_modules, bun.lock, *.bun-build, browse/)
+#   - Backups, docs (not needed at runtime)
+#   - CLI-only shell scripts (setup, update, backup, restore, export — none run in Cowork)
+#   - The Claude Code marketplace manifest (.claude-plugin/marketplace.json)
+#   - Maintainer-only docs (CLAUDE.md)
 zip -r "$OUTPUT_FILE" "$PLUGIN_NAME/" \
   -x "$PLUGIN_NAME/.git/*" \
   -x "$PLUGIN_NAME/.git" \
+  -x "$PLUGIN_NAME/.gitignore" \
+  -x "$PLUGIN_NAME/.claude/*" \
+  -x "$PLUGIN_NAME/.claude" \
+  -x "$PLUGIN_NAME/.mcp.json" \
+  -x "$PLUGIN_NAME/.source-repo" \
+  -x "$PLUGIN_NAME/.content-versions.json" \
+  -x "$PLUGIN_NAME/.claude-plugin/marketplace.json" \
   -x "$PLUGIN_NAME/node_modules/*" \
   -x "$PLUGIN_NAME/browse/*" \
+  -x "$PLUGIN_NAME/browse" \
   -x "$PLUGIN_NAME/backups/*" \
-  -x "$PLUGIN_NAME/knowledge/*" \
+  -x "$PLUGIN_NAME/backups" \
   -x "$PLUGIN_NAME/docs/*" \
+  -x "$PLUGIN_NAME/docs" \
   -x "$PLUGIN_NAME/bun.lock" \
+  -x "$PLUGIN_NAME/*.bun-build" \
   -x "$PLUGIN_NAME/.DS_Store" \
   -x "$PLUGIN_NAME/**/.DS_Store" \
-  -x "$PLUGIN_NAME/*.bun-build" \
   -x "$PLUGIN_NAME/CLAUDE.md" \
+  -x "$PLUGIN_NAME/config.local.md" \
+  -x "$PLUGIN_NAME/setup" \
+  -x "$PLUGIN_NAME/update" \
+  -x "$PLUGIN_NAME/backup" \
+  -x "$PLUGIN_NAME/restore" \
+  -x "$PLUGIN_NAME/export" \
   > /dev/null
 
 SIZE="$(du -h "$OUTPUT_FILE" | cut -f1 | tr -d ' ')"
@@ -37,16 +59,22 @@ echo ""
 echo "Exported: $OUTPUT_FILE ($SIZE)"
 echo ""
 echo "Includes:"
+echo "  - Plugin manifest (.claude-plugin/plugin.json)"
 echo "  - Primitives (primitives/)"
 echo "  - Skills (skills/ — counsel, browse, retro, setup, update, export)"
+echo "  - Knowledge (knowledge/law/, knowledge/practice-seed/)"
 echo "  - Scripts (scripts/)"
-echo "  - Config (config.md, config.local.md)"
+echo "  - Templates (templates/)"
+echo "  - Default config (config.md)"
 echo ""
-echo "Does NOT include:"
-echo "  - Knowledge content (law/, practice-seed/)"
-echo "  - Your vault content (practice, memory, matters, entity files)"
+echo "Excludes:"
+echo "  - User-specific config (config.local.md, .claude/settings.local.json, .mcp.json)"
+echo "  - CLI shell scripts (setup, update, backup, restore, export — Cowork can't run them)"
+echo "  - Browse binary/source (CLI-only)"
+echo "  - Dev metadata (.git, .gitignore, .content-versions.json, .source-repo)"
 echo ""
 echo "To install in Cowork:"
-echo "  1. Open Claude Desktop → Cowork → Customize"
+echo "  1. Open Claude Desktop → Cowork → Customize → Browse plugins"
 echo "  2. Remove the old Counsel OS plugin (if installed)"
 echo "  3. Upload $OUTPUT_FILE"
+echo "  4. Run /counsel-os:setup to seed content into your vault"
