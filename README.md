@@ -12,9 +12,9 @@ Counsel OS runs in **Claude Desktop (Cowork)** for lawyers and in **Claude Code*
 
 No terminal required.
 
-1. Download this repo as a `.zip` file (green **Code** button → **Download ZIP**)
-2. Open **Claude Desktop** → **Cowork** → **Customize** → **Browse plugins**
-3. Upload the `.zip` file — it installs automatically
+1. Open **Claude Desktop** → **Cowork** → **Customize** → **Plugins** → **Add marketplace**
+2. Paste `https://github.com/eigenlegal/counsel-os` and confirm
+3. Install **Counsel OS** from the new marketplace
 4. Start a **new conversation** and run `/counsel-os:setup`
 
 The setup skill walks you through choosing a folder for your legal content, seeds the 26 law areas and practice content into it, and configures your practice profile through chat. No file editing, no terminal commands.
