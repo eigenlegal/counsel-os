@@ -6,75 +6,82 @@ Built for solo practitioners, law firms, and in-house counsel.
 
 ## Installation
 
-### Claude Code (CLI)
+Counsel OS runs in **Claude Desktop (Cowork)** for lawyers and in **Claude Code** for developers. Pick the path that matches the tool you already use.
 
-```bash
-# Clone the repo
-git clone https://github.com/jw2856/counsel-os.git ~/counsel-os
-cd ~/counsel-os
+### Claude Desktop / Cowork — recommended for lawyers
 
-# Run setup (seeds knowledge into your vault, optionally builds browser)
-./setup
+No terminal required.
 
-# Start Claude Code
-claude
-```
-
-The setup script:
-- Seeds legal framework content (law areas) and practice content (standards, methods, clause library) into your configured legal root
-- Copies practice profile template and memory logs
-- If [Bun](https://bun.sh/) is installed, builds the headless browser binary for `/counsel-os:browse`
-- Does not overwrite existing files if you've already customized
-
-**Requirements:** Git. Optional tools:
-- **Bun** — for the `/counsel-os:browse` browser skill
-- **pandoc** — for extracting tracked changes from Word documents
-- **QMD** — for entity discovery across your whole vault. Without QMD, entity files live under `{legal_root}/entities/` and are discovered via filesystem search. Setup auto-detects what you have and configures accordingly.
-
-### Claude Desktop (Cowork)
-
-1. Download this repo as a `.zip` file (Code → Download ZIP on GitHub)
+1. Download this repo as a `.zip` file (green **Code** button → **Download ZIP**)
 2. Open **Claude Desktop** → **Cowork** → **Customize** → **Browse plugins**
 3. Upload the `.zip` file — it installs automatically
-4. Start a **new conversation** in Cowork mode — the skills are now active
+4. Start a **new conversation** and run `/counsel-os:setup`
 
-> **Note:** The `/counsel-os:browse` skill (headless browser) is not available in Cowork since it requires CLI access. All other skills work identically.
+The setup skill walks you through choosing a folder for your legal content, seeds the 26 law areas and practice content into it, and configures your practice profile through chat. No file editing, no terminal commands.
 
-### As a Claude Code Plugin
+> **Note:** The `/counsel-os:browse` skill (headless browser for portals and document extraction) requires CLI access and isn't available in Cowork. All other skills work identically.
 
-In Claude Code, add this repo as a marketplace and install:
+### Claude Code with local install — recommended for developers
+
+```bash
+git clone https://github.com/eigenlegal/counsel-os.git ~/counsel-os
+cd ~/counsel-os && ./setup
+claude --plugin-dir ~/counsel-os
+```
+
+The `--plugin-dir` flag loads the plugin directly from the cloned directory — no marketplace, no cache layer to invalidate. Make it stick by adding an alias to `~/.zshrc` (or `~/.bashrc`):
+
+```bash
+alias claude='claude --plugin-dir ~/counsel-os'
+```
+
+The `./setup` script seeds law areas and practice content into your configured legal root, optionally builds the `/counsel-os:browse` browser binary if [Bun](https://bun.sh/) is installed, and skips any files you've already customized.
+
+**Optional dependencies:**
+- **[Bun](https://bun.sh/)** — for the `/counsel-os:browse` browser skill
+- **pandoc** — for extracting tracked changes from Word documents
+- **[QMD](https://github.com/qmd-tools/qmd)** — for entity discovery across your whole vault (without QMD, entity files live under `{legal_root}/entities/` and are found via filesystem search)
+
+`./setup` auto-detects what you have and configures accordingly.
+
+### Claude Code marketplace — experimental
+
+Claude Code's plugin marketplace is the "official" install path, but its cache invalidation is currently fragile — installs can get stuck on old manifests, and updates require a full Cmd-Q restart. If your install gets stuck, the local-install path above is the reliable fallback.
 
 ```
-/plugin marketplace add jw2856/counsel-os
-/plugin install counsel-os@eigen-legal
+/plugin marketplace add eigenlegal/counsel-os
+/plugin install counsel-os@eigenlegal
 ```
 
-Claude Code caches the plugin under `~/.claude/plugins/cache/eigen-legal/counsel-os/{version}/` and loads its skills automatically. Updates flow through `/counsel-os:update`.
+Once installed, Claude Code caches the plugin under `~/.claude/plugins/cache/eigenlegal/counsel-os/{version}/` and updates flow through `/counsel-os:update`.
+
+If install fails or seems stuck:
+
+```bash
+# Refresh the marketplace clone
+cd ~/.claude/plugins/marketplaces/eigenlegal && git pull
+
+# Then fully restart Claude Code (Cmd-Q — closing the window isn't enough,
+# Claude Code holds the manifest in memory). Retry the install.
+```
+
+If that still doesn't work, fall back to the local install above — same content, same skills, no marketplace layer.
 
 ---
 
 ## Setup
 
-After installing, configure `config.md` in the plugin root to point to your legal root — the folder where Counsel OS manages its framework content:
-
-```markdown
-legal_root: /path/to/your/vault/Counsel OS
-```
-
-Then run the guided onboarding:
-
-```
-/counsel-os:setup
-```
-
-This walks you through setup interactively:
+After installing, run `/counsel-os:setup` (Cowork or Claude Code) — it walks you through the full configuration in chat:
 
 | Step | What It Configures | Time |
 |------|--------------------|------|
+| Legal root | Where Counsel OS stores law areas, practice content, and memory in your vault | ~1 min |
 | `profile.md` | Your organization, legal philosophy, risk appetite, writing style, escalation criteria | ~5 min |
 | Standards customization | Review and adjust the 24 standard clause positions for your practice | ~10 min |
 
-You can also edit these files directly in `{legal_root}/practice/`.
+CLI users running `./setup` from the cloned repo get the same flow plus optional environment checks (Bun, pandoc, QMD).
+
+You can edit any of these files directly in `{legal_root}/practice/` later.
 
 **Optional:** Provide 3-5 past contracts during setup and the system will analyze them to infer your actual positions — often more accurate than describing them in the abstract.
 
@@ -205,12 +212,12 @@ With QMD the plugin works with any vault structure — organize files however yo
 ```
 {legal_root}/
 ├── law/          Layer 1 — Hard constraints (regulations, statutes)
-├── practice/     Layer 2 — YOUR standards, methods, library, and profile
-├── matters/      Persistent state per engagement
+├── practice/     Layer 3 — YOUR standards, methods, library, and profile
+├── matters/      Persistent state per engagement (not a precedence layer)
 └── memory/       Layer 4 — Accumulated decisions and patterns
 
 {anywhere in your vault, or {legal_root}/entities/ without QMD}/
-└── <company>.md  Layer 3 — Per-deal and per-counterparty overrides (discovered via entity lookup)
+└── <company>.md  Layer 2 — Per-deal and per-counterparty overrides (discovered via entity lookup)
 ```
 
 **Precedence rules:**

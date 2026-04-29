@@ -1,5 +1,5 @@
 {
-  "name": "eigen-legal",
+  "name": "eigenlegal",
   "owner": {
     "name": "Eigen Legal"
   },
@@ -8,7 +8,7 @@
       "name": "counsel-os",
       "source": {
         "source": "url",
-        "url": "https://github.com/jw2856/counsel-os.git"
+        "url": "https://github.com/eigenlegal/counsel-os.git"
       },
       "description": "Legal operating system — primitives-based legal practice tool with 4-layer knowledge system, auto-detection of applicable law, and institutional memory. For solo practitioners, law firms, and in-house counsel."
     }
