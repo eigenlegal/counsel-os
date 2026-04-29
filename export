@@ -36,6 +36,8 @@ zip -r "$OUTPUT_FILE" "$PLUGIN_NAME/" \
   -x "$PLUGIN_NAME/node_modules/*" \
   -x "$PLUGIN_NAME/browse/*" \
   -x "$PLUGIN_NAME/browse" \
+  -x "$PLUGIN_NAME/scripts/*" \
+  -x "$PLUGIN_NAME/scripts" \
   -x "$PLUGIN_NAME/backups/*" \
   -x "$PLUGIN_NAME/backups" \
   -x "$PLUGIN_NAME/docs/*" \
@@ -63,13 +65,13 @@ echo "  - Plugin manifest (.claude-plugin/plugin.json)"
 echo "  - Primitives (primitives/)"
 echo "  - Skills (skills/ — counsel, browse, retro, setup, update, export)"
 echo "  - Knowledge (knowledge/law/, knowledge/practice-seed/)"
-echo "  - Scripts (scripts/)"
 echo "  - Templates (templates/)"
 echo "  - Default config (config.md)"
 echo ""
 echo "Excludes:"
 echo "  - User-specific config (config.local.md, .claude/settings.local.json, .mcp.json)"
 echo "  - CLI shell scripts (setup, update, backup, restore, export — Cowork can't run them)"
+echo "  - scripts/ (Python redline pipeline — Claude Code only; Cowork uses markdown redlines)"
 echo "  - Browse binary/source (CLI-only)"
 echo "  - Dev metadata (.git, .gitignore, .content-versions.json, .source-repo)"
 echo ""
