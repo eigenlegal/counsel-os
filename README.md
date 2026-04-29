@@ -44,7 +44,7 @@ The `./setup` script seeds law areas and practice content into your configured l
 **Optional dependencies:**
 - **[Bun](https://bun.sh/)** — for the `/counsel-os:browse` browser skill
 - **pandoc** — for extracting tracked changes from Word documents
-- **[QMD](https://github.com/qmd-tools/qmd)** — for entity discovery across your whole vault (without QMD, entity files live under `{legal_root}/entities/` and are found via filesystem search)
+- **[QMD](https://github.com/tobi/qmd)** — content-index MCP server for entity discovery across your whole vault. Install separately as its own Claude plugin (works in Claude Code and Cowork). Without it, entity files live under `{legal_root}/entities/` and are found via filesystem search.
 
 `./setup` auto-detects what you have and configures accordingly.
 
@@ -83,7 +83,7 @@ After installing, run `/counsel-os:setup` (Cowork or Claude Code) — it walks y
 | `profile.md` | Your organization, legal philosophy, risk appetite, writing style, escalation criteria | ~5 min |
 | Standards customization | Review and adjust the 24 standard clause positions for your practice | ~10 min |
 
-CLI users running `./setup` from the cloned repo get the same flow plus optional environment checks (Bun, pandoc, QMD).
+CLI users running `./setup` from the cloned repo get the same flow plus optional environment checks (Bun, pandoc).
 
 You can edit any of these files directly in `{legal_root}/practice/` later.
 
@@ -207,11 +207,11 @@ The plugin discovers content through two mechanisms:
 
 1. **Legal root** — A configured folder in your vault where Counsel OS manages framework content: `law/`, `practice/`, `matters/`, `memory/`.
 
-2. **Entity lookup** — When you ask about a counterparty, vendor, or matter, Counsel OS finds the relevant note from your vault and merges it into the legal context. The discovery mechanism is auto-selected at setup based on what you have installed:
+2. **Entity lookup** — When you ask about a counterparty, vendor, or matter, Counsel OS finds the relevant note from your vault and merges it into the legal context. The mechanism is auto-detected at runtime based on what's connected in your session:
 
-   - **QMD mode (recommended)** — pulls from your existing notes wherever they live.
+   - **With a content-index connector (recommended)** — pulls from your existing notes wherever they live.
 
-     If you have [QMD](https://github.com/qmd-tools/qmd) installed, Counsel OS finds notes by frontmatter, **anywhere in your Obsidian vault** — not just inside the legal root. Tag any note as a counterparty:
+     If [QMD](https://github.com/tobi/qmd) (or any MCP server exposing a `query` tool over markdown frontmatter) is connected, Counsel OS finds notes by frontmatter, **anywhere in your Obsidian vault** — not just inside the legal root. Tag any note as a counterparty:
 
      ```yaml
      ---
@@ -223,7 +223,9 @@ The plugin discovers content through two mechanisms:
 
      Supported types: `counterparty`, `vendor`, `customer`, `prospect`, `matter`.
 
-   - **Filesystem mode (fallback when QMD isn't installed)** — entity files live at a fixed location, `{legal_root}/entities/`, discovered via grep on the same `counsel-os-type` frontmatter. Same metadata, less structural flexibility — you have to put files in the entities folder for them to be found.
+     QMD ships as its own Claude plugin — install separately, no extra Counsel OS configuration needed. Works in both Claude Code and Cowork.
+
+   - **Filesystem fallback (when no index tool is connected)** — entity files live at a fixed location, `{legal_root}/entities/`, discovered via grep on the same `counsel-os-type` frontmatter. Same metadata, less structural flexibility — you have to put files in the entities folder for them to be found.
 
 ### 4-Layer Knowledge System
 
@@ -234,7 +236,7 @@ The plugin discovers content through two mechanisms:
 ├── matters/      Persistent state per engagement (not a precedence layer)
 └── memory/       Layer 4 — Accumulated decisions and patterns
 
-{anywhere in your vault, or {legal_root}/entities/ without QMD}/
+{anywhere in your vault, or {legal_root}/entities/ when no index tool is connected}/
 └── <company>.md  Layer 2 — Per-deal and per-counterparty overrides (discovered via entity lookup)
 ```
 
@@ -323,7 +325,7 @@ Once seeded, you own all of this content. Customize law areas, rewrite methods, 
 
 ### Adding Counterparty Context
 
-After working with a counterparty, counsel proposes creating an entity file (via `remember`). With QMD you choose where to save it — Counsel OS discovers it wherever it lives. Without QMD, entity files go under `{legal_root}/entities/`.
+After working with a counterparty, counsel proposes creating an entity file (via `remember`). With a content-index connector (e.g. QMD) you choose where to save it — Counsel OS discovers it wherever it lives. Without one, entity files go under `{legal_root}/entities/`.
 
 The entity file stores:
 - Relationship history and notes

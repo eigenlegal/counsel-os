@@ -18,8 +18,8 @@ Find context from the knowledge system.
 - `practice/library/` — clause language variants
 - `practice/profile.md` — identity, principles, voice, thresholds
 - `law/` — hard legal constraints with trigger conditions
-- Entity files — discovered via the Entity and Matter Lookup procedure in counsel/SKILL.md
-- Matter files — discovered via the Entity and Matter Lookup procedure in counsel/SKILL.md
+- Entity files — discovered via the Knowledge Base Search procedure in counsel/SKILL.md
+- Matter files — discovered via the Knowledge Base Search procedure in counsel/SKILL.md
 
 ## Produces
 
@@ -31,11 +31,9 @@ The requested context, ready for use by evaluate, draft, or direct answer to the
 
 ### Path resolution
 
-Read `config.local.md` (if it exists) or `config.md` from the plugin root to find:
-- **Legal root** (`{legal_root}`) — contains law/, practice/, matters/, memory/
-- **Entity discovery** — per the Entity and Matter Lookup procedure in counsel/SKILL.md
+Resolve `{legal_root}` via the Finding the Legal Root procedure in `skills/counsel/SKILL.md`. All practice content lives at `{legal_root}/` (with `law/`, `practice/`, `matters/`, `memory/`).
 
-All practice content is at `{legal_root}/`. Entity files are discovered via the Entity and Matter Lookup procedure in counsel/SKILL.md.
+Entity and matter files are discovered via the Knowledge Base Search procedure in counsel/SKILL.md (runtime-detected: content-index MCP if connected, else filesystem).
 
 ### The knowledge layers
 
@@ -54,7 +52,7 @@ Find which law areas apply and load their requirements.
 
 ### Instructions
 
-1. **Scan trigger conditions.** Read each law area file at `{legal_root}/law/`. Each area has a Trigger Conditions section with keywords, clause types, regulatory references, and relationship patterns.
+1. **Scan trigger conditions.** If a content-index tool is connected, use Knowledge Base Search (counsel/SKILL.md) to query law-area files for content matching the document's keywords, clause types, and regulatory references — the index ranks relevance and returns the most likely matches. Otherwise, read each law area file at `{legal_root}/law/` and scan its Trigger Conditions section manually. Either way, evaluate every plausible match — don't stop at the first hit.
 
 2. **Match against the document or matter.** Check the document text (or matter description) against each area's triggers. A SaaS agreement might trigger data-privacy, ip-and-technology, and consumer-protection simultaneously. Load ALL that match — not just the most obvious one.
 
@@ -92,7 +90,7 @@ Load the standard for a specific clause type.
 When research is followed by evaluate, assemble the **effective position** by merging layers:
 
 1. Load practice/standards/{clause-type}.md — the baseline
-2. Look up the counterparty's entity file using the Entity and Matter Lookup procedure in counsel/SKILL.md. If found, check for deal-specific overrides. Entity overrides supersede practice for this deal.
+2. Look up the counterparty's entity file using the Knowledge Base Search procedure in counsel/SKILL.md. If found, check for deal-specific overrides. Entity overrides supersede practice for this deal.
 3. Note any law/ constraints that set a floor or ceiling. Law always wins.
 
 Report the effective position with source attribution:
@@ -112,7 +110,7 @@ Find counterparty context and history.
 
 ### Instructions
 
-1. **Look up the entity.** Use the Entity and Matter Lookup procedure in counsel/SKILL.md to find a file matching the company name with `counsel-os-type` in [counterparty, vendor, customer, prospect].
+1. **Look up the entity.** Use the Knowledge Base Search procedure in counsel/SKILL.md to find a file matching the company name with `counsel-os-type` in [counterparty, vendor, customer, prospect].
 
 2. **If found, read the entity file.** Extract:
    - Relationship overview and history
@@ -133,7 +131,7 @@ Find existing matter state.
 
 ### Instructions
 
-1. **Look up the matter.** Use the Entity and Matter Lookup procedure in counsel/SKILL.md to find a file matching `counsel-os-type: matter` + the counterparty name (if known) or matter description.
+1. **Look up the matter.** Use the Knowledge Base Search procedure in counsel/SKILL.md to find a file matching `counsel-os-type: matter` + the counterparty name (if known) or matter description.
 
 2. **Prefer active matters.** Look for matters with stage `intake` or `working`. If found:
    - Read the matter file

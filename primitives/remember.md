@@ -18,7 +18,7 @@ Persist state and propose knowledge updates.
 - Existing entity file (if any) — to update rather than create
 - `practice/standards/` — to detect position gaps or drift
 - `practice/profile.md` — identity for attribution
-- `config.local.md` / `config.md` — for legal root and matters path
+- `{legal_root}/config.md` — for the matters path and other overrides (resolved via the Finding the Legal Root procedure in counsel/SKILL.md)
 
 ## Produces
 
@@ -48,7 +48,7 @@ Proceed?
 
 ### Path resolution
 
-Read `config.local.md` (if it exists) or `config.md` from the plugin root to find `{legal_root}`. Matter files live at `{legal_root}/{matters_path}/` (default: `{legal_root}/matters/`).
+Resolve `{legal_root}` and any path overrides via the Finding the Legal Root procedure in `skills/counsel/SKILL.md`. Matter files live at `{legal_root}/{matters_path}/` (default: `{legal_root}/matters/`).
 
 ---
 
@@ -69,7 +69,7 @@ Do NOT create a matter for:
 
 ### Check for existing matters
 
-Before creating, look up `counsel-os-type: matter` + the counterparty name using the Entity and Matter Lookup procedure in counsel/SKILL.md.
+Before creating, look up `counsel-os-type: matter` + the counterparty name using the Knowledge Base Search procedure in counsel/SKILL.md.
 
 - **Active matter found** (stage is not `closed`): Resume it. Read the file, update with new context.
 - **Only closed matters found:** Note the prior context. Create a new matter.
@@ -163,7 +163,7 @@ After working on a matter, look for entity-specific information worth preserving
 
 ### Finding the entity file
 
-Look up the company name with `counsel-os-type` in [counterparty, vendor, customer, prospect] using the Entity and Matter Lookup procedure in counsel/SKILL.md.
+Look up the company name with `counsel-os-type` in [counterparty, vendor, customer, prospect] using the Knowledge Base Search procedure in counsel/SKILL.md.
 
 **If found:** Propose additions to the existing file. Show exactly what will be added.
 
