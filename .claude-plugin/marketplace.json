@@ -7,8 +7,8 @@
     {
       "name": "counsel-os",
       "source": {
-        "source": "url",
-        "url": "https://github.com/eigenlegal/counsel-os.git"
+        "source": "github",
+        "repo": "eigenlegal/counsel-os"
       },
       "description": "Legal operating system — primitives-based legal practice tool with 4-layer knowledge system, auto-detection of applicable law, and institutional memory. For solo practitioners, law firms, and in-house counsel."
     }
