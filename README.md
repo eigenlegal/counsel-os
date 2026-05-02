@@ -29,7 +29,6 @@ The setup skill walks you through choosing a folder for your legal content, seed
 
 ```bash
 git clone https://github.com/eigenlegal/counsel-os.git ~/counsel-os
-cd ~/counsel-os && ./setup
 claude --plugin-dir ~/counsel-os
 ```
 
@@ -39,14 +38,20 @@ The `--plugin-dir` flag loads the plugin directly from the cloned directory — 
 alias claude='claude --plugin-dir ~/counsel-os'
 ```
 
-The `./setup` script seeds law areas and practice content into your configured legal root, optionally builds the `/counsel-os:browse` browser binary if [Bun](https://bun.sh/) is installed, and skips any files you've already customized.
+Then start a new Claude Code session and run:
+
+```
+/counsel-os:setup
+```
+
+Counsel OS is skill-first: setup is written as an `.md` skill so Claude can adapt it to your vault, permissions, shell environment, and connected tools. The repo's shell scripts are only narrow mechanical helpers for deterministic tasks.
 
 **Optional dependencies:**
 - **[Bun](https://bun.sh/)** — for the `/counsel-os:browse` browser skill
 - **pandoc** — for extracting tracked changes from Word documents
 - **[QMD](https://github.com/tobi/qmd)** — content-index MCP server for entity discovery across your whole vault. Install separately as its own Claude plugin (works in Claude Code and Cowork). Without it, entity files live under `{legal_root}/entities/` and are found via filesystem search.
 
-`./setup` auto-detects what you have and configures accordingly.
+The setup skill auto-detects what you have and configures accordingly.
 
 ### Claude Code marketplace — experimental
 
@@ -83,7 +88,7 @@ After installing, run `/counsel-os:setup` (Cowork or Claude Code) — it walks y
 | `profile.md` | Your organization, legal philosophy, risk appetite, writing style, escalation criteria | ~5 min |
 | Standards customization | Review and adjust the 24 standard clause positions for your practice | ~10 min |
 
-CLI users running `./setup` from the cloned repo get the same flow plus optional environment checks (Bun, pandoc).
+Claude Code users get the same flow plus optional environment checks (Bun, pandoc).
 
 You can edit any of these files directly in `{legal_root}/practice/` later.
 
@@ -157,20 +162,23 @@ Run weekly or monthly to calibrate your practice.
 /counsel-os:update
 ```
 
-Or from the command line:
-```bash
-./update
-```
-
 This:
-1. Pulls the latest plugin methodology (skills, primitives, scripts)
+1. Helps update plugin methodology through your install path (marketplace or local git clone)
 2. Shows what changed in law/ upstream and offers new practice content for your review
-3. You decide what to apply to your vault — the plugin never overwrites your content
+3. Lets you decide what to apply to your vault — the plugin never overwrites practice content without approval
+
+When upgrading from an older Counsel OS install, `/counsel-os:update` also performs a one-time migration to the current marked config format:
+
+```markdown
+counsel-os-config: true
+config_version: 1
+legal_root: /path/to/your/legal/root
+```
 
 ### Backup and Restore
 
 ```bash
-# Back up your legal root (law, practice, matters, memory)
+# Back up your legal root (law, practice, matters, memory, entities)
 ./backup
 
 # Restore from the most recent backup
@@ -180,7 +188,7 @@ This:
 ./restore counsel-os-backup-20260313-143022
 ```
 
-Backups are stored locally in `backups/` (gitignored). Entity files (company/counterparty files) are part of your vault and should be backed up via your vault's own backup mechanism (Obsidian Sync, git, etc.).
+Backups are stored locally in `backups/` (gitignored). For routine use, prefer your vault's normal backup or version-control workflow; these scripts are local Claude Code helpers.
 
 ---
 
@@ -191,10 +199,10 @@ Backups are stored locally in `backups/` (gitignored). Entity files (company/cou
 Counsel OS separates **methodology** (how to do legal work) from **knowledge** (what you know).
 
 **The plugin provides methodology + tooling:**
-- 6 skills: `counsel` (the orchestrator), `browse`, `retro`, `setup`, `update`, `export`
+- 5 skills: `counsel` (the orchestrator), `browse`, `retro`, `setup`, `update`
 - 5 primitives (read, research, evaluate, draft, remember) that `counsel` composes dynamically based on intent
 - Headless browser for document extraction
-- Shell scripts for setup, backup, restore, update
+- Narrow deterministic helpers for backup/restore, Word redlines, formatting, and browser automation
 
 **Your vault provides all knowledge:**
 - Legal framework (law areas)

@@ -19,7 +19,7 @@
 
 import type { Page, Locator } from 'playwright';
 import type { BrowserManager } from './browser-manager';
-import * as Diff from 'diff';
+import { diffLines } from './simple-diff';
 
 // Roles considered "interactive" for the -i flag
 const INTERACTIVE_ROLES = new Set([
@@ -375,7 +375,7 @@ export async function handleSnapshot(
       return snapshotText + '\n\n(no previous snapshot to diff against — this snapshot stored as baseline)';
     }
 
-    const changes = Diff.diffLines(lastSnapshot, snapshotText);
+    const changes = diffLines(lastSnapshot, snapshotText);
     const diffOutput: string[] = ['--- previous snapshot', '+++ current snapshot', ''];
 
     for (const part of changes) {

@@ -1,5 +1,5 @@
 /**
- * gstack browse server — persistent Chromium daemon
+ * Counsel OS browse server — persistent Chromium daemon
  *
  * Architecture:
  *   Bun.serve HTTP on localhost → routes commands to Playwright

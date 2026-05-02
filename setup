@@ -1,19 +1,15 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
-# Counsel OS — Setup
-# All setup is handled by /counsel-os:setup inside Claude Code.
+cat <<'EOF'
+Counsel OS is skill-first.
 
-echo "Counsel OS Setup"
-echo "================"
-echo ""
-echo "Start Claude Code and run:"
-echo ""
-echo "  /counsel-os:setup"
-echo ""
-echo "This handles everything:"
-echo "  - Choose where to store your framework content"
-echo "  - Seed law areas, positions, playbooks, checklists, clause library"
-echo "  - Build the browse binary (if bun is installed)"
-echo "  - Walk you through configuring your practice profile"
-echo ""
-echo "Takes about 15 minutes."
+There is no shell installer to run. Start Claude with this plugin loaded, then
+run:
+
+  /counsel-os:setup
+
+The setup skill will choose or create your legal root, write the marked
+{legal_root}/config.md file, seed law and practice content, and check optional
+tools such as Bun and pandoc when shell access is available.
+EOF

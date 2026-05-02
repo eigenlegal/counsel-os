@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Bump content-version dates for Counsel OS knowledge areas.
 
-Discovers all content groups (subdirs of knowledge/law/ and knowledge/defaults/),
+Discovers all content groups (subdirs of knowledge/law/ and knowledge/practice-seed/),
 hashes the body content (stripping YAML frontmatter), and updates the
 content-version date in frontmatter only when content has actually changed.
 
@@ -22,7 +22,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 KNOWLEDGE_DIR = REPO_ROOT / "knowledge"
 VERSIONS_FILE = REPO_ROOT / ".content-versions.json"
 
-CONTENT_DIRS = ["law", "defaults"]
+CONTENT_DIRS = ["law", "practice-seed"]
 
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?\n)---\s*\n", re.DOTALL)
 
@@ -129,6 +129,11 @@ def main():
         versions = {}
 
     groups = discover_groups()
+    discovered_keys = {key for key, _ in groups}
+    stale_keys = sorted(set(versions) - discovered_keys)
+    for key in stale_keys:
+        versions.pop(key, None)
+
     total_files_modified = 0
     groups_changed = []
     groups_unchanged = []
@@ -168,6 +173,7 @@ def main():
     print(f"Groups discovered:    {len(groups)}")
     print(f"Groups changed:       {len(groups_changed)}")
     print(f"Groups unchanged:     {len(groups_unchanged)}")
+    print(f"Stale groups removed: {len(stale_keys)}")
     print(f"Files modified:       {total_files_modified}")
 
     if groups_changed:
@@ -177,6 +183,11 @@ def main():
 
     if not groups_changed:
         print("\nNo content changes detected.")
+
+    if stale_keys:
+        print("\nRemoved stale groups:")
+        for key in stale_keys:
+            print(f"  {key}")
 
 
 if __name__ == "__main__":

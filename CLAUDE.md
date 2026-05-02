@@ -24,7 +24,7 @@ templates/memory/    — Seed template for patterns.md
 - `primitives/*.md` — Detailed instructions for each primitive, structured by mode.
 - `knowledge/practice-seed/methods/` — Reference guides (not playbooks). Coverage checklists for different work types.
 - `knowledge/practice-seed/standards/` — 24 position files with Our Position + Classification Guide.
-- `config.md` (plugin) — documentation of the path-resolution model. Per-user config lives in the user's vault at `{legal_root}/config.md` (written by setup, discovered each session via the bootstrap procedure in `skills/counsel/SKILL.md`).
+- `CONFIGURATION.md` (plugin) — documentation of the path-resolution model. Per-user config lives in the user's vault at `{legal_root}/config.md` and must contain `counsel-os-config: true` plus `legal_root:` (written by setup, discovered each session via the bootstrap procedure in `skills/counsel/SKILL.md`).
 
 ## Making changes
 

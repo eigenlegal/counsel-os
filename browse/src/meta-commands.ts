@@ -5,7 +5,7 @@
 import type { BrowserManager } from './browser-manager';
 import { handleSnapshot } from './snapshot';
 import { getCleanText } from './read-commands';
-import * as Diff from 'diff';
+import { diffLines } from './simple-diff';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -196,7 +196,7 @@ export async function handleMetaCommand(
       await page.goto(url2, { waitUntil: 'domcontentloaded', timeout: 15000 });
       const text2 = await getCleanText(page);
 
-      const changes = Diff.diffLines(text1, text2);
+      const changes = diffLines(text1, text2);
       const output: string[] = [`--- ${url1}`, `+++ ${url2}`, ''];
 
       for (const part of changes) {

@@ -1,20 +1,4 @@
 {
-  "defaults/checklists": {
-    "content-version": "2026-04-08",
-    "hash": "3df0bcbd54db5b33bc166c1e30d8e5985f823ffaaa7013fa5e5e32fb95599e3b"
-  },
-  "defaults/clause-library": {
-    "content-version": "2026-04-08",
-    "hash": "2558a13586831e9c5d29af677d4685291b99bb5dea134300d25723aaece5f892"
-  },
-  "defaults/playbooks": {
-    "content-version": "2026-04-08",
-    "hash": "74a64e36c95d82de689756c52afb18152c4c57f3ccaeb8b1681d8ae7c515d018"
-  },
-  "defaults/positions": {
-    "content-version": "2026-04-08",
-    "hash": "97e2f6616c1b58f9ead27f0ca64981eb13f61915cccd5d686d49b3afafafa440"
-  },
   "law/accessibility": {
     "content-version": "2026-04-08",
     "hash": "dca4aa9aa800f7f86a5c45ae8dcb57b13e5acc2124d6e27fe3d94523b10b58d5"
@@ -118,5 +102,17 @@
   "law/white-collar-investigations": {
     "content-version": "2026-04-08",
     "hash": "f1f8ac5be2a7db79a17f0defcb668b296f88113ab5281baa91c8d4b6d71e89d2"
+  },
+  "practice-seed/library": {
+    "content-version": "2026-04-08",
+    "hash": "2558a13586831e9c5d29af677d4685291b99bb5dea134300d25723aaece5f892"
+  },
+  "practice-seed/methods": {
+    "content-version": "2026-04-08",
+    "hash": "21e35b20f8aae016321421e5b381896ad942bca869ac7accec39446f841d60d2"
+  },
+  "practice-seed/standards": {
+    "content-version": "2026-04-08",
+    "hash": "94bea03865e4efa153c04769e624b5d3ea98df32e779b822439a577ef1edce33"
   }
 }
