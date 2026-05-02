@@ -85,6 +85,7 @@ After installing, run `/counsel-os:setup` (Cowork or Claude Code) — it walks y
 | Step | What It Configures | Time |
 |------|--------------------|------|
 | Legal root | Where Counsel OS stores law areas, practice content, and memory in your vault | ~1 min |
+| Optional tools | Whether you want to use a plain folder, Obsidian, QMD, or filesystem fallback | ~1 min |
 | `profile.md` | Your organization, legal philosophy, risk appetite, writing style, escalation criteria | ~5 min |
 | Standards customization | Review and adjust the 24 standard clause positions for your practice | ~10 min |
 

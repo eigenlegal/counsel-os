@@ -50,6 +50,15 @@ Ask the user where to store the framework content:
 > If you use Obsidian, a good choice is a top-level folder in your vault (e.g., `~/Documents/Obsidian Vault/Counsel OS`).
 > If you don't use Obsidian, any folder works (e.g., `~/legal/counsel-os`).
 
+Then ask one optional tooling question:
+> Do you already use Obsidian or a content-index tool like QMD?
+>
+> - If yes, I can place Counsel OS inside your existing vault and use any connected index automatically.
+> - If no, we can continue with a normal folder. Obsidian and QMD are optional.
+> - If you'd like, I can give you install/connect instructions for Obsidian or QMD after core setup is done.
+
+Do not block setup on Obsidian or QMD. If the user wants install guidance, give concise instructions appropriate to the host, but continue setup with the filesystem fallback unless the user explicitly pauses to install/connect a tool.
+
 If shell or file listing is available, after the user provides a path, detect whether it looks like an Obsidian vault:
 
 ```bash
