@@ -94,17 +94,24 @@ PRECEDENCE (highest to lowest):
 
 ## Finding the Legal Root
 
-The user's per-user configuration lives in their vault at `{legal_root}/config.md`. The plugin tree itself never carries user state. To find `{legal_root}` on each session, follow this procedure before doing any path-based work.
+The user's per-user configuration lives in their vault at `{legal_root}/config.md`. The plugin tree itself never carries user state. A valid config file MUST contain both:
+
+```markdown
+counsel-os-config: true
+legal_root: /absolute/path/to/legal/root
+```
+
+Do not treat an unmarked `config.md` as Counsel OS config. To find `{legal_root}` on each session, follow this procedure before doing any path-based work.
 
 **Procedure (in order — stop at the first hit):**
 
 1. **Check the pointer file** at `~/.counsel-os/legal-root` (Claude Code only — Cowork's sandbox doesn't have home-dir access). The pointer is a single line containing an absolute path. If it exists:
-   - Verify `{path}/config.md` still exists. If yes → use it (and skip to step 5).
+   - Verify `{path}/config.md` exists and contains `counsel-os-config: true`. If yes → use it (and skip to step 5).
    - If the file or directory is gone (user moved their vault), the pointer is stale — fall through to step 2.
 
-2. **Glob from the working location.** In Claude Code, start from the current working directory and walk up to ~3 parent levels looking for `config.md`. In Cowork, scan from the connected workspace root to ~3 levels deep. Read each candidate for a line matching `legal_root: <path>`.
+2. **Glob from the working location.** In Claude Code, start from the current working directory and walk up to ~3 parent levels looking for `config.md`. In Cowork, scan from the connected workspace root to ~3 levels deep. A candidate only counts if it contains `counsel-os-config: true` and a line matching `legal_root: <path>`.
 
-3. **Glob known vault locations** (Claude Code only — Cowork already covers this via step 2). Check these conventional paths for a `config.md` containing `legal_root:`:
+3. **Glob known vault locations** (Claude Code only — Cowork already covers this via step 2). Check these conventional paths for a marked `config.md` containing `counsel-os-config: true` and `legal_root:`:
    - `~/Documents/Obsidian Vault/*/config.md`
    - `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/*/*/config.md` (iCloud Obsidian)
    - `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/*/config.md`
@@ -116,7 +123,7 @@ The user's per-user configuration lives in their vault at `{legal_root}/config.m
 4. **Resolve based on what was found across steps 2–3:**
    - **Exactly one match** → use it. The directory containing the matched `config.md` is `{legal_root}` (the file's `legal_root:` line should agree; if they conflict, prefer the file's actual location and warn the user).
    - **Multiple matches** → ask the user which legal root to use ("I see Counsel OS configs at A and B — which one?"). Rare; would mean multiple installations.
-   - **Zero matches** → ask the user explicitly: *"I don't see a Counsel OS legal root configured. Run `/counsel-os:setup` to set one up, or tell me where your existing legal root is."*
+   - **Zero matches** → ask the user explicitly: *"I don't see a marked Counsel OS legal root config. Run `/counsel-os:setup` to set one up, or tell me where your existing legal root is."*
 
 5. **Write the pointer file** (Claude Code only, after resolving via steps 2–4). This caches the resolution for the next session so we don't re-scan:
    ```bash
@@ -135,7 +142,7 @@ The user's per-user configuration lives in their vault at `{legal_root}/config.m
 - `entity_properties.type_field` → `counsel-os-type`
 - `entity_properties.values` → `[counterparty, vendor, customer, prospect, matter]`
 
-**The plugin's own `config.md`** (in the plugin tree) is documentation only — never read it for values. The user's `{legal_root}/config.md` is the only authoritative source.
+**The plugin's own `CONFIGURATION.md`** is documentation only — never read it for values. The user's marked `{legal_root}/config.md` is the only authoritative source.
 
 **Why the pointer file isn't the source of truth:** the pointer at `~/.counsel-os/legal-root` is a per-machine performance cache, not configuration. The vault's `config.md` is canonical. If they disagree (rare), trust the vault — and rewrite the pointer.
 

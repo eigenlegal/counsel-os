@@ -174,16 +174,19 @@ Close the current tab.
 
 ### Cookie & Authentication
 
-#### `cookies import <file>`
-Import cookies from a file (Netscape/Mozilla format or JSON). Use this to access authenticated portals and data rooms without re-entering credentials.
+#### `cookie-import <file>`
+Import cookies from a JSON file. Use this to access authenticated portals and data rooms without re-entering credentials.
 ```
-cookies import ~/cookies/dataroom.txt
+cookie-import ~/cookies/dataroom.json
 ```
 
 **Important for legal work:** Many data rooms and client portals require authentication. Export your browser cookies using a browser extension and import them here to maintain your authenticated session.
 
-#### `cookies export <file>`
-Export current cookies to a file for reuse.
+#### `cookie-import-browser [browser] [--domain <domain>]`
+Import cookies from a supported local Chromium browser, either through the picker UI or directly for a domain.
+```
+cookie-import-browser chrome --domain docusign.com
+```
 
 ### Chaining Commands
 
@@ -198,7 +201,7 @@ chain goto https://dataroom.example.com | click "Documents" | click "Contracts" 
 ### Extract a Contract from a Data Room
 
 ```
-1. cookies import ~/cookies/dataroom-cookies.txt
+1. cookie-import ~/cookies/dataroom-cookies.json
 2. goto https://dataroom.intralinks.com/deal/12345
 3. snapshot                                          # see the page structure
 4. click "Documents"                                 # navigate to documents
@@ -227,7 +230,7 @@ chain goto https://dataroom.example.com | click "Documents" | click "Contracts" 
 ### Download from Cloud Storage
 
 ```
-1. cookies import ~/cookies/google-drive.txt
+1. cookie-import ~/cookies/google-drive.json
 2. goto https://drive.google.com/drive/folders/abc123
 3. links                                             # list files
 4. click "Q1 Vendor Agreements"                      # navigate to folder

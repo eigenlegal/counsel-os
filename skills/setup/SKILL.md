@@ -8,20 +8,31 @@ description: "Guided onboarding: configure your legal root, seed content, and se
 You are helping a user set up Counsel OS from scratch. This single skill handles everything: choosing where to store content, seeding the legal framework, and walking through practice profile configuration. The goal is to go from zero to a working Counsel OS in one session.
 
 
-## Step 0: Detect Environment
+## Step 0: Detect Capabilities
 
-Determine whether you're running in **Claude Code** (CLI) or **Cowork** (Claude Desktop):
+Counsel OS setup is skill-first and capability-based. Do not assume only one host or operating system. First determine what this session can do:
 
-- **Claude Code**: You have shell access (Bash tool), can write to external paths, and can detect optional tools (bun, pandoc). Follow the full setup flow below.
-- **Cowork**: No shell access. Follow the same setup flow, but skip the browse binary build and pandoc check in Step 2. Everything else (path selection, content seeding, practice onboarding) works the same — content still lives in the user's vault.
+- **File write access:** Can you create folders and files in the user's chosen legal root?
+- **Shell access:** Can you run a simple shell command such as `echo ok`?
+- **Home-directory access:** Can you write `~/.counsel-os/legal-root`?
+- **Plugin-tree write access:** Can you build optional local binaries in the plugin directory?
+- **External tooling:** Are `bun`, `pandoc`, `python3`, Microsoft Word, or other optional tools available?
+- **Connected index/search tools:** Is a content-index MCP tool such as QMD connected?
 
-To detect: try to use the Bash tool with a simple command like `echo ok`. If it works, you're in Claude Code. If it's unavailable, you're in Cowork.
+Adapt to the answers:
+
+- If shell access is available, use it for detection, directory creation, copying seed files, and optional dependency checks.
+- If shell access is unavailable but file tools are available, perform setup through those file tools and skip shell-only checks.
+- If the environment is read-only except for a connected workspace, ask the user to choose a legal root inside that workspace.
+- If no file write mechanism is available, prepare the exact files and paths the user should create, then stop after confirming what could not be written.
+
+Claude Code is one capable host; Cowork is usually a file-tool host without shell. Other LLM environments should follow the same capability matrix rather than a hardcoded host branch.
 
 ## Step 1: Determine Legal Root
 
-Check if a legal root is already configured by running the **Finding the Legal Root** procedure in `skills/counsel/SKILL.md`. That procedure looks for an existing `config.md` (with a `legal_root:` line) near the working location and reports back what it finds.
+Check if a legal root is already configured by running the **Finding the Legal Root** procedure in `skills/counsel/SKILL.md`. That procedure looks for an existing marked `config.md` containing both `counsel-os-config: true` and `legal_root:` near the working location and reports back what it finds.
 
-**Do not** read `config.local.md` from the plugin root — that file is no longer used. Per-user configuration lives in the user's vault at `{legal_root}/config.md`.
+**Do not** read `config.local.md` or plugin documentation files. Per-user configuration lives only in the user's vault at `{legal_root}/config.md`.
 
 ### If an existing legal root was found:
 
@@ -39,19 +50,21 @@ Ask the user where to store the framework content:
 > If you use Obsidian, a good choice is a top-level folder in your vault (e.g., `~/Documents/Obsidian Vault/Counsel OS`).
 > If you don't use Obsidian, any folder works (e.g., `~/legal/counsel-os`).
 
-In Claude Code, after the user provides a path, detect whether it looks like an Obsidian vault:
+If shell or file listing is available, after the user provides a path, detect whether it looks like an Obsidian vault:
 
 ```bash
 [ -d "{user's path}/.obsidian" ] || [ -d "$(dirname '{user's path}')/.obsidian" ] && echo "IS_OBSIDIAN: yes" || echo "IS_OBSIDIAN: no"
 ```
 
-(In Cowork, skip this detection — the workspace is the user's vault by definition.)
+If that detection is unavailable, skip it; the legal root does not have to be an Obsidian vault.
 
 Then write the user's config file at `{legal_root}/config.md`:
 
 ```markdown
 # Counsel OS Configuration
 
+counsel-os-config: true
+config_version: 1
 legal_root: {user's path}
 
 # Optional overrides (defaults shown — uncomment to customize):
@@ -64,16 +77,16 @@ legal_root: {user's path}
 
 This file is the authoritative source of per-user configuration. It travels with the user's vault (sync, git, machine swap), and both runtimes find it via the bootstrap procedure on subsequent sessions.
 
-**Do not** write to the plugin's `config.md` or to a `config.local.md` in the plugin tree. The plugin tree is read-only in some runtimes (Cowork) and shouldn't carry user state regardless.
+**Do not** write to plugin documentation files or to a `config.local.md` in the plugin tree. The plugin tree is read-only in some runtimes (Cowork) and shouldn't carry user state regardless.
 
-**Also write the pointer file** (Claude Code only) so subsequent sessions can skip the scan:
+**Also write the pointer file** if home-directory writes are available so subsequent sessions can skip the scan:
 
 ```bash
 mkdir -p ~/.counsel-os
 printf '%s' "{user's path}" > ~/.counsel-os/legal-root
 ```
 
-The pointer is a per-machine performance cache; the vault's `config.md` is canonical. In Cowork, skip this step — the sandbox doesn't allow home-dir writes, and Cowork's workspace-relative scan in step 2 of the bootstrap is fast enough without it.
+The pointer is a per-machine performance cache; the vault's `config.md` is canonical. If home-directory writes are unavailable, skip this step.
 
 Entity discovery is runtime-detected — if a content-index MCP tool is connected (QMD recommended; see CONNECTORS.md), it's used automatically and entity files can live anywhere in the vault. Otherwise the counsel skill falls back to grepping `{legal_root}/{entities_path}/`. No setup-time choice required.
 
@@ -116,14 +129,18 @@ counsel-os-type: memory-patterns
 ```
 
 ### Build browse binary
-If the plugin has `browse/src/` but no `browse/dist/browse`, try to build it:
+If shell access and plugin-tree write access are available, and the plugin has `browse/src/` but no `browse/dist/browse`, try to build it:
 1. Check if `bun` is available: `command -v bun`
 2. If yes: run `cd {plugin_root} && bun install && bun run build`
 3. If no: note that the browse skill won't be available and suggest installing bun
 
+If shell access or plugin-tree write access is unavailable, skip this step. The rest of Counsel OS still works.
+
 ### Pandoc check
-Check if pandoc is installed (`command -v pandoc`). If not, note:
+If shell access is available, check if pandoc is installed (`command -v pandoc`). If not, note:
 > pandoc is not installed. You'll need it to extract tracked changes from Word documents. Install with `brew install pandoc` (macOS) or `apt-get install pandoc` (Linux).
+
+If shell access is unavailable, skip this check and tell the user `.docx` tracked-change extraction depends on pandoc in CLI-style environments.
 
 Report what was seeded and built:
 > Counsel OS framework seeded at `{legal_root}`:
@@ -295,7 +312,7 @@ Run a quick validation:
 1. **Files exist check:** Verify law/, practice/ (with profile.md, standards/, methods/, library/), matters/, memory/ are all present and populated
 2. **Content check:** Verify profile.md has real content (not just template placeholders)
 3. **Consistency check:** Verify positions don't conflict with each other or with law/ constraints
-4. **Config check:** Verify `{legal_root}/config.md` exists and contains the correct `legal_root:` path
+4. **Config check:** Verify `{legal_root}/config.md` exists and contains `counsel-os-config: true` plus the correct `legal_root:` path
 
 ```
 ## Setup Complete

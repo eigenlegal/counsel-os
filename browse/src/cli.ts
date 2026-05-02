@@ -1,5 +1,5 @@
 /**
- * gstack CLI — thin wrapper that talks to the persistent server
+ * Counsel OS browse CLI — thin wrapper that talks to the persistent server
  *
  * Flow:
  *   1. Read /tmp/browse-server.json for port + token
@@ -45,8 +45,18 @@ export function resolveServerScript(
     }
   }
 
-  // Legacy fallback for user-level installs
-  return path.resolve(env.HOME || '/tmp', '.claude/skills/gstack/browse/src/server.ts');
+  const home = env.HOME || '/tmp';
+  const candidates = [
+    path.resolve(home, 'counsel-os/browse/src/server.ts'),
+    path.resolve(home, '.claude/plugins/cache/eigenlegal/counsel-os/current/browse/src/server.ts'),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return path.resolve(home, 'counsel-os/browse/src/server.ts');
 }
 
 const SERVER_SCRIPT = resolveServerScript();
@@ -203,7 +213,7 @@ async function main() {
   const args = process.argv.slice(2);
 
   if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
-    console.log(`gstack browse — Fast headless browser for AI coding agents
+    console.log(`Counsel OS browse — headless browser for legal document extraction
 
 Usage: browse <command> [args...]
 
