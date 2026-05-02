@@ -7,7 +7,7 @@
  * No cookie values exposed anywhere.
  */
 
-export function getCookiePickerHTML(serverPort: number): string {
+export function getCookiePickerHTML(serverPort: number, pickerToken: string): string {
   const baseUrl = `http://127.0.0.1:${serverPort}`;
 
   return `<!DOCTYPE html>
@@ -290,6 +290,7 @@ export function getCookiePickerHTML(serverPort: number): string {
 <script>
 (function() {
   const BASE = '${baseUrl}';
+  const PICKER_TOKEN = '${pickerToken}';
   let activeBrowser = null;
   let allDomains = [];
   let importedSet = {};  // domain → count
@@ -328,7 +329,8 @@ export function getCookiePickerHTML(serverPort: number): string {
 
   // ─── API ────────────────────────────────
   async function api(path, opts) {
-    const res = await fetch(BASE + '/cookie-picker' + path, opts);
+    const sep = path.includes('?') ? '&' : '?';
+    const res = await fetch(BASE + '/cookie-picker' + path + sep + 'token=' + encodeURIComponent(PICKER_TOKEN), opts);
     const data = await res.json();
     if (!res.ok) {
       const err = new Error(data.error || 'Request failed');

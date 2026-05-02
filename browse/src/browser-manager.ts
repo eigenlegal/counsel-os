@@ -29,6 +29,8 @@ export class BrowserManager {
 
   /** Server port — set after server starts, used by cookie-import-browser command */
   public serverPort: number = 0;
+  /** Private token for the cookie picker UI/API. */
+  public cookiePickerToken: string = '';
 
   // ─── Ref Map (snapshot → @e1, @e2, @c1, @c2, ...) ────────
   private refMap: Map<string, Locator> = new Map();

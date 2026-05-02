@@ -7,30 +7,7 @@ TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 BACKUP_NAME="counsel-os-backup-$TIMESTAMP"
 BACKUP_PATH="$BACKUP_DIR/$BACKUP_NAME"
 
-resolve_legal_root() {
-  if [ -n "${COUNSEL_OS_LEGAL_ROOT:-}" ]; then
-    printf '%s\n' "$COUNSEL_OS_LEGAL_ROOT"
-    return
-  fi
-
-  if [ -f "$HOME/.counsel-os/legal-root" ]; then
-    tr -d '\n' < "$HOME/.counsel-os/legal-root"
-    return
-  fi
-
-  local dir="$PWD"
-  while [ "$dir" != "/" ]; do
-    if [ -f "$dir/config.md" ] && grep -q '^counsel-os-config: true$' "$dir/config.md"; then
-      printf '%s\n' "$dir"
-      return
-    fi
-    dir="$(dirname "$dir")"
-  done
-
-  return 1
-}
-
-LEGAL_ROOT="$(resolve_legal_root || true)"
+LEGAL_ROOT="$(bash "$COUNSEL_DIR/scripts/resolve_legal_root.sh" || true)"
 
 if [ -z "$LEGAL_ROOT" ] || [ ! -d "$LEGAL_ROOT" ]; then
   echo "Legal root not found."
