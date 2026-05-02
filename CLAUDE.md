@@ -32,7 +32,7 @@ templates/memory/    — Seed template for patterns.md
 - **Positions/methods/library**: Edit in `knowledge/practice-seed/`. Users get these via `/counsel-os:setup` (initial) and `/counsel-os:update` (sync). Practice content is user-owned — update offers suggestions, never overwrites.
 - **Law areas**: Edit in `knowledge/law/`. These are plugin-managed — update overwrites the user's copies.
 - **Scripts**: Python/bash in `scripts/`. Test locally before pushing.
-- **Version**: Bump in VERSION, package.json, and .claude-plugin/plugin.json (all three).
+- **Version**: Bump in VERSION, package.json, .claude-plugin/plugin.json, and .claude-plugin/marketplace.json (all four).
 
 ## Testing
 
