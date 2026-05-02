@@ -20,46 +20,35 @@ const INSTANCE_SUFFIX = BROWSE_PORT ? `-${BROWSE_PORT}` : '';
 const STATE_FILE = process.env.BROWSE_STATE_FILE || `/tmp/browse-server${INSTANCE_SUFFIX}.json`;
 const MAX_START_WAIT = 8000; // 8 seconds to start
 
-export function resolveServerScript(
-  env: Record<string, string | undefined> = process.env,
-  metaDir: string = import.meta.dir,
-  execPath: string = process.execPath
-): string {
-  if (env.BROWSE_SERVER_SCRIPT) {
-    return env.BROWSE_SERVER_SCRIPT;
+function resolveServerCommand(): string[] {
+  if (process.env.BROWSE_SERVER_SCRIPT) {
+    return ['bun', 'run', process.env.BROWSE_SERVER_SCRIPT];
   }
 
-  // Dev mode: cli.ts runs directly from browse/src
-  if (metaDir.startsWith('/') && !metaDir.includes('$bunfs')) {
-    const direct = path.resolve(metaDir, 'server.ts');
+  // Dev mode: cli.ts runs directly from browse/src.
+  if (import.meta.dir.startsWith('/') && !import.meta.dir.includes('$bunfs')) {
+    const direct = path.resolve(import.meta.dir, 'server.ts');
     if (fs.existsSync(direct)) {
-      return direct;
+      return ['bun', 'run', direct];
     }
   }
 
-  // Compiled binary: derive the source tree from browse/dist/browse
-  if (execPath) {
-    const adjacent = path.resolve(path.dirname(execPath), '..', 'src', 'server.ts');
-    if (fs.existsSync(adjacent)) {
-      return adjacent;
-    }
-  }
-
-  const home = env.HOME || '/tmp';
-  const candidates = [
-    path.resolve(home, 'counsel-os/browse/src/server.ts'),
-    path.resolve(home, '.claude/plugins/cache/eigenlegal/counsel-os/current/browse/src/server.ts'),
-  ];
-  for (const candidate of candidates) {
-    if (fs.existsSync(candidate)) {
-      return candidate;
-    }
-  }
-
-  return path.resolve(home, 'counsel-os/browse/src/server.ts');
+  // Compiled mode: the bundled binary includes the literal dynamic import used
+  // by __server, so it can spawn itself with a private server argument.
+  return [process.execPath, '__server'];
 }
 
-const SERVER_SCRIPT = resolveServerScript();
+function ensurePluginNodePath(): void {
+  const pluginRoot = path.resolve(path.dirname(process.execPath), '..', '..');
+  const nodeModules = path.join(pluginRoot, 'node_modules');
+  if (!fs.existsSync(nodeModules)) return;
+
+  const existing = process.env.NODE_PATH;
+  const parts = existing ? existing.split(path.delimiter) : [];
+  if (!parts.includes(nodeModules)) {
+    process.env.NODE_PATH = [nodeModules, ...parts].join(path.delimiter);
+  }
+}
 
 interface ServerState {
   pid: number;
@@ -92,9 +81,10 @@ function isProcessAlive(pid: number): boolean {
 async function startServer(): Promise<ServerState> {
   // Clean up stale state file
   try { fs.unlinkSync(STATE_FILE); } catch {}
+  ensurePluginNodePath();
 
   // Start server as detached background process
-  const proc = Bun.spawn(['bun', 'run', SERVER_SCRIPT], {
+  const proc = Bun.spawn(resolveServerCommand(), {
     stdio: ['ignore', 'pipe', 'pipe'],
     env: { ...process.env },
   });
@@ -211,6 +201,13 @@ async function sendCommand(state: ServerState, command: string, args: string[], 
 // ─── Main ──────────────────────────────────────────────────────
 async function main() {
   const args = process.argv.slice(2);
+
+  if (args[0] === '__server') {
+    ensurePluginNodePath();
+    const { start: startBrowseServer } = await import('./server');
+    await startBrowseServer();
+    return;
+  }
 
   if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
     console.log(`Counsel OS browse — headless browser for legal document extraction

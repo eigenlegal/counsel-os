@@ -296,7 +296,9 @@ export async function handleWriteCommand(
         throw new Error('No Chromium browsers found. Supported: Comet, Chrome, Arc, Brave, Edge');
       }
 
-      const pickerUrl = `http://127.0.0.1:${port}/cookie-picker`;
+      const token = bm.cookiePickerToken;
+      if (!token) throw new Error('Cookie picker token not available');
+      const pickerUrl = `http://127.0.0.1:${port}/cookie-picker?token=${encodeURIComponent(token)}`;
       try {
         Bun.spawn(['open', pickerUrl], { stdout: 'ignore', stderr: 'ignore' });
       } catch {

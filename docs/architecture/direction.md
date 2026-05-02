@@ -163,7 +163,6 @@ counsel-os/
     retro/                       # Practice analytics
     setup/                       # Onboarding
     update/                      # Content sync
-    export/                      # Package for Cowork
 
   knowledge/                     # Shipped content
     law/                         # 26 law areas
@@ -180,7 +179,7 @@ counsel-os/
     legal-template.docx          # Style template
 
   templates/memory/              # Seed template for patterns.md
-  config.md                      # Plugin config docs (per-user config lives at {legal_root}/config.md in the user's vault)
+  CONFIGURATION.md               # Plugin config docs (per-user config lives at {legal_root}/config.md in the user's vault)
 ```
 
 ---

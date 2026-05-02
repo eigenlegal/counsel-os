@@ -13,7 +13,7 @@ You are using a headless browser to access web resources for legal work. This sk
 - **Legal research:** Navigate case law databases, regulatory agency sites, corporate registries
 - **Cloud storage access:** Download documents from Google Drive, SharePoint, Dropbox web interfaces
 - **Portal navigation:** Access client portals, filing systems, government databases
-- **Evidence capture:** Take timestamped screenshots of web pages for litigation or compliance purposes
+- **Evidence capture:** Take full-page screenshots of web pages for litigation or compliance purposes
 - **Contract import:** Extract agreement text from web-based contract management platforms
 
 ## Setup
@@ -26,24 +26,24 @@ bun install
 bun run build
 ```
 
-Or if bun is not installed, use npx:
+Install the Playwright browser if it has not been installed yet:
 ```bash
-npx playwright install chromium
+bunx playwright install chromium
 ```
 
 ## Finding the Binary
 
 The helper script `browse/bin/find-browse` locates the browse binary. The binary can be at:
 1. `browse/dist/browse` (compiled binary)
-2. System PATH
-3. Via `bunx`/`npx` as a fallback
+2. The active plugin root's `browse/dist/browse`
+3. `~/counsel-os/browse/dist/browse`
 
 ## Command Reference
 
 ### Navigation
 
 #### `goto <url>`
-Navigate to a URL. Waits for the page to fully load.
+Navigate to a URL. Waits for DOM content to load.
 ```
 goto https://dataroom.example.com/deal/project-alpha
 ```
@@ -64,7 +64,7 @@ text
 Returns the full text content of the page, stripped of HTML tags and navigation elements.
 
 #### `snapshot`
-Take an accessibility snapshot of the page — returns a structured representation of all interactive elements, text content, and page structure. More detailed than `text` but includes element identifiers for interaction.
+Take an accessibility snapshot of the page. This returns structured page content with `@e1`, `@e2`, etc. refs for interaction.
 ```
 snapshot
 ```
@@ -78,36 +78,35 @@ links
 ### Interaction
 
 #### `click <element>`
-Click on an element. Use text content, accessibility label, or element identifier from snapshot.
+Click an element. Use a CSS selector or an `@e`/`@c` ref from `snapshot`; plain visible text is not a selector.
 ```
-click "Download Agreement"
-click "Section 4 - Indemnification"
-click element-id-from-snapshot
+snapshot
+click @e3
+click "button.download"
 ```
 
 #### `fill <element> <value>`
-Fill in a form field. Use for login forms, search boxes, and filters.
+Fill in a form field. Use a CSS selector or an `@e`/`@c` ref from `snapshot`.
 ```
-fill "Search" "Master Services Agreement"
-fill "Username" "user@example.com"
-fill "Password" "..."
+fill @e4 "Master Services Agreement"
+fill "input[name=email]" "user@example.com"
 ```
 
 #### `select <element> <value>`
 Select an option from a dropdown.
 ```
-select "Document Type" "Contracts"
-select "Sort By" "Date Modified"
+select @e5 "Contracts"
+select "select[name=documentType]" "Contracts"
 ```
 
 #### `hover <element>`
 Hover over an element to reveal tooltips or dropdown menus.
 
-#### `scroll <direction> [amount]`
-Scroll the page. Direction: up, down, left, right.
+#### `scroll [selector]`
+Scroll to the bottom of the page, or scroll a specific selector/ref into view.
 ```
-scroll down 500
-scroll down  # scrolls one viewport
+scroll
+scroll @e12
 ```
 
 ### Screenshots & Evidence
@@ -115,19 +114,16 @@ scroll down  # scrolls one viewport
 #### `screenshot [filename]`
 Take a screenshot of the current page. Use for evidence capture, documenting web page states, or recording counterparty portal content.
 ```
-screenshot                           # auto-named with timestamp
-screenshot "data-room-index.png"     # custom filename
+screenshot                           # saves /tmp/browse-screenshot.png
+screenshot "/tmp/data-room-index.png"
 ```
 
-Screenshots are saved to the current working directory. For legal evidence, screenshots include:
-- Timestamp in the filename
-- The URL of the page
-- Full-page capture
+Screenshots are full-page captures. Custom paths must be under `/tmp` or the current working directory.
 
-#### `screenshot <element>`
-Take a screenshot of a specific element on the page.
+#### Annotated screenshot
+Use `snapshot -a` to create an annotated screenshot with ref labels.
 ```
-screenshot "contract-section-4"
+snapshot -a -o /tmp/browse-annotated.png
 ```
 
 ### Advanced
@@ -148,11 +144,17 @@ Show recent network requests. Useful for finding API endpoints that serve docume
 network
 ```
 
-#### `responsive <width> <height>`
+#### `viewport <WxH>`
 Set the viewport size. Useful when sites render differently on mobile/desktop.
 ```
-responsive 1920 1080  # desktop
-responsive 375 812    # mobile
+viewport 1920x1080
+viewport 375x812
+```
+
+#### `responsive [prefix]`
+Capture mobile, tablet, and desktop screenshots.
+```
+responsive /tmp/browse-responsive
 ```
 
 #### `diff`
@@ -177,10 +179,10 @@ Close the current tab.
 #### `cookie-import <file>`
 Import cookies from a JSON file. Use this to access authenticated portals and data rooms without re-entering credentials.
 ```
-cookie-import ~/cookies/dataroom.json
+cookie-import /tmp/dataroom-cookies.json
 ```
 
-**Important for legal work:** Many data rooms and client portals require authentication. Export your browser cookies using a browser extension and import them here to maintain your authenticated session.
+**Important for legal work:** Many data rooms and client portals require authentication. Cookie JSON paths must be under `/tmp` or the current working directory. For local Chromium browsers, prefer `cookie-import-browser`.
 
 #### `cookie-import-browser [browser] [--domain <domain>]`
 Import cookies from a supported local Chromium browser, either through the picker UI or directly for a domain.
@@ -190,10 +192,10 @@ cookie-import-browser chrome --domain docusign.com
 
 ### Chaining Commands
 
-#### `chain <cmd1> | <cmd2> | <cmd3>`
-Execute multiple commands in sequence. Useful for multi-step workflows.
+#### `chain`
+Execute multiple commands in sequence. `chain` reads a JSON array from stdin.
 ```
-chain goto https://dataroom.example.com | click "Documents" | click "Contracts" | text
+echo '[["goto","https://dataroom.example.com"],["snapshot"],["text"]]' | browse chain
 ```
 
 ## Common Workflows
@@ -201,13 +203,13 @@ chain goto https://dataroom.example.com | click "Documents" | click "Contracts" 
 ### Extract a Contract from a Data Room
 
 ```
-1. cookie-import ~/cookies/dataroom-cookies.json
+1. cookie-import /tmp/dataroom-cookies.json
 2. goto https://dataroom.intralinks.com/deal/12345
 3. snapshot                                          # see the page structure
-4. click "Documents"                                 # navigate to documents
-5. click "Executed Agreements"                        # find the right folder
+4. click @e3                                         # navigate to documents
+5. click @e7                                         # find the right folder
 6. links                                             # list available documents
-7. click "MSA - Acme Corp - Executed.pdf"            # open the document
+7. click @e12                                        # open the document
 8. text                                              # extract the text
 ```
 
@@ -223,19 +225,20 @@ chain goto https://dataroom.example.com | click "Documents" | click "Contracts" 
 
 ```
 1. goto https://counterparty-website.com/terms-of-service
-2. screenshot "counterparty-tos-2026-03-13.png"       # timestamped capture
+2. screenshot "/tmp/counterparty-tos-2026-03-13.png"
 3. text                                              # extract text for analysis
 ```
 
 ### Download from Cloud Storage
 
 ```
-1. cookie-import ~/cookies/google-drive.json
+1. cookie-import /tmp/google-drive-cookies.json
 2. goto https://drive.google.com/drive/folders/abc123
 3. links                                             # list files
-4. click "Q1 Vendor Agreements"                      # navigate to folder
-5. click "Vendor-MSA-Draft-v3.docx"                  # select file
-6. click "Download"                                  # trigger download
+4. snapshot                                          # get fresh refs
+5. click @e8                                         # navigate to folder
+6. click @e14                                        # select file
+7. click @e20                                        # trigger download
 ```
 
 ## Security Notes
