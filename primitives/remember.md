@@ -18,7 +18,7 @@ Persist state and propose knowledge updates.
 - Existing entity file (if any) — to update rather than create
 - `practice/standards/` — to detect position gaps or drift
 - `practice/profile.md` — identity for attribution
-- `{legal_root}/config.md` — for the matters path and other overrides (resolved via the Finding the Legal Root procedure in counsel/SKILL.md)
+- `{legal_root}/config.md` — the marked Counsel OS config file for the matters path and other overrides (resolved via the Finding the Legal Root procedure in counsel/SKILL.md)
 
 ## Produces
 

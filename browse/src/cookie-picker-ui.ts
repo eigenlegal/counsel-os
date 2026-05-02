@@ -15,7 +15,7 @@ export function getCookiePickerHTML(serverPort: number): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cookie Import — gstack browse</title>
+<title>Cookie Import — Counsel OS browse</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {

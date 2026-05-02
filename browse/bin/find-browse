@@ -1,11 +1,18 @@
 #!/bin/bash
-# Find the gstack browse binary. Echoes path and exits 0, or exits 1 if not found.
-ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
-if [ -n "$ROOT" ] && test -x "$ROOT/.claude/skills/gstack/browse/dist/browse"; then
-  echo "$ROOT/.claude/skills/gstack/browse/dist/browse"
-elif test -x "$HOME/.claude/skills/gstack/browse/dist/browse"; then
-  echo "$HOME/.claude/skills/gstack/browse/dist/browse"
+set -euo pipefail
+
+# Find the Counsel OS browse binary. Echoes path and exits 0, or exits 1 if not found.
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PLUGIN_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+
+if [ -n "$ROOT" ] && test -x "$ROOT/browse/dist/browse"; then
+  echo "$ROOT/browse/dist/browse"
+elif test -x "$PLUGIN_ROOT/browse/dist/browse"; then
+  echo "$PLUGIN_ROOT/browse/dist/browse"
+elif test -x "$HOME/counsel-os/browse/dist/browse"; then
+  echo "$HOME/counsel-os/browse/dist/browse"
 else
-  echo "ERROR: browse binary not found. Run: cd <skill-dir> && ./setup" >&2
+  echo "ERROR: browse binary not found. Run /counsel-os:setup or build with: bun run build" >&2
   exit 1
 fi

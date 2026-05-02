@@ -1,382 +1,208 @@
 ---
 name: update
-description: "Pull latest plugin and sync content updates to your vault. One command handles everything."
+description: "Skill-first update: refresh plugin methodology through the install path, then review law and practice content changes for your vault."
 ---
 
-# Update — Pull Plugin + Sync Content
+# Update — Skill-First Sync
 
-This skill handles both plugin updates (methodology) and content syncing (law areas and practice seed content) in one step. Run periodically to stay current.
+Counsel OS updates are LLM-orchestrated. The skill decides what is safe to do in the current runtime, explains each step, and asks before changing user-owned knowledge.
 
+## Step 0: Resolve Plugin Root
 
-## Step 0: Resolve Paths
+Resolve the plugin root first: the directory containing this skill. You need this to distinguish plugin documentation from the user's legal root and to find shipped content.
+
+## Step 1: Migrate Config If Needed
+
+This is a one-time migration path for users upgrading from earlier Counsel OS versions. It is intentionally limited to `/counsel-os:update`; normal counsel/setup path discovery remains strict and does not silently accept legacy config.
+
+### Current config format
+
+A valid legal-root config is marked:
+
+```markdown
+counsel-os-config: true
+legal_root: /absolute/path/to/legal/root
+```
+
+### Migration trigger
+
+First try the Finding the Legal Root procedure in `skills/counsel/SKILL.md`.
+
+- If it finds a marked config, skip this migration.
+- If it finds no marked config, attempt the migration below.
+- If it finds multiple marked configs, ask the user which one to use and skip migration.
+
+### Migration sources
+
+Check these sources in order. A source may be read only for this migration, not as a recurring fallback.
+
+1. **Pointer file** at `~/.counsel-os/legal-root` if home-directory access is available. If it points to a directory that exists, treat that directory as the candidate legal root.
+2. **Legacy plugin config** at `{plugin_root}/config.local.md`, if present. Read only `legal_root:`, `entities_path:`, `matters_path:`, and `entity_properties:` fields.
+3. **User-provided path.** If no source is found, ask: "Where is your existing Counsel OS legal root?"
+
+Do not scan arbitrary unmarked `config.md` files. That was the old failure mode: plugin documentation or unrelated project files could be mistaken for user config.
+
+### Candidate validation
+
+Before writing anything, validate the candidate legal root:
+
+- The path is outside the plugin root.
+- The directory exists, or the user approved creating it.
+- Prefer candidates containing at least one Counsel OS directory: `law/`, `practice/`, `matters/`, `memory/`, or `entities/`.
+- If the candidate has an existing `config.md`, preserve optional overrides from it only if it appears to be user config. Do not preserve unrelated prose or plugin docs.
+
+### Write migrated config
+
+Write `{legal_root}/config.md` in the current format:
+
+```markdown
+# Counsel OS Configuration
+
+counsel-os-config: true
+config_version: 1
+legal_root: {resolved legal root}
+
+# Optional overrides (defaults shown — uncomment to customize):
+# entities_path: entities
+# matters_path: matters
+# entity_properties:
+#   type_field: counsel-os-type
+#   values: [counterparty, vendor, customer, prospect, matter]
+```
+
+If the legacy config had explicit `entities_path`, `matters_path`, or `entity_properties` overrides that differ from defaults, carry them forward below `legal_root:`. Discard legacy discovery/index configuration; knowledge search is runtime-detected.
+
+If home-directory writes are available, update the pointer:
+
+```bash
+mkdir -p ~/.counsel-os
+printf '%s' "{resolved legal root}" > ~/.counsel-os/legal-root
+```
+
+Report:
+
+```markdown
+Migrated Counsel OS config to the current marked format at {legal_root}/config.md.
+```
+
+## Step 2: Resolve Legal Root
 
 Resolve `{legal_root}` via the Finding the Legal Root procedure in `skills/counsel/SKILL.md`.
 
-- **Legal root** (`{legal_root}`) — contains law/, practice/, matters/, memory/
-- **Plugin root** — where the plugin lives (the directory containing this skill)
+Do not read unmarked legacy configs as a fallback. If no marked config is found, ask the user to run `/counsel-os:setup` or provide the legal root path so setup can write the current config format.
 
-## Step 1: Pull Plugin Update
+## Step 3: Refresh Plugin Methodology
 
-This updates the plugin's methodology — skills, primitives, scripts. Your vault content is not touched.
+Plugin methodology means skills, primitives, scripts, templates, and shipped knowledge. How it updates depends on install mode:
 
-```bash
-# Store current version
-OLD_VERSION=$(cat VERSION)
+- **Claude Desktop / Cowork marketplace:** tell the user to update/reinstall the plugin through the plugin marketplace, then start a new conversation.
+- **Claude Code marketplace:** tell the user to update/reinstall through Claude's plugin installer and fully restart Claude Code if the old manifest remains cached.
+- **Claude Code local clone:** if shell access is available and the plugin root is a git repo, run:
 
-# Pull latest
-git fetch origin
-git merge origin/main --no-edit
+  ```bash
+  git -C {plugin_root} fetch origin
+  git -C {plugin_root} merge --ff-only origin/main
+  ```
 
-# Show new version
-NEW_VERSION=$(cat VERSION)
-```
+If the local clone has uncommitted changes or a non-fast-forward update is needed, stop and explain the situation. Do not merge through conflicts inside the update skill.
 
-If the plugin is not a git repo (installed via plugin cache), find the source repo and sync:
-```bash
-./update
-```
+After updating methodology, tell the user whether a restart is needed. In most plugin runtimes, changed skill files load reliably only in a new conversation or after restarting the host.
 
-Report what changed:
-> **Plugin updated: v{old} → v{new}**
-> - Skills: [list any changed skill files]
-> - Primitives: [list any changed primitive files]
-> - Scripts: [list any changed scripts]
+## Step 4: Compare Vault Content
 
-If already up to date:
-> Plugin is current (v{version}). Checking content sync...
+Compare the plugin's shipped content to the user's vault.
 
-### Sync plugin cache (if version changed)
+### Law areas: plugin-managed
 
-If the version changed, update the Claude Code plugin cache so skills load from the new version:
-
-```bash
-# Find the cache directory — works for any marketplace name (eigenlegal, jack-plugins, etc.)
-CACHE_BASE=$(ls -d "$HOME/.claude/plugins/cache/"*/counsel-os 2>/dev/null | head -1)
-
-if [ -z "$CACHE_BASE" ]; then
-  echo "Plugin cache not found — skill may be running outside a plugin install. Skipping cache sync."
-else
-  # Remove old version caches
-  for dir in "$CACHE_BASE"/*/; do
-    version=$(basename "$dir")
-    if [ "$version" != "$NEW_VERSION" ]; then
-      rm -rf "$dir"
-    fi
-  done
-
-  # Copy current plugin to new versioned cache
-  mkdir -p "$CACHE_BASE/$NEW_VERSION"
-  cp -R {plugin_root}/* "$CACHE_BASE/$NEW_VERSION/"
-fi
-```
-
-Then update `~/.claude/plugins/installed_plugins.json` — find the `counsel-os@*` entry (marketplace name varies: `eigenlegal` for end users, `jack-plugins` for the maintainer) and set:
-- `installPath` → the new cache path
-- `version` → the new version
-- `lastUpdated` → today's date
-
-Tell the user:
-> Plugin cache updated to v{new}. Restart Claude Code to load the new skills.
-
-## Step 1c: Migrate plugin-tree config to vault config (one-time, v0.8.1 → v0.8.2)
-
-Before v0.8.2, per-user configuration lived in the plugin tree at `{plugin_root}/config.local.md`. As of v0.8.2 it lives in the user's vault at `{legal_root}/config.md` (so it survives plugin updates and works in read-only-plugin runtimes like Cowork).
-
-Detect whether the user is on the old layout. If ALL of these are true, run the migration:
-
-- `{plugin_root}/config.local.md` exists (legacy file)
-- `{legal_root}/config.md` does NOT exist (new file not yet written)
-
-If the legacy file exists but you don't yet know `{legal_root}` (because the bootstrap procedure failed to find a vault config), parse the legacy `config.local.md` to extract `legal_root:` — this is the one and only case where reading the plugin-tree config is allowed, specifically for migration.
-
-### Migration steps
-
-1. **Read the legacy config** at `{plugin_root}/config.local.md` and extract:
-   - `legal_root:` (required)
-   - `entities_path:` (optional override)
-   - `matters_path:` (optional override)
-   - `entity_properties:` (optional override)
-   - **Discard:** `discovery:`, `collection:`, and any QMD-specific fields. These are no longer config — knowledge-base search is runtime-detected as of v0.8.1.
-
-2. **Write `{legal_root}/config.md`** with just `legal_root:` plus any overrides that genuinely differed from the new defaults. Use this template:
-
-   ```markdown
-   # Counsel OS Configuration
-
-   legal_root: {extracted path}
-
-   # Optional overrides (defaults shown — uncomment to customize):
-   # entities_path: entities
-   # matters_path: matters
-   # entity_properties:
-   #   type_field: counsel-os-type
-   #   values: [counterparty, vendor, customer, prospect, matter]
-   ```
-
-3. **Write the bootstrap pointer** (Claude Code only — skip in Cowork):
-   ```bash
-   mkdir -p ~/.counsel-os
-   printf '%s' "{extracted legal_root}" > ~/.counsel-os/legal-root
-   ```
-   This lets subsequent sessions skip the directory scan. See "Finding the Legal Root" in `skills/counsel/SKILL.md` for how the pointer is used.
-
-4. **Tell the user what happened:**
-   > **Migrated config to v0.8.2 layout.** Per-user config now lives at `{legal_root}/config.md` instead of in the plugin tree. The legacy file at `{plugin_root}/config.local.md` is no longer used and can be deleted (it's harmless to leave for now — the skills ignore it).
-
-5. **Do not auto-delete `{plugin_root}/config.local.md`.** The plugin tree may be read-only (Cowork) and even when writable, deleting things in there during an update is the kind of thing users want to control. Leave it; it's inert.
-
-After migration, continue with Step 2 below — the user is now on the v0.8.2 architecture.
-
----
-
-## Step 1b: Migrate from v0.5.x → v0.6.1 (one-time)
-
-Check if the vault has the old structure. If ALL of these are true, run the migration:
-- `{legal_root}/defaults/` exists
-- `{legal_root}/practice/standards/` does NOT exist
-
-If migration is not needed (already on the new structure), skip to Step 2.
-
-### Migration overview
-
-Tell the user:
-> Your vault uses the old 5-layer structure (defaults/ + separate practice files). v0.6.1 consolidates everything into practice/. I'll migrate your vault now — your customizations are preserved.
-
-### 1b-a. Consolidate practice profile
-
-Read these files and merge into a single `{legal_root}/practice/profile.md`:
-- `{legal_root}/practice/identity.md` → `## Identity` section
-- `{legal_root}/practice/principles.md` → `## Principles` section
-- `{legal_root}/practice/voice.md` → `## Voice` section
-- `{legal_root}/practice/thresholds.md` → `## Escalation Thresholds` section
-
-Write the merged file with frontmatter:
-```yaml
----
-counsel-os-type: practice
----
-```
-
-Keep the old files until the user confirms the migration looks good.
-
-### 1b-b. Seed practice/standards/ from defaults/positions/
-
-Copy every file from `{legal_root}/defaults/positions/` → `{legal_root}/practice/standards/`. These become user-owned.
-
-Update frontmatter in each: `counsel-os-type: default-positions` → `counsel-os-type: practice`.
-
-### 1b-c. Merge user position overrides into standards/
-
-Read `{legal_root}/practice/positions.md` (the old override file). For each `## Clause Type` section that has real content (not just `[TO BE DEVELOPED]` placeholders):
-
-1. Find the matching file in `{legal_root}/practice/standards/` by clause type name
-2. If the standards file has an `## Our Position` section, replace it with the user's override content
-3. If not, add `## Our Position` at the top (after the title) with the user's content
-
-Format the merged section:
-```markdown
-## Our Position
-**Our standard:** [from user's positions.md]
-**We'll accept:** [from user's positions.md]
-**We won't accept:** [from user's positions.md]
-**Auto-escalate:** [from user's positions.md]
-
-[Any additional notes the user had under this clause type]
-```
-
-### 1b-d. Seed practice/methods/ from defaults/playbooks/ + defaults/checklists/
-
-Copy playbook files from `{legal_root}/defaults/playbooks/` → `{legal_root}/practice/methods/`.
-
-For checklists:
-- If a checklist matches a playbook name (contract-review, due-diligence, vendor-onboarding), append the checklist content to the corresponding method file with a `---` separator
-- If a checklist has no matching playbook, copy it as a standalone file to `{legal_root}/practice/methods/`
-
-Update frontmatter in all: `counsel-os-type: playbook` or `counsel-os-type: checklist` → `counsel-os-type: practice`.
-
-### 1b-e. Seed practice/library/ from defaults/clause-library/
-
-Copy `{legal_root}/defaults/clause-library/` → `{legal_root}/practice/library/`.
-
-Update frontmatter: `counsel-os-type: clause-library` → `counsel-os-type: practice`.
-
-### 1b-f. Create matters/ directory
-
-```bash
-mkdir -p "{legal_root}/matters"
-```
-
-### 1b-g. Report and confirm
-
-Show the user a summary:
-```
-## Migration Complete (v0.5.x → v0.6.1)
-
-Practice profile:
-- [x] profile.md created — consolidated from identity.md, principles.md, voice.md, thresholds.md
-
-Standards (practice/standards/):
-- [x] {N} position files migrated from defaults/positions/
-- [x] {M} user overrides merged from practice/positions.md
-
-Methods (practice/methods/):
-- [x] {N} playbook files migrated
-- [x] {M} checklists merged or added
-
-Library (practice/library/):
-- [x] {N} clause library files migrated
-
-Old files preserved:
-- defaults/ — still exists (will be removed after confirmation)
-- practice/identity.md, principles.md, voice.md, thresholds.md, positions.md — still exist
-```
-
-Ask: "Everything look good? Can I remove the old defaults/ directory and the old separate practice files?"
-
-If yes:
-```bash
-rm -rf "{legal_root}/defaults"
-rm "{legal_root}/practice/identity.md" "{legal_root}/practice/principles.md" "{legal_root}/practice/voice.md" "{legal_root}/practice/thresholds.md" "{legal_root}/practice/positions.md"
-```
-
-If no: keep everything, let the user fix issues manually.
-
-## Step 2: Compare Content
-
-Compare content from two sources:
-
-### Law areas (plugin-managed, safe to overwrite)
-Compare `knowledge/law/` against `{legal_root}/law/`. Law areas are plugin-managed — users don't customize them.
+Compare `knowledge/law/` in the plugin root against `{legal_root}/law/`.
 
 For each law area:
-1. Read the plugin's `content-version` date from the area's files
-2. Read the vault's `content-version` date from the corresponding files
-3. If dates match → skip (unchanged)
-4. If dates differ or vault file is missing → classify as **upstream updated** or **new**
+1. Read the plugin file's `content-version`.
+2. Read the vault file's `content-version`.
+3. If the vault file is missing, classify as **new law content**.
+4. If the plugin version is newer, classify as **upstream law update**.
+5. If versions match, skip.
 
-### Practice seed content (user-owned, suggest only)
-Compare `knowledge/practice-seed/` against `{legal_root}/practice/` (standards/, methods/, library/). Practice content is user-owned — never overwrite without asking.
+Law areas are plugin-managed, so these are safe to apply after user approval.
 
-For each file in the seed:
-1. If the file doesn't exist in the vault → offer as **new content**: "New standard/method/clause available. Add to your practice?"
-2. If the file exists → compare content (ignoring frontmatter). If the seed has new sections or updated guidance, offer as a **suggestion**: "The market guidance for [topic] has been updated. Want to review the changes?"
-3. Never auto-overwrite practice files — always ask.
+### Practice seed: user-owned
 
-## Step 3: Present Changes
+Compare `knowledge/practice-seed/` in the plugin root against `{legal_root}/practice/`.
 
-Show the user what's different, organized by action needed:
+Practice files are user-owned. Never overwrite them blindly.
 
-### New law areas
+For each seed file:
+1. If the vault file is missing, offer it as **new practice content**.
+2. If the vault file exists, compare content while preserving the user's `## Our Position` section where applicable.
+3. If the seed has new reference guidance, offer a reviewable merge.
+
+## Step 5: Present Changes
+
+Show a concise change list:
+
+```markdown
+## Update Review
+
+Plugin methodology:
+- [current status]
+
+Law updates:
+- law/data-privacy/ — updated upstream
+
+Practice suggestions:
+- practice/standards/data-protection.md — updated guidance available; user position will be preserved
+
+Unchanged:
+- [N] files already current
 ```
-New law areas available:
-- law/new-area/ — [brief description of what it covers]
+
+Ask what to apply. Apply law updates only after approval. Apply practice suggestions only after showing exactly what will change.
+
+## Step 6: Apply Approved Changes
+
+For approved law updates:
+1. Copy the plugin law file or directory into `{legal_root}/law/`.
+2. Preserve no local edits unless the user explicitly says they customized law content and wants a merge.
+
+For approved practice updates:
+1. Preserve user-owned sections, especially `## Our Position`.
+2. Update reference sections from the seed.
+3. Write only the approved files.
+
+For new practice files:
+1. Copy from `knowledge/practice-seed/`.
+2. Explain that the user can edit them directly later.
+
+## Step 7: Check Impact
+
+After applying law updates, check whether any updated law constraints affect the user's standards in `{legal_root}/practice/standards/`.
+
+Flag conflicts clearly:
+
+```markdown
+Action needed: updated data-privacy law guidance affects practice/standards/data-protection.md. Review breach notification timing before the next DPA.
 ```
-For each, ask: "Add this to your vault?" Law areas are plugin-managed, so these are safe to add.
 
-### Updated law areas
-```
-Updated upstream (safe to apply):
-- law/data-privacy/ — [summary of what changed]
-```
-For each, ask: "Apply this update?" Then overwrite the vault copy.
+## Step 8: Version Control
 
-### New practice content (suggestions)
-```
-New practice content available:
-- practice/standards/new-topic.md — [brief description]
-- practice/methods/new-method.md — [brief description]
-```
-For each, ask: "Add this to your practice?" Copy from seed to vault.
-
-### Updated practice seed (suggestions only)
-```
-Updated guidance available for:
-- practice/standards/data-protection.md — [summary: updated classification guide for new regulations]
-```
-For each, show what changed in the seed and ask: "Want to review the updated guidance? Your position is preserved — only the reference sections (Classification Guide, Practical Guidance, etc.) have changed."
-
-If the user wants to apply, merge carefully: preserve their `## Our Position` section, update the reference sections.
-
-### Unchanged
-Don't list these individually, just note:
-> [N] files unchanged — your vault is current.
-
-## Step 4: Apply Approved Changes
-
-For each change the user approved:
-1. Read the vault file to preserve any local frontmatter fields
-2. Replace the content body with the new/merged content
-3. Update `content-version` in frontmatter to match the plugin's `content-version` date for that group. Remove `counsel-os-version` if present (pre-migration field).
-4. Write the file
-
-For new files:
-1. Copy from plugin seed to vault
-2. Frontmatter should already contain `counsel-os-type` and `content-version` from the plugin seed
-3. Write the file
-
-## Step 5: Check Law Impact on Practice
-
-After syncing law areas, check whether any updates affect the user's practice:
-
-### Law constraint impact
-For each updated law area:
-1. Check if any positions in `{legal_root}/practice/standards/` now conflict with new requirements
-2. Flag urgently if so:
-> **Action needed:** Updated [law area] introduces new requirements that affect your [clause type] position in practice/standards/. Review before your next matter in this area.
-
-## Step 6: Version Control Check
-
-Check if `{legal_root}` is a git repo:
+If `{legal_root}` is a git repo and changes were applied, offer to commit:
 
 ```bash
-git -C {legal_root} rev-parse --is-inside-work-tree 2>/dev/null
+git -C {legal_root} add -A
+git -C {legal_root} commit -m "Update Counsel OS law and practice content"
 ```
 
-### If NOT a git repo:
+If it is not a git repo, mention that version control is available but do not push it. The user can ask `/counsel-os:setup` to configure it.
 
-This is an existing user who set up before version control was available. Offer it once:
+## Step 9: Summary
 
-> **New in v0.4.0:** You can now version-control your legal knowledge base. This tracks changes to your positions, counterparty files, and decision history — so you can see how your practice evolves over time.
->
-> Want me to set it up? (This initializes a git repo in your legal root. Optionally connects to a private GitHub repo for backup.)
+End with:
 
-If yes, follow the same flow as `/setup` Step 6 (git init, .gitignore, initial commit, optional remote).
-
-If no, skip. Don't ask again on future updates.
-
-### If already a git repo:
-
-If content was synced in Steps 2-4, commit the changes:
-
-```bash
-cd {legal_root}
-git add -A
-git commit -m "Update: synced law/ and practice/ to plugin v{new_version}"
-```
-
-If remote exists, offer to push.
-
-## Step 7: Summary
-
-```
+```markdown
 ## Update Complete
 
-**Plugin:** v{old} → v{new} [or "already current"]
-**Content synced:** [N] files updated, [N] new files added, [N] skipped
-
-### Changes Applied
-- law/data-privacy/ — updated
-- law/new-area/ — added (new)
-- practice/standards/new-topic.md — added (new)
-
-### Skipped
-- practice/standards/data-protection.md — user declined update
-
-### Law Impact
-- [N] law constraint changes to review against your practice
-- [or] No law impact — all updates are backward compatible
-
-### Next Steps
-1. [Review practice/standards/X against updated law requirements]
-2. [or] No action needed — you're current
+Plugin methodology: [current/updated/restart needed]
+Config migration: [not needed/migrated/user action needed]
+Vault content: [N] law files updated, [N] practice files added/merged, [N] skipped
+Next steps: [specific review items or "none"]
 ```

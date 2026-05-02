@@ -4,10 +4,13 @@ This file is documentation, not configuration. The plugin doesn't carry per-user
 values; it describes how Counsel OS resolves paths and detects capabilities at
 runtime.
 
+This file is intentionally named `CONFIGURATION.md`, not `config.md`, so it can
+never be mistaken for a user's Counsel OS configuration.
+
 ## Per-user config lives in the user's vault
 
-After running `/counsel-os:setup`, the user's configuration lives in a file at
-the top of their legal root:
+After running `/counsel-os:setup`, the user's configuration lives in a marked
+file at the top of their legal root:
 
 ```
 {legal_root}/config.md
@@ -21,15 +24,17 @@ read-only (e.g. Cowork).
 ## Finding the legal root
 
 Each session, the counsel skill discovers `legal_root` by looking for a
-`config.md` file (containing a `legal_root:` line) near the user's working
-location, then reading it. If no candidate is found, it asks the user. The full
-procedure is in `skills/counsel/SKILL.md` ("Finding the Legal Root").
+`config.md` file containing both `counsel-os-config: true` and a `legal_root:`
+line. If no marked candidate is found, it asks the user. The full procedure is
+in `skills/counsel/SKILL.md` ("Finding the Legal Root").
 
 ## What goes in `{legal_root}/config.md`
 
 Required:
 
 ```markdown
+counsel-os-config: true
+config_version: 1
 legal_root: /full/path/to/legal/root
 ```
 

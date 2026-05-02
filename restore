@@ -1,34 +1,48 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
 COUNSEL_DIR="$(cd "$(dirname "$0")" && pwd)"
 BACKUP_DIR="$COUNSEL_DIR/backups"
 
-# Read legal root: config.local.md first, then config.md
-LEGAL_ROOT=""
-if [ -f "$COUNSEL_DIR/config.local.md" ]; then
-    LEGAL_ROOT=$(grep "^legal_root:" "$COUNSEL_DIR/config.local.md" | sed 's/^legal_root: *//')
-fi
-if [ -z "$LEGAL_ROOT" ] && [ -f "$COUNSEL_DIR/config.md" ]; then
-    LEGAL_ROOT=$(grep "^legal_root:" "$COUNSEL_DIR/config.md" | sed 's/^legal_root: *//')
-fi
+resolve_legal_root() {
+  if [ -n "${COUNSEL_OS_LEGAL_ROOT:-}" ]; then
+    printf '%s\n' "$COUNSEL_OS_LEGAL_ROOT"
+    return
+  fi
+
+  if [ -f "$HOME/.counsel-os/legal-root" ]; then
+    tr -d '\n' < "$HOME/.counsel-os/legal-root"
+    return
+  fi
+
+  local dir="$PWD"
+  while [ "$dir" != "/" ]; do
+    if [ -f "$dir/config.md" ] && grep -q '^counsel-os-config: true$' "$dir/config.md"; then
+      printf '%s\n' "$dir"
+      return
+    fi
+    dir="$(dirname "$dir")"
+  done
+
+  return 1
+}
+
+LEGAL_ROOT="$(resolve_legal_root || true)"
 
 if [ -z "$LEGAL_ROOT" ]; then
-  echo "Legal root not configured. Check config.md."
+  echo "Legal root not found."
+  echo "Run /counsel-os:setup, or set COUNSEL_OS_LEGAL_ROOT=/path/to/legal/root."
   exit 1
 fi
 
-# ── Find backup to restore ──────────────────────────────────────────
-
-if [ -n "$1" ]; then
+if [ -n "${1:-}" ]; then
   if [ -d "$BACKUP_DIR/$1" ]; then
     BACKUP_PATH="$BACKUP_DIR/$1"
   elif [ -d "$1" ]; then
     BACKUP_PATH="$1"
   else
     echo "Backup not found: $1"
-    echo "Usage: ./restore [backup-name]"
-    echo "       ./restore                  (restores most recent)"
+    echo "Usage: ./restore [backup-name-or-path]"
     exit 1
   fi
 else
@@ -44,7 +58,10 @@ else
   fi
 fi
 
-# ── Show what we're restoring ────────────────────────────────────────
+if [ ! -f "$BACKUP_PATH/config.md" ] || ! grep -q '^counsel-os-config: true$' "$BACKUP_PATH/config.md"; then
+  echo "Backup is not a marked Counsel OS backup: $BACKUP_PATH"
+  exit 1
+fi
 
 echo "Restoring from: $(basename "$BACKUP_PATH")"
 echo "Restoring to:   $LEGAL_ROOT"
@@ -54,10 +71,8 @@ if [ -f "$BACKUP_PATH/manifest.json" ]; then
   echo "  current version:      $(cat "$COUNSEL_DIR/VERSION" 2>/dev/null || echo "unknown")"
 fi
 
-# ── Check for existing content ───────────────────────────────────────
-
 has_existing=0
-for dir in practice memory law defaults; do
+for dir in law practice matters memory entities; do
   if [ -d "$LEGAL_ROOT/$dir" ] && [ "$(find "$LEGAL_ROOT/$dir" -type f ! -name '.gitkeep' | head -1)" ]; then
     has_existing=1
     break
@@ -66,22 +81,23 @@ done
 
 if [ "$has_existing" -eq 1 ]; then
   echo ""
-  echo "WARNING: Existing content found at legal root."
-  echo "Restoring will OVERWRITE current practice/, memory/, law/, and defaults/ files."
+  echo "WARNING: Existing Counsel OS content found at legal root."
+  echo "Restoring will copy backed-up files over current law/, practice/, matters/, memory/, and entities/ files."
   echo ""
-  read -p "Continue? (y/N) " confirm
+  read -r -p "Continue? (y/N) " confirm
   if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
     echo "Restore cancelled."
     exit 0
   fi
 fi
 
-# ── Restore ──────────────────────────────────────────────────────────
+mkdir -p "$LEGAL_ROOT"
+cp "$BACKUP_PATH/config.md" "$LEGAL_ROOT/config.md"
 
-for dir in practice memory law defaults; do
+for dir in law practice matters memory entities; do
   if [ -d "$BACKUP_PATH/$dir" ]; then
     mkdir -p "$LEGAL_ROOT/$dir"
-    cp -r "$BACKUP_PATH/$dir/"* "$LEGAL_ROOT/$dir/" 2>/dev/null || true
+    cp -R "$BACKUP_PATH/$dir/." "$LEGAL_ROOT/$dir/"
     echo "  restored: $dir/"
   fi
 done
