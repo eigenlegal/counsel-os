@@ -19,6 +19,7 @@ import * as crypto from 'crypto';
 
 // ─── Auth (inline) ─────────────────────────────────────────────
 const AUTH_TOKEN = crypto.randomUUID();
+const COOKIE_PICKER_TOKEN = crypto.randomUUID();
 const PORT_OFFSET = 45600;
 const BROWSE_PORT = process.env.CONDUCTOR_PORT
   ? parseInt(process.env.CONDUCTOR_PORT, 10) - PORT_OFFSET
@@ -88,9 +89,6 @@ async function flushBuffers() {
   }
 }
 
-// Flush every 1 second
-const flushInterval = setInterval(flushBuffers, 1000);
-
 // ─── Idle Timer ────────────────────────────────────────────────
 let lastActivity = Date.now();
 
@@ -98,12 +96,9 @@ function resetIdleTimer() {
   lastActivity = Date.now();
 }
 
-const idleCheckInterval = setInterval(() => {
-  if (Date.now() - lastActivity > IDLE_TIMEOUT_MS) {
-    console.log(`[browse] Idle for ${IDLE_TIMEOUT_MS / 1000}s, shutting down`);
-    shutdown();
-  }
-}, 60_000);
+let flushInterval: ReturnType<typeof setInterval> | null = null;
+let idleCheckInterval: ReturnType<typeof setInterval> | null = null;
+let signalsRegistered = false;
 
 // ─── Command Sets (exported for chain command) ──────────────────
 export const READ_COMMANDS = new Set([
@@ -137,7 +132,7 @@ async function findPort(): Promise<number> {
   // Deterministic port from CONDUCTOR_PORT (e.g., 55040 - 45600 = 9440)
   if (BROWSE_PORT) {
     try {
-      const testServer = Bun.serve({ port: BROWSE_PORT, fetch: () => new Response('ok') });
+      const testServer = Bun.serve({ port: BROWSE_PORT, hostname: '127.0.0.1', fetch: () => new Response('ok') });
       testServer.stop();
       return BROWSE_PORT;
     } catch {
@@ -149,7 +144,7 @@ async function findPort(): Promise<number> {
   const start = parseInt(process.env.BROWSE_PORT_START || '9400', 10);
   for (let port = start; port < start + 10; port++) {
     try {
-      const testServer = Bun.serve({ port, fetch: () => new Response('ok') });
+      const testServer = Bun.serve({ port, hostname: '127.0.0.1', fetch: () => new Response('ok') });
       testServer.stop();
       return port;
     } catch {
@@ -228,8 +223,8 @@ async function shutdown() {
   isShuttingDown = true;
 
   console.log('[browse] Shutting down...');
-  clearInterval(flushInterval);
-  clearInterval(idleCheckInterval);
+  if (flushInterval) clearInterval(flushInterval);
+  if (idleCheckInterval) clearInterval(idleCheckInterval);
   await flushBuffers(); // Final flush (async now)
 
   await browserManager.close();
@@ -240,16 +235,27 @@ async function shutdown() {
   process.exit(0);
 }
 
-// Handle signals
-process.on('SIGTERM', shutdown);
-process.on('SIGINT', shutdown);
-
 // ─── Start ─────────────────────────────────────────────────────
-async function start() {
+export async function start() {
   // Clear old log files
   try { fs.unlinkSync(CONSOLE_LOG_PATH); } catch {}
   try { fs.unlinkSync(NETWORK_LOG_PATH); } catch {}
   try { fs.unlinkSync(DIALOG_LOG_PATH); } catch {}
+
+  if (!signalsRegistered) {
+    process.on('SIGTERM', shutdown);
+    process.on('SIGINT', shutdown);
+    signalsRegistered = true;
+  }
+
+  lastActivity = Date.now();
+  flushInterval = setInterval(flushBuffers, 1000);
+  idleCheckInterval = setInterval(() => {
+    if (Date.now() - lastActivity > IDLE_TIMEOUT_MS) {
+      console.log(`[browse] Idle for ${IDLE_TIMEOUT_MS / 1000}s, shutting down`);
+      shutdown();
+    }
+  }, 60_000);
 
   const port = await findPort();
 
@@ -265,9 +271,10 @@ async function start() {
 
       const url = new URL(req.url);
 
-      // Cookie picker routes — no auth required (localhost-only)
+      // Cookie picker routes use a separate URL token so they can be opened
+      // in the user's browser without exposing the command bearer token.
       if (url.pathname.startsWith('/cookie-picker')) {
-        return handleCookiePickerRoute(url, req, browserManager);
+        return handleCookiePickerRoute(url, req, browserManager, COOKIE_PICKER_TOKEN);
       }
 
       // Health check — no auth required (now async)
@@ -312,12 +319,15 @@ async function start() {
   fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2), { mode: 0o600 });
 
   browserManager.serverPort = port;
+  browserManager.cookiePickerToken = COOKIE_PICKER_TOKEN;
   console.log(`[browse] Server running on http://127.0.0.1:${port} (PID: ${process.pid})`);
   console.log(`[browse] State file: ${STATE_FILE}`);
   console.log(`[browse] Idle timeout: ${IDLE_TIMEOUT_MS / 1000}s`);
 }
 
-start().catch((err) => {
-  console.error(`[browse] Failed to start: ${err.message}`);
-  process.exit(1);
-});
+if (import.meta.main) {
+  start().catch((err) => {
+    console.error(`[browse] Failed to start: ${err.message}`);
+    process.exit(1);
+  });
+}

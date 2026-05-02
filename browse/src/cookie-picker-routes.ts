@@ -4,7 +4,7 @@
  * Handles all /cookie-picker/* routes. Imports from cookie-import-browser.ts
  * (decryption) and cookie-picker-ui.ts (HTML generation).
  *
- * Routes (no auth — localhost-only, accepted risk):
+ * Routes (private token required):
  *   GET  /cookie-picker              → serves the picker HTML page
  *   GET  /cookie-picker/browsers     → list installed browsers
  *   GET  /cookie-picker/domains      → list domains + counts for a browser
@@ -14,7 +14,7 @@
  */
 
 import type { BrowserManager } from './browser-manager';
-import { findInstalledBrowsers, listDomains, importCookies, CookieImportError, type PlaywrightCookie } from './cookie-import-browser';
+import { findInstalledBrowsers, listDomains, importCookies, CookieImportError } from './cookie-import-browser';
 import { getCookiePickerHTML } from './cookie-picker-ui';
 
 // ─── State ──────────────────────────────────────────────────────
@@ -26,18 +26,50 @@ const importedCounts = new Map<string, number>();
 
 // ─── JSON Helpers ───────────────────────────────────────────────
 
-function jsonResponse(data: any, status = 200): Response {
+function localOrigin(url: URL): string {
+  return `${url.protocol}//${url.host}`;
+}
+
+function isAllowedOrigin(url: URL, req: Request): boolean {
+  const origin = req.headers.get('origin');
+  return !origin || origin === localOrigin(url);
+}
+
+function hasPickerAccess(url: URL, req: Request, pickerToken: string): boolean {
+  if (!isAllowedOrigin(url, req)) return false;
+
+  const secFetchSite = req.headers.get('sec-fetch-site');
+  if (secFetchSite && !['same-origin', 'none'].includes(secFetchSite)) {
+    return false;
+  }
+
+  const suppliedToken =
+    url.searchParams.get('token') ||
+    req.headers.get('x-browse-picker-token') ||
+    '';
+
+  return suppliedToken === pickerToken;
+}
+
+function corsHeaders(url: URL): Record<string, string> {
+  return {
+    'Access-Control-Allow-Origin': localOrigin(url),
+    'Vary': 'Origin',
+  };
+}
+
+function jsonResponse(url: URL, data: any, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': `http://127.0.0.1:${parseInt(url.port, 10) || 9400}`,
+      ...corsHeaders(url),
     },
   });
 }
 
-function errorResponse(message: string, code: string, status = 400, action?: string): Response {
-  return jsonResponse({ error: message, code, ...(action ? { action } : {}) }, status);
+function errorResponse(url: URL, message: string, code: string, status = 400, action?: string): Response {
+  return jsonResponse(url, { error: message, code, ...(action ? { action } : {}) }, status);
 }
 
 // ─── Route Handler ──────────────────────────────────────────────
@@ -46,26 +78,34 @@ export async function handleCookiePickerRoute(
   url: URL,
   req: Request,
   bm: BrowserManager,
+  pickerToken: string,
 ): Promise<Response> {
   const pathname = url.pathname;
 
   // CORS preflight
   if (req.method === 'OPTIONS') {
+    if (!isAllowedOrigin(url, req)) {
+      return errorResponse(url, 'Forbidden origin', 'forbidden_origin', 403);
+    }
     return new Response(null, {
       status: 204,
       headers: {
-        'Access-Control-Allow-Origin': `http://127.0.0.1:${parseInt(url.port, 10) || 9400}`,
+        ...corsHeaders(url),
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type, X-Browse-Picker-Token',
       },
     });
+  }
+
+  if (!hasPickerAccess(url, req, pickerToken)) {
+    return errorResponse(url, 'Unauthorized', 'unauthorized', 401);
   }
 
   try {
     // GET /cookie-picker — serve the picker UI
     if (pathname === '/cookie-picker' && req.method === 'GET') {
       const port = parseInt(url.port, 10) || 9400;
-      const html = getCookiePickerHTML(port);
+      const html = getCookiePickerHTML(port, pickerToken);
       return new Response(html, {
         status: 200,
         headers: { 'Content-Type': 'text/html; charset=utf-8' },
@@ -75,7 +115,7 @@ export async function handleCookiePickerRoute(
     // GET /cookie-picker/browsers — list installed browsers
     if (pathname === '/cookie-picker/browsers' && req.method === 'GET') {
       const browsers = findInstalledBrowsers();
-      return jsonResponse({
+      return jsonResponse(url, {
         browsers: browsers.map(b => ({
           name: b.name,
           aliases: b.aliases,
@@ -87,10 +127,10 @@ export async function handleCookiePickerRoute(
     if (pathname === '/cookie-picker/domains' && req.method === 'GET') {
       const browserName = url.searchParams.get('browser');
       if (!browserName) {
-        return errorResponse("Missing 'browser' parameter", 'missing_param');
+        return errorResponse(url, "Missing 'browser' parameter", 'missing_param');
       }
       const result = listDomains(browserName);
-      return jsonResponse({
+      return jsonResponse(url, {
         browser: result.browser,
         domains: result.domains,
       });
@@ -102,20 +142,20 @@ export async function handleCookiePickerRoute(
       try {
         body = await req.json();
       } catch {
-        return errorResponse('Invalid JSON body', 'bad_request');
+        return errorResponse(url, 'Invalid JSON body', 'bad_request');
       }
 
       const { browser, domains } = body;
-      if (!browser) return errorResponse("Missing 'browser' field", 'missing_param');
+      if (!browser) return errorResponse(url, "Missing 'browser' field", 'missing_param');
       if (!domains || !Array.isArray(domains) || domains.length === 0) {
-        return errorResponse("Missing or empty 'domains' array", 'missing_param');
+        return errorResponse(url, "Missing or empty 'domains' array", 'missing_param');
       }
 
       // Decrypt cookies from the browser DB
       const result = await importCookies(browser, domains);
 
       if (result.cookies.length === 0) {
-        return jsonResponse({
+        return jsonResponse(url, {
           imported: 0,
           failed: result.failed,
           domainCounts: {},
@@ -137,7 +177,7 @@ export async function handleCookiePickerRoute(
 
       console.log(`[cookie-picker] Imported ${result.count} cookies for ${Object.keys(result.domainCounts).length} domains`);
 
-      return jsonResponse({
+      return jsonResponse(url, {
         imported: result.count,
         failed: result.failed,
         domainCounts: result.domainCounts,
@@ -150,12 +190,12 @@ export async function handleCookiePickerRoute(
       try {
         body = await req.json();
       } catch {
-        return errorResponse('Invalid JSON body', 'bad_request');
+        return errorResponse(url, 'Invalid JSON body', 'bad_request');
       }
 
       const { domains } = body;
       if (!domains || !Array.isArray(domains) || domains.length === 0) {
-        return errorResponse("Missing or empty 'domains' array", 'missing_param');
+        return errorResponse(url, "Missing or empty 'domains' array", 'missing_param');
       }
 
       const page = bm.getPage();
@@ -168,7 +208,7 @@ export async function handleCookiePickerRoute(
 
       console.log(`[cookie-picker] Removed cookies for ${domains.length} domains`);
 
-      return jsonResponse({
+      return jsonResponse(url, {
         removed: domains.length,
         domains,
       });
@@ -182,7 +222,7 @@ export async function handleCookiePickerRoute(
       }
       entries.sort((a, b) => b.count - a.count);
 
-      return jsonResponse({
+      return jsonResponse(url, {
         domains: entries,
         totalDomains: entries.length,
         totalCookies: entries.reduce((sum, e) => sum + e.count, 0),
@@ -192,9 +232,9 @@ export async function handleCookiePickerRoute(
     return new Response('Not found', { status: 404 });
   } catch (err: any) {
     if (err instanceof CookieImportError) {
-      return errorResponse(err.message, err.code, 400, err.action);
+      return errorResponse(url, err.message, err.code, 400, err.action);
     }
     console.error(`[cookie-picker] Error: ${err.message}`);
-    return errorResponse(err.message || 'Internal error', 'internal_error', 500);
+    return errorResponse(url, err.message || 'Internal error', 'internal_error', 500);
   }
 }
