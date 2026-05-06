@@ -1,0 +1,28 @@
+{
+  "findings": [
+    {
+      "title": "Oral disclosure marking trap",
+      "severity": "yellow",
+      "clause": "Oral disclosures are protected only if reduced to a marked writing within five business days.",
+      "rationale": "The marking process creates an oral disclosure gap and should be replaced with broader protection for non-written disclosures.",
+      "citations": ["knowledge/practice-seed/standards/confidentiality.md"]
+    },
+    {
+      "title": "Residuals carveout is too broad",
+      "severity": "red",
+      "clause": "Recipient may use residual knowledge retained in unaided memory for any purpose, including product development.",
+      "rationale": "The unaided-memory residuals right is broad enough to permit product development from confidential information.",
+      "citations": ["knowledge/practice-seed/standards/confidentiality.md"]
+    },
+    {
+      "title": "Return and destruction obligation is weak",
+      "severity": "yellow",
+      "clause": "commercially reasonable efforts to return or destroy ... within ninety days",
+      "rationale": "Return/destruction should be mandatory, faster than 90 days, and backed by certification.",
+      "citations": ["knowledge/practice-seed/standards/confidentiality.md"]
+    }
+  ],
+  "citations": [
+    "knowledge/practice-seed/standards/confidentiality.md"
+  ]
+}

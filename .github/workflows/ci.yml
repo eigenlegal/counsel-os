@@ -30,3 +30,6 @@ jobs:
 
       - name: Test
         run: bun test
+
+      - name: Eval scorer self-test
+        run: bun run evals:self-test

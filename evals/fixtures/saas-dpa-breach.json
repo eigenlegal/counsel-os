@@ -1,0 +1,60 @@
+{
+  "id": "saas-dpa-breach",
+  "title": "SaaS DPA with weak breach, subprocessors, and transfer terms",
+  "document_type": "data processing addendum",
+  "input": {
+    "contract_text": "Processor will notify Customer of a confirmed Security Incident within thirty (30) days after Processor determines that notice is legally required. Processor may engage subprocessors without prior notice to Customer. Customer authorizes Processor to transfer Personal Data globally as needed to provide the Services, and the parties agree that no additional transfer terms are required."
+  },
+  "expected_catches": [
+    {
+      "id": "breach-notice-too-slow",
+      "severity": "red",
+      "clause": "thirty (30) days after Processor determines that notice is legally required",
+      "why": "Breach notice is too slow and triggered too late for common DPA and statutory notification workflows.",
+      "match_any": ["thirty", "30 days", "breach notice", "security incident", "too slow"]
+    },
+    {
+      "id": "no-subprocessor-notice",
+      "severity": "yellow",
+      "clause": "may engage subprocessors without prior notice",
+      "why": "Subprocessor changes should include prior notice and an objection mechanism for personal-data processing.",
+      "match_any": ["subprocessor", "subprocessors", "prior notice", "objection"]
+    },
+    {
+      "id": "missing-transfer-mechanism",
+      "severity": "red",
+      "clause": "transfer Personal Data globally ... no additional transfer terms",
+      "why": "Cross-border transfers need a valid transfer mechanism where restricted transfer rules apply.",
+      "match_any": ["cross-border", "transfer mechanism", "scc", "standard contractual clauses", "global"]
+    }
+  ],
+  "expected_citations": [
+    {
+      "id": "dpa-law-area",
+      "aliases": ["knowledge/law/data-privacy/data-processing-agreements.md", "data-processing-agreements", "data processing agreements"]
+    },
+    {
+      "id": "cross-border-law-area",
+      "aliases": ["knowledge/law/data-privacy/cross-border-transfers.md", "cross-border-transfers", "standard contractual clauses"]
+    },
+    {
+      "id": "data-protection-standard",
+      "aliases": ["knowledge/practice-seed/standards/data-protection.md", "data-protection"]
+    }
+  ],
+  "negative_checks": [
+    {
+      "id": "do-not-flag-mutual-confidentiality",
+      "description": "The clause does not contain a mutual confidentiality problem.",
+      "match_any": ["mutual confidentiality is missing", "one-way confidentiality"]
+    }
+  ],
+  "allowed_citation_aliases": [
+    "knowledge/law/data-privacy/data-processing-agreements.md",
+    "knowledge/law/data-privacy/cross-border-transfers.md",
+    "knowledge/law/data-privacy/breach-notification.md",
+    "knowledge/practice-seed/standards/data-protection.md",
+    "GDPR Art. 28",
+    "standard contractual clauses"
+  ]
+}

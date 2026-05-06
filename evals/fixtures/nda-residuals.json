@@ -1,0 +1,50 @@
+{
+  "id": "nda-residuals",
+  "title": "NDA with broad residuals and weak oral-disclosure coverage",
+  "document_type": "mutual NDA",
+  "input": {
+    "contract_text": "Confidential Information means information marked confidential when disclosed in writing. Oral disclosures are protected only if reduced to a marked writing within five (5) business days. Recipient may use residual knowledge retained in unaided memory for any purpose, including product development, provided Recipient does not intentionally memorize the information. Upon termination, Recipient will use commercially reasonable efforts to return or destroy Confidential Information within ninety (90) days."
+  },
+  "expected_catches": [
+    {
+      "id": "oral-disclosure-gap",
+      "severity": "yellow",
+      "clause": "Oral disclosures are protected only if reduced to a marked writing within five (5) business days.",
+      "why": "Oral/demo disclosures should be protected with a practical confirmation process, not a narrow marking trap.",
+      "match_any": ["oral disclosure", "oral disclosures", "marking", "marked writing"]
+    },
+    {
+      "id": "broad-residuals",
+      "severity": "red",
+      "clause": "Recipient may use residual knowledge retained in unaided memory for any purpose, including product development.",
+      "why": "The residuals carveout is broad enough to swallow trade secret and product-roadmap protection.",
+      "match_any": ["residual", "unaided memory", "product development"]
+    },
+    {
+      "id": "slow-return-destruction",
+      "severity": "yellow",
+      "clause": "commercially reasonable efforts to return or destroy ... within ninety (90) days",
+      "why": "Return/destruction should be prompt, mandatory, and include certification.",
+      "match_any": ["return", "destroy", "destruction", "90 days", "certification"]
+    }
+  ],
+  "expected_citations": [
+    {
+      "id": "confidentiality-standard",
+      "aliases": ["knowledge/practice-seed/standards/confidentiality.md", "confidentiality"]
+    }
+  ],
+  "negative_checks": [
+    {
+      "id": "do-not-demand-perpetual-all-info",
+      "description": "The eval should not demand perpetual protection for all ordinary confidential information.",
+      "match_any": ["all confidential information must be perpetual", "perpetual protection for all confidential information"]
+    }
+  ],
+  "allowed_citation_aliases": [
+    "knowledge/practice-seed/standards/confidentiality.md",
+    "trade secret",
+    "defend trade secrets act",
+    "uniform trade secrets act"
+  ]
+}
