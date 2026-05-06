@@ -1,6 +1,7 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-04-08"
+jurisdiction: [technical-standard, global, us-federal, us-state]
 ---
 ## Wcag
 
