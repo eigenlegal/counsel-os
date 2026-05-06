@@ -44,25 +44,50 @@ done
 
 cp "$LEGAL_ROOT/config.md" "$BACKUP_PATH/config.md"
 
-cat > "$BACKUP_PATH/manifest.json" << MANIFEST
-{
-  "timestamp": "$TIMESTAMP",
-  "version": "$(cat "$COUNSEL_DIR/VERSION" 2>/dev/null || echo "unknown")",
-  "source": "$LEGAL_ROOT",
-  "contents": {
-    "law": $([ -d "$BACKUP_PATH/law" ] && find "$BACKUP_PATH/law" -type f ! -name '.gitkeep' | wc -l | tr -d ' ' || echo 0),
-    "practice": $([ -d "$BACKUP_PATH/practice" ] && find "$BACKUP_PATH/practice" -type f ! -name '.gitkeep' | wc -l | tr -d ' ' || echo 0),
-    "matters": $([ -d "$BACKUP_PATH/matters" ] && find "$BACKUP_PATH/matters" -type f ! -name '.gitkeep' | wc -l | tr -d ' ' || echo 0),
-    "memory": $([ -d "$BACKUP_PATH/memory" ] && find "$BACKUP_PATH/memory" -type f ! -name '.gitkeep' | wc -l | tr -d ' ' || echo 0),
-    "entities": $([ -d "$BACKUP_PATH/entities" ] && find "$BACKUP_PATH/entities" -type f ! -name '.gitkeep' | wc -l | tr -d ' ' || echo 0)
-  }
+count_files() {
+  local dir="$1"
+  if [ -d "$BACKUP_PATH/$dir" ]; then
+    find "$BACKUP_PATH/$dir" -type f ! -name '.gitkeep' | wc -l | tr -d ' '
+  else
+    echo 0
+  fi
 }
-MANIFEST
+
+VERSION="$(cat "$COUNSEL_DIR/VERSION" 2>/dev/null || echo "unknown")"
+LAW_COUNT="$(count_files law)"
+PRACTICE_COUNT="$(count_files practice)"
+MATTERS_COUNT="$(count_files matters)"
+MEMORY_COUNT="$(count_files memory)"
+ENTITIES_COUNT="$(count_files entities)"
+
+python3 - "$BACKUP_PATH/manifest.json" "$TIMESTAMP" "$VERSION" "$LEGAL_ROOT" \
+  "$LAW_COUNT" "$PRACTICE_COUNT" "$MATTERS_COUNT" "$MEMORY_COUNT" "$ENTITIES_COUNT" <<'PY'
+import json
+import sys
+
+manifest_path, timestamp, version, source, law, practice, matters, memory, entities = sys.argv[1:]
+manifest = {
+    "timestamp": timestamp,
+    "version": version,
+    "source": source,
+    "contents": {
+        "law": int(law),
+        "practice": int(practice),
+        "matters": int(matters),
+        "memory": int(memory),
+        "entities": int(entities),
+    },
+}
+
+with open(manifest_path, "w", encoding="utf-8") as f:
+    json.dump(manifest, f, indent=2)
+    f.write("\n")
+PY
 
 echo "Backup created: $BACKUP_PATH"
 echo "  source:   $LEGAL_ROOT"
-echo "  law:      $(grep -o '"law": [0-9]*' "$BACKUP_PATH/manifest.json" | grep -o '[0-9]*') files"
-echo "  practice: $(grep -o '"practice": [0-9]*' "$BACKUP_PATH/manifest.json" | grep -o '[0-9]*') files"
-echo "  matters:  $(grep -o '"matters": [0-9]*' "$BACKUP_PATH/manifest.json" | grep -o '[0-9]*') files"
-echo "  memory:   $(grep -o '"memory": [0-9]*' "$BACKUP_PATH/manifest.json" | grep -o '[0-9]*') files"
-echo "  entities: $(grep -o '"entities": [0-9]*' "$BACKUP_PATH/manifest.json" | grep -o '[0-9]*') files"
+echo "  law:      $LAW_COUNT files"
+echo "  practice: $PRACTICE_COUNT files"
+echo "  matters:  $MATTERS_COUNT files"
+echo "  memory:   $MEMORY_COUNT files"
+echo "  entities: $ENTITIES_COUNT files"

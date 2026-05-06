@@ -1,6 +1,6 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-04-08"
+content-version: "2026-05-06"
 ---
 ## International
 
@@ -81,14 +81,14 @@ This file covers comprehensive data protection laws outside the United States an
 - **Penalties:** Fines up to **3% of related revenue** or **KRW 2 billion** (~USD 1.5 million). Criminal penalties including imprisonment up to **5 years** for certain violations.
 - **EU adequacy:** South Korea received an EU adequacy decision in December 2021.
 
-### India — DPDP Act 2023
+### India — DPDP Act 2023 and DPDP Rules 2025
 
-- **Statute:** Digital Personal Data Protection Act, 2023 (Act No. 22 of 2023). Enforced by the Data Protection Board of India (once constituted).
+- **Statute:** Digital Personal Data Protection Act, 2023 (Act No. 22 of 2023) and Digital Personal Data Protection Rules, 2025. Enforced by the Data Protection Board of India.
 - **Scope:** Applies to processing of digital personal data within India, and to processing outside India if related to offering goods/services or profiling individuals in India.
 - **Lawful basis:** Consent (free, specific, informed, unconditional, unambiguous, with clear affirmative action) or "legitimate uses" (specified purposes such as employment, medical emergency, state functions).
 - **Consent manager:** A registered consent manager may manage consent on behalf of data principals (a new concept in global privacy law).
-- **Cross-border transfers:** Permitted to all countries except those specifically restricted by the Central Government via notification. The government may blacklist specific countries but has not yet done so as of early 2026.
-- **Breach notification:** Data fiduciaries must notify the Data Protection Board and affected data principals of any personal data breach. Timelines to be specified in rules (not yet finalized as of early 2026).
+- **Cross-border transfers:** Permitted to all countries except those specifically restricted by the Central Government via notification. Verify current notifications before relying on the blacklist model for sensitive transfers.
+- **Breach notification:** On becoming aware of any personal data breach, data fiduciaries must notify affected data principals **without delay** with the nature, extent, timing, likely consequences, mitigation steps, safety recommendations, and contact information. They must also notify the Data Protection Board **without delay** with initial breach details and mitigation measures, then provide detailed information within **72 hours** (unless the Board permits a longer period).
 - **Penalties:** Fines up to **INR 250 crore** (~USD 30 million) per violation for failure to take reasonable security safeguards. Other violations carry fines up to **INR 50-200 crore** depending on the obligation breached. **No private right of action** — enforcement through the Data Protection Board only.
 - **Significant data fiduciaries:** Entities designated by the government face additional obligations including DPO appointment, independent audit, and data protection impact assessments.
 
@@ -111,7 +111,7 @@ This file covers comprehensive data protection laws outside the United States an
 | Japan (APPI) | Promptly + **30 days** full report | Promptly | Sensitive PI, 1,000+ individuals, or wrongful intent |
 | South Korea (PIPA) | Without delay | Without delay | 1,000+ individuals or sensitive data |
 | China (PIPL) | Immediately | Immediately | Any breach or likely breach |
-| India (DPDP) | Per rules (TBD) | Per rules (TBD) | Any personal data breach |
+| India (DPDP) | Without delay + detailed Board filing within **72 hours** | Without delay | Any personal data breach |
 
 ### International Cross-Border Transfer Mechanisms
 
@@ -229,3 +229,5 @@ The following jurisdictions have enacted data protection laws relevant to cross-
 - [APPI — PPC Japan](https://www.ppc.go.jp/en/legal/) — Act on Protection of Personal Information (English)
 - [PIPA — PIPC South Korea](https://www.pipc.go.kr/np/cop/bbs/selectBoardList.do?bbsId=BS074&mCode=C020010000) — Personal Information Protection Act
 - [DPDP Act 2023 — India Code](https://www.indiacode.nic.in/handle/123456789/19833) — Digital Personal Data Protection Act
+- [DPDP Rules 2025 — MeitY](https://www.meity.gov.in/static/uploads/2025/11/53450e6e5dc0bfa85ebd78686cadad39.pdf) — Digital Personal Data Protection Rules, 2025
+- [DPDP Rules 2025 Explanatory Note — MeitY](https://www.meity.gov.in/writereaddata/files/Explanatory-Note-DPDP-Rules-2025.pdf) — Plain-language explanation of the Rules

@@ -433,14 +433,17 @@ export class BrowserManager {
       }
     });
 
-    // Capture response sizes via response finished
+    // Capture response sizes without reading response bodies.
     page.on('requestfinished', async (req) => {
       try {
         const res = await req.response();
         if (res) {
           const url = req.url();
-          const body = await res.body().catch(() => null);
-          const size = body ? body.length : 0;
+          const contentLength = res.headers()['content-length'];
+          if (!contentLength) return;
+          const size = Number.parseInt(contentLength, 10);
+          if (!Number.isFinite(size)) return;
+
           for (let i = networkBuffer.length - 1; i >= 0; i--) {
             const entry = networkBuffer.get(i);
             if (entry && entry.url === url && !entry.size) {

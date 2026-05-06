@@ -7,6 +7,7 @@
 
 import type { BrowserManager } from './browser-manager';
 import { consoleBuffer, networkBuffer, dialogBuffer } from './buffers';
+import { redactUrl } from './url-redaction';
 import type { Page } from 'playwright';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -201,7 +202,7 @@ export async function handleReadCommand(
       }
       if (networkBuffer.length === 0) return '(no network requests)';
       return networkBuffer.toArray().map(e =>
-        `${e.method} ${e.url} → ${e.status || 'pending'} (${e.duration || '?'}ms, ${e.size || '?'}B)`
+        `${e.method} ${redactUrl(e.url)} → ${e.status || 'pending'} (${e.duration || '?'}ms, ${e.size || '?'}B)`
       ).join('\n');
     }
 
