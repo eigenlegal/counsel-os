@@ -1,0 +1,28 @@
+{
+  "findings": [
+    {
+      "title": "Security incident notice is too slow",
+      "severity": "red",
+      "clause": "thirty (30) days after Processor determines that notice is legally required",
+      "rationale": "Thirty days is too slow for breach notice and the trigger should not wait until Processor decides legal notice is required.",
+      "citations": ["knowledge/law/data-privacy/data-processing-agreements.md", "knowledge/law/data-privacy/breach-notification.md"]
+    },
+    {
+      "title": "Subprocessor changes need prior notice and objection rights",
+      "severity": "yellow",
+      "clause": "may engage subprocessors without prior notice",
+      "rationale": "Customer should get prior notice of subprocessors and a practical objection mechanism.",
+      "citations": ["knowledge/law/data-privacy/data-processing-agreements.md"]
+    },
+    {
+      "title": "Cross-border transfer mechanism is missing",
+      "severity": "red",
+      "clause": "transfer Personal Data globally ... no additional transfer terms",
+      "rationale": "Global transfers need a transfer mechanism such as standard contractual clauses where restricted-transfer rules apply.",
+      "citations": ["knowledge/law/data-privacy/cross-border-transfers.md"]
+    }
+  ],
+  "citations": [
+    "knowledge/practice-seed/standards/data-protection.md"
+  ]
+}

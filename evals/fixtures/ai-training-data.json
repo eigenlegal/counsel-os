@@ -1,0 +1,58 @@
+{
+  "id": "ai-training-data",
+  "title": "AI vendor addendum with customer-data training rights",
+  "document_type": "AI services addendum",
+  "input": {
+    "contract_text": "Vendor may use Customer Data, prompts, outputs, telemetry, and user feedback to train, improve, and develop Vendor's machine learning models and related services. Customer Data may be combined with data from other customers. Vendor may use affiliates and third-party model providers to process Customer Data. Vendor will use commercially reasonable efforts to delete Customer Data upon written request, except where retained in model weights, embeddings, logs, or backups."
+  },
+  "expected_catches": [
+    {
+      "id": "training-use-too-broad",
+      "severity": "red",
+      "clause": "use Customer Data, prompts, outputs, telemetry, and user feedback to train",
+      "why": "Customer data should not be used for model training without a clear opt-in or negotiated permission.",
+      "match_any": ["training", "train", "model improvement", "customer data", "opt-in"]
+    },
+    {
+      "id": "commingling-risk",
+      "severity": "yellow",
+      "clause": "combined with data from other customers",
+      "why": "Commingling customer data creates confidentiality, privacy, and output-contamination risks.",
+      "match_any": ["combined", "commingl", "other customers", "segregation"]
+    },
+    {
+      "id": "deletion-exceptions-too-broad",
+      "severity": "red",
+      "clause": "except where retained in model weights, embeddings, logs, or backups",
+      "why": "Deletion exceptions are broad and should be narrowed with retention limits and technical commitments.",
+      "match_any": ["model weights", "embeddings", "logs", "backups", "deletion"]
+    }
+  ],
+  "expected_citations": [
+    {
+      "id": "ai-data-standard",
+      "aliases": ["knowledge/practice-seed/standards/ai-data-use.md", "ai-data-use"]
+    },
+    {
+      "id": "training-data-law-area",
+      "aliases": ["knowledge/law/ai-and-automation/training-data.md", "training-data"]
+    },
+    {
+      "id": "privacy-dpa-law-area",
+      "aliases": ["knowledge/law/data-privacy/data-processing-agreements.md", "data-processing-agreements"]
+    }
+  ],
+  "negative_checks": [
+    {
+      "id": "do-not-ban-ordinary-telemetry",
+      "description": "The eval should not ban all operational telemetry if it is aggregated and non-sensitive.",
+      "match_any": ["all telemetry must be prohibited", "ban all telemetry"]
+    }
+  ],
+  "allowed_citation_aliases": [
+    "knowledge/practice-seed/standards/ai-data-use.md",
+    "knowledge/law/ai-and-automation/training-data.md",
+    "knowledge/law/data-privacy/data-processing-agreements.md",
+    "knowledge/law/ai-and-automation/model-ownership.md"
+  ]
+}

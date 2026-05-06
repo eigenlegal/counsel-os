@@ -1,0 +1,65 @@
+{
+  "id": "msa-liability-indemnity",
+  "title": "MSA with weak IP indemnity and overbroad liability cap",
+  "document_type": "SaaS master services agreement",
+  "input": {
+    "contract_text": "Vendor's total liability arising out of or related to the Agreement will not exceed the fees paid by Customer in the three (3) months before the claim. This cap applies to all claims, including confidentiality breaches, data security incidents, payment obligations, and indemnification claims. Vendor disclaims any obligation to defend Customer against third-party claims alleging that the Services infringe intellectual property rights. Customer will indemnify Vendor for all claims arising from Customer's use of the Services."
+  },
+  "expected_catches": [
+    {
+      "id": "cap-too-low",
+      "severity": "red",
+      "clause": "fees paid ... in the three (3) months before the claim",
+      "why": "A three-month fees cap is too low for a SaaS vendor handling meaningful customer risk.",
+      "match_any": ["three months", "3 months", "cap too low", "liability cap"]
+    },
+    {
+      "id": "confidentiality-security-capped",
+      "severity": "red",
+      "clause": "cap applies to ... confidentiality breaches, data security incidents",
+      "why": "Confidentiality and security breaches should be uncapped or subject to a meaningful super-cap.",
+      "match_any": ["confidentiality", "security incident", "data security", "super-cap", "uncapped"]
+    },
+    {
+      "id": "missing-ip-indemnity",
+      "severity": "red",
+      "clause": "disclaims any obligation to defend ... intellectual property rights",
+      "why": "Vendor should provide IP infringement defense and indemnity for its services.",
+      "match_any": ["ip indemnity", "intellectual property", "infring", "defend"]
+    },
+    {
+      "id": "one-way-customer-indemnity",
+      "severity": "yellow",
+      "clause": "Customer will indemnify Vendor for all claims",
+      "why": "Customer indemnity is broad and one-sided without reciprocal vendor obligations.",
+      "match_any": ["one-sided", "one-way", "customer indemnity", "indemnify vendor"]
+    }
+  ],
+  "expected_citations": [
+    {
+      "id": "liability-standard",
+      "aliases": ["knowledge/practice-seed/standards/limitation-of-liability.md", "limitation-of-liability"]
+    },
+    {
+      "id": "indemnity-standard",
+      "aliases": ["knowledge/practice-seed/standards/indemnification.md", "indemnification"]
+    },
+    {
+      "id": "ip-standard",
+      "aliases": ["knowledge/practice-seed/standards/ip-ownership.md", "ip-ownership"]
+    }
+  ],
+  "negative_checks": [
+    {
+      "id": "do-not-demand-unlimited-general-liability",
+      "description": "The eval should not demand unlimited liability for all ordinary contract claims.",
+      "match_any": ["unlimited liability for all claims", "all liability must be uncapped"]
+    }
+  ],
+  "allowed_citation_aliases": [
+    "knowledge/practice-seed/standards/limitation-of-liability.md",
+    "knowledge/practice-seed/standards/indemnification.md",
+    "knowledge/practice-seed/standards/ip-ownership.md",
+    "knowledge/practice-seed/standards/data-protection.md"
+  ]
+}
