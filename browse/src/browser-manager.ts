@@ -125,7 +125,7 @@ export class BrowserManager {
     if (tabId === this.activeTabId) {
       const remaining = [...this.pages.keys()];
       if (remaining.length > 0) {
-        this.activeTabId = remaining[remaining.length - 1];
+        this.activeTabId = remaining[remaining.length - 1]!;
       } else {
         // No tabs left — create a new blank one
         await this.newTab();
@@ -342,7 +342,9 @@ export class BrowserManager {
       if (this.pages.size === 0) {
         await this.newTab();
       } else {
-        this.activeTabId = activeId ?? [...this.pages.keys()][0];
+        const firstTabId = [...this.pages.keys()][0];
+        if (firstTabId === undefined) throw new Error('No restored tabs available');
+        this.activeTabId = activeId ?? firstTabId;
       }
 
       // Clear refs — pages are new, locators are stale

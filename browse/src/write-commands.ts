@@ -151,7 +151,10 @@ export async function handleWriteCommand(
     case 'viewport': {
       const size = args[0];
       if (!size || !size.includes('x')) throw new Error('Usage: browse viewport <WxH> (e.g., 375x812)');
-      const [w, h] = size.split('x').map(Number);
+      const [width, height] = size.split('x');
+      const w = Number(width);
+      const h = Number(height);
+      if (!Number.isFinite(w) || !Number.isFinite(h)) throw new Error('Usage: browse viewport <WxH> (e.g., 375x812)');
       await bm.setViewport(w, h);
       return `Viewport set to ${w}x${h}`;
     }
@@ -277,6 +280,7 @@ export async function handleWriteCommand(
       if (domainIdx !== -1 && domainIdx + 1 < args.length) {
         // Direct import mode — no UI
         const domain = args[domainIdx + 1];
+        if (!domain) throw new Error('Usage: browse cookie-import-browser [browser] --domain <domain>');
         const browser = browserArg || 'comet';
         const result = await importCookies(browser, [domain]);
         if (result.cookies.length > 0) {

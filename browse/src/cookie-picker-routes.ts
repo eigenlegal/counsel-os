@@ -174,7 +174,7 @@ export async function handleCookiePickerRoute(
       // Track what was imported
       for (const domain of Object.keys(result.domainCounts)) {
         importedDomains.add(domain);
-        importedCounts.set(domain, (importedCounts.get(domain) || 0) + result.domainCounts[domain]);
+        importedCounts.set(domain, (importedCounts.get(domain) || 0) + (result.domainCounts[domain] ?? 0));
       }
 
       console.log(`[cookie-picker] Imported ${result.count} cookies for ${Object.keys(result.domainCounts).length} domains`);

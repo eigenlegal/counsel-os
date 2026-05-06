@@ -38,7 +38,9 @@ export async function handleMetaCommand(
     }
 
     case 'tab': {
-      const id = parseInt(args[0], 10);
+      const tabArg = args[0];
+      if (!tabArg) throw new Error('Usage: browse tab <id>');
+      const id = parseInt(tabArg, 10);
       if (isNaN(id)) throw new Error('Usage: browse tab <id>');
       bm.switchTab(id);
       return `Switched to tab ${id}`;
@@ -134,7 +136,7 @@ export async function handleMetaCommand(
       const jsonStr = args[0];
       if (!jsonStr) throw new Error('Usage: echo \'[["goto","url"],["text"]]\' | browse chain');
 
-      let commands: string[][];
+      let commands: unknown;
       try {
         commands = JSON.parse(jsonStr);
       } catch {
@@ -146,6 +148,12 @@ export async function handleMetaCommand(
       const results: string[] = [];
 
       for (const cmd of commands) {
+        if (!Array.isArray(cmd) || typeof cmd[0] !== 'string') {
+          throw new Error('Expected each command to be an array beginning with a command name');
+        }
+        if (!cmd.every(arg => typeof arg === 'string')) {
+          throw new Error('Expected command names and arguments to be strings');
+        }
         const [name, ...cmdArgs] = cmd;
         try {
           let result: string;

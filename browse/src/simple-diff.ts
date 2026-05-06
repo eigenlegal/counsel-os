@@ -13,7 +13,9 @@ export function diffLines(before: string, after: string): DiffPart[] {
 
   for (let i = a.length - 1; i >= 0; i--) {
     for (let j = b.length - 1; j >= 0; j--) {
-      lcs[i][j] = a[i] === b[j] ? lcs[i + 1][j + 1] + 1 : Math.max(lcs[i + 1][j], lcs[i][j + 1]);
+      lcs[i]![j] = a[i] === b[j]
+        ? lcs[i + 1]![j + 1]! + 1
+        : Math.max(lcs[i + 1]![j]!, lcs[i]![j + 1]!);
     }
   }
 
@@ -36,20 +38,20 @@ export function diffLines(before: string, after: string): DiffPart[] {
 
   while (i < a.length && j < b.length) {
     if (a[i] === b[j]) {
-      push(a[i]);
+      push(a[i]!);
       i++;
       j++;
-    } else if (lcs[i + 1][j] >= lcs[i][j + 1]) {
-      push(a[i], 'removed');
+    } else if (lcs[i + 1]![j]! >= lcs[i]![j + 1]!) {
+      push(a[i]!, 'removed');
       i++;
     } else {
-      push(b[j], 'added');
+      push(b[j]!, 'added');
       j++;
     }
   }
 
-  while (i < a.length) push(a[i++], 'removed');
-  while (j < b.length) push(b[j++], 'added');
+  while (i < a.length) push(a[i++]!, 'removed');
+  while (j < b.length) push(b[j++]!, 'added');
 
   return parts.map(part => ({ ...part, value: `${part.value}\n` }));
 }

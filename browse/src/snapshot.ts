@@ -66,7 +66,9 @@ export function parseSnapshotArgs(args: string[]): SnapshotOptions {
         break;
       case '-d':
       case '--depth':
-        opts.depth = parseInt(args[++i], 10);
+        const depthArg = args[++i];
+        if (!depthArg) throw new Error('Usage: snapshot -d <number>');
+        opts.depth = parseInt(depthArg, 10);
         if (isNaN(opts.depth!)) throw new Error('Usage: snapshot -d <number>');
         break;
       case '-s':
@@ -116,9 +118,12 @@ function parseLine(line: string): ParsedNode | null {
     // Skip metadata lines like "- /url: /a"
     return null;
   }
+  const indent = match[1] ?? '';
+  const role = match[2];
+  if (!role) return null;
   return {
-    indent: match[1].length,
-    role: match[2],
+    indent: indent.length,
+    role,
     name: match[3] ?? null,
     props: match[4] || '',
     children: match[5]?.trim() || '',
@@ -260,7 +265,7 @@ export async function handleSnapshot(
           const parts: string[] = [];
           let current: Element | null = el;
           while (current && current !== document.documentElement) {
-            const parent = current.parentElement;
+            const parent: Element | null = current.parentElement;
             if (!parent) break;
             const siblings = [...parent.children];
             const index = siblings.indexOf(current) + 1;
