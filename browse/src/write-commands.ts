@@ -271,7 +271,7 @@ export async function handleWriteCommand(
       // Two modes:
       // 1. Direct CLI import: cookie-import-browser <browser> --domain <domain>
       // 2. Open picker UI: cookie-import-browser [browser]
-      const browserArg = args[0];
+      const browserArg = args[0]?.startsWith('--') ? undefined : args[0];
       const domainIdx = args.indexOf('--domain');
 
       if (domainIdx !== -1 && domainIdx + 1 < args.length) {
@@ -298,14 +298,14 @@ export async function handleWriteCommand(
 
       const token = bm.cookiePickerToken;
       if (!token) throw new Error('Cookie picker token not available');
-      const pickerUrl = `http://127.0.0.1:${port}/cookie-picker?token=${encodeURIComponent(token)}`;
+      const pickerUrl = `http://127.0.0.1:${port}/cookie-picker#token=${encodeURIComponent(token)}`;
       try {
         Bun.spawn(['open', pickerUrl], { stdout: 'ignore', stderr: 'ignore' });
       } catch {
-        // open may fail silently — URL is in the message below
+        // open may fail silently; direct --domain import remains available.
       }
 
-      return `Cookie picker opened at ${pickerUrl}\nDetected browsers: ${browsers.map(b => b.name).join(', ')}\nSelect domains to import, then close the picker when done.`;
+      return `Cookie picker opened in your browser on localhost:${port}\nDetected browsers: ${browsers.map(b => b.name).join(', ')}\nSelect domains to import, then close the picker when done.`;
     }
 
     default:

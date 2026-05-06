@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
-"""Reformat a .docx to professional standards using consistent styles.
+"""Reformat a simple .docx to professional standards using consistent styles.
 
 Usage:
     python3 clean_format.py <input.docx> <output.docx> [--template <template.docx>]
+
+This script rebuilds the output document from body paragraphs and tables. It is
+appropriate for simple letters, memos, and rough drafts, not negotiated
+contracts or files that must preserve comments, tracked changes, hyperlinks,
+fields, images, footnotes/endnotes, complex numbering, or section-specific
+formatting.
 
 Applies uniform 11pt Times New Roman, justified body text, bold headings with
 proper spacing, native Word multilevel numbering (1, 1.1, 1.1.1), and 1-inch

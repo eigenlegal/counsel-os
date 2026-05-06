@@ -45,37 +45,39 @@ echo "  Output:   $OUTPUT"
 # NOTE: All paths must be in user-accessible directories (e.g. ~/Desktop, ~/Documents).
 # macOS sandboxing prevents Word from accessing /tmp or /private/tmp.
 
-osascript << ENDSCRIPT
-tell application "Microsoft Word"
-    activate
+if osascript - "$ORIGINAL" "$MODIFIED" "$AUTHOR" "$OUTPUT" << 'ENDSCRIPT'
+on run argv
+    set originalPath to item 1 of argv
+    set modifiedPath to item 2 of argv
+    set authorName to item 3 of argv
+    set outputPath to item 4 of argv
 
-    -- Open the original document
-    set origDoc to open file name POSIX file "$ORIGINAL"
+    tell application "Microsoft Word"
+        activate
 
-    -- Compare with the modified document, author name set to specified author
-    compare origDoc path "$MODIFIED" author name "$AUTHOR" target compare target new add to recent files false
+        -- Open the original document
+        set origDoc to open file name POSIX file originalPath
 
-    -- The comparison result is now the active document
-    set compDoc to active document
+        -- Compare with the modified document, author name set to specified author
+        compare origDoc path modifiedPath author name authorName target compare target new add to recent files false
 
-    -- Save the comparison document
-    save as compDoc file name POSIX file "$OUTPUT" file format format document
+        -- The comparison result is now the active document
+        set compDoc to active document
 
-    -- Close all documents
-    close compDoc saving no
-    close origDoc saving no
-end tell
+        -- Save the comparison document
+        save as compDoc file name POSIX file outputPath file format format document
+
+        -- Close all documents
+        close compDoc saving no
+        close origDoc saving no
+    end tell
+end run
 ENDSCRIPT
-
-COMPARE_EXIT=$?
-
-if [ $COMPARE_EXIT -eq 0 ]; then
+then
     echo "Success: Tracked changes document saved to $OUTPUT"
-
-    # Clean up the intermediate modified file
-    rm -f "$MODIFIED"
-    echo "Cleaned up intermediate file: $MODIFIED"
+    echo "Modified input retained: $MODIFIED"
 else
+    COMPARE_EXIT=$?
     echo "Error: Word Compare failed with exit code $COMPARE_EXIT"
     exit 1
 fi

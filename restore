@@ -3,6 +3,36 @@ set -euo pipefail
 
 COUNSEL_DIR="$(cd "$(dirname "$0")" && pwd)"
 BACKUP_DIR="$COUNSEL_DIR/backups"
+RESTORE_DIRS=(law practice matters memory entities)
+RESTORE_WORKDIR=""
+
+cleanup_restore_workdir() {
+  if [ -n "$RESTORE_WORKDIR" ] && [ -d "$RESTORE_WORKDIR" ]; then
+    rm -rf "$RESTORE_WORKDIR"
+  fi
+}
+
+rollback_restore() {
+  local status=$?
+
+  if [ -n "$RESTORE_WORKDIR" ] && [ -d "$RESTORE_WORKDIR/rollback" ]; then
+    echo ""
+    echo "Restore failed. Attempting to roll back previous content..." >&2
+
+    for item in config.md "${RESTORE_DIRS[@]}"; do
+      rm -rf "$LEGAL_ROOT/$item"
+      if [ -e "$RESTORE_WORKDIR/rollback/$item" ]; then
+        mv "$RESTORE_WORKDIR/rollback/$item" "$LEGAL_ROOT/$item" || true
+      fi
+    done
+  fi
+
+  cleanup_restore_workdir
+  exit "$status"
+}
+
+trap rollback_restore ERR
+trap cleanup_restore_workdir EXIT
 
 LEGAL_ROOT="$(bash "$COUNSEL_DIR/scripts/resolve_legal_root.sh" || true)"
 
@@ -49,7 +79,7 @@ if [ -f "$BACKUP_PATH/manifest.json" ]; then
 fi
 
 has_existing=0
-for dir in law practice matters memory entities; do
+for dir in "${RESTORE_DIRS[@]}"; do
   if [ -d "$LEGAL_ROOT/$dir" ] && [ "$(find "$LEGAL_ROOT/$dir" -type f ! -name '.gitkeep' | head -1)" ]; then
     has_existing=1
     break
@@ -59,7 +89,8 @@ done
 if [ "$has_existing" -eq 1 ]; then
   echo ""
   echo "WARNING: Existing Counsel OS content found at legal root."
-  echo "Restoring will copy backed-up files over current law/, practice/, matters/, memory/, and entities/ files."
+  echo "Restoring will replace current law/, practice/, matters/, memory/, and entities/"
+  echo "with the backup contents. Files not present in the backup will be removed."
   echo ""
   read -r -p "Continue? (y/N) " confirm
   if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
@@ -69,15 +100,38 @@ if [ "$has_existing" -eq 1 ]; then
 fi
 
 mkdir -p "$LEGAL_ROOT"
-cp "$BACKUP_PATH/config.md" "$LEGAL_ROOT/config.md"
 
-for dir in law practice matters memory entities; do
+RESTORE_WORKDIR="$(mktemp -d "$LEGAL_ROOT/.counsel-os-restore.XXXXXX")"
+STAGE_PATH="$RESTORE_WORKDIR/stage"
+ROLLBACK_PATH="$RESTORE_WORKDIR/rollback"
+mkdir -p "$STAGE_PATH" "$ROLLBACK_PATH"
+
+cp "$BACKUP_PATH/config.md" "$STAGE_PATH/config.md"
+
+for dir in "${RESTORE_DIRS[@]}"; do
   if [ -d "$BACKUP_PATH/$dir" ]; then
-    mkdir -p "$LEGAL_ROOT/$dir"
-    cp -R "$BACKUP_PATH/$dir/." "$LEGAL_ROOT/$dir/"
-    echo "  restored: $dir/"
+    cp -R "$BACKUP_PATH/$dir" "$STAGE_PATH/$dir"
   fi
 done
+
+for item in config.md "${RESTORE_DIRS[@]}"; do
+  if [ -e "$LEGAL_ROOT/$item" ]; then
+    mv "$LEGAL_ROOT/$item" "$ROLLBACK_PATH/$item"
+  fi
+done
+
+mv "$STAGE_PATH/config.md" "$LEGAL_ROOT/config.md"
+
+for dir in "${RESTORE_DIRS[@]}"; do
+  if [ -d "$STAGE_PATH/$dir" ]; then
+    mv "$STAGE_PATH/$dir" "$LEGAL_ROOT/$dir"
+    echo "  restored: $dir/"
+  else
+    echo "  removed:  $dir/ (not present in backup)"
+  fi
+done
+
+rm -rf "$ROLLBACK_PATH"
 
 echo ""
 echo "Restore complete."

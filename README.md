@@ -47,7 +47,7 @@ Then start a new Claude Code session and run:
 Counsel OS is skill-first: setup is written as an `.md` skill so Claude can adapt it to your vault, permissions, shell environment, and connected tools. The repo's shell scripts are only narrow mechanical helpers for deterministic tasks.
 
 **Optional dependencies:**
-- **[Bun](https://bun.sh/)** — for the `/counsel-os:browse` browser skill
+- **[Bun](https://bun.sh/)** plus Playwright Chromium (`bunx playwright install chromium`) — for the `/counsel-os:browse` browser skill
 - **pandoc** — for extracting tracked changes from Word documents
 - **[QMD](https://github.com/tobi/qmd)** — content-index MCP server for entity discovery across your whole vault. Install separately as its own Claude plugin (works in Claude Code and Cowork). Without it, entity files live under `{legal_root}/entities/` and are found via filesystem search.
 

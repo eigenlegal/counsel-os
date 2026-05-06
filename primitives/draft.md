@@ -265,10 +265,13 @@ Parse the JSON output. Report skipped items.
 {plugin_root}/scripts/word_compare.sh "{original.docx}" "{modified.docx}" "{author_name}" "{output_path}"
 ```
 Default output: `{original_dir}/{original_name}-redline-{YYYY-MM-DD}.docx`
+The script retains `{modified.docx}`. Delete it only if it is a generated intermediate file and the user no longer needs it.
 
-**4. Clean format option.** Offer the user a choice:
+**4. Clean format option.** Default to preserving formatting for contract redlines.
 - **(A) Preserve formatting** — tracked changes show content edits only (standard for redlines)
-- **(B) Clean format** — reformat to professional standards first, then apply changes (better when source has inconsistent formatting)
+- **(B) Clean format** — use only for simple letters, memos, or drafts where the user explicitly accepts document flattening.
+
+Do not offer clean formatting as a routine option for negotiated contracts, signed documents, or files with comments, tracked changes, fields, hyperlinks, images, footnotes/endnotes, complex numbering, or section-specific formatting. `clean_format.py` rebuilds the document from body paragraphs and tables; it can drop or flatten those structures. If clean format is appropriate, warn the user before running it.
 
 For clean format:
 ```bash
