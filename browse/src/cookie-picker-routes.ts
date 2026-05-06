@@ -26,16 +26,16 @@ const importedCounts = new Map<string, number>();
 
 // ─── JSON Helpers ───────────────────────────────────────────────
 
-function localOrigin(url: URL): string {
+export function localOrigin(url: URL): string {
   return `${url.protocol}//${url.host}`;
 }
 
-function isAllowedOrigin(url: URL, req: Request): boolean {
+export function isAllowedOrigin(url: URL, req: Request): boolean {
   const origin = req.headers.get('origin');
   return !origin || origin === localOrigin(url);
 }
 
-function hasPickerAccess(url: URL, req: Request, pickerToken: string): boolean {
+export function hasPickerAccess(url: URL, req: Request, pickerToken: string): boolean {
   if (!isAllowedOrigin(url, req)) return false;
 
   const secFetchSite = req.headers.get('sec-fetch-site');

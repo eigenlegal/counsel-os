@@ -5,6 +5,8 @@
   "scripts": {
     "build": "bun build --target=bun --compile -e electron -e 'chromium-bidi/*' browse/src/cli.ts --outfile browse/dist/browse",
     "content-version": "python3 scripts/bump_content_versions.py",
+    "test": "bun test",
+    "test:server": "bun test browse/src",
     "typecheck": "tsc --noEmit -p browse/tsconfig.json"
   },
   "dependencies": {
