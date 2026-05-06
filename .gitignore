@@ -1,7 +1,6 @@
 .DS_Store
 node_modules/
 browse/dist/
-bun.lock
 backups/
 *.bun-build
 config.local.md
