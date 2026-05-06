@@ -30,9 +30,13 @@ const INSTANCE_SUFFIX = BROWSE_PORT ? `-${BROWSE_PORT}` : '';
 const STATE_FILE = process.env.BROWSE_STATE_FILE || `/tmp/browse-server${INSTANCE_SUFFIX}.json`;
 const IDLE_TIMEOUT_MS = parseInt(process.env.BROWSE_IDLE_TIMEOUT || '1800000', 10); // 30 min
 
-function validateAuth(req: Request): boolean {
+export function validateBearerAuth(req: Request, token: string): boolean {
   const header = req.headers.get('authorization');
-  return header === `Bearer ${AUTH_TOKEN}`;
+  return header === `Bearer ${token}`;
+}
+
+function validateAuth(req: Request): boolean {
+  return validateBearerAuth(req, AUTH_TOKEN);
 }
 
 // ─── Buffer (from buffers.ts) ────────────────────────────────────
@@ -176,11 +180,22 @@ function wrapError(err: any): string {
   return msg;
 }
 
-async function handleCommand(body: any): Promise<Response> {
+export async function dispatchCommand(
+  body: any,
+  bm: BrowserManager,
+  shutdownFn: () => Promise<void> = shutdown,
+): Promise<Response> {
   const { command, args = [] } = body;
 
-  if (!command) {
+  if (!command || typeof command !== 'string') {
     return new Response(JSON.stringify({ error: 'Missing "command" field' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  if (!Array.isArray(args)) {
+    return new Response(JSON.stringify({ error: '"args" must be an array' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -190,11 +205,11 @@ async function handleCommand(body: any): Promise<Response> {
     let result: string;
 
     if (READ_COMMANDS.has(command)) {
-      result = await handleReadCommand(command, args, browserManager);
+      result = await handleReadCommand(command, args, bm);
     } else if (WRITE_COMMANDS.has(command)) {
-      result = await handleWriteCommand(command, args, browserManager);
+      result = await handleWriteCommand(command, args, bm);
     } else if (META_COMMANDS.has(command)) {
-      result = await handleMetaCommand(command, args, browserManager, shutdown);
+      result = await handleMetaCommand(command, args, bm, shutdownFn);
     } else {
       return new Response(JSON.stringify({
         error: `Unknown command: ${command}`,
@@ -215,6 +230,10 @@ async function handleCommand(body: any): Promise<Response> {
       headers: { 'Content-Type': 'application/json' },
     });
   }
+}
+
+async function handleCommand(body: any): Promise<Response> {
+  return dispatchCommand(body, browserManager, shutdown);
 }
 
 async function shutdown() {

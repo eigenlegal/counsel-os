@@ -20,33 +20,49 @@ const INSTANCE_SUFFIX = BROWSE_PORT ? `-${BROWSE_PORT}` : '';
 const STATE_FILE = process.env.BROWSE_STATE_FILE || `/tmp/browse-server${INSTANCE_SUFFIX}.json`;
 const MAX_START_WAIT = 8000; // 8 seconds to start
 
-function resolveServerCommand(): string[] {
-  if (process.env.BROWSE_SERVER_SCRIPT) {
-    return ['bun', 'run', process.env.BROWSE_SERVER_SCRIPT];
+interface ServerCommandOptions {
+  env?: NodeJS.ProcessEnv;
+  importMetaDir?: string;
+  execPath?: string;
+  existsSync?: (path: string) => boolean;
+}
+
+export function resolveServerCommand(options: ServerCommandOptions = {}): string[] {
+  const env = options.env ?? process.env;
+  const importMetaDir = options.importMetaDir ?? import.meta.dir;
+  const execPath = options.execPath ?? process.execPath;
+  const existsSync = options.existsSync ?? fs.existsSync;
+
+  if (env.BROWSE_SERVER_SCRIPT) {
+    return ['bun', 'run', env.BROWSE_SERVER_SCRIPT];
   }
 
   // Dev mode: cli.ts runs directly from browse/src.
-  if (import.meta.dir.startsWith('/') && !import.meta.dir.includes('$bunfs')) {
-    const direct = path.resolve(import.meta.dir, 'server.ts');
-    if (fs.existsSync(direct)) {
+  if (importMetaDir.startsWith('/') && !importMetaDir.includes('$bunfs')) {
+    const direct = path.resolve(importMetaDir, 'server.ts');
+    if (existsSync(direct)) {
       return ['bun', 'run', direct];
     }
   }
 
   // Compiled mode: the bundled binary includes the literal dynamic import used
   // by __server, so it can spawn itself with a private server argument.
-  return [process.execPath, '__server'];
+  return [execPath, '__server'];
 }
 
-function ensurePluginNodePath(): void {
-  const pluginRoot = path.resolve(path.dirname(process.execPath), '..', '..');
+export function ensurePluginNodePath(
+  env: NodeJS.ProcessEnv = process.env,
+  execPath = process.execPath,
+  existsSync: (path: string) => boolean = fs.existsSync,
+): void {
+  const pluginRoot = path.resolve(path.dirname(execPath), '..', '..');
   const nodeModules = path.join(pluginRoot, 'node_modules');
-  if (!fs.existsSync(nodeModules)) return;
+  if (!existsSync(nodeModules)) return;
 
-  const existing = process.env.NODE_PATH;
+  const existing = env.NODE_PATH;
   const parts = existing ? existing.split(path.delimiter) : [];
   if (!parts.includes(nodeModules)) {
-    process.env.NODE_PATH = [nodeModules, ...parts].join(path.delimiter);
+    env.NODE_PATH = [nodeModules, ...parts].join(path.delimiter);
   }
 }
 
