@@ -1,0 +1,37 @@
+{
+  "findings": [
+    {
+      "title": "Liability cap is too low",
+      "severity": "red",
+      "clause": "fees paid by Customer in the three (3) months before the claim",
+      "rationale": "A three months liability cap is too low for meaningful SaaS risk.",
+      "citations": ["knowledge/practice-seed/standards/limitation-of-liability.md"]
+    },
+    {
+      "title": "Confidentiality and security should be uncapped or super-capped",
+      "severity": "red",
+      "clause": "cap applies to all claims, including confidentiality breaches, data security incidents",
+      "rationale": "Confidentiality and data security claims should sit outside the general cap or under a meaningful super-cap.",
+      "citations": ["knowledge/practice-seed/standards/limitation-of-liability.md", "knowledge/practice-seed/standards/data-protection.md"]
+    },
+    {
+      "title": "Vendor disclaims IP indemnity",
+      "severity": "red",
+      "clause": "disclaims any obligation to defend Customer against third-party claims alleging ... intellectual property rights",
+      "rationale": "Vendor should defend and indemnify Customer for IP infringement claims arising from the Services.",
+      "citations": ["knowledge/practice-seed/standards/indemnification.md", "knowledge/practice-seed/standards/ip-ownership.md"]
+    },
+    {
+      "title": "Customer indemnity is one-sided",
+      "severity": "yellow",
+      "clause": "Customer will indemnify Vendor for all claims arising from Customer's use",
+      "rationale": "The customer indemnity is broad and one-sided without reciprocal vendor indemnity.",
+      "citations": ["knowledge/practice-seed/standards/indemnification.md"]
+    }
+  ],
+  "citations": [
+    "knowledge/practice-seed/standards/limitation-of-liability.md",
+    "knowledge/practice-seed/standards/indemnification.md",
+    "knowledge/practice-seed/standards/ip-ownership.md"
+  ]
+}

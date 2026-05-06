@@ -1,0 +1,30 @@
+{
+  "findings": [
+    {
+      "title": "Training use of customer data is too broad",
+      "severity": "red",
+      "clause": "use Customer Data, prompts, outputs, telemetry, and user feedback to train",
+      "rationale": "The training right should be opt-in and tightly scoped; customer data should not be used for model improvement by default.",
+      "citations": ["knowledge/practice-seed/standards/ai-data-use.md", "knowledge/law/ai-and-automation/training-data.md"]
+    },
+    {
+      "title": "Customer data may be commingled",
+      "severity": "yellow",
+      "clause": "combined with data from other customers",
+      "rationale": "Commingling with other customers' data raises confidentiality, privacy, and segregation concerns.",
+      "citations": ["knowledge/practice-seed/standards/ai-data-use.md"]
+    },
+    {
+      "title": "Deletion exceptions are too broad",
+      "severity": "red",
+      "clause": "except where retained in model weights, embeddings, logs, or backups",
+      "rationale": "The model weights, embeddings, logs, and backups exceptions undermine deletion and retention obligations.",
+      "citations": ["knowledge/law/data-privacy/data-processing-agreements.md"]
+    }
+  ],
+  "citations": [
+    "knowledge/practice-seed/standards/ai-data-use.md",
+    "knowledge/law/ai-and-automation/training-data.md",
+    "knowledge/law/data-privacy/data-processing-agreements.md"
+  ]
+}
