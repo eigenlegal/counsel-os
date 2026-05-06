@@ -10,16 +10,50 @@ The redlines.json file should contain an array of objects:
         "current": "exact text to find",
         "proposed": "replacement text",
         "comment": "rationale for the change (or null)",
-        "author": "Author Name"
+        "author": "Author Name",
+        "match": {
+          "location": "body[12]",
+          "before": "optional immediately preceding text",
+          "after": "optional immediately following text"
+        }
       }
     ]
+
+If `current` appears more than once, the script refuses to apply that item
+unless `match` selects exactly one occurrence. Supported match selectors:
+`location`, `paragraph_index`, `occurrence`, `before`, `after`, and `context`.
 """
 
 import json
 import sys
+import zipfile
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, Optional
+from xml.etree import ElementTree as ET
 
 from docx import Document
+
+W_NS = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+UNSUPPORTED_PARTS = (
+    ("word/footnotes.xml", "footnote", "footnote"),
+    ("word/endnotes.xml", "endnote", "endnote"),
+    ("word/comments.xml", "comment", "comment"),
+)
+
+
+@dataclass
+class TextMatch:
+    location: str
+    occurrence: int
+    start: int
+    end: int
+    text: str
+    before: str
+    after: str
+    replaceable: bool
+    paragraph: Optional[Any] = None
+    paragraph_index: Optional[int] = None
 
 
 def get_paragraph_text(paragraph):
@@ -27,7 +61,34 @@ def get_paragraph_text(paragraph):
     return "".join(run.text for run in paragraph.runs)
 
 
-def replace_in_paragraph(paragraph, current, proposed):
+def find_occurrence_starts(text, current):
+    """Return non-overlapping start offsets for current in text."""
+    if not current:
+        return []
+
+    starts = []
+    start = 0
+    while True:
+        index = text.find(current, start)
+        if index == -1:
+            return starts
+        starts.append(index)
+        start = index + len(current)
+
+
+def context_before(text, start_idx, size=160):
+    return text[max(0, start_idx - size) : start_idx]
+
+
+def context_after(text, end_idx, size=160):
+    return text[end_idx : end_idx + size]
+
+
+def truncate(text, length=80):
+    return text[:length] + "..." if len(text) > length else text
+
+
+def replace_in_paragraph(paragraph, current, proposed, start_idx=None):
     """Replace `current` text with `proposed` in a paragraph, preserving formatting.
 
     Joins run text to find the match, then reconstructs runs so the first
@@ -37,8 +98,9 @@ def replace_in_paragraph(paragraph, current, proposed):
     Returns True if a replacement was made, False otherwise.
     """
     full_text = get_paragraph_text(paragraph)
-    start_idx = full_text.find(current)
-    if start_idx == -1:
+    if start_idx is None:
+        start_idx = full_text.find(current)
+    if start_idx == -1 or full_text[start_idx : start_idx + len(current)] != current:
         return False
 
     end_idx = start_idx + len(current)
@@ -85,6 +147,182 @@ def replace_in_paragraph(paragraph, current, proposed):
         last_run.text = suffix
 
     return True
+
+
+def collect_matches_from_paragraph(paragraph, current, location, occurrence, paragraph_index=None):
+    full_text = get_paragraph_text(paragraph)
+    matches = []
+
+    for start in find_occurrence_starts(full_text, current):
+        end = start + len(current)
+        matches.append(
+            TextMatch(
+                location=location,
+                occurrence=occurrence + len(matches),
+                start=start,
+                end=end,
+                text=full_text,
+                before=context_before(full_text, start),
+                after=context_after(full_text, end),
+                replaceable=True,
+                paragraph=paragraph,
+                paragraph_index=paragraph_index,
+            )
+        )
+
+    return matches
+
+
+def collect_replaceable_matches(document, current):
+    matches = []
+
+    for paragraph_index, paragraph in enumerate(document.paragraphs):
+        matches.extend(
+            collect_matches_from_paragraph(
+                paragraph,
+                current,
+                f"body[{paragraph_index}]",
+                len(matches),
+                paragraph_index=paragraph_index,
+            )
+        )
+
+    for table_index, table in enumerate(document.tables):
+        for row_index, row in enumerate(table.rows):
+            for cell_index, cell in enumerate(row.cells):
+                for paragraph_index, paragraph in enumerate(cell.paragraphs):
+                    matches.extend(
+                        collect_matches_from_paragraph(
+                            paragraph,
+                            current,
+                            (
+                                f"table[{table_index}].row[{row_index}]"
+                                f".cell[{cell_index}].p[{paragraph_index}]"
+                            ),
+                            len(matches),
+                        )
+                    )
+
+    return matches
+
+
+def paragraph_text_from_xml(paragraph):
+    return "".join(node.text or "" for node in paragraph.iter(f"{W_NS}t"))
+
+
+def collect_unsupported_matches(docx_path, current, occurrence):
+    matches = []
+
+    try:
+        with zipfile.ZipFile(docx_path) as package:
+            names = set(package.namelist())
+            part_specs = list(UNSUPPORTED_PARTS)
+            part_specs.extend(
+                (name, "header", Path(name).stem)
+                for name in names
+                if name.startswith("word/header") and name.endswith(".xml")
+            )
+            part_specs.extend(
+                (name, "footer", Path(name).stem)
+                for name in names
+                if name.startswith("word/footer") and name.endswith(".xml")
+            )
+
+            for part_name, part_kind, part_label in part_specs:
+                if part_name not in names:
+                    continue
+
+                root = ET.fromstring(package.read(part_name))
+                paragraph_index = 0
+                for paragraph in root.iter(f"{W_NS}p"):
+                    full_text = paragraph_text_from_xml(paragraph)
+                    for start in find_occurrence_starts(full_text, current):
+                        end = start + len(current)
+                        matches.append(
+                            TextMatch(
+                                location=f"{part_label}[{paragraph_index}]",
+                                occurrence=occurrence + len(matches),
+                                start=start,
+                                end=end,
+                                text=full_text,
+                                before=context_before(full_text, start),
+                                after=context_after(full_text, end),
+                                replaceable=False,
+                            )
+                        )
+                    paragraph_index += 1
+    except (zipfile.BadZipFile, ET.ParseError):
+        return matches
+
+    return matches
+
+
+def collect_matches(document, docx_path, current):
+    matches = collect_replaceable_matches(document, current)
+    matches.extend(collect_unsupported_matches(docx_path, current, len(matches)))
+    return matches
+
+
+def format_match(match):
+    return {
+        "location": match.location,
+        "occurrence": match.occurrence,
+        "start": match.start,
+        "replaceable": match.replaceable,
+        "before": truncate(match.before.strip(), 80),
+        "after": truncate(match.after.strip(), 80),
+    }
+
+
+def select_match(matches, match_spec):
+    selected = matches
+
+    if not match_spec:
+        if len(matches) == 1:
+            return matches[0], None
+        return None, f"Found {len(matches)} matches; add a match disambiguator"
+
+    if not isinstance(match_spec, dict):
+        return None, "match must be an object"
+
+    if "occurrence" in match_spec:
+        try:
+            occurrence = int(match_spec["occurrence"])
+        except (TypeError, ValueError):
+            return None, "match.occurrence must be an integer"
+        selected = [match for match in selected if match.occurrence == occurrence]
+
+    if "location" in match_spec:
+        selected = [
+            match for match in selected if match.location == str(match_spec["location"])
+        ]
+
+    if "paragraph_index" in match_spec:
+        try:
+            paragraph_index = int(match_spec["paragraph_index"])
+        except (TypeError, ValueError):
+            return None, "match.paragraph_index must be an integer"
+        selected = [
+            match for match in selected if match.paragraph_index == paragraph_index
+        ]
+
+    if "before" in match_spec:
+        before = str(match_spec["before"])
+        selected = [match for match in selected if match.before.endswith(before)]
+
+    if "after" in match_spec:
+        after = str(match_spec["after"])
+        selected = [match for match in selected if match.after.startswith(after)]
+
+    if "context" in match_spec:
+        context = str(match_spec["context"])
+        selected = [match for match in selected if context in match.text]
+
+    if len(selected) == 1:
+        return selected[0], None
+    if len(selected) == 0:
+        return None, "match disambiguator selected no matches"
+    return None, f"match disambiguator still selected {len(selected)} matches"
 
 
 def add_comment_to_paragraph(document, paragraph, comment_text, author):
@@ -136,80 +374,76 @@ def main():
         proposed = item["proposed"]
         comment_text = item.get("comment")
         author = item.get("author", "Unknown")
+        match_spec = item.get("match")
 
-        replaced = False
-        match_count = 0
-
-        for paragraph in doc.paragraphs:
-            full_text = get_paragraph_text(paragraph)
-            if current in full_text:
-                match_count += 1
-
-        if match_count == 0:
-            # Try searching in tables too
-            for table in doc.tables:
-                for row in table.rows:
-                    for cell in row.cells:
-                        for paragraph in cell.paragraphs:
-                            if current in get_paragraph_text(paragraph):
-                                match_count += 1
-
-        if match_count == 0:
+        if not current:
             results["skipped"].append(
                 {
                     "index": i,
-                    "current": current[:80] + "..." if len(current) > 80 else current,
+                    "current": "",
+                    "reason": "current text must not be empty",
+                }
+            )
+            continue
+
+        matches = collect_matches(doc, original_path, current)
+        if not matches:
+            results["skipped"].append(
+                {
+                    "index": i,
+                    "current": truncate(current),
                     "reason": "Text not found in document",
                 }
             )
             continue
 
-        if match_count > 1:
-            results["warnings"].append(
-                {
-                    "index": i,
-                    "current": current[:80] + "..." if len(current) > 80 else current,
-                    "reason": f"Found {match_count} matches, replacing first only",
-                }
-            )
-
-        # Apply replacement — body paragraphs first, then tables
-        for paragraph in doc.paragraphs:
-            if replace_in_paragraph(paragraph, current, proposed):
-                if comment_text:
-                    add_comment_to_paragraph(doc, paragraph, comment_text, author)
-                results["applied"].append({"index": i})
-                replaced = True
-                break
-
-        if not replaced:
-            for table in doc.tables:
-                for row in table.rows:
-                    for cell in row.cells:
-                        for paragraph in cell.paragraphs:
-                            if replace_in_paragraph(paragraph, current, proposed):
-                                if comment_text:
-                                    add_comment_to_paragraph(
-                                        doc, paragraph, comment_text, author
-                                    )
-                                results["applied"].append({"index": i})
-                                replaced = True
-                                break
-                        if replaced:
-                            break
-                    if replaced:
-                        break
-                if replaced:
-                    break
-
-        if not replaced:
+        selected_match, reason = select_match(matches, match_spec)
+        if selected_match is None:
             results["skipped"].append(
                 {
                     "index": i,
-                    "current": current[:80] + "..." if len(current) > 80 else current,
-                    "reason": "Replacement failed despite text being found",
+                    "current": truncate(current),
+                    "reason": reason,
+                    "matches": [format_match(match) for match in matches],
                 }
             )
+            continue
+
+        if not selected_match.replaceable:
+            results["skipped"].append(
+                {
+                    "index": i,
+                    "current": truncate(current),
+                    "reason": f"Selected match is in unsupported content: {selected_match.location}",
+                    "matches": [format_match(selected_match)],
+                }
+            )
+            continue
+
+        replaced = replace_in_paragraph(
+            selected_match.paragraph, current, proposed, selected_match.start
+        )
+        if replaced:
+            if comment_text:
+                add_comment_to_paragraph(
+                    doc, selected_match.paragraph, comment_text, author
+                )
+            results["applied"].append(
+                {
+                    "index": i,
+                    "location": selected_match.location,
+                    "occurrence": selected_match.occurrence,
+                }
+            )
+            continue
+
+        results["skipped"].append(
+            {
+                "index": i,
+                "current": truncate(current),
+                "reason": "Replacement failed despite text being found",
+            }
+        )
 
     doc.save(str(output_path))
 
