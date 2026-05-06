@@ -95,9 +95,22 @@ Do not read unmarked legacy configs as a fallback. If no marked config is found,
 
 Plugin methodology means skills, primitives, scripts, templates, and shipped knowledge. How it updates depends on install mode:
 
-- **Claude Desktop / Cowork marketplace:** tell the user to update/reinstall the plugin through the plugin marketplace, then start a new conversation.
-- **Claude Code marketplace:** tell the user to update/reinstall through Claude's plugin installer and fully restart Claude Code if the old manifest remains cached.
-- **Claude Code local clone:** if shell access is available and the plugin root is a git repo, run:
+First classify the loaded plugin:
+
+- **Local clone:** `{plugin_root}` itself contains `.git/`.
+- **Claude Code marketplace cache:** `{plugin_root}` is under `~/.claude/plugins/cache/{marketplace}/counsel-os/{loaded_version}/`.
+- **Other marketplace/runtime:** shell access is unavailable or the install layout is not readable.
+
+Always report:
+
+- loaded plugin root
+- loaded version from `{plugin_root}/VERSION` or `{plugin_root}/.claude-plugin/plugin.json`
+- install mode
+- whether the currently running session can use updated skill files without restart
+
+### Claude Code local clone
+
+If shell access is available and the plugin root is a git repo, run:
 
   ```bash
   git -C {plugin_root} fetch origin
@@ -105,6 +118,54 @@ Plugin methodology means skills, primitives, scripts, templates, and shipped kno
   ```
 
 If the local clone has uncommitted changes or a non-fast-forward update is needed, stop and explain the situation. Do not merge through conflicts inside the update skill.
+
+### Claude Code marketplace cache
+
+Do not try to edit the cache directory directly. The cache is a versioned snapshot, and the current session has already loaded these skill files into memory.
+
+If shell access is available and the loaded path matches `~/.claude/plugins/cache/{marketplace}/counsel-os/{loaded_version}/`:
+
+1. Derive `{marketplace}` and `{loaded_version}` from the cache path.
+2. Check the marketplace clone at `~/.claude/plugins/marketplaces/{marketplace}`.
+3. If that directory is a git repo, refresh it:
+
+   ```bash
+   git -C ~/.claude/plugins/marketplaces/{marketplace} fetch origin
+   git -C ~/.claude/plugins/marketplaces/{marketplace} merge --ff-only origin/main
+   ```
+
+   If it has uncommitted changes or cannot fast-forward, stop and explain.
+
+4. Read the marketplace-declared Counsel OS version from:
+   - `~/.claude/plugins/marketplaces/{marketplace}/.claude-plugin/marketplace.json`
+   - or `~/.claude/plugins/marketplaces/{marketplace}/.claude-plugin/plugin.json`
+
+5. Compare `{loaded_version}` against the marketplace-declared version.
+   - If the marketplace version is newer, report the exact delta and tell the user to run:
+
+     ```text
+     /plugin install counsel-os@{marketplace}
+     ```
+
+     Then fully restart Claude Code with Cmd-Q. Closing the window is not enough to clear loaded skills and cached manifests.
+
+   - If the versions match, tell the user the marketplace clone and cache appear aligned. A new conversation or restart may still be required for the currently running session to load changed skill files.
+
+If the marketplace clone is missing or shell access is unavailable, tell the user to refresh through Claude's plugin installer and fully restart Claude Code.
+
+### Developer shortcut
+
+If the user is actively developing Counsel OS from a source checkout, recommend launching Claude Code with the source repo:
+
+```bash
+claude --plugin-dir /path/to/counsel-os
+```
+
+This bypasses marketplace and cache layers. A new conversation is still needed to reload changed skill files.
+
+### Other marketplace runtimes
+
+For Claude Desktop / Cowork marketplace installs, tell the user to update or reinstall the plugin through the plugin marketplace, then start a new conversation or restart the host.
 
 After updating methodology, tell the user whether a restart is needed. In most plugin runtimes, changed skill files load reliably only in a new conversation or after restarting the host.
 
