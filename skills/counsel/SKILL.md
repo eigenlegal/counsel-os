@@ -101,40 +101,30 @@ counsel-os-config: true
 legal_root: /absolute/path/to/legal/root
 ```
 
-Do not treat an unmarked `config.md` as Counsel OS config. To find `{legal_root}` on each session, follow this procedure before doing any path-based work.
+Do not treat an unmarked `config.md` as Counsel OS config. To find `{legal_root}` on each session, use `scripts/resolve_legal_root.sh` as the canonical non-interactive implementation before doing any path-based work. The script owns the search order, validation rules, conventional vault paths, and exit-code contract.
 
-**Procedure (in order — stop at the first hit):**
+**Claude Code procedure:**
 
-1. **Check the pointer file** at `~/.counsel-os/legal-root` (Claude Code only — Cowork's sandbox doesn't have home-dir access). The pointer is a single line containing an absolute path. If it exists:
-   - Verify `{path}/config.md` exists and contains `counsel-os-config: true`. If yes → use it (and skip to step 5).
-   - If the file or directory is gone (user moved their vault), the pointer is stale — fall through to step 2.
-
-2. **Glob from the working location.** In Claude Code, start from the current working directory and walk up to ~3 parent levels looking for `config.md`. In Cowork, scan from the connected workspace root to ~3 levels deep. A candidate only counts if it contains `counsel-os-config: true` and a line matching `legal_root: <path>`.
-
-3. **Glob known vault locations** (Claude Code only — Cowork already covers this via step 2). Check these conventional paths for a marked `config.md` containing `counsel-os-config: true` and `legal_root:`:
-   - `~/Documents/Obsidian Vault/*/config.md`
-   - `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/*/*/config.md` (iCloud Obsidian)
-   - `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/*/config.md`
-   - `~/Dropbox/Obsidian/*/config.md`
-   - `~/legal/*/config.md`
-   - `~/counsel-os/config.md`
-   - `~/Documents/Counsel OS/config.md`
-
-4. **Resolve based on what was found across steps 2–3:**
-   - **Exactly one match** → use it. The directory containing the matched `config.md` is `{legal_root}` (the file's `legal_root:` line should agree; if they conflict, prefer the file's actual location and warn the user).
-   - **Multiple matches** → ask the user which legal root to use ("I see Counsel OS configs at A and B — which one?"). Rare; would mean multiple installations.
-   - **Zero matches** → ask the user explicitly: *"I don't see a marked Counsel OS legal root config. Run `/counsel-os:setup` to set one up, or tell me where your existing legal root is."*
-
-5. **Write the pointer file** (Claude Code only, after resolving via steps 2–4). This caches the resolution for the next session so we don't re-scan:
+1. Run the helper from the plugin root:
+   ```bash
+   bash {plugin_root}/scripts/resolve_legal_root.sh
+   ```
+2. Interpret its exit code:
+   - `0` → stdout is `{legal_root}`. Use that path.
+   - `1` → no marked legal root was found, or `COUNSEL_OS_LEGAL_ROOT` points at an invalid root. Ask the user: *"I don't see a marked Counsel OS legal root config. Run `/counsel-os:setup` to set one up, or tell me where your existing legal root is."*
+   - `2` → multiple marked legal roots were found. Read stderr for candidates and ask the user which one to use.
+3. **Write the pointer file** after resolving by user choice or discovery. This caches the resolution for the next session so we don't re-scan:
    ```bash
    mkdir -p ~/.counsel-os
    echo "{resolved legal_root}" > ~/.counsel-os/legal-root
    ```
-   In Cowork this step is skipped — the workspace-relative scan in step 2 is fast enough that no caching is needed.
+4. If shell execution is unavailable, follow the helper's documented algorithm rather than this skill carrying its own copy of the search paths. The only interaction-specific behavior here is user prompting on exit `1` or `2`.
 
-6. **Read overrides from the resolved config.** After finding `{legal_root}/config.md`, read it for any optional overrides (`entities_path`, `matters_path`, `entity_properties`). Use defaults for anything not set.
+**Cowork procedure:** shell and home-directory access may be unavailable. Scan the connected workspace for marked `config.md` files using the same validity rule. Ask the user on zero or multiple matches. Skip pointer-file caching.
 
-7. **Cache for the session.** Once resolved, treat `{legal_root}` and the overrides as fixed for the rest of the session — don't re-run discovery on every primitive call.
+5. **Read overrides from the resolved config.** After finding `{legal_root}/config.md`, read it for any optional overrides (`entities_path`, `matters_path`, `entity_properties`). Use defaults for anything not set.
+
+6. **Cache for the session.** Once resolved, treat `{legal_root}` and the overrides as fixed for the rest of the session — don't re-run discovery on every primitive call.
 
 **Defaults if not overridden:**
 - `entities_path` → `entities`
