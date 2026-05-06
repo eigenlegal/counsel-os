@@ -33,3 +33,6 @@ jobs:
 
       - name: Eval scorer self-test
         run: bun run evals:self-test
+
+      - name: Law frontmatter warnings
+        run: bun run law:frontmatter
