@@ -1,6 +1,6 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-04-08"
+content-version: "2026-05-06"
 ---
 ## Us Breach Notification 50 State
 

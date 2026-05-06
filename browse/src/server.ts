@@ -14,6 +14,7 @@ import { handleWriteCommand } from './write-commands';
 import { handleMetaCommand } from './meta-commands';
 import { handleCookiePickerRoute } from './cookie-picker-routes';
 import { READ_COMMANDS, WRITE_COMMANDS, META_COMMANDS } from './commands';
+import { redactUrl } from './url-redaction';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
@@ -58,7 +59,7 @@ async function flushBuffers() {
       const lines = entries.map(e =>
         `[${new Date(e.timestamp).toISOString()}] [${e.level}] ${e.text}`
       ).join('\n') + '\n';
-      await Bun.write(CONSOLE_LOG_PATH, (await Bun.file(CONSOLE_LOG_PATH).text().catch(() => '')) + lines);
+      await fs.promises.appendFile(CONSOLE_LOG_PATH, lines, { mode: 0o600 });
       lastConsoleFlushed = consoleBuffer.totalAdded;
     }
 
@@ -67,9 +68,9 @@ async function flushBuffers() {
     if (newNetworkCount > 0) {
       const entries = networkBuffer.last(Math.min(newNetworkCount, networkBuffer.length));
       const lines = entries.map(e =>
-        `[${new Date(e.timestamp).toISOString()}] ${e.method} ${e.url} → ${e.status || 'pending'} (${e.duration || '?'}ms, ${e.size || '?'}B)`
+        `[${new Date(e.timestamp).toISOString()}] ${e.method} ${redactUrl(e.url)} → ${e.status || 'pending'} (${e.duration || '?'}ms, ${e.size || '?'}B)`
       ).join('\n') + '\n';
-      await Bun.write(NETWORK_LOG_PATH, (await Bun.file(NETWORK_LOG_PATH).text().catch(() => '')) + lines);
+      await fs.promises.appendFile(NETWORK_LOG_PATH, lines, { mode: 0o600 });
       lastNetworkFlushed = networkBuffer.totalAdded;
     }
 
@@ -80,7 +81,7 @@ async function flushBuffers() {
       const lines = entries.map(e =>
         `[${new Date(e.timestamp).toISOString()}] [${e.type}] "${e.message}" → ${e.action}${e.response ? ` "${e.response}"` : ''}`
       ).join('\n') + '\n';
-      await Bun.write(DIALOG_LOG_PATH, (await Bun.file(DIALOG_LOG_PATH).text().catch(() => '')) + lines);
+      await fs.promises.appendFile(DIALOG_LOG_PATH, lines, { mode: 0o600 });
       lastDialogFlushed = dialogBuffer.totalAdded;
     }
   } catch {
@@ -104,6 +105,26 @@ let signalsRegistered = false;
 // ─── Server ────────────────────────────────────────────────────
 const browserManager = new BrowserManager();
 let isShuttingDown = false;
+let commandQueue: Promise<void> = Promise.resolve();
+let activeCommands = 0;
+
+async function runExclusive<T>(fn: () => Promise<T>): Promise<T> {
+  const previous = commandQueue;
+  let release!: () => void;
+  commandQueue = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+
+  await previous.catch(() => {});
+  activeCommands++;
+  try {
+    return await fn();
+  } finally {
+    activeCommands--;
+    resetIdleTimer();
+    release();
+  }
+}
 
 // Find port: deterministic from CONDUCTOR_PORT, or scan range
 async function findPort(): Promise<number> {
@@ -229,7 +250,7 @@ export async function start() {
   lastActivity = Date.now();
   flushInterval = setInterval(flushBuffers, 1000);
   idleCheckInterval = setInterval(() => {
-    if (Date.now() - lastActivity > IDLE_TIMEOUT_MS) {
+    if (activeCommands === 0 && Date.now() - lastActivity > IDLE_TIMEOUT_MS) {
       console.log(`[browse] Idle for ${IDLE_TIMEOUT_MS / 1000}s, shutting down`);
       shutdown();
     }
@@ -279,7 +300,7 @@ export async function start() {
 
       if (url.pathname === '/command' && req.method === 'POST') {
         const body = await req.json();
-        return handleCommand(body);
+        return runExclusive(() => handleCommand(body));
       }
 
       return new Response('Not found', { status: 404 });

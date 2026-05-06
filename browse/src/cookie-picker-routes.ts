@@ -82,6 +82,18 @@ export async function handleCookiePickerRoute(
 ): Promise<Response> {
   const pathname = url.pathname;
 
+  // GET /cookie-picker — serve the picker UI. The access token is delivered
+  // in the URL fragment and then sent back as an API header; fragments are not
+  // visible to the HTTP server.
+  if (pathname === '/cookie-picker' && req.method === 'GET') {
+    const port = parseInt(url.port, 10) || 9400;
+    const html = getCookiePickerHTML(port);
+    return new Response(html, {
+      status: 200,
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    });
+  }
+
   // CORS preflight
   if (req.method === 'OPTIONS') {
     if (!isAllowedOrigin(url, req)) {
@@ -102,16 +114,6 @@ export async function handleCookiePickerRoute(
   }
 
   try {
-    // GET /cookie-picker — serve the picker UI
-    if (pathname === '/cookie-picker' && req.method === 'GET') {
-      const port = parseInt(url.port, 10) || 9400;
-      const html = getCookiePickerHTML(port, pickerToken);
-      return new Response(html, {
-        status: 200,
-        headers: { 'Content-Type': 'text/html; charset=utf-8' },
-      });
-    }
-
     // GET /cookie-picker/browsers — list installed browsers
     if (pathname === '/cookie-picker/browsers' && req.method === 'GET') {
       const browsers = findInstalledBrowsers();
