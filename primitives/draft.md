@@ -247,10 +247,24 @@ Check what's available:
     "current": "exact current language",
     "proposed": "exact proposed language",
     "comment": "counterparty-facing rationale, or null",
-    "author": "User's Name from profile.md"
+    "author": "User's Name from profile.md",
+    "match": {
+      "location": "body[12]",
+      "before": "optional immediately preceding text",
+      "after": "optional immediately following text"
+    }
   }
 ]
 ```
+
+`match` is optional only when `current` appears exactly once. If the script reports `Found N matches; add a match disambiguator`, do not accept partial application. Re-read the candidate `matches` in the JSON output, choose the intended occurrence, rewrite that redline item with a precise selector, and run the script again.
+
+Supported selectors:
+- `location` — exact candidate location such as `body[12]` or `table[0].row[1].cell[2].p[0]`
+- `paragraph_index` — zero-based body paragraph index
+- `occurrence` — zero-based occurrence from the candidate list
+- `before` / `after` — text immediately before or after the intended match
+- `context` — additional text that must appear in the same paragraph or cell
 
 **Important:** Write the JSON file alongside the original document (`{original_dir}/counsel-os-redlines-{timestamp}.json`), NOT in `/tmp`. macOS sandboxing prevents Word from accessing `/tmp`.
 
