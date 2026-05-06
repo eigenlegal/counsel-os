@@ -1,6 +1,7 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-04-08"
+jurisdiction: [network-rules, us-federal]
 ---
 ## Card Network Ach Rules
 

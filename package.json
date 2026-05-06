@@ -6,6 +6,7 @@
     "build": "bun build --target=bun --compile -e electron -e 'chromium-bidi/*' browse/src/cli.ts --outfile browse/dist/browse",
     "content-version": "python3 scripts/bump_content_versions.py",
     "evals:self-test": "python3 scripts/run_evals.py --self-test",
+    "law:frontmatter": "python3 scripts/validate_law_frontmatter.py",
     "test": "bun test",
     "test:server": "bun test browse/src",
     "typecheck": "tsc --noEmit -p browse/tsconfig.json"
