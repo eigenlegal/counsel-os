@@ -145,12 +145,12 @@ export async function handleReadCommand(
         return value;
       }
       const value = await page.evaluate(
-        ([sel, prop]) => {
+        ([sel, prop]: [string, string]) => {
           const el = document.querySelector(sel);
           if (!el) return `Element not found: ${sel}`;
           return getComputedStyle(el).getPropertyValue(prop);
         },
-        [resolved.selector, property]
+        [resolved.selector, property] as [string, string]
       );
       return value;
     }
@@ -257,7 +257,7 @@ export async function handleReadCommand(
       if (args[0] === 'set' && args[1]) {
         const key = args[1];
         const value = args[2] || '';
-        await page.evaluate(([k, v]) => localStorage.setItem(k, v), [key, value]);
+        await page.evaluate(([k, v]: [string, string]) => localStorage.setItem(k, v), [key, value] as [string, string]);
         return `Set localStorage["${key}"]`;
       }
       const storage = await page.evaluate(() => ({

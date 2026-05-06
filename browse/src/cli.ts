@@ -245,6 +245,7 @@ Refs:           After 'snapshot', use @e1, @e2... as selectors:
   }
 
   const command = args[0];
+  if (!command) throw new Error('Usage: browse <command> [args...]');
   const commandArgs = args.slice(1);
 
   // Special case: chain reads from stdin
