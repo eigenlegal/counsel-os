@@ -7,6 +7,10 @@ jurisdiction: [eu]
 
 # GDPR (General Data Protection Regulation)
 
+## Source-First Use
+
+For current US/EU privacy work, load `us-eu-core.md` before relying on this file. Use this file as a checklist for GDPR issues, then verify the current text of Regulation (EU) 2016/679, EDPB guidance, and any applicable member-state guidance before making a precise legal conclusion.
+
 ## Applicability
 
 The EU General Data Protection Regulation (Regulation 2016/679) applies when ANY of the following are true:

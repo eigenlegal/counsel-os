@@ -7,6 +7,10 @@ jurisdiction: [us-federal, us-state, eu, international]
 
 # Cross-Border Data Transfers
 
+## Source-First Use
+
+For EU/US transfer work, load `us-eu-core.md` before relying on this file. Use this file as a transfer-mechanism checklist, then verify the current GDPR Chapter V text, European Commission adequacy and SCC materials, EDPB supplementary-measures guidance, and DPF certification status before making a precise legal conclusion.
+
 ## Applicability
 
 This sub-file covers the legal mechanisms and requirements for transferring personal data across national borders. Load when:
