@@ -20,6 +20,7 @@ Load this area when the document or matter involves ANY of the following:
 
 | Sub-File | Load When |
 |----------|-----------|
+| `us-eu-core.md` | Any US, California, EU/EEA, GDPR, SCC, CCPA/CPRA, US state privacy, COPPA, or GLBA privacy issue is present; load first as the source map before relying on detailed summaries |
 | `gdpr.md` | Parties are in the EU/EEA, data subjects are EU residents, UK GDPR applies, or GDPR is referenced explicitly |
 | `ccpa-cpra.md` | California residents' data is involved, "sale" or "sharing" of personal information is discussed, or CCPA/CPRA is referenced |
 | `us-state-privacy.md` | Company operates in or targets residents of Virginia, Colorado, Connecticut, Utah, Texas, Oregon, Montana, Iowa, Indiana, Tennessee, or other states with comprehensive privacy laws |
@@ -39,6 +40,7 @@ Load this area when the document or matter involves ANY of the following:
 
 ## Quick Reference
 
+- **us-eu-core.md** — source-first map for US/EU privacy authorities and routing to detailed sub-files
 - **gdpr.md** — EU/EEA data protection: lawful basis, DPAs, DPIAs, 72-hour breach notification, cross-border transfer mechanisms
 - **ccpa-cpra.md** — California privacy: $25M/100K thresholds, sale vs. sharing, consumer rights with 45-day response, service provider contracts
 - **us-state-privacy.md** — State-by-state comparison: scope thresholds, consumer rights, enforcement models, sensitive data definitions

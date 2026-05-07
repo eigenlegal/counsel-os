@@ -7,6 +7,10 @@ jurisdiction: [us-state]
 
 # US State Privacy Laws (Non-California)
 
+## Source-First Use
+
+For current state privacy work, load `us-eu-core.md` before relying on this file. Treat the state summaries below as triage prompts only; verify the current official state statute or regulator page before applying a threshold, exemption, effective date, cure period, UOOM obligation, assessment trigger, or enforcement rule.
+
 ## Applicability
 
 A growing number of US states have enacted comprehensive consumer privacy laws. These laws vary in scope, consumer rights, business obligations, and enforcement mechanisms, creating a patchwork of requirements. This file covers laws outside of California (see `ccpa-cpra.md` for CCPA/CPRA). As of early 2026, over 15 states have enacted comprehensive privacy legislation.
