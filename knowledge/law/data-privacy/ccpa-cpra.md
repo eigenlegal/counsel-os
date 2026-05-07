@@ -7,6 +7,10 @@ jurisdiction: [us-state]
 
 # CCPA/CPRA (California Consumer Privacy Act / California Privacy Rights Act)
 
+## Source-First Use
+
+For current California privacy work, load `us-eu-core.md` before relying on this file. Use this file as a checklist, then verify the current California Civil Code text, CPPA regulations, and any active CPPA rulemaking package before making a precise legal conclusion.
+
 ## Applicability
 
 The California Consumer Privacy Act (Cal. Civ. Code 1798.100 et seq.), as amended by the California Privacy Rights Act (Proposition 24, effective January 1, 2023), applies to **for-profit entities** doing business in California that meet ANY of the following thresholds:
