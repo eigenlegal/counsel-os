@@ -1,6 +1,10 @@
 # Proactive Upgrade UX — Design
 
-**Status:** Draft for review
+**Status:** ON HOLD as of 2026-05-10 evening.
+
+This spec solves a problem (out-of-date plugin notifications) for a user base that does not yet exist. Counsel OS has zero non-builder users today. A field test with the first prospective user is scheduled for Monday 2026-05-11; see `2026-05-10-yvonne-field-test.md`. Do not implement this spec until there is evidence that user-facing upgrade UX is the right thing to be working on, which we will not have until at least Tuesday.
+
+**Original status:** Draft for review
 **Date:** 2026-05-10
 **Scope:** Make Counsel OS notice when it is out of date, prompt the user with sensible options, and apply state migrations safely across upgrades.
 
