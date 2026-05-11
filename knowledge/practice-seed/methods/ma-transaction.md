@@ -2,8 +2,6 @@
 counsel-os-type: practice
 content-version: "2026-04-08"
 ---
-## Ma Transaction
-
 # M&A Transaction Checklist
 
 ## Pre-Signing / Letter of Intent

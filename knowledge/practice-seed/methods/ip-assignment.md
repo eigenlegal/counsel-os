@@ -2,8 +2,6 @@
 counsel-os-type: practice
 content-version: "2026-04-08"
 ---
-## Ip Assignment
-
 # IP Assignment Checklist
 
 ## Scope of Assignment
