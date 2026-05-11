@@ -2,8 +2,6 @@
 counsel-os-type: practice
 content-version: "2026-04-08"
 ---
-## Government Contract
-
 # Government Contract Checklist
 
 ## Contract Type and Authority

@@ -2,8 +2,6 @@
 counsel-os-type: practice
 content-version: "2026-04-08"
 ---
-## Nda Screening
-
 # NDA Screening Checklist
 
 ## Initial Classification
