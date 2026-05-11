@@ -87,20 +87,7 @@ Load the standard for a specific clause type.
 
 ### Building effective positions
 
-When research is followed by evaluate, assemble the **effective position** by merging layers:
-
-1. Load practice/standards/{clause-type}.md — the baseline
-2. Look up the counterparty's entity file using the Knowledge Base Search procedure in counsel/SKILL.md. If found, check for deal-specific overrides. Entity overrides supersede practice for this deal.
-3. Note any law/ constraints that set a floor or ceiling. Law always wins.
-
-Report the effective position with source attribution:
-```
-Limitation of liability:
-- Practice standard: mutual cap at 12 months of fees (practice/standards/limitation-of-liability.md)
-- Entity override: Acme accepted 24-month cap in prior deal (Acme entity file)
-- Law floor: data breach liability must be carved out (GDPR Art. 82)
-- Effective position: 24-month cap with data breach carve-out
-```
+When `--position` is followed by `evaluate` or `draft`, assemble the **effective position** (practice → entity → law → memory) using the bottom-up procedure in `skills/counsel/SKILL.md` → Building the Effective Position. That section also defines the attribution format for reporting source layers.
 
 ---
 

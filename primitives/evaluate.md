@@ -32,31 +32,15 @@ Per-issue assessments. Each finding includes:
 
 ## Core instructions
 
-### The 4-layer precedence
+### Precedence and assembly
 
-When evaluating any clause, apply the knowledge layers in strict order:
+Apply the **4-layer precedence** (law → entity → practice → memory) and the **bottom-up assembly procedure** (practice baseline → entity overrides → law constraints → memory context) defined in `skills/counsel/SKILL.md`. Both are canonical there — don't restate them here.
 
-1. **law/** — Hard floor/ceiling. If a law area sets a requirement (e.g., GDPR 72-hour breach notification), the clause MUST meet it. Any violation is automatically flagged as requiring action. Cite the specific regulation, article, and requirement.
-
-2. **Entity file** — Deal-specific overrides. If the counterparty's entity file says "accepted 24-month liability cap," that is the effective position for this counterparty — it supersedes the practice standard for this deal.
-
-3. **practice/standards/** — Your standard position. The ## Our Position section defines: our standard, what we'll accept, what we won't accept, and what triggers escalation.
-
-4. **memory/** — Informs but doesn't override. "We've accepted this 3 times before" is useful context for the rationale, not a reason to change the classification.
-
-**Strictest wins for law/**: When multiple law areas apply to the same clause, apply the strictest requirement.
-
-**Compound, don't replace**: If data-privacy requires a DPA and financial-services requires PCI compliance, the contract needs BOTH.
-
-### Building the effective position
-
-Before evaluating a clause, assemble the effective position:
-
-1. Read `practice/standards/{clause-type}.md` — the ## Our Position section
-2. Look up the counterparty's entity file using the Knowledge Base Search procedure in counsel/SKILL.md. If found, check for agreed positions or deal-specific overrides on this clause type. Entity overrides win on conflict with practice.
-3. Cross-reference against loaded law/ areas. Note any regulatory floors or ceilings.
-
-The effective position is: practice standard, adjusted by entity overrides, bounded by law constraints.
+Reminders specific to evaluation:
+- Build the effective position before classifying any clause.
+- Strictest wins when multiple `law/` areas apply.
+- Compound requirements don't replace each other (data-privacy DPA + financial-services PCI = both).
+- Cite specific regulations, not "regulations" — e.g., "GDPR Art. 33 requires 72-hour notification."
 
 ### Per-issue assessment format
 
@@ -114,7 +98,7 @@ For each clause under review:
 
 1. **Identify the clause type.** Map to a known type: limitation of liability, indemnification, confidentiality, data protection, IP ownership, termination, warranty, governing law, force majeure, assignment, fees/payment, etc.
 
-2. **Load the effective position.** Read `practice/standards/{clause-type}.md`. Check the entity file for overrides. The ## Our Position section defines: our standard, what we'll accept, what we won't accept, auto-escalate triggers.
+2. **Load the effective position** per the procedure in `skills/counsel/SKILL.md` → Building the Effective Position. From `practice/standards/{clause-type}.md`, the ## Our Position section defines: our standard, what we'll accept, what we won't accept, auto-escalate triggers.
 
 3. **Compare.** What does the clause say vs. what does our position require? Identify every specific deviation.
 

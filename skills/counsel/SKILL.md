@@ -92,6 +92,39 @@ PRECEDENCE (highest to lowest):
 
 ---
 
+## Building the Effective Position
+
+Before evaluating a clause or proposing language, assemble the **effective position** — the layered answer to "what should this say for this deal?"
+
+Walk the procedure bottom-up, from baseline to absolute constraint:
+
+1. **Practice baseline.** Load `practice/standards/{clause-type}.md` → ## Our Position. This is the starting point: your default ask, your walk-aways, your escalation triggers.
+
+2. **Entity overrides.** Look up the counterparty's entity file (Knowledge Base Search). If you've previously agreed to a non-default position with this counterparty, that becomes the effective position for this deal. Entity overrides supersede practice.
+
+3. **Law constraints.** Cross-reference loaded `law/` areas for floors or ceilings (e.g., GDPR 72-hour breach notification, state employment minimums). Law always wins on conflict — see the precedence box above.
+
+4. **Memory context.** Scan `memory/` for relevant patterns ("we've accepted this 3 times before," "this counterparty walked from a similar deal last quarter"). Memory informs your rationale, confidence, and fallback positions — but does not change the classification or override the layers above.
+
+The procedure constructs bottom-up; the precedence box above resolves conflicts top-down. These are inverses on purpose — assembly starts from your default and progressively narrows; conflicts resolve from absolute constraint downward.
+
+**Reporting the effective position.** When asked, attribute each layer:
+
+```
+Limitation of liability:
+- Practice standard: mutual cap at 12 months of fees
+  (practice/standards/limitation-of-liability.md)
+- Entity override: Acme accepted 24-month cap in prior deal
+  (Acme entity file)
+- Law floor: data breach liability must be carved out
+  (GDPR Art. 82)
+- Memory context: yielded to 24-month caps for strategic accounts
+  in 3 prior matters
+- Effective position: 24-month cap with data breach carve-out
+```
+
+---
+
 ## Finding the Legal Root
 
 The user's per-user configuration lives in their vault at `{legal_root}/config.md`. The plugin tree itself never carries user state. A valid config file MUST contain both:
