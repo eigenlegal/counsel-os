@@ -6,6 +6,10 @@ evals/outputs/
 *.bun-build
 config.local.md
 
+# Per-worktree gbrain source pin (kubectl-style context). Machine-specific
+# source ID written by /sync-gbrain; each developer generates their own.
+.gbrain-source
+
 # Seed content (law/, defaults/) is tracked; user-specific content is not.
 # /setup copies seed templates to the user's vault on first run.
 knowledge/practice/
