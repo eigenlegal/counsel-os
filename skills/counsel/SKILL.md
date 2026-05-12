@@ -138,9 +138,11 @@ Do not treat an unmarked `config.md` as Counsel OS config. To find `{legal_root}
 
 **Claude Code procedure:**
 
+`${CLAUDE_PLUGIN_ROOT}` is the absolute path to this plugin's installed root, set by Claude Code on every plugin invocation. Use it directly in shell commands — do NOT substitute it manually, do NOT replace it with a SKILL.md-relative path. Bash will resolve the env var to the correct absolute path.
+
 1. Run the helper from the plugin root:
    ```bash
-   bash {plugin_root}/scripts/resolve_legal_root.sh
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/resolve_legal_root.sh"
    ```
 2. Interpret its exit code:
    - `0` → stdout is `{legal_root}`. Use that path.
