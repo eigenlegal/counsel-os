@@ -272,13 +272,13 @@ Supported selectors:
 
 **2. Apply changes:**
 ```bash
-python3 {plugin_root}/scripts/apply_redlines.py "{original.docx}" "{redlines.json}" "{modified.docx}"
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply_redlines.py" "{original.docx}" "{redlines.json}" "{modified.docx}"
 ```
 Parse the JSON output. Report skipped items.
 
 **3. Word Compare (Full tier only):**
 ```bash
-{plugin_root}/scripts/word_compare.sh "{original.docx}" "{modified.docx}" "{author_name}" "{output_path}"
+"${CLAUDE_PLUGIN_ROOT}/scripts/word_compare.sh" "{original.docx}" "{modified.docx}" "{author_name}" "{output_path}"
 ```
 Default output: `{original_dir}/{original_name}-redline-{YYYY-MM-DD}.docx`
 The script retains `{modified.docx}`. Delete it only if it is a generated intermediate file and the user no longer needs it.
@@ -291,7 +291,7 @@ Do not offer clean formatting as a routine option for negotiated contracts, sign
 
 For clean format:
 ```bash
-python3 {plugin_root}/scripts/clean_format.py "{input.docx}" "{clean_output.docx}"
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/clean_format.py" "{input.docx}" "{clean_output.docx}"
 ```
 
 **5. Report results:**

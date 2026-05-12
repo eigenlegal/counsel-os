@@ -113,8 +113,8 @@ Always report:
 If shell access is available and the plugin root is a git repo, run:
 
   ```bash
-  git -C {plugin_root} fetch origin
-  git -C {plugin_root} merge --ff-only origin/main
+  git -C "${CLAUDE_PLUGIN_ROOT}" fetch origin
+  git -C "${CLAUDE_PLUGIN_ROOT}" merge --ff-only origin/main
   ```
 
 If the local clone has uncommitted changes or a non-fast-forward update is needed, stop and explain the situation. Do not merge through conflicts inside the update skill.

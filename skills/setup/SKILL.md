@@ -140,8 +140,8 @@ counsel-os-type: memory-patterns
 ### Build browse binary
 If shell access and plugin-tree write access are available, and the plugin has `browse/src/` but no `browse/dist/browse`, try to build it:
 1. Check if `bun` is available: `command -v bun`
-2. If yes: run `cd {plugin_root} && bun install && bun run build`
-3. Check whether Playwright Chromium is installed. If shell and network access are available, run `cd {plugin_root} && bunx playwright install chromium`. If network access is unavailable, tell the user the browse skill will prompt them to run that command before first use.
+2. If yes: run `cd "${CLAUDE_PLUGIN_ROOT}" && bun install && bun run build`
+3. Check whether Playwright Chromium is installed. If shell and network access are available, run `cd "${CLAUDE_PLUGIN_ROOT}" && bunx playwright install chromium`. If network access is unavailable, tell the user the browse skill will prompt them to run that command before first use.
 4. If Bun is unavailable: note that the browse skill won't be available and suggest installing Bun.
 
 If shell access or plugin-tree write access is unavailable, skip this step. The rest of Counsel OS still works.
