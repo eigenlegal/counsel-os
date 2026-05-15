@@ -1,8 +1,4 @@
----
-counsel-os-type: practice
-content-version: "2026-05-05"
----
-# Redline Output Hygiene
+# redline-output
 
 Reference for producing clean tracked-changes redlines via `draft --redline`. Focused on defects that caused issues in past redlines and how to prevent them. Load this file whenever generating a `.docx` redline output.
 
