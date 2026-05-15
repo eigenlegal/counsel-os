@@ -218,7 +218,7 @@ Draft new clause language from scratch (not revising existing language).
 
 Generate tracked changes against the original document. This is the full document output pipeline.
 
-**Load `practice/methods/redline-output.md` before drafting redline JSON.** It covers section-numbering integrity, run-level formatting inheritance (the bold-leading-paragraph trap), character-set matching, and post-replacement cleanup — defects that are easy to introduce and hard to catch without explicit checks.
+**Load `primitives/redline-output.md` before drafting redline JSON.** It covers section-numbering integrity, run-level formatting inheritance (the bold-leading-paragraph trap), character-set matching, and post-replacement cleanup — defects that are easy to introduce and hard to catch without explicit checks.
 
 ### Prerequisites
 
