@@ -106,6 +106,8 @@ Walk the procedure bottom-up, from baseline to absolute constraint:
 
 4. **Memory context.** Scan `memory/` for relevant patterns ("we've accepted this 3 times before," "this counterparty walked from a similar deal last quarter"). Memory informs your rationale, confidence, and fallback positions — but does not change the classification or override the layers above.
 
+**Not part of the effective position:** `practice/reference/` is source material (example agreements, treatise excerpts), not a layer in this procedure. Consult it for issue-spotting and sample language only — it never sets or shifts a position, must be cite-checked against current `law/`, and is never lifted verbatim.
+
 The procedure constructs bottom-up; the precedence box above resolves conflicts top-down. These are inverses on purpose — assembly starts from your default and progressively narrows; conflicts resolve from absolute constraint downward.
 
 **Reporting the effective position.** When asked, attribute each layer:
@@ -178,7 +180,7 @@ Do not treat an unmarked `config.md` as Counsel OS config. To find `{legal_root}
 After resolving `{legal_root}` (above), framework paths are:
 
 - `law/` → `{legal_root}/law/`
-- `practice/` → `{legal_root}/practice/` (with `standards/`, `methods/`, `library/`, and `profile.md`)
+- `practice/` → `{legal_root}/practice/` (with `standards/`, `methods/`, `library/`, `reference/`, and `profile.md`)
 - `memory/` → `{legal_root}/memory/`
 - `matters/` → `{legal_root}/{matters_path}/`
 - `entities/` (filesystem fallback) → `{legal_root}/{entities_path}/`
@@ -192,7 +194,7 @@ Knowledge-base search is runtime-detected — see **Knowledge Base Search** belo
 Whenever a primitive needs to find content in the user's vault — entity files, matters, past memos, prior decisions, related precedent, similar clause language — use this procedure. The same mechanism applies to every search; the primitive supplies the inputs (frontmatter type, name, free-text query), and this section defines **how** the search runs.
 
 **Inputs (any combination):**
-- `counsel-os-type` — `counterparty`, `vendor`, `customer`, `prospect`, `matter`, `practice`, `law-area`, `memory-patterns`, `memory-decision`, etc.
+- `counsel-os-type` — `counterparty`, `vendor`, `customer`, `prospect`, `matter`, `practice`, `reference`, `law-area`, `memory-patterns`, `memory-decision`, etc.
 - `name` — a specific identifier (company, matter, file)
 - `query` — free-text or semantic search ("similar facts to...", "past redlines on indemnification")
 
@@ -264,6 +266,7 @@ Other practice content loaded on demand by the primitives:
 - `practice/standards/` — 24 position files (Our Position, Classification Guide, Practical Guidance)
 - `practice/methods/` — Reference guides for approaching different types of work (not rigid workflows — guidance the LLM adapts based on the user's actual request)
 - `practice/library/` — Clause language variants (standard, aggressive, vendor-favorable)
+- `practice/reference/` — Third-party/source material the user curates: example agreements, checklists, treatise excerpts. **Source material, not positions** — it sits *outside* the precedence layers (informs issue-spotting and sample language, never governs). Always cite-check against `law/`; never lift verbatim. Files carry `counsel-os-type: reference` with provenance and date.
 
 ---
 
@@ -316,6 +319,7 @@ User's vault (all knowledge — discovered via config + Knowledge Base Search):
       standards/                               # Positions and classification guides (24 topics)
       methods/                                 # Reference guides for different work types
       library/                                 # Clause language variants
+      reference/                               # Source material (example agreements, checklists, etc.) — outside precedence; informs only
     matters/                                   # Persistent state per engagement
       {matter-id}.md                           # counsel-os-type: matter
     memory/                                    # Layer 4: Institutional learning

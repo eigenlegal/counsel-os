@@ -16,6 +16,7 @@ Find context from the knowledge system.
 - `practice/standards/` — position files
 - `practice/methods/` — reference guides for approaching different work types
 - `practice/library/` — clause language variants
+- `practice/reference/` — third-party/source material (example agreements, checklists, treatise excerpts); **source material, not positions** — outside precedence, mine for issues and language, never governs
 - `practice/profile.md` — identity, principles, voice, thresholds
 - `law/` — hard legal constraints with trigger conditions
 - Entity files — discovered via the Knowledge Base Search procedure in counsel/SKILL.md
@@ -43,6 +44,8 @@ When researching context, always be aware of which layer you're querying:
 2. **Entity files** — Deal-specific. What was agreed with this counterparty, their history, their positions.
 3. **practice/** — User's standards. How they operate, what they accept, their methods and library.
 4. **memory/** — Institutional learning. Patterns, retro snapshots. Informs but doesn't override.
+
+**Outside the layers:** `practice/reference/` is source material (example agreements, checklists, treatise excerpts), not a layer. Use it to spot issues and find sample language; it never sets or overrides a position, must be cite-checked against current `law/`, and is never lifted verbatim into work product.
 
 ---
 
