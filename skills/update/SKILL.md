@@ -126,32 +126,27 @@ Do not try to edit the cache directory directly. The cache is a versioned snapsh
 If shell access is available and the loaded path matches `~/.claude/plugins/cache/{marketplace}/counsel-os/{loaded_version}/`:
 
 1. Derive `{marketplace}` and `{loaded_version}` from the cache path.
-2. Check the marketplace clone at `~/.claude/plugins/marketplaces/{marketplace}`.
-3. If that directory is a git repo, refresh it:
+2. **Refresh Claude Code's marketplace catalog** so it actually discovers the new version. A raw `git pull` of the clone updates files on disk but NOT Claude Code's catalog metadata, so `/plugin install` keeps reporting "already installed." If the `claude` CLI is available, run:
 
    ```bash
-   git -C ~/.claude/plugins/marketplaces/{marketplace} fetch origin
-   git -C ~/.claude/plugins/marketplaces/{marketplace} merge --ff-only origin/main
+   claude plugin marketplace update {marketplace}
    ```
 
-   If it has uncommitted changes or cannot fast-forward, stop and explain.
+3. Determine the now-available version (`claude plugin list`, or read `~/.claude/plugins/marketplaces/{marketplace}/.claude-plugin/marketplace.json`) and compare it against `{loaded_version}`.
 
-4. Read the marketplace-declared Counsel OS version from:
-   - `~/.claude/plugins/marketplaces/{marketplace}/.claude-plugin/marketplace.json`
-   - or `~/.claude/plugins/marketplaces/{marketplace}/.claude-plugin/plugin.json`
+4. **If a newer version is available, install it for the user** — no manual `/plugin` typing needed:
 
-5. Compare `{loaded_version}` against the marketplace-declared version.
-   - If the marketplace version is newer, report the exact delta and tell the user to run:
+   ```bash
+   claude plugin update counsel-os@{marketplace}
+   ```
 
-     ```text
-     /plugin install counsel-os@{marketplace}
-     ```
+   This may prompt for command permission. If `claude plugin update` is unavailable, fall back to `claude plugin uninstall counsel-os@{marketplace}` followed by `claude plugin install counsel-os@{marketplace}`.
 
-     Then fully restart Claude Code with Cmd-Q. Closing the window is not enough to clear loaded skills and cached manifests.
+5. **Apply.** New skill files load only after a reload — the one step the skill cannot perform itself. Tell the user to run `/reload-plugins` (or start a new conversation; a full Cmd-Q restart is the safe fallback), and report the version delta applied.
 
-   - If the versions match, tell the user the marketplace clone and cache appear aligned. A new conversation or restart may still be required for the currently running session to load changed skill files.
+   - If the versions already match, tell the user the install is current; a new conversation or `/reload-plugins` may still be needed for the running session to pick up changed skill files.
 
-If the marketplace clone is missing or shell access is unavailable, tell the user to refresh through Claude's plugin installer and fully restart Claude Code.
+If the `claude` CLI or shell access is unavailable, tell the user to run, in order: `/plugin marketplace update {marketplace}` → `/plugin uninstall counsel-os@{marketplace}` → `/plugin install counsel-os@{marketplace}` → `/reload-plugins`, then fully restart if needed.
 
 ### Developer shortcut
 
