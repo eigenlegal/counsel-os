@@ -250,6 +250,32 @@ Propose entries:
 **Action:** [update positions / update process / monitor]
 ```
 
+---
+
+## --reference
+
+Import third-party source material — sample agreements, form books, checklists, treatise excerpts — into `practice/reference/` so it becomes searchable during real work. Reference is source material OUTSIDE the precedence layers: it informs issue-spotting and sample language, never governs, and is always cite-checked against current `law/`.
+
+### When to use
+
+The user says "import these agreements / this form book / this folder as reference," or shares material worth keeping as a quarry rather than as positions.
+
+### Instructions
+
+1. **Confirm scope and attribution.** Collection name (kebab-case slug), source attribution and vintage (e.g., "Corporate Partnering Manual, Villeneuve et al., c. 2007"). Vintage matters — it drives how aggressively future cite-checking hedges.
+2. **With shell access**, run the deterministic helper — it handles conversion (.docx via pandoc, legacy .doc via textutil, .md/.txt pass-through), frontmatter, the provenance banner, and index registration:
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/import_reference.sh" <source-dir> <collection-slug> --source "<attribution, vintage>"
+   ```
+   Conversion note baked into the script: pandoc's `markdown` flavor, never `gfm` — gfm silently drops complex tables.
+3. **Without shell (Cowork):** ask the user for markdown/text versions, then create the files by hand following the same convention: `counsel-os-type: reference` + `reference-collection` + `source` + `imported` + `caution` frontmatter, the "⚠️ Reference only" banner as the first body line, an `_index.md` per collection, and a line in `practice/reference/_index.md`.
+4. **Reindex** if a content index is connected (`qmd update && qmd embed`), so the material is retrievable in the next matter.
+5. **Offer distillation as a follow-up, not a default.** The raw import is a quarry. The durable upgrade is mining it later: clause language re-expressed into `practice/library/` variants, checklists into `practice/methods/` — clean-room re-expression, with stale citations dropped and current law supplied by `law/`.
+
+**Copyright note:** imported third-party material stays in the user's private vault. Never propose promoting its text into shareable/plugin content — distillations must be re-expressions.
+
+---
+
 ### Always ask first
 
 Knowledge system changes need explicit consent. Show the proposed change, explain why, wait for approval.
