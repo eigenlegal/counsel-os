@@ -79,11 +79,11 @@ on run argv
             -- The comparison result is now the active document
             set compDoc to active document
 
-            -- WARNING: "format document" may map to the legacy binary .doc
-            -- format on some Word builds, even though the output is named
-            -- .docx. After running on a new machine/Word version, verify the
-            -- output opens with python-docx; if it fails as an OLE (.doc)
-            -- file, switch this enum to the docx-producing value
+            -- VERIFIED (Word 16.109.3 for Mac, 2026-06-10): "format document"
+            -- produces a real OOXML .docx here (opens with python-docx; file(1)
+            -- reports "Microsoft Word 2007+"), with tracked changes correctly
+            -- attributed. If a future Word build emits a legacy OLE .doc
+            -- instead, switch this enum to the docx-producing value
             -- ("format document default" / OOXML document format).
             save as compDoc file name POSIX file outputPath file format format document
 
