@@ -65,6 +65,7 @@ legal_root: {resolved legal root}
 # Optional overrides (defaults shown — uncomment to customize):
 # entities_path: entities
 # matters_path: matters
+# auto_apply_law_updates: false   # true = update applies law content without per-area approval
 # entity_properties:
 #   type_field: counsel-os-type
 #   values: [counterparty, vendor, customer, prospect, matter]
@@ -179,7 +180,7 @@ For each law area:
 4. If the plugin version is newer, classify as **upstream law update**.
 5. If versions match, skip.
 
-Law areas are plugin-managed, so these are safe to apply after user approval.
+Law areas are plugin-managed, so these are safe to apply after user approval — or automatically, when the user's `{legal_root}/config.md` sets `auto_apply_law_updates: true`.
 
 ### Practice seed: user-owned
 
@@ -212,7 +213,7 @@ Unchanged:
 - [N] files already current
 ```
 
-Ask what to apply. Apply law updates only after approval. Apply practice suggestions only after showing exactly what will change.
+Ask what to apply. Apply law updates only after approval — unless `auto_apply_law_updates: true` is set in `{legal_root}/config.md`, in which case apply them directly and report what changed. Practice suggestions ALWAYS require approval after showing exactly what will change, regardless of the flag.
 
 ## Step 6: Apply Approved Changes
 

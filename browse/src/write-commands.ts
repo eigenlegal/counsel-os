@@ -58,7 +58,8 @@ export async function handleWriteCommand(
     case 'fill': {
       const [selector, ...valueParts] = args;
       const value = valueParts.join(' ');
-      if (!selector || !value) throw new Error('Usage: browse fill <selector> <value>');
+      // Empty string is a valid value — it clears the field.
+      if (!selector || valueParts.length === 0) throw new Error('Usage: browse fill <selector> <value> (use "" to clear)');
       const resolved = bm.resolveRef(selector);
       if ('locator' in resolved) {
         await resolved.locator.fill(value, { timeout: 5000 });

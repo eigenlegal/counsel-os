@@ -291,19 +291,22 @@ async function getKeychainPassword(service: string): Promise<string> {
     { stdout: 'pipe', stderr: 'pipe' },
   );
 
-  const timeout = new Promise<never>((_, reject) =>
-    setTimeout(() => {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
       proc.kill();
       reject(new CookieImportError(
         `macOS is waiting for Keychain permission. Look for a dialog asking to allow access to "${service}".`,
         'keychain_timeout',
         'retry',
       ));
-    }, 10_000),
-  );
+    }, 10_000);
+  });
 
   try {
     const exitCode = await Promise.race([proc.exited, timeout]);
+    // The process exited first — cancel the pending kill/reject timer.
+    if (timeoutId) clearTimeout(timeoutId);
     const stdout = await new Response(proc.stdout).text();
     const stderr = await new Response(proc.stderr).text();
 

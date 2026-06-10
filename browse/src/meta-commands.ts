@@ -11,14 +11,18 @@ import { diffLines } from './simple-diff';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Security: Path validation to prevent path traversal attacks
-const SAFE_DIRECTORIES = ['/tmp', process.cwd()];
+// Security: Path validation to prevent path traversal attacks.
+// Computed per call — the server chdirs to the caller's cwd on each command.
+function safeDirectories(): string[] {
+  return ['/tmp', process.cwd()];
+}
 
 function validateOutputPath(filePath: string): void {
+  const dirs = safeDirectories();
   const resolved = path.resolve(filePath);
-  const isSafe = SAFE_DIRECTORIES.some(dir => resolved === dir || resolved.startsWith(dir + '/'));
+  const isSafe = dirs.some(dir => resolved === dir || resolved.startsWith(dir + '/'));
   if (!isSafe) {
-    throw new Error(`Path must be within: ${SAFE_DIRECTORIES.join(', ')}`);
+    throw new Error(`Path must be within: ${dirs.join(', ')}`);
   }
 }
 
@@ -75,14 +79,18 @@ export async function handleMetaCommand(
     }
 
     case 'stop': {
-      await shutdown();
+      // Respond first, exit after — shutdown() ends in process.exit(0), and
+      // awaiting it here would kill the server before the HTTP response is
+      // sent (the CLI then saw ECONNRESET and spawned a throwaway server).
+      setTimeout(() => { Promise.resolve(shutdown()).catch(() => {}); }, 250);
       return 'Server stopped';
     }
 
     case 'restart': {
-      // Signal that we want a restart — the CLI will detect exit and restart
+      // Same respond-then-exit pattern; the CLI waits for this PID to die and
+      // starts a fresh server.
       console.log('[browse] Restart requested. Exiting for CLI to restart.');
-      await shutdown();
+      setTimeout(() => { Promise.resolve(shutdown()).catch(() => {}); }, 250);
       return 'Restarting...';
     }
 
@@ -106,7 +114,6 @@ export async function handleMetaCommand(
     case 'responsive': {
       const page = bm.getPage();
       const prefix = args[0] || '/tmp/browse-responsive';
-      validateOutputPath(prefix);
       const viewports = [
         { name: 'mobile', width: 375, height: 812 },
         { name: 'tablet', width: 768, height: 1024 },
@@ -115,16 +122,21 @@ export async function handleMetaCommand(
       const originalViewport = page.viewportSize();
       const results: string[] = [];
 
-      for (const vp of viewports) {
-        await page.setViewportSize({ width: vp.width, height: vp.height });
-        const path = `${prefix}-${vp.name}.png`;
-        await page.screenshot({ path, fullPage: true });
-        results.push(`${vp.name} (${vp.width}x${vp.height}): ${path}`);
-      }
-
-      // Restore original viewport
-      if (originalViewport) {
-        await page.setViewportSize(originalViewport);
+      try {
+        for (const vp of viewports) {
+          await page.setViewportSize({ width: vp.width, height: vp.height });
+          const filePath = `${prefix}-${vp.name}.png`;
+          // Validate the actual file path, not the prefix — "/tmp" as a prefix
+          // would otherwise pass validation while writing /tmp-mobile.png.
+          validateOutputPath(filePath);
+          await page.screenshot({ path: filePath, fullPage: true });
+          results.push(`${vp.name} (${vp.width}x${vp.height}): ${filePath}`);
+        }
+      } finally {
+        // Restore original viewport even if a screenshot fails
+        if (originalViewport) {
+          await page.setViewportSize(originalViewport).catch(() => {});
+        }
       }
 
       return results.join('\n');

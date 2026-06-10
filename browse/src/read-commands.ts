@@ -12,15 +12,19 @@ import type { Page } from 'playwright';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Security: Path validation to prevent path traversal attacks
-const SAFE_DIRECTORIES = ['/tmp', process.cwd()];
+// Security: Path validation to prevent path traversal attacks.
+// Computed per call — the server chdirs to the caller's cwd on each command.
+function safeDirectories(): string[] {
+  return ['/tmp', process.cwd()];
+}
 
 function validateReadPath(filePath: string): void {
   if (path.isAbsolute(filePath)) {
+    const dirs = safeDirectories();
     const resolved = path.resolve(filePath);
-    const isSafe = SAFE_DIRECTORIES.some(dir => resolved === dir || resolved.startsWith(dir + '/'));
+    const isSafe = dirs.some(dir => resolved === dir || resolved.startsWith(dir + '/'));
     if (!isSafe) {
-      throw new Error(`Absolute path must be within: ${SAFE_DIRECTORIES.join(', ')}`);
+      throw new Error(`Absolute path must be within: ${dirs.join(', ')}`);
     }
   }
   const normalized = path.normalize(filePath);

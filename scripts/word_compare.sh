@@ -17,7 +17,19 @@ fi
 ORIGINAL="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 MODIFIED="$(cd "$(dirname "$2")" && pwd)/$(basename "$2")"
 AUTHOR="$3"
-OUTPUT="$(cd "$(dirname "$4")" 2>/dev/null && pwd)/$(basename "$4")" || OUTPUT="$4"
+
+# Create the output directory and resolve OUTPUT to an absolute path.
+# A relative path must never reach AppleScript: Word would resolve it
+# against its own working directory, not ours.
+OUTPUT_DIR="$(dirname "$4")"
+if ! mkdir -p "$OUTPUT_DIR"; then
+    echo "Error: Could not create output directory: $OUTPUT_DIR"
+    exit 1
+fi
+if ! OUTPUT="$(cd "$OUTPUT_DIR" && pwd)/$(basename "$4")"; then
+    echo "Error: Could not resolve output path to an absolute path: $4"
+    exit 1
+fi
 
 # Check Word is installed
 if [ ! -d "/Applications/Microsoft Word.app" ]; then
@@ -52,25 +64,34 @@ on run argv
     set authorName to item 3 of argv
     set outputPath to item 4 of argv
 
-    tell application "Microsoft Word"
-        activate
+    -- Large compares can exceed the default AppleEvent timeout (~2 min);
+    -- allow up to 10 minutes before giving up.
+    with timeout of 600 seconds
+        tell application "Microsoft Word"
+            activate
 
-        -- Open the original document
-        set origDoc to open file name POSIX file originalPath
+            -- Open the original document
+            set origDoc to open file name POSIX file originalPath
 
-        -- Compare with the modified document, author name set to specified author
-        compare origDoc path modifiedPath author name authorName target compare target new add to recent files false
+            -- Compare with the modified document, author name set to specified author
+            compare origDoc path modifiedPath author name authorName target compare target new add to recent files false
 
-        -- The comparison result is now the active document
-        set compDoc to active document
+            -- The comparison result is now the active document
+            set compDoc to active document
 
-        -- Save the comparison document
-        save as compDoc file name POSIX file outputPath file format format document
+            -- WARNING: "format document" may map to the legacy binary .doc
+            -- format on some Word builds, even though the output is named
+            -- .docx. After running on a new machine/Word version, verify the
+            -- output opens with python-docx; if it fails as an OLE (.doc)
+            -- file, switch this enum to the docx-producing value
+            -- ("format document default" / OOXML document format).
+            save as compDoc file name POSIX file outputPath file format format document
 
-        -- Close all documents
-        close compDoc saving no
-        close origDoc saving no
-    end tell
+            -- Close all documents
+            close compDoc saving no
+            close origDoc saving no
+        end tell
+    end timeout
 end run
 ENDSCRIPT
 then

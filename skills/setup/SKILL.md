@@ -79,6 +79,7 @@ legal_root: {user's path}
 # Optional overrides (defaults shown — uncomment to customize):
 # entities_path: entities
 # matters_path: matters
+# auto_apply_law_updates: false   # true = update applies law content without per-area approval
 # entity_properties:
 #   type_field: counsel-os-type
 #   values: [counterparty, vendor, customer, prospect, matter]

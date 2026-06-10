@@ -20,6 +20,7 @@
 import type { Page, Locator } from 'playwright';
 import type { BrowserManager } from './browser-manager';
 import { diffLines } from './simple-diff';
+import * as path from 'path';
 
 // Roles considered "interactive" for the -i flag
 const INTERACTIVE_ROLES = new Set([
@@ -131,6 +132,80 @@ function parseLine(line: string): ParsedNode | null {
   };
 }
 
+export interface PlannedRef {
+  ref: string;
+  role: string;
+  name: string | null;
+  /** Index for locator.nth() when role+name is ambiguous; null when unique. */
+  nthIndex: number | null;
+  outputLine: string;
+}
+
+/**
+ * Pure planning pass: parse the aria tree, apply filters, assign refs, and
+ * compute nth() indices. Counting happens for EVERY parsed node — filtered or
+ * not — because nth() indexes into the full page, not the filtered view.
+ * (Depth/compact-filtered duplicates previously skipped counting, shifting
+ * later refs onto the wrong elements.)
+ */
+export function planSnapshot(
+  ariaText: string,
+  opts: SnapshotOptions
+): { items: PlannedRef[]; outputLines: string[] } {
+  const lines = ariaText.split('\n');
+
+  // First pass: count role+name pairs for disambiguation
+  const roleNameCounts = new Map<string, number>();
+  for (const line of lines) {
+    const node = parseLine(line);
+    if (!node) continue;
+    const key = `${node.role}:${node.name || ''}`;
+    roleNameCounts.set(key, (roleNameCounts.get(key) || 0) + 1);
+  }
+
+  // Second pass: assign refs
+  const roleNameSeen = new Map<string, number>();
+  const items: PlannedRef[] = [];
+  const outputLines: string[] = [];
+  let refCounter = 1;
+
+  for (const line of lines) {
+    const node = parseLine(line);
+    if (!node) continue;
+
+    const key = `${node.role}:${node.name || ''}`;
+    const seenIndex = roleNameSeen.get(key) || 0;
+    roleNameSeen.set(key, seenIndex + 1);
+
+    const depth = Math.floor(node.indent / 2);
+    const isInteractive = INTERACTIVE_ROLES.has(node.role);
+
+    // Filters — counting above already happened, so nth stays aligned
+    if (opts.depth !== undefined && depth > opts.depth) continue;
+    if (opts.interactive && !isInteractive) continue;
+    if (opts.compact && !isInteractive && !node.name && !node.children) continue;
+
+    const ref = `e${refCounter++}`;
+    const indent = '  '.repeat(depth);
+    let outputLine = `${indent}@${ref} [${node.role}]`;
+    if (node.name) outputLine += ` "${node.name}"`;
+    if (node.props) outputLine += ` ${node.props}`;
+    if (node.children) outputLine += `: ${node.children}`;
+
+    const totalCount = roleNameCounts.get(key) || 1;
+    items.push({
+      ref,
+      role: node.role,
+      name: node.name,
+      nthIndex: totalCount > 1 ? seenIndex : null,
+      outputLine,
+    });
+    outputLines.push(outputLine);
+  }
+
+  return { items, outputLines };
+}
+
 /**
  * Take an accessibility snapshot and build the ref map.
  */
@@ -157,81 +232,30 @@ export async function handleSnapshot(
     return '(no accessible elements found)';
   }
 
-  // Parse the ariaSnapshot output
-  const lines = ariaText.split('\n');
+  // Plan refs from the aria tree (pure, testable), then build a Playwright
+  // locator for each planned ref.
+  const { items, outputLines } = planSnapshot(ariaText, opts);
   const refMap = new Map<string, Locator>();
-  const output: string[] = [];
-  let refCounter = 1;
+  const output: string[] = [...outputLines];
 
-  // Track role+name occurrences for nth() disambiguation
-  const roleNameCounts = new Map<string, number>();
-  const roleNameSeen = new Map<string, number>();
-
-  // First pass: count role+name pairs for disambiguation
-  for (const line of lines) {
-    const node = parseLine(line);
-    if (!node) continue;
-    const key = `${node.role}:${node.name || ''}`;
-    roleNameCounts.set(key, (roleNameCounts.get(key) || 0) + 1);
-  }
-
-  // Second pass: assign refs and build locators
-  for (const line of lines) {
-    const node = parseLine(line);
-    if (!node) continue;
-
-    const depth = Math.floor(node.indent / 2);
-    const isInteractive = INTERACTIVE_ROLES.has(node.role);
-
-    // Depth filter
-    if (opts.depth !== undefined && depth > opts.depth) continue;
-
-    // Interactive filter: skip non-interactive but still count for locator indices
-    if (opts.interactive && !isInteractive) {
-      // Still track for nth() counts
-      const key = `${node.role}:${node.name || ''}`;
-      roleNameSeen.set(key, (roleNameSeen.get(key) || 0) + 1);
-      continue;
-    }
-
-    // Compact filter: skip elements with no name and no inline content that aren't interactive
-    if (opts.compact && !isInteractive && !node.name && !node.children) continue;
-
-    // Assign ref
-    const ref = `e${refCounter++}`;
-    const indent = '  '.repeat(depth);
-
-    // Build Playwright locator
-    const key = `${node.role}:${node.name || ''}`;
-    const seenIndex = roleNameSeen.get(key) || 0;
-    roleNameSeen.set(key, seenIndex + 1);
-    const totalCount = roleNameCounts.get(key) || 1;
-
+  for (const item of items) {
     let locator: Locator;
     if (opts.selector) {
-      locator = page.locator(opts.selector).getByRole(node.role as any, {
-        name: node.name || undefined,
+      locator = page.locator(opts.selector).getByRole(item.role as any, {
+        name: item.name || undefined,
       });
     } else {
-      locator = page.getByRole(node.role as any, {
-        name: node.name || undefined,
+      locator = page.getByRole(item.role as any, {
+        name: item.name || undefined,
       });
     }
 
     // Disambiguate with nth() if multiple elements share role+name
-    if (totalCount > 1) {
-      locator = locator.nth(seenIndex);
+    if (item.nthIndex !== null) {
+      locator = locator.nth(item.nthIndex);
     }
 
-    refMap.set(ref, locator);
-
-    // Format output line
-    let outputLine = `${indent}@${ref} [${node.role}]`;
-    if (node.name) outputLine += ` "${node.name}"`;
-    if (node.props) outputLine += ` ${node.props}`;
-    if (node.children) outputLine += `: ${node.children}`;
-
-    output.push(outputLine);
+    refMap.set(item.ref, locator);
   }
 
   // ─── Cursor-interactive scan (-C) ─────────────────────────
@@ -315,7 +339,7 @@ export async function handleSnapshot(
   if (opts.annotate) {
     const screenshotPath = opts.outputPath || '/tmp/browse-annotated.png';
     // Validate output path (consistent with screenshot/pdf/responsive)
-    const resolvedPath = require('path').resolve(screenshotPath);
+    const resolvedPath = path.resolve(screenshotPath);
     const safeDirs = ['/tmp', process.cwd()];
     if (!safeDirs.some((dir: string) => resolvedPath === dir || resolvedPath.startsWith(dir + '/'))) {
       throw new Error(`Path must be within: ${safeDirs.join(', ')}`);
@@ -335,11 +359,16 @@ export async function handleSnapshot(
       }
 
       await page.evaluate((boxes) => {
+        // boundingBox() is viewport-relative; these overlays are absolutely
+        // positioned in the document — add the scroll offset so annotations
+        // line up on scrolled pages and full-page screenshots.
+        const sx = window.scrollX;
+        const sy = window.scrollY;
         for (const { ref, box } of boxes) {
           const overlay = document.createElement('div');
           overlay.className = '__browse_annotation__';
           overlay.style.cssText = `
-            position: absolute; top: ${box.y}px; left: ${box.x}px;
+            position: absolute; top: ${box.y + sy}px; left: ${box.x + sx}px;
             width: ${box.width}px; height: ${box.height}px;
             border: 2px solid red; background: rgba(255,0,0,0.1);
             pointer-events: none; z-index: 99999;

@@ -85,13 +85,38 @@ def _make_level(ilvl: int, num_fmt: str, lvl_text: str,
     return lvl
 
 
+def _add_numbering_definition(numbering_elm, abstract_num_id: int, num_id: int, levels):
+    """Append one abstractNum + num pair to the numbering element."""
+    abstract_num = OxmlElement("w:abstractNum")
+    abstract_num.set(qn("w:abstractNumId"), str(abstract_num_id))
+
+    multi_level = OxmlElement("w:multiLevelType")
+    multi_level.set(qn("w:val"), "multilevel")
+    abstract_num.append(multi_level)
+
+    for lvl in levels:
+        abstract_num.append(lvl)
+
+    numbering_elm.append(abstract_num)
+
+    num = OxmlElement("w:num")
+    num.set(qn("w:numId"), str(num_id))
+    abstract_ref = OxmlElement("w:abstractNumId")
+    abstract_ref.set(qn("w:val"), str(abstract_num_id))
+    num.append(abstract_ref)
+    numbering_elm.append(num)
+
+
 def create_numbering(doc):
-    """Create multilevel numbering (1, 1.1, 1.1.1) definition.
+    """Create multilevel numbering definitions for headings and lists.
 
     Purges all pre-existing numbering definitions to avoid conflicts with
-    built-in styles, then creates a clean multilevel definition.
+    built-in styles, then creates two fully independent definitions: one for
+    headings (1, 1.1, 1.1.1) and one for bullet/numbered list items. Keeping
+    them separate means list items never advance the heading counters (a
+    3-item list under section 2 no longer pushes the next subsection to 2.4).
 
-    Returns num_id (int).
+    Returns (heading_num_id, list_num_id).
     """
     numbering_part = doc.part.numbering_part
     numbering_elm = numbering_part._element
@@ -102,34 +127,25 @@ def create_numbering(doc):
         if tag in ("abstractNum", "num"):
             numbering_elm.remove(child)
 
-    # --- Multilevel numbered list: 1. / 1.1. / 1.1.1. ---
-    abstract_num = OxmlElement("w:abstractNum")
-    abstract_num.set(qn("w:abstractNumId"), "1")
-
-    multi_level = OxmlElement("w:multiLevelType")
-    multi_level.set(qn("w:val"), "multilevel")
-    abstract_num.append(multi_level)
-
+    # --- Headings: 1. / 1.1. / 1.1.1. ---
     # Level 0 (section headings): number at 0, text at 0.5", wrap to 0
-    abstract_num.append(_make_level(0, "decimal", "%1.",
-                                    num_pos=0, tab_pos=720, wrap_pos=0))
-    # Level 1 (sub-items): number at 0.5", text at 1.0", wrap to 0
-    abstract_num.append(_make_level(1, "decimal", "%1.%2.",
-                                    num_pos=720, tab_pos=1440, wrap_pos=0))
+    # Level 1 (sub-sections): number at 0.5", text at 1.0", wrap to 0
     # Level 2 (nested): number at 1.0", text at 1.5", wrap to 0
-    abstract_num.append(_make_level(2, "decimal", "%1.%2.%3.",
-                                    num_pos=1440, tab_pos=2160, wrap_pos=0))
+    _add_numbering_definition(numbering_elm, 1, 1, [
+        _make_level(0, "decimal", "%1.", num_pos=0, tab_pos=720, wrap_pos=0),
+        _make_level(1, "decimal", "%1.%2.", num_pos=720, tab_pos=1440, wrap_pos=0),
+        _make_level(2, "decimal", "%1.%2.%3.", num_pos=1440, tab_pos=2160, wrap_pos=0),
+    ])
 
-    numbering_elm.append(abstract_num)
+    # --- Lists: own definition so counters never interleave with headings.
+    # Each level shows only its own counter, indented one step per level.
+    _add_numbering_definition(numbering_elm, 2, 2, [
+        _make_level(0, "decimal", "%1.", num_pos=720, tab_pos=1440, wrap_pos=0),
+        _make_level(1, "decimal", "%2.", num_pos=1440, tab_pos=2160, wrap_pos=0),
+        _make_level(2, "decimal", "%3.", num_pos=2160, tab_pos=2880, wrap_pos=0),
+    ])
 
-    num = OxmlElement("w:num")
-    num.set(qn("w:numId"), "1")
-    abstract_ref = OxmlElement("w:abstractNumId")
-    abstract_ref.set(qn("w:val"), "1")
-    num.append(abstract_ref)
-    numbering_elm.append(num)
-
-    return 1
+    return 1, 2
 
 
 def apply_numbering(paragraph, num_id: int, ilvl: int):
@@ -171,7 +187,33 @@ NUMBERED_PREFIX = re.compile(
     re.IGNORECASE,
 )
 
+# Letter/roman-numeral markers ("a.", "iv.") need extra checks because they
+# also match abbreviations ("E. coli") and case citations ("v. Smith").
+LETTER_PREFIX = re.compile(r"^([a-z]|[ivxlc]+)\.\s+", re.IGNORECASE)
+
 BULLET_CHARS = set("•·–—-*▪▸►")
+
+
+def match_number_prefix(text: str):
+    """Match a numbered-list prefix, or None.
+
+    Digit forms ("1.", "2.3.", "(1)") always count. Letter/roman forms
+    ("a.", "iv.") count only when the remainder does not start with a
+    lowercase word (rules out abbreviations like "E. coli") and the marker
+    is not "v"/"vs" before a capitalized word (rules out case citations
+    like "v. Smith").
+    """
+    m = NUMBERED_PREFIX.match(text)
+    if not m:
+        return None
+    letter = LETTER_PREFIX.match(text)
+    if letter and letter.end() == m.end():
+        rest = text[m.end():]
+        if rest[:1].islower():
+            return None
+        if letter.group(1).lower() in ("v", "vs") and rest[:1].isupper():
+            return None
+    return m
 
 
 def _is_heading_style(style_name: str) -> bool:
@@ -193,10 +235,33 @@ def _heading_level(style_name: str) -> int:
     return 1
 
 
+def _style_bold(style) -> bool:
+    """Resolve bold from a style, walking the base_style chain.
+
+    Returns False when no style in the chain sets bold (unresolvable).
+    """
+    seen = set()
+    while style is not None and style.style_id not in seen:
+        seen.add(style.style_id)
+        font = getattr(style, "font", None)
+        bold = font.bold if font is not None else None
+        if bold is not None:
+            return bold
+        style = style.base_style
+    return False
+
+
 def _all_runs_bold(paragraph) -> bool:
     if not paragraph.runs:
         return False
-    return all(r.bold for r in paragraph.runs if r.text.strip())
+    # run.bold is None when bold is inherited from the paragraph style, so
+    # fall back to the style chain rather than treating None as not-bold.
+    style_bold = _style_bold(paragraph.style)
+    return all(
+        r.bold if r.bold is not None else style_bold
+        for r in paragraph.runs
+        if r.text.strip()
+    )
 
 
 def _is_all_caps_text(text: str) -> bool:
@@ -246,7 +311,7 @@ def classify_paragraph(paragraph) -> tuple[str, int]:
         return ("bullet", 1)
 
     # Detect numbered list by prefix
-    if NUMBERED_PREFIX.match(text):
+    if match_number_prefix(text):
         return ("number", 1)
 
     return ("body", 0)
@@ -259,7 +324,7 @@ def strip_bullet_prefix(text: str) -> str:
 
 
 def strip_number_prefix(text: str) -> str:
-    m = NUMBERED_PREFIX.match(text)
+    m = match_number_prefix(text)
     if m:
         return text[m.end():]
     return text
@@ -270,18 +335,29 @@ def strip_number_prefix(text: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _smartquotes(text: str) -> str:
-    """Convert straight quotes to curly (smart) quotes."""
+def _smartquotes(text: str, prev_char: str = "") -> str:
+    """Convert straight quotes to curly (smart) quotes.
+
+    prev_char is the last character of the preceding run in the same
+    paragraph (empty at paragraph start), so a quote at position 0 of a run
+    is not blindly treated as opening when Word split the run mid-sentence.
+    """
     result = []
     for i, ch in enumerate(text):
+        before = text[i - 1] if i > 0 else prev_char
         if ch == '"':
-            if i == 0 or text[i - 1] in " \t\n\r([":
+            if not before or before in " \t\n\r([":
                 result.append("\u201c")
             else:
                 result.append("\u201d")
         elif ch == "'":
-            if i == 0 or text[i - 1] in " \t\n\r([":
-                result.append("\u2018")
+            if not before or before in " \t\n\r([":
+                # Apostrophe before a digit ('90s) is an elision, not an
+                # opening quote.
+                if text[i + 1 : i + 2].isdigit():
+                    result.append("\u2019")
+                else:
+                    result.append("\u2018")
             else:
                 result.append("\u2019")
         else:
@@ -328,11 +404,13 @@ def _set_style_defaults(doc):
 
 def copy_runs(source_paragraph, dest_paragraph):
     """Copy runs preserving bold/italic/underline only."""
+    prev_char = ""
     for src_run in source_paragraph.runs:
         text = src_run.text
         if not text:
             continue
-        dest_run = dest_paragraph.add_run(_smartquotes(text))
+        dest_run = dest_paragraph.add_run(_smartquotes(text, prev_char))
+        prev_char = text[-1]
         dest_run.font.name = DEFAULT_FONT
         dest_run.font.size = DEFAULT_SIZE
         dest_run.bold = src_run.bold
@@ -349,6 +427,7 @@ def copy_runs(source_paragraph, dest_paragraph):
 def copy_runs_strip_prefix(source_paragraph, dest_paragraph, strip_fn):
     """Copy runs, stripping a prefix from the first non-empty run."""
     first = True
+    prev_char = ""
     for src_run in source_paragraph.runs:
         run_text = src_run.text
         if first and run_text.strip():
@@ -356,7 +435,8 @@ def copy_runs_strip_prefix(source_paragraph, dest_paragraph, strip_fn):
             first = False
         if not run_text:
             continue
-        dest_run = dest_paragraph.add_run(_smartquotes(run_text))
+        dest_run = dest_paragraph.add_run(_smartquotes(run_text, prev_char))
+        prev_char = run_text[-1]
         dest_run.font.name = DEFAULT_FONT
         dest_run.font.size = DEFAULT_SIZE
         dest_run.bold = src_run.bold
@@ -375,8 +455,24 @@ def copy_table(source_table, dest_doc, warnings):
     except KeyError:
         pass
 
+    # row.cells repeats the same underlying tc element for merged spans;
+    # track seen tc elements so merged content is copied only once.
+    seen_tcs = set()
+    merged_warned = False
+
     for i, src_row in enumerate(source_table.rows):
         for j, src_cell in enumerate(src_row.cells):
+            tc_id = id(src_cell._tc)
+            if tc_id in seen_tcs:
+                if not merged_warned:
+                    warnings.append(
+                        "Merged table cell detected; content copied once and "
+                        "the merge structure was not preserved"
+                    )
+                    merged_warned = True
+                continue
+            seen_tcs.add(tc_id)
+
             dest_cell = dest_table.cell(i, j)
             if dest_cell.paragraphs:
                 dest_cell.paragraphs[0].clear()
@@ -395,6 +491,27 @@ def copy_table(source_table, dest_doc, warnings):
                 copy_runs(src_para, dest_para)
 
     return dest_table
+
+
+def iter_block_elements(container, warnings):
+    """Yield w:p and w:tbl elements in document order.
+
+    Content controls (w:sdt — cover pages, TOCs, etc.) are unwrapped so the
+    paragraphs and tables inside w:sdtContent are processed like top-level
+    blocks instead of being silently dropped. Handles nested controls.
+    """
+    for element in container:
+        tag = element.tag.split("}")[-1] if "}" in element.tag else element.tag
+        if tag in ("p", "tbl"):
+            yield element
+        elif tag == "sdt":
+            warnings.append(
+                "Content control (w:sdt) unwrapped; its contents were "
+                "processed as body content"
+            )
+            content = element.find(qn("w:sdtContent"))
+            if content is not None:
+                yield from iter_block_elements(content, warnings)
 
 
 def build_clean_document(source_path, template_path):
@@ -420,8 +537,8 @@ def build_clean_document(source_path, template_path):
     # Set default font on styles and remove title border
     _set_style_defaults(dest)
 
-    # Create numbering definition
-    num_id = create_numbering(dest)
+    # Create numbering definitions (headings and lists are independent)
+    heading_num_id, list_num_id = create_numbering(dest)
 
     results = {
         "paragraphs_processed": 0,
@@ -433,7 +550,7 @@ def build_clean_document(source_path, template_path):
 
     title_seen = False
 
-    for element in source.element.body:
+    for element in iter_block_elements(source.element.body, results["warnings"]):
         tag = element.tag.split("}")[-1] if "}" in element.tag else element.tag
 
         if tag == "p":
@@ -471,23 +588,23 @@ def build_clean_document(source_path, template_path):
                 copy_runs_strip_prefix(src_para, dest_para, strip_number_prefix)
                 # Heading level maps to numbering ilvl: H1=0, H2=1, H3=2
                 ilvl = min(level - 1, 2)
-                apply_numbering(dest_para, num_id, ilvl)
+                apply_numbering(dest_para, heading_num_id, ilvl)
 
             elif cls == "bullet":
                 results["lists_converted"] += 1
                 dest_para = dest.add_paragraph(style="Normal")
                 copy_runs_strip_prefix(src_para, dest_para, strip_bullet_prefix)
-                # Bullets become sub-items (ilvl 1 under current heading)
-                ilvl = min(level, 2)  # level 1 bullet → ilvl 1
-                apply_numbering(dest_para, num_id, ilvl)
+                # List items use their own numbering definition: L1=0, L2=1, L3=2
+                ilvl = min(level - 1, 2)
+                apply_numbering(dest_para, list_num_id, ilvl)
 
             elif cls == "number":
                 results["lists_converted"] += 1
                 dest_para = dest.add_paragraph(style="Normal")
                 copy_runs_strip_prefix(src_para, dest_para, strip_number_prefix)
-                # Numbered items become sub-items (ilvl 1 under current heading)
-                ilvl = min(level, 2)
-                apply_numbering(dest_para, num_id, ilvl)
+                # List items use their own numbering definition: L1=0, L2=1, L3=2
+                ilvl = min(level - 1, 2)
+                apply_numbering(dest_para, list_num_id, ilvl)
 
             else:
                 dest_para = dest.add_paragraph(style="Normal")

@@ -36,3 +36,11 @@ jobs:
 
       - name: Law frontmatter warnings
         run: bun run law:frontmatter
+
+      - name: Knowledge conventions + manifest version sync
+        run: python3 scripts/lint_knowledge.py --check-versions
+
+      - name: Script syntax (python + shell)
+        run: |
+          python3 -m py_compile scripts/*.py
+          for f in scripts/*.sh; do bash -n "$f"; done

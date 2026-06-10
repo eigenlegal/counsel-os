@@ -60,6 +60,7 @@ export class BrowserManager {
       contextOptions.userAgent = this.customUserAgent;
     }
     this.context = await this.browser.newContext(contextOptions);
+    this.wireContextEvents(this.context);
 
     if (Object.keys(this.extraHeaders).length > 0) {
       await this.context.setExtraHTTPHeaders(this.extraHeaders);
@@ -95,16 +96,59 @@ export class BrowserManager {
   }
 
   // ─── Tab Management ────────────────────────────────────────
+
+  private findTabId(page: Page): number | null {
+    for (const [id, p] of this.pages) {
+      if (p === page) return id;
+    }
+    return null;
+  }
+
+  /**
+   * Register a page in the tab map and wire its events — exactly once.
+   * Called both from newTab() and from the context 'page' listener, so pages
+   * opened by the page itself (popups, window.open, target=_blank) are
+   * adopted too instead of being invisible to the tab system.
+   */
+  private adoptPage(page: Page): number {
+    const existing = this.findTabId(page);
+    if (existing !== null) return existing;
+
+    const id = this.nextTabId++;
+    this.pages.set(id, page);
+    this.wirePageEvents(page);
+
+    // Keep the tab map honest when a page closes itself (or a popup is closed
+    // by the site). Manual closeTab() stays the primary path; this is cleanup.
+    page.on('close', () => {
+      if (this.pages.get(id) === page) {
+        this.pages.delete(id);
+        if (this.activeTabId === id) {
+          const remaining = [...this.pages.keys()];
+          if (remaining.length > 0) {
+            this.activeTabId = remaining[remaining.length - 1]!;
+          }
+        }
+      }
+    });
+
+    return id;
+  }
+
+  /** Adopt every page the context creates, including popups. */
+  private wireContextEvents(context: BrowserContext) {
+    context.on('page', (page) => {
+      this.adoptPage(page);
+    });
+  }
+
   async newTab(url?: string): Promise<number> {
     if (!this.context) throw new Error('Browser not launched');
 
     const page = await this.context.newPage();
-    const id = this.nextTabId++;
-    this.pages.set(id, page);
+    // The context 'page' listener may have adopted it already — adoptPage dedupes.
+    const id = this.adoptPage(page);
     this.activeTabId = id;
-
-    // Wire up console/network/dialog capture
-    this.wirePageEvents(page);
 
     if (url) {
       await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
@@ -295,6 +339,7 @@ export class BrowserManager {
         contextOptions.userAgent = this.customUserAgent;
       }
       this.context = await this.browser.newContext(contextOptions);
+      this.wireContextEvents(this.context);
 
       if (Object.keys(this.extraHeaders).length > 0) {
         await this.context.setExtraHTTPHeaders(this.extraHeaders);
@@ -309,9 +354,7 @@ export class BrowserManager {
       let activeId: number | null = null;
       for (const saved of savedPages) {
         const page = await this.context.newPage();
-        const id = this.nextTabId++;
-        this.pages.set(id, page);
-        this.wirePageEvents(page);
+        const id = this.adoptPage(page);
 
         if (saved.url) {
           await page.goto(saved.url, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
@@ -364,6 +407,7 @@ export class BrowserManager {
           contextOptions.userAgent = this.customUserAgent;
         }
         this.context = await this.browser!.newContext(contextOptions);
+        this.wireContextEvents(this.context);
         await this.newTab();
         this.clearRefs();
       } catch {

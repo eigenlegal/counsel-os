@@ -48,10 +48,15 @@ Optional overrides (defaults shown):
 ```markdown
 entities_path: entities
 matters_path: matters
+auto_apply_law_updates: false
 entity_properties:
   type_field: counsel-os-type
   values: [counterparty, vendor, customer, prospect, matter]
 ```
+
+`auto_apply_law_updates: true` lets `/counsel-os:update` apply plugin-managed law
+content without per-area approval (one-time consent instead of every-update
+prompts). Practice content always requires approval regardless of this flag.
 
 ## Path resolution
 
