@@ -24,7 +24,7 @@ The cap should be based on "paid or payable" rather than just "paid" to ensure r
 ## Excluded Claims / Super Cap
 
 ### Standard
-> "Excluded Claims" means: (a) indemnification obligations under Section [X]; (b) breach of confidentiality obligations; (c) Vendor's breach of data protection obligations; (d) infringement or misappropriation of intellectual property; and (e) gross negligence, willful misconduct, or fraud. Excluded Claims shall be subject to a separate aggregate cap equal to two (2) times the general liability cap.
+> "Excluded Claims" means: (a) indemnification obligations under Section [X]; (b) breach of confidentiality obligations; (c) Vendor's breach of data protection obligations; and (d) infringement or misappropriation of intellectual property. Excluded Claims shall be subject to a separate aggregate cap equal to two (2) times the general liability cap. Notwithstanding anything to the contrary in this Agreement, nothing limits either party's liability for fraud, willful misconduct, gross negligence, or death or bodily injury caused by its negligence — such liability is uncapped.
 
 ### Aggressive (Customer-Favorable)
 > The following obligations shall not be subject to the limitation of liability and shall be uncapped: (a) Vendor's IP indemnification obligations; (b) Vendor's breach of data protection and security obligations, including any Personal Data Breach; (c) Vendor's breach of confidentiality; (d) either party's liability for fraud, willful misconduct, or gross negligence; (e) liability for death or bodily injury caused by negligence; and (f) Customer's obligation to pay fees.
