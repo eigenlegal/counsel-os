@@ -2,6 +2,14 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [industry-standard, network-rules]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "PCI SSC Document Library"
+    title: "PCI DSS v4.0.1 standard and supporting documents"
+    url: "https://www.pcisecuritystandards.org/document_library"
+  - cite: "PCI SSC announcement (June 2024)"
+    title: "Just Published: PCI DSS v4.0.1 (v4.0 retired December 31, 2024)"
+    url: "https://blog.pcisecuritystandards.org/just-published-pci-dss-v4-0-1"
 ---
 # PCI DSS (Payment Card Industry Data Security Standard)
 
@@ -11,9 +19,9 @@ Load when the matter involves payment card processing, cardholder data storage o
 
 ## Key Requirements
 
-### PCI DSS 4.0 Overview
+### PCI DSS v4.x Overview
 
-- **What:** PCI DSS is a set of security standards established by the PCI Security Standards Council (PCI SSC), founded by Visa, Mastercard, American Express, Discover, and JCB. PCI DSS 4.0 became mandatory on March 31, 2025, replacing PCI DSS 3.2.1.
+- **What:** PCI DSS is a set of security standards established by the PCI Security Standards Council (PCI SSC), founded by Visa, Mastercard, American Express, Discover, and JCB. The current version is PCI DSS v4.0.1 (published June 2024): v3.2.1 was retired on March 31, 2024, v4.0 was retired on December 31, 2024, and the future-dated v4.x requirements became mandatory on March 31, 2025. v4.0.1 is a limited revision — no requirements were added or deleted relative to v4.0.
 - **Scope:** Applies to all entities that store, process, or transmit cardholder data (CHD) or sensitive authentication data (SAD), and all entities that could affect the security of the cardholder data environment (CDE).
 - **Cardholder data:** Primary Account Number (PAN), cardholder name, expiration date, and service code. Sensitive authentication data (full track data, CVV/CVC, PINs) must never be stored after authorization.
 - **Consequence:** PCI DSS compliance is mandated by card network operating regulations. Non-compliance can result in fines, increased transaction fees, and loss of card acceptance privileges.
@@ -48,7 +56,7 @@ Load when the matter involves payment card processing, cardholder data storage o
   4. **Implement Strong Access Control Measures:** (7) Restrict access to system components and cardholder data by business need to know; (8) Identify users and authenticate access to system components; (9) Restrict physical access to cardholder data
   5. **Regularly Monitor and Test Networks:** (10) Log and monitor all access to system components and cardholder data; (11) Test security of systems and networks regularly
   6. **Maintain an Information Security Policy:** (12) Support information security with organizational policies and programs
-- **PCI DSS 4.0 key changes:** Customized approach (alternative to defined approach), expanded multi-factor authentication requirements, targeted risk analyses replacing some prescriptive requirements, and enhanced requirements for e-commerce (anti-skimming protections).
+- **PCI DSS v4.x key changes:** Customized approach (alternative to defined approach), expanded multi-factor authentication requirements, targeted risk analyses replacing some prescriptive requirements, and enhanced requirements for e-commerce (anti-skimming protections).
 
 ### Penalties and Enforcement
 
@@ -89,7 +97,7 @@ Load when the matter involves payment card processing, cardholder data storage o
 ## Sources
 
 - PCI Security Standards Council: https://www.pcisecuritystandards.org
-- PCI DSS 4.0: https://docs-prv.pcisecuritystandards.org/PCI%20DSS/Standard/PCI-DSS-v4_0.pdf
+- PCI DSS v4.0.1 (current version — access via the document library): https://www.pcisecuritystandards.org/document_library
 - PCI SSC Document Library: https://www.pcisecuritystandards.org/document_library
 - Visa Merchant Compliance: https://usa.visa.com/support/small-business/security-compliance.html
 - Mastercard Site Data Protection: https://www.mastercard.us/en-us/business/overview/safety-and-security/security-recommendations/site-data-protection-PCI.html

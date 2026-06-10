@@ -2,6 +2,17 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state, network-rules, industry-standard]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "90 FR 40986 (Aug. 22, 2025)"
+    title: "CFPB Advance Notice of Proposed Rulemaking — Personal Financial Data Rights Reconsideration"
+    url: "https://www.federalregister.gov/documents/2025/08/22/2025-16139/personal-financial-data-rights-reconsideration"
+  - cite: "CFPB Section 1033 rulemaking page"
+    title: "Required Rulemaking on Personal Financial Data Rights"
+    url: "https://www.consumerfinance.gov/personal-financial-data-rights/"
+  - cite: "12 C.F.R. Part 1033"
+    title: "Personal Financial Data Rights rule (current codified text)"
+    url: "https://www.ecfr.gov/current/title-12/chapter-X/part-1033"
 ---
 # Fintech Regulation
 
@@ -15,7 +26,7 @@ Load when the matter involves fintech company regulatory strategy, bank-fintech 
 
 - **What:** The OCC has authority to grant special purpose national bank (SPNB) charters, including to fintech companies. The charter would allow nationwide operation without state-by-state licensing for certain activities.
 - **Threshold:** Applicants must meet the same core requirements as traditional national banks: capital adequacy, a comprehensive business plan, experienced management, compliance infrastructure, and CRA commitments.
-- **Status:** The OCC fintech charter has faced legal challenges (Conference of State Bank Supervisors v. OCC). The program's availability remains uncertain, and no fintech company has successfully obtained a SPNB charter as of the current date.
+- **Status:** The OCC fintech charter has faced legal challenges (Conference of State Bank Supervisors v. OCC). The program's availability remains uncertain, and no fintech company has successfully obtained a SPNB charter as of mid-2026 (note: several digital-asset firms have instead pursued OCC national trust charters — check current OCC licensing actions if charter strategy is at issue).
 - **Industrial Loan Company (ILC):** Alternative path — certain states (notably Utah, Nevada) charter ILCs that provide FDIC-insured deposit-taking ability without being subject to Federal Reserve bank holding company oversight. Several fintech companies have obtained ILC charters.
 - **Consequence:** Operating as an unlicensed fintech providing banking services without a charter or valid partnership arrangement exposes the company to state enforcement actions.
 
@@ -55,7 +66,7 @@ Load when the matter involves fintech company regulatory strategy, bank-fintech 
 ### No US Open Banking Mandate
 
 - **What:** Unlike the EU (PSD2/PSD3) and UK (Open Banking), the US does not have a comprehensive federal open banking mandate requiring banks to share customer data with third parties via APIs.
-- **CFPB Section 1033:** Dodd-Frank Section 1033 grants consumers the right to access their financial data. The CFPB finalized its Personal Financial Data Rights rule in 2024, establishing standards for data sharing, but implementation is phased and scope is narrower than PSD2.
+- **CFPB Section 1033:** Dodd-Frank Section 1033 grants consumers the right to access their financial data. The CFPB finalized its Personal Financial Data Rights rule in late 2024 (compliance originally phased from 2026), but the rule's future is unsettled as of mid-2026: the CFPB opened a reconsideration rulemaking in August 2025 signaling substantial revision, and in October 2025 a federal court enjoined enforcement of the rule pending that reconsideration. Verify current status before advising on Section 1033 obligations. Scope is in any event narrower than PSD2.
 - **Screen scraping:** In the absence of a mandate, fintech companies have relied on screen scraping (credential-based data access). Banks have pushed back, citing security concerns. The industry is transitioning toward tokenized API access.
 - **Consequence:** Data access disputes between banks and fintechs remain common. The evolving regulatory framework creates uncertainty for business models reliant on account data aggregation.
 
