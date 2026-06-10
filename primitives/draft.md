@@ -80,7 +80,7 @@ For each finding that needs revision:
 
 2. **Anchor to the effective position.** Propose what the practice standard calls for, not a pre-compromised middle ground. Start from strength.
 
-3. **Consult the clause library.** Read `practice/library/{clause-type}.md` for proven variants — standard, aggressive, and vendor-favorable options. Use proven language where available.
+3. **Consult the clause library.** Find the matching file in `practice/library/` for proven variants — standard, aggressive, and vendor-favorable options. Check `practice/library/_index.md` first: library files group related clause types, so the slug may not match the standards filename (e.g., limitation-of-liability and indemnification share `liability-and-indemnification.md`). Use proven language where available.
 
 4. **Check against law.** If a law area creates a floor (e.g., GDPR 72-hour breach notification), the proposed language must meet it. Note: "This revision reflects a regulatory requirement, not a negotiation preference."
 
@@ -207,7 +207,7 @@ Draft new clause language from scratch (not revising existing language).
 
 ### Instructions
 
-1. Research the clause type: load `practice/standards/{clause-type}.md` for your position and `practice/library/{clause-type}.md` for proven language.
+1. Research the clause type: load `practice/standards/{clause-type}.md` for your position and the matching `practice/library/` file (see `_index.md` — library slugs group related clause types) for proven language.
 2. Draft language that reflects the practice standard.
 3. Check against applicable law/ areas.
 4. Provide the clause in both standard and aggressive variants if useful.

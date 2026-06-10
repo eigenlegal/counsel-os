@@ -1,8 +1,8 @@
 ---
-counsel-os-type: default-positions
-content-version: "2026-04-08"
+counsel-os-type: practice
+content-version: "2026-06-10"
 ---
-# Default Positions Index
+# Positions Index
 
 Standard clause positions for contract review. Each file covers one clause type with Market Standard, Classification Guide (GREEN/YELLOW/RED), Escalate If, Practical Guidance, Key Negotiation Points, and Common Traps.
 

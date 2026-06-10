@@ -1,10 +1,8 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-04-08"
+content-version: "2026-06-10"
 jurisdiction: [industry-standard, network-rules]
 ---
-## Pci Dss
-
 # PCI DSS (Payment Card Industry Data Security Standard)
 
 ## Applicability

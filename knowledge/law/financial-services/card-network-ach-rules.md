@@ -1,10 +1,8 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-04-08"
+content-version: "2026-06-10"
 jurisdiction: [network-rules, us-federal]
 ---
-## Card Network Ach Rules
-
 # Card Network and ACH Operating Rules
 
 ## Applicability

@@ -1,10 +1,8 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-05-06"
+content-version: "2026-06-10"
 jurisdiction: [us-state]
 ---
-## Ccpa Cpra
-
 # CCPA/CPRA (California Consumer Privacy Act / California Privacy Rights Act)
 
 ## Source-First Use

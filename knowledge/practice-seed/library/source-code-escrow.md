@@ -1,9 +1,7 @@
 ---
 counsel-os-type: practice
-content-version: "2026-04-08"
+content-version: "2026-06-10"
 ---
-## Source Code Escrow
-
 # Source Code Escrow — Clause Library
 
 ## Escrow Deposit

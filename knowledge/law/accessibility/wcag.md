@@ -1,10 +1,8 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-04-08"
+content-version: "2026-06-10"
 jurisdiction: [technical-standard, global, us-federal, us-state]
 ---
-## Wcag
-
 # WCAG — Web Content Accessibility Guidelines
 
 ## Applicability

@@ -1,10 +1,8 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-05-06"
+content-version: "2026-06-10"
 jurisdiction: [us-state]
 ---
-## Us Breach Notification 50 State
-
 # US Breach Notification — 50-State Reference
 
 ## Applicability

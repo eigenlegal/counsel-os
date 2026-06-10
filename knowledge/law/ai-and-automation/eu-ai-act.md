@@ -1,10 +1,8 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-04-08"
+content-version: "2026-06-10"
 jurisdiction: [eu]
 ---
-## Eu Ai Act
-
 # EU AI Act (Regulation 2024/1689)
 
 ## Applicability

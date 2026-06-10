@@ -1,10 +1,8 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-04-08"
+content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state, technical-standard]
 ---
-## Ada Title Iii
-
 # ADA Title III — Public Accommodations
 
 ## Applicability

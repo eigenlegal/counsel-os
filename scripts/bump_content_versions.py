@@ -79,9 +79,10 @@ def update_frontmatter(file_path: Path, version_date: str) -> bool:
 
     # Update or add content-version
     if re.search(r"content-version:", new_fm):
+        # Replace the whole value — handles quoted and unquoted alike.
         new_fm = re.sub(
-            r'content-version:\s*"[^"]*"',
-            f'content-version: "{version_date}"',
+            r"(?m)^(\s*content-version:)[^\n]*$",
+            rf'\1 "{version_date}"',
             new_fm,
         )
     else:

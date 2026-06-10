@@ -17,7 +17,7 @@ Resolve `{legal_root}` via the Finding the Legal Root procedure in `skills/couns
 - **Legal root** (`{legal_root}`) — contains law/, practice/, matters/, memory/
 - **Entity discovery** — enumerate and look up entity/matter files using the Knowledge Base Search procedure in counsel/SKILL.md
 
-All framework content (law areas, default positions, practice files, memory) is read from `{legal_root}/`. Entity files (companies, counterparties) are discovered via the Knowledge Base Search procedure — in qmd mode they can live anywhere in the vault; in filesystem mode they live under `{legal_root}/{entities_path}/`.
+All framework content (law areas, standard positions, practice files, memory) is read from `{legal_root}/`. Entity files (companies, counterparties) are discovered via the Knowledge Base Search procedure — in qmd mode they can live anywhere in the vault; in filesystem mode they live under `{legal_root}/{entities_path}/`.
 
 ## Step 1: Gather Data
 
@@ -26,6 +26,9 @@ Read all available data sources:
 ### Memory Files
 1. **`{legal_root}/memory/patterns.md`** — Cross-cutting practice-level observations and insights
 2. **`{legal_root}/memory/retro-*.md`** — Previous retro snapshots for trend comparison
+
+### Matter Files
+3. **Enumerate all matter files** — Use the Knowledge Base Search procedure in counsel/SKILL.md to enumerate files with `counsel-os-type: matter` (filesystem fallback: `{legal_root}/{matters_path}/`). Matter files are the primary data source: frontmatter (stage, type, dates), `## Findings`, the `## Decisions` log (including deviations from standard), and `## Open Issues`.
 
 ### Entity Files
 4. **Enumerate all entity files** — Use the Knowledge Base Search procedure in counsel/SKILL.md to enumerate files with `counsel-os-type` in [counterparty, vendor, customer, prospect]. These contain history, agreed positions, and notes.
@@ -49,7 +52,7 @@ Count and categorize:
 
 ### Turnaround
 
-If timestamps are available in the logs:
+If timestamps are available (matter frontmatter `created`/`updated` dates):
 - Average time from intake to close, by track
 - Compare against turnaround expectations in profile.md (## Escalation Thresholds section)
 - Identify bottlenecks
@@ -58,7 +61,7 @@ If timestamps are available in the logs:
 
 ### Most-Negotiated Clauses
 
-From decisions and exceptions logs:
+From the `## Findings` and `## Decisions` sections of matter files:
 - Which clause types appear most frequently in YELLOW and RED findings?
 - Which clause types are most often negotiated?
 - Which clause types lead to the most exceptions?
@@ -103,6 +106,8 @@ For counterparties with multiple interactions:
 
 ### Exception Frequency
 
+An *exception* is a decision that accepted terms outside the practice standard. There is no separate exceptions log — find them in matter `## Decisions` entries (deviations from standard) and in entity-file agreed positions that differ from `practice/standards/`.
+
 - How many exceptions were granted in the period?
 - Which clause types have the most exceptions?
 - Are exceptions trending up or down?
@@ -118,7 +123,7 @@ For any clause type where exceptions exceed 30% of matters:
 
 ### One-Time vs. Precedent
 
-From the "one-time or precedent" field in exceptions:
+Where decisions were framed as one-time vs. precedent-setting (in matter `## Decisions` entries or entity files):
 - Are "one-time" exceptions being repeated? (If so, they're becoming precedent whether or not the position is updated.)
 - How many exceptions were marked as precedent-setting?
 
@@ -181,7 +186,7 @@ The retro audits the health of the knowledge base but does NOT perform maintenan
 
 ### Stale Entity Metadata
 - Enumerate all entity files (Knowledge Base Search) and check for counterparties still marked as "Negotiating" that may have been executed or abandoned
-- Flag any mismatches in `counsel-os-status` frontmatter
+- Flag any mismatches in status metadata, where the user tracks it (e.g., a `counsel-os-status` property — optional, not written by default)
 
 ## Step 9: Save Retro Snapshot
 
@@ -200,7 +205,7 @@ The snapshot should include:
 - Recommendations made
 - Status of previous recommendations
 
-## Step 9: Output the Retro Report
+## Step 10: Output the Retro Report
 
 ```
 ## Practice Retro — [Period]

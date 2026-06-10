@@ -30,12 +30,17 @@ in `skills/counsel/SKILL.md` ("Finding the Legal Root").
 
 ## What goes in `{legal_root}/config.md`
 
-Required:
+Required (these two markers are what discovery validates):
 
 ```markdown
 counsel-os-config: true
-config_version: 1
 legal_root: /full/path/to/legal/root
+```
+
+Recommended (informational — not checked by discovery):
+
+```markdown
+config_version: 1
 ```
 
 Optional overrides (defaults shown):
