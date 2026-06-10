@@ -2,6 +2,26 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state, eu, international]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "Regulation (EU) 2016/679, Articles 44-49"
+    title: "GDPR Chapter V — transfers of personal data to third countries"
+    url: "https://eur-lex.europa.eu/eli/reg/2016/679/oj"
+  - cite: "Commission Implementing Decision (EU) 2021/914"
+    title: "2021 Standard Contractual Clauses"
+    url: "https://eur-lex.europa.eu/eli/dec_impl/2021/914/oj"
+  - cite: "European Commission adequacy decisions"
+    title: "Current adequacy decisions, including the UK renewal (December 2025) and Brazil (January 2026)"
+    url: "https://commission.europa.eu/law/law-topic/data-protection/international-dimension-data-protection/adequacy-decisions_en"
+  - cite: "Latombe v Commission, T-553/23 (Gen. Ct. Sept. 3, 2025)"
+    title: "General Court judgment dismissing the challenge to the EU-US DPF adequacy decision"
+    url: "https://curia.europa.eu/site/upload/docs/application/pdf/2025-09/cp250106en.pdf"
+  - cite: "Resolução CD/ANPD nº 19/2024"
+    title: "ANPD International Data Transfer Regulation and Brazilian SCCs (August 23, 2024)"
+    url: "https://www.gov.br/anpd/pt-br/acesso-a-informacao/institucional/atos-normativos/regulamentacoes_anpd/resolucao-cd-anpd-no-19-de-23-de-agosto-de-2024"
+  - cite: "EDPB Recommendations 01/2020"
+    title: "Supplementary measures for international transfers"
+    url: "https://www.edpb.europa.eu/our-work-tools/our-documents/recommendations/recommendations-012020-measures-supplement-transfer_en"
 ---
 # Cross-Border Data Transfers
 
@@ -29,7 +49,7 @@ The GDPR restricts transfers of personal data to countries outside the EEA unles
 #### Adequacy Decisions (Article 45)
 
 - **What:** The European Commission determines that a third country ensures an adequate level of data protection. Transfers to adequate countries are permitted without additional safeguards.
-- **Current adequacy decisions (as of early 2026):** Andorra, Argentina, Canada (commercial activities under PIPEDA only), Faroe Islands, Guernsey, Isle of Man, Israel, Japan, Jersey, New Zealand, Republic of Korea, Switzerland, United Kingdom, Uruguay, and the **United States** (limited to organizations self-certified under the EU-US Data Privacy Framework).
+- **Current adequacy decisions (as of mid-2026):** Andorra, Argentina, **Brazil** (adopted January 2026, with reciprocal ANPD recognition of the EU/EEA), Canada (commercial activities under PIPEDA only), Faroe Islands, Guernsey, Isle of Man, Israel, Japan, Jersey, New Zealand, Republic of Korea, Switzerland, United Kingdom (renewed December 2025 through December 27, 2031), Uruguay, and the **United States** (limited to organizations self-certified under the EU-US Data Privacy Framework).
 - **EU-US Data Privacy Framework (DPF):** Adopted July 2023, replacing Privacy Shield (invalidated by Schrems II). Requires US organizations to self-certify with the Department of Commerce and commit to DPF Principles. Covers only transfers to self-certified US organizations. Includes redress mechanisms through the Data Protection Review Court.
 - **Consequence:** Adequacy decisions are subject to periodic review and can be revoked. Reliance on an adequacy decision that is later invalidated may retroactively undermine the lawfulness of transfers.
 
@@ -82,7 +102,7 @@ The EDPB Recommendations 01/2020 identify three categories:
 
 ### UK Cross-Border Transfer Framework
 
-- **UK adequacy bridge:** Following Brexit, the EU granted the UK an adequacy decision (June 2021) with a sunset clause of **4 years** (expiring June 2025, with potential extension). As of early 2026, check current status.
+- **UK adequacy bridge:** Following Brexit, the EU granted the UK an adequacy decision (June 2021) with a four-year sunset clause. After a six-month technical extension and review of the UK's Data (Use and Access) Act 2025, the Commission **renewed the UK adequacy decisions on December 19, 2025 for six years, through December 27, 2031**.
 - **UK International Data Transfer Agreement (IDTA):** The UK's alternative to EU SCCs, adopted by the ICO. Available as a standalone agreement or as a UK Addendum to the EU SCCs.
 - **UK Transfer Risk Assessments:** Similar to TIAs under EU GDPR. The ICO provides a Transfer Risk Assessment tool.
 - **UK Extension to EU-US DPF:** The UK-US Data Bridge extends the EU-US DPF framework to UK personal data transfers to self-certified US organizations.
@@ -97,8 +117,9 @@ The EDPB Recommendations 01/2020 identify three categories:
 
 ### Brazil — LGPD Cross-Border Transfers (Articles 33-36)
 
-- **Mechanisms:** Transfer permitted when the destination country provides adequate protection (as determined by the ANPD), under SCCs approved by the ANPD, BCRs, cooperation agreements between supervisory authorities, or with the data subject's specific and prominent consent.
-- **Status:** As of early 2026, the ANPD has not yet finalized its adequacy assessment framework or approved SCCs. Specific consent and contractual clauses remain the primary mechanisms.
+- **Mechanisms:** Transfer permitted when the destination country provides adequate protection (as determined by the ANPD), under ANPD-approved standard contractual clauses, equivalent or specific contractual clauses, global corporate norms (BCR equivalent), or with the data subject's specific and prominent consent.
+- **International Data Transfer Regulation (Resolução CD/ANPD nº 19/2024, August 23, 2024):** The ANPD adopted its transfer regulation and **Brazilian SCCs**. Agents using contractual clauses for international transfers were required to incorporate the ANPD's standard clauses into existing contracts within **12 months (by August 2025 — deadline now passed)**; new transfers must use the Brazilian SCCs or another recognized mechanism. The ANPD also recognizes "equivalent" foreign clauses (a route for EU SCC alignment) on the terms set in the regulation.
+- **Adequacy:** In January 2026, the ANPD issued its first adequacy recognition — Resolução CD/ANPD nº 32/2026, recognizing the **EU/EEA** as providing adequate protection — coordinated with the European Commission's reciprocal adequacy decision for Brazil. Other adequacy assessments remain pending.
 
 ### Singapore — PDPA Cross-Border Transfers (Section 26)
 
@@ -148,7 +169,7 @@ Post-Schrems II, controllers relying on SCCs must conduct a TIA to assess whethe
 - **Onward transfers:** DPF-certified organizations transferring data onward to third parties must ensure the third party provides equivalent protection — via DPF certification, SCCs, or binding and enforceable commitments.
 - **UK-US Data Bridge:** The UK Extension to the EU-US DPF allows transfers from the UK to DPF-certified organizations that have opted into the UK Extension. Verify UK Extension coverage separately on the DPF list.
 - **Swiss-US DPF:** Switzerland has a separate Swiss-US DPF. Verify Swiss coverage separately.
-- **Litigation risk:** The DPF's predecessor (Privacy Shield) was invalidated by Schrems II. DPF is built on EO 14086's enhanced protections and the Data Protection Review Court, but a challenge (Schrems III) is anticipated. Monitor the status; maintain SCC fallback readiness.
+- **Litigation risk:** The DPF's predecessor (Privacy Shield) was invalidated by Schrems II. DPF is built on EO 14086's enhanced protections and the Data Protection Review Court. The EU General Court **dismissed the first annulment challenge** (Latombe v Commission, T-553/23, September 3, 2025), upholding the adequacy decision — including the DPRC's independence — but an appeal to the CJEU and further challenges remain possible, and the framework depends on the continued operation of the EO 14086 redress mechanism within the US executive branch. Monitor the status; maintain SCC fallback readiness.
 
 ### Intra-Group Transfers — SCCs vs. BCRs
 
@@ -170,8 +191,8 @@ Post-Schrems II, controllers relying on SCCs must conduct a TIA to assess whethe
 |----------|----------------------|
 | EU to self-certified US company | EU-US Data Privacy Framework (verify certification on DPF list) |
 | EU to non-DPF US company | SCCs (Module 2 or 3) + TIA + supplementary measures |
-| EU to UK | EU adequacy decision (verify current status) |
-| EU to Japan, South Korea | Adequacy decision |
+| EU to UK | EU adequacy decision (renewed December 2025, through December 2031) |
+| EU to Japan, South Korea, Brazil | Adequacy decision |
 | EU to China | SCCs + TIA + supplementary measures (significant compliance burden) |
 | Intra-group multinational (EU HQ) | BCRs (if approved) or SCCs for each entity pair |
 | China outbound | CAC security assessment (if thresholds met) or filed standard contract |
@@ -192,6 +213,8 @@ Post-Schrems II, controllers relying on SCCs must conduct a TIA to assess whethe
 - [EU-US Data Privacy Framework](https://www.dataprivacyframework.gov/) — Self-certification portal and DPF participant list
 - [CJEU Schrems II Decision (C-311/18)](https://curia.europa.eu/juris/liste.jsf?num=C-311/18) — Foundational ruling on cross-border transfers
 - [UK International Data Transfer Agreement](https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/international-transfers/) — ICO guidance and IDTA templates
+- [ANPD International Data Transfer Regulation](https://www.gov.br/anpd/pt-br/acesso-a-informacao/institucional/atos-normativos/regulamentacoes_anpd/resolucao-cd-anpd-no-19-de-23-de-agosto-de-2024) — Resolução CD/ANPD nº 19/2024 with Brazilian SCCs
+- [Latombe v Commission (T-553/23) — Curia press release](https://curia.europa.eu/site/upload/docs/application/pdf/2025-09/cp250106en.pdf) — General Court judgment upholding the EU-US DPF adequacy decision
 - [EU-US DPF Participant List](https://www.dataprivacyframework.gov/list) — Verify active DPF certification
 - [EO 14086 — Enhancing Safeguards for US Signals Intelligence](https://www.whitehouse.gov/briefing-room/presidential-actions/2022/10/07/executive-order-on-enhancing-safeguards-for-united-states-signals-intelligence-activities/) — Foundation for DPF adequacy decision
 - [Global CBPR Forum](https://www.globalcbpr.org/) — Cross-border privacy rules beyond APEC

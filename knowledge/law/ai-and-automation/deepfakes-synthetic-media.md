@@ -2,6 +2,23 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state, eu, international]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "Pub. L. 119-12 (May 19, 2025)"
+    title: "TAKE IT DOWN Act — federal NCII criminalization and platform notice-and-removal"
+    url: "https://www.govinfo.gov/content/pkg/PLAW-119publ12/pdf/PLAW-119publ12.pdf"
+  - cite: "S. 1837, 119th Congress"
+    title: "DEFIANCE Act of 2025 (passed Senate Jan. 13, 2026; not enacted)"
+    url: "https://www.congress.gov/bill/119th-congress/senate-bill/1837"
+  - cite: "Texas SB 751 (2019), Tex. Elec. Code § 255.004"
+    title: "Texas election deepfake criminal offense"
+    url: "https://capitol.texas.gov/tlodocs/86R/billtext/pdf/SB00751F.pdf"
+  - cite: "Regulation (EU) 2024/1689, Art. 50"
+    title: "EU AI Act transparency obligations for synthetic media"
+    url: "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689"
+  - cite: "California SB 942 / AB 853"
+    title: "California AI Transparency Act (operative August 2, 2026)"
+    url: "https://leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=202320240SB942"
 ---
 # Deepfakes and Synthetic Media
 
@@ -20,20 +37,21 @@ This sub-topic is relevant when ANY of the following are true:
 
 ### State Deepfake Laws — Election Interference
 
-- **What**: A growing number of US states have enacted laws specifically targeting AI-generated deepfakes used to influence elections.
-- **Texas SB 2105 (2019)**: Creates a criminal offense for publishing a deepfake video intended to injure a candidate or influence an election within **30 days** of the election. Applies to video that is created with AI and appears to depict a real person performing an action that did not occur, with the intent to deceive and influence the election.
-- **California AB 730 (2019, amended by AB 2655 in 2024)**: Prohibited distribution of materially deceptive audio or visual media of a candidate within **60 days** of an election. AB 2655 expanded obligations to require large online platforms to block or label deceptive AI-generated election content.
+- **What**: A growing number of US states have enacted laws specifically targeting AI-generated deepfakes used to influence elections — but several flagship laws have been enjoined on First Amendment or Section 230 grounds, so verify litigation status before advising.
+- **Texas SB 751 (2019), Tex. Elec. Code § 255.004**: Creates a criminal offense for creating and publishing a deepfake video intended to injure a candidate or influence an election within **30 days** of the election. Applies to video created with intent to deceive that appears to depict a real person performing an action that did not occur.
+- **California (constitutional setbacks, as of June 2026)**: AB 730 (2019) prohibited distribution of materially deceptive candidate media within 60 days of an election. Its 2024 successors fared badly in court: **AB 2839** (deceptive election-content distribution) was enjoined and held unconstitutional under the First Amendment (*Kohls v. Bonta*, E.D. Cal. 2024-2025), and **AB 2655** (platform blocking/labeling duties) was **permanently enjoined as preempted by Section 230** (*X Corp. v. Bonta*, E.D. Cal. 2025). Appeals were pending as of June 2026 — do not treat either as operative.
 - **Minnesota HF 1370 (2023)**: Prohibits dissemination of deepfake media depicting a candidate within **90 days** of an election without a clear and conspicuous disclosure that the media is AI-generated.
-- **Threshold**: State laws vary in their temporal windows (30-90 days pre-election), intent requirements, and disclosure safe harbors. At least 15 states had enacted deepfake election laws by early 2026.
-- **Consequence**: Texas: **Class A misdemeanor** (up to 1 year imprisonment, $4,000 fine). California: Injunctive relief and damages; platforms face penalties for failure to label. Minnesota: Gross misdemeanor (up to 1 year, $3,000 fine).
+- **Threshold**: State laws vary in their temporal windows (30-90 days pre-election), intent requirements, and disclosure safe harbors. At least 15 states had enacted deepfake election laws by early 2026, but the California rulings supply a roadmap for First Amendment and Section 230 challenges elsewhere.
+- **Consequence**: Texas: **Class A misdemeanor** (up to 1 year imprisonment, $4,000 fine). Minnesota: Gross misdemeanor (up to 1 year, $3,000 fine). California: enforcement enjoined as of June 2026.
 
 ### Non-Consensual Intimate Images (NCII)
 
-- **What**: AI-generated intimate imagery depicting real individuals without their consent is increasingly addressed by both existing revenge porn statutes and new AI-specific legislation.
-- **Federal DEFIANCE Act (proposed/enacted 2024-2025)**: Creates a federal civil cause of action for individuals depicted in non-consensual, AI-generated intimate images, allowing victims to sue creators and distributors.
-- **State laws**: Over 45 states have revenge porn laws; a growing subset explicitly cover AI-generated content. Texas expanded its deepfake law to cover non-consensual intimate images. Virginia's revenge porn statute (Va. Code Section 18.2-386.2) was amended to explicitly include AI-generated ("falsely created") images. Illinois and California have similarly expanded coverage.
-- **Threshold**: Creating or distributing AI-generated intimate images of an identifiable person without their consent triggers criminal and/or civil liability in a growing majority of US jurisdictions.
-- **Consequence**: Varies by state. Criminal penalties range from misdemeanors to felonies. Civil remedies include actual damages, statutory damages (California provides **minimum $1,500 per violation**), injunctive relief, and attorneys' fees.
+- **What**: AI-generated intimate imagery depicting real individuals without their consent is now addressed by a federal criminal statute with platform removal duties, existing revenge porn statutes, and AI-specific state legislation.
+- **TAKE IT DOWN Act (Pub. L. 119-12, signed May 19, 2025)**: The controlling federal law. Criminalizes knowing publication of non-consensual intimate visual depictions, **including AI-generated "digital forgeries"** of identifiable individuals (criminal provisions effective immediately on enactment). Covered platforms were required to stand up a **notice-and-removal process by May 19, 2026** — now binding as of June 2026 — and must remove reported NCII (and known identical copies) **within 48 hours** of a valid request. Platform noncompliance is enforced by the FTC as an unfair or deceptive practice.
+- **Federal DEFIANCE Act — not law**: Would create a federal civil cause of action for victims of AI-generated NCII. It passed the Senate in the 118th Congress (2024) but died in the House, and the reintroduced S. 1837 passed the Senate by unanimous consent on **January 13, 2026** and remained pending in the House as of June 2026. Do not cite it as enacted; the TAKE IT DOWN Act (criminal/platform) is the federal hook, with civil remedies still primarily state-law.
+- **State laws**: Over 45 states have revenge porn laws; a growing subset explicitly cover AI-generated content. Texas Penal Code § 21.165 (2023, expanded 2025) criminalizes non-consensual deepfake intimate media (Class A misdemeanor; third-degree felony for repeat offenses or minors). Virginia's revenge porn statute (Va. Code Section 18.2-386.2) explicitly includes AI-generated ("falsely created") images. Illinois and California have similarly expanded coverage.
+- **Threshold**: Creating or distributing AI-generated intimate images of an identifiable person without consent now triggers federal criminal liability plus state criminal and/or civil liability in most US jurisdictions; platforms hosting user content have federal removal-process obligations.
+- **Consequence**: Federal: fines and imprisonment (enhanced where minors are depicted); FTC enforcement against non-compliant platforms. State: criminal penalties from misdemeanors to felonies; civil remedies include actual damages, statutory damages (California provides **minimum $1,500 per violation**), injunctive relief, and attorneys' fees.
 
 ### EU AI Act — Transparency for Synthetic Media (Art. 50)
 
@@ -41,13 +59,13 @@ This sub-topic is relevant when ANY of the following are true:
 - **Disclosure to users (Art. 50(2))**: Providers of AI systems that generate synthetic audio, image, video, or text content must ensure that the outputs are marked as artificially generated or manipulated, in a machine-readable format. This applies to all such systems, regardless of risk tier.
 - **Disclosure by deployers (Art. 50(4))**: Deployers of AI systems that generate deepfakes must disclose that the content has been artificially generated or manipulated. Exceptions exist for AI-generated content that is part of a manifestly artistic, creative, satirical, or fictional work, provided the disclosure does not impede display or enjoyment.
 - **Emotion recognition and biometric categorization (Art. 50(3))**: Deployers must inform persons that they are being subjected to emotion recognition or biometric categorization systems.
-- **Timeline**: Transparency obligations effective **2 August 2025**.
+- **Timeline**: Art. 50 transparency obligations apply from **2 August 2026** (Art. 113). **Pending change (not yet law as of 10 June 2026)**: the EU "Digital Omnibus on AI" — provisional political agreement reached 7 May 2026, formal adoption expected mid-2026 — would postpone the machine-readable marking/watermarking obligations to **2 December 2026** and add new prohibited practices for AI-generated NCII and CSAM. Verify adoption status before advising on dates.
 - **Consequence**: Non-compliance subject to fines up to **EUR 15 million or 3% of total worldwide annual turnover** (Art. 99(4)).
 
 ### Platform Responsibilities
 
-- **What**: Online platforms face increasing legal obligations regarding AI-generated and deepfake content.
-- **Section 230 limitations**: Section 230 of the Communications Decency Act provides immunity for platforms as intermediaries for user-generated content. However, courts have not definitively resolved whether Section 230 protects platforms that actively generate or recommend deepfake content, and there is legislative momentum to create carve-outs for AI-generated harmful content.
+- **What**: Online platforms face increasing legal obligations regarding AI-generated and deepfake content — most concretely the TAKE IT DOWN Act's NCII notice-and-removal regime (binding since May 19, 2026; see above).
+- **Section 230 limitations**: Section 230 of the Communications Decency Act provides immunity for platforms as intermediaries for user-generated content — and it has teeth against state deepfake mandates: *X Corp. v. Bonta* (E.D. Cal. 2025) permanently enjoined California's AB 2655 platform labeling/blocking law as preempted by Section 230. Courts have not definitively resolved whether Section 230 protects platforms that themselves generate AI content, and the TAKE IT DOWN Act shows Congress legislating platform duties directly rather than through Section 230 carve-outs.
 - **EU Digital Services Act (DSA)**: Very large online platforms (VLOPs, 45M+ EU monthly users) must assess and mitigate systemic risks, including those from AI-generated disinformation. Requires notice-and-action mechanisms for illegal deepfake content.
 - **Voluntary commitments**: Major platforms (Meta, Google, Microsoft, TikTok) have signed the **AI Elections Accord** and **C2PA content provenance standards**, committing to label AI-generated content and support content authentication.
 - **Threshold**: Platforms hosting, distributing, or recommending synthetic media must assess obligations under platform liability law, election law, and sector-specific AI regulations in each jurisdiction.
@@ -56,17 +74,17 @@ This sub-topic is relevant when ANY of the following are true:
 ### DMCA and Content Provenance
 
 - **What**: The Digital Millennium Copyright Act (17 U.S.C. Section 512) provides a notice-and-takedown framework that may be applied to AI-generated content that infringes copyright, but does not specifically address deepfakes.
-- **Content provenance**: Technical standards like **C2PA (Coalition for Content Provenance and Authenticity)** provide cryptographic metadata binding content to its origin and editing history. California AB 3211 (2024) and similar bills propose mandating C2PA-compatible provenance metadata for AI-generated content.
-- **Threshold**: DMCA takedown is available only for copyright-infringing content, not for non-infringing deepfakes. Content provenance mandates are emerging but not yet widely enacted.
+- **Content provenance**: Technical standards like **C2PA (Coalition for Content Provenance and Authenticity)** provide cryptographic metadata binding content to its origin and editing history. California's **AI Transparency Act (SB 942, as amended by AB 853 (2025))** mandates AI-detection tools plus manifest and latent provenance disclosures for large GenAI providers, operative **2 August 2026**, with GenAI hosting-platform duties phasing in from 1 January 2027. Connecticut's PA 26-15 (2026) adds synthetic-content provenance/watermarking duties on a staggered schedule from October 2026.
+- **Threshold**: DMCA takedown is available only for copyright-infringing content, not for non-infringing deepfakes. Content provenance mandates are now enacted in California and Connecticut (and under the EU AI Act) but were not yet operative as of 10 June 2026 — check effective dates.
 - **Consequence**: DMCA: Standard safe harbor framework. Failure to implement provenance requirements where mandated may result in penalties under state or EU law.
 
 ### FTC Enforcement
 
-- **What**: The FTC has signaled aggressive enforcement against deceptive AI-generated content under Section 5 of the FTC Act.
-- **Proposed rule on AI impersonation (2024)**: The FTC proposed extending its Government and Business Impersonation Rule to cover AI-generated impersonation of individuals, making it an unfair practice to use AI-generated deepfakes to deceive consumers. Final rule expected 2025-2026.
+- **What**: The FTC enforces against deceptive AI-generated content under Section 5 of the FTC Act, and is now the enforcement agency for the TAKE IT DOWN Act's platform obligations.
+- **Impersonation rule status (as of June 2026)**: The Government and Business Impersonation Rule took effect April 1, 2024. The supplemental proposed rule extending it to impersonation of **individuals** (including via AI deepfakes) went through an informal hearing in January 2025 but **had not been finalized** as of June 2026, and the Commission dropped the proposed "means and instrumentalities" provision. Treat individual-impersonation coverage as pending, not law.
 - **Deceptive advertising**: Using deepfakes or AI-generated testimonials in advertising without disclosure is actionable as a deceptive practice under Section 5 and the updated FTC Endorsement Guides (2023).
 - **Threshold**: Any commercial use of synthetic media that could deceive a reasonable consumer triggers FTC scrutiny.
-- **Consequence**: FTC consent orders, injunctive relief, civil penalties of up to **$51,744 per violation per day** (2024 adjusted) for consent order violations, and potential disgorgement.
+- **Consequence**: FTC consent orders, injunctive relief, civil penalties of up to **$53,088 per violation per day** (2025-adjusted figure, carried into 2026) for rule and consent order violations, and potential disgorgement.
 
 ## Interaction with Other Areas
 
@@ -77,10 +95,13 @@ This sub-topic is relevant when ANY of the following are true:
 
 ## Sources
 
-- [Texas SB 2105 — Texas Legislature](https://capitol.texas.gov/BillLookup/History.aspx?LegSess=86R&Bill=SB2105) — Deepfake election interference law
-- [California AB 2655 (2024)](https://leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=202320240AB2655) — Platform obligations for deceptive AI election content
+- [TAKE IT DOWN Act, Pub. L. 119-12 — govinfo](https://www.govinfo.gov/content/pkg/PLAW-119publ12/pdf/PLAW-119publ12.pdf) — Federal NCII criminalization and platform notice-and-removal
+- [DEFIANCE Act, S. 1837 (119th Cong.) — Congress.gov](https://www.congress.gov/bill/119th-congress/senate-bill/1837) — Pending federal NCII civil cause of action (not enacted)
+- [Texas SB 751 (2019) — Texas Legislature](https://capitol.texas.gov/tlodocs/86R/billtext/pdf/SB00751F.pdf) — Deepfake election interference law (Tex. Elec. Code § 255.004)
+- [California AB 2655 (2024)](https://leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=202320240AB2655) — Platform obligations for deceptive AI election content (permanently enjoined, *X Corp. v. Bonta*)
+- [California SB 942 — California AI Transparency Act](https://leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=202320240SB942) — Provenance and detection-tool mandate (operative Aug. 2, 2026)
 - [EU AI Act Art. 50 — EUR-Lex](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689) — Transparency obligations for synthetic media
-- [FTC Proposed Rule on AI Impersonation (2024)](https://www.ftc.gov/legal-library/browse/federal-register-notices/trade-regulation-rule-impersonation-individuals) — Extending impersonation rules to AI
+- [FTC Proposed Rule on AI Impersonation](https://www.ftc.gov/legal-library/browse/federal-register-notices/trade-regulation-rule-impersonation-individuals) — Extending impersonation rules to individuals (pending)
 - [C2PA Technical Specification](https://c2pa.org/specifications/specifications/2.0/specs/C2PA_Specification.html) — Content provenance standards
 
 ---

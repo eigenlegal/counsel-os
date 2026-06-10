@@ -2,6 +2,17 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "DOL Field Assistance Bulletin 2025-1"
+    title: "WHD enforcement posture on independent contractor status (2024 rule not applied in enforcement)"
+    url: "https://www.dol.gov/sites/dolgov/files/WHD/fab/fab2025-1.pdf"
+  - cite: "29 CFR Part 795"
+    title: "DOL employee or independent contractor classification rulemaking"
+    url: "https://www.dol.gov/agencies/whd/flsa/misclassification/rulemaking"
+  - cite: "91 FR (Feb. 27, 2026)"
+    title: "NLRB withdrawal of the 2023 joint-employer standard; 2020 rule reinstated"
+    url: "https://www.federalregister.gov/documents/2026/02/27/2026-03955/withdrawal-of-2023-standard-for-determining-joint-employer-status"
 ---
 # Independent Contractor Classification
 
@@ -33,7 +44,9 @@ protections, and liability.
 - **Consequence**: Failure on any single prong means the worker is an employee.
   California AB5 (Labor Code 2775, effective January 1, 2020) applies this test for
   wage orders, the Labor Code, unemployment insurance, and workers' compensation.
-  California PAGA penalties reach up to $200 per pay period per worker. Massachusetts
+  California PAGA penalties reach up to $200 per pay period per worker, subject to
+  the June 2024 PAGA reform's standing rules, caps, and cure provisions (see
+  wage-and-hour). Massachusetts
   imposes treble damages for misclassification (Mass. Gen. Laws ch. 149, 148B).
   New Jersey penalties include $250 per misclassified worker for first violation.
 - **Exemptions**: California AB5 includes professional exemptions for certain
@@ -57,6 +70,12 @@ protections, and liability.
   multi-factor totality-of-circumstances test, replacing the 2021 rule that gave
   disproportionate weight to control and opportunity for profit/loss. Economic
   dependence, not control alone, is the touchstone.
+- **Status (in flux)**: The 2024 rule remains on the books and applies in private
+  litigation, but DOL announced in Field Assistance Bulletin 2025-1 (May 2025) that
+  investigators will not apply it in enforcement, reverting to the longstanding
+  Fact Sheet #13 framework. In February 2026 DOL proposed rescinding the 2024 rule
+  in favor of a 2021-style test centered on control and opportunity for profit or
+  loss. Verify the operative test before advising.
 - **Consequence**: Misclassified workers are entitled to FLSA minimum wage ($7.25/hour
   federal; higher in most states), overtime (1.5x for hours over 40/week), and
   recordkeeping protections. Liquidated damages (double back pay) plus attorneys'
@@ -87,8 +106,9 @@ protections, and liability.
 - **Federal tax**: Employer liable for employer's FICA share (7.65%), plus employee
   FICA share (reduced rates under IRC 3509 if 1099 filed), plus income tax
   withholding. Total exposure can reach 30%+ of total compensation paid.
-- **Willful misclassification**: $50 per Form W-2 that should have been filed per
-  worker (IRC 6721). Full 100% of un-withheld taxes. Criminal penalties under
+- **Willful misclassification**: Per-return information-return penalties for each
+  Form W-2 that should have been filed (IRC 6721; indexed annually). Full 100% of
+  un-withheld taxes. Criminal penalties under
   IRC 7202: up to $10,000 fine and 5 years imprisonment per occurrence for willful
   failure to collect or pay employment taxes.
 - **State penalties**: California AB5 — penalties of $5,000-$25,000 per violation
@@ -100,7 +120,10 @@ protections, and liability.
   insurance for the entire period of misclassification.
 - **Joint liability**: Staffing agencies and client companies may face joint employer
   liability. Multiple states impose joint and several liability for misclassification
-  by staffing intermediaries.
+  by staffing intermediaries. For NLRA purposes, the NLRB's February 2026 rule
+  formally withdrew the vacated 2023 joint-employer standard and reinstated the 2020
+  rule, which requires substantial direct and immediate control over essential terms
+  of employment.
 
 ### Section 530 Safe Harbor
 

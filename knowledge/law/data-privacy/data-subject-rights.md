@@ -2,6 +2,17 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state, eu, international]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "Regulation (EU) 2016/679, Articles 12-22"
+    title: "GDPR data subject rights provisions"
+    url: "https://eur-lex.europa.eu/eli/reg/2016/679/oj"
+  - cite: "Cal. Civ. Code §§ 1798.100-1798.125"
+    title: "CCPA/CPRA consumer rights"
+    url: "https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?division=3.&part=4.&lawCode=CIV&title=1.81.5"
+  - cite: "California Privacy Protection Agency regulations"
+    title: "CPPA regulations on verification, authorized agents, and request processing"
+    url: "https://cppa.ca.gov/regulations/"
 ---
 # Data Subject Rights
 

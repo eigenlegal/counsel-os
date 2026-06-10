@@ -2,6 +2,20 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state, eu, international]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "Regulation (EU) 2016/679, Article 28"
+    title: "GDPR controller-processor contract requirements"
+    url: "https://eur-lex.europa.eu/eli/reg/2016/679/oj"
+  - cite: "EDPB Guidelines 07/2020"
+    title: "Guidelines on the concepts of controller and processor in the GDPR"
+    url: "https://edpb.europa.eu/our-work-tools/our-documents/guidelines/guidelines-072020-concepts-controller-and-processor-gdpr_en"
+  - cite: "Cal. Civ. Code § 1798.140(ag), (j)"
+    title: "CCPA service provider and contractor definitions"
+    url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=1798.140.&lawCode=CIV"
+  - cite: "Va. Code Title 59.1, Chapter 53"
+    title: "VCDPA, including processor contract requirements"
+    url: "https://law.lis.virginia.gov/vacodefull/title59.1/chapter53/"
 ---
 # Data Processing Agreements
 

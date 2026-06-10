@@ -2,6 +2,14 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "EEOC Enforcement and Litigation Statistics"
+    title: "Charge statistics by category (retaliation most prevalent; 47.8% of FY2024 charges)"
+    url: "https://www.eeoc.gov/data/enforcement-and-litigation-statistics-0"
+  - cite: "29 CFR Part 1636"
+    title: "EEOC Pregnant Workers Fairness Act regulations"
+    url: "https://www.eeoc.gov/laws/guidance/pregnant-workers-fairness-act"
 ---
 # Discrimination and Harassment
 
@@ -24,7 +32,7 @@ GINA, PWFA) and key state variations.
 | **ADEA** (29 USC 621) | 20+ | Age (40 and older only) |
 | **Equal Pay Act** (29 USC 206(d)) | Virtually all employers | Sex-based wage disparities (no minimum employee count; covered under FLSA) |
 | **Pregnancy Discrimination Act** (42 USC 2000e(k)) | 15+ (amends Title VII) | Pregnancy, childbirth, related medical conditions |
-| **PWFA** (Pregnant Workers Fairness Act, 2023) | 15+ | Requires reasonable accommodation for known limitations related to pregnancy, childbirth, or related medical conditions |
+| **PWFA** (Pregnant Workers Fairness Act, 2023) | 15+ | Requires reasonable accommodation for known limitations related to pregnancy, childbirth, or related medical conditions. The statute and most of the EEOC's 2024 regulations stand, but a 2025 federal court order vacated the portion treating elective abortion as a covered condition — verify the rule's current scope before advising on it |
 | **GINA** (42 USC 2000ff) | 15+ | Genetic information including family medical history |
 | **Section 1981** (42 USC 1981) | No minimum | Race and ethnicity in contracts (no administrative exhaustion required; 4-year SOL) |
 
@@ -141,9 +149,10 @@ GINA, PWFA) and key state variations.
   from engaging in protected activity (Burlington Northern v. White, 2006). Broader
   than the adverse action standard for discrimination claims — includes schedule
   changes, increased scrutiny, negative references, and exclusion from meetings.
-- **Consequence**: Retaliation is the most frequently filed EEOC charge category
-  (over 55% of all charges in recent years). Full remedies available. Retaliation
-  claims frequently survive even when the underlying discrimination claim does not.
+- **Consequence**: Retaliation is the most frequently filed EEOC charge category —
+  the most prevalent for 17+ consecutive years, appearing in roughly half of all
+  charges (47.8% in FY2024). Full remedies available. Retaliation claims frequently
+  survive even when the underlying discrimination claim does not.
 
 ### Pay Equity
 

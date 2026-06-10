@@ -2,6 +2,20 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "8 Del. C. §§ 141-146"
+    title: "DGCL Subchapter IV — Directors and Officers (including § 144 as rewritten 2025)"
+    url: "https://delcode.delaware.gov/title8/c001/sc04/index.html"
+  - cite: "Del. SS 1 for SB 21 (153rd Gen. Assem., enacted March 25, 2025)"
+    title: "An Act to Amend Title 8 — rewrote DGCL §§ 144 and 220"
+    url: "https://legis.delaware.gov/BillDetail/141930"
+  - cite: "8 Del. C. §§ 211-233"
+    title: "DGCL Subchapter VII — Meetings, Elections, Voting and Notice (including § 220 as amended 2025)"
+    url: "https://delcode.delaware.gov/title8/c001/sc07/index.html"
+  - cite: "Del. SB 95 (153rd Gen. Assem., 2025)"
+    title: "2025 annual DGCL amendments (internal corporate claims, franchise tax provisions), effective August 1, 2025"
+    url: "https://legis.delaware.gov/BillDetail/142081"
 ---
 # Corporate and LLC Governance
 
@@ -50,8 +64,8 @@ Load when any of the following arise: board of directors actions or composition 
 ### Record-Keeping Requirements
 
 - **What**: Corporations and LLCs must maintain specified records as evidence of proper authorization and compliance with legal requirements.
-- **Threshold/Timeline**: Under DGCL Section 224, the corporation must keep books and records of account. Under DGCL Section 220, any stockholder may inspect corporate books and records for a proper purpose. Records that should be maintained: certificate of incorporation and all amendments, bylaws and all amendments, minutes of board and stockholder meetings, written consents, stock ledger, financial records, and material contracts. LLCs: DLLCA Section 18-305 grants members inspection rights.
-- **Consequence**: Failure to maintain records weakens defenses against fiduciary duty claims (no evidence of informed decision-making) and veil-piercing claims (failure to observe formalities). Books-and-records demands under DGCL Section 220 are a powerful pre-litigation tool -- courts broadly enforce them and may award attorneys' fees for wrongful refusal.
+- **Threshold/Timeline**: Under DGCL Section 224, the corporation must keep books and records of account. Under DGCL Section 220, a stockholder may inspect corporate "books and records" -- a term the 2025 amendments (SB 21) now define as an enumerated list: the certificate of incorporation, bylaws, stockholder meeting minutes and signed consents (3 years), stockholder communications (3 years), board and committee minutes and materials, annual financial statements (3 years), Section 144(a) agreements, and D&O independence questionnaires. The demand must be made in good faith for a proper purpose, describe that purpose with reasonable particularity, and seek records specifically related to it; the Court of Chancery may order production beyond the enumerated list only in limited circumstances, and the corporation may impose confidentiality and incorporation-by-reference conditions. Records that should be maintained: certificate of incorporation and all amendments, bylaws and all amendments, minutes of board and stockholder meetings, written consents, stock ledger, financial records, and material contracts. LLCs: DLLCA Section 18-305 grants members inspection rights.
+- **Consequence**: Failure to maintain records weakens defenses against fiduciary duty claims (no evidence of informed decision-making) and veil-piercing claims (failure to observe formalities). Books-and-records demands under DGCL Section 220 remain a standard pre-litigation tool, but the 2025 amendments narrowed their scope; demands made on or before February 17, 2025 are governed by the prior, broader regime.
 
 ### D&O Indemnification and Advancement
 
@@ -62,8 +76,8 @@ Load when any of the following arise: board of directors actions or composition 
 ### Conflicts of Interest — Safe Harbor
 
 - **What**: Interested director transactions must comply with safe harbor procedures to avoid being voidable solely because of the director's interest.
-- **Threshold/Timeline**: Under DGCL Section 144, an interested transaction is not void or voidable if: (a) the material facts of the interest are disclosed and the transaction is approved by a majority of disinterested directors (even if less than a quorum), (b) the material facts are disclosed and the transaction is approved by a stockholder vote, or (c) the transaction is fair to the corporation at the time it is authorized. For controlling stockholder transactions, the MFW framework (Kahn v. M&F Worldwide, 2014) provides business judgment review if the transaction is conditioned ab initio on both special committee approval and majority-of-minority stockholder vote.
-- **Consequence**: Failure to follow safe harbor procedures subjects the transaction to entire fairness review, placing the burden on the interested party to prove both fair dealing and fair price.
+- **Threshold/Timeline**: DGCL Section 144, rewritten by SB 21 (enacted March 25, 2025), provides safe harbors: a director or officer conflict transaction may not give rise to damages or equitable relief if (a) the material facts are disclosed and it is approved by a majority of disinterested directors or a committee of two or more disinterested directors, (b) it is approved or ratified by an informed, uncoerced vote of a majority of the votes cast by disinterested stockholders, or (c) it is fair to the corporation and its stockholders. For controlling stockholder transactions, the statute displaces the judicially created MFW framework for post-2025 conduct: a controller transaction other than a going-private transaction needs only ONE protection (disinterested-director committee approval OR a disinterested-stockholder vote); a going-private transaction requires BOTH. "Controlling stockholder" is statutorily defined to include holders of at least one-third voting power who also exercise managerial authority.
+- **Consequence**: Failure to satisfy a safe harbor subjects the transaction to entire fairness review, placing the burden on the interested party to prove both fair dealing and fair price. The MFW framework continues to govern litigation pending and books-and-records demands made on or before February 17, 2025.
 
 ### State-Specific Variations
 
@@ -77,7 +91,7 @@ Load when any of the following arise: board of directors actions or composition 
 - **Corporate (Fiduciary Duties)**: Governance structures implement fiduciary duties. Board composition, committee independence, and approval processes are the mechanisms through which duties of care and loyalty are discharged.
 - **Securities**: Governance provisions in investor rights agreements, voting agreements, and stockholder agreements are negotiated alongside equity issuances. Public company governance is additionally regulated by SEC rules, stock exchange listing standards, and Sarbanes-Oxley.
 - **Employment**: Officer employment agreements must be consistent with board authority. Executive compensation requires board or compensation committee approval. Indemnification agreements are common for senior executives.
-- **Litigation**: Derivative litigation, books-and-records demands (DGCL Section 220), and appraisal actions arise from governance disputes. Proper governance procedures are a primary defense.
+- **Litigation**: Derivative litigation, books-and-records demands (DGCL Section 220, narrowed by the 2025 amendments), and appraisal actions arise from governance disputes. Proper governance procedures are a primary defense.
 - **Insurance**: D&O insurance coverage must align with indemnification and advancement provisions. Policy structure (Side A, B, C) should be coordinated with the entity's governance framework.
 
 ## Sources
@@ -85,7 +99,8 @@ Load when any of the following arise: board of directors actions or composition 
 - [DGCL Title 8 (Delaware General Corporation Law)](https://delcode.delaware.gov/title8/c001/index.html) -- complete statutory framework for Delaware corporations
 - [DGCL Section 141 -- Board of Directors](https://delcode.delaware.gov/title8/c001/sc04/index.html) -- board powers, quorum, committees, written consent
 - [DGCL Section 145 -- Indemnification](https://delcode.delaware.gov/title8/c001/sc04/index.html) -- indemnification and advancement of expenses
-- [DGCL Sections 211-233 -- Meetings and Voting](https://delcode.delaware.gov/title8/c001/sc07/index.html) -- annual meetings, special meetings, record dates, proxies, written consents
+- [DGCL Sections 211-233 -- Meetings and Voting](https://delcode.delaware.gov/title8/c001/sc07/index.html) -- annual meetings, special meetings, record dates, proxies, written consents, books-and-records inspection
+- [Delaware SS 1 for SB 21 (2025)](https://legis.delaware.gov/BillDetail/141930) -- the 2025 act rewriting Sections 144 and 220
 - [DLLCA Title 6 Chapter 18 (Delaware LLC Act)](https://delcode.delaware.gov/title6/c018/index.html) -- LLC governance framework
 - [Model Business Corporation Act (Cornell LII)](https://www.law.cornell.edu/uniform/vol7#702) -- uniform provisions adopted in most non-Delaware states
 

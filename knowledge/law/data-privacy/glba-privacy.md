@@ -2,6 +2,23 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "15 U.S.C. Chapter 94"
+    title: "Gramm-Leach-Bliley Act — disclosure of nonpublic personal information"
+    url: "https://www.law.cornell.edu/uscode/text/15/chapter-94"
+  - cite: "12 C.F.R. Part 1016"
+    title: "Regulation P — Privacy of Consumer Financial Information"
+    url: "https://www.law.cornell.edu/cfr/text/12/part-1016"
+  - cite: "16 C.F.R. Part 314"
+    title: "FTC Safeguards Rule — Standards for Safeguarding Customer Information"
+    url: "https://www.law.cornell.edu/cfr/text/16/part-314"
+  - cite: "88 FR 77499 (Nov. 13, 2023)"
+    title: "Safeguards Rule amendment — breach notification to the FTC (effective May 13, 2024)"
+    url: "https://www.federalregister.gov/documents/2023/11/13/2023-24412/standards-for-safeguarding-customer-information"
+  - cite: "Cal. Civ. Code § 1798.145(e)"
+    title: "CCPA GLBA exemption"
+    url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=1798.145.&lawCode=CIV"
 ---
 # GLBA — Financial Privacy and Safeguards
 
@@ -50,6 +67,7 @@ For general data privacy frameworks (GDPR, CCPA), see the other data-privacy sub
   - Service provider oversight: select and retain service providers capable of maintaining appropriate safeguards, require contractual provisions, and periodically assess based on risk
   - Incident response plan: written plan covering goals, internal processes, roles and responsibilities, communications and information sharing, remediation, documentation, and revision
 - **Small institution exception:** Institutions maintaining customer information of fewer than 5,000 consumers are exempt from certain requirements: written risk assessment, incident response plan, and annual reporting to the board.
+- **Breach notification to the FTC (effective May 13, 2024):** A 2023 amendment to the Safeguards Rule requires covered institutions to report any "notification event" — unauthorized acquisition of unencrypted customer information involving **500 or more consumers** — to the FTC **as soon as possible, and no later than 30 days** after discovery. Reports are submitted through the FTC's online portal and must describe the event, the types of information involved, the number of consumers affected or potentially affected, and the date or date range of the event. The FTC makes these reports publicly available. This federal reporting obligation is separate from, and additional to, state breach notification laws.
 - **Annual board reporting:** The Qualified Individual must report in writing at least annually to the board of directors or equivalent governing body, covering the overall status of the information security program, compliance with the Safeguards Rule, material security events, and recommendations for changes.
 - **Consequence:** FTC enforcement via Section 5 and the Safeguards Rule. Consent orders, civil penalties, and required third-party auditing. The FTC has been increasingly aggressive in enforcement against non-bank financial institutions.
 
@@ -94,6 +112,7 @@ For general data privacy frameworks (GDPR, CCPA), see the other data-privacy sub
 - [Regulation P (12 C.F.R. Part 1016)](https://www.law.cornell.edu/cfr/text/12/part-1016) — CFPB Privacy of Consumer Financial Information
 - [FTC Safeguards Rule (16 C.F.R. Part 314)](https://www.law.cornell.edu/cfr/text/16/part-314) — Standards for Safeguarding Customer Information
 - [FTC Safeguards Rule Compliance Guide](https://www.ftc.gov/business-guidance/resources/ftc-safeguards-rule-what-your-business-needs-know) — Plain-language FTC guidance on 2023 amendments
+- [Safeguards Rule Breach Notification Amendment — Federal Register](https://www.federalregister.gov/documents/2023/11/13/2023-24412/standards-for-safeguarding-customer-information) — 88 FR 77499; FTC notice within 30 days for events involving 500+ consumers (effective May 13, 2024)
 - [CFPB Model Privacy Notice Form](https://www.consumerfinance.gov/policy-compliance/guidance/privacy-guidance/) — Safe harbor privacy notice template
 - [SEC Regulation S-P (17 C.F.R. Part 248)](https://www.law.cornell.edu/cfr/text/17/part-248) — Privacy of consumer financial information for SEC-regulated entities
 - [CCPA GLBA Exemption — Cal. Civ. Code § 1798.145(e)](https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=1798.145.&lawCode=CIV) — CCPA financial data exemption

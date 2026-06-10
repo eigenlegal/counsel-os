@@ -2,6 +2,20 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state, eu, international]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "Regulation (EU) 2016/679, Articles 6-8"
+    title: "GDPR consent provisions"
+    url: "https://eur-lex.europa.eu/eli/reg/2016/679/oj"
+  - cite: "EDPB Guidelines 05/2020"
+    title: "Guidelines on consent under Regulation 2016/679"
+    url: "https://edpb.europa.eu/our-work-tools/our-documents/guidelines/guidelines-052020-consent-under-regulation-2016679_en"
+  - cite: "Directive 2002/58/EC"
+    title: "ePrivacy Directive (the proposed ePrivacy Regulation was withdrawn in 2025)"
+    url: "https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX%3A32002L0058"
+  - cite: "Custom Communications, Inc. v. FTC, No. 24-3137 (8th Cir. July 8, 2025)"
+    title: "Vacatur of the FTC Negative Option (click-to-cancel) Rule"
+    url: "https://law.justia.com/cases/federal/appellate-courts/ca8/24-3137/24-3137-2025-07-08.html"
 ---
 # Consent Mechanics
 
@@ -36,7 +50,7 @@ GDPR sets the global high-water mark for consent requirements:
 - **What:** Storing information or gaining access to information on a user's terminal equipment (cookies, device fingerprinting, local storage) requires the user's **prior consent**, except for strictly necessary cookies (e.g., session management, shopping cart, load balancing).
 - **Standard:** Consent must meet the GDPR standard (informed, specific, freely given, unambiguous). Cookie walls (blocking access unless all cookies are accepted) are generally considered non-compliant by most EU supervisory authorities (EDPB guidance), though enforcement varies by member state.
 - **Analytics cookies:** Not considered "strictly necessary" — consent required even for first-party analytics under most supervisory authority interpretations.
-- **Timeline:** The ePrivacy Directive is currently in force; the proposed ePrivacy Regulation (intended to replace the directive) remains in legislative process.
+- **Timeline:** The ePrivacy Directive remains in force. The proposed ePrivacy Regulation that would have replaced it was **withdrawn by the European Commission in 2025** (announced February 2025; formalized October 2025) — national implementations of the Directive continue to govern cookie consent.
 - **Consequence:** Violations enforced under national implementing laws with varying penalty structures. French CNIL has imposed fines of **EUR 150 million** (Google, 2022) for cookie consent violations.
 
 ### CCPA/CPRA Consent Model
@@ -54,7 +68,7 @@ CCPA follows a fundamentally different approach from GDPR:
 Most comprehensive US state privacy laws follow an opt-out model with targeted opt-in requirements:
 
 - **Sensitive data:** All major state laws (Virginia, Colorado, Connecticut, Utah, Texas, Oregon, etc.) require **opt-in consent** for processing sensitive personal data. Definitions of "sensitive" vary by state (see `us-state-privacy.md`).
-- **Universal opt-out mechanisms:** Colorado and Connecticut require businesses to recognize universal opt-out signals (e.g., GPC) for targeted advertising and sale opt-outs. Other states may adopt similar requirements.
+- **Universal opt-out mechanisms:** A growing bloc of states requires businesses to recognize universal opt-out signals (e.g., GPC) for targeted advertising and sale opt-outs — Colorado and Connecticut first, with Texas and Montana effective January 1, 2025 and Oregon effective January 1, 2026, among others. Check each state's current requirement.
 - **Children's data:** Most state laws treat personal data of a **known child** as sensitive data requiring opt-in consent. Age thresholds vary (13 in most states, 16 in some contexts).
 - **Targeted advertising opt-out:** All major state laws provide a right to opt out of targeted advertising, but this is an opt-out right (not prior consent) except where sensitive data is involved.
 
@@ -97,7 +111,7 @@ When designing consent mechanisms for multi-jurisdiction compliance:
 Regulators across jurisdictions have increasingly focused on the validity of consent mechanisms:
 
 - **EU enforcement:** Between 2020 and 2025, European supervisory authorities imposed over **EUR 1 billion** in fines related to consent and cookie consent violations. Major actions include CNIL v. Google (**EUR 150 million**, cookie consent, 2022), Irish DPC v. Meta (**EUR 390 million**, legal basis/consent for behavioral advertising, 2023), and Italian Garante enforcement actions against cookie consent practices.
-- **FTC enforcement:** The FTC has brought multiple actions against companies for obtaining consent through dark patterns, particularly in subscription services (negative option marketing) and data collection contexts. The FTC's proposed Negative Option Rule would strengthen consent requirements for subscription services.
+- **FTC enforcement:** The FTC has brought multiple actions against companies for obtaining consent through dark patterns, particularly in subscription services (negative option marketing) and data collection contexts. The FTC's 2024 Negative Option ("click-to-cancel") Rule was **vacated by the Eighth Circuit on procedural grounds** (Custom Communications, Inc. v. FTC, July 8, 2025) days before its main compliance date; ROSCA, FTC Act Section 5, and state automatic-renewal laws continue to govern negative option consent, and the FTC has signaled renewed rulemaking.
 - **CCPA/CPPA enforcement:** The CPPA has focused enforcement on businesses that fail to honor GPC signals, treat GPC as a suggestion rather than a binding opt-out request, or use manipulative interfaces to discourage consumers from exercising opt-out rights.
 - **Key takeaway:** Consent mechanisms are no longer a "check the box" compliance item. Regulators scrutinize the actual user experience, not just the language of consent forms. A technically present consent mechanism that is designed to maximize opt-ins rather than inform users is increasingly treated as non-compliant.
 

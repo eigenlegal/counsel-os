@@ -2,6 +2,20 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "8 Del. C. § 122(18)"
+    title: "Statutory authority for corporations to enter into binding stockholder contracts (added by SB 313, effective August 1, 2024)"
+    url: "https://delcode.delaware.gov/title8/c001/sc02/index.html"
+  - cite: "Del. SB 313 (152nd Gen. Assem., 2024)"
+    title: "2024 DGCL amendments responding to West Palm Beach Firefighters v. Moelis"
+    url: "https://legis.delaware.gov/BillDetail/141480"
+  - cite: "8 Del. C. § 218"
+    title: "Voting trusts and voting agreements"
+    url: "https://delcode.delaware.gov/title8/c001/sc07/index.html"
+  - cite: "8 Del. C. § 202"
+    title: "Restrictions on transfer of securities"
+    url: "https://delcode.delaware.gov/title8/c001/sc06/index.html"
 ---
 # Shareholder Agreements
 
@@ -14,7 +28,7 @@ Load when any of the following arise: voting agreements or arrangements, buy-sel
 ### Voting Agreements
 
 - **What**: Contracts among stockholders or members committing to vote their shares in a specified manner on designated matters, most commonly board elections and fundamental transactions.
-- **Threshold/Timeline**: Under DGCL Section 218, voting agreements between stockholders are specifically enforceable. Voting agreements typically specify board composition (e.g., investor-designated directors, founder-designated directors, independent directors) and are tied to ownership thresholds. Standard venture-backed voting agreements (per NVCA model) grant board designation rights contingent on continued ownership of a specified percentage of shares.
+- **Threshold/Timeline**: Under DGCL Section 218, voting agreements between stockholders are specifically enforceable. Where the corporation itself is a party, DGCL Section 122(18) (added effective August 1, 2024 in response to West Palm Beach Firefighters v. Moelis) expressly authorizes contracts with stockholders that restrict specified corporate actions, require stockholder consent before specified actions, or covenant that actions will or will not be taken -- for board-approved minimum consideration, and provided the terms would not be contrary to the certificate of incorporation or Delaware law if included in the charter. Voting agreements typically specify board composition (e.g., investor-designated directors, founder-designated directors, independent directors) and are tied to ownership thresholds. Standard venture-backed voting agreements (per NVCA model) grant board designation rights contingent on continued ownership of a specified percentage of shares.
 - **Consequence**: A party that breaches a voting agreement may be subject to specific performance (court-ordered compliance). Irrevocable proxies coupled with an interest are the strongest enforcement mechanism. Voting agreements that conflict with charter or bylaw provisions may create enforcement complications -- the charter generally controls.
 
 ### Buy-Sell Agreements
@@ -63,7 +77,7 @@ Load when any of the following arise: voting agreements or arrangements, buy-sel
 
 - **Securities**: Transfer restrictions must comply with federal and state securities laws. Rule 144 safe harbor governs resale of restricted securities. Stockholder agreements often contain representations about accredited investor status.
 - **Corporate (Governance)**: Voting agreements directly affect board composition and corporate governance. Conflicts between stockholder agreements and charter/bylaw provisions must be resolved under state corporate law.
-- **Corporate (Fiduciary Duties)**: Exercise of drag-along and other controlling stockholder rights is subject to fiduciary duty constraints. Entire fairness may apply to squeeze-out transactions.
+- **Corporate (Fiduciary Duties)**: Exercise of drag-along and other controlling stockholder rights is subject to fiduciary duty constraints. Entire fairness may apply to squeeze-out transactions unless a safe harbor under rewritten DGCL Section 144 (2025) is satisfied.
 - **Employment**: Buy-sell triggers frequently overlap with employment events (termination, retirement). Equity repurchase rights upon termination must comply with applicable employment law and Section 409A.
 - **Litigation**: Stockholder agreement disputes are among the most common forms of closely held company litigation. Forum selection and arbitration clauses affect dispute resolution.
 
@@ -71,6 +85,7 @@ Load when any of the following arise: voting agreements or arrangements, buy-sel
 
 - [DGCL Section 202 -- Transfer Restrictions](https://delcode.delaware.gov/title8/c001/sc06/index.html) -- statutory authority for stock transfer restrictions
 - [DGCL Section 218 -- Voting Trusts and Agreements](https://delcode.delaware.gov/title8/c001/sc07/index.html) -- statutory framework for voting agreements
+- [DGCL Section 122(18) -- Stockholder Contracts](https://delcode.delaware.gov/title8/c001/sc02/index.html) -- 2024 statutory authority for corporation-level stockholder agreements
 - [NVCA Model Voting Agreement](https://nvca.org/model-legal-documents/) -- industry-standard voting agreement for venture-backed companies
 - [NVCA Model ROFR and Co-Sale Agreement](https://nvca.org/model-legal-documents/) -- industry-standard ROFR and tag-along provisions
 - [SEC Rule 144 (17 CFR 230.144)](https://www.ecfr.gov/current/title-17/chapter-II/part-230/subject-group-ECFR6e651a4c86c0174/section-230.144) -- safe harbor for resale of restricted and control securities

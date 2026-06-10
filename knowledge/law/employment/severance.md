@@ -2,6 +2,20 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "IRS Notice 2025-67"
+    title: "2026 cost-of-living adjustments (401(a)(17) compensation limit used in the 409A separation pay exception)"
+    url: "https://www.irs.gov/pub/irs-drop/n-25-67.pdf"
+  - cite: "McLaren Macomb, 372 NLRB No. 58 (2023)"
+    title: "NLRA limits on severance confidentiality and non-disparagement provisions"
+    url: "https://www.nlrb.gov/case/07-CA-263041"
+  - cite: "NLRB Office of the General Counsel"
+    title: "General Counsel memoranda (GC 23-05 on severance agreements rescinded February 2025)"
+    url: "https://www.nlrb.gov/guidance/memos-research/general-counsel-memos"
+  - cite: "N.J.S.A. 34:21-1 et seq."
+    title: "New Jersey WARN (Millville Dallas Airmotive Plant Job Loss Notification Act), as amended effective 2023"
+    url: "https://www.nj.gov/labor/employer-services/warn/"
 ---
 # Severance and Separation Agreements
 
@@ -103,9 +117,10 @@ tax treatment of severance payments.
   of 100+ miles. Penalties: 60 days of back pay and benefits per employee.
 - **New York**: **50+ employees** (at plant or within state); **90-day notice**.
   Penalties: 60 days of back pay plus $500/day to local government.
-- **New Jersey**: **100+ employees**; **90-day notice**. Unique: mandatory severance
-  of **1 week of pay per full year of service** if employer fails to give required
-  notice (effective 2023).
+- **New Jersey**: **100+ employees**; **90-day notice**. Unique: as amended effective
+  April 2023, covered mass layoffs require mandatory severance of **1 week of pay per
+  full year of service** for every affected employee regardless of notice, plus
+  **4 additional weeks** if the required notice is not given.
 - **Illinois**: **75+ full-time employees**; **60-day notice**. Applies to mass
   layoffs of 250+ employees or plant closings of 75+.
 - **Massachusetts**: **50+ employees**; **90-day notice**. Director of Labor and
@@ -127,7 +142,8 @@ tax treatment of severance payments.
     year the right to payment is no longer subject to a substantial risk of forfeiture
   - **Two-year separation pay exception**: Total payments do not exceed the lesser
     of (a) 2x the employee's annual compensation, or (b) 2x the 401(a)(17) limit
-    ($345,000 in 2024, meaning the exception covers up to **$690,000**)
+    ($360,000 in 2026, indexed annually, meaning the exception covers up to
+    **$720,000**)
   - **Specified employee delay**: Payments to "specified employees" of publicly
     traded companies triggered by separation from service must be delayed **6 months**
     following separation (or structured to avoid this delay under a permissible
@@ -144,6 +160,11 @@ tax treatment of severance payments.
   broad non-disparagement and confidentiality provisions in severance agreements
   may violate NLRA Section 7 by chilling employees' rights to engage in concerted
   activity. This applies to non-supervisory employees covered by the NLRA.
+- **Status**: McLaren Macomb remains Board precedent, but its enforcement posture has
+  softened — the General Counsel memo aggressively interpreting it (GC 23-05) was
+  rescinded in February 2025, and the Board majority seated after the late-2025
+  quorum restoration may revisit the decision. Treat carve-outs as the safe default
+  and check current Board law before relying on aggressive provisions.
 - **Consequence**: Severance agreements for non-supervisory employees should include
   carve-outs preserving Section 7 rights (right to discuss wages, working conditions,
   and terms of employment with co-workers, unions, government agencies, and in legal

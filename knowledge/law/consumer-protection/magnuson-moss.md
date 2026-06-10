@@ -2,6 +2,17 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "15 U.S.C. §§ 2301-2312"
+    title: "Magnuson-Moss Warranty Act"
+    url: "https://www.law.cornell.edu/uscode/text/15/chapter-50"
+  - cite: "16 C.F.R. Parts 700-703"
+    title: "FTC Magnuson-Moss interpretations, disclosure, pre-sale availability, and informal dispute settlement rules"
+    url: "https://www.ecfr.gov/current/title-16/chapter-I/subchapter-G"
+  - cite: "FTC warranty guidance"
+    title: "Businessperson's Guide to Federal Warranty Law"
+    url: "https://www.ftc.gov/business-guidance/resources/businesspersons-guide-federal-warranty-law"
 ---
 # Magnuson-Moss Warranty Act
 

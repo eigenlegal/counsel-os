@@ -2,6 +2,20 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "15 U.S.C. § 45"
+    title: "FTC Act Section 5"
+    url: "https://www.law.cornell.edu/uscode/text/15/45"
+  - cite: "FTC Adjustments to Civil Penalty Amounts (Jan. 2025)"
+    title: "Inflation-adjusted civil penalty amounts for 2025 — $53,088 maximum, carried unchanged into 2026"
+    url: "https://www.ftc.gov/news-events/news/press-releases/2025/02/ftc-publishes-inflation-adjusted-civil-penalty-amounts-2025"
+  - cite: "16 C.F.R. Part 464"
+    title: "Trade Regulation Rule on Unfair or Deceptive Fees, effective May 12, 2025"
+    url: "https://www.ecfr.gov/current/title-16/chapter-I/subchapter-D/part-464"
+  - cite: "FTC Fees Rule FAQ"
+    title: "The Rule on Unfair or Deceptive Fees: Frequently Asked Questions"
+    url: "https://www.ftc.gov/business-guidance/resources/rule-unfair-or-deceptive-fees-frequently-asked-questions"
 ---
 # FTC Act Section 5 and UDAP
 
@@ -32,7 +46,7 @@ This sub-file applies whenever a matter involves advertising claims, marketing p
 ### FTC Enforcement Powers
 
 - **What**: The FTC enforces Section 5 through administrative proceedings, federal court actions, and rulemaking.
-- **Threshold**: Civil penalties for violations of FTC rules or consent orders are adjusted annually for inflation — currently exceeding $50,120 per violation (as adjusted post-2021 under the Federal Civil Penalties Inflation Adjustment Act). Each day of a continuing violation or each affected consumer may constitute a separate violation.
+- **Threshold**: Civil penalties for violations of FTC rules or consent orders are adjusted annually for inflation — currently $53,088 per violation (per the FTC's January 2025 adjustment under the Federal Civil Penalties Inflation Adjustment Act, carried unchanged into 2026; re-check the current figure before quoting it). Each day of a continuing violation or each affected consumer may constitute a separate violation.
 - **Consequence**: Remedies include cease-and-desist orders, civil penalties, consumer redress (refunds), disgorgement of ill-gotten gains, corrective advertising, and compliance monitoring. After the Supreme Court's decision in AMG Capital Management v. FTC (2021), the FTC's ability to seek monetary relief under Section 13(b) is limited; monetary remedies now primarily come through Section 19 (following administrative proceedings) or through Penalty Offense Authority under Section 5(m)(1)(B).
 
 ### Holder Rule (16 C.F.R. Part 433)
@@ -51,7 +65,13 @@ This sub-file applies whenever a matter involves advertising claims, marketing p
 
 - **What**: Products advertised as "Made in USA" must be "all or virtually all" made domestically — meaning all significant parts, processing, and labor are of U.S. origin. The FTC Made in USA Rule codifies this standard.
 - **Threshold**: "All or virtually all" means that all or virtually all significant inputs are domestic and the product was last substantially transformed in the U.S. Qualified claims (e.g., "Assembled in USA from imported parts") must be truthful and non-deceptive. The FTC Rule applies to product labels and implies penalties for violations.
-- **Consequence**: Civil penalties up to $50,120 per violation for violations of the Made in USA Rule. The FTC can also pursue enforcement under Section 5 for misleading origin claims not covered by the specific Rule.
+- **Consequence**: Civil penalties up to $53,088 per violation (indexed annually for inflation) for violations of the Made in USA Rule. The FTC can also pursue enforcement under Section 5 for misleading origin claims not covered by the specific Rule.
+
+### Unfair or Deceptive Fees Rule — "Junk Fees" (16 C.F.R. Part 464)
+
+- **What**: The Trade Regulation Rule on Unfair or Deceptive Fees (effective May 12, 2025) prohibits bait-and-switch pricing and hidden mandatory fees for live-event tickets and short-term lodging (hotels, vacation rentals, and similar accommodations). Final rule published in the Federal Register January 10, 2025.
+- **Threshold**: Any business displaying pricing for covered offerings must state the total price — including all mandatory fees and charges it knows about and can calculate — up front, and must display it more prominently than other pricing information (other than the final payment amount). Government charges, shipping charges, and fees for optional ancillary goods or services may be excluded from the advertised total but must be disclosed before payment. Misrepresenting the nature, purpose, amount, or refundability of any fee is prohibited.
+- **Consequence**: Violations are rule violations under Section 5, carrying civil penalties up to $53,088 per violation (indexed annually). Drip pricing outside the covered sectors remains subject to ordinary Section 5 deception analysis and state UDAP laws; the FTC opened an ANPRM on rental housing fee practices in March 2026.
 
 ### Native Advertising and Sponsored Content
 
@@ -77,5 +97,7 @@ This sub-file applies whenever a matter involves advertising claims, marketing p
 - [FTC Policy Statement on Unfairness (1980)](https://www.ftc.gov/legal-library/browse/ftc-policy-statements/ftc-policy-statement-unfairness) — Authoritative statement of the three-part unfairness test.
 - [16 C.F.R. Part 255 — Endorsement Guides](https://www.ecfr.gov/current/title-16/chapter-I/subchapter-B/part-255) — Guidelines concerning endorsements and testimonials in advertising.
 - [16 C.F.R. Part 323 — Made in USA Rule](https://www.ecfr.gov/current/title-16/chapter-I/subchapter-C/part-323) — Rule governing Made in USA labeling and marketing claims.
+- [16 C.F.R. Part 464 — Rule on Unfair or Deceptive Fees](https://www.ecfr.gov/current/title-16/chapter-I/subchapter-D/part-464) — Total-price disclosure rule for live-event tickets and short-term lodging, effective May 12, 2025.
+- [FTC Fees Rule FAQ](https://www.ftc.gov/business-guidance/resources/rule-unfair-or-deceptive-fees-frequently-asked-questions) — FTC staff guidance on Part 464 compliance.
 - [16 C.F.R. Part 433 — Holder Rule](https://www.ecfr.gov/current/title-16/chapter-I/subchapter-D/part-433) — Preservation of consumers' claims and defenses in consumer credit transactions.
 - [AMG Capital Management v. FTC, 593 U.S. 67 (2021)](https://www.law.cornell.edu/supremecourt/text/19-508) — Supreme Court decision limiting FTC Section 13(b) monetary relief authority.

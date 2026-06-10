@@ -2,6 +2,20 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "15 U.S.C. §§ 6501-6506"
+    title: "Children's Online Privacy Protection Act"
+    url: "https://www.law.cornell.edu/uscode/text/15/chapter-91"
+  - cite: "16 C.F.R. Part 312"
+    title: "Children's Online Privacy Protection Rule (as amended 2025)"
+    url: "https://www.ecfr.gov/current/title-16/chapter-I/subchapter-C/part-312"
+  - cite: "90 FR 16918 (Apr. 22, 2025)"
+    title: "Children's Online Privacy Protection Rule — final rule amendments"
+    url: "https://www.federalregister.gov/documents/2025/04/22/2025-05904/childrens-online-privacy-protection-rule"
+  - cite: "NetChoice, LLC v. Bonta, No. 25-2366 (9th Cir. Mar. 12, 2026)"
+    title: "Preliminary-injunction ruling on the California Age-Appropriate Design Code Act"
+    url: "https://cdn.ca9.uscourts.gov/datastore/opinions/2026/03/12/25-2366.pdf"
 ---
 # COPPA (Children's Online Privacy Protection Act)
 
@@ -20,12 +34,24 @@ The Children's Online Privacy Protection Act (15 U.S.C. 6501-6506) and the FTC's
 
 ## Key Requirements
 
+### 2025 Amended COPPA Rule
+
+The FTC finalized the first COPPA Rule amendments since 2013 in a final rule published April 22, 2025 (90 FR 16918). The amended Rule took effect **June 23, 2025**, and compliance with most new requirements was required by **April 22, 2026** — the amended Rule is now binding. Key changes:
+
+- **Separate opt-in consent for third-party disclosures:** Operators must obtain verifiable parental consent for disclosures of personal information to third parties — including disclosures for targeted advertising — that is **separate** from consent to collection and use, unless the disclosure is integral to the nature of the service. A parent must be able to consent to collection without consenting to third-party disclosure.
+- **Expanded "personal information" definition:** Now expressly includes **biometric identifiers** that can be used for automated or semi-automated recognition of an individual (e.g., fingerprints, voiceprints, facial templates) and **government-issued identifiers**.
+- **Data retention limits:** Personal information may be retained only as long as reasonably necessary for the **specific purpose** for which it was collected — not for secondary purposes — and **indefinite retention is prohibited**. Operators must establish and publish a **written data retention policy**.
+- **Written information security program:** Operators must establish, implement, and maintain a written children's data security program with a designated coordinator, annual risk assessments, safeguards to control identified risks, testing and monitoring, and annual evaluation.
+- **Other changes:** Codified treatment of mixed-audience services, additional approved consent methods (including knowledge-based authentication, facial-recognition matching against photo ID, and "text plus"), and enhanced transparency and reporting requirements for Safe Harbor programs.
+
+The sections below describe the baseline framework; check the amended 16 C.F.R. Part 312 text for precise current requirements.
+
 ### Verifiable Parental Consent (VPC)
 
 - **What:** Before collecting, using, or disclosing personal information from a child under 13, the operator must obtain **verifiable parental consent**. "Personal information" includes name, physical address, email address, phone number, SSN, photo/video/audio of the child, geolocation, persistent identifier (cookies, device ID) when used for purposes other than internal operations, and any combination of information that permits physical or online contacting.
 - **Methods approved by the FTC:** (a) Signed consent form returned by mail, fax, or electronic scan; (b) credit card or other online payment transaction as verification; (c) toll-free telephone call or video conference with trained personnel; (d) government-issued ID checked against a database (with prompt deletion of the ID); (e) knowledge-based authentication; (f) facial recognition comparison of parent's photo ID to real-time selfie (with prompt deletion after verification); (g) any other method approved through the FTC's voluntary review process.
 - **Sliding scale for internal use:** If personal information will only be used for internal purposes (not disclosed to third parties), a less rigorous method may suffice, such as email-plus (email to parent plus confirmation mechanism, with a delayed activation period).
-- **Consequence:** Collection without VPC is a **per-child, per-incident violation**. FTC civil penalties up to **$51,744 per violation** (as adjusted for inflation, 2024 figure). Penalties are regularly adjusted; check current FTC penalty amounts.
+- **Consequence:** Collection without VPC is a **per-child, per-incident violation**. FTC civil penalties up to **$53,088 per violation** (as adjusted for inflation; 2025 figure, carried into 2026). Penalties are adjusted annually; check current FTC penalty amounts.
 
 ### Direct Notice to Parents
 
@@ -97,7 +123,7 @@ The FTC has actively enforced COPPA, with escalating penalties over time:
 - **Data Privacy (GDPR):** GDPR Article 8 requires parental consent for information society services offered directly to children under 16 (member states may lower to 13). If a US-based, child-directed service has EU users, both COPPA and GDPR child consent provisions apply. GDPR's age threshold may be higher (up to 16) in some member states.
 - **Consumer Protection:** FTC enforcement of COPPA is an exercise of its Section 5 authority over unfair or deceptive acts. COPPA violations may also constitute unfair or deceptive practices under state consumer protection laws, enabling parallel state enforcement.
 - **Employment/Education:** FERPA (Family Educational Rights and Privacy Act) governs student education records and may overlap with COPPA for ed-tech platforms. When a school directs a student to use a technology service, the school may consent on behalf of the parent under COPPA's "school exception," but only for the educational purpose — not for commercial purposes.
-- **US State Privacy Laws:** Several states have enacted laws specifically addressing children's or teen data beyond COPPA's scope. California's Age-Appropriate Design Code Act (effective July 1, 2024) imposes DPIA requirements for online products likely to be accessed by children under 18, with penalties up to **$7,500 per affected child**. Other states are considering similar age-appropriate design legislation.
+- **US State Privacy Laws:** Several states have enacted laws specifically addressing children's or teen data beyond COPPA's scope. California's Age-Appropriate Design Code Act (scheduled to take effect July 1, 2024, but enjoined before enforcement in *NetChoice v. Bonta*) would impose DPIA requirements for online products likely to be accessed by children under 18, with penalties up to **$7,500 per affected child**. The Act has never been enforced as written: the Ninth Circuit held the DPIA provisions likely unconstitutional in 2024, and its March 2026 ruling left the data-use restrictions and dark-pattern prohibition enjoined while narrowing the injunction as to the coverage and age-estimation provisions. Verify current litigation status before relying on the AADC. Other states have pursued similar age-appropriate design legislation, with comparable First Amendment challenges.
 
 ### Connected Toys, IoT, and Voice Assistants
 
@@ -110,14 +136,15 @@ The FTC has actively enforced COPPA, with escalating penalties over time:
 
 Beyond COPPA, several states have enacted additional children's privacy protections:
 
-- **California (AADC):** Age-Appropriate Design Code Act requires data protection impact assessments for online services likely to be accessed by children under 18, default high-privacy settings, and age estimation mechanisms.
-- **Utah, Arkansas, Texas, Ohio:** Have enacted laws requiring parental consent for minors' social media accounts, with varying age thresholds (typically under 16 or 18).
+- **California (AADC):** Age-Appropriate Design Code Act would require data protection impact assessments for online services likely to be accessed by children under 18, default high-privacy settings, and age estimation mechanisms — but its core provisions remain enjoined in *NetChoice v. Bonta* (see above).
+- **Utah, Arkansas, Texas, Ohio:** Have enacted laws requiring parental consent for minors' social media accounts, with varying age thresholds (typically under 16 or 18). Several have been blocked in First Amendment litigation — Arkansas's Act 689 and Ohio's Social Media Parental Notification Act were permanently enjoined in 2025, and others remain in litigation. Verify the current status of any state minors' social media law before advising.
 - **Interaction:** These state laws supplement COPPA. Where both COPPA (under 13, federal) and a state children's data law (under 18, state) apply, both must be satisfied. COPPA does not preempt stricter state laws that are consistent with its protections.
 
 ## Sources
 
 - [COPPA Statute — Cornell LII](https://www.law.cornell.edu/uscode/text/15/chapter-91) — 15 U.S.C. 6501-6506
 - [FTC COPPA Rule — eCFR](https://www.ecfr.gov/current/title-16/chapter-I/subchapter-C/part-312) — 16 C.F.R. Part 312
+- [2025 COPPA Rule Amendments — Federal Register](https://www.federalregister.gov/documents/2025/04/22/2025-05904/childrens-online-privacy-protection-rule) — 90 FR 16918 (final rule, effective June 23, 2025; compliance by April 22, 2026)
 - [FTC COPPA FAQ](https://www.ftc.gov/business-guidance/resources/complying-coppa-frequently-asked-questions) — Comprehensive FTC guidance on COPPA compliance
 - [FTC COPPA Safe Harbor Programs](https://www.ftc.gov/safe-harbor-program) — List of approved self-regulatory programs
 - [FTC COPPA Enforcement Actions](https://www.ftc.gov/legal-library/browse/cases-proceedings?search_api_fulltext=coppa) — Published enforcement actions

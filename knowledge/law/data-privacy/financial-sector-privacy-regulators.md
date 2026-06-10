@@ -2,6 +2,26 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state, eu, international]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "12 C.F.R. Part 53"
+    title: "OCC computer-security incident notification rule (36-hour rule)"
+    url: "https://www.law.cornell.edu/cfr/text/12/part-53"
+  - cite: "23 NYCRR Part 500"
+    title: "NY DFS Cybersecurity Regulation"
+    url: "https://www.dfs.ny.gov/industry_guidance/cybersecurity"
+  - cite: "CFPB Personal Financial Data Rights Reconsideration"
+    title: "Section 1033 reconsideration rulemaking (ANPRM, August 2025)"
+    url: "https://www.consumerfinance.gov/rules-policy/rules-under-development/personal-financial-data-rights-reconsideration/"
+  - cite: "90 FR (Aug. 22, 2025)"
+    title: "Advance notice of proposed rulemaking — Personal Financial Data Rights Reconsideration"
+    url: "https://www.federalregister.gov/documents/2025/08/22/2025-16139/personal-financial-data-rights-reconsideration"
+  - cite: "17 C.F.R. Part 248"
+    title: "SEC Regulation S-P (2024 amendments)"
+    url: "https://www.law.cornell.edu/cfr/text/17/part-248"
+  - cite: "CISA CIRCIA rulemaking page"
+    title: "Cyber Incident Reporting for Critical Infrastructure Act rulemaking status"
+    url: "https://www.cisa.gov/topics/cyber-threats-and-advisories/information-sharing/cyber-incident-reporting-critical-infrastructure-act-2022-circia"
 ---
 # Financial Sector Privacy Regulators
 
@@ -48,6 +68,7 @@ For GLBA Privacy Rule and Safeguards Rule, see `glba-privacy.md`. For general br
 ### CFPB — Personal Financial Data Rights (Section 1033)
 
 - **Authority:** Dodd-Frank Act Section 1033 (12 U.S.C. 5533), implemented by the CFPB's Personal Financial Data Rights rule (finalized October 22, 2024). Also known as the "open banking" or "consumer-authorized data sharing" rule.
+- **Current status (verify before advising):** The rule's future is unsettled as of mid-2026. The CFPB opened a **formal reconsideration rulemaking** with an advance notice of proposed rulemaking on **August 22, 2025** (covering "representative" scope, cost-recovery fees, data security, and privacy), signaling substantial revision. In **October 2025**, the court in the Forcht Bank / Bank Policy Institute litigation (E.D. Ky.) **enjoined enforcement of the rule and stayed its compliance deadlines** pending completion of the new rulemaking. The substantive description and phased compliance dates below reflect the 2024 rule as issued; they are currently stayed and likely to change.
 - **Scope:** Data providers include depository institutions (banks, credit unions) and non-depository financial institutions (card issuers, payment facilitators) that control or possess consumer financial data. Third parties that access consumer data on behalf of consumers (fintechs, aggregators, personal financial management apps) are "authorized third parties" subject to the rule's obligations.
 - **Consumer right to access:** Consumers have the right to access their personal financial data held by covered data providers. Data providers must make this data available in a standardized, machine-readable format through a developer interface (API). Screen scraping is disfavored and data providers can block credential-based access once a compliant API is available.
 - **Third-party authorization framework:** Authorized third parties may access consumer data only with the consumer's express informed consent. The authorization must specify: (1) the data to be accessed, (2) the purpose for which it will be used, (3) the duration of authorization (maximum 1 year, renewable). Third parties must provide a clear, conspicuous authorization disclosure.
@@ -62,9 +83,9 @@ For GLBA Privacy Rule and Safeguards Rule, see `glba-privacy.md`. For general br
   - Depository institutions >$1.5B assets: April 1, 2029
   - Depository institutions >$850M assets: April 1, 2030
   - Small depository institutions (≤$850M): exempt until further rulemaking
-- **Impact on fintechs:** Fintechs that aggregate financial data (Plaid model) must transition from screen scraping to API-based access, obtain proper consumer authorization, limit data use to authorized purposes, and implement data minimization. This fundamentally restructures the data aggregation business model.
-- **Consequence:** CFPB enforcement including civil penalties, restitution, and injunctive relief. The rule is subject to ongoing litigation (Bank Policy Institute challenged the rule; status should be verified).
-- **Sources:** [CFPB Personal Financial Data Rights Rule](https://www.consumerfinance.gov/rules-policy/final-rules/personal-financial-data-rights/) | [12 U.S.C. 5533](https://www.law.cornell.edu/uscode/text/12/5533) | [CFPB Section 1033 Rulemaking Page](https://www.consumerfinance.gov/rules-policy/rules/required-rulemaking-personal-financial-data-rights/)
+- **Impact on fintechs:** Fintechs that aggregate financial data (Plaid model) must transition from screen scraping to API-based access, obtain proper consumer authorization, limit data use to authorized purposes, and implement data minimization. This fundamentally restructures the data aggregation business model — if the rule survives reconsideration in substantially its current form.
+- **Consequence:** CFPB enforcement including civil penalties, restitution, and injunctive relief — currently enjoined pending the reconsideration rulemaking (see current status above).
+- **Sources:** [CFPB Personal Financial Data Rights Rule](https://www.consumerfinance.gov/rules-policy/final-rules/personal-financial-data-rights/) | [12 U.S.C. 5533](https://www.law.cornell.edu/uscode/text/12/5533) | [CFPB Reconsideration Rulemaking](https://www.consumerfinance.gov/rules-policy/rules-under-development/personal-financial-data-rights-reconsideration/) | [ANPRM — Federal Register (Aug. 22, 2025)](https://www.federalregister.gov/documents/2025/08/22/2025-16139/personal-financial-data-rights-reconsideration)
 
 ### FinCEN — Record Retention vs. Privacy Deletion Rights
 
@@ -94,14 +115,14 @@ For GLBA Privacy Rule and Safeguards Rule, see `glba-privacy.md`. For general br
 
 ### CISA — Cyber Incident Reporting (CIRCIA)
 
-- **Authority:** Cyber Incident Reporting for Critical Infrastructure Act of 2022 (CIRCIA), signed March 15, 2022. CISA published a Notice of Proposed Rulemaking (NPRM) on April 4, 2024. Final rule expected 2025-2026.
+- **Authority:** Cyber Incident Reporting for Critical Infrastructure Act of 2022 (CIRCIA), signed March 15, 2022. CISA published a Notice of Proposed Rulemaking (NPRM) on April 4, 2024. The statutory final-rule deadline (October 2025) has passed; CISA's announced target slipped to mid-2026 and, as of June 2026, the final rule remains pending (with additional stakeholder town halls scheduled), so further slippage is likely.
 - **Scope (proposed):** Covered entities include entities in critical infrastructure sectors as designated by Presidential Policy Directive 21 — the financial services sector is explicitly included. Size thresholds and specific coverage criteria are defined in the proposed rule.
 - **Reporting obligations (proposed):**
   - **Covered cyber incidents:** Report to CISA within **72 hours** of reasonably believing a covered cyber incident has occurred
   - **Ransom payments:** Report to CISA within **24 hours** of making a ransom payment
   - **Supplemental reports:** Submit if substantially new or different information becomes available
 - **Covered cyber incident definition:** An incident that leads to substantial loss of confidentiality, integrity, or availability of an information system; serious impact on the safety or resiliency of operational systems or processes; disruption of the ability to engage in business or deliver services; or unauthorized access due to compromise of a third-party service provider.
-- **Current status:** NPRM published; final rule pending. Until the final rule is effective, CIRCIA reporting is voluntary. However, CISA encourages voluntary reporting and many financial sector entities already report voluntarily.
+- **Current status:** NPRM published; final rule still pending as of mid-2026. Until the final rule is effective, CIRCIA reporting is voluntary. However, CISA encourages voluntary reporting and many financial sector entities already report voluntarily.
 - **Relationship to other obligations:** CIRCIA reporting is separate from and additional to banking regulator notification (36h), state breach notification, and NY DFS notification. CIRCIA includes provisions allowing entities to satisfy CIRCIA through reports made to other federal agencies (potential harmonization).
 - **Consequence (once effective):** CISA can issue subpoenas for non-compliant entities. Information provided is protected from disclosure (cannot be used in civil litigation against the reporting entity). Criminal penalties for knowingly making false statements.
 - **Sources:** [CIRCIA Text](https://www.congress.gov/bill/117th-congress/house-bill/2471) | [CISA CIRCIA NPRM](https://www.cisa.gov/topics/cyber-threats-and-advisories/information-sharing/cyber-incident-reporting-critical-infrastructure-act-2022-circia) | [CISA Official Site](https://www.cisa.gov/)
