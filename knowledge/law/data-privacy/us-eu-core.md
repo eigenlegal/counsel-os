@@ -1,6 +1,6 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-05-07"
+content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state, eu]
 last-reviewed: "2026-05-07"
 authorities:
@@ -38,7 +38,6 @@ authorities:
     title: "Texas Data Privacy and Security Act"
     url: "https://dir.texas.gov/technology-legislation/texas-data-privacy-and-security-act"
 ---
-
 # US/EU Data Privacy Core Source Map
 
 ## Source-First Rule

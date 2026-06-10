@@ -1,6 +1,7 @@
 ---
 name: counsel
-description: "Legal work across any practice area — data privacy, employment, IP, corporate, securities, financial services, litigation, antitrust, M&A, tax, real estate, healthcare, government contracts, AI and technology, insurance, international trade, consumer protection, bankruptcy, environmental, and more. Composes five primitives (read, research, evaluate, draft, remember) to handle any legal task: answering questions, researching law and past decisions, reviewing documents, analyzing positions, drafting memos and correspondence, managing matters and entities, and building institutional knowledge. Use PROACTIVELY for ANY legal, regulatory, or compliance request. Trigger phrases include: 'can we do [X]', 'is [X] legal/compliant/allowed', 'what's the law on [X]', 'research [regulation/doctrine/case]', 'what's our position on [X]', 'write a memo on [X]', 'draft a [policy/notice/letter/email/response]', 'review this [document]', 'look at this [contract/agreement/policy/NDA/MSA/SOW/DPA/BAA/LOI/term sheet/handbook/filing/complaint/demand letter/notice]', 'is this [clause/term/provision] ok', 'redline this', 'mark up this agreement', 'check [clause] against [regulation/standard]', 'does this comply with [GDPR/CCPA/HIPAA/SOC 2/SEC/PCI-DSS/FCPA/export controls/state law]', 'what did we agree with [counterparty]', 'pull up the [counterparty/vendor/customer] file', 'status of [matter]', 'close this matter', 'log this decision', 'update our standards on [topic]'. Also invoke whenever the user mentions: a specific legal/regulatory topic, a counterparty/vendor/customer/entity by name, a matter or deal, a clause or provision, a policy or governance document, an employment or HR issue, an IP asset, a dispute or claim, a filing or registration, a board or corporate action, or anything else that calls for legal judgment."
+description: "Legal work across any practice area — contracts, data privacy, employment, IP, corporate, securities, financial services, litigation, antitrust, M&A, tax, real estate, healthcare, government contracts, AI, insurance, international trade, consumer protection, bankruptcy, environmental. Composes five primitives (read, research, evaluate, draft, remember) to answer legal questions, research law and past decisions, review and redline documents, evaluate clauses against positions, draft memos and correspondence, manage matters and entities, and build institutional knowledge. Use PROACTIVELY for ANY legal, regulatory, or compliance request — anything mentioning a law, regulator, contract, clause, counterparty, deal, dispute, filing, policy, IP asset, or a question calling for legal judgment."
+when_to_use: "Trigger phrases: 'can we do X', 'is X legal/compliant/allowed', 'what's the law on X', 'what's our position on X', 'review this contract/NDA/MSA/SOW/DPA/BAA/policy', 'is this clause ok', 'redline this', 'mark up this agreement', 'does this comply with GDPR/CCPA/HIPAA/SOC 2/SEC/PCI-DSS/FCPA/export controls', 'draft a memo/policy/notice/letter/response', 'what did we agree with [counterparty]', 'pull up the [vendor/customer] file', 'status of [matter]', 'close this matter', 'log this decision', 'update our standards on X'."
 ---
 
 # Counsel OS
@@ -76,6 +77,8 @@ PRECEDENCE (highest to lowest):
                            library, and your professional profile. If
                            practice/standards/ defines your positions,
                            that is the authoritative source.
+                           (practice/reference/ sits outside this
+                           precedence — source material, informs only.)
 
 4. memory/               — Context for pattern recognition. Inform, don't
                            override. "We've accepted this 3 times before"
@@ -157,7 +160,7 @@ Do not treat an unmarked `config.md` as Counsel OS config. To find `{legal_root}
    ```
 4. If shell execution is unavailable, follow the helper's documented algorithm rather than this skill carrying its own copy of the search paths. The only interaction-specific behavior here is user prompting on exit `1` or `2`.
 
-**Cowork procedure:** shell and home-directory access may be unavailable. Scan the connected workspace for marked `config.md` files using the same validity rule. Ask the user on zero or multiple matches. Skip pointer-file caching.
+**Cowork procedure:** shell and home-directory access may be unavailable. Scan the connected workspace for marked `config.md` files using the same validity rule. Ask the user on zero or multiple matches. Skip pointer-file caching. Then continue with steps 5–6 below — they apply in every runtime.
 
 5. **Read overrides from the resolved config.** After finding `{legal_root}/config.md`, read it for any optional overrides (`entities_path`, `matters_path`, `entity_properties`). Use defaults for anything not set.
 
@@ -194,7 +197,7 @@ Knowledge-base search is runtime-detected — see **Knowledge Base Search** belo
 Whenever a primitive needs to find content in the user's vault — entity files, matters, past memos, prior decisions, related precedent, similar clause language — use this procedure. The same mechanism applies to every search; the primitive supplies the inputs (frontmatter type, name, free-text query), and this section defines **how** the search runs.
 
 **Inputs (any combination):**
-- `counsel-os-type` — `counterparty`, `vendor`, `customer`, `prospect`, `matter`, `practice`, `reference`, `law-area`, `memory-patterns`, `memory-decision`, etc.
+- `counsel-os-type` — `counterparty`, `vendor`, `customer`, `prospect`, `matter`, `practice`, `reference`, `law-area`, `memory-patterns`, etc.
 - `name` — a specific identifier (company, matter, file)
 - `query` — free-text or semantic search ("similar facts to...", "past redlines on indemnification")
 
@@ -214,7 +217,7 @@ Pick at call time based on what's available in the session:
 How to invoke (QMD's `query` tool):
 - Lookup by name + type: filter on `counsel-os-type: {type}`, query `{name}`
 - Enumerate: filter on `counsel-os-type: {type}`, no query
-- Find related: filter on relevant types (e.g. `matter`, `memory-decision`), query free-text describing what you're looking for
+- Find related: filter on relevant types (e.g. `matter`, `memory-patterns`), query free-text describing what you're looking for
 
 After getting paths back, use the index's `get` / `multi_get` to retrieve content, or fall back to Read.
 
@@ -222,6 +225,7 @@ After getting paths back, use the index's `get` / `multi_get` to retrieve conten
 - `type: matter` → `{legal_root}/{matters_path}/`
 - entity types → `{legal_root}/{entities_path}/`
 - `practice`, `memory-*`, `law-area` → `{legal_root}/practice/`, `{legal_root}/memory/`, `{legal_root}/law/` respectively
+- `reference` → `{legal_root}/practice/reference/`
 - "Find related" use cases (no specific type) → grep across the whole legal root for keyword matches
 
 For all filesystem searches, filter by frontmatter type when applicable, and by name/keyword in filename or content. If a directory doesn't exist, return empty.
@@ -240,7 +244,7 @@ When looking up by name and no file matches, return `not found` cleanly — the 
 
 ## Matters
 
-Every substantive legal task lives inside a matter — a plain markdown file with `counsel-os-type: matter` frontmatter, stored in `{legal_root}/matters/`.
+Every substantive legal task lives inside a matter — a plain markdown file with `counsel-os-type: matter` frontmatter, stored in `{legal_root}/{matters_path}/` (default `matters/`).
 
 **When to create:** When the user starts substantive work involving a specific document or engagement. NOT for quick lookups, general questions, or one-off research.
 
@@ -297,6 +301,7 @@ Plugin (methodology + tooling):
     evaluate.md                                # Assess against standards and/or law
     draft.md                                   # Generate any output
     remember.md                                # Persist state and propose knowledge updates
+    redline-output.md                          # Redline hygiene rules (loaded by draft --redline)
   skills/                                      # Utility skills
     browse/SKILL.md                            # /counsel-os:browse — Web extraction
     retro/SKILL.md                             # /counsel-os:retro — Practice analytics
@@ -307,6 +312,7 @@ Plugin (methodology + tooling):
     clean_format.py                            # Reformat .docx to professional standards
     legal-template.docx                        # Style template for clean_format.py
     word_compare.sh                            # Drive Word Compare via AppleScript
+    resolve_legal_root.sh                      # Canonical legal-root discovery (exit 0/1/2)
 
 User's vault (all knowledge — discovered via config + Knowledge Base Search):
   {legal_root}/

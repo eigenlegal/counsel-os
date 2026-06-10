@@ -35,7 +35,9 @@ is_marked_root() {
 add_match() {
   local root="$1"
   is_marked_root "$root" || return 0
-  for existing in "${matches[@]}"; do
+  # ${matches[@]+...} guards the empty-array expansion: bash 3.2 (stock macOS)
+  # treats "${matches[@]}" on an empty array as unbound under `set -u`.
+  for existing in ${matches[@]+"${matches[@]}"}; do
     [ "$existing" = "$root" ] && return 0
   done
   matches+=("$root")

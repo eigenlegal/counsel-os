@@ -1,10 +1,8 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-05-06"
+content-version: "2026-06-10"
 jurisdiction: [us-state]
 ---
-## Us State Privacy
-
 # US State Privacy Laws (Non-California)
 
 ## Source-First Use

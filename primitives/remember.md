@@ -226,7 +226,7 @@ Look for:
 3. **Effective counter-language.** Did clause language work well in negotiation?
    ```
    The counter-language for [clause type] was accepted. Should I add it to
-   practice/library/{clause-type}.md?
+   the matching practice/library/ file (see _index.md)?
    ```
 
 ### Institutional memory — memory/patterns.md

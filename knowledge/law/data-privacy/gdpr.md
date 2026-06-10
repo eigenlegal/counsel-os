@@ -1,10 +1,8 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-05-06"
+content-version: "2026-06-10"
 jurisdiction: [eu]
 ---
-## Gdpr
-
 # GDPR (General Data Protection Regulation)
 
 ## Source-First Use

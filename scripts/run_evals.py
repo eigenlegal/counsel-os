@@ -215,8 +215,8 @@ def self_test(repo_root: Path) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Score Counsel OS golden-matter eval outputs.")
-    parser.add_argument("--fixtures", type=Path, default=Path("evals/fixtures"))
-    parser.add_argument("--outputs", type=Path, default=Path("evals/outputs"))
+    parser.add_argument("--fixtures", type=Path, default=None)
+    parser.add_argument("--outputs", type=Path, default=None)
     parser.add_argument("--fail-under", type=float, default=None)
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
@@ -225,10 +225,18 @@ def main() -> int:
     if args.self_test:
         return self_test(repo_root)
 
-    reports, missing = run_scores(args.fixtures, args.outputs)
+    # Anchor defaults to the repo root so a bare invocation works from any cwd.
+    fixtures = args.fixtures if args.fixtures is not None else repo_root / "evals" / "fixtures"
+    outputs = args.outputs if args.outputs is not None else repo_root / "evals" / "outputs"
+
+    reports, missing = run_scores(fixtures, outputs)
     print_report(reports, missing)
 
     if missing:
+        return 2
+
+    if not reports:
+        print(f"No fixtures found under {fixtures} — nothing was scored.", file=sys.stderr)
         return 2
 
     if args.fail_under is not None:

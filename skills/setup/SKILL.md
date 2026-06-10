@@ -45,7 +45,7 @@ Check if it's already populated (has `law/`, `practice/`, `memory/` with content
 ### If no existing legal root was found:
 
 Ask the user where to store the framework content:
-> Where should Counsel OS store its framework content? This folder will contain your law areas, default positions, practice profile, and memory.
+> Where should Counsel OS store its framework content? This folder will contain your law areas, standard positions, practice profile, and memory.
 >
 > If you use Obsidian, a good choice is a top-level folder in your vault (e.g., `~/Documents/Obsidian Vault/Counsel OS`).
 > If you don't use Obsidian, any folder works (e.g., `~/legal/counsel-os`).
@@ -114,14 +114,15 @@ content-version: "{date from plugin's .content-versions.json for that group}"
 ---
 ```
 
-### Practice (from plugin `knowledge/practice-seed/` and `templates/practice/`)
+### Practice (from plugin `knowledge/practice-seed/`)
 Copy the full practice seed into `{legal_root}/practice/`:
 - `knowledge/practice-seed/profile.md` → `practice/profile.md`
 - `knowledge/practice-seed/standards/` → `practice/standards/` (24 position files, pre-filled with market standards)
 - `knowledge/practice-seed/methods/` → `practice/methods/` (method files with integrated checklists)
 - `knowledge/practice-seed/library/` → `practice/library/` (clause language categories)
+- `knowledge/practice-seed/reference/` → `practice/reference/` (starts with just `_index.md` — the user's curated source-material area: example agreements, checklists, treatise excerpts; sits outside the precedence layers)
 
-All files should already have `counsel-os-type: practice` frontmatter from the seed.
+All files should already have `counsel-os-type` frontmatter from the seed (practice content uses `practice`; `reference/_index.md` uses `reference`).
 
 ### Matters directory
 Create `{legal_root}/matters/` (empty — populated when substantive work begins).
@@ -155,7 +156,7 @@ If shell access is unavailable, skip this check and tell the user `.docx` tracke
 Report what was seeded and built:
 > Counsel OS framework seeded at `{legal_root}`:
 > - law/ — 26 legal area files
-> - practice/ — profile template, 24 standards, methods, clause library
+> - practice/ — profile template, 24 standards, methods, clause library, reference/ (for curated source material)
 > - matters/ — ready for intake
 > - memory/ — patterns log ready
 
@@ -319,7 +320,7 @@ Skip — no version control. The backup/restore scripts still work as a safety n
 
 Run a quick validation:
 
-1. **Files exist check:** Verify law/, practice/ (with profile.md, standards/, methods/, library/), matters/, memory/ are all present and populated
+1. **Files exist check:** Verify law/, practice/ (with profile.md, standards/, methods/, library/, reference/), matters/, memory/ are all present and populated
 2. **Content check:** Verify profile.md has real content (not just template placeholders)
 3. **Consistency check:** Verify positions don't conflict with each other or with law/ constraints
 4. **Config check:** Verify `{legal_root}/config.md` exists and contains `counsel-os-config: true` plus the correct `legal_root:` path
@@ -334,6 +335,7 @@ Your Counsel OS is configured:
 - [x] standards/ — [N] positions customized, [M] using market defaults
 - [x] methods/ — [N] reference guides seeded
 - [x] library/ — clause library seeded
+- [x] reference/ — ready for curated source material
 - [x] law/ — [N] law areas seeded
 - [x] matters/ — ready
 - [x] memory/ — patterns log ready

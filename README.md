@@ -242,6 +242,7 @@ The plugin discovers content through two mechanisms:
 {legal_root}/
 ├── law/          Layer 1 — Hard constraints (regulations, statutes)
 ├── practice/     Layer 3 — YOUR standards, methods, library, and profile
+│   └── reference/  Curated source material (not a precedence layer — informs, never governs)
 ├── matters/      Persistent state per engagement (not a precedence layer)
 └── memory/       Layer 4 — Accumulated decisions and patterns
 
@@ -320,6 +321,7 @@ Multiple areas apply simultaneously and compound — a fintech SaaS contract tri
 - 24 standard clause positions (in `practice/standards/`)
 - Method files with integrated checklists (in `practice/methods/`)
 - 21 clause library categories with standard/aggressive/vendor-favorable/minimum language (in `practice/library/`)
+- A `practice/reference/` area for curated source material you import (example agreements, checklists, treatise excerpts) — outside the precedence layers, mined for issue-spotting and sample language
 
 Once seeded, you own all of this content. Customize law areas, rewrite methods, add your own clause language — it's your vault.
 
