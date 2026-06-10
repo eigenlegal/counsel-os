@@ -313,6 +313,7 @@ Plugin (methodology + tooling):
     legal-template.docx                        # Style template for clean_format.py
     word_compare.sh                            # Drive Word Compare via AppleScript
     resolve_legal_root.sh                      # Canonical legal-root discovery (exit 0/1/2)
+    import_reference.sh                        # Import third-party material into practice/reference/ (see remember --reference)
 
 User's vault (all knowledge — discovered via config + Knowledge Base Search):
   {legal_root}/
