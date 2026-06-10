@@ -2,6 +2,20 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "15 U.S.C. § 45"
+    title: "FTC Act Section 5"
+    url: "https://www.law.cornell.edu/uscode/text/15/45"
+  - cite: "Custom Communications, Inc. v. FTC, No. 24-3137 (8th Cir. July 8, 2025)"
+    title: "Decision vacating the FTC's 2024 Negative Option (Click-to-Cancel) Rule"
+    url: "https://www.courtlistener.com/docket/69305486/custom-communications-inc-v-federal-trade-commission/"
+  - cite: "16 C.F.R. Part 464"
+    title: "Rule on Unfair or Deceptive Fees (junk fees), effective May 12, 2025"
+    url: "https://www.ecfr.gov/current/title-16/chapter-I/subchapter-D/part-464"
+  - cite: "16 C.F.R. Part 465"
+    title: "Rule on the Use of Consumer Reviews and Testimonials, effective October 21, 2024"
+    url: "https://www.ecfr.gov/current/title-16/chapter-I/subchapter-D/part-465"
 ---
 # Consumer Protection
 
@@ -9,11 +23,11 @@ jurisdiction: [us-federal, us-state]
 
 Load this area when the document or matter involves ANY of the following:
 
-**Keywords:** consumer, end user, subscriber, customer, terms of service, terms and conditions, user agreement, refund policy, return policy, warranty, guarantee, deceptive practices, unfair practices, unconscionable, adhesion contract, clickwrap, browsewrap, fine print, hidden fees, automatic renewal, auto-renewal, free trial, negative option, cancellation, chargebacks, advertising claims, endorsements, testimonials, made in USA, price gouging, bait and switch, dark patterns, money-back guarantee, satisfaction guarantee, robocall, telemarketing, text message marketing, ATDS, do not call, commercial email, spam, opt-out, unsubscribe, influencer, sponsored content, material connection, warranty disclaimer, implied warranty, full warranty, limited warranty
+**Keywords:** consumer, end user, subscriber, customer, terms of service, terms and conditions, user agreement, refund policy, return policy, warranty, guarantee, deceptive practices, unfair practices, unconscionable, adhesion contract, clickwrap, browsewrap, fine print, hidden fees, junk fees, drip pricing, automatic renewal, auto-renewal, free trial, negative option, cancellation, chargebacks, advertising claims, endorsements, testimonials, fake reviews, made in USA, price gouging, bait and switch, dark patterns, money-back guarantee, satisfaction guarantee, robocall, telemarketing, text message marketing, ATDS, do not call, commercial email, spam, opt-out, unsubscribe, influencer, sponsored content, material connection, warranty disclaimer, implied warranty, full warranty, limited warranty
 
 **Clause types:** limitation of liability in consumer contracts, mandatory arbitration clauses in consumer agreements, class action waivers, unilateral modification clauses, automatic renewal clauses, cancellation/termination provisions in consumer contracts, warranty disclaimers in consumer products, forum selection clauses in consumer agreements, liquidated damages in consumer contracts, consent-to-contact clauses, marketing opt-in provisions, electronic communication consent, endorsement and testimonial obligations, influencer disclosure requirements
 
-**Regulatory references:** FTC Act Section 5, FTC Guides (Endorsement Guides, Green Guides, Made in USA), ROSCA (Restore Online Shoppers' Confidence Act), EFTA, Magnuson-Moss Warranty Act, CAN-SPAM Act, TCPA, Telemarketing Sales Rule, state UDAP statutes, state consumer protection acts, Uniform Commercial Code Article 2 (consumer goods), Consumer Financial Protection Act, state auto-renewal laws (e.g., California ARL), FTC Click-to-Cancel Rule, FTC Negative Option Rule, EU Digital Services Act, state mini-TCPA laws
+**Regulatory references:** FTC Act Section 5, FTC Guides (Endorsement Guides, Green Guides, Made in USA), ROSCA (Restore Online Shoppers' Confidence Act), EFTA, Magnuson-Moss Warranty Act, CAN-SPAM Act, TCPA, Telemarketing Sales Rule, state UDAP statutes, state consumer protection acts, Uniform Commercial Code Article 2 (consumer goods), Consumer Financial Protection Act, state auto-renewal laws (e.g., California ARL), FTC Negative Option Rule (the 2024 Click-to-Cancel amendments were vacated by the Eighth Circuit in 2025), FTC Rule on Unfair or Deceptive Fees (junk fees), FTC Consumer Reviews and Testimonials Rule (fake reviews), EU Digital Services Act, state mini-TCPA laws
 
 **Relationship patterns:** B2C product or service agreements, subscription services, SaaS with individual users, mobile app terms, e-commerce transactions, marketplace platforms, direct-to-consumer sales, free trial offers, loyalty programs, consumer lending, consumer warranty programs, influencer/affiliate marketing agreements, telemarketing vendor agreements, email marketing service agreements
 
@@ -30,11 +44,11 @@ Load this area when the document or matter involves ANY of the following:
 
 ## Quick Reference
 
-- **ftc-udap.md** — Federal prohibition on unfair/deceptive acts; deception and unfairness standards; enforcement powers and civil penalties.
+- **ftc-udap.md** — Federal prohibition on unfair/deceptive acts; deception and unfairness standards; enforcement powers and civil penalties; junk-fees (total price) rule for live-event tickets and short-term lodging.
 - **state-consumer-laws.md** — State UDAP statutes with private rights of action, treble damages, and AG enforcement across all 50 states.
-- **auto-renewal.md** — ROSCA, FTC Click-to-Cancel Rule, and state auto-renewal laws governing subscriptions and negative option offers.
+- **auto-renewal.md** — ROSCA and state auto-renewal laws governing subscriptions and negative option offers; the FTC's 2024 Click-to-Cancel Rule was vacated in 2025.
 - **tcpa.md** — Federal and state rules on telemarketing calls, texts, ATDS use, consent requirements, and per-violation penalties.
 - **can-spam.md** — Federal requirements for commercial email including opt-out, header accuracy, and transactional message exemptions.
 - **magnuson-moss.md** — Federal warranty act governing written and implied warranties for consumer products, disclaimers, and remedies.
 - **dark-patterns.md** — FTC, state, and EU enforcement against manipulative design in digital interfaces and consent flows.
-- **endorsements-testimonials.md** — FTC Endorsement Guides on material connections, influencer disclosures, and testimonial substantiation.
+- **endorsements-testimonials.md** — FTC Endorsement Guides on material connections, influencer disclosures, and testimonial substantiation; Consumer Reviews and Testimonials Rule (fake reviews).

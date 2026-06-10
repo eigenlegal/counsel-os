@@ -2,6 +2,23 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [eu]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "Regulation (EU) 2016/679"
+    title: "General Data Protection Regulation"
+    url: "https://eur-lex.europa.eu/eli/reg/2016/679/oj"
+  - cite: "Data (Use and Access) Act 2025 (c. 18)"
+    title: "UK data protection reform act amending UK GDPR, DPA 2018, and PECR"
+    url: "https://www.legislation.gov.uk/ukpga/2025/18"
+  - cite: "European Commission adequacy decisions"
+    title: "Adequacy decisions page, including the December 2025 UK adequacy renewal"
+    url: "https://commission.europa.eu/law/law-topic/data-protection/international-dimension-data-protection/adequacy-decisions_en"
+  - cite: "ICO — Data (Use and Access) Act 2025"
+    title: "ICO guidance on DUAA changes and commencement"
+    url: "https://ico.org.uk/about-the-ico/what-we-do/legislation-we-cover/data-use-and-access-act-2025/"
+  - cite: "Directive 2002/58/EC"
+    title: "ePrivacy Directive (the proposed ePrivacy Regulation was withdrawn in 2025)"
+    url: "https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX%3A32002L0058"
 ---
 # GDPR (General Data Protection Regulation)
 
@@ -116,7 +133,7 @@ When relying on legitimate interests (Art. 6(1)(f)) as the lawful basis, control
 - **Step 2 — Necessity test:** Is the processing necessary for the identified purpose? Could the purpose be achieved with less intrusive means? If the same objective can be accomplished with less personal data or with anonymized data, the processing fails this step.
 - **Step 3 — Balancing test:** Weigh the controller's legitimate interests against the data subject's interests, rights, and freedoms. Factors include: reasonable expectations of the data subject (would they expect this processing?), nature of the data (special categories weigh heavily against the controller), impact on the data subject (what are the consequences?), relationship between the controller and the data subject (closer relationships support reasonable expectations), safeguards applied (pseudonymization, access controls, transparency), and whether the data subject is a child or vulnerable person.
 - **Documentation:** The LIA must be documented in writing before processing begins and updated when circumstances change. Maintain the LIA alongside the RoPA entry for the processing activity. Be prepared to produce it on request from the supervisory authority.
-- **EDPB guidance:** EDPB Opinion 1/2024 and the Article 29 Working Party Opinion 06/2014 provide the authoritative framework. The CJEU has consistently held that legitimate interests requires a case-by-case assessment.
+- **EDPB guidance:** EDPB Guidelines 1/2024 on processing based on Article 6(1)(f) and the Article 29 Working Party Opinion 06/2014 provide the authoritative framework. The CJEU has consistently held that legitimate interests requires a case-by-case assessment.
 - **Fintech-specific applications:** Fraud detection scoring is generally supported as a legitimate interest, but must be balanced against the individual's rights (especially Art. 22 if automated decisions produce legal effects). Transaction monitoring for AML is typically supported under Art. 6(1)(c) (legal obligation) rather than legitimate interests, but supplementary monitoring beyond legal requirements falls under 6(1)(f).
 
 ### Automated Decision-Making in Fintech Context (Article 22)
@@ -130,15 +147,15 @@ When relying on legitimate interests (Art. 6(1)(f)) as the lawful basis, control
 
 ### UK GDPR Divergence
 
-- **Current status:** The UK GDPR is retained EU law as amended by the UK Data Protection Act 2018 and subsequent UK legislation. Post-Brexit, the UK regime is substantively similar but increasingly diverging.
+- **Current status:** The UK GDPR is retained EU law as amended by the UK Data Protection Act 2018 and, now, the **Data (Use and Access) Act 2025** (royal assent June 19, 2025). Post-Brexit, the UK regime is substantively similar but increasingly diverging.
+- **Data (Use and Access) Act 2025 (DUAA):** The DUAA replaced the lapsed Data Protection and Digital Information Bill and amends the UK GDPR, the DPA 2018, and PECR. Key changes include a new lawful basis of **"recognised legitimate interests"** (no balancing test required for listed purposes), relaxed rules on automated decision-making outside special-category data, a "reasonable and proportionate search" standard for DSARs, broader research provisions, changes to cookie consent exceptions under PECR, and restructured regulator powers (including higher PECR penalties). Most of the data protection provisions were commenced **February 5, 2026**; commencement is phased, so verify which provisions are in force before advising.
 - **Key divergences:**
-  - **Transfer mechanisms:** The UK uses the International Data Transfer Agreement (IDTA) and UK Addendum to EU SCCs, replacing the EU SCC modules for UK transfers. The UK has its own adequacy assessment process and has granted adequacy to additional countries not recognized by the EU.
+  - **Transfer mechanisms:** The UK uses the International Data Transfer Agreement (IDTA) and UK Addendum to EU SCCs, replacing the EU SCC modules for UK transfers. The UK has its own adequacy assessment process (recast by the DUAA as a "data protection test") and has granted adequacy to additional countries not recognized by the EU.
   - **UK-US Data Bridge:** The UK established the UK Extension to the EU-US Data Privacy Framework, allowing UK-US transfers for DPF-certified organizations. Operationally similar to the EU-US DPF but legally distinct.
   - **ICO enforcement approach:** The ICO has taken a more risk-based, pragmatic approach to enforcement compared to some EU DPAs. ICO reprimand letters and enforcement notices are used more frequently than fines for first-time violations.
-  - **Research exemption:** The UK has broader exemptions for scientific research processing, particularly under the Data Protection Act 2018 Schedule 2.
-  - **Cookie consent:** The UK's Privacy and Electronic Communications Regulations (PECR) still require cookie consent, but the ICO has signaled a more flexible approach than some EU DPAs.
-  - **Data Protection and Digital Information Bill (DPDI):** The UK government has proposed reforms that would further diverge from EU GDPR, including replacing DPIAs with a "record of assessments" system, relaxing some aspects of the legitimate interests balancing test for recognized legitimate interests, and reducing the scope of Art. 22 automated decision-making rights. Status should be verified — the bill has been reintroduced across parliamentary sessions.
-- **EU adequacy decision for the UK:** The European Commission granted the UK an adequacy decision (effective June 28, 2021) with a sunset clause requiring review by June 2025. If adequacy is revoked or not renewed, EU-UK data transfers would require SCCs or other transfer mechanisms. Monitor the renewal status.
+  - **Research exemption:** The UK has broader exemptions for scientific research processing, expanded further by the DUAA.
+  - **Cookie consent:** The UK's Privacy and Electronic Communications Regulations (PECR) still require cookie consent, but the DUAA adds exceptions for certain low-risk purposes (e.g., statistical/analytics cookies with notice and an opt-out) and raises PECR fines to UK GDPR levels.
+- **EU adequacy decision for the UK:** The European Commission granted the UK an adequacy decision effective June 28, 2021, extended it for six months in June 2025, and — after assessing the DUAA — **renewed it on December 19, 2025 for six years, through December 27, 2031**. Monitor for any challenge or review triggered by further UK divergence.
 - **Practical approach:** Maintain compliance with both EU GDPR and UK GDPR as separate regimes. Use EU SCCs with UK Addendum for combined EU/UK transfers. Designate a UK representative if required (Art. 27 equivalent).
 
 ### ePrivacy Directive and Cookie Consent
@@ -147,7 +164,7 @@ When relying on legitimate interests (Art. 6(1)(f)) as the lawful basis, control
 - **Scope:** Covers the processing of personal data in the electronic communications sector. Most relevant provisions: cookie consent (Art. 5(3)) and direct marketing (Art. 13).
 - **Cookie consent rule (Art. 5(3)):** Storing information or accessing information already stored on a user's terminal equipment (cookies, tracking pixels, device fingerprinting, local storage) requires prior informed consent — UNLESS the storage/access is strictly necessary for the provision of a service explicitly requested by the user. This is separate from GDPR consent — both must be satisfied.
 - **Strictly necessary exemption:** Session cookies for authentication, shopping cart cookies, load balancing cookies, and first-party analytics cookies configured to minimize data collection are generally considered strictly necessary. Advertising cookies, third-party tracking, and cross-site analytics are NOT strictly necessary and require consent.
-- **ePrivacy Regulation (replacement):** The proposed ePrivacy Regulation has been under negotiation since 2017. If adopted, it would replace the ePrivacy Directive with directly applicable EU-wide rules. Key proposed changes include browser-based consent settings, expanded scope to OTT communications, and harmonized rules on metadata processing. Status should be monitored — negotiations have repeatedly stalled.
+- **ePrivacy Regulation (withdrawn):** The proposed ePrivacy Regulation, under negotiation since 2017, was **withdrawn by the European Commission** — announced in the 2025 Commission work programme (February 2025) and formalized in the Official Journal in October 2025 — on the ground that no co-legislator agreement was foreseeable. The ePrivacy Directive and its national implementing laws remain in force; any replacement would come through a future digital-rules package.
 - **Interaction with GDPR:** ePrivacy provides lex specialis (specific rules) for electronic communications. Where ePrivacy applies, it takes precedence over GDPR's general provisions. Where ePrivacy is silent, GDPR applies. Cookie consent (ePrivacy) and lawful basis for processing the collected data (GDPR) are separate requirements.
 
 ### EDPB One-Stop-Shop and Lead Supervisory Authority
@@ -181,6 +198,8 @@ Two tiers of administrative fines:
 - [Regulation (EU) 2016/679 (GDPR) — EUR-Lex](https://eur-lex.europa.eu/eli/reg/2016/679/oj) — Full text of the GDPR
 - [EDPB Guidelines and Recommendations](https://edpb.europa.eu/our-work-tools/general-guidance/guidelines-recommendations-best-practices_en) — Authoritative interpretive guidance
 - [UK GDPR and Data Protection Act 2018](https://www.legislation.gov.uk/ukpga/2018/12/contents/enacted) — UK regime post-Brexit
+- [Data (Use and Access) Act 2025](https://www.legislation.gov.uk/ukpga/2025/18) — 2025 UK reform act; most data protection provisions commenced February 5, 2026
+- [ICO — Data (Use and Access) Act 2025](https://ico.org.uk/about-the-ico/what-we-do/legislation-we-cover/data-use-and-access-act-2025/) — ICO guidance on DUAA changes and commencement
 - [CJEU Schrems II Decision (C-311/18)](https://curia.europa.eu/juris/liste.jsf?num=C-311/18) — Invalidation of Privacy Shield, SCC guidance
 - [Art. 29 WP Opinion 06/2014 on Legitimate Interests](https://ec.europa.eu/justice/article-29/documentation/opinion-recommendation/files/2014/wp217_en.pdf) — Authoritative LIA framework
 - [EDPB Guidelines on Automated Decision-Making and Profiling](https://edpb.europa.eu/our-work-tools/general-guidance/guidelines-recommendations-best-practices_en) — Art. 22 interpretation

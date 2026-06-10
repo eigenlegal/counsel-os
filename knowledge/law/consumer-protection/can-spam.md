@@ -2,6 +2,20 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "15 U.S.C. §§ 7701-7713"
+    title: "CAN-SPAM Act of 2003"
+    url: "https://www.law.cornell.edu/uscode/text/15/chapter-103"
+  - cite: "16 C.F.R. Part 316"
+    title: "FTC CAN-SPAM Rule"
+    url: "https://www.ftc.gov/legal-library/browse/rules/can-spam-rule"
+  - cite: "FTC CAN-SPAM compliance guide"
+    title: "CAN-SPAM Act: A Compliance Guide for Business"
+    url: "https://www.ftc.gov/business-guidance/resources/can-spam-act-compliance-guide-business"
+  - cite: "FTC Adjustments to Civil Penalty Amounts (Jan. 2025)"
+    title: "Inflation-adjusted civil penalty amounts for 2025 — $53,088 maximum, carried unchanged into 2026"
+    url: "https://www.ftc.gov/news-events/news/press-releases/2025/02/ftc-publishes-inflation-adjusted-civil-penalty-amounts-2025"
 ---
 # CAN-SPAM Act
 
@@ -15,7 +29,7 @@ This sub-file applies whenever a matter involves commercial email marketing, tra
 
 - **What**: The CAN-SPAM Act (Controlling the Assault of Non-Solicited Pornography and Marketing Act of 2003) establishes requirements for commercial electronic mail messages, gives recipients the right to stop receiving emails, and imposes penalties for violations. It applies to any electronic mail message the primary purpose of which is the commercial advertisement or promotion of a commercial product or service.
 - **Threshold**: A single commercial email is sufficient to trigger CAN-SPAM obligations. The Act applies to all commercial email sent to or from the United States, regardless of whether the recipient is a customer. No prior relationship is required for CAN-SPAM to apply — it is not an anti-spam "opt-in" law but rather a "right to opt-out" framework.
-- **Consequence**: Civil penalties up to $50,120 per violation (per non-compliant email, as adjusted for inflation). Criminal penalties — including imprisonment up to 5 years — for aggravated violations involving fraud, harvesting, or dictionary attacks. Enforcement by the FTC, state AGs, and ISPs. No private right of action for individual consumers.
+- **Consequence**: Civil penalties up to $53,088 per violation (per non-compliant email; indexed annually for inflation — figure per the FTC's 2025 adjustment, carried unchanged into 2026). Criminal penalties — including imprisonment up to 5 years — for aggravated violations involving fraud, harvesting, or dictionary attacks. Enforcement by the FTC, state AGs, and ISPs. No private right of action for individual consumers.
 
 ### Prohibition on False or Misleading Header Information
 
@@ -27,25 +41,25 @@ This sub-file applies whenever a matter involves commercial email marketing, tra
 
 - **What**: It is unlawful to use a subject line that would be likely to mislead a recipient, acting reasonably under the circumstances, about a material fact regarding the contents or subject matter of the message.
 - **Threshold**: The subject line must accurately reflect the content of the message. "Act now!" or "Urgent" subject lines are not per se violations, but subject lines that affirmatively misrepresent the message content (e.g., "Re: Your Order" when there is no order) violate the Act.
-- **Consequence**: Civil penalties up to $50,120 per violation.
+- **Consequence**: Civil penalties up to $53,088 per violation (indexed annually).
 
 ### Identification as Advertisement
 
 - **What**: Commercial email must include a "clear and conspicuous identification that the message is an advertisement or solicitation."
 - **Threshold**: The disclosure must be clear and conspicuous but the Act does not mandate specific wording. The FTC has stated that the identification can appear anywhere in the message. If the recipient has given affirmative consent to receive the message, the identification requirement does not apply.
-- **Consequence**: Civil penalties up to $50,120 per violation.
+- **Consequence**: Civil penalties up to $53,088 per violation (indexed annually).
 
 ### Opt-Out Mechanism Requirements
 
 - **What**: Every commercial email must include a clear and conspicuous mechanism for the recipient to opt out of future commercial email from the sender. The opt-out must be functional for at least 30 days after the message is sent.
 - **Threshold**: The opt-out mechanism must be available via return email or another internet-based mechanism that is clearly and conspicuously displayed. The sender must process opt-out requests within 10 business days. After opt-out, the sender may not send or cause to be sent any commercial email to that address. The sender may not require the recipient to pay a fee, provide information beyond an email address, or take any steps other than replying to the email or visiting a single internet page to opt out. Opt-out requests cannot be conditioned on the recipient visiting more than a single page (no multi-page opt-out flows).
-- **Consequence**: Failure to provide a functioning opt-out mechanism or failure to honor opt-out requests within 10 business days subjects the sender to civil penalties up to $50,120 per subsequent non-compliant email.
+- **Consequence**: Failure to provide a functioning opt-out mechanism or failure to honor opt-out requests within 10 business days subjects the sender to civil penalties up to $53,088 per subsequent non-compliant email (indexed annually).
 
 ### Physical Postal Address
 
 - **What**: Every commercial email must include a valid physical postal address of the sender.
 - **Threshold**: The address must be a valid current street address, a PO Box registered with the United States Postal Service, or a private mailbox registered with a commercial mail receiving agency under USPS regulations. The address must be the sender's actual address or one where the sender receives mail.
-- **Consequence**: Civil penalties up to $50,120 per violation.
+- **Consequence**: Civil penalties up to $53,088 per violation (indexed annually).
 
 ### Transactional or Relationship Message Exemption
 

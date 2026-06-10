@@ -2,6 +2,14 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "OSHA Penalties Page"
+    title: "Current OSHA maximum and minimum penalty amounts (annually adjusted)"
+    url: "https://www.osha.gov/penalties"
+  - cite: "OSHA Memo (Jan. 7, 2025)"
+    title: "2025 annual adjustments to OSHA civil penalties (levels carried into 2026)"
+    url: "https://www.osha.gov/memos/2025-01-07/2025-annual-adjustments-osha-civil-penalties"
 ---
 # Workplace Safety
 
@@ -34,20 +42,22 @@ reporting requirements, or whistleblower retaliation claims related to safety co
   structure as specific-standard violations. Compliance with specific OSHA standards
   is not a defense if additional recognized hazards exist beyond those standards.
 
-### OSHA Penalties (2024 Adjusted Amounts)
+### OSHA Penalties (Adjusted Annually; 2025 Levels Carried Into 2026)
 
 | Violation Type | Penalty Range |
 |---------------|---------------|
-| **Serious** (substantial probability of death/serious harm; employer knew or should have known) | Up to **$16,131** per violation |
-| **Other-than-serious** (related to safety/health but unlikely to cause death/serious harm) | Up to **$16,131** per violation |
-| **Willful** (intentional disregard or plain indifference to the law) | **$11,524** minimum to **$161,323** maximum per violation |
-| **Repeat** (substantially similar violation within prior 5 years) | Up to **$161,323** per violation |
-| **Failure to abate** (not corrected by abatement date) | Up to **$16,131 per day** beyond the abatement date |
-| **Posting requirement** (failure to post OSHA poster or citations) | Up to **$16,131** |
+| **Serious** (substantial probability of death/serious harm; employer knew or should have known) | Up to **$16,550** per violation |
+| **Other-than-serious** (related to safety/health but unlikely to cause death/serious harm) | Up to **$16,550** per violation |
+| **Willful** (intentional disregard or plain indifference to the law) | **$11,823** minimum to **$165,514** maximum per violation |
+| **Repeat** (substantially similar violation within prior 5 years) | Up to **$165,514** per violation |
+| **Failure to abate** (not corrected by abatement date) | Up to **$16,550 per day** beyond the abatement date |
+| **Posting requirement** (failure to post OSHA poster or citations) | Up to **$16,550** |
 
 - **Penalty adjustment**: OSHA adjusts penalty amounts annually for inflation under
   the Federal Civil Penalties Inflation Adjustment Act Improvements Act of 2015.
-  The amounts above are the 2024 adjusted figures.
+  The amounts above took effect January 15, 2025 and carried into 2026 without a
+  CPI adjustment (the fall 2025 government shutdown prevented publication of the
+  index agencies use); check osha.gov/penalties for the current schedule.
 - **Penalty factors**: OSHA considers gravity of the violation, employer size (fewer
   employees may reduce penalties), good faith efforts, and history of violations.
 - **Criminal penalties**: Willful violation causing death of an employee: up to
@@ -81,7 +91,7 @@ reporting requirements, or whistleblower retaliation claims related to safety co
   access the 300 Log and 301 forms.
 - **Annual posting**: Form 300A (Annual Summary) must be posted in a conspicuous
   location from **February 1 through April 30** of each year.
-- **Consequence**: Failure to maintain or post: up to **$16,131** per violation.
+- **Consequence**: Failure to maintain or post: up to **$16,550** per violation.
   Intentional falsification of records: criminal prosecution under 18 USC 1001.
   OSHA has increasingly used recordkeeping violations as a basis for programmed
   inspections and willful citations.
@@ -100,8 +110,8 @@ reporting requirements, or whistleblower retaliation claims related to safety co
   hotline (1-800-321-OSHA / 1-800-321-6742), or online at www.osha.gov. The report
   must include business name, names of affected employees, location, time, brief
   description, and contact person.
-- **Consequence**: Failure to report: up to **$161,323** if classified as willful,
-  or **$16,131** for other-than-serious violations. Late reporting is one of the
+- **Consequence**: Failure to report: up to **$165,514** if classified as willful,
+  or **$16,550** for other-than-serious violations. Late reporting is one of the
   most common bases for OSHA citations.
 
 ### OSHA Inspections
@@ -124,7 +134,7 @@ reporting requirements, or whistleblower retaliation claims related to safety co
   the Occupational Safety and Health Review Commission (OSHRC).
 - **Consequence**: An uncontested citation becomes a final order of OSHRC.
   Subsequent violations of the same or substantially similar standard within 5 years
-  may be classified as "repeat" violations with penalties up to $161,323.
+  may be classified as "repeat" violations with penalties up to $165,514.
 
 ### Whistleblower Protection — Section 11(c)
 

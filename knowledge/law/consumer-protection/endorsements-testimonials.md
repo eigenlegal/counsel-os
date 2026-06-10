@@ -2,6 +2,20 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "16 C.F.R. Part 255"
+    title: "Guides Concerning the Use of Endorsements and Testimonials in Advertising (2023 revision)"
+    url: "https://www.ecfr.gov/current/title-16/chapter-I/subchapter-B/part-255"
+  - cite: "16 C.F.R. Part 465"
+    title: "Trade Regulation Rule on the Use of Consumer Reviews and Testimonials, effective October 21, 2024"
+    url: "https://www.ecfr.gov/current/title-16/chapter-I/subchapter-D/part-465"
+  - cite: "FR Doc. 2024-18519 (Aug. 22, 2024)"
+    title: "Consumer Reviews and Testimonials final rule announcement"
+    url: "https://www.ftc.gov/news-events/news/press-releases/federal-trade-commission-announces-final-rule-banning-fake-reviews-testimonials"
+  - cite: "FTC Consumer Review Rule warning letters (Dec. 2025)"
+    title: "FTC Warns 10 Companies About Possible Violations of the Agency's New Consumer Review Rule"
+    url: "https://www.ftc.gov/news-events/news/press-releases/2025/12/ftc-warns-10-companies-about-possible-violations-agencys-new-consumer-review-rule"
 ---
 # Endorsements and Testimonials
 
@@ -15,7 +29,7 @@ This sub-file applies whenever a matter involves influencer marketing agreements
 
 - **What**: The FTC Endorsement Guides provide guidance on the application of FTC Act Section 5 to endorsements and testimonials in advertising. The Guides were significantly updated in June 2023 to address modern marketing practices including social media, influencer marketing, and online reviews. Endorsements that are deceptive — because they misrepresent the endorser's experience, fail to disclose material connections, or make unsubstantiated claims — violate Section 5.
 - **Threshold**: An "endorsement" is any advertising message that consumers are likely to believe reflects the opinions, beliefs, findings, or experiences of a party other than the sponsoring advertiser. This includes social media posts, online reviews, blog posts, podcast mentions, video content, and any other communication where a third party appears to be expressing their own views about a product or service.
-- **Consequence**: Violations are enforced under FTC Act Section 5 as deceptive practices. Civil penalties can reach $50,120+ per violation. Both the endorser and the advertiser may be liable. The 2023 update makes clear that individual social media influencers can face direct FTC enforcement.
+- **Consequence**: Violations are enforced under FTC Act Section 5 as deceptive practices. Civil penalties — available for conduct covered by the Consumer Reviews and Testimonials Rule or penalty offense authority — can reach $53,088 per violation (indexed annually). Both the endorser and the advertiser may be liable. The 2023 update makes clear that individual social media influencers can face direct FTC enforcement.
 
 ### Material Connection Disclosure
 
@@ -44,7 +58,7 @@ This sub-file applies whenever a matter involves influencer marketing agreements
 ### Consumer Endorsements and Testimonials
 
 - **What**: Consumer endorsements (testimonials from real consumers about their experience with a product) must be truthful and reflect genuine experiences. Fabricated or incentivized reviews that do not disclose the incentive are deceptive.
-- **Threshold**: If a consumer was incentivized (free product, payment, discount, contest entry) to provide a review or testimonial, that incentive must be disclosed. Advertisements may not use fake consumer reviews or testimonials. The FTC's 2023 proposed rule on fake reviews would specifically prohibit: (1) buying, selling, or procuring fake reviews, (2) suppressing negative reviews, (3) using insider reviews without disclosure, and (4) creating or controlling review websites that appear independent.
+- **Threshold**: If a consumer was incentivized (free product, payment, discount, contest entry) to provide a review or testimonial, that incentive must be disclosed. Advertisements may not use fake consumer reviews or testimonials. The FTC's Consumer Reviews and Testimonials Rule (16 C.F.R. Part 465, effective October 21, 2024) specifically prohibits: (1) buying, selling, or procuring fake reviews (including AI-generated reviews by someone with no actual experience), (2) suppressing negative reviews, (3) using insider reviews without disclosure, and (4) creating or controlling review websites that appear independent.
 - **Consequence**: The FTC has imposed penalties exceeding $4 million for fake review practices (Fashion Nova, $4.2 million in 2022 for suppressing negative reviews). Companies face both FTC enforcement and state AG actions.
 
 ### Influencer-Specific Disclosure Requirements
@@ -61,9 +75,9 @@ This sub-file applies whenever a matter involves influencer marketing agreements
 
 ### Reviews and Ratings
 
-- **What**: The FTC proposed a rule in 2023 specifically addressing fake reviews and testimonials, which would complement the existing Endorsement Guides by creating specific prohibitions with civil penalty authority.
-- **Threshold**: Under the proposed rule (and current enforcement practice), businesses may not: (1) create or procure fake consumer reviews (positive or negative), (2) pay for reviews without requiring disclosure of the payment, (3) suppress or hide negative reviews to manipulate overall ratings, (4) use company insiders (employees, officers, agents) to write reviews without disclosing the relationship, (5) create or control fake review websites, or (6) misrepresent that reviews represent independent consumer opinion when they are curated or influenced by the company.
-- **Consequence**: The proposed rule would authorize civil penalties of $50,120+ per violation. Under current law, these practices are enforceable as deceptive acts under Section 5.
+- **What**: The FTC finalized the Trade Regulation Rule on the Use of Consumer Reviews and Testimonials in August 2024 (16 C.F.R. Part 465, effective October 21, 2024), complementing the Endorsement Guides by creating specific prohibitions with civil penalty authority.
+- **Threshold**: Under the rule, businesses may not: (1) create or procure fake consumer reviews (positive or negative, including AI-generated reviews), (2) pay for reviews without requiring disclosure of the payment, (3) suppress or hide negative reviews to manipulate overall ratings (including through intimidation or by misrepresenting that displayed reviews are representative), (4) use company insiders (employees, officers, agents) to write reviews without disclosing the relationship, (5) create or control fake review websites, (6) misrepresent that reviews represent independent consumer opinion when they are curated or influenced by the company, or (7) buy or sell fake indicators of social media influence (followers, views).
+- **Consequence**: The rule authorizes civil penalties of up to $53,088 per violation (indexed annually). The FTC began active enforcement — it sent warning letters to ten companies in December 2025 — and the same practices remain independently actionable as deceptive acts under Section 5.
 
 ## Interaction with Other Areas
 
@@ -78,5 +92,6 @@ This sub-file applies whenever a matter involves influencer marketing agreements
 - [16 C.F.R. Part 255 — FTC Endorsement Guides (2023 Update)](https://www.ecfr.gov/current/title-16/chapter-I/subchapter-B/part-255) — FTC Guides concerning use of endorsements and testimonials in advertising.
 - [FTC Endorsement Guides: What People Are Asking](https://www.ftc.gov/business-guidance/resources/ftc-endorsement-guides-what-people-are-asking) — FTC FAQ and practical guidance on endorsement compliance.
 - [FTC Staff Report: Bringing Dark Patterns to Light (2022)](https://www.ftc.gov/reports/bringing-dark-patterns-light) — Includes discussion of social proof manipulation and fake reviews.
-- [FTC Proposed Rule on Fake Reviews and Testimonials (2023)](https://www.ftc.gov/legal-library/browse/federal-register-notices/trade-regulation-rule-use-consumer-reviews-testimonials) — Proposed rule creating specific prohibitions on fake and deceptive reviews.
+- [16 C.F.R. Part 465 — Rule on the Use of Consumer Reviews and Testimonials](https://www.ecfr.gov/current/title-16/chapter-I/subchapter-D/part-465) — Final rule (effective October 21, 2024) creating specific prohibitions on fake and deceptive reviews with civil penalty authority.
+- [FTC Consumer Reviews and Testimonials Rule: Questions and Answers](https://www.ftc.gov/business-guidance/resources/consumer-reviews-testimonials-rule-questions-answers) — FTC staff guidance on Part 465 compliance.
 - [FTC Disclosures 101 for Social Media Influencers](https://www.ftc.gov/business-guidance/resources/disclosures-101-social-media-influencers) — FTC practical guide for influencer disclosure requirements.

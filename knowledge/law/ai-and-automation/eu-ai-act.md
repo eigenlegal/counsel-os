@@ -2,8 +2,24 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [eu]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "Regulation (EU) 2024/1689"
+    title: "EU Artificial Intelligence Act (full text, including Arts. 50, 99, 101, 113)"
+    url: "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689"
+  - cite: "European Commission, GPAI Code of Practice (July 10, 2025)"
+    title: "General-Purpose AI Code of Practice"
+    url: "https://digital-strategy.ec.europa.eu/en/policies/contents-code-gpai"
+  - cite: "European Commission, GPAI Guidelines"
+    title: "Guidelines for providers of general-purpose AI models"
+    url: "https://digital-strategy.ec.europa.eu/en/policies/guidelines-gpai-providers"
+  - cite: "Council of the EU press release (May 7, 2026)"
+    title: "Digital Omnibus on AI — provisional agreement to delay and simplify AI Act obligations"
+    url: "https://www.consilium.europa.eu/en/press/press-releases/2026/05/07/artificial-intelligence-council-and-parliament-agree-to-simplify-and-streamline-rules/"
 ---
 # EU AI Act (Regulation 2024/1689)
+
+> **Currency note (10 June 2026):** The EU "Digital Omnibus on AI" reached provisional Council-Parliament agreement on 7 May 2026 and is expected to be formally adopted mid-2026. It would delay the Annex III high-risk compliance date (2 August 2026 → 2 December 2027), the Annex I date (2 August 2027 → 2 August 2028), and the Art. 50 marking obligations (→ 2 December 2026), and add prohibitions on AI-generated NCII/CSAM. **It is not yet law.** Verify adoption and the final dates before advising on any deadline below.
 
 ## Applicability
 
@@ -63,7 +79,7 @@ AI systems in the following domains are classified as high-risk:
 - **Accuracy, robustness, cybersecurity** (Art. 15): Appropriate levels of accuracy, robustness, and cybersecurity throughout lifecycle.
 - **Conformity assessment** (Art. 43): Self-assessment for most high-risk systems; third-party conformity assessment required for biometric identification systems. CE marking required.
 - **EU database registration** (Art. 71): Registration in the EU public database before placing on market.
-- **Timeline**: High-risk obligations effective **2 August 2026**.
+- **Timeline**: High-risk obligations scheduled to apply from **2 August 2026** (Annex III) — but the pending Digital Omnibus would push this to **2 December 2027** (and Annex I products to 2 August 2028), in part because harmonized standards are not ready. As of 10 June 2026 the delay had provisional political agreement but was not yet adopted; confirm the operative date before advising.
 - **Consequence**: Non-compliance fines up to **EUR 15 million or 3% of total worldwide annual turnover** (Art. 99(4)).
 
 #### Limited Risk — Transparency Obligations (Art. 50)
@@ -72,7 +88,7 @@ AI systems in the following domains are classified as high-risk:
 - AI systems generating synthetic audio, image, video, or text content must mark the output as artificially generated or manipulated, in a machine-readable format.
 - Deployers of emotion recognition or biometric categorization systems must inform affected persons.
 - Deployers of AI systems generating deepfakes must disclose that content has been artificially generated or manipulated.
-- **Timeline**: Transparency obligations effective **2 August 2025**.
+- **Timeline**: Art. 50 transparency obligations apply from **2 August 2026** (Art. 113). The pending Digital Omnibus would move the machine-readable marking obligations to **2 December 2026** — not yet adopted as of 10 June 2026.
 
 #### Minimal Risk
 
@@ -83,26 +99,26 @@ All other AI systems (e.g., spam filters, AI-enabled video games) may be develop
 - **All GPAI models**: Providers must maintain technical documentation, provide information and documentation to downstream providers integrating the model into AI systems, establish a policy to comply with EU copyright law (including Text and Data Mining opt-outs under Art. 4 of the DSM Directive), and publish a sufficiently detailed summary of training data content.
 - **Systemic risk threshold**: GPAI models trained with cumulative compute exceeding **10^25 FLOPs** are presumed to have systemic risk (Art. 51(2)). The Commission may also designate models below this threshold based on other criteria.
 - **Additional obligations for systemic risk models** (Art. 55): Perform model evaluations (including adversarial testing), assess and mitigate systemic risks, report serious incidents to the AI Office, ensure adequate cybersecurity protections.
-- **Timeline**: GPAI obligations effective **2 August 2025**.
-- **Consequence**: Fines up to **EUR 15 million or 3% of turnover** for GPAI providers; up to **EUR 7.5 million or 1% of turnover** for providing incorrect information (Art. 99(4)-(5)).
+- **Timeline**: GPAI obligations have applied since **2 August 2025** for models placed on the market from that date; providers of models already on the market before 2 August 2025 have until **2 August 2027** to comply. The final **GPAI Code of Practice** (transparency, copyright, and safety/security chapters) was published 10 July 2025, alongside Commission guidelines on GPAI scope and a mandatory training-data summary template — adherence to the Code is the practical compliance route.
+- **Consequence**: The Commission may fine GPAI providers up to **EUR 15 million or 3% of total worldwide annual turnover**, including for supplying incorrect or misleading information (Art. 101).
 
 ### Enforcement Architecture
 
 - **AI Office** (within the European Commission): Exclusive competence for GPAI model oversight. Coordinates enforcement across member states.
-- **National competent authorities**: Each member state designates a national supervisory authority (by 2 August 2025) and a market surveillance authority.
-- **Codes of practice**: The AI Office facilitates codes of practice for GPAI providers (Art. 56), expected to be finalized by early 2025.
+- **National competent authorities**: Each member state designates a national supervisory authority and a market surveillance authority (deadline was 2 August 2025; several member states were late — check the specific member state's designation when enforcement exposure matters).
+- **Codes of practice**: The AI Office facilitated the GPAI Code of Practice (Art. 56), published in final form on 10 July 2025.
 - **Right to explanation**: Affected persons have the right to an explanation of individual decisions made by high-risk AI systems (Art. 86).
 - **Right to lodge complaints**: Any natural or legal person may lodge a complaint with the relevant market surveillance authority (Art. 85).
 
 ### Key Compliance Timeline
 
-| Date | Milestone |
-|------|-----------|
-| 1 August 2024 | Entry into force |
-| 2 February 2025 | Prohibited AI practices banned; AI literacy obligations apply |
-| 2 August 2025 | GPAI model rules apply; transparency obligations apply; national authorities designated |
-| 2 August 2026 | High-risk AI system obligations apply (Annex III) |
-| 2 August 2027 | High-risk obligations for AI systems that are safety components of regulated products (Annex I) |
+| Date | Milestone | Status as of 10 June 2026 |
+|------|-----------|---------------------------|
+| 1 August 2024 | Entry into force | Done |
+| 2 February 2025 | Prohibited AI practices banned; AI literacy obligations apply | In force |
+| 2 August 2025 | GPAI model rules apply (new models); governance and penalties chapters apply; national authorities designated | In force |
+| 2 August 2026 | Art. 50 transparency obligations; high-risk AI system obligations (Annex III) | Annex III delay to 2 Dec 2027 and marking-obligation delay to 2 Dec 2026 provisionally agreed (Digital Omnibus) — not yet adopted |
+| 2 August 2027 | High-risk obligations for Annex I product safety components; compliance deadline for pre-Aug-2025 GPAI models | Annex I delay to 2 Aug 2028 provisionally agreed — not yet adopted |
 
 ## Interaction with Other Areas
 
@@ -116,7 +132,9 @@ All other AI systems (e.g., spam filters, AI-enabled video games) may be develop
 
 - [Regulation (EU) 2024/1689 (EU AI Act) — EUR-Lex](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689) — Full text of the AI Act
 - [European AI Office](https://digital-strategy.ec.europa.eu/en/policies/ai-office) — Enforcement body and GPAI oversight
-- [AI Act Annexes I and III](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689) — Regulated products list and high-risk use cases
+- [GPAI Code of Practice — European Commission](https://digital-strategy.ec.europa.eu/en/policies/contents-code-gpai) — Final Code published 10 July 2025
+- [GPAI Guidelines — European Commission](https://digital-strategy.ec.europa.eu/en/policies/guidelines-gpai-providers) — Scope and obligations guidance for GPAI providers
+- [Digital Omnibus provisional agreement — Council of the EU (7 May 2026)](https://www.consilium.europa.eu/en/press/press-releases/2026/05/07/artificial-intelligence-council-and-parliament-agree-to-simplify-and-streamline-rules/) — Pending timeline delays and simplification
 - [EDPB-EDPS Joint Opinion 5/2021 on the AI Act Proposal](https://edpb.europa.eu/our-work-tools/our-documents/edpbedps-joint-opinion/edpb-edps-joint-opinion-52021-proposal_en) — Data protection interaction guidance
 
 ---

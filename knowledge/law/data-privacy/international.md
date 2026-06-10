@@ -2,6 +2,23 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [international, eu, uk]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "Lei nº 13.709/2018 (LGPD)"
+    title: "Brazilian General Data Protection Law"
+    url: "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm"
+  - cite: "Resolução CD/ANPD nº 19/2024"
+    title: "ANPD International Data Transfer Regulation and Brazilian SCCs"
+    url: "https://www.gov.br/anpd/pt-br/acesso-a-informacao/institucional/atos-normativos/regulamentacoes_anpd/resolucao-cd-anpd-no-19-de-23-de-agosto-de-2024"
+  - cite: "Privacy and Other Legislation Amendment Act 2024 (Cth)"
+    title: "First-tranche Australian Privacy Act reforms, including the statutory tort (commenced June 10, 2025)"
+    url: "https://www.oaic.gov.au/privacy/your-privacy-rights/more-privacy-rights/statutory-tort-for-serious-invasions-of-privacy"
+  - cite: "Personal Data Protection (Amendment) Act 2024 (Malaysia)"
+    title: "PDPA amendments phased into force during 2025"
+    url: "https://www.pdp.gov.my/ppdpv1/en/akta/personal-data-protection-amendment-act-2024/"
+  - cite: "Digital Personal Data Protection Rules, 2025 (India)"
+    title: "DPDP Rules notified by MeitY"
+    url: "https://www.meity.gov.in/static/uploads/2025/11/53450e6e5dc0bfa85ebd78686cadad39.pdf"
 ---
 # International Privacy Laws (Non-US, Non-EU)
 
@@ -28,7 +45,7 @@ This file covers comprehensive data protection laws outside the United States an
 - **Lawful bases:** Ten legal bases including consent, legitimate interest, contract performance, legal/regulatory obligation, exercise of rights in judicial/administrative proceedings, protection of life, health protection, research, credit protection, and regular exercise of rights.
 - **Data protection officer:** Appointment of a DPO (encarregado) is required for all controllers. The ANPD may establish complementary rules, including exemptions for small processing agents.
 - **Breach notification:** Controllers must notify the ANPD and affected data subjects within a **reasonable timeframe** when the breach may cause relevant risk or damage. The ANPD recommends notification within **2 business days** of becoming aware of the breach.
-- **Cross-border transfers:** Permitted to countries with adequate protection (as determined by the ANPD), under SCCs, BCRs, cooperation agreements, or with specific and prominent consent.
+- **Cross-border transfers:** Permitted to countries with adequate protection (as determined by the ANPD), under ANPD-approved standard contractual clauses, equivalent or specific clauses, global corporate norms, or with specific and prominent consent. The ANPD adopted its **International Data Transfer Regulation and Brazilian SCCs in August 2024** (Resolução CD/ANPD nº 19/2024); the 12-month deadline to incorporate the standard clauses into existing contracts passed in **August 2025**. In **January 2026** the ANPD issued its first adequacy recognition (EU/EEA, Resolução CD/ANPD nº 32/2026), coordinated with the European Commission's reciprocal adequacy decision for Brazil. See `cross-border-transfers.md`.
 - **Penalties:** Administrative fines up to **2% of revenue in Brazil** per violation, capped at **BRL 50 million** (~USD 10 million) per violation. Also includes publicization of the infraction, blocking or deletion of data, and daily fines.
 - **Data subject rights:** Confirmation of processing, access, correction, anonymization/blocking/deletion of unnecessary or excessive data, portability, information about sharing, revocation of consent, and the right to petition the ANPD.
 
@@ -61,7 +78,7 @@ This file covers comprehensive data protection laws outside the United States an
 - **Breach notification (Notifiable Data Breaches scheme):** Mandatory notification to the OAIC and affected individuals when an eligible data breach occurs — where unauthorized access or disclosure is **likely to result in serious harm**. Must notify **as soon as practicable** after becoming aware. Assessment must be completed within **30 days** of suspecting a breach.
 - **Cross-border disclosure (APP 8):** Before disclosing personal information overseas, the disclosing entity must take **reasonable steps** to ensure the overseas recipient does not breach the APPs. The disclosing entity is accountable for breaches by the overseas recipient unless an exception applies (e.g., consent, legal requirement, Cloud Act).
 - **Penalties:** Civil penalties up to **AUD 50 million**, or **3 times the benefit obtained**, or **30% of adjusted turnover** — whichever is greatest (2022 amendments).
-- **Ongoing reform:** The Privacy Act Review Report (2023) proposes significant reforms including a statutory tort for serious invasions of privacy, expanded coverage to small businesses, and stronger enforcement. Monitor for legislative implementation.
+- **2024-25 reform (first tranche enacted):** The Privacy and Other Legislation Amendment Act 2024 (royal assent December 10, 2024) implemented the first tranche of the Privacy Act Review reforms. A **statutory tort for serious invasions of privacy** commenced **June 10, 2025** (intrusion upon seclusion or misuse of private information; damages capped at the greater of the indexed statutory cap or the defamation non-economic loss cap). The Act also added tiered civil penalties, OAIC infringement-notice powers, transparency requirements for automated decisions (phased), and an offense of malicious doxxing. Further tranches — including expanded small-business coverage — remain proposals; monitor for legislation.
 
 ### Japan — APPI
 
@@ -93,7 +110,7 @@ This file covers comprehensive data protection laws outside the United States an
 
 ## Interaction with Other Areas
 
-- **Data Privacy (GDPR):** EU adequacy decisions enable smoother data transfers to recognized jurisdictions (Japan, South Korea, Canada for commercial data, UK, New Zealand, etc.). Non-adequate jurisdictions require SCCs or other mechanisms even when local law is robust. PIPL and LGPD have structural similarities to GDPR but with significant differences in cross-border transfer mechanisms.
+- **Data Privacy (GDPR):** EU adequacy decisions enable smoother data transfers to recognized jurisdictions (Japan, South Korea, Canada for commercial data, UK, New Zealand, Brazil as of January 2026, etc.). Non-adequate jurisdictions require SCCs or other mechanisms even when local law is robust. PIPL and LGPD have structural similarities to GDPR but with significant differences in cross-border transfer mechanisms.
 - **International Trade:** Data localization requirements (China, Russia, certain sectors in India/Vietnam) interact with trade agreements and sanctions. Cross-border data flows may implicate export control and sanctions considerations. US-China tech restrictions may affect data transfer architectures.
 - **Corporate:** International corporate structures (subsidiaries, branches, joint ventures) must account for each jurisdiction's data protection requirements in intra-group data sharing agreements. PIPL and PIPA require specific contractual frameworks for intra-group transfers.
 - **Financial Services:** Many jurisdictions impose sector-specific data protection requirements for financial institutions that layer on top of general privacy laws (e.g., Singapore's MAS guidelines, Japan's FSA requirements, India's RBI data localization for payments).
@@ -117,7 +134,7 @@ This file covers comprehensive data protection laws outside the United States an
 | Jurisdiction | Adequacy Framework | Contractual Mechanism | Other Mechanisms |
 |-------------|-------------------|----------------------|------------------|
 | Canada (PIPEDA) | No formal framework | Contractual accountability | Transferor remains accountable |
-| Brazil (LGPD) | ANPD adequacy (pending) | SCCs (pending ANPD approval) | Specific and prominent consent |
+| Brazil (LGPD) | ANPD adequacy (first decision: EU/EEA, 2026) | Brazilian SCCs (Res. 19/2024) | Global corporate norms; specific and prominent consent |
 | Singapore (PDPA) | No formal framework | Legally enforceable obligations | BCR equivalents |
 | China (PIPL) | No outbound adequacy | CAC standard contract | Security assessment, certification |
 | Japan (APPI) | PPC-recognized countries | Equivalent system at recipient | Consent with destination disclosure |
@@ -147,7 +164,7 @@ The following jurisdictions have enacted data protection laws relevant to cross-
 - **Source:** [UAE PDPL](https://u.ae/en/about-the-uae/digital-uae/data/data-protection-laws) | [DIFC Data Protection Law](https://www.difc.ae/business/laws-regulations/data-protection/)
 
 ### Saudi Arabia
-- **Statute:** Personal Data Protection Law (PDPL, Royal Decree M/19, effective September 14, 2023, with 2-year compliance grace period to September 2025)
+- **Statute:** Personal Data Protection Law (PDPL, Royal Decree M/19, effective September 14, 2023; the post-enactment compliance grace period has ended and enforcement is active)
 - **Regulator:** Saudi Data and Artificial Intelligence Authority (SDAIA)
 - **Key note:** Consent-based model. Data localization: personal data must be transferred and stored inside Saudi Arabia unless transfer abroad meets PDPL conditions (adequacy, sufficient safeguards, or limited exceptions). SAMA (Saudi Central Bank) imposes additional requirements on financial institutions.
 - **Source:** [SDAIA](https://sdaia.gov.sa/) | [PDPL Text (Arabic)](https://laws.boe.gov.sa/)
@@ -183,10 +200,10 @@ The following jurisdictions have enacted data protection laws relevant to cross-
 - **Source:** [UU PDP (Bahasa Indonesia)](https://peraturan.bpk.go.id/Details/229798/uu-no-27-tahun-2022) | [Kominfo](https://www.kominfo.go.id/)
 
 ### Vietnam
-- **Statute:** Decree 13/2023/ND-CP on Personal Data Protection (effective July 1, 2023)
+- **Statute:** Law on Personal Data Protection No. 91/2025/QH15 (enacted June 26, 2025; effective January 1, 2026), replacing Decree 13/2023/ND-CP
 - **Regulator:** Ministry of Public Security (MPS)
-- **Key note:** Transfer impact assessment and MPS filing required within 60 days of processing for cross-border transfers. State Bank of Vietnam imposes additional payment data storage requirements. See `payments-data-localization.md`.
-- **Source:** [Decree 13/2023](https://thuvienphapluat.vn/van-ban/Cong-nghe-thong-tin/Nghi-dinh-13-2023-ND-CP-bao-ve-du-lieu-ca-nhan-357384.aspx) | [MPS](https://bocongan.gov.vn/)
+- **Key note:** The PDPL carries forward and tightens the Decree 13 framework: cross-border transfer impact assessment dossiers must be filed with the MPS within 60 days of the transfer (with limited exemptions), and fines can reach **5% of prior-year annual revenue** for cross-border transfer violations. State Bank of Vietnam imposes additional payment data storage requirements. See `payments-data-localization.md`.
+- **Source:** [PDPL 91/2025/QH15 (English)](https://english.luatvietnam.vn/dan-su/law-on-personal-data-protection-law-no-91-2025-qh15-405135-d1.html) | [MPS](https://bocongan.gov.vn/)
 
 ### Taiwan
 - **Statute:** Personal Data Protection Act (PDPA, amended 2015)
@@ -213,10 +230,10 @@ The following jurisdictions have enacted data protection laws relevant to cross-
 - **Source:** [DPA 2012](https://www.privacy.gov.ph/data-privacy-act/) | [NPC](https://www.privacy.gov.ph/)
 
 ### Malaysia
-- **Statute:** Personal Data Protection Act 2010 (PDPA, effective November 15, 2013)
-- **Regulator:** Department of Personal Data Protection (JPDP)
-- **Key note:** Cross-border transfer restrictions (Section 129) — transfers only to countries gazetted by the Minister. List has been limited, creating practical challenges. Bank Negara Malaysia imposes additional financial data requirements. Amendment bill pending that would modernize the law.
-- **Source:** [PDPA 2010](https://www.pdp.gov.my/) | [JPDP](https://www.pdp.gov.my/)
+- **Statute:** Personal Data Protection Act 2010 (PDPA), as amended by the Personal Data Protection (Amendment) Act 2024 — phased into force January 1, April 1, and June 1, 2025
+- **Regulator:** Department of Personal Data Protection (JPDP) / Personal Data Protection Commissioner
+- **Key note:** The 2024 amendments added **mandatory breach notification** to the Commissioner (and to affected individuals where significant harm is likely), **mandatory DPO appointment** for controllers and processors, a **data portability right**, direct obligations on data processors, and higher penalties — all effective June 1, 2025. The Section 129 cross-border "whitelist" (transfers only to gazetted countries) was **replaced** with a framework permitting transfers to jurisdictions with substantially similar laws or an adequate level of protection, supported by 2025 JPDP transfer guidelines. Bank Negara Malaysia imposes additional financial data requirements.
+- **Source:** [PDP (Amendment) Act 2024 — JPDP](https://www.pdp.gov.my/ppdpv1/en/akta/personal-data-protection-amendment-act-2024/) | [JPDP](https://www.pdp.gov.my/)
 
 ## Sources
 
@@ -225,6 +242,7 @@ The following jurisdictions have enacted data protection laws relevant to cross-
 - [PDPA Full Text — Singapore Statutes Online](https://sso.agc.gov.sg/Act/PDPA2012) — Personal Data Protection Act 2012
 - [PIPL Full Text — NPC Observer](https://www.npcobserver.com/legislation/personal-information-protection-law/) — English translation of China's Personal Information Protection Law
 - [Privacy Act 1988 — Federal Register of Legislation, Australia](https://www.legislation.gov.au/Details/C2023C00130) — Including Australian Privacy Principles
+- [Statutory tort for serious invasions of privacy — OAIC](https://www.oaic.gov.au/privacy/your-privacy-rights/more-privacy-rights/statutory-tort-for-serious-invasions-of-privacy) — Privacy and Other Legislation Amendment Act 2024 reforms (tort commenced June 10, 2025)
 - [APPI — PPC Japan](https://www.ppc.go.jp/en/legal/) — Act on Protection of Personal Information (English)
 - [PIPA — PIPC South Korea](https://www.pipc.go.kr/np/cop/bbs/selectBoardList.do?bbsId=BS074&mCode=C020010000) — Personal Information Protection Act
 - [DPDP Act 2023 — India Code](https://www.indiacode.nic.in/handle/123456789/19833) — Digital Personal Data Protection Act

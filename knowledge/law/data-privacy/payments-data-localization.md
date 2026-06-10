@@ -2,6 +2,17 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state, eu, international]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "RBI Circular DPSS.CO.OD No.2785/06.08.005/2017-2018"
+    title: "Storage of Payment System Data (India localization mandate)"
+    url: "https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=11244"
+  - cite: "Personal Information Protection Law of the PRC"
+    title: "China PIPL (English translation, NPC)"
+    url: "http://www.npc.gov.cn/englishnpc/c23934/202112/1abd8829788946ecab270e469b13c39c.shtml"
+  - cite: "Law No. 91/2025/QH15 (Vietnam)"
+    title: "Vietnam Law on Personal Data Protection (effective January 1, 2026)"
+    url: "https://english.luatvietnam.vn/dan-su/law-on-personal-data-protection-law-no-91-2025-qh15-405135-d1.html"
 ---
 # Payments Data Localization
 
@@ -44,7 +55,7 @@ For general cross-border data transfer mechanisms (SCCs, BCRs, adequacy decision
 - **Cross-border transfer:** Permitted after initial localization in Russia (the "primary database" must be in Russia; copies can exist abroad). Cross-border transfer to "adequate" countries (Roskomnadzor maintains the list) is permitted; transfer to non-adequate countries requires consent or other legal basis.
 - **CBR payment-specific rules:** The National Payment Card System (NSPK/Mir) requires all transaction data for domestic Russian card transactions to be processed and stored within Russia. After 2014 sanctions, Visa and Mastercard were required to route all domestic Russian transactions through NSPK. CBR imposes additional data handling requirements on payment system operators.
 - **Sanctions context:** Since 2022, many Western payment companies have exited or been restricted in Russia. However, understanding the localization requirements remains relevant for: (1) companies with legacy data obligations, (2) entities processing through intermediaries, (3) OFAC licensing analysis for wind-down activities.
-- **Consequence:** Roskomnadzor can block access to non-compliant services. Fines for 152-FZ violations: up to 18 million RMB for repeated violations (2023 amendments significantly increased penalties). CBR can restrict payment system participation.
+- **Consequence:** Roskomnadzor can block access to non-compliant services. Fines for 152-FZ localization violations: up to 18 million rubles for repeated violations, and subsequent amendments have continued to increase data-protection penalties. CBR can restrict payment system participation.
 - **Sources:** [152-FZ Text](http://pravo.gov.ru/proxy/ips/?docbody=&nd=102108261) | [Roskomnadzor](https://rkn.gov.ru/) | [CBR Payment System Oversight](https://cbr.ru/eng/psystem/)
 
 ### Indonesia — OJK and Bank Indonesia Rules
@@ -57,14 +68,14 @@ For general cross-border data transfer mechanisms (SCCs, BCRs, adequacy decision
 - **Consequence:** Non-compliance can result in license revocation, administrative sanctions, and operational restrictions imposed by BI or OJK.
 - **Sources:** [Bank Indonesia Regulations](https://www.bi.go.id/en/publikasi/peraturan/default.aspx) | [OJK Official Site](https://www.ojk.go.id/en/) | [GR 71/2019](https://jdih.kominfo.go.id/)
 
-### Vietnam — Decree 13/2023 and SBV Rules
+### Vietnam — PDP Law 91/2025 (replacing Decree 13/2023) and SBV Rules
 
-- **Authority:** Ministry of Public Security (MPS) Decree 13/2023/ND-CP on Personal Data Protection (effective July 1, 2023), State Bank of Vietnam (SBV) circulars.
-- **General requirement (Decree 13):** Data processors that transfer personal data of Vietnamese citizens abroad must: (1) prepare a transfer impact assessment dossier; (2) obtain consent of the data subject; (3) file the dossier with the MPS within 60 days of processing. The decree does not mandate localization per se but imposes onerous conditions on cross-border transfers.
+- **Authority:** Law on Personal Data Protection No. 91/2025/QH15 (effective January 1, 2026), replacing Ministry of Public Security (MPS) Decree 13/2023/ND-CP; State Bank of Vietnam (SBV) circulars.
+- **General requirement (PDPL, carried over from Decree 13):** Data transferors sending personal data of Vietnamese citizens abroad must: (1) prepare a cross-border transfer impact assessment dossier; (2) satisfy the applicable consent/lawful-basis requirements; (3) file the dossier with the MPS within 60 days of the transfer (limited exemptions apply, including employee data stored on cloud services). The regime does not mandate localization per se but imposes onerous conditions on cross-border transfers; fines for cross-border violations can reach 5% of prior-year annual revenue.
 - **SBV payment-specific rules:** The State Bank of Vietnam requires domestic payment data to be stored in Vietnam. E-wallet providers, intermediary payment service providers, and card processors operating in Vietnam must maintain local data infrastructure. SBV Circular 39/2014 and subsequent amendments govern payment intermediary services.
 - **Practical impact:** Payment companies must maintain Vietnam-based servers or use compliant cloud infrastructure. The transfer impact assessment process adds significant administrative burden to any cross-border data flow.
-- **Consequence:** Administrative fines for Decree 13 violations. SBV can restrict or revoke payment intermediary licenses for non-compliance with data storage rules.
-- **Sources:** [Decree 13/2023](https://thuvienphapluat.vn/van-ban/Cong-nghe-thong-tin/Nghi-dinh-13-2023-ND-CP-bao-ve-du-lieu-ca-nhan-357384.aspx) | [SBV Circular 39/2014](https://www.sbv.gov.vn/)
+- **Consequence:** Administrative fines under the PDPL (up to 5% of prior-year annual revenue for cross-border transfer violations). SBV can restrict or revoke payment intermediary licenses for non-compliance with data storage rules.
+- **Sources:** [PDPL 91/2025/QH15 (English)](https://english.luatvietnam.vn/dan-su/law-on-personal-data-protection-law-no-91-2025-qh15-405135-d1.html) | [SBV Circular 39/2014](https://www.sbv.gov.vn/)
 
 ### Nigeria — CBN Guidelines
 
@@ -109,7 +120,7 @@ When designing payment infrastructure subject to data localization:
 - [CAC Outbound Data Transfer Security Assessment](http://www.cac.gov.cn/2022-07/07/c_1658811536396503.htm) — China cross-border transfer rules
 - [Russia 152-FZ](http://pravo.gov.ru/proxy/ips/?docbody=&nd=102108261) — Russia data localization law
 - [Bank Indonesia Payment Regulations](https://www.bi.go.id/en/publikasi/peraturan/default.aspx) — Indonesia payment data rules
-- [Vietnam Decree 13/2023](https://thuvienphapluat.vn/van-ban/Cong-nghe-thong-tin/Nghi-dinh-13-2023-ND-CP-bao-ve-du-lieu-ca-nhan-357384.aspx) — Vietnam data protection decree
+- [Vietnam PDP Law 91/2025/QH15](https://english.luatvietnam.vn/dan-su/law-on-personal-data-protection-law-no-91-2025-qh15-405135-d1.html) — Vietnam personal data protection law (effective January 1, 2026, replacing Decree 13/2023)
 - [CBN Nigeria — E-Payment Guidelines](https://www.cbn.gov.ng/) — Nigeria payment data requirements
 - [DLA Piper Data Protection Laws of the World](https://www.dlapiperdataprotection.com/) — Comparative data localization tracker
 

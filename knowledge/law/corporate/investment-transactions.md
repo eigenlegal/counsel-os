@@ -2,6 +2,14 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "SEC Division of Corporation Finance no-action letter, Latham & Watkins LLP (Mar. 12, 2025)"
+    title: "Rule 506(c) accredited investor verification via minimum investment amounts plus written representations"
+    url: "https://www.sec.gov/rules-regulations/no-action-interpretive-exemptive-letters/division-corporation-finance-no-action/latham-watkins-503c-031225"
+  - cite: "SEC Rule 506 of Regulation D"
+    title: "Private placement exemptions under Rule 506(b) and 506(c)"
+    url: "https://www.sec.gov/answers/rule506.htm"
 ---
 # Investment Transactions
 
@@ -61,7 +69,7 @@ Load when any of the following arise: SAFE agreements, convertible notes, prefer
 
 ## Interaction with Other Areas
 
-- **Securities**: All investment instruments (SAFEs, convertible notes, preferred stock) are securities. Issuance must comply with federal registration requirements or exemptions (Regulation D Rule 506(b)/506(c), Regulation A, Regulation CF) and state blue sky laws. Accredited investor verification required for Rule 506(c).
+- **Securities**: All investment instruments (SAFEs, convertible notes, preferred stock) are securities. Issuance must comply with federal registration requirements or exemptions (Regulation D Rule 506(b)/506(c), Regulation A, Regulation CF) and state blue sky laws. Accredited investor verification required for Rule 506(c); under March 2025 SEC staff guidance, requiring high minimum investment amounts coupled with written purchaser representations can constitute reasonable verification steps.
 - **Corporate (Governance)**: Protective provisions, board composition rights, and voting agreements affect corporate governance. Charter amendments for new preferred series require board and stockholder approval.
 - **Corporate (Fiduciary Duties)**: Board must exercise fiduciary duties in approving investment terms, particularly when existing investors lead or participate in rounds (potential conflicts).
 - **Employment**: Equity incentive plans, option pools (typically 10-20% of fully diluted shares), and Section 409A valuation requirements for common stock options interact with investment round pricing.

@@ -2,6 +2,17 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "8 Del. C. §§ 275-283"
+    title: "DGCL Subchapter X — dissolution, winding up, survival, and claims procedures"
+    url: "https://delcode.delaware.gov/title8/c001/sc10/index.html"
+  - cite: "Delaware Division of Corporations"
+    title: "Renewal and revival filings for all entity types"
+    url: "https://corp.delaware.gov/renew09/"
+  - cite: "6 Del. C. §§ 18-801 to 18-806"
+    title: "Delaware LLC Act — dissolution and winding up"
+    url: "https://delcode.delaware.gov/title6/c018/sc08/index.html"
 ---
 # Dissolution and Wind-Down
 
@@ -44,7 +55,7 @@ Load when any of the following arise: voluntary dissolution by board and stockho
 ### Administrative Dissolution and Revival
 
 - **What**: A state may administratively dissolve or revoke an entity's authority for failure to comply with statutory requirements, most commonly failure to pay franchise taxes or file annual reports.
-- **Threshold/Timeline**: Delaware: failure to pay franchise tax results in voiding of the entity's charter. Reinstatement requires payment of all back taxes, penalties, and interest, plus a reinstatement fee. The reinstatement fee is $375 for corporations. Back taxes accrue from the date of voiding. California: suspension for failure to file returns or pay minimum franchise tax ($800/year). Revival requires filing all delinquent returns and paying all taxes, penalties, and interest.
+- **Threshold/Timeline**: Delaware: failure to pay franchise tax results in voiding of the entity's charter. Reinstatement requires filing a certificate of revival and paying all back taxes, penalties, and interest, plus the revival filing fee (confirm the current amount on the Division of Corporations fee schedule). Back taxes accrue from the date of voiding. California: suspension for failure to file returns or pay minimum franchise tax ($800/year). Revival requires filing all delinquent returns and paying all taxes, penalties, and interest.
 - **Consequence**: A voided or suspended entity generally cannot maintain lawsuits, enter into contracts, or conduct business. In Delaware, reinstatement under DGCL Section 312 is retroactive -- the entity is treated as if it had never been voided, validating acts taken during the voided period. However, rights of third parties that vested during the voided period may be protected.
 
 ### Involuntary (Judicial) Dissolution

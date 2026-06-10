@@ -2,6 +2,20 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-state]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "Cal. Civ. Code §§ 1798.29, 1798.82"
+    title: "California breach notification statute (spot-verified)"
+    url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=1798.82.&lawCode=CIV"
+  - cite: "N.Y. Gen. Bus. Law § 899-aa"
+    title: "New York breach notification statute, as amended December 2024 (spot-verified)"
+    url: "https://www.nysenate.gov/legislation/laws/GBS/899-AA"
+  - cite: "Tex. Bus. & Com. Code § 521.053"
+    title: "Texas breach notification statute, as amended 2023 (spot-verified)"
+    url: "https://statutes.capitol.texas.gov/GetStatute.aspx?Code=BC&Value=521.053"
+  - cite: "88 FR 77499 (Nov. 13, 2023)"
+    title: "FTC Safeguards Rule breach-notification amendment (effective May 13, 2024)"
+    url: "https://www.federalregister.gov/documents/2023/11/13/2023-24412/standards-for-safeguarding-customer-information"
 ---
 # US Breach Notification — 50-State Reference
 
@@ -514,16 +528,16 @@ States differ on the trigger standard:
 
 ### New York
 
-- **Statute:** N.Y. Gen. Bus. Law § 899-aa; N.Y. State Tech. Law § 208 (government entities); SHIELD Act (Stop Hacks and Improve Electronic Data Security Act, 2019)
+- **Statute:** N.Y. Gen. Bus. Law § 899-aa; N.Y. State Tech. Law § 208 (government entities); SHIELD Act (Stop Hacks and Improve Electronic Data Security Act, 2019); December 2024 amendments
 - **Trigger:** Unauthorized acquisition or access of computerized data that compromises the security, confidentiality, or integrity of private information. The SHIELD Act broadened the trigger from "unauthorized acquisition" to include "unauthorized access."
-- **Personal information definition:** Expansive under the SHIELD Act. Name + SSN, DL/state ID, financial account number with access code, biometric data, username/email + password/security question. Also: **any of the following standing alone** (no name required): SSN, DL number, financial account number with access code, biometric data, username/email + password/security question. The SHIELD Act also added: credit/debit card number without a required security code (the number alone is sufficient).
-- **Notification timeline:** In the most expedient time possible and without unreasonable delay (no specific numeric deadline)
-- **AG notification:** Required — must notify the AG, the Department of State (Division of Consumer Protection), and the Division of State Police. Must notify all three agencies for **any number** of affected New York residents. If breach affects **more than 5,000 New York residents**, must also notify consumer reporting agencies.
+- **Personal information definition:** Expansive under the SHIELD Act. Name + SSN, DL/state ID, financial account number with access code, biometric data, username/email + password/security question. Also: **any of the following standing alone** (no name required): SSN, DL number, financial account number with access code, biometric data, username/email + password/security question. The SHIELD Act also added: credit/debit card number without a required security code (the number alone is sufficient). 2024 amendments added **medical information and health insurance information** to the definition (effective March 21, 2025).
+- **Notification timeline:** In the most expedient time possible and without unreasonable delay, but no later than **30 days** after discovery of the breach (December 2024 amendment, effective December 21, 2024)
+- **AG notification:** Required — must notify the AG, the Department of State (Division of Consumer Protection), and the Division of State Police. Must notify all three agencies for **any number** of affected New York residents. NY DFS-regulated entities must **also notify the Department of Financial Services** (December 2024 amendment, as clarified February 2025). If breach affects **more than 5,000 New York residents**, must also notify consumer reporting agencies.
 - **Consumer notification content:** Must include contact information for the entity, telephone numbers and websites of the major credit reporting agencies, and the FTC and AG's office
 - **Credit monitoring:** Not specifically mandated by statute, but the AG has strongly recommended it and enforcement actions have included credit monitoring as part of settlements
 - **Risk of harm exemption:** No explicit risk-of-harm exemption under the SHIELD Act. If PI is accessed or acquired without authorization and security/confidentiality/integrity is compromised, notification is required.
 - **Encryption safe harbor:** Yes — encrypted data excluded unless the encryption key was also accessed or acquired
-- **Notable:** The **SHIELD Act** (2019) is among the most significant state-level expansions. It (1) broadened PI to include biometric data and standalone data elements (SSN alone, without a name), (2) broadened the trigger from "acquisition" to "access," (3) imposed **reasonable security requirements** on any entity holding private information of New York residents (administrative, technical, and physical safeguards). No private right of action, but the AG has broad enforcement powers and has been aggressive. Must notify **three separate state agencies**. The SHIELD Act's broad definition means more incidents qualify as notifiable breaches.
+- **Notable:** The **SHIELD Act** (2019) is among the most significant state-level expansions. It (1) broadened PI to include biometric data and standalone data elements (SSN alone, without a name), (2) broadened the trigger from "acquisition" to "access," (3) imposed **reasonable security requirements** on any entity holding private information of New York residents (administrative, technical, and physical safeguards). The **December 2024 amendments** added a hard 30-day consumer notification deadline, expanded PI to medical and health insurance information, and added DFS notification for DFS-regulated entities. No private right of action, but the AG has broad enforcement powers and has been aggressive. Must notify **three separate state agencies** (four for DFS-regulated entities). The broad definitions mean more incidents qualify as notifiable breaches.
 - **Source:** [N.Y. Gen. Bus. Law § 899-aa](https://www.nysenate.gov/legislation/laws/GBS/899-AA), [SHIELD Act (S.5575B)](https://www.nysenate.gov/legislation/bills/2019/s5575)
 
 ### North Carolina
@@ -672,12 +686,12 @@ States differ on the trigger standard:
 - **Trigger:** Unauthorized acquisition of computerized data that compromises the security, confidentiality, or integrity of sensitive personal information
 - **Personal information definition:** Name + SSN, DL/state ID, financial account number with access code, health insurance information, medical information. Standalone trigger: information that identifies an individual and relates to physical or mental health, provision of or payment for healthcare, or an individual's health insurance. Also: username/email + password/security question.
 - **Notification timeline:** As quickly as possible and without unreasonable delay, but no later than **60 days** after determination of the breach
-- **AG notification:** Required within 60 days if breach affects **250 or more Texas residents** (one of the lower thresholds)
+- **AG notification:** Required **as soon as practicable and not later than 30 days** after determination (shortened from 60 days by SB 768, effective September 1, 2023) if breach affects **250 or more Texas residents** (one of the lower thresholds); must be submitted via the electronic form on the AG's website
 - **Consumer notification content:** Description of the circumstances, type of PI, steps the entity has taken, advice on monitoring credit reports, and contact information for credit bureaus
 - **Credit monitoring:** Not mandated by statute, but the AG has frequently included credit monitoring in enforcement settlements
 - **Risk of harm exemption:** Yes — notification not required if, after investigation, the entity determines that the breach will not likely result in harm
 - **Encryption safe harbor:** Yes — encrypted data excluded unless the encryption key was also compromised
-- **Notable:** 60-day deadline with penalties of **$100 to $250,000 per violation**; lower AG notification threshold of 250 residents; the Texas CUBI Act (Tex. Bus. & Com. Code § 503.001) provides a **private right of action** for biometric identifier data breaches; AG has been active in enforcement; applies to any entity conducting business in Texas, regardless of size
+- **Notable:** 60-day consumer deadline (30-day AG deadline) with penalties of **$100 to $250,000 per violation**; lower AG notification threshold of 250 residents; the AG publishes reported breaches on a public website; the Texas CUBI Act (Tex. Bus. & Com. Code § 503.001) provides AG enforcement for biometric identifier violations; AG has been active in enforcement; applies to any entity conducting business in Texas, regardless of size
 - **Source:** [Tex. Bus. & Com. Code § 521.053](https://statutes.capitol.texas.gov/Docs/BC/htm/BC.521.htm)
 
 ### Utah
@@ -827,7 +841,7 @@ Financial institutions face ADDITIONAL notification obligations beyond state bre
 - **OCC / Federal Reserve / FDIC — Computer-Security Incident Notification Rule (2022):** Banking organizations must notify their primary federal regulator within **36 hours** of determining that a "computer-security incident" has occurred that has materially disrupted or degraded, or is reasonably likely to materially disrupt or degrade, banking operations, business lines, or the stability of the financial sector. This is a notification to the regulator, not to customers.
 - **NY DFS — 23 NYCRR 500 (Cybersecurity Regulation):** Covered entities regulated by the New York Department of Financial Services must notify DFS within **72 hours** of determining a "cybersecurity event" has occurred that either (a) requires notice to any government or supervisory body, (b) has a reasonable likelihood of materially harming the normal operation of the entity, or (c) involves the deployment of ransomware within a material part of the entity's information systems. The 2023 amendments strengthened these requirements.
 - **PCI DSS — Card Brand Notification:** Card brands (Visa, Mastercard, Amex, Discover) require notification within approximately **24 hours** of an entity becoming aware of a suspected breach involving cardholder data. The specific timelines and procedures vary by card brand. A PCI Forensic Investigator (PFI) must be engaged for the investigation.
-- **GLBA Safeguards Rule (as amended by FTC 2023):** Financial institutions subject to the FTC's Safeguards Rule must notify the FTC within **60 days** of discovery of a breach affecting the information of **500 or more consumers**. The notification must include a description of the event, the types of information involved, the number of affected consumers, and remedial actions.
+- **GLBA Safeguards Rule (as amended by FTC 2023, effective May 13, 2024):** Financial institutions subject to the FTC's Safeguards Rule must notify the FTC **as soon as possible, and no later than 30 days** after discovery of a notification event involving the unencrypted information of **500 or more consumers**. The notification must include a description of the event, the types of information involved, the number of consumers affected or potentially affected, and the date or date range of the event; the FTC makes the reports publicly available.
 - **SEC — Cybersecurity Incident Disclosure (2023):** Public companies must disclose material cybersecurity incidents on **Form 8-K within 4 business days** of determining that an incident is material. Registrants must also describe their cybersecurity risk management, strategy, and governance in annual reports on Form 10-K.
 
 Cross-reference: `financial-sector-privacy-regulators.md` (if available), `banking-regulation.md`, `pci-dss.md` in `law/financial-services/`.

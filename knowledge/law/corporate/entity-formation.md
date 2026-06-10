@@ -2,6 +2,17 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "Delaware Division of Corporations"
+    title: "How to Calculate Franchise Taxes (authorized shares and assumed par value capital methods)"
+    url: "https://corp.delaware.gov/frtaxcalc/"
+  - cite: "Delaware Division of Corporations"
+    title: "Annual Report and Tax Instructions (corporate March 1 deadline; LLC/LP/GP $300 annual tax)"
+    url: "https://corp.delaware.gov/paytaxes/"
+  - cite: "Delaware Division of Corporations"
+    title: "Corporate Fee Schedule (current filing fees)"
+    url: "https://corp.delaware.gov/fee/"
 ---
 # Entity Formation
 
@@ -13,7 +24,7 @@ Load when any of the following arise: new entity formation, entity conversion or
 
 ### Entity Type Comparison
 
-- **C Corporation**: Formed under state corporation statutes (DGCL, MBCA). Taxed at entity level (21% federal corporate rate as of 2024) with potential double taxation on distributions. Unlimited number and types of stockholders. Preferred for venture capital and institutional investment. Required formalities: certificate of incorporation, bylaws, organizational resolutions, stock issuance, annual meetings, annual reports, franchise tax.
+- **C Corporation**: Formed under state corporation statutes (DGCL, MBCA). Taxed at entity level (21% federal corporate rate, left unchanged by the 2025 tax legislation) with potential double taxation on distributions. Unlimited number and types of stockholders. Preferred for venture capital and institutional investment. Required formalities: certificate of incorporation, bylaws, organizational resolutions, stock issuance, annual meetings, annual reports, franchise tax.
 - **S Corporation**: Tax election (IRS Form 2553) on an eligible corporation. Maximum 100 shareholders, one class of stock (voting differences permitted), only eligible shareholders (individuals, certain trusts, estates -- no partnerships, corporations, or non-resident aliens). Must file Form 2553 within 75 days of formation or by March 15 for calendar-year election. Pass-through taxation eliminates double taxation. Inadvertent termination occurs if eligibility requirements are violated.
 - **LLC**: Formed under state LLC acts. Default tax treatment as partnership (multi-member) or disregarded entity (single-member). May elect C-corp or S-corp taxation via IRS Form 8832 (check-the-box) or Form 2553. Maximum governance flexibility through operating agreement. Fewer mandatory formalities. Delaware LLCs permit broad modification of fiduciary duties.
 - **Limited Partnership (LP)**: One or more general partners (unlimited liability, management authority) and limited partners (limited liability, no management authority). Common for PE/VC fund structures. Tax-transparent. Governed by partnership agreement and state LP acts (DRULPA in Delaware).
@@ -21,7 +32,7 @@ Load when any of the following arise: new entity formation, entity conversion or
 
 ### Formation Requirements by State
 
-- **Delaware**: Certificate of Incorporation (corporations) or Certificate of Formation (LLCs) filed with Division of Corporations. Filing fee: $89 (corp) or $90 (LLC). Annual franchise tax required -- corporations: minimum $400, calculated by authorized shares or assumed par value capital method. LLCs: flat $300 annual tax. No requirement to conduct business in Delaware.
+- **Delaware**: Certificate of Incorporation (corporations) or Certificate of Formation (LLCs) filed with Division of Corporations. Filing fees are modest (confirm current amounts on the Division of Corporations fee schedule). Annual franchise tax required -- corporations: calculated by the authorized shares method (minimum $175) or the assumed par value capital method (minimum $400), whichever yields the lesser tax; maximum $200,000 ($250,000 for Large Corporate Filers); annual report and tax due March 1. LLCs: flat $300 annual tax due June 1, no annual report. No requirement to conduct business in Delaware.
 - **California**: Articles of Incorporation (corporations) or Articles of Organization (LLCs) filed with Secretary of State. Filing fee: $100 (corp) or $70 (LLC). Annual minimum franchise tax: $800 for all entities (waived first year for some). Statement of Information required annually (corps) or biennially (LLCs). California imposes entity-level tax on LLCs with gross receipts exceeding $250,000.
 - **New York**: Certificate of Incorporation (corporations) or Articles of Organization (LLCs) filed with Department of State. Filing fee: $125 (corp) or $200 (LLC). LLCs must publish formation notice in two newspapers designated by the county clerk within 120 days of formation -- estimated cost $500-$2,000+. Biennial statement filing required.
 

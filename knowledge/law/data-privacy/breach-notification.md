@@ -2,6 +2,23 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state, eu, international]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "Regulation (EU) 2016/679, Articles 33-34"
+    title: "GDPR personal data breach notification"
+    url: "https://eur-lex.europa.eu/eli/reg/2016/679/oj"
+  - cite: "45 C.F.R. Part 164, Subpart D"
+    title: "HIPAA Breach Notification Rule"
+    url: "https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-C/part-164/subpart-D"
+  - cite: "Cal. Civ. Code §§ 1798.29, 1798.82"
+    title: "California breach notification statute"
+    url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=1798.82.&lawCode=CIV"
+  - cite: "N.Y. Gen. Bus. Law § 899-aa"
+    title: "New York breach notification statute (30-day deadline added December 2024)"
+    url: "https://www.nysenate.gov/legislation/laws/GBS/899-AA"
+  - cite: "Digital Personal Data Protection Rules, 2025 (India)"
+    title: "DPDP Rules breach notification requirements"
+    url: "https://www.meity.gov.in/static/uploads/2025/11/53450e6e5dc0bfa85ebd78686cadad39.pdf"
 ---
 # Breach Notification
 
@@ -47,7 +64,7 @@ This sub-file covers mandatory data breach notification requirements across juri
 - **Business associate obligation:** Must notify the covered entity within **60 days** of discovery (or a shorter contractual timeline). The covered entity bears the ultimate notification obligation.
 - **"Discovery" standard:** A breach is "discovered" when the covered entity or business associate first knows or should have known by exercising reasonable diligence.
 - **Exception:** Notification not required if a risk assessment demonstrates a **low probability** that the PHI has been compromised (considering: nature and extent of PHI, unauthorized person who accessed it, whether PHI was actually acquired or viewed, and extent of mitigation).
-- **Consequence:** Civil penalties of **$100 to $50,000 per violation**, with annual caps of **$25,000 to $1.5 million** per violation category per year. Criminal penalties of up to **$250,000 and 10 years imprisonment** for intentional violations.
+- **Consequence:** Civil penalties of **$100 to $50,000 per violation** (statutory baseline; adjusted annually for inflation), with annual caps of **$25,000 to $1.5 million** per violation category per year (also inflation-adjusted). Criminal penalties of up to **$250,000 and 10 years imprisonment** for intentional violations.
 
 ### US State Breach Notification Laws
 
@@ -56,9 +73,9 @@ All 50 states, DC, and US territories have breach notification statutes. Key var
 | Jurisdiction | Timeline | AG Notification Threshold | Notable Features |
 |-------------|----------|--------------------------|-------------------|
 | **California** | Most expedient time / no unreasonable delay | 500+ residents | Private right of action under CCPA for reasonable security failures |
-| **New York** | Most expeditious time / no unreasonable delay | Any number of NY residents | SHIELD Act requires reasonable security; broadened PI definition |
+| **New York** | **30 days** after discovery (2024 amendment, eff. Dec. 21, 2024) | Any number of NY residents | SHIELD Act requires reasonable security; PI definition adds medical/health insurance information (eff. Mar. 2025); DFS-regulated entities also notify DFS |
 | **Florida** | **30 days** after determination of breach | 500+ residents | Among the strictest numerical deadlines |
-| **Texas** | **60 days** after determination of breach | 250+ residents | Lower AG notification threshold |
+| **Texas** | **60 days** after determination of breach | 250+ residents | Lower AG notification threshold; AG notice within **30 days** via electronic form (2023 amendment) |
 | **Colorado** | **30 days** after determination of breach | 500+ residents | 30-day hard deadline |
 | **Connecticut** | **60 days** after discovery | Any number of CT residents | AG notification for any number of affected residents |
 | **Oregon** | **45 days** after discovery | 250+ residents | Lower AG notification threshold |
@@ -85,7 +102,7 @@ All 50 states, DC, and US territories have breach notification statutes. Key var
 | **Japan (APPI)** | Promptly (preliminary) + **30 days** (full) | Promptly | Sensitive PI, property damage, wrongful intent, or 1,000+ individuals |
 | **South Korea (PIPA)** | Without delay | Without delay | 1,000+ individuals or sensitive/unique ID information |
 | **China (PIPL)** | Immediately | Immediately | Any breach or likely breach |
-| **India (DPDP Act)** | To be specified in rules | To be specified in rules | Any personal data breach |
+| **India (DPDP Act + 2025 Rules)** | Without delay + detailed report within **72 hours** | Without delay | Any personal data breach |
 
 ### Cross-Jurisdiction Breach Response Principles
 
@@ -119,6 +136,7 @@ Financial institutions face a cascade of notification obligations with compresse
 | **72 hours** | Notify NY DFS Superintendent | 23 NYCRR 500.17(a) | Cybersecurity event requiring notification to any government body OR reasonably likely to materially harm operations |
 | **72 hours** | Notify EU supervisory authority | GDPR Art. 33 | Personal data breach (unless unlikely to result in risk to data subjects) |
 | **72 hours** | Notify CISA | CIRCIA (once final rule effective) | Covered cyber incident at a critical infrastructure entity |
+| **30 days** | Notify FTC | FTC Safeguards Rule (effective May 2024) | Notification event — unauthorized acquisition of unencrypted customer information of 500+ consumers (non-bank financial institutions) |
 
 **Breach triage decision tree for a fintech:**
 1. **Hour 0-4:** Activate incident response plan. Determine scope: does it involve payment card data? Banking systems? EU personal data? Engage legal counsel and cyber insurance carrier (check policy notice window — typically 48-72 hours).
@@ -131,10 +149,10 @@ See `financial-sector-privacy-regulators.md` for detailed requirements of each f
 
 ### CIRCIA — Cyber Incident Reporting for Critical Infrastructure
 
-- **Authority:** Cyber Incident Reporting for Critical Infrastructure Act of 2022. CISA NPRM published April 2024; final rule expected 2025-2026.
+- **Authority:** Cyber Incident Reporting for Critical Infrastructure Act of 2022. CISA NPRM published April 2024; the final rule remains pending as of mid-2026 (the statutory October 2025 deadline passed and CISA's target has slipped).
 - **Scope:** Covered entities in designated critical infrastructure sectors, including financial services. Size and significance thresholds defined in the proposed rule.
 - **Requirements (proposed):** Report covered cyber incidents to CISA within **72 hours** of reasonable belief. Report ransom payments within **24 hours**. Submit supplemental reports for materially new information.
-- **Current status:** Voluntary until final rule is effective. Many financial sector entities already report voluntarily under existing CISA programs.
+- **Current status:** Voluntary until the final rule is effective (still pending as of mid-2026). Many financial sector entities already report voluntarily under existing CISA programs.
 - **Relationship to other obligations:** CIRCIA includes provisions for satisfying the requirement through reports to other federal agencies (potential harmonization with banking regulator notifications).
 - **Source:** [CISA CIRCIA Page](https://www.cisa.gov/topics/cyber-threats-and-advisories/information-sharing/cyber-incident-reporting-critical-infrastructure-act-2022-circia)
 

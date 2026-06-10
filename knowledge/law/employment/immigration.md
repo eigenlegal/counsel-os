@@ -2,6 +2,20 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "90 FR 96 (Jan. 2, 2025)"
+    title: "DHS civil monetary penalty adjustments for inflation (I-9 and unauthorized-employment penalties)"
+    url: "https://www.federalregister.gov/documents/2025/01/02/2024-31204/civil-monetary-penalty-adjustments-for-inflation"
+  - cite: "8 CFR 274a.10"
+    title: "Civil penalties for unlawful employment and verification violations"
+    url: "https://www.ecfr.gov/current/title-8/chapter-I/subchapter-B/part-274a/section-274a.10"
+  - cite: "USCIS Alert (2025)"
+    title: "Presidential Proclamation on Restriction on Entry of Certain Nonimmigrant Workers ($100,000 H-1B payment)"
+    url: "https://www.uscis.gov/newsroom/alerts/presidential-proclamation-on-restriction-on-entry-of-certain-nonimmigrant-workers"
+  - cite: "28 CFR 85.5"
+    title: "DOJ inflation adjustments for INA 274B unfair immigration-related employment practice penalties"
+    url: "https://www.ecfr.gov/current/title-28/chapter-I/part-85/section-85.5"
 ---
 # Immigration and Work Authorization
 
@@ -43,22 +57,24 @@ employment terms, or immigration-related compliance obligations.
   or permanent residents, or employees who presented List B identity documents that
   expired.
 
-### I-9 Penalties (2024 Adjusted Amounts)
+### I-9 Penalties (Adjusted Annually; 2025 Levels Carried Into 2026)
 
 | Violation | Penalty Range |
 |-----------|--------------|
-| **Paperwork violations (first offense)** | **$252 to $2,507** per I-9 form |
-| **Paperwork violations (second offense)** | **$1,161 to $2,507** per form |
-| **Paperwork violations (third+ offense)** | **$1,740 to $2,507** per form |
-| **Knowingly hiring unauthorized worker (first)** | **$698 to $5,579** per worker |
-| **Knowingly hiring (second offense)** | **$5,579 to $13,946** per worker |
-| **Knowingly hiring (third+ offense)** | **$8,369 to $27,894** per worker |
-| **Document fraud (first offense)** | **$529 to $4,236** per document |
-| **Document fraud (subsequent)** | **$4,236 to $10,591** per document |
+| **Paperwork violations** | **$288 to $2,861** per I-9 form (ICE grades within the range by violation percentage and history) |
+| **Knowingly hiring unauthorized worker (first)** | **$716 to $5,724** per worker |
+| **Knowingly hiring (second offense)** | **$5,724 to $14,308** per worker |
+| **Knowingly hiring (third+ offense)** | **$8,586 to $28,619** per worker |
+| **Document fraud (first offense)** | **$590 to $4,730** per document (higher ranges for subsequent offenses) |
 
+- **Indexing note**: These amounts adjust annually for inflation under the Federal
+  Civil Penalties Inflation Adjustment Act (8 CFR 274a.10). The 2025 levels carried
+  into 2026 because the fall 2025 government shutdown prevented publication of the
+  CPI data agencies use to adjust; check the current DHS/ICE schedule before quoting
+  figures.
 - **Consequence**: ICE Notices of Inspection (I-9 audits) have increased significantly.
   Penalties are assessed per violation (per form), so a company with 500 employees
-  and systemic errors across all forms faces exposure exceeding **$1.25 million**
+  and systemic errors across all forms faces exposure approaching **$1.4 million**
   for paperwork violations alone. Criminal penalties apply for pattern or practice
   of knowingly hiring unauthorized workers: up to **$3,000 per worker** and **6 months
   imprisonment** per count.
@@ -108,9 +124,17 @@ employment terms, or immigration-related compliance obligations.
   to bargaining representative).
 - **Consequence**: LCA violations: up to **$1,000 per violation** for non-willful
   failures. Willful violations or misrepresentation: up to **$35,000 per violation**
-  and **debarment from H-1B program for 2+ years**. H-1B dependent employers
+  and **debarment from H-1B program for 2+ years** (statutory base amounts — DOL
+  adjusts these annually for inflation; see 20 CFR 655.810). H-1B dependent employers
   (15%+ of workforce are H-1B) face additional displacement and recruitment
   attestation obligations.
+- **$100,000 proclamation payment**: A September 2025 presidential proclamation
+  conditions certain new H-1B petitions for beneficiaries outside the United States
+  on a **$100,000 payment**, with effect from September 21, 2025 (stated 12-month
+  duration). USCIS guidance exempts petitions for amendments, extensions, and
+  changes of status granted for workers already in the US. Litigation challenging
+  the proclamation is pending — verify current status and exemptions before any
+  H-1B filing strategy decision.
 
 **L-1 (Intracompany Transferee)**
 - **L-1A** (managers/executives): Up to **7 years**. Requires 1 continuous year of
@@ -186,10 +210,10 @@ employment terms, or immigration-related compliance obligations.
   refusing to hire work-authorized non-citizens, imposing citizenship requirements
   not mandated by law or regulation, and reverifying documents that do not require
   reverification (e.g., US passport).
-- **Consequence**: Civil penalties of **$2,000-$5,000** per individual for first
-  offense (hiring/firing discrimination), escalating to **$10,000-$25,000** for
-  third and subsequent offenses. Back pay, front pay, attorneys' fees, and
-  injunctive relief also available.
+- **Consequence**: Civil penalties are assessed per individual discriminated against,
+  with ranges that escalate for repeat offenses and adjust annually for inflation —
+  quote current amounts from 28 CFR 85.5 rather than a static figure. Back pay,
+  front pay, attorneys' fees, and injunctive relief also available.
 
 ## Interaction with Other Areas
 

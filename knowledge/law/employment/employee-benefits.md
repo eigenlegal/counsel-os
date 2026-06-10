@@ -2,6 +2,20 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "IRS Notice 2025-67"
+    title: "2026 cost-of-living adjustments for retirement plans (deferral, catch-up, 415, HCE, compensation limits)"
+    url: "https://www.irs.gov/pub/irs-drop/n-25-67.pdf"
+  - cite: "IRS Newsroom (Nov. 2025)"
+    title: "401(k) limit increases to $24,500 for 2026"
+    url: "https://www.irs.gov/newsroom/401k-limit-increases-to-24500-for-2026-ira-limit-increases-to-7500"
+  - cite: "T.D. (Sept. 2025)"
+    title: "Final regulations on the SECURE 2.0 Roth catch-up requirement"
+    url: "https://www.irs.gov/newsroom/treasury-irs-issue-final-regulations-on-new-roth-catch-up-rule-other-secure-2point0-act-provisions"
+  - cite: "26 USC 4980H"
+    title: "Employer shared responsibility provisions (indexed payment amounts and affordability percentage)"
+    url: "https://www.irs.gov/affordable-care-act/employers/employer-shared-responsibility-provisions"
 ---
 # Employee Benefits
 
@@ -41,10 +55,12 @@ HIPAA portability and nondiscrimination rules.
 
 ### 401(k) and Retirement Plans
 
-- **Annual contribution limits (2024)**:
-  - Employee elective deferral: **$23,000** ($30,500 for age 50+)
-  - Employer + employee combined (415 limit): **$69,000** ($76,500 for age 50+)
-  - Highly compensated employee (HCE) threshold: earnings above **$155,000**
+- **Annual contribution limits (2026; indexed annually — confirm against the
+  current IRS COLA notice)**:
+  - Employee elective deferral: **$24,500** ($32,500 for age 50+ with the $8,000
+    catch-up; ages 60-63 get an enhanced $11,250 catch-up under SECURE 2.0)
+  - Employer + employee combined (415 limit): **$72,000** (plus catch-ups)
+  - Highly compensated employee (HCE) threshold: earnings above **$160,000**
 - **Nondiscrimination testing**: HCEs cannot defer disproportionately more than
   non-HCEs. Actual Deferral Percentage (ADP) test for employee contributions.
   Actual Contribution Percentage (ACP) test for employer matching. Testing is
@@ -62,8 +78,11 @@ HIPAA portability and nondiscrimination rules.
     up to 10-15%.
   - Exempt: employers with 10 or fewer employees, businesses less than 3 years old,
     church plans, and government plans.
-  - New Roth catch-up requirement: employees with wages exceeding $145,000 must
-    make catch-up contributions on a Roth (after-tax) basis only (effective 2026).
+  - Roth catch-up requirement: in effect since January 1, 2026 — employees whose
+    prior-year FICA wages exceeded the indexed threshold ($150,000 in 2025 wages for
+    2026) must make catch-up contributions on a Roth (after-tax) basis only. Final
+    regulations issued September 2025; full regulatory compliance phases in, with
+    good-faith compliance expected in the interim.
 - **Consequence**: Nondiscrimination test failure requires corrective distributions
   to HCEs (taxable) or qualified nonelective contributions (QNECs) to non-HCEs.
   Plan disqualification results in loss of tax-deferred status for all participants.
@@ -77,18 +96,20 @@ HIPAA portability and nondiscrimination rules.
 - **ALE threshold**: **50+ full-time equivalent employees** in the prior calendar year.
   FTEs are calculated by: (total monthly hours of all part-time employees) / 120,
   added to the count of full-time employees.
-- **Penalties (2024)**:
+- **Penalties (2026; both amounts and the affordability percentage are indexed
+  annually)**:
   - **4980H(a)** ("sledgehammer"): If employer fails to offer MEC to at least
     **95% of full-time employees** and any employee receives a premium tax credit:
-    **$2,970/year** per full-time employee (minus first 30). For an employer with
-    200 full-time employees: up to $504,900 per year.
+    **$3,340/year** per full-time employee (minus first 30). For an employer with
+    200 full-time employees: up to $567,800 per year.
   - **4980H(b)** ("tack hammer"): If employer offers coverage but it is unaffordable
-    (employee cost exceeds **8.39% of household income** in 2024) or does not provide
-    minimum value (**60% actuarial value**): **$4,460/year** per employee who
-    actually receives a premium tax credit.
+    (employee cost exceeds **9.96% of household income** for 2026 plan years, per
+    the applicable safe harbor) or does not provide minimum value (**60% actuarial
+    value**): **$5,010/year** per employee who actually receives a premium tax credit.
 - **Reporting**: Forms 1094-C and 1095-C filed annually with the IRS and furnished
-  to employees. Late filing penalty: **$310/return** (2024), maximum
-  **$3,783,500/year**.
+  to employees. Late filing penalties under IRC 6721 apply per return, with a
+  multimillion-dollar annual cap; both are indexed annually — quote the current
+  IRS amounts.
 - **Consequence**: ACA penalties are not deductible as business expenses. No penalty
   for failing to cover part-time employees (under 30 hours/week).
 

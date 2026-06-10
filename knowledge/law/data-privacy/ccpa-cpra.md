@@ -2,6 +2,17 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-state]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "Cal. Civ. Code §§ 1798.100-1798.199.100"
+    title: "California Consumer Privacy Act, as amended by the CPRA"
+    url: "https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?division=3.&part=4.&lawCode=CIV&title=1.81.5"
+  - cite: "CPPA CCPA regulations"
+    title: "CPPA regulations page, including the 2025 ADMT, risk assessment, and cybersecurity audit rules (effective January 1, 2026)"
+    url: "https://cppa.ca.gov/regulations/ccpa_updates.html"
+  - cite: "Cal. Civ. Code § 1798.99.80 et seq. (Delete Act)"
+    title: "Data broker registration and the DROP deletion mechanism"
+    url: "https://cppa.ca.gov/data_brokers/"
 ---
 # CCPA/CPRA (California Consumer Privacy Act / California Privacy Rights Act)
 
@@ -77,20 +88,21 @@ While CCPA does not prescribe specific security measures, the private right of a
 
 ### Automated Decision-Making Technology (CPRA Section 1798.185(a)(16))
 
-- **What:** The CPRA directs the CPPA to issue regulations governing businesses' use of automated decision-making technology, including profiling, particularly regarding decisions that produce legal or similarly significant effects on consumers.
-- **Requirements (per CPPA rulemaking):** Businesses must provide consumers with information about the logic involved in automated decision-making processes, the intended output, and the right to opt out of automated decision-making for significant decisions. Pre-decision notice and access to information about the decision are required.
+- **What:** The CPPA's ADMT regulations were **finalized in 2025 and took effect January 1, 2026**. They govern businesses' use of automated decision-making technology for **"significant decisions"** affecting consumers (e.g., financial or lending services, housing, employment, education, healthcare).
+- **Requirements:** Businesses using ADMT for significant decisions must provide a **pre-use notice**, offer consumers the **right to opt out**, and respond to **access requests** about how the ADMT was used — with full compliance for in-scope uses required by **January 1, 2027**. The final rules are narrower than earlier drafts (behavioral advertising and "AI" generally are not standalone triggers); check the final regulation text for scope.
 - **Consequence:** Violations enforced by the CPPA with standard penalty authority — **$2,500 per unintentional violation, $7,500 per intentional violation**.
 
 ### Cybersecurity Audits and Risk Assessments (CPRA Section 1798.185(a)(15))
 
-- **What:** The CPPA is directed to issue regulations requiring businesses whose processing presents significant risk to consumer privacy or security to (a) perform annual **cybersecurity audits** and (b) submit regular **risk assessments** to the CPPA regarding their processing of personal information.
-- **Threshold:** Applies to businesses whose processing of personal information presents "significant risk to consumers' privacy or security" — criteria defined by CPPA regulations.
+- **What:** The CPPA's regulations requiring annual **cybersecurity audits** and **risk assessments** were **finalized in 2025 and took effect January 1, 2026**, for businesses whose processing presents significant risk to consumer privacy or security.
+- **Risk assessments:** Required before initiating high-risk processing (selling/sharing, sensitive PI, certain ADMT uses, profiling in specified contexts). For covered processing initiated before January 1, 2026, assessments must be completed by **December 31, 2027**, with the first attestations/submissions to the CPPA due **April 1, 2028**.
+- **Cybersecurity audits:** Phased certification deadlines by revenue — first annual audit certifications due to the CPPA by **April 1, 2028** (>$100M revenue), **April 1, 2029** ($50-100M), and **April 1, 2030** (<$50M).
 - **Consequence:** Failure to perform required audits or submit risk assessments is an independent violation subject to CPPA enforcement.
 
 ### Data Broker Registration (Cal. Civ. Code 1798.99.80 et seq.)
 
 - **What:** A "data broker" is a business that knowingly collects and sells the personal information of consumers with whom the business does not have a direct relationship. Data brokers must register with the CPPA annually.
-- **Delete My Data:** The California Delete Act (SB 362, 2023) requires the CPPA to establish an accessible mechanism by **January 1, 2026** allowing consumers to submit a single verified request to all registered data brokers to delete their personal information.
+- **Delete My Data (DROP):** Under the California Delete Act (SB 362, 2023), the CPPA's **Delete Request and Opt-out Platform (DROP)** opened to consumer deletion requests in **January 2026**; registered data brokers must access the platform and process deletion requests **at least every 45 days beginning August 1, 2026**.
 - **Registration fee:** Annual fee determined by the CPPA.
 - **Consequence:** Failure to register — **$200 per day** of violation. Penalties for failure to comply with delete requests assessed under standard CCPA enforcement.
 
@@ -125,5 +137,7 @@ The CPPA, which assumed full enforcement authority from the AG, has signaled enf
 
 - [CCPA/CPRA Full Text — California Legislative Information](https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?division=3.&part=4.&lawCode=CIV&title=1.81.5) — Cal. Civ. Code 1798.100-1798.199.100
 - [CPPA Final Regulations](https://cppa.ca.gov/regulations/) — Implementing regulations from the California Privacy Protection Agency
+- [CPPA 2025 Rulemaking — ADMT, Risk Assessments, Cybersecurity Audits](https://cppa.ca.gov/regulations/ccpa_updates.html) — Final rules effective January 1, 2026, with phased compliance dates
+- [CPPA Data Broker Registry and DROP](https://cppa.ca.gov/data_brokers/) — Delete Act registration and deletion mechanism
 - [California AG CCPA Enforcement](https://oag.ca.gov/privacy/ccpa) — Enforcement actions and guidance from the California Attorney General
 - [CIS Critical Security Controls](https://www.cisecurity.org/controls) — Referenced as a baseline for "reasonable security" under CCPA

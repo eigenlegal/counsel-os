@@ -2,6 +2,29 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state, eu, international]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "17 U.S.C. § 107"
+    title: "Copyright Act fair use provision"
+    url: "https://www.copyright.gov/title17/92chap1.html#107"
+  - cite: "Bartz v. Anthropic, No. 3:24-cv-05417 (N.D. Cal. June 23, 2025)"
+    title: "Summary judgment on fair use for AI training; class settlement docket"
+    url: "https://www.courtlistener.com/docket/69058235/bartz-v-anthropic-pbc/"
+  - cite: "Kadrey v. Meta Platforms, No. 3:23-cv-03417 (N.D. Cal. June 25, 2025)"
+    title: "Summary judgment for Meta on fair use for LLM training"
+    url: "https://law.justia.com/cases/federal/district-courts/california/candce/3:2023cv03417/415175/598/"
+  - cite: "Thomson Reuters v. Ross Intelligence, No. 25-2153 (3d Cir.)"
+    title: "Interlocutory appeal of D. Del. ruling that training copying was not fair use"
+    url: "https://www.courtlistener.com/docket/70622297/thomson-reuters-enterprise-centre-gmbh-v-ross-intelligence-inc/"
+  - cite: "NYT v. Microsoft/OpenAI, No. 1:23-cv-11195 (S.D.N.Y.)"
+    title: "Consolidated news-publisher training litigation; April 2025 motion-to-dismiss opinion"
+    url: "https://www.courtlistener.com/docket/68117049/the-new-york-times-company-v-microsoft-corporation/"
+  - cite: "U.S. Copyright Office, Copyright and AI, Part 3 (May 2025)"
+    title: "Generative AI Training report (pre-publication version)"
+    url: "https://www.copyright.gov/ai/Copyright-and-Artificial-Intelligence-Part-3-Generative-AI-Training-Report-Pre-Publication-Version.pdf"
+  - cite: "Directive (EU) 2019/790, Arts. 3-4"
+    title: "DSM Directive text and data mining exceptions"
+    url: "https://eur-lex.europa.eu/eli/dir/2019/790/oj"
 ---
 # Training Data
 
@@ -21,12 +44,15 @@ This sub-topic is relevant when ANY of the following are true:
 
 ### Copyright and Fair Use
 
-- **What**: The use of copyrighted works to train AI models raises fundamental copyright questions. No definitive US federal statute addresses AI training specifically. Analysis proceeds under the four-factor fair use test (17 U.S.C. Section 107) and evolving case law.
-- **Fair use four factors**: (1) Purpose and character of the use — commercial vs. nonprofit, transformative use. (2) Nature of the copyrighted work — factual vs. creative. (3) Amount and substantiality of the portion used — whether the entire work is ingested. (4) Effect on the potential market — whether the model's outputs substitute for the original.
+- **What**: The use of copyrighted works to train AI models raises fundamental copyright questions. No definitive US federal statute addresses AI training specifically. Analysis proceeds under the four-factor fair use test (17 U.S.C. Section 107) and rapidly developing case law. As of June 2026 the emerging district-court pattern: **training on lawfully acquired copies has been held transformative fair use, but acquiring or retaining pirated copies is not protected** — and no appellate court has yet ruled (first appellate decision expected from the Third Circuit, argued June 2026).
+- **Fair use four factors**: (1) Purpose and character of the use — commercial vs. nonprofit, transformative use. (2) Nature of the copyrighted work — factual vs. creative. (3) Amount and substantiality of the portion used — whether the entire work is ingested. (4) Effect on the potential market — whether the model's outputs substitute for the original, including the emerging "market dilution" theory (outputs flooding the market for the originals).
 - **Authors Guild v. Google (2d Cir. 2015)**: Established that digitizing entire books for a searchable index is fair use where the output (snippet view) is transformative and does not substitute for the original. Frequently cited by AI developers as supporting training on copyrighted text.
-- **Thomson Reuters v. Ross Intelligence (D. Del. 2025)**: Found that copying of headnotes to train a legal AI search tool was not fair use, emphasizing the commercial nature and market substitution in the legal research market.
-- **NYT v. OpenAI (S.D.N.Y., filed Dec. 2023)**: Ongoing litigation alleging that training GPT models on New York Times articles constitutes copyright infringement. The Times alleges the models can reproduce near-verbatim copies. Outcome will significantly shape training data law. No final ruling as of early 2026.
-- **Threshold**: Every use of copyrighted material for training requires a fair use analysis or a license. Fair use is a fact-specific, case-by-case determination. No blanket safe harbor for AI training exists under current US law.
+- **Bartz v. Anthropic (N.D. Cal., June 23, 2025)**: Held on summary judgment that training LLMs on lawfully purchased books was "quintessentially transformative" fair use — but that downloading and retaining pirated library copies was not fair use. The piracy exposure drove a **$1.5 billion class settlement** (~500,000 works, roughly $3,000 per work, plus destruction of the pirated libraries). Preliminarily approved September 25, 2025; the final fairness hearing was held May 14, 2026 and **final approval remained pending as of early June 2026** — verify current status before citing.
+- **Kadrey v. Meta (N.D. Cal., June 25, 2025)**: Granted Meta summary judgment on fair use for LLM training (including on pirated books), but expressly because those plaintiffs failed to build a market-harm record. The court signaled that a developed "market dilution" showing would likely defeat fair use in similar cases — a narrow, record-specific win, not a green light.
+- **Thomson Reuters v. Ross Intelligence (D. Del. Feb. 2025)**: Found that copying Westlaw headnotes to train a legal AI search tool was not fair use, emphasizing the commercial nature and market substitution in the legal research market. On interlocutory appeal to the Third Circuit (No. 25-2153); oral argument held June 11, 2026 — the first appellate test of fair use for AI training. Check for a decision before relying on the district court ruling.
+- **NYT v. OpenAI (S.D.N.Y., filed Dec. 2023)**: Consolidated news-publisher litigation. Motions to dismiss were largely denied (opinion April 4, 2025), and the case was in discovery with summary judgment briefing through spring 2026. No merits ruling as of June 2026.
+- **Copyright Office, Part 3 report (May 2025, pre-publication)**: Concluded AI training is not categorically fair use — transformativeness is a matter of context and degree, pirated source material weighs against fair use, and market dilution is a cognizable factor-four harm. Persuasive (not binding) authority; both Bartz and Kadrey echo parts of it.
+- **Threshold**: Every use of copyrighted material for training requires a fair use analysis or a license. Provenance of the copies is now the pivotal fact: lawful acquisition supports fair use; pirated sources create severe exposure independent of the training use. Fair use remains fact-specific. No blanket safe harbor for AI training exists under current US law.
 - **Consequence**: Copyright infringement damages include actual damages and profits, or statutory damages of **$750-$30,000 per work infringed** (up to **$150,000 per work** for willful infringement) under 17 U.S.C. Section 504. Injunctive relief may halt model distribution.
 
 ### Text and Data Mining (TDM) Under EU Law
@@ -79,7 +105,10 @@ This sub-topic is relevant when ANY of the following are true:
 
 - [17 U.S.C. Section 107 — Fair Use](https://www.copyright.gov/title17/92chap1.html#107) — US Copyright Act fair use provision
 - [EU Directive 2019/790 (DSM Directive) — EUR-Lex](https://eur-lex.europa.eu/eli/dir/2019/790/oj) — Text and Data Mining exceptions (Arts. 3-4)
-- [US Copyright Office: Copyright and AI — Part 1: Digital Replicas (2025)](https://www.copyright.gov/ai/) — Copyright Office AI initiatives
+- [US Copyright Office: Copyright and AI reports](https://www.copyright.gov/ai/) — Parts 1-3, including Part 3 on Generative AI Training (May 2025)
+- [Bartz v. Anthropic docket — CourtListener](https://www.courtlistener.com/docket/69058235/bartz-v-anthropic-pbc/) — Fair use ruling and class settlement
+- [Kadrey v. Meta, summary judgment order (N.D. Cal. 2025)](https://law.justia.com/cases/federal/district-courts/california/candce/3:2023cv03417/415175/598/) — Fair use for LLM training
+- [Thomson Reuters v. Ross Intelligence, 3d Cir. No. 25-2153 — CourtListener](https://www.courtlistener.com/docket/70622297/thomson-reuters-enterprise-centre-gmbh-v-ross-intelligence-inc/) — First appellate test of AI-training fair use
 - [Van Buren v. United States, 593 U.S. 374 (2021)](https://www.supremecourt.gov/opinions/20pdf/19-783_k53l.pdf) — CFAA scope narrowing
 - [hiQ Labs v. LinkedIn, 31 F.4th 1180 (9th Cir. 2022)](https://law.justia.com/cases/federal/appellate-courts/ca9/17-16783/17-16783-2022-04-18.html) — Web scraping and CFAA
 

@@ -2,6 +2,23 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "29 CFR Part 541"
+    title: "DOL earnings thresholds for the EAP exemptions (2019 levels operative after 2024 rule vacatur)"
+    url: "https://www.dol.gov/agencies/whd/overtime/salary-levels"
+  - cite: "DOL WHD News Release (May 14, 2026)"
+    title: "Technical amendment restoring the part 541 regulations after vacatur of the 2024 rule"
+    url: "https://www.dol.gov/newsroom/releases/whd/whd20260514"
+  - cite: "Cal. Lab. Code 2698 et seq., as amended by AB 2288/SB 92 (2024)"
+    title: "PAGA reform — standing, penalty caps, and cure provisions"
+    url: "https://www.labor.ca.gov/resources/paga/paga-faqs/"
+  - cite: "Cal. DIR"
+    title: "California minimum wage ($16.90 effective January 1, 2026)"
+    url: "https://www.dir.ca.gov/dlse/minimum_wage.htm"
+  - cite: "DOL WHD"
+    title: "State minimum wage laws table"
+    url: "https://www.dol.gov/agencies/whd/minimum-wage/state"
 ---
 # Wage and Hour
 
@@ -20,10 +37,12 @@ Fair Labor Standards Act (FLSA) and key state variations.
 - **What**: Employees must be classified as exempt or non-exempt from FLSA overtime
   and minimum wage requirements. Exempt employees are not entitled to overtime pay;
   non-exempt employees must receive overtime for all hours worked over 40 per week.
-- **Salary threshold**: $35,568/year ($684/week) under the current effective rule.
-  The DOL proposed increasing to $55,068/year ($1,059/week) in 2024; the rule was
-  vacated by the Eastern District of Texas in November 2024. Counsel must confirm
-  the effective threshold at the time of classification.
+- **Salary threshold**: $35,568/year ($684/week). The DOL's 2024 final rule raised
+  this to $43,888 (July 2024) and would have reached $58,656 (January 2025), but the
+  Eastern District of Texas vacated the rule nationwide in November 2024. DOL enforces
+  the 2019 levels and in May 2026 issued a technical amendment restoring the 2019
+  regulatory text to 29 CFR part 541; a new rulemaking could change the figure, so
+  confirm the effective threshold at the time of classification.
 - **Salary basis test**: Exempt employees must be paid on a salary basis — a
   predetermined, fixed amount not subject to reduction based on quality or quantity
   of work performed. Impermissible deductions from salary (other than safe harbor
@@ -47,8 +66,8 @@ Fair Labor Standards Act (FLSA) and key state variations.
     away from the employer's place of business. No salary threshold.
   - **Highly Compensated Employee (HCE)**: Total annual compensation of $107,432+.
     Must customarily and regularly perform at least one exempt duty of an executive,
-    administrative, or professional employee. The DOL proposed increasing to
-    $143,988; this was vacated in 2024.
+    administrative, or professional employee. The 2024 rule's higher HCE figures were
+    vacated along with the rest of that rule; $107,432 is the operative number.
 - **Consequence**: Misclassification results in liability for unpaid overtime for
   up to 2 years (3 years if willful), plus liquidated damages equal to unpaid
   overtime (effectively doubling recovery), plus attorneys' fees. FLSA collective
@@ -78,10 +97,14 @@ Fair Labor Standards Act (FLSA) and key state variations.
 ### Minimum Wage
 
 - **Federal**: $7.25/hour (unchanged since July 24, 2009).
-- **State minimums (selected, 2024)**: California $16.00, Washington $16.28,
-  New York $15.00 (NYC $16.00), Massachusetts $15.00, Colorado $14.42,
-  Oregon $14.70 (Portland metro $15.45), Connecticut $15.69.
-  Over 30 states and numerous cities exceed the federal minimum.
+- **State minimums (selected, 2026; most are indexed and change each January 1 —
+  Oregon adjusts July 1)**: California $16.90, Washington $17.13, New York $16.00
+  ($17.00 in NYC, Long Island, and Westchester), Massachusetts $15.00,
+  Colorado $15.16, Oregon $15.05 standard / $16.30 Portland metro (rising to
+  $15.55 / $16.80 on July 1, 2026), Connecticut $16.94. Over 30 states and numerous
+  cities exceed the federal minimum; confirm current rates (including local
+  ordinances and industry-specific rates such as California fast food and
+  healthcare) before advising.
 - **Tipped employees**: Federal tipped minimum wage is $2.13/hour, provided tips
   bring total compensation to at least $7.25/hour (tip credit of up to $5.12/hour).
   Seven states prohibit tip credits entirely (employer must pay full minimum wage
@@ -158,8 +181,20 @@ Fair Labor Standards Act (FLSA) and key state variations.
   employer demonstrates good faith and reasonable grounds. Attorneys' fees mandatory
   for prevailing employees.
 - **California**: 3-year SOL for statutory wage claims (Labor Code); 4 years under
-  UCL (Bus. & Prof. Code 17200). PAGA penalties: $100/employee for initial violation
-  per pay period, $200/employee for subsequent violations per pay period.
+  UCL (Bus. & Prof. Code 17200).
+- **PAGA (post-reform)**: The default civil penalty remains $100/employee per pay
+  period, but the June 2024 reform (AB 2288/SB 92) rewrote exposure for PAGA notices
+  filed on or after June 19, 2024: the plaintiff must have personally experienced
+  each violation alleged; the $200 subsequent-violation penalty applies only after a
+  prior agency/court finding or for malicious, fraudulent, or oppressive conduct;
+  penalties are capped at 15% of the maximum if the employer took "all reasonable
+  steps" toward compliance before receiving the notice (30% if within 60 days after);
+  reduced penalties apply to isolated, short-duration violations and to derivative
+  and wage-statement claims; cure mechanisms were expanded (an LWDA process for
+  employers under 100 employees, court early-evaluation conferences for larger ones);
+  and aggrieved employees now receive 35% of penalties (65% to LWDA). Pre-reform
+  penalty math substantially overstates exposure in post-June 2024 cases; pre-reform
+  rules still govern earlier-noticed actions.
 - **Collective / class actions**: FLSA permits collective actions (opt-in); state
   laws often permit Rule 23 class actions (opt-out). Aggregate exposure across
   hundreds or thousands of affected employees can reach tens of millions.
@@ -184,5 +219,6 @@ Fair Labor Standards Act (FLSA) and key state variations.
 - [29 CFR Part 541](https://www.ecfr.gov/current/title-29/subtitle-B/chapter-V/subchapter-A/part-541) — White-collar exemption regulations
 - [DOL Wage and Hour Fact Sheets](https://www.dol.gov/agencies/whd/fact-sheets) — DOL guidance on exemptions, overtime, minimum wage
 - [California DLSE: Overtime FAQ](https://www.dir.ca.gov/dlse/FAQ_Overtime.htm) — California daily overtime and break requirements
-- [DOL Overtime Rulemaking (2024)](https://www.dol.gov/agencies/whd/overtime/rulemaking) — Proposed salary threshold (vacated)
+- [DOL Overtime Rulemaking (2024)](https://www.dol.gov/agencies/whd/overtime/rulemaking) — 2024 salary threshold rule (vacated November 2024; 2019 levels restored)
+- [LWDA PAGA FAQs](https://www.labor.ca.gov/resources/paga/paga-faqs/) — June 2024 PAGA reform: standing, caps, cure
 - [Anderson v. Mt. Clemens Pottery, 328 U.S. 680 (1946)](https://www.law.cornell.edu/supremecourt/text/328/680) — Burden-shifting for employer recordkeeping failures
