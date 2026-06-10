@@ -191,6 +191,38 @@ legal_root: /path/to/your/legal/root
 
 Backups are stored locally in `backups/` (gitignored). For routine use, prefer your vault's normal backup or version-control workflow; these scripts are local Claude Code helpers.
 
+### Scripts Reference
+
+Everything in `scripts/` is a narrow, deterministic helper. The document-pipeline scripts are normally driven *by counsel* during a redline — you rarely need to run them yourself, but they work standalone when you do.
+
+#### Document pipeline (Claude Code + macOS)
+
+| Script | What it does | When to run it yourself |
+|--------|-------------|------------------------|
+| `scripts/apply_redlines.py <original.docx> <redlines.json> <output.docx>` | Applies text replacements and margin comments to a `.docx` (python-docx). Sees text inside hyperlinks and tracked insertions; refuses ambiguous matches until disambiguated. | Re-applying an edited redline spec without redoing the analysis; debugging why a specific replacement didn't land (it reports found/skipped per item). |
+| `scripts/word_compare.sh <original.docx> <modified.docx> <author> <output.docx>` | Drives Microsoft Word's Compare via AppleScript to produce a native tracked-changes `.docx` attributed to `<author>`. Requires Word for Mac; paths must be user-accessible (not `/tmp`). | Regenerating the tracked-changes file after hand-editing the modified version; producing a redline between any two documents outside a counsel session. |
+| `scripts/clean_format.py <input.docx> <output.docx> [--template <path>]` | Rebuilds a messy `.docx` against the professional style template (`scripts/legal-template.docx`): consistent heading numbering, list formatting, smart quotes. Warns on content controls and merged cells. | A counterparty draft is too mangled to redline cleanly; normalizing a doc before comparison. |
+
+The redline flow counsel runs for you: analysis → `apply_redlines.py` (edits + comments on a copy) → `word_compare.sh` (real tracked changes) — see `primitives/draft.md` and `primitives/redline-output.md`.
+
+#### Diagnostics
+
+| Script | What it does | When |
+|--------|-------------|------|
+| `scripts/resolve_legal_root.sh` | Canonical legal-root discovery. Prints the marked root and exits 0; exits 1 if none found, 2 if multiple (candidates on stderr). | Debugging "I don't see a marked Counsel OS legal root" — run it directly to see what discovery sees. Honors `COUNSEL_OS_LEGAL_ROOT` and the `~/.counsel-os/legal-root` pointer cache. |
+
+#### Maintainer / contributor scripts
+
+Only relevant if you're developing Counsel OS itself:
+
+| Script | What it does | When |
+|--------|-------------|------|
+| `scripts/release.sh <X.Y.Z> -m "subject" [-b "body"] [--tag] [--no-push]` | One-command release: bumps all four version manifests, runs the lint + version-sync gate, commits the working tree, pushes. `--tag` adds a `claude plugin tag` release tag. | Every release. Never bump the four manifests by hand. |
+| `scripts/lint_knowledge.py [--check-versions]` | Lints `knowledge/` conventions (no checkboxes, no H2-before-H1, frontmatter present) and, with the flag, verifies the four manifests agree. Runs in CI. | Before committing knowledge content changes. |
+| `scripts/bump_content_versions.py [--date YYYY-MM-DD]` | Hashes each content group and bumps `content-version` frontmatter for groups that changed — this is what lets `/counsel-os:update` detect upstream law/practice changes. | After editing anything under `knowledge/law/` or `knowledge/practice-seed/`. |
+| `scripts/validate_law_frontmatter.py` | Validates law-area frontmatter against `knowledge/law/frontmatter-policy.json`; reports attestations coming due. Runs in CI. | After editing law frontmatter; periodically to see attestation debt. |
+| `scripts/run_evals.py [--self-test]` | Scores golden-matter eval outputs in `evals/`; `--self-test` validates the scorer itself. Runs in CI. | After changing primitives or evaluation behavior. |
+
 ---
 
 ## How It Works

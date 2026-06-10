@@ -43,4 +43,4 @@ jobs:
       - name: Script syntax (python + shell)
         run: |
           python3 -m py_compile scripts/*.py
-          for f in scripts/*.sh; do bash -n "$f"; done
+          for f in scripts/*.sh backup restore setup update; do bash -n "$f"; done

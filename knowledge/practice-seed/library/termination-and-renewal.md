@@ -7,7 +7,7 @@ content-version: "2026-06-10"
 ## Term and Auto-Renewal
 
 ### Standard
-> This Agreement shall commence on the Effective Date and continue for an initial term of [one (1) year / as specified in the Order Form] (the "Initial Term"). Upon expiration, this Agreement shall automatically renew for successive renewal terms of the same duration, unless either party provides written notice of non-renewal at least sixty (60) days prior to the end of the then-current Term.
+> This Agreement shall commence on the Effective Date and continue for an initial term of [one (1) year / as specified in the Order Form] (the "Initial Term"). Upon expiration, this Agreement shall automatically renew for successive renewal terms of one (1) year each, unless either party provides written notice of non-renewal at least sixty (60) days prior to the end of the then-current Term.
 
 ### Aggressive (Customer-Favorable)
 > This Agreement shall commence on the Effective Date and continue for the initial term specified in the Order Form. Upon expiration, it shall automatically renew for successive one (1) year renewal terms, unless either party provides notice of non-renewal at least ninety (90) days prior to the end of the then-current Term. Vendor shall provide written notice of upcoming renewal and any fee changes at least one hundred twenty (120) days prior. If Vendor fails to provide such notice, the renewal shall be at then-current pricing with no increase.

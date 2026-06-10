@@ -43,15 +43,22 @@ rollback_restore() {
 
   trap - ERR
 
+  # Fail-safe FIRST: the work directory may hold the user's only copy of
+  # pre-restore content. Preserve it unless rollback completes fully —
+  # if this trap itself dies, the EXIT cleanup must not delete it.
+  PRESERVE_RESTORE_WORKDIR=1
+
   if [ "${#MOVED_TO_ROLLBACK[@]}" -gt 0 ] || [ "${#MOVED_TO_LIVE[@]}" -gt 0 ]; then
     echo ""
     echo "Restore failed. Attempting to roll back previous content..." >&2
 
-    for item in "${MOVED_TO_LIVE[@]}"; do
+    # ${arr[@]+...} guards the empty-array expansion: bash 3.2 (stock macOS)
+    # treats "${arr[@]}" on an empty array as unbound under `set -u`.
+    for item in ${MOVED_TO_LIVE[@]+"${MOVED_TO_LIVE[@]}"}; do
       rm -rf "$LEGAL_ROOT/$item" || rollback_failed=1
     done
 
-    for item in "${MOVED_TO_ROLLBACK[@]}"; do
+    for item in ${MOVED_TO_ROLLBACK[@]+"${MOVED_TO_ROLLBACK[@]}"}; do
       rm -rf "$LEGAL_ROOT/$item" || rollback_failed=1
       if [ -e "$ROLLBACK_PATH/$item" ]; then
         mv "$ROLLBACK_PATH/$item" "$LEGAL_ROOT/$item" || rollback_failed=1
@@ -62,9 +69,13 @@ rollback_restore() {
     done
 
     if [ "$rollback_failed" -eq 1 ]; then
-      PRESERVE_RESTORE_WORKDIR=1
       echo "Rollback was incomplete; inspect the preserved work directory before retrying." >&2
+    else
+      PRESERVE_RESTORE_WORKDIR=0
     fi
+  else
+    # Nothing was moved yet — nothing irreplaceable in the work directory.
+    PRESERVE_RESTORE_WORKDIR=0
   fi
 
   trap - EXIT
@@ -175,7 +186,7 @@ for dir in "${RESTORE_DIRS[@]}"; do
     mv "$STAGE_PATH/$dir" "$LEGAL_ROOT/$dir"
     MOVED_TO_LIVE+=("$dir")
     echo "  restored: $dir/"
-  elif contains_item "$dir" "${EXISTED_BEFORE[@]}"; then
+  elif contains_item "$dir" ${EXISTED_BEFORE[@]+"${EXISTED_BEFORE[@]}"}; then
     echo "  removed:  $dir/ (not present in backup)"
   fi
 done
