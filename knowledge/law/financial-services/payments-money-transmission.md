@@ -2,6 +2,17 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state, network-rules, industry-standard]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "18 U.S.C. 1960"
+    title: "Prohibition of unlicensed money transmitting businesses"
+    url: "https://www.law.cornell.edu/uscode/text/18/1960"
+  - cite: "31 C.F.R. 1010.100(ff)"
+    title: "FinCEN definition of money services business / money transmitter"
+    url: "https://www.law.cornell.edu/cfr/text/31/1010.100"
+  - cite: "CSBS MTMA legislation tracker"
+    title: "Money Transmission Modernization Act enacted and pending legislation"
+    url: "https://www.csbs.org/state-pending-enacted-mtma-legislation"
 ---
 # Payments and Money Transmission
 

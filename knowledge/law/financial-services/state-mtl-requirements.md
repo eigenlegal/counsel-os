@@ -2,6 +2,23 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-state]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "CSBS MTMA legislation tracker"
+    title: "2022-2026 Money Transmission Modernization Act proposed and enacted legislation"
+    url: "https://www.csbs.org/state-pending-enacted-mtma-legislation"
+  - cite: "Tex. Fin. Code Chapter 152"
+    title: "Regulation of Money Services Businesses (Money Services Modernization Act, S.B. 895, eff. Sept. 1, 2023)"
+    url: "https://statutes.capitol.texas.gov/Docs/FI/htm/FI.152.htm"
+  - cite: "N.Y. Banking Law Article 13-B"
+    title: "Transmitters of Money (bond requirements at Section 643)"
+    url: "https://www.nysenate.gov/legislation/laws/BNK/A13-B"
+  - cite: "Cal. DFPI"
+    title: "Digital Financial Assets Law — licensure required for activity with California residents from July 1, 2026"
+    url: "https://dfpi.ca.gov/regulated-industries/digital-financial-assets/"
+  - cite: "NMLS"
+    title: "Nationwide Multistate Licensing System state checklists"
+    url: "https://www.nmls.org"
 ---
 # State Money Transmitter Licensing Requirements
 
@@ -9,13 +26,15 @@ jurisdiction: [us-state]
 
 Load when the matter involves state-specific money transmitter licensing, multi-state licensing strategy, bond or net worth calculations, state examination preparation, new-state expansion analysis, or MTMA adoption status. This file covers all 50 states plus DC, Puerto Rico, and USVI.
 
+**Triage only.** Use the per-state entries below to scope and prioritize — not as the basis for a current-law conclusion. Bonds, net worth figures, fees, exemption language, and MTMA status change frequently and have not all been verified on the same date. Before relying on any per-state figure or exemption, verify against the state statute, the state regulator's site, and the NMLS checklist for that state.
+
 For federal requirements (FinCEN/BSA, CFPB, OFAC), see `federal-payments-regulation.md`. For general money transmission definitions and exemption analysis, see `payments-money-transmission.md`.
 
 ## Key Requirements
 
 ### MTMA — Money Transmission Modernization Act Framework
 
-- **What:** The CSBS Money Transmission Modernization Act (MTMA) is a model law establishing uniform nationwide standards for money transmitter licensing. As of February 2026, 30+ states have enacted the MTMA in full or in part. Licensees in MTMA-adopting states collectively account for 99% of reported money transmission activity.
+- **What:** The CSBS Money Transmission Modernization Act (MTMA) is a model law establishing uniform nationwide standards for money transmitter licensing. Per the CSBS tracker (April 2026 update), 31 states have enacted the MTMA in full or in part — check the tracker for the current count, as the state list below may lag the most recent enactments. Licensees in MTMA-adopting states collectively account for 99% of reported money transmission activity.
 - **Standardized requirements under MTMA:**
   - **Net worth:** Tangible net worth of the greater of $100,000 or 3% of total assets for the first $100M, plus 2% of additional assets over $100M
   - **Surety bond:** Not less than $25,000 and not more than $500,000 based on the licensee's transmission activity volume; specific formula set by state
@@ -253,10 +272,10 @@ For MTMA-adopting states below, only deviations from the MTMA standard are noted
 
 ### Texas
 
-- **Statute:** Tex. Fin. Code Chapter 151 (Money Services Act)
+- **Statute:** Tex. Fin. Code Chapter 152 (Regulation of Money Services Businesses) — S.B. 895 (2023, the Money Services Modernization Act) repealed former Chapter 151 and replaced it with Chapter 152
 - **Regulator:** Texas Department of Banking
 - **Definition:** Broad definition — receiving money or monetary value to transmit, deliver, or instruct to be delivered by any means; **Texas uses an expansive interpretation** that captures many activities other states may exempt
-- **MTMA:** Adopted 2023 (S.B. 895, H.B. 3573) — Full MTMA, effective September 1, 2023
+- **MTMA:** Adopted 2023 (S.B. 895) — Full MTMA, effective September 1, 2023
 - **NMLS:** Yes
 - **Surety bond:** MTMA standard (up to $500,000 based on volume); pre-MTMA requirement was $300,000 minimum
 - **Net worth:** MTMA standard
@@ -265,7 +284,7 @@ For MTMA-adopting states below, only deviations from the MTMA standard are noted
 - **Application fee:** $2,500 | **Renewal:** Annual, $1,000 + assessment
 - **Notable:** Texas's broad definition of money transmission is one of the most expansive nationally. The lack of a clear payment processor exemption means many companies that would be exempt in other states must be licensed in TX. Full MTMA adoption (2023) standardized financial requirements. Texas Department of Banking conducts active examinations and enforcement.
 - **Penalties:** Class A misdemeanor for first offense; third-degree felony for subsequent offenses; civil penalties up to $25,000/day
-- **Sources:** [Tex. Fin. Code Ch. 151](https://statutes.capitol.texas.gov/Docs/FI/htm/FI.151.htm) | [TX Dept of Banking](https://www.dob.texas.gov/) | [NMLS](https://www.nmls.org)
+- **Sources:** [Tex. Fin. Code Ch. 152](https://statutes.capitol.texas.gov/Docs/FI/htm/FI.152.htm) | [TX Dept of Banking](https://www.dob.texas.gov/) | [NMLS](https://www.nmls.org)
 - **Last verified:** 2026-Q1
 
 ### Washington

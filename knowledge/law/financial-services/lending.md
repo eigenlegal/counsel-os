@@ -2,6 +2,23 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state, network-rules, industry-standard]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "90 FR (Dec. 15, 2025)"
+    title: "CFPB/FRB annual Regulation Z threshold adjustment — 2026 TILA exemption threshold"
+    url: "https://www.federalregister.gov/documents/2025/12/15/2025-22814/truth-in-lending-regulation-z"
+  - cite: "91 FR (May 1, 2026)"
+    title: "CFPB final rule — Small Business Lending Under the Equal Credit Opportunity Act (Regulation B, Section 1071 revisions)"
+    url: "https://www.federalregister.gov/documents/2026/05/01/2026-08494/small-business-lending-under-the-equal-credit-opportunity-act-regulation-b"
+  - cite: "90 FR 20084 (May 12, 2025)"
+    title: "CFPB withdrawal of interpretive rules, policy statements, and advisory opinions (including the 2024 BNPL interpretive rule)"
+    url: "https://www.federalregister.gov/documents/2025/05/12/2025-08286/interpretive-rules-policy-statements-and-advisory-opinions-withdrawal"
+  - cite: "90 FR (Dec. 23, 2025)"
+    title: "CFPB advisory opinion — Truth in Lending (Regulation Z); Non-application to Earned Wage Access Products"
+    url: "https://www.federalregister.gov/documents/2025/12/23/2025-23735/truth-in-lending-regulation-z-non-application-to-earned-wage-access-products"
+  - cite: "12 C.F.R. Part 1026"
+    title: "Regulation Z (Truth in Lending)"
+    url: "https://www.law.cornell.edu/cfr/text/12/part-1026"
 ---
 # Lending Regulation
 
@@ -16,7 +33,7 @@ Load when the matter involves consumer or commercial lending, loan origination, 
 - **What:** TILA (15 U.S.C. 1601 et seq.) and its implementing Regulation Z (12 C.F.R. Part 1026) require creditors to provide uniform credit cost disclosures to consumers before consummation of a credit transaction.
 - **Key disclosures:** Annual Percentage Rate (APR), finance charge, amount financed, total of payments, payment schedule, and late payment fees. For open-end credit: periodic statements, APR, fees, and billing rights.
 - **Right of rescission:** For consumer credit transactions secured by the borrower's principal dwelling (excluding purchase-money mortgages), the borrower has a 3-business-day right to rescind after consummation, receipt of material disclosures, and receipt of rescission notice. Failure to provide proper disclosures extends rescission right to 3 years.
-- **Threshold:** TILA applies to consumer credit (personal, family, or household purposes). Exempt: business/commercial/agricultural credit over $69,500 (adjusted annually), securities-secured credit, and public utility credit.
+- **Threshold:** TILA applies to consumer credit (personal, family, or household purposes). Exempt: business/commercial/agricultural credit; consumer credit over the exemption threshold, which is indexed annually ($73,400 for 2026 — check the current annual adjustment) except that private education loans and dwelling/real-property-secured credit are covered regardless of amount; securities-secured credit; and public utility credit.
 - **Consequence:** Statutory damages of $500–$4,000 (individual) or lesser of $1,000,000 or 1% of net worth (class action). Actual damages. Extended rescission rights. CFPB enforcement.
 
 ### Equal Credit Opportunity Act (ECOA) / Regulation B
@@ -55,13 +72,13 @@ Load when the matter involves consumer or commercial lending, loan origination, 
 - **What:** The Consumer Financial Protection Bureau has supervisory authority over banks with assets exceeding $10 billion and over non-bank entities in designated markets.
 - **Threshold:** Non-bank supervision extends to mortgage companies (origination, servicing, modification), payday lenders, private education lenders, and larger participants in consumer financial markets (defined by rule based on annual receipts).
 - **UDAAP:** Broad authority to prohibit unfair, deceptive, or abusive acts or practices in consumer financial services (12 U.S.C. 5531). "Abusive" is a standard unique to Dodd-Frank, broader than traditional UDAP.
-- **Section 1071 (Small Business Lending Data Collection):** Requires financial institutions to collect and report data on credit applications from small businesses, including women-owned and minority-owned businesses. Phased implementation based on lending volume.
+- **Section 1071 (Small Business Lending Data Collection):** Requires financial institutions to collect and report data on credit applications from small businesses, including women-owned and minority-owned businesses. The CFPB substantially revised the rule in a May 2026 final rule (effective June 30, 2026): coverage, covered transactions, and required data points were narrowed, and the compliance date was extended to January 1, 2028. Verify the revised rule's coverage tests before advising.
 - **Consequence:** CFPB enforcement orders have included penalties exceeding $100M and restitution exceeding $1B in individual matters.
 
 ### Specific Lending Products
 
-- **BNPL (Buy Now, Pay Later):** CFPB has interpreted BNPL as subject to TILA Regulation Z (billing rights, dispute resolution, refunds). State licensing requirements vary and are evolving.
-- **Earned Wage Access (EWA):** Regulatory treatment varies. Some states treat EWA as lending requiring licensing; CFPB advisory opinion (2020) provides conditions under which employer-integrated EWA may not constitute credit.
+- **BNPL (Buy Now, Pay Later):** The CFPB's May 2024 interpretive rule treating BNPL "digital user accounts" as credit cards under Regulation Z was withdrawn on May 12, 2025, and the CFPB has said it will not reissue it or prioritize BNPL enforcement on that theory. Closed-end TILA disclosure analysis and state law still apply on their own terms. State licensing requirements vary and are evolving (several states have enacted BNPL-specific licensing).
+- **Earned Wage Access (EWA):** Regulatory treatment varies. Some states treat EWA as lending requiring licensing. At the federal level, a December 2025 CFPB advisory opinion concludes that qualifying EWA products are not "credit" under TILA/Regulation Z and formally withdraws the 2024 proposed interpretive rule that would have treated EWA as credit. Check the advisory opinion's conditions and current status before relying on it.
 - **Mortgage lending:** Subject to extensive additional requirements including RESPA/Regulation X, TILA-RESPA Integrated Disclosure (TRID), Ability-to-Repay/Qualified Mortgage (ATR/QM) rule, HMDA reporting, and state mortgage licensing (MLO licensing through NMLS).
 
 ## Interaction with Other Areas

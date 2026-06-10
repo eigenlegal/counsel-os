@@ -2,6 +2,23 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state, network-rules, industry-standard]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "12 C.F.R. Part 3"
+    title: "OCC capital adequacy standards (Basel III)"
+    url: "https://www.law.cornell.edu/cfr/text/12/part-3"
+  - cite: "OCC Bulletin 2023-17"
+    title: "Interagency Guidance on Third-Party Relationships: Risk Management"
+    url: "https://www.occ.gov/news-issuances/bulletins/2023/bulletin-2023-17.html"
+  - cite: "90 FR 33538 (Jul. 18, 2025)"
+    title: "Interagency proposal to rescind the 2023 CRA final rule and reinstate the prior framework"
+    url: "https://www.federalregister.gov/documents/2025/07/18/2025-13559/community-reinvestment-act-regulations"
+  - cite: "OCC Bulletin 2025-18"
+    title: "CRA: Interagency Notice of Proposed Rulemaking to Rescind and Replace the 2023 CRA Final Rule"
+    url: "https://www.occ.gov/news-issuances/bulletins/2025/bulletin-2025-18.html"
+  - cite: "12 U.S.C. 2901"
+    title: "Community Reinvestment Act"
+    url: "https://www.law.cornell.edu/uscode/text/12/2901"
 ---
 # Banking Regulation
 
@@ -50,7 +67,7 @@ Load when the matter involves bank charters, bank partnerships, Banking-as-a-Ser
 
 ### Third-Party Risk Management
 
-- **What:** Federal banking regulators require banks to manage risks from third-party relationships through a lifecycle approach (31 C.F.R.; OCC Bulletin 2023-17, FDIC FIL-44-2008, Federal Reserve SR 13-19/CA 13-21).
+- **What:** Federal banking regulators require banks to manage risks from third-party relationships through a lifecycle approach under the 2023 Interagency Guidance on Third-Party Relationships (OCC Bulletin 2023-17; Federal Reserve SR 23-4; FDIC FIL-29-2023), which replaced the agencies' earlier separate guidance.
 - **Requirements:** Planning (risk assessment), due diligence and third-party selection, contract negotiation (must include audit rights, compliance obligations, performance standards, business continuity, subcontracting controls, default/termination provisions), ongoing monitoring, and contingency planning.
 - **Critical activities:** Relationships involving critical activities (significant bank functions, customer-facing services, material risk exposure) require enhanced oversight including board reporting.
 - **Consequence:** Regulatory examination findings on third-party risk management deficiencies can lead to MRAs (Matters Requiring Attention), MRIAs (Matters Requiring Immediate Attention), consent orders, and civil money penalties.
@@ -59,7 +76,8 @@ Load when the matter involves bank charters, bank partnerships, Banking-as-a-Ser
 
 - **What:** CRA (12 U.S.C. 2901) requires insured depository institutions to meet the credit needs of their entire community, including low- and moderate-income neighborhoods, consistent with safe and sound operations.
 - **Threshold:** CRA examinations and ratings apply to all insured depository institutions. Evaluation tests vary by asset size (small bank, intermediate small bank, large bank).
-- **Timeline:** CRA performance evaluations conducted on a regular cycle (typically every 2-4 years). Final CRA modernization rule effective April 1, 2024 (implementation phased through 2026).
+- **Timeline:** CRA performance evaluations conducted on a regular cycle (typically every 2-4 years).
+- **Modernization status (as of June 2026):** The October 2023 CRA modernization final rule never took effect — it was stayed in litigation, and in July 2025 the OCC, Federal Reserve, and FDIC jointly proposed to rescind it and reinstate regulations substantively identical to the prior (1995/2021) framework. Banks continue to be examined under the prior framework; verify whether the rescission has been finalized before advising on CRA evaluation standards.
 - **Consequence:** Unsatisfactory CRA ratings can result in denial or delay of applications for mergers, acquisitions, branch openings, and other expansion activities. CRA ratings are publicly available.
 
 ### Examination Cycle

@@ -2,6 +2,26 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "31 C.F.R. Part 1022"
+    title: "FinCEN rules for money services businesses"
+    url: "https://www.law.cornell.edu/cfr/text/31/part-1022"
+  - cite: "12 C.F.R. Part 1005"
+    title: "Regulation E (Electronic Fund Transfers), including Remittance Transfer Rule subpart B"
+    url: "https://www.law.cornell.edu/cfr/text/12/part-1005"
+  - cite: "12 C.F.R. 1090.107"
+    title: "CFPB larger-participant rule — international money transfer market"
+    url: "https://www.ecfr.gov/current/title-12/chapter-X/part-1090/subpart-B/section-1090.107"
+  - cite: "90 FR 3687 (Jan. 15, 2025)"
+    title: "OFAC final rule — Inflation Adjustment of Civil Monetary Penalties (2025 maximums, unchanged for 2026)"
+    url: "https://www.federalregister.gov/documents/2025/01/15/2025-00786/inflation-adjustment-of-civil-monetary-penalties"
+  - cite: "18 U.S.C. 1960"
+    title: "Prohibition of unlicensed money transmitting businesses"
+    url: "https://www.law.cornell.edu/uscode/text/18/1960"
+  - cite: "16 C.F.R. 1.98"
+    title: "FTC adjustment of civil monetary penalty amounts"
+    url: "https://www.ecfr.gov/current/title-16/chapter-I/subchapter-A/part-1/subpart-L/section-1.98"
 ---
 # Federal Payments Regulation
 
@@ -15,7 +35,7 @@ For state-by-state licensing requirements, see `state-mtl-requirements.md`. For 
 
 ### FinCEN / BSA — MSB Registration and Compliance
 
-- **MSB Registration (31 C.F.R. 1010.100(ff)):** Money services businesses, including money transmitters, must register with FinCEN on Form 107 within 180 days of beginning operations. Renewal required every 2 years. Registration and state licensing are independent obligations — must have both. Failure to register violates 31 U.S.C. 5330 (civil penalties up to $5,000/day, criminal penalties).
+- **MSB Registration (31 C.F.R. 1010.100(ff)):** Money services businesses, including money transmitters, must register with FinCEN on Form 107 within 180 days of beginning operations. Renewal required every 2 years. Registration and state licensing are independent obligations — must have both. Failure to register violates 31 U.S.C. 5330 (civil penalties of $5,000/day statutory base, indexed annually for inflation; criminal penalties).
 - **AML Program (31 C.F.R. 1022.210):** MSBs must establish and maintain an effective AML program with five pillars: (1) internal policies, procedures, and controls; (2) designation of a compliance officer; (3) ongoing employee training; (4) independent review/testing; (5) customer due diligence appropriate to risk. MSB programs must be risk-based and commensurate with the MSB's size, complexity, and nature of operations.
 - **SAR Filing (31 C.F.R. 1022.320):** MSBs must file SARs for suspicious transactions of $2,000 or more (lower threshold than the $5,000 bank threshold). Filing deadline: 30 calendar days after initial detection. No tipping off — prohibited from disclosing SAR filing to the subject. Retain SAR and supporting documentation for 5 years.
 - **CTR Filing (31 C.F.R. 1022.310):** Currency transaction reports required for cash transactions exceeding $10,000 in a single business day. Structuring (breaking transactions to avoid CTR threshold) is a federal crime. File within 15 calendar days.
@@ -30,8 +50,8 @@ For state-by-state licensing requirements, see `state-mtl-requirements.md`. For 
 - **Remittance Transfer Rule (Reg E Subpart B, 12 C.F.R. 1005.30-36):** Implements Dodd-Frank Section 1073. Applies to electronic transfers of $15+ sent by consumers to recipients in foreign countries. Requires pre-payment disclosures (exchange rate, fees, taxes, amount to be received in foreign currency). 30-minute cancellation right after payment. Error resolution within 180 days. Sender liability protections. Applies to remittance transfer providers sending 500+ remittances annually.
 - **Prepaid Account Rule (12 C.F.R. 1005.18):** Requires short-form and long-form fee disclosures for prepaid accounts (payroll cards, government benefit cards, general-purpose reloadable cards). Error resolution protections apply. If prepaid account has credit feature, Regulation Z (TILA) applies to the credit component. Prepaid account issuers must register with CFPB.
 - **UDAAP Authority (Dodd-Frank Section 1031):** CFPB enforces prohibition on unfair, deceptive, or abusive acts or practices in consumer financial services. Applies to payment processors — CFPB has taken action against processors facilitating fraud, imposing deceptive fees, or failing to honor error resolution obligations. Broader than FTC's UDAP standard (adds "abusive").
-- **Supervisory Authority:** CFPB supervises nonbank money transmitters with $1 million+ in annual aggregate receipts from money transmission under the larger participant rule (12 C.F.R. 1090.107). Supervision includes examination authority and the ability to require reports.
-- **Consequence:** CFPB civil penalties up to $1,000,000/day for knowing violations. Restitution, disgorgement, and injunctive relief. Individual liability for officers who participate in violations.
+- **Supervisory Authority:** CFPB supervises nonbank participants in the international money transfer market with at least one million aggregate annual international money transfers (counting affiliates) under the larger participant rule (12 C.F.R. 1090.107). Supervision includes examination authority and the ability to require reports. The CFPB opened a rulemaking docket on this larger-participant rule in 2025 — verify the current threshold before advising.
+- **Consequence:** CFPB civil penalties up to $1,000,000/day for knowing violations ($1M is the statutory base; tiers are indexed annually for inflation). Restitution, disgorgement, and injunctive relief. Individual liability for officers who participate in violations.
 
 ### OFAC — Sanctions Compliance for Payments
 
@@ -39,7 +59,7 @@ For state-by-state licensing requirements, see `state-mtl-requirements.md`. For 
 - **Payments-Specific Guidance:** OFAC has issued guidance on virtual currency sanctions compliance (requires IP address screening, geolocation tools, transaction monitoring). Cross-border wire transfers require originator and beneficiary screening. Correspondent banking relationships require enhanced due diligence for sanctions risk.
 - **Blocking vs. Rejecting:** Blocked transactions (involving SDN-listed persons) must be placed in an interest-bearing account and reported to OFAC within 10 business days on a blocked property report. Rejected transactions (involving prohibited but not blocked parties) must be reported to OFAC annually.
 - **Licensing and Exemptions:** General licenses authorize specific categories of otherwise prohibited transactions (e.g., humanitarian, informational materials, certain personal remittances). Specific licenses are case-by-case authorizations. Application process through OFAC's Licensing Division.
-- **Consequence:** Civil penalties up to $356,579 per violation (inflation-adjusted, 2024) or twice the transaction value, whichever is greater. Criminal penalties up to $1,000,000 and 20 years imprisonment for willful violations. No minimum transaction threshold — even de minimis transactions can trigger liability.
+- **Consequence:** Civil penalties up to the IEEPA maximum per violation or twice the transaction value, whichever is greater. The maximum is indexed annually — $377,700 under OFAC's 2025 adjustment, which remains in effect for 2026 (no 2026 adjustment was issued); check OFAC's current figure rather than relying on a hardcoded number. Criminal penalties up to $1,000,000 and 20 years imprisonment for willful violations. No minimum transaction threshold — even de minimis transactions can trigger liability.
 
 ### Federal Criminal — 18 U.S.C. 1960
 
@@ -61,7 +81,7 @@ For state-by-state licensing requirements, see `state-mtl-requirements.md`. For 
 - **FTC Act Section 5:** Prohibits unfair or deceptive acts or practices in or affecting commerce. Applies to non-bank payment processors. FTC has concurrent jurisdiction with CFPB for entities outside CFPB's supervisory authority.
 - **Telemarketing Sales Rule (16 C.F.R. Part 310):** Restricts payment methods in telemarketing transactions. Payment processors can be liable for assisting and facilitating TSR violations by merchant clients, particularly when the processor knew or consciously avoided knowing about the violations.
 - **Enforcement Precedent:** FTC has brought enforcement actions against payment processors for: continuing to process for merchants with high chargeback rates and known fraud indicators; failing to conduct adequate due diligence on merchants; facilitating deceptive billing practices. Consent orders typically require enhanced merchant monitoring programs.
-- **Consequence:** FTC can seek injunctive relief, consumer redress, disgorgement of profits, and civil penalties up to $50,120 per violation (inflation-adjusted) for knowing violations.
+- **Consequence:** FTC can seek injunctive relief, consumer redress, disgorgement of profits, and civil penalties for knowing violations up to the indexed maximum per violation ($53,088 under the FTC's 2025 adjustment, in effect as of mid-2026; see 16 C.F.R. 1.98 for the current figure).
 
 ## Interaction with Other Areas
 

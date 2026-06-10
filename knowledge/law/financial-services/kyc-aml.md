@@ -2,6 +2,23 @@
 counsel-os-type: law-area
 content-version: "2026-06-10"
 jurisdiction: [us-federal, us-state, network-rules, industry-standard]
+last-reviewed: "2026-06-10"
+authorities:
+  - cite: "31 C.F.R. 1010.230"
+    title: "FinCEN Customer Due Diligence Rule"
+    url: "https://www.law.cornell.edu/cfr/text/31/section-1010.230"
+  - cite: "90 FR 13688 (Mar. 26, 2025)"
+    title: "FinCEN interim final rule — Beneficial Ownership Information Reporting Requirement Revision and Deadline Extension"
+    url: "https://www.federalregister.gov/documents/2025/03/26/2025-05199/beneficial-ownership-information-reporting-requirement-revision-and-deadline-extension"
+  - cite: "FinCEN BOI program page"
+    title: "Beneficial Ownership Information Reporting"
+    url: "https://www.fincen.gov/boi"
+  - cite: "90 FR 3687 (Jan. 15, 2025)"
+    title: "OFAC final rule — Inflation Adjustment of Civil Monetary Penalties (2025 maximums, unchanged for 2026)"
+    url: "https://www.federalregister.gov/documents/2025/01/15/2025-00786/inflation-adjustment-of-civil-monetary-penalties"
+  - cite: "OFAC civil penalties page"
+    title: "Civil Penalties and Enforcement Information"
+    url: "https://ofac.treasury.gov/civil-penalties-and-enforcement-information"
 ---
 # KYC/AML (Know Your Customer / Anti-Money Laundering)
 
@@ -59,14 +76,14 @@ Load when the matter involves customer onboarding, identity verification, transa
 - **What:** All US persons and entities must comply with OFAC sanctions programs. Financial institutions must screen customers, transactions, and counterparties against the SDN (Specially Designated Nationals and Blocked Persons) List and other OFAC lists (Sectoral Sanctions, Non-SDN lists).
 - **Threshold:** Strict liability — no minimum transaction amount or materiality threshold. A 50% ownership rule applies (entities owned 50%+ by blocked persons are also blocked).
 - **Timeline:** Blocked property must be reported to OFAC within 10 business days. Rejected transactions must be reported within 10 business days.
-- **Consequence:** Civil penalties under a strict liability standard up to the greater of $356,579 (adjusted annually) or twice the transaction value. Criminal penalties up to $1,000,000 and 20 years imprisonment for willful violations.
+- **Consequence:** Civil penalties under a strict liability standard up to the greater of the IEEPA maximum per violation or twice the transaction value. The maximum is indexed annually — $377,700 under the 2025 adjustment, which remains in effect for 2026 (no 2026 adjustment was issued); check OFAC's current figure rather than relying on a hardcoded number. Criminal penalties up to $1,000,000 and 20 years imprisonment for willful violations.
 
 ### Beneficial Ownership
 
 - **What:** Financial institutions must identify and verify the identity of beneficial owners of legal entity customers at account opening.
 - **Threshold:** Individuals with 25% or more equity ownership interest, PLUS one individual with significant management responsibility (e.g., CEO, CFO, managing member), regardless of ownership percentage.
 - **CDD Rule scope:** Applies to legal entity customers (corporations, LLCs, partnerships, trusts other than statutory trusts). Exemptions for publicly traded companies, regulated financial institutions, government entities, and certain others.
-- **Corporate Transparency Act (CTA):** Separate requirement — most US entities must report beneficial ownership information directly to FinCEN (25%+ ownership or substantial control). Existing companies and new companies have specified filing deadlines.
+- **Corporate Transparency Act (CTA):** Separate from financial-institution CDD, and substantially narrowed in 2025. Under FinCEN's interim final rule (90 FR 13688, March 26, 2025), all entities formed in the United States (formerly "domestic reporting companies") and US persons are exempt from BOI reporting. Only foreign-formed entities registered to do business in a US state ("foreign reporting companies") must report, and they need not report US-person beneficial owners. FinCEN has stated it intends to finalize the rule; verify current scope at fincen.gov/boi before advising.
 
 ### Recordkeeping Requirements
 
@@ -81,7 +98,7 @@ Load when the matter involves customer onboarding, identity verification, transa
 - **Financial Services (Cryptocurrency):** Virtual currency businesses have specific BSA/AML obligations including the Travel Rule. See `cryptocurrency.md`.
 - **Data Privacy:** KYC/AML data collection and retention must be reconciled with data minimization requirements under GDPR, CCPA, and other privacy laws. BSA recordkeeping may override privacy deletion requests.
 - **International Trade:** OFAC sanctions compliance intersects with export controls. Sanctions screening must cover all OFAC programs.
-- **Corporate:** CTA beneficial ownership reporting applies to most US entities separate from financial institution CDD obligations.
+- **Corporate:** CTA beneficial ownership reporting now applies only to foreign reporting companies (per FinCEN's March 2025 interim final rule), separate from financial institution CDD obligations.
 - **Litigation:** SAR filings are confidential and protected by safe harbor; litigation must navigate SAR confidentiality requirements.
 
 ## Sources
