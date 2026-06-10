@@ -1,13 +1,20 @@
 ---
 name: retro
-description: "Practice analytics: analyze decision history, exception patterns, position drift, and counterparty trends. Use weekly or monthly."
+description: "Practice analytics: matter and counterparty trends, knowledge-base health, and harvesting promotable knowledge from matters (archetype/corridor playbooks, proven clause language) — plus, at sufficient volume, position drift and exception-rate analysis. Use monthly."
 ---
 
 # Retro — Practice Analytics
 
 You are running a retrospective analysis of the user's legal practice. Your job is to analyze accumulated data in the memory and matters files, identify trends, and recommend improvements to positions, processes, and priorities.
 
-**When to use:** Run weekly or monthly, or when the user wants insight into their practice patterns.
+**When to use:** Run monthly, or when the user wants insight into their practice patterns.
+
+**Calibrate to the practice's shape before analyzing.** Two archetypes:
+
+- **High-volume, homogeneous** (many similar contracts against the same positions): the statistical steps (3 and 5 — position effectiveness, exception rates) are meaningful. Run everything.
+- **Low-volume, heterogeneous** (most solo/in-house practices: few matters, each structurally different): per-clause statistics are noise at n < ~10 per clause type. SKIP the statistical analysis in Steps 3 and 5 — treat deviations as individual case notes instead of trends — and make **Step 6 (Harvest)** the centerpiece. In these practices the durable knowledge is rarely clause-generic; it's deal-archetype and regulatory-posture knowledge (e.g., "how pay-ins work in jurisdiction X via partner Y"), which belongs in promoted playbooks, not position files.
+
+State which mode you're running and why at the top of the report.
 
 
 ## Step 0: Resolve Paths
@@ -68,6 +75,8 @@ From the `## Findings` and `## Decisions` sections of matter files:
 
 ### Position Effectiveness
 
+**Volume gate:** only compute acceptance/fallback/exception rates for clause types with roughly 10+ comparable matters in the period. Below that, list notable deviations as case notes with their rationale — do not present percentages from tiny samples as trends.
+
 For each position file in `{legal_root}/practice/standards/`:
 - How often was the standard position accepted without modification?
 - How often was it negotiated down to the fallback position?
@@ -116,7 +125,7 @@ An *exception* is a decision that accepted terms outside the practice standard. 
 
 The most important analysis: **Are your exceptions telling you something about your standards?**
 
-For any clause type where exceptions exceed 30% of matters:
+For any clause type where exceptions exceed 30% of matters (only meaningful with ~10+ matters of a comparable type — see the volume gate in Step 3):
 - Your standard may be too aggressive for the current market
 - Consider whether the standard should be updated to reflect actual practice
 - Flag: "You've granted [N] exceptions on [clause type] out of [M] matters. Consider updating your standard position."
@@ -127,7 +136,18 @@ Where decisions were framed as one-time vs. precedent-setting (in matter `## Dec
 - Are "one-time" exceptions being repeated? (If so, they're becoming precedent whether or not the position is updated.)
 - How many exceptions were marked as precedent-setting?
 
-## Step 6: Compare Against Previous Retro
+## Step 6: Harvest Promotable Knowledge
+
+The highest-value step for low-volume practices. Sweep matter files (working and closed) and entity files for knowledge that has outgrown its container and should be **promoted**:
+
+1. **Deal-archetype / corridor playbooks → `practice/methods/`.** When 2+ matters share a structure (a payment corridor, a partner architecture, a deal type like "vendor infrastructure purchase"), the accumulated knowledge — regulatory architecture, who confirmed what and when, agreed structures, reusable instruments, open gaps — belongs in a method file the next matter can start from, not buried across matter files. This is the knowledge object between a clause position (too generic) and a matter file (too specific).
+2. **Proven negotiated language → `practice/library/`.** Counter-language that was accepted in a real negotiation, with a note on the context it won in. Harvest verbatim from the executed documents or redlines where possible; mark anything reconstructed from matter notes as reconstructed.
+3. **Regulatory-posture notes → entity files.** Partner- or regulator-specific posture confirmed during a matter (license scope, filing positions, comfort levels) that future deals with that entity will need.
+4. **Process rules → `memory/patterns.md`** (cross-cutting only, per the remember primitive's rules).
+
+For each candidate, present: source (matter/entity file), what would be promoted, destination, and a draft or outline. Promotion writes to user-owned practice content — ALWAYS get approval before writing.
+
+## Step 7: Compare Against Previous Retro
 
 If a previous retro snapshot exists:
 - Compare metrics (volume, distribution, turnaround, exception rate)
@@ -135,7 +155,7 @@ If a previous retro snapshot exists:
 - Check if previous retro recommendations were implemented
 - Track trend lines over time
 
-## Step 7: Generate Recommendations
+## Step 8: Generate Recommendations
 
 Based on the analysis, produce specific, actionable recommendations:
 
@@ -168,7 +188,14 @@ Reason: [gap identified during the period]
 Priority: [high/medium/low]
 ```
 
-## Step 8: Knowledge Base Health Audit
+### Archetype Playbooks (from Step 6 harvest)
+```
+Recommendation: Promote [matter/entity knowledge] into practice/methods/[playbook].md
+Reason: [N] matters share this structure; the knowledge currently lives only in matter files
+Contents: [regulatory architecture / agreed structures / reusable instruments / open gaps]
+```
+
+## Step 9: Knowledge Base Health Audit
 
 The retro audits the health of the knowledge base but does NOT perform maintenance directly. Flag issues here; the user can fix them by asking to update entity files or practice standards (the `remember` primitive handles this).
 
@@ -188,7 +215,7 @@ The retro audits the health of the knowledge base but does NOT perform maintenan
 - Enumerate all entity files (Knowledge Base Search) and check for counterparties still marked as "Negotiating" that may have been executed or abandoned
 - Flag any mismatches in status metadata, where the user tracks it (e.g., a `counsel-os-status` property — optional, not written by default)
 
-## Step 9: Save Retro Snapshot
+## Step 10: Save Retro Snapshot
 
 Offer to save the retro results for future comparison:
 
@@ -205,7 +232,7 @@ The snapshot should include:
 - Recommendations made
 - Status of previous recommendations
 
-## Step 10: Output the Retro Report
+## Step 11: Output the Retro Report
 
 ```
 ## Practice Retro — [Period]
@@ -233,6 +260,11 @@ The snapshot should include:
 
 ### Counterparty Insights
 [Key counterparty patterns and trends]
+
+### Harvest — Promotable Knowledge
+| Source | What | Destination | Status |
+|--------|------|-------------|--------|
+| [matter/entity] | [archetype playbook / proven language / posture note] | [methods/library/entity/patterns] | [proposed/approved/written] |
 
 ### Exception Analysis
 - Total exceptions: [N]
