@@ -66,6 +66,23 @@ export function ensurePluginNodePath(
   }
 }
 
+// Bun's fetch throws TimeoutError (AbortSignal.timeout) and ConnectionRefused,
+// not Node's AbortError/ECONNREFUSED — accept both shapes.
+export function isTimeoutError(err: any): boolean {
+  return err?.name === 'AbortError' || err?.name === 'TimeoutError';
+}
+
+export function isConnectionError(err: any): boolean {
+  return (
+    err?.code === 'ECONNREFUSED' ||
+    err?.code === 'ECONNRESET' ||
+    err?.code === 'ConnectionRefused' ||
+    err?.code === 'ConnectionReset' ||
+    !!err?.message?.includes('fetch failed') ||
+    !!err?.message?.includes('Unable to connect')
+  );
+}
+
 interface ServerState {
   pid: number;
   port: number;
@@ -159,7 +176,10 @@ async function ensureServer(): Promise<ServerState> {
 
 // ─── Command Dispatch ──────────────────────────────────────────
 async function sendCommand(state: ServerState, command: string, args: string[], retries = 0): Promise<void> {
-  const body = JSON.stringify({ command, args });
+  // chain runs multiple steps server-side (each with its own Playwright timeout),
+  // so give it a larger budget than single commands.
+  const timeoutMs = command === 'chain' ? 120_000 : 30_000;
+  const body = JSON.stringify({ command, args, cwd: process.cwd() });
 
   try {
     const resp = await fetch(`http://127.0.0.1:${state.port}/command`, {
@@ -169,7 +189,7 @@ async function sendCommand(state: ServerState, command: string, args: string[], 
         'Authorization': `Bearer ${state.token}`,
       },
       body,
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
 
     if (resp.status === 401) {
@@ -199,12 +219,12 @@ async function sendCommand(state: ServerState, command: string, args: string[], 
       process.exit(1);
     }
   } catch (err: any) {
-    if (err.name === 'AbortError') {
-      console.error('[browse] Command timed out after 30s');
+    if (isTimeoutError(err)) {
+      console.error(`[browse] Command timed out after ${timeoutMs / 1000}s`);
       process.exit(1);
     }
     // Connection error — server may have crashed
-    if (err.code === 'ECONNREFUSED' || err.code === 'ECONNRESET' || err.message?.includes('fetch failed')) {
+    if (isConnectionError(err)) {
       if (retries >= 1) throw new Error('[browse] Server crashed twice in a row — aborting');
       console.error('[browse] Server connection lost. Restarting...');
       const newState = await startServer();
@@ -234,7 +254,7 @@ Navigation:     goto <url> | back | forward | reload | url
 Content:        text | html [sel] | links | forms | accessibility
 Interaction:    click <sel> | fill <sel> <val> | select <sel> <val>
                 hover <sel> | type <text> | press <key>
-                scroll [sel] | wait <sel|--networkidle|--load> | viewport <WxH>
+                scroll [sel] | wait <sel|--networkidle|--load|--domcontentloaded> | viewport <WxH>
                 upload <sel> <file1> [file2...]
                 cookie-import <json-file>
                 cookie-import-browser [browser] [--domain <d>]
@@ -272,6 +292,17 @@ Refs:           After 'snapshot', use @e1, @e2... as selectors:
 
   const state = await ensureServer();
   await sendCommand(state, command, commandArgs);
+
+  // restart: the server responds, then exits ~250ms later. Wait for the old
+  // process to die, then bring up a fresh server so "restart" means restart.
+  if (command === 'restart') {
+    const deadline = Date.now() + 5000;
+    while (Date.now() < deadline && isProcessAlive(state.pid)) {
+      await Bun.sleep(100);
+    }
+    const newState = await startServer();
+    console.error(`[browse] Server restarted (PID: ${newState.pid})`);
+  }
 }
 
 if (import.meta.main) {

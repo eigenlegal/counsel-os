@@ -15,3 +15,7 @@ config.local.md
 knowledge/practice/
 knowledge/matters/
 knowledge/memory/
+
+# Python bytecode (release.sh commits with git add -A)
+__pycache__/
+*.pyc

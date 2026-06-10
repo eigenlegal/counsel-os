@@ -56,37 +56,43 @@ async function flushBuffers() {
   flushInProgress = true;
 
   try {
+    // Capture cursors BEFORE the awaits — entries added during an appendFile
+    // must not be marked flushed without being written.
+    const consoleTotal = consoleBuffer.totalAdded;
+    const networkTotal = networkBuffer.totalAdded;
+    const dialogTotal = dialogBuffer.totalAdded;
+
     // Console buffer
-    const newConsoleCount = consoleBuffer.totalAdded - lastConsoleFlushed;
+    const newConsoleCount = consoleTotal - lastConsoleFlushed;
     if (newConsoleCount > 0) {
       const entries = consoleBuffer.last(Math.min(newConsoleCount, consoleBuffer.length));
       const lines = entries.map(e =>
         `[${new Date(e.timestamp).toISOString()}] [${e.level}] ${e.text}`
       ).join('\n') + '\n';
       await fs.promises.appendFile(CONSOLE_LOG_PATH, lines, { mode: 0o600 });
-      lastConsoleFlushed = consoleBuffer.totalAdded;
+      lastConsoleFlushed = consoleTotal;
     }
 
     // Network buffer
-    const newNetworkCount = networkBuffer.totalAdded - lastNetworkFlushed;
+    const newNetworkCount = networkTotal - lastNetworkFlushed;
     if (newNetworkCount > 0) {
       const entries = networkBuffer.last(Math.min(newNetworkCount, networkBuffer.length));
       const lines = entries.map(e =>
         `[${new Date(e.timestamp).toISOString()}] ${e.method} ${redactUrl(e.url)} → ${e.status || 'pending'} (${e.duration || '?'}ms, ${e.size || '?'}B)`
       ).join('\n') + '\n';
       await fs.promises.appendFile(NETWORK_LOG_PATH, lines, { mode: 0o600 });
-      lastNetworkFlushed = networkBuffer.totalAdded;
+      lastNetworkFlushed = networkTotal;
     }
 
     // Dialog buffer
-    const newDialogCount = dialogBuffer.totalAdded - lastDialogFlushed;
+    const newDialogCount = dialogTotal - lastDialogFlushed;
     if (newDialogCount > 0) {
       const entries = dialogBuffer.last(Math.min(newDialogCount, dialogBuffer.length));
       const lines = entries.map(e =>
         `[${new Date(e.timestamp).toISOString()}] [${e.type}] "${e.message}" → ${e.action}${e.response ? ` "${e.response}"` : ''}`
       ).join('\n') + '\n';
       await fs.promises.appendFile(DIALOG_LOG_PATH, lines, { mode: 0o600 });
-      lastDialogFlushed = dialogBuffer.totalAdded;
+      lastDialogFlushed = dialogTotal;
     }
   } catch {
     // Flush failures are non-fatal — buffers are in memory
@@ -233,6 +239,12 @@ export async function dispatchCommand(
 }
 
 async function handleCommand(body: any): Promise<Response> {
+  // Adopt the caller's cwd so relative paths (screenshots, eval files) and the
+  // safe-directory checks resolve against where the CLI ran, not where the
+  // daemon happened to be spawned. Commands run exclusively, so this is safe.
+  if (typeof body?.cwd === 'string' && body.cwd) {
+    try { process.chdir(body.cwd); } catch {}
+  }
   return dispatchCommand(body, browserManager, shutdown);
 }
 
@@ -302,7 +314,7 @@ export async function start() {
           status: healthy ? 'healthy' : 'unhealthy',
           uptime: Math.floor((Date.now() - startTime) / 1000),
           tabs: browserManager.getTabCount(),
-          currentUrl: browserManager.getCurrentUrl(),
+          currentUrl: redactUrl(browserManager.getCurrentUrl()),
         }), {
           status: 200,
           headers: { 'Content-Type': 'application/json' },

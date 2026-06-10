@@ -33,6 +33,7 @@ from typing import Any, Optional
 from xml.etree import ElementTree as ET
 
 from docx import Document
+from docx.text.run import Run
 
 W_NS = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 UNSUPPORTED_PARTS = (
@@ -56,9 +57,24 @@ class TextMatch:
     paragraph_index: Optional[int] = None
 
 
+def get_runs(paragraph):
+    """Collect a paragraph's runs in document order, including runs inside
+    hyperlinks (w:hyperlink) and tracked insertions (w:ins).
+
+    paragraph.runs only yields direct w:r children, which makes hyperlink
+    and tracked-insertion text invisible to find/replace. Tracked deletions
+    (w:del) are deliberately NOT descended into — deleted text must stay
+    invisible.
+    """
+    return [
+        Run(r, paragraph)
+        for r in paragraph._p.xpath("./w:r | ./w:hyperlink/w:r | ./w:ins/w:r")
+    ]
+
+
 def get_paragraph_text(paragraph):
     """Get the full text of a paragraph by joining all runs."""
-    return "".join(run.text for run in paragraph.runs)
+    return "".join(run.text for run in get_runs(paragraph))
 
 
 def find_occurrence_starts(text, current):
@@ -104,11 +120,12 @@ def replace_in_paragraph(paragraph, current, proposed, start_idx=None):
         return False
 
     end_idx = start_idx + len(current)
+    runs = get_runs(paragraph)
 
     # Map character positions to runs
     char_pos = 0
     run_ranges = []  # [(start_char, end_char, run_index)]
-    for i, run in enumerate(paragraph.runs):
+    for i, run in enumerate(runs):
         run_start = char_pos
         run_end = char_pos + len(run.text)
         run_ranges.append((run_start, run_end, i))
@@ -124,14 +141,14 @@ def replace_in_paragraph(paragraph, current, proposed, start_idx=None):
         return False
 
     first_run_start, first_run_end, first_run_idx = affected_runs[0]
-    first_run = paragraph.runs[first_run_idx]
+    first_run = runs[first_run_idx]
 
     # Text before the match in the first affected run
     prefix = first_run.text[: start_idx - first_run_start]
 
     # Text after the match in the last affected run
     last_run_start, last_run_end, last_run_idx = affected_runs[-1]
-    last_run = paragraph.runs[last_run_idx]
+    last_run = runs[last_run_idx]
     suffix = last_run.text[end_idx - last_run_start :]
 
     # Set the first run to prefix + proposed + suffix (if first == last)
@@ -142,7 +159,7 @@ def replace_in_paragraph(paragraph, current, proposed, start_idx=None):
         first_run.text = prefix + proposed
         # Clear intermediate runs
         for _, _, run_idx in affected_runs[1:-1]:
-            paragraph.runs[run_idx].text = ""
+            runs[run_idx].text = ""
         # Set last run to just the suffix
         last_run.text = suffix
 
@@ -188,8 +205,15 @@ def collect_replaceable_matches(document, current):
         )
 
     for table_index, table in enumerate(document.tables):
+        # row.cells repeats the same underlying tc element for merged spans;
+        # skip already-seen tc elements so one occurrence counts once.
+        seen_tcs = set()
         for row_index, row in enumerate(table.rows):
             for cell_index, cell in enumerate(row.cells):
+                tc_id = id(cell._tc)
+                if tc_id in seen_tcs:
+                    continue
+                seen_tcs.add(tc_id)
                 for paragraph_index, paragraph in enumerate(cell.paragraphs):
                     matches.extend(
                         collect_matches_from_paragraph(
@@ -325,14 +349,26 @@ def select_match(matches, match_spec):
     return None, f"match disambiguator still selected {len(selected)} matches"
 
 
+def text_in_tracked_deletions(document, current):
+    """Return True if `current` appears in tracked-deletion text (w:delText)."""
+    deleted = "".join(
+        node.text or "" for node in document.element.body.iter(f"{W_NS}delText")
+    )
+    return current in deleted
+
+
 def add_comment_to_paragraph(document, paragraph, comment_text, author):
     """Add a Word comment anchored to the full paragraph.
 
     Uses python-docx 1.2.0's native comment API with mark_comment_range
-    to link the comment to the paragraph's runs.
+    to link the comment to the paragraph's runs. Anchors to direct runs
+    when available, falling back to runs inside hyperlinks/tracked
+    insertions. Returns True if the comment was added, False if the
+    paragraph has no runs to anchor to.
     """
-    if not paragraph.runs:
-        return
+    runs = paragraph.runs or get_runs(paragraph)
+    if not runs:
+        return False
 
     comment = document.part.comments.add_comment(
         text=comment_text,
@@ -340,9 +376,10 @@ def add_comment_to_paragraph(document, paragraph, comment_text, author):
         initials="".join(word[0] for word in author.split() if word).upper(),
     )
 
-    first_run = paragraph.runs[0]
-    last_run = paragraph.runs[-1]
+    first_run = runs[0]
+    last_run = runs[-1]
     first_run.mark_comment_range(last_run, comment.comment_id)
+    return True
 
 
 def main():
@@ -388,6 +425,17 @@ def main():
 
         matches = collect_matches(doc, original_path, current)
         if not matches:
+            if text_in_tracked_deletions(doc, current):
+                results["warnings"].append(
+                    {
+                        "index": i,
+                        "current": truncate(current),
+                        "warning": (
+                            "Text appears only inside tracked deletions (w:del); "
+                            "deleted text is not editable"
+                        ),
+                    }
+                )
             results["skipped"].append(
                 {
                     "index": i,
@@ -425,9 +473,20 @@ def main():
         )
         if replaced:
             if comment_text:
-                add_comment_to_paragraph(
+                anchored = add_comment_to_paragraph(
                     doc, selected_match.paragraph, comment_text, author
                 )
+                if not anchored:
+                    results["warnings"].append(
+                        {
+                            "index": i,
+                            "current": truncate(current),
+                            "warning": (
+                                "Comment skipped: paragraph has no runs to "
+                                "anchor the comment to"
+                            ),
+                        }
+                    )
             results["applied"].append(
                 {
                     "index": i,

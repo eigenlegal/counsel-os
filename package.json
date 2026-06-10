@@ -1,6 +1,6 @@
 {
   "name": "counsel-os",
-  "version": "0.9.7",
+  "version": "0.9.8",
   "description": "Legal operating system for Claude — contract review, negotiation, and practice management",
   "scripts": {
     "build": "bun build --target=bun --compile -e electron -e 'chromium-bidi/*' browse/src/cli.ts --outfile browse/dist/browse",

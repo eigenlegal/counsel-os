@@ -32,13 +32,15 @@ templates/memory/    — Seed template for patterns.md
 - **Positions/methods/library**: Edit in `knowledge/practice-seed/`. Users get these via `/counsel-os:setup` (initial) and `/counsel-os:update` (sync). Practice content is user-owned — update offers suggestions, never overwrites.
 - **Law areas**: Edit in `knowledge/law/`. These are plugin-managed — update overwrites the user's copies.
 - **Scripts**: Python/bash in `scripts/`. Test locally before pushing.
-- **Version**: Bump in VERSION, package.json, .claude-plugin/plugin.json, and .claude-plugin/marketplace.json (all four).
+- **Version / release**: Run `scripts/release.sh <X.Y.Z> -m "subject" [-b "body"]` — bumps all four manifests (VERSION, package.json, .claude-plugin/plugin.json, .claude-plugin/marketplace.json), runs the knowledge lint + version-sync check, commits the working tree as one release commit, and pushes. `--tag` additionally creates a `claude plugin tag` release tag.
 
 ## Testing
 
 Install locally with `--plugin-dir .` or sync to the plugin cache at `~/.claude/plugins/cache/{marketplace}/counsel-os/{version}/` (marketplace is `eigenlegal` for the published plugin, or `jack-plugins` for local dev). Restart Claude Code after cache changes.
 
 Test from a directory OTHER than this repo to verify the counsel skill activates via the plugin system (not project-level CLAUDE.md).
+
+CI (`.github/workflows/ci.yml`) runs typecheck, bun tests, the eval scorer self-test, law frontmatter validation, the knowledge-conventions lint, and manifest version sync on every push and PR.
 
 ## GBrain Search Guidance (configured by /sync-gbrain)
 <!-- gstack-gbrain-search-guidance:start -->

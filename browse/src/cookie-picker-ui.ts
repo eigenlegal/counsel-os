@@ -328,7 +328,8 @@ export function getCookiePickerHTML(serverPort: number): string {
   }
 
   function escHtml(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    // Escape quotes too — escHtml output is interpolated into attribute values
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
 
   // ─── API ────────────────────────────────
