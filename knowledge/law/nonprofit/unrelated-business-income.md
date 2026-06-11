@@ -1,7 +1,18 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "26 U.S.C. §§ 511-514"
+    title: "Tax on unrelated business income; UBTI definition, exceptions, SILO rule (§ 512(a)(6)), debt-financed income"
+    url: "https://www.law.cornell.edu/uscode/text/26/512"
+  - cite: "IRS Publication 598"
+    title: "Tax on Unrelated Business Income of Exempt Organizations"
+    url: "https://www.irs.gov/publications/p598"
+  - cite: "REG-106864-18"
+    title: "Proposed regulations on separately computing UBTI for each trade or business (§ 512(a)(6))"
+    url: "https://www.federalregister.gov/documents/2020/04/24/2020-08826"
+# authorities checked 2026-06-11
 ---
 # Unrelated Business Income
 
@@ -54,7 +65,7 @@ All three elements must be present for income to be classified as unrelated busi
 
 - **Advertising Income** / Advertising in exempt organization publications (journals, newsletters) is UBTI; editorial/readership costs may offset / **Consequence**: Net advertising income taxable; fragmentation rule allows separating advertising from exempt publishing
 - **Fitness/Recreation Facilities** / If open to general public for a fee beyond members = potential UBIT / **Consequence**: Convenience exception may apply if primarily for members/students
-- **Parking and Transportation** / Pre-TCJA 2017 provision (IRC 512(a)(7)) taxing qualified transportation fringe benefits repealed in 2020 / **Consequence**: No longer a UBIT issue for most organizations
+- **Parking and Transportation** / Pre-TCJA 2017 provision (IRC 512(a)(7)) taxing qualified transportation fringe benefits repealed in 2020 / **Consequence**: No longer a UBIT issue for most organizations / **OBBBA note (checked 2026-06-11)**: House-passed proposals to reinstate UBIT on qualified-transportation/parking fringe benefits and to treat name/logo royalties and certain non-public research income as UBTI were all DROPPED from the final One Big Beautiful Bill Act (Pub. L. 119-21, July 4, 2025). The current royalty exclusion and the absence of the parking tax are unchanged; re-verify if Congress revisits these.
 
 ## Interaction with Other Areas
 

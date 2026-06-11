@@ -1,7 +1,27 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "SEC Release No. 33-11421 (May 29, 2026)"
+    title: "Proposed rescission of the 2024 climate-related disclosure rules (comments due Aug. 3, 2026)"
+    url: "https://www.sec.gov/rules-regulations/2026/05/s7-2026-19"
+  - cite: "SEC Press Release 2026-46 (May 19, 2026)"
+    title: "Proposed registered offering reform, EGC accommodation enhancements, and filer-status simplification (large accelerated filer threshold to $2B float)"
+    url: "https://www.sec.gov/newsroom/press-releases/2026-46-sec-proposes-transformative-reforms-help-public-companies-conduct-registered-offerings-simplify"
+  - cite: "17 CFR 229.106; Form 8-K Item 1.05"
+    title: "Cybersecurity risk management, strategy, governance, and incident disclosure (2023 rules, in force)"
+    url: "https://www.ecfr.gov/current/title-17/chapter-II/part-229/section-229.106"
+  - cite: "17 CFR 240.10D-1"
+    title: "Clawback of erroneously awarded incentive-based compensation"
+    url: "https://www.ecfr.gov/current/title-17/chapter-II/part-240/subpart-A/subject-group-ECFR53bf57d5765085a/section-240.10D-1"
+  - cite: "17 CFR 243.100-103"
+    title: "Regulation FD"
+    url: "https://www.ecfr.gov/current/title-17/chapter-II/part-243"
+  - cite: "15 U.S.C. 7201 et seq."
+    title: "Sarbanes-Oxley Act Sections 302, 404, 906 certification and internal control requirements"
+    url: "https://www.law.cornell.edu/uscode/text/15/chapter-98"
 ---
 # Public Company Obligations
 
@@ -20,7 +40,7 @@ Load when ANY of the following is present: SEC reporting company, public company
 ### Sarbanes-Oxley Act — Internal Controls (Section 404)
 
 - **What**: Management must assess and report on the effectiveness of internal controls over financial reporting (ICFR). For larger companies, the external auditor must also attest to management's assessment.
-- **Threshold/Timeline**: Section 404(a) — management assessment: required for ALL SEC reporting companies; management must include an internal control report in the annual 10-K. Section 404(b) — auditor attestation: required for "accelerated filers" (public float $75M+) and "large accelerated filers" (public float $700M+); smaller reporting companies (public float below $75M or revenues below $100M with public float below $250M) and emerging growth companies (EGCs) are exempt from auditor attestation. EGC status: available for up to 5 years after IPO for companies with less than $1.235B in annual revenue, subject to other thresholds.
+- **Threshold/Timeline**: Section 404(a) — management assessment: required for ALL SEC reporting companies; management must include an internal control report in the annual 10-K. Section 404(b) — auditor attestation: required for "accelerated filers" (public float $75M+) and "large accelerated filers" (public float $700M+); smaller reporting companies (public float below $75M or revenues below $100M with public float below $250M) and emerging growth companies (EGCs) are exempt from auditor attestation. EGC status: available for up to 5 years after IPO for companies with less than $1.235B in annual revenue, subject to other thresholds. Note: on May 19, 2026 the SEC proposed consolidating the five filer categories into two (large accelerated and non-accelerated, with a small non-accelerated sub-category), raising the large accelerated filer threshold from $700M to $2B in public float, and expanding EGC accommodations — proposals only; the current thresholds remain in effect until any final rule.
 - **Consequence**: Material weaknesses in ICFR must be disclosed and may trigger restatements, SEC comment letters, shareholder lawsuits, and negative market reaction. Auditor attestation adds significant cost ($500K-$2M+ annually for mid-size companies).
 
 ### Sarbanes-Oxley Act — Criminal Penalties (Section 906)
@@ -32,7 +52,7 @@ Load when ANY of the following is present: SEC reporting company, public company
 ### Periodic Reporting Obligations
 
 - **What**: SEC reporting companies must file periodic reports disclosing financial results, material events, and other information required by SEC rules.
-- **Threshold/Timeline**: Form 10-K (annual report): due 60 days after fiscal year end for large accelerated filers, 75 days for accelerated filers, 90 days for all other filers (non-accelerated filers). Form 10-Q (quarterly report): due 40 days after fiscal quarter end for large accelerated and accelerated filers, 45 days for all other filers. Form 8-K (current report): due within 4 business days of triggering event for most items. Triggering events include: entry into or termination of material agreements, completion of acquisition/disposition, creation of financial obligations, defaults, bankruptcy, changes in auditors, director/officer changes, amendments to charter/bylaws, and financial results (Item 2.02 earnings releases). Regulation S-K prescribes the content requirements; Regulation S-X prescribes financial statement requirements.
+- **Threshold/Timeline**: Form 10-K (annual report): due 60 days after fiscal year end for large accelerated filers, 75 days for accelerated filers, 90 days for all other filers (non-accelerated filers). Form 10-Q (quarterly report): due 40 days after fiscal quarter end for large accelerated and accelerated filers, 45 days for all other filers. Form 8-K (current report): due within 4 business days of triggering event for most items. Triggering events include: entry into or termination of material agreements, completion of acquisition/disposition, creation of financial obligations, defaults, bankruptcy, changes in auditors, director/officer changes, amendments to charter/bylaws, financial results (Item 2.02 earnings releases), and material cybersecurity incidents (Item 1.05, adopted July 2023 — due within 4 business days of the materiality determination, not discovery, subject to a US Attorney General national-security/public-safety delay; annual cybersecurity risk management and governance disclosure is required under Item 106 of Regulation S-K). Regulation S-K prescribes the content requirements; Regulation S-X prescribes financial statement requirements. The 2024 climate-related disclosure rules never took effect — the SEC stayed them in April 2024, ended its litigation defense in March 2025 (Iowa v. SEC, 8th Cir.), and proposed rescinding them in their entirety on May 29, 2026 (Release No. 33-11421).
 - **Consequence**: Late filings result in loss of eligibility for short-form registration statements (Form S-3), potential delisting notices from stock exchanges, SEC enforcement action, and investor lawsuits. Delinquent filers may be subject to SEC administrative proceedings and revocation of registration.
 
 ### Proxy Rules (Regulation 14A)

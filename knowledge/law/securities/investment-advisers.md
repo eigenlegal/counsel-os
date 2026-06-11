@@ -1,7 +1,27 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "SEC Release No. IA-6961 (Apr. 28, 2026)"
+    title: "Order adjusting qualified client thresholds to $1.4M AUM / $2.7M net worth, effective June 29, 2026"
+    url: "https://www.sec.gov/files/rules/ia/2026/ia-6961.pdf"
+  - cite: "SEC Release No. 33-11377 (June 12, 2025)"
+    title: "Withdrawal of 14 proposed rules, including the Safeguarding Rule, predictive data analytics, and adviser cybersecurity proposals"
+    url: "https://www.sec.gov/files/rules/final/2025/33-11377.pdf"
+  - cite: "17 CFR 275.206(4)-2"
+    title: "Custody Rule (remains operative following withdrawal of the Safeguarding proposal)"
+    url: "https://www.ecfr.gov/current/title-17/chapter-II/part-275/section-275.206(4)-2"
+  - cite: "17 CFR 275.204-3"
+    title: "Brochure delivery — before or at the time of entering the advisory contract"
+    url: "https://www.ecfr.gov/current/title-17/chapter-II/part-275/section-275.204-3"
+  - cite: "SEC Division of Investment Management FAQ — mid-sized advisers"
+    title: "SEC/state registration allocation; New York as the only non-examining state"
+    url: "https://www.sec.gov/rules-regulations/staff-guidance/division-investment-management-frequently-asked-questions/division-investment-management-frequently-asked-questions-regarding-mid-sized-advisers"
+  - cite: "SEC Release No. IA-5248 (June 5, 2019)"
+    title: "Commission Interpretation Regarding Standard of Conduct for Investment Advisers (fiduciary duty)"
+    url: "https://www.sec.gov/rules/interp/2019/ia-5248.pdf"
 ---
 # Investment Advisers Act
 
@@ -14,7 +34,7 @@ Load when ANY of the following is present: investment adviser registration, advi
 ### Registration Thresholds — SEC vs. State
 
 - **What**: The Investment Advisers Act of 1940 requires persons who meet the definition of "investment adviser" to register with either the SEC or their home state, depending on assets under management (AUM).
-- **Threshold/Timeline**: SEC registration required: AUM of $100M or more (may register between $100M and $110M; must register at $110M). State registration required: AUM under $100M (registered in adviser's principal office state and each state where adviser has a place of business or exceeds de minimis client thresholds — typically 5 or fewer clients in a state without a place of business). Exceptions to state allocation: advisers in states that do not examine advisers (currently Wyoming and New York) may register with SEC regardless of AUM. Multi-state advisers with a place of business in 15+ states may register with SEC. Foreign private advisers (no US place of business, fewer than 15 US clients/investors, less than $25M US AUM) are exempt from registration.
+- **Threshold/Timeline**: SEC registration required: AUM of $100M or more (may register between $100M and $110M; must register at $110M). State registration required: AUM under $100M (registered in adviser's principal office state and each state where adviser has a place of business or exceeds de minimis client thresholds — typically 5 or fewer clients in a state without a place of business). Exceptions to state allocation: mid-sized advisers ($25M-$100M AUM) whose principal office is in a state that does not subject them to examination (currently only New York) must register with the SEC; Wyoming ceased to be an exception when it adopted an adviser registration statute in 2017. Multi-state advisers with a place of business in 15+ states may register with SEC. Foreign private advisers (no US place of business, fewer than 15 US clients/investors, less than $25M US AUM) are exempt from registration.
 - **Consequence**: Operating as an unregistered adviser is a federal or state securities violation. SEC enforcement actions can include cease-and-desist orders, disgorgement, civil penalties, and industry bars. State violations carry similar remedies plus potential criminal penalties.
 
 ### Fiduciary Duty (Duty of Care and Duty of Loyalty)
@@ -27,7 +47,7 @@ Load when ANY of the following is present: investment adviser registration, advi
 
 - **What**: Registered investment advisers must file Form ADV with the SEC (or state) and deliver a brochure (Part 2A) and relationship summary (Part 3/Form CRS) to clients and prospective clients.
 - **Threshold/Timeline**: Form ADV Part 1A: filed electronically through IARD; updated annually within 90 days of fiscal year end and promptly for material changes. Part 2A (brochure): narrative disclosure of advisory services, fees, conflicts of interest, disciplinary history, code of ethics, and other material information; delivered to new clients before or at the time of entering an advisory agreement and offered annually thereafter. Part 2B (brochure supplement): information about supervised persons who provide advisory services. Form CRS (Part 3): 2-page relationship summary for retail investors; delivered to new and prospective retail clients. Material changes require prompt amendment and delivery to affected clients.
-- **Consequence**: Failure to file or update Form ADV is an independent violation of the Advisers Act. Material omissions or misstatements in Form ADV are fraud under Section 206. Failure to deliver brochures to clients creates a rescission right — clients may void the advisory agreement within 5 business days of receiving the brochure (48 hours for contracts entered at the adviser's principal office).
+- **Consequence**: Failure to file or update Form ADV is an independent violation of the Advisers Act. Material omissions or misstatements in Form ADV are fraud under Section 206. Failure to deliver the brochure before or at the time of entering into the advisory agreement violates Rule 204-3. (The older federal construct — 48-hour advance delivery or a 5-business-day penalty-free termination right — was eliminated in the 2010 amendments, but survives in some state rules and remains enforceable where an adviser's own contract still promises it.)
 
 ### Exempt Reporting Advisers (ERAs)
 
@@ -39,7 +59,7 @@ Load when ANY of the following is present: investment adviser registration, advi
 
 - **What**: Investment advisers with custody of client funds or securities must comply with safeguarding requirements to protect client assets.
 - **Threshold/Timeline**: "Custody" includes: holding client funds/securities, having authority to obtain possession (e.g., deducting advisory fees from client accounts), or acting in any capacity that gives the adviser legal ownership or access to client funds/securities. Requirements: (1) maintain client assets with a "qualified custodian" (bank, broker-dealer, futures commission merchant, or foreign financial institution meeting specified conditions); (2) provide or arrange for quarterly account statements to clients; (3) undergo annual surprise examination by an independent public accountant to verify client assets. Exception for pooled investment vehicles: advisers to pooled vehicles (funds) may comply by having the fund audited annually by a PCAOB-registered independent auditor, with audited financial statements delivered to investors within 120 days of fiscal year end (180 days for fund-of-funds).
-- **Consequence**: Custody violations are a common SEC enforcement priority. Unauthorized access to client funds is fraud. Failure to maintain assets with a qualified custodian or failure to undergo surprise examinations can result in enforcement actions, civil penalties, and adviser registration revocation.
+- **Consequence**: Custody violations are a common SEC enforcement priority. Unauthorized access to client funds is fraud. Failure to maintain assets with a qualified custodian or failure to undergo surprise examinations can result in enforcement actions, civil penalties, and adviser registration revocation. Note: the SEC's February 2023 proposal to replace the Custody Rule with a broader "Safeguarding Rule" was formally withdrawn on June 12, 2025 (along with 13 other pending proposals, including predictive data analytics, adviser cybersecurity, and adviser ESG disclosure); Rule 206(4)-2 as written remains the operative rule.
 
 ### Best Execution
 
@@ -57,7 +77,7 @@ Load when ANY of the following is present: investment adviser registration, advi
 
 - Advisory agreements that contain impermissible hedge clauses purporting to limit the adviser's fiduciary liability.
 - Custody arrangements where the adviser has signatory authority over client bank accounts without complying with the Custody Rule.
-- Performance-based fee arrangements that do not comply with the "qualified client" requirement ($1.1M AUM or $2.2M net worth, adjusted periodically).
+- Performance-based fee arrangements that do not comply with the "qualified client" requirement — $1.4M AUM or $2.7M net worth for contracts entered into on or after June 29, 2026 (SEC order IA-6961, Apr. 28, 2026); $1.1M/$2.2M for earlier contracts, which are grandfathered.
 - Solicitation and referral arrangements that fail to comply with the amended marketing rule (Rule 206(4)-1) regarding testimonials, endorsements, and third-party ratings.
 - Sub-advisory agreements that do not clearly allocate fiduciary responsibilities between the primary adviser and sub-adviser.
 - Form ADV disclosures that do not adequately describe conflicts of interest, including proprietary products, affiliate transactions, and revenue sharing.

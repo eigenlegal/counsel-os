@@ -1,7 +1,21 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal]
+authorities:
+  - cite: "29 U.S.C. 151-169"
+    title: "National Labor Relations Act"
+    url: "https://www.law.cornell.edu/uscode/text/29/chapter-7/subchapter-II"
+  - cite: "NLRB — Jurisdictional Standards"
+    title: "Annual-volume thresholds for asserting jurisdiction"
+    url: "https://www.nlrb.gov/about-nlrb/rights-we-protect/the-law/jurisdictional-standards"
+  - cite: "Starbucks Corp. v. McKinney, 602 U.S. 339 (2024)"
+    title: "Section 10(j) injunctions governed by the traditional four-factor Winter test"
+    url: "https://www.supremecourt.gov/opinions/23pdf/23-367_f3b7.pdf"
+  - cite: "Thryv, Inc., 372 NLRB No. 22 (2022)"
+    title: "Make-whole remedies include consequential damages (subject to Board reconsideration)"
+    url: "https://www.nlrb.gov/case/20-CA-250250"
+# authorities checked 2026-06-11
 ---
 # National Labor Relations Act (NLRA)
 
@@ -51,7 +65,7 @@ Applies to most private-sector employers and employees in the United States. The
 - **Supervisors** / Individuals with authority to hire, fire, discipline, assign, reward, or responsibly direct employees using independent judgment / **Consequence**: Supervisors have no Section 7 rights under NLRA; but employer may not discipline supervisors for refusing to commit ULPs
 - **Managers** / Individuals who formulate and effectuate management policies by expressing and making operative the decisions of their employer / **Consequence**: Managers are excluded from bargaining units and Section 7 protections
 - **Agricultural Laborers** / Excluded from NLRA coverage / **Consequence**: Some states have separate agricultural labor relations statutes (e.g., California Agricultural Labor Relations Act)
-- **Independent Contractors** / Common law agency test determines employee vs. independent contractor status / **Consequence**: Misclassification = failure to recognize Section 7 rights; NLRB has recently adopted broader employee definitions
+- **Independent Contractors** / Common law agency test determines employee vs. independent contractor status / **Consequence**: Misclassification = failure to recognize Section 7 rights. As of mid-2026 the Board applies the employee-favoring common-law standard of The Atlanta Opera, Inc., 372 NLRB No. 95 (2023), which de-emphasized "entrepreneurial opportunity" relative to the prior SuperShuttle (2019) test; this standard is among the doctrines a Republican-majority Board is expected to revisit — verify before relying.
 - **Confidential Employees** / Employees who assist and act in a confidential capacity to persons who formulate, determine, and effectuate management labor relations policies / **Consequence**: Excluded from bargaining units; narrow definition — must relate to labor relations, not just access to confidential business information
 - **Federal, State, and Local Government Employees** / Excluded from NLRA; covered by separate statutes (Federal Service Labor-Management Relations Statute; state public employee labor laws) / **Consequence**: Different frameworks apply; some states have no public sector bargaining rights
 - **Railway and Airline Employees** / Covered by Railway Labor Act, not NLRA / **Consequence**: Different election, bargaining, and strike rules apply
@@ -60,7 +74,8 @@ Applies to most private-sector employers and employees in the United States. The
 
 - **ULP Charge Filing** / Filed with regional NLRB office within 6 months of alleged violation / **Timeline**: 6-month statute of limitations; strict deadline / **Consequence**: Late filing = charge dismissed; no tolling for continuing violations in most circumstances
 - **Investigation and Complaint** / Regional Director investigates; if meritorious, issues complaint; settlement encouraged; if not settled, hearing before Administrative Law Judge (ALJ) / **Timeline**: Investigation typically 7-14 weeks; complaint to hearing 6-12 months / **Consequence**: ALJ decision appealable to full NLRB Board; Board decisions appealable to federal circuit court
-- **Remedies** / Cease and desist; notice posting (physical and electronic); reinstatement with back pay (less interim earnings); make-whole relief; bargaining order in egregious cases / **Consequence**: No punitive damages under NLRA; but back pay liability accumulates during proceedings; NLRB has expanded make-whole remedies to include consequential damages (Thryv, 2022)
+- **Remedies** / Cease and desist; notice posting (physical and electronic); reinstatement with back pay (less interim earnings); make-whole relief; bargaining order in egregious cases / **Consequence**: No punitive damages under NLRA; but back pay liability accumulates during proceedings; the Board expanded make-whole remedies to include consequential damages in Thryv, Inc., 372 NLRB No. 22 (2022) — still Board law but among the doctrines the Republican-majority Board is expected to revisit; verify current status
+- **Section 10(j) Injunctions** / While a ULP case is pending, the NLRB may seek a preliminary injunction in federal district court / **Standard**: District courts apply the traditional four-factor equitable test (likelihood of success, irreparable harm, balance of equities, public interest), not a deferential "reasonable cause" standard (Starbucks Corp. v. McKinney, 602 U.S. 339 (2024)) / **Consequence**: 10(j) relief is harder for the Board to obtain than under the prior reasonable-cause approach
 
 ## Interaction with Other Areas
 
@@ -76,5 +91,7 @@ Applies to most private-sector employers and employees in the United States. The
 - [NLRB — Jurisdictional Standards](https://www.nlrb.gov/about-nlrb/rights-we-protect/the-law/jurisdictional-standards)
 - [NLRB Decisions and Case Handling Manual](https://www.nlrb.gov/guidance/key-reference-materials)
 - [Thryv, Inc., 372 NLRB No. 22 (2022) — Consequential Damages](https://www.nlrb.gov/case/20-CA-250250)
+- [Starbucks Corp. v. McKinney, 602 U.S. 339 (2024) — Section 10(j) four-factor standard](https://www.supremecourt.gov/opinions/23pdf/23-367_f3b7.pdf)
+- [The Atlanta Opera, Inc., 372 NLRB No. 95 (2023) — independent-contractor standard](https://www.nlrb.gov/case/10-RC-276292)
 
 ---

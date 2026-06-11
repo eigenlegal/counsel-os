@@ -1,7 +1,21 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, industry-standard]
+authorities:
+  - cite: "NIST SP 800-61 Rev 3 (Apr. 2025)"
+    title: "Incident Response Recommendations and Considerations for Cybersecurity Risk Management: A CSF 2.0 Community Profile"
+    url: "https://csrc.nist.gov/pubs/sp/800/61/r3/final"
+  - cite: "6 U.S.C. §§ 681-681g (CIRCIA)"
+    title: "CISA — Cyber Incident Reporting for Critical Infrastructure Act of 2022"
+    url: "https://www.cisa.gov/topics/cyber-threats-and-advisories/information-sharing/cyber-incident-reporting-critical-infrastructure-act-2022-circia"
+  - cite: "OFAC Updated Advisory (Sept. 21, 2021)"
+    title: "Updated Advisory on Potential Sanctions Risks for Facilitating Ransomware Payments"
+    url: "https://ofac.treasury.gov/media/912981/download"
+  - cite: "Genesco, Inc. v. Visa U.S.A., Inc., 302 F.R.D. 168 (M.D. Tenn. 2014)"
+    title: "Privilege and work product over counsel-directed breach investigation"
+    url: "https://www.courtlistener.com/opinion/8787700/genesco-inc-v-visa-usa-inc/"
 ---
 # Incident Response
 
@@ -39,14 +53,16 @@ Applies to any organization experiencing or preparing for a cybersecurity incide
 ### Forensic Investigation Privilege
 
 - **Attorney-Client Privilege** / Forensic investigation directed by counsel for purpose of providing legal advice may be privileged / **Threshold**: Counsel must be genuinely directing investigation for legal purpose; dual-purpose investigations (legal + business) create risk / **Consequence**: Courts increasingly scrutinizing privilege claims over forensic reports
-- **Genesco Decision (2023)** / Court held forensic report prepared by firm retained by insurer (not counsel) was discoverable; privilege requires counsel's direction and legal purpose / **Consequence**: Ensure forensic firm is retained by and reports to outside counsel, not IT or management
+- **Genesco Decision (M.D. Tenn. 2014)** / Court upheld attorney-client privilege and work product over a forensic investigation where counsel retained the forensic firm for the purpose of providing legal advice in anticipation of litigation; the favorable benchmark for counsel-directed investigations / **Consequence**: Privilege requires counsel's genuine direction and a legal purpose — ensure the forensic firm is retained by and reports to counsel, not IT, management, or the insurer
+- **Wengui v. Clark Hill (D.D.C. 2021) and In re Rutter's (M.D. Pa. 2021)** / Courts ordered production of forensic reports that served ordinary-course business/remediation purposes despite counsel's nominal involvement / **Consequence**: Routing an investigation through counsel is not enough; substance of purpose and use controls
 - **Capital One Decision (2020)** / Court ordered disclosure of Mandiant forensic report because it served dual business/legal purpose and would have been prepared in substantially similar form regardless of litigation / **Consequence**: "But-for" test: would the report have been prepared in the same form absent litigation? If yes, not privileged
 - **Best Practices for Privilege** / (1) Outside counsel retains forensic firm directly; (2) engagement letter specifies legal purpose; (3) forensic reports addressed to counsel; (4) separate business-purpose investigation if needed; (5) mark communications "privileged and confidential — attorney work product" / **Consequence**: No guarantee of privilege; but structured approach maximizes protection
 
 ### Law Enforcement Notification
 
-- **FBI/CISA Reporting** / Encouraged for significant incidents; may be required for critical infrastructure (CIRCIA: 72-hour reporting for covered entities, 24-hour for ransomware payments — effective ~2026) / **Consequence**: Voluntary reporting may provide delay in public notification; cooperation credit in any enforcement action
-- **Ransomware Payments** / No federal law prohibits payment (but OFAC sanctions may apply if payment to sanctioned entity); CIRCIA requires 24-hour reporting of ransomware payments / **Consequence**: Payment to sanctioned entity = strict liability OFAC violation ($330K+ per violation); must conduct sanctions screening before payment
+- **FBI/CISA Reporting** / Encouraged for significant incidents; CIRCIA will require 72-hour covered-incident and 24-hour ransom-payment reporting for covered critical-infrastructure entities, but only once CISA's final rule takes effect — as of June 2026 the rule is still pending (NPRM April 2024; CISA missed the October 2025 statutory deadline and its self-set May 2026 target; town halls to refine scope and burden begin June 15, 2026) / **Consequence**: No CIRCIA reporting obligation attaches yet; voluntary reporting may provide cooperation credit; monitor for the final rule and its compliance date
+- **CISA 2015 Information-Sharing Protections** / Cybersecurity Information Sharing Act of 2015 liability and antitrust protections for sharing cyber threat indicators lapsed September 30, 2025, were temporarily extended November 12, 2025, and were reauthorized through September 30, 2026 by the February 3, 2026 funding act / **Consequence**: Sharing protections currently in force but sunset September 30, 2026 absent further reauthorization; confirm status before relying on them
+- **Ransomware Payments** / No federal law prohibits payment (but OFAC sanctions may apply if payment to sanctioned entity); CIRCIA's 24-hour ransom-payment reporting will apply once the final rule is effective / **Consequence**: Payment to sanctioned entity = strict liability OFAC violation (IEEPA civil penalty: greater of approx. $368K+ per violation, inflation-adjusted, or twice the transaction value); must conduct sanctions screening before payment
 - **Law Enforcement Hold** / Law enforcement may request delay of public notification to preserve investigation / **Consequence**: Provides safe harbor for notification delay in most state breach laws; must be documented
 
 ### Insurance Notification
@@ -71,10 +87,10 @@ Applies to any organization experiencing or preparing for a cybersecurity incide
 
 ## Sources
 
-- [NIST SP 800-61 Rev 2 — Computer Security Incident Handling Guide](https://csrc.nist.gov/publications/detail/sp/800-61/rev-2/final)
-- [CISA Cyber Incident Reporting for Critical Infrastructure Act (CIRCIA)](https://www.cisa.gov/circia)
-- [OFAC Advisory on Ransomware Payments](https://ofac.treasury.gov/recent-actions/20201001)
-- [Genesco Inc. v. Visa U.S.A. Inc., No. 3:13-cv-00202 (M.D. Tenn. 2023)](https://casetext.com/case/genesco-inc-v-visa-usa-inc-5)
+- [NIST SP 800-61 Rev 3 — Incident Response Recommendations and Considerations for Cybersecurity Risk Management (Apr. 2025; supersedes Rev 2)](https://csrc.nist.gov/pubs/sp/800/61/r3/final)
+- [CISA Cyber Incident Reporting for Critical Infrastructure Act (CIRCIA)](https://www.cisa.gov/topics/cyber-threats-and-advisories/information-sharing/cyber-incident-reporting-critical-infrastructure-act-2022-circia)
+- [OFAC Updated Advisory on Potential Sanctions Risks for Facilitating Ransomware Payments (Sept. 21, 2021)](https://ofac.treasury.gov/media/912981/download)
+- [Genesco, Inc. v. Visa U.S.A., Inc., 302 F.R.D. 168 (M.D. Tenn. 2014)](https://www.courtlistener.com/opinion/8787700/genesco-inc-v-visa-usa-inc/)
 - [In re Capital One Consumer Data Security Breach Litigation, No. 1:19-md-02915 (E.D. Va. 2020)](https://casetext.com/case/in-re-capital-one-consumer-data-sec-breach-litig-4)
 
 ---

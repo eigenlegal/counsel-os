@@ -1,6 +1,6 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal, us-state]
 ---
 # Insurance
@@ -34,3 +34,5 @@ These are non-overridable legal requirements from this area. They cannot be modi
 - State unfair claims settlement practices acts impose statutory obligations on insurers for timely investigation, communication, and fair claims handling; bad faith claims can result in extracontractual damages and punitive damages.
 - Workers' compensation insurance is mandatory in nearly all states; the exclusive remedy provision bars most employee tort claims against employers for workplace injuries.
 - Self-insurance and captive insurance arrangements must comply with state-specific regulatory requirements.
+- Insurer cybersecurity and data governance are increasingly regulated: roughly half the states have enacted the NAIC Insurance Data Security Model Law (#668), imposing written information security programs, incident investigation, and regulator-notification duties on licensees. NYDFS additionally requires compliance with its cybersecurity regulation (23 NYCRR 500).
+- Insurers' use of AI and external consumer data in underwriting and pricing is subject to anti-discrimination, actuarial-validity, governance, and transparency expectations. Roughly half the states (plus DC) have adopted the NAIC Model Bulletin on the Use of Artificial Intelligence Systems by Insurers or similar guidance, and NYDFS Insurance Circular Letter No. 7 (2024) imposes parallel expectations for New York-authorized insurers.

@@ -1,7 +1,18 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities-checked: "2026-06-11"
+authorities:
+  - cite: "NAIC Unfair Claims Settlement Practices Act (Model #900)"
+    title: "Statutory claims-handling standards: prompt investigation, fair evaluation, timely communication"
+    url: "https://content.naic.org/sites/default/files/inline-files/MDL-900.pdf"
+  - cite: "Cal. Civ. Code § 2860"
+    title: "Independent (Cumis) counsel on conflict of interest; insurer rate cap and qualification limits"
+    url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=2860.&lawCode=CIV"
+  - cite: "San Diego Navy Fed. Credit Union v. Cumis Ins. Soc'y, 162 Cal. App. 3d 358 (1984)"
+    title: "Origin of the independent-counsel (Cumis) right later codified at Civ. Code § 2860"
+    url: "https://law.justia.com/cases/california/court-of-appeal/3d/162/358.html"
 ---
 # Claims Procedures
 
@@ -19,8 +30,12 @@ obligations. Also load when evaluating bad faith or unfair claims settlement pra
 - **What**: Timely notice to the insurer of claims and occurrences.
 - **Threshold**: Claims-made: within the policy period or ERP. Occurrence: "as soon
   as practicable" or within 30–90 days.
-- **Consequence**: Late notice may void coverage entirely (strict compliance states,
-  ~15 states) or require the insurer to prove prejudice (~35 states).
+- **Consequence**: For occurrence policies, the large majority of states apply
+  the notice-prejudice rule (insurer must show prejudice before denying for late
+  notice); only a small minority (Arkansas, Hawaii, Mississippi, Virginia, and DC)
+  follow the no-prejudice/forfeiture rule. Verify the forum state before relying on
+  prejudice. Claims-made-and-reported policies are treated differently: most courts
+  hold that timely reporting is a condition precedent and prejudice is not a factor.
 
 - **Claims-made policies**: Notice is a condition precedent. Must report within
   the policy period or ERP. Late notice — even by one day — voids coverage in
@@ -28,9 +43,13 @@ obligations. Also load when evaluating bad faith or unfair claims settlement pra
 - **Occurrence policies**: Require notice "as soon as practicable" or within a
   fixed deadline (30–90 days). Measured from when the insured knew or should
   have known of the claim.
-- **Prejudice requirement**: ~35 states require the insurer to prove actual
-  prejudice before denying for late notice. ~15 states enforce strictly. For
-  claims-made, most states apply strict compliance regardless.
+- **Prejudice requirement**: For occurrence policies, the notice-prejudice rule
+  is the majority rule; the insurer must prove actual prejudice before denying for
+  late notice. Only a small minority of jurisdictions (Arkansas, Hawaii, Mississippi,
+  Virginia, DC) still enforce a no-prejudice forfeiture rule. For claims-made-and-
+  reported policies, most states treat timely reporting as a condition precedent
+  and do not require prejudice, though a few courts have begun applying a prejudice
+  analysis where notice is within the policy period but past an internal deadline.
 - **Notice to whom**: Notice to the broker may NOT constitute notice to the
   insurer. Send directly to the insurer at the policy-specified address.
 - **Content**: Date, description, claimant identity, estimated damages, policy
@@ -64,7 +83,7 @@ obligations. Also load when evaluating bad faith or unfair claims settlement pra
 - **Standard rule**: Insurer selects panel counsel and controls defense strategy.
 - **Independent counsel (Cumis counsel)**: When a conflict exists (ROR issued,
   coverage disputed, limits eroding), the insured selects independent counsel
-  at insurer's expense. California Insurance Code Section 2860 codified this;
+  at insurer's expense. California Civil Code Section 2860 codified this;
   Alaska, Connecticut, Florida adopted similar rules through case law.
 - **Rate caps**: Independent counsel fees may be capped at panel counsel rates.
   Some states reject caps if independent counsel rates are reasonable.
@@ -152,4 +171,4 @@ obligations. Also load when evaluating bad faith or unfair claims settlement pra
 - [NAIC — Unfair Claims Settlement Practices Model Act (Model 900)](https://content.naic.org/sites/default/files/inline-files/MDL-900.pdf)
 - [NAIC — Unfair Property/Casualty Claims Settlement Practices](https://content.naic.org/cipr-topics/unfair-claims-settlement-practices)
 - [IRMI — Claims-Made Policy Analysis](https://www.irmi.com/term/insurance-definitions/claims-made-policy)
-- [California Insurance Code Section 2860 — Independent Counsel (Cumis)](https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=2860.&lawCode=INS)
+- [California Civil Code Section 2860 — Independent Counsel (Cumis)](https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=2860.&lawCode=CIV)

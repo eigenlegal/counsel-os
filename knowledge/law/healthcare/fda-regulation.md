@@ -1,7 +1,24 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "21 U.S.C. 301 et seq."
+    title: "Federal Food, Drug, and Cosmetic Act"
+    url: "https://www.law.cornell.edu/uscode/text/21/chapter-9"
+  - cite: "21 CFR Part 860"
+    title: "Medical device classification procedures"
+    url: "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-H/part-860"
+  - cite: "21 CFR Part 50"
+    title: "Protection of human subjects (informed consent)"
+    url: "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-A/part-50"
+  - cite: "FDA Device Classification"
+    title: "FDA product classification database"
+    url: "https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfpcd/classification.cfm"
+  - cite: "FDA Drug Approval Process"
+    title: "Development and approval process for drugs"
+    url: "https://www.fda.gov/drugs/development-approval-process-drugs"
 ---
 # FDA Regulation
 

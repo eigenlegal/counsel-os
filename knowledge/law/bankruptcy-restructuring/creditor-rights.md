@@ -1,7 +1,21 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal]
+authorities:
+  - cite: "11 U.S.C. § 507"
+    title: "Priorities (wage, benefit, and deposit caps as adjusted)"
+    url: "https://www.law.cornell.edu/uscode/text/11/507"
+  - cite: "Adjustment of Certain Dollar Amounts, 90 Fed. Reg. 8941 (Feb. 4, 2025)"
+    title: "Section 104 triennial adjustment effective April 1, 2025"
+    url: "https://www.federalregister.gov/documents/2025/02/04/2025-02207/adjustment-of-certain-dollar-amounts-applicable-to-bankruptcy-cases"
+  - cite: "Harrington v. Purdue Pharma L.P., 603 U.S. 204 (2024)"
+    title: "No nonconsensual third-party releases under § 1123(b)(6)"
+    url: "https://www.supremecourt.gov/opinions/23pdf/23-124_8nk0.pdf"
+  - cite: "11 U.S.C. § 1129(b)"
+    title: "Cramdown — fair and equitable, absolute priority"
+    url: "https://www.law.cornell.edu/uscode/text/11/1129"
+# authorities checked 2026-06-11
 ---
 # Creditor Rights
 
@@ -20,9 +34,9 @@ Applies when a creditor seeks to protect or enforce its claims in a bankruptcy p
 ### Priority of Claims (Section 507)
 
 - **Administrative Expenses (Section 507(a)(2))** / Post-petition claims essential to preserving the estate: professional fees, operating expenses, goods received within **20 days** before petition (Section 503(b)(9)). / **Consequence**: Administrative claims are paid in full before any distribution to pre-petition unsecured creditors. The 20-day goods claim is a critical protection for trade creditors — goods delivered within 20 days of the petition are treated as administrative priority.
-- **Wage Priority (Section 507(a)(4))** / Employee wages, salaries, and commissions earned within **180 days** before the petition date, up to **$15,150** per employee. / **Consequence**: The cap is adjusted every 3 years (most recent adjustment effective April 2022); amounts above the cap are general unsecured claims. Includes vacation pay, severance, and sick leave.
-- **Employee Benefit Plan Contributions (Section 507(a)(5))** / Contributions to employee benefit plans arising from services rendered within **180 days** before the petition, up to **$15,150** per employee (reduced by amounts paid under wage priority). / **Consequence**: Covers health insurance, retirement plan contributions, and other benefit obligations; calculation is complex when combined with the wage priority cap.
-- **Customer Deposits (Section 507(a)(7))** / Deposits for undelivered goods or services by individual consumers, up to **$3,350** per individual. / **Consequence**: Protects individual (not business) customers who prepaid for goods or services the debtor never delivered; amounts above the cap are general unsecured claims.
+- **Wage Priority (Section 507(a)(4))** / Employee wages, salaries, and commissions earned within **180 days** before the petition date, up to **$17,150** per employee (effective April 1, 2025; was $15,150). / **Consequence**: The cap is adjusted every 3 years under Section 104; amounts above the cap are general unsecured claims. Includes vacation pay, severance, and sick leave. Adjusted figures apply only to cases filed on or after the adjustment date.
+- **Employee Benefit Plan Contributions (Section 507(a)(5))** / Contributions to employee benefit plans arising from services rendered within **180 days** before the petition, up to **$17,150** per employee (effective April 1, 2025; was $15,150), reduced by amounts paid under wage priority. / **Consequence**: Covers health insurance, retirement plan contributions, and other benefit obligations; calculation is complex when combined with the wage priority cap.
+- **Customer Deposits (Section 507(a)(7))** / Deposits for undelivered goods or services by individual consumers, up to **$3,800** per individual (effective April 1, 2025; was $3,350). / **Consequence**: Protects individual (not business) customers who prepaid for goods or services the debtor never delivered; amounts above the cap are general unsecured claims.
 - **Tax Claims (Section 507(a)(8))** / Income taxes for taxable years ending within **3 years** before the petition; employment taxes; sales/use taxes; and certain property taxes. / **Consequence**: Priority tax claims are nondischargeable and must be paid in full under a Chapter 11 plan (may be paid in installments over **5 years** with interest). Failure to pay priority taxes prevents plan confirmation.
 
 ### Secured vs. Unsecured Claims
@@ -49,6 +63,10 @@ Applies when a creditor seeks to protect or enforce its claims in a bankruptcy p
 - **Fair and Equitable — Unsecured Claims (Absolute Priority Rule)** / No junior class may receive or retain any property under the plan unless the senior dissenting class is paid in full. / **Consequence**: In practice, the absolute priority rule means equity holders receive nothing unless all unsecured creditors are paid in full. Exceptions: individual debtors in Chapter 11 (BAPCPA carve-out) and negotiated "gifting" by consenting senior classes.
 - **No Unfair Discrimination** / Dissenting class must be treated comparably to other classes of the same priority level. / **Consequence**: The debtor cannot favor one class of unsecured creditors over another without justification; different treatment requires legitimate business reasons (e.g., trade creditor payments necessary for operations).
 
+### Nonconsensual Third-Party Releases
+
+- **No Nonconsensual Nondebtor Releases (Harrington v. Purdue Pharma, 2024)** / The Bankruptcy Code does not authorize a Chapter 11 plan to discharge claims against a nondebtor without the affected claimants' consent; Section 1123(b)(6)'s "any other appropriate provision" catchall does not supply that power. / **Consequence**: Plan releases of nondebtors (officers, owners, affiliates, insurers) can no longer be imposed over a claimant's objection. The Court did not address consensual releases or define what counts as consent, leaving opt-in versus opt-out mechanics to lower courts. Practice has shifted toward consent-based structures: the reconfirmed Purdue plan (confirmed November 18, 2025; effective 2026) used an opt-in release of the Sacklers tied to settlement consideration. Channeling injunctions under Section 524(g) for asbestos trusts remain available by their own statutory authority.
+
 ## Interaction with Other Areas
 
 - **Employment** — Employee wage and benefit priority claims; WARN Act claims; retiree benefit obligations under Section 1114
@@ -64,5 +82,7 @@ Applies when a creditor seeks to protect or enforce its claims in a bankruptcy p
 - [11 U.S.C. Section 364 — Obtaining Credit](https://www.law.cornell.edu/uscode/text/11/364)
 - [11 U.S.C. Section 1129(b) — Cramdown](https://www.law.cornell.edu/uscode/text/11/1129)
 - [Associates Commercial Corp. v. Rash, 520 U.S. 953 (1997)](https://supreme.justia.com/cases/federal/us/520/953/)
+- [Harrington v. Purdue Pharma L.P., 603 U.S. 204 (2024) — Nonconsensual Third-Party Releases](https://www.supremecourt.gov/opinions/23pdf/23-124_8nk0.pdf)
+- [Adjustment of Certain Dollar Amounts, 90 Fed. Reg. 8941 (Feb. 4, 2025) — April 1, 2025 § 104 Adjustment](https://www.federalregister.gov/documents/2025/02/04/2025-02207/adjustment-of-certain-dollar-amounts-applicable-to-bankruptcy-cases)
 
 ---

@@ -1,7 +1,26 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal]
+authorities:
+  - cite: "EO 14275 (Apr. 15, 2025)"
+    title: "Restoring Common Sense to Federal Procurement — launched the Revolutionary FAR Overhaul; checked 2026-06-11"
+    url: "https://www.federalregister.gov/documents/2025/04/18/2025-06876/restoring-common-sense-to-federal-procurement"
+  - cite: "FAR Overhaul model deviations"
+    title: "Revolutionary FAR Overhaul — model deviation texts issued for ~38 FAR parts (May–Sept 2025); final rules pending at OMB/OIRA as of review; checked 2026-06-11"
+    url: "https://www.acquisition.gov/content/revolutionary-far-overhaul"
+  - cite: "90 FR 41872 (Aug. 27, 2025)"
+    title: "FAR inflation adjustment of acquisition-related thresholds (eff. Oct. 1, 2025) — TINA threshold raised to $2.5M; checked 2026-06-11"
+    url: "https://www.federalregister.gov/documents/2025/08/27/2025-16412/federal-acquisition-regulation-inflation-adjustment-of-acquisition-related-thresholds"
+  - cite: "FAR 15.403-4"
+    title: "Requiring certified cost or pricing data (TINA)"
+    url: "https://www.acquisition.gov/far/15.403-4"
+  - cite: "FAR Part 30 / 48 CFR Chapter 99"
+    title: "Cost Accounting Standards administration and CAS Board standards"
+    url: "https://www.acquisition.gov/far/part-30"
+  - cite: "28 CFR 85.5"
+    title: "False Claims Act civil penalties $14,308–$28,619 per claim (2025 rate carried into 2026); checked 2026-06-11"
+    url: "https://www.ecfr.gov/current/title-28/chapter-I/part-85/section-85.5"
 ---
 # FAR & DFAR Key Clauses
 
@@ -9,13 +28,15 @@ jurisdiction: [us-federal]
 
 Applies to all contracts subject to the Federal Acquisition Regulation (FAR, 48 CFR) and the Defense Federal Acquisition Regulation Supplement (DFARS). FAR governs civilian agency procurement; DFARS adds requirements for Department of Defense contracts.
 
+**Revolutionary FAR Overhaul (RFO):** EO 14275 (Apr. 15, 2025) directed the FAR Council to strip the FAR to provisions required by statute or essential to sound procurement. Implementation is proceeding through agency-issued **model deviations** rather than final rules: deviation texts for roughly 38 FAR parts were issued between May and September 2025 and are operative now, but the corresponding **final rules remained pending at OMB/OIRA as of this review** and had not been published. When citing a FAR part, confirm whether a deviation has restructured or renumbered it (e.g., security content moved to a new Part 40; Parts 4, 6, 10, 18, 48 substantially condensed) before relying on the clause numbers below.
+
 ## Key Requirements
 
 ### Commercial Item Exception (FAR Part 12)
 
 - **What**: FAR 52.212 series streamlines procurement of commercial items and commercially available off-the-shelf (COTS) items
 - **Threshold/Timeline**: Commercial item determination allows exemption from many FAR clauses; contractor must demonstrate item is sold in substantial quantities to the general public
-- **Consequence**: Misrepresentation of commercial item status can trigger False Claims Act liability ($11,665-$23,331 per claim plus treble damages)
+- **Consequence**: Misrepresentation of commercial item status can trigger False Claims Act liability ($14,308–$28,619 per claim plus treble damages, at the 2025 rate carried into 2026 per 28 CFR 85.5)
 
 ### IP and Data Rights (FAR 52.227)
 
@@ -38,13 +59,13 @@ Applies to all contracts subject to the Federal Acquisition Regulation (FAR, 48 
 ### Cost Accounting Standards (CAS)
 
 - **What**: Standards governing measurement, assignment, and allocation of costs to government contracts
-- **Threshold/Timeline**: Modified CAS coverage for contracts $7.5M+; full CAS coverage when contractor receives $50M+ in CAS-covered contracts in prior cost accounting period
+- **Threshold/Timeline**: Modified CAS coverage for contracts $7.5M+; full CAS coverage when contractor receives $50M+ in CAS-covered contracts in prior cost accounting period (FY2026 NDAA §1806 restructures these to a $35M applicability floor and $100M full-coverage threshold for contracts awarded on or after June 30, 2026 — confirm award date)
 - **Consequence**: CAS noncompliance requires cost impact statement; contractor pays interest on overpayments; potential contract price adjustment
 
 ### Truth in Negotiations Act (TINA)
 
 - **What**: Requirement to submit certified cost or pricing data for negotiated contracts
-- **Threshold/Timeline**: Required for contracts exceeding $2M (adjusted periodically for inflation); exemptions for adequate price competition, commercial items, prices set by law/regulation
+- **Threshold/Timeline**: Required for contracts exceeding $2.5M (raised from $2M effective Oct. 1, 2025 by the FAR inflation adjustment; FY2026 NDAA §1804 further raises it to $10M for contracts entered after June 30, 2026); exemptions for adequate price competition, commercial items, prices set by law/regulation
 - **Consequence**: Defective pricing entitles government to price reduction plus interest; potential False Claims Act liability for knowingly submitting defective data
 
 ### Changes Clause (FAR 52.243)

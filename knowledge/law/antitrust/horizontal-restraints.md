@@ -1,7 +1,24 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "15 U.S.C. § 1"
+    title: "Sherman Act Section 1"
+    url: "https://www.law.cornell.edu/uscode/text/15/1"
+  - cite: "15 U.S.C. § 15"
+    title: "Clayton Act Section 4 treble damages"
+    url: "https://www.law.cornell.edu/uscode/text/15/15"
+  - cite: "DOJ Antitrust Division Leniency Policy"
+    title: "Leniency Policy and Procedures (March 2024)"
+    url: "https://www.justice.gov/atr/leniency-policy"
+  - cite: "DOJ/FTC Antitrust Guidance for Human Resource Professionals (2016)"
+    title: "Criminal treatment of naked no-poach and wage-fixing agreements"
+    url: "https://www.justice.gov/atr/file/903511/download"
+  - cite: "United States v. Lopez (D. Nev. 2025)"
+    title: "DOJ press release: jury convicts home health agency executive of wage fixing (Apr. 14, 2025)"
+    url: "https://www.justice.gov/opa/pr/jury-convicts-home-health-agency-executive-fixing-wages-and-fraudulently-concealing-criminal"
 ---
 # Horizontal Restraints
 
@@ -51,7 +68,7 @@ Certain horizontal agreements are conclusively presumed unreasonable. No procomp
 
 - **Wage-fixing**
   - **What:** Competing employers agree to fix, depress, or stabilize compensation levels.
-  - **Threshold/Timeline:** Criminal per se violation. Applies to salary, benefits, bonuses, and other terms of compensation.
+  - **Threshold/Timeline:** Criminal per se violation. Applies to salary, benefits, bonuses, and other terms of compensation. After a string of trial setbacks, DOJ obtained its first labor-market jury conviction in April 2025 (United States v. Lopez, D. Nev. — wage-fixing among home healthcare staffing agencies; 40-month sentence).
   - **Consequence:** Same penalties as horizontal price-fixing.
 
 - **Carve-out:** Non-solicitation provisions that are ancillary to a legitimate business transaction (M&A, joint venture, franchise, outsourcing) are analyzed under the rule of reason, not per se. The restraint must be reasonably necessary to achieve the transaction's procompetitive objectives and limited in scope and duration.
@@ -101,7 +118,7 @@ Agreements among competitors that involve meaningful integration of economic act
 
 ## Interaction with Other Areas
 
-- **Employment:** No-poach and wage-fixing between competitors are criminal antitrust violations, distinct from employer-employee non-compete agreements (see `employment/` for FTC non-compete rule and state law restrictions). Franchise no-poach provisions are under active scrutiny.
+- **Employment:** No-poach and wage-fixing between competitors are criminal antitrust violations, distinct from employer-employee non-compete agreements (see `employment/` for state non-compete restrictions; the FTC's 2024 non-compete rule was set aside in 2024 and the FTC dismissed its appeals in September 2025 — it is not in effect). Franchise no-poach provisions are under active scrutiny.
 - **IP and Technology:** Standard-setting FRAND commitments and patent pool arrangements must comply with horizontal restraint principles. See `ip-and-technology/` for patent licensing analysis.
 - **Consumer Protection:** FTC enforces Section 5 of the FTC Act (unfair methods of competition) as a complement to Sherman Act Section 1. FTC Act has a broader reach and does not require proof of an "agreement."
 - **International Trade:** Cartels frequently span multiple jurisdictions. EU Article 101 TFEU prohibits equivalent horizontal agreements. Cross-border leniency applications may be necessary (but leniency in one jurisdiction does not guarantee leniency in another).
@@ -111,7 +128,7 @@ Agreements among competitors that involve meaningful integration of economic act
 ## Sources
 
 - [Sherman Antitrust Act (15 U.S.C. 1-7) — Cornell LII](https://www.law.cornell.edu/uscode/text/15/1)
-- [DOJ Antitrust Division Leniency Program](https://www.justice.gov/atr/leniency-program)
+- [DOJ Antitrust Division Leniency Policy](https://www.justice.gov/atr/leniency-policy)
 - [DOJ/FTC Antitrust Guidance for Human Resource Professionals (2016)](https://www.justice.gov/atr/file/903511/download)
 - [DOJ/FTC Competitor Collaboration Guidelines (2000)](https://www.ftc.gov/sites/default/files/documents/public_events/joint-venture-hearings-antitrust-guidelines-702collaboration-among-competitors/ftcdojguidelines-2.pdf)
 - [Clayton Act Section 4 — Treble Damages (15 U.S.C. 15) — Cornell LII](https://www.law.cornell.edu/uscode/text/15/15)

@@ -1,7 +1,33 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, international]
+authorities:
+  - cite: "50 U.S.C. §§ 1701-1706"
+    title: "International Emergency Economic Powers Act"
+    url: "https://www.law.cornell.edu/uscode/text/50/chapter-35"
+  - cite: "31 C.F.R. Part 501, Appendix A"
+    title: "OFAC Economic Sanctions Enforcement Guidelines"
+    url: "https://www.ecfr.gov/current/title-31/subtitle-B/chapter-V/part-501/appendix-Appendix%20A%20to%20Part%20501"
+  - cite: "90 Fed. Reg. (Jan. 15, 2025)"
+    title: "OFAC Inflation Adjustment of Civil Monetary Penalties (2025 levels, carried into 2026)"
+    url: "https://www.federalregister.gov/documents/2025/01/15/2025-00786/inflation-adjustment-of-civil-monetary-penalties"
+  - cite: "Executive Order 14312 (June 30, 2025)"
+    title: "Providing for the Revocation of Syria Sanctions"
+    url: "https://ofac.treasury.gov/sanctions-programs-and-country-information/syria-sanctions-inactive-and-archived"
+  - cite: "OFAC FAQs Topic 1521"
+    title: "Entities Owned by Blocked Persons (50 Percent Rule)"
+    url: "https://ofac.treasury.gov/faqs/topic/1521"
+  - cite: "OFAC Russian Harmful Foreign Activities Sanctions (E.O. 14024)"
+    title: "Russia program page, including October 2025 Rosneft/Lukoil designations"
+    url: "https://ofac.treasury.gov/sanctions-programs-and-country-information/russian-harmful-foreign-activities-sanctions"
+  - cite: "Treasury Press Release sb0290 (Oct. 22, 2025)"
+    title: "Treasury Sanctions Major Russian Oil Companies (Rosneft, Lukoil)"
+    url: "https://home.treasury.gov/news/press-releases/sb0290"
+  - cite: "OFAC Recent Action (May 1, 2026)"
+    title: "Issuance of Executive Order imposing new Cuba sanctions authorities"
+    url: "https://ofac.treasury.gov/recent-actions/20260501_33"
 ---
 # US and International Sanctions
 
@@ -9,7 +35,7 @@ jurisdiction: [us-federal, international]
 
 Applies when any party to a transaction, agreement, or business relationship has a nexus to:
 
-- Countries or regions subject to comprehensive US sanctions (Cuba, Iran, North Korea, Syria, Crimea/Donetsk/Luhansk)
+- Countries or regions subject to comprehensive US sanctions (Cuba, Iran, North Korea, Crimea/Donetsk/Luhansk)
 - Countries or regions subject to targeted/sectoral US sanctions (Russia, Venezuela, Belarus, Myanmar, others)
 - Persons or entities on OFAC restricted party lists (SDN, SSI, NS-MBS, FSE, CAPTA, NS-PLC)
 - Transactions involving the US financial system, US-origin goods, or US persons (including US companies and their foreign branches)
@@ -20,9 +46,17 @@ Applies when any party to a transaction, agreement, or business relationship has
 
 ### Comprehensive Sanctions Programs
 
-- **What**: Prohibit virtually all transactions with the sanctioned country/region, including imports, exports, financial transactions, investment, and services. Current comprehensive programs: Cuba (TWEA-based), Iran, North Korea, Syria, and Crimea/Donetsk/Luhansk regions of Ukraine
+- **What**: Prohibit virtually all transactions with the sanctioned country/region, including imports, exports, financial transactions, investment, and services. Current comprehensive programs: Cuba (TWEA-based), Iran, North Korea, and the Crimea/Donetsk/Luhansk regions of Ukraine. Syria's comprehensive program was revoked by E.O. 14312 (June 30, 2025) and the Caesar Act was repealed by the FY2026 NDAA (Dec. 18, 2025); Syria remains a designated State Sponsor of Terrorism, and targeted designations (Assad-linked persons, captagon traffickers, ISIS/al-Qa'ida) remain in force
 - **Threshold/Timeline**: Zero tolerance — any transaction involving a comprehensively sanctioned jurisdiction is prohibited absent a specific or general license. No de minimis value exception
-- **Consequence**: Civil penalties up to $356,579 per violation under IEEPA (adjusted annually for inflation); criminal penalties up to $1,000,000 and 20 years imprisonment per willful violation under IEEPA; $90,895 per violation under TWEA (Cuba)
+- **Consequence**: Civil penalties up to the greater of $377,700 per violation or twice the transaction value under IEEPA (inflation-adjusted Jan. 2025; no 2026 adjustment was published); criminal penalties up to $1,000,000 and 20 years imprisonment per willful violation under IEEPA; $111,308 per violation under TWEA (Cuba)
+
+### Country Program Status Notes (checked June 2026 — verify against OFAC recent actions before relying)
+
+- **Russia**: Significantly tightened in late 2025 — OFAC designated Rosneft and Lukoil under E.O. 14024 (Oct. 22, 2025; restrictions effective Nov. 21, 2025), citing lack of commitment to a Ukraine peace process. In 2026, amid peace negotiations and energy-market disruption, OFAC has issued narrow, time-limited general licenses easing specific oil-related transactions (e.g., GL 134C for Russian-origin oil in transit; GL 131F for the Lukoil International divestiture). The program is volatile; check current GLs and designations before any Russia-touching transaction
+- **Iran**: "Maximum pressure" reinstated by NSPM-2 (Feb. 2025). UN snapback sanctions were reimposed effective Sept. 27-28, 2025 after the E3 invoked the JCPOA snapback mechanism; Russia, China, and Iran dispute the reimposition's validity. US designations have continued through 2026
+- **Venezuela**: Sanctions remain in place notwithstanding the January 2026 removal of Nicolás Maduro from power — Government of Venezuela/PdVSA prohibitions continue, and many regime-linked SDN designations persist. OFAC General License 46 (Jan. 29, 2026) authorizes certain Venezuelan-origin oil transactions. Expect continued change
+- **Cuba**: Tightened — Cuba restored to the State Sponsors of Terrorism list (Jan. 2025), NSPM-5 (June 30, 2025) reinstated pressure policy, and E.O. 14404 (May 1, 2026) created new designation authorities targeting key sectors of the Cuban economy plus secondary-sanctions exposure for foreign financial institutions
+- **Syria**: Comprehensive program revoked (see above); screen for remaining targeted designations and the continuing SST designation, which preserves certain export-control and terrorism-related restrictions
 
 ### SDN List and Targeted Sanctions
 
@@ -35,6 +69,7 @@ Applies when any party to a transaction, agreement, or business relationship has
 - **What**: An entity that is 50% or more owned, directly or indirectly, by one or more SDNs is itself considered blocked, even if the entity is not separately listed on the SDN list. Ownership interests of multiple SDNs are aggregated
 - **Threshold/Timeline**: 50% ownership threshold. Must trace both direct and indirect ownership. If SDN A owns 30% and SDN B owns 25%, the entity is blocked (55% aggregate). Applies to ownership at every level of the corporate chain
 - **Consequence**: Transacting with a 50%-owned entity carries the same penalties as transacting directly with an SDN. Compliance programs must include beneficial ownership analysis, not just list screening
+- **2026 guidance**: OFAC's "Sham Transactions and Sanctions Evasion" guidance (Mar. 31, 2026) treats the 50% Rule as a floor, not a ceiling — divestitures or ownership structures designed to evade blocking are disregarded, and entities below 50% blocked-person ownership may still present blocking/evasion risk where control or benefit to a blocked person exists. Apply enhanced diligence where red flags or significant minority blocked-person stakes are present
 
 ### Sectoral Sanctions (e.g., Russia SSI List)
 
@@ -45,6 +80,7 @@ Applies when any party to a transaction, agreement, or business relationship has
   - Directive 4: Provision of goods, services, or technology for deepwater, Arctic offshore, or shale projects for specified energy sector entities
 - **Threshold/Timeline**: Restrictions apply to new transactions only (not pre-existing obligations, unless separately sanctioned). Debt tenor measured from issuance, not maturity
 - **Consequence**: Same IEEPA penalties. Sectoral violations are assessed under the same enforcement framework
+- **Current Russia program note**: Since 2022 the center of gravity has shifted from the E.O. 13662 sectoral directives to full blocking designations under E.O. 14024 (now including Rosneft and Lukoil, designated Oct. 2025) and services/import-export bans under E.O. 14071. Analyze Russia exposure against the current E.O. 14024 SDN designations and general licenses, not only the SSI directives
 
 ### General and Specific Licenses
 
@@ -128,7 +164,7 @@ Applies when any party to a transaction, agreement, or business relationship has
 - **Anti-Corruption**: Sanctions and anti-corruption intersect when government officials of sanctioned countries are involved; FCPA analysis may also be required
 - **IP and Technology**: Technology licensing and SaaS agreements must include sanctions compliance provisions and may require geo-blocking for comprehensively sanctioned jurisdictions
 - **Employment**: Foreign national employees from sanctioned jurisdictions may require OFAC licenses for certain employment-related transactions. Sanctions screening must be applied to all new hires and vendors
-- **Anti-Boycott**: Sanctions and anti-boycott are distinct regimes with separate enforcement agencies (OFAC vs. BIS). A country may be subject to both US sanctions and be a participant in a foreign boycott (e.g., Syria). Both regimes must be analyzed independently
+- **Anti-Boycott**: Sanctions and anti-boycott are distinct regimes with separate enforcement agencies (OFAC vs. BIS). A country may be subject to US sanctions and also participate in a foreign boycott, and the regimes change independently — Syria's comprehensive US sanctions were revoked in 2025, but Syria remains on Treasury's boycotting-country list. Both regimes must be analyzed independently
 
 ## Sources
 
@@ -137,5 +173,5 @@ Applies when any party to a transaction, agreement, or business relationship has
 - OFAC Framework for Compliance Commitments (May 2019): https://ofac.treasury.gov/media/16331/download
 - OFAC Consolidated Sanctions List: https://ofac.treasury.gov/consolidated-sanctions-list-non-sdn-lists
 - IEEPA (50 U.S.C. Sections 1701-1706)
-- OFAC FAQs on the 50% Rule: https://ofac.treasury.gov/faqs/topic/1526
+- OFAC FAQs on the 50% Rule: https://ofac.treasury.gov/faqs/topic/1521
 - EU Consolidated Sanctions List: https://www.sanctionsmap.eu

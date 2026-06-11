@@ -1,7 +1,21 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "IRS Publication 1771"
+    title: "Charitable Contributions — Substantiation and Disclosure Requirements"
+    url: "https://www.irs.gov/publications/p1771"
+  - cite: "26 U.S.C. § 6115"
+    title: "Disclosure related to quid pro quo contributions (over $75)"
+    url: "https://www.law.cornell.edu/uscode/text/26/6115"
+  - cite: "26 U.S.C. § 170(f)(8)"
+    title: "Contemporaneous written acknowledgment for contributions of $250 or more"
+    url: "https://www.law.cornell.edu/uscode/text/26/170"
+  - cite: "NASCO / Charleston Principles"
+    title: "National Association of State Charity Officials — online solicitation guidance"
+    url: "https://www.nasconet.org/"
+# authorities checked 2026-06-11
 ---
 # Charitable Solicitation
 
@@ -16,7 +30,7 @@ Applies to any nonprofit organization soliciting charitable contributions from t
 - **Registration Requirement** / 41 states plus DC require registration before soliciting contributions from residents of that state / **Consequence**: Soliciting without registration = cease and desist orders, civil penalties ($1K-$25K per violation depending on state), potential criminal penalties
 - **Unified Registration Statement (URS)** / Accepted by approximately 37 states; streamlines multi-state registration / **Timeline**: Initial registration typically 30-60 days; annual renewal required
 - **Exemptions** / Most states exempt religious organizations, organizations raising <$25K (threshold varies $5K-$50K by state), educational institutions, hospitals, and membership organizations soliciting only members / **Consequence**: Claiming exemption improperly = same penalties as failure to register
-- **Financial Thresholds** / Some states require audited financials above certain revenue levels (e.g., NY: >$750K requires independent audit; CA: >$2M requires audit) / **Consequence**: Failure to file required financials = registration denial or revocation
+- **Financial Thresholds** / Some states require audited financials above certain revenue levels (e.g., NY: >$750K requires independent audit; CA: >$2M requires audit) / **Consequence**: Failure to file required financials = registration denial or revocation / **UNCERTAIN (2026-06-11)**: The state-count ("41 states plus DC"), the ~37-state URS acceptance figure, and the per-state audit thresholds above are not verified against each state's current statute in this pass; secondary trackers report varying counts. Confirm the specific state's current threshold and registration requirement (and whether it accepts the URS or requires its own form) before relying on these numbers.
 
 ### Solicitation Disclosure Requirements
 

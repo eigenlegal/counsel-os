@@ -1,7 +1,27 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "15 U.S.C. § 2"
+    title: "Sherman Act Section 2"
+    url: "https://www.law.cornell.edu/uscode/text/15/2"
+  - cite: "United States v. Grinnell Corp., 384 U.S. 563 (1966)"
+    title: "Monopolization elements"
+    url: "https://supreme.justia.com/cases/federal/us/384/563/"
+  - cite: "Brooke Group Ltd. v. Brown & Williamson Tobacco Corp., 509 U.S. 209 (1993)"
+    title: "Predatory pricing standard"
+    url: "https://supreme.justia.com/cases/federal/us/509/209/"
+  - cite: "Verizon Communications v. Trinko, 540 U.S. 398 (2004)"
+    title: "Refusal to deal and essential facilities limits"
+    url: "https://supreme.justia.com/cases/federal/us/540/398/"
+  - cite: "United States v. Google LLC (search), No. 1:20-cv-03010 (D.D.C.)"
+    title: "DOJ press release on the September 2, 2025 remedies decision"
+    url: "https://www.justice.gov/opa/pr/department-justice-wins-significant-remedies-against-google"
+  - cite: "FTC v. Meta Platforms, Inc., No. 1:20-cv-03590 (D.D.C.)"
+    title: "FTC press release announcing appeal of the November 2025 judgment for Meta (Jan. 2026)"
+    url: "https://www.ftc.gov/news-events/news/press-releases/2026/01/ftc-appeals-ruling-meta-monopolization-case"
 ---
 # Monopolization
 
@@ -47,7 +67,7 @@ Two elements must be proven:
      - Factors: market structure, barriers to entry, likelihood of supracompetitive pricing post-predation, duration required for recoupment.
      - Without recoupment, below-cost pricing benefits consumers and does not support an antitrust claim.
 
-- **Consequence:** Treble damages under Clayton Act Section 4. Injunctive relief. Criminal prosecution under Section 2 is theoretically possible but extremely rare (DOJ has not brought a criminal Section 2 case in decades). Predatory pricing claims are difficult to prove and rarely succeed after Brooke Group.
+- **Consequence:** Treble damages under Clayton Act Section 4. Injunctive relief. Criminal prosecution under Section 2 is rare but no longer dormant: in 2022 DOJ obtained its first criminal Section 2 conviction in roughly 40 years (United States v. Zito, D. Mont. — guilty plea to attempted monopolization via a proposed market-allocation scheme). Predatory pricing claims are difficult to prove and rarely succeed after Brooke Group.
 
 ### Exclusive Dealing as Monopolization
 
@@ -92,6 +112,14 @@ Three elements must be proven:
 - **Threshold/Timeline:** Requires proof of a conspiracy (agreement), specific intent to monopolize, and an overt act. Unlike monopolization, does not require proof of monopoly power or dangerous probability of success. Less commonly prosecuted.
 - **Consequence:** Same penalties as monopolization: up to $100M corporate fine, $1M individual fine, 10 years imprisonment for criminal violations. Treble damages for civil violations.
 
+### Major Pending Section 2 Cases (status as of June 2026 — verify before relying)
+
+These postures are litigation-dependent and change quickly; confirm current status before advising.
+
+- **United States v. Google (search), D.D.C. (Judge Mehta):** August 2024 liability finding that Google unlawfully maintained monopolies in general search and general search text ads through exclusive default-distribution agreements. September 2, 2025 remedies opinion declined divestiture (Chrome/Android) but barred exclusive default contracts, required sharing of certain search index and user-interaction data with qualified competitors, and imposed a six-year term overseen by a technical committee. Final judgment entered; Google appealed (January 2026) and DOJ/state plaintiffs cross-appealed; briefing before the D.C. Circuit was under way in mid-2026.
+- **United States v. Google (ad tech), E.D. Va. (Judge Brinkema):** April 17, 2025 liability finding that Google monopolized the publisher ad server and ad exchange markets and unlawfully tied its products. The remedies phase (DOJ seeks divestiture of the AdX exchange; Google proposes behavioral relief) was tried in late 2025; the remedies decision remained pending as of June 2026.
+- **FTC v. Meta Platforms, D.D.C. (Judge Boasberg):** November 18, 2025 judgment for Meta after trial — the FTC failed to prove Meta currently holds monopoly power in a personal-social-networking market (competition from TikTok and YouTube defeated the proposed market definition). The FTC noticed an appeal in January 2026.
+
 ### Remedies in Monopolization Cases
 
 - **Structural remedies (divestiture/breakup):** The most significant remedy. Applied in Standard Oil (1911) and AT&T (1984). Proposed but not ultimately imposed in Microsoft. DOJ and FTC increasingly favor structural remedies over behavioral remedies as more effective at restoring competition.
@@ -114,6 +142,8 @@ Three elements must be proven:
 - [Brooke Group Ltd. v. Brown & Williamson Tobacco (1993) — Supreme Court](https://supreme.justia.com/cases/federal/us/509/209/)
 - [Verizon Communications v. Law Offices of Curtis V. Trinko (2004) — Supreme Court](https://supreme.justia.com/cases/federal/us/540/398/)
 - [United States v. Grinnell Corp. (1966) — Supreme Court](https://supreme.justia.com/cases/federal/us/384/563/)
+- [DOJ press release — Google search remedies decision (Sept. 2025)](https://www.justice.gov/opa/pr/department-justice-wins-significant-remedies-against-google)
+- [FTC press release — FTC appeals ruling in Meta monopolization case (Jan. 2026)](https://www.ftc.gov/news-events/news/press-releases/2026/01/ftc-appeals-ruling-meta-monopolization-case)
 - [DOJ/FTC 2023 Merger Guidelines](https://www.justice.gov/atr/2023-merger-guidelines)
 
 ---

@@ -1,7 +1,30 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "16 C.F.R. Part 255 (88 FR 48102, July 26, 2023)"
+    title: "Endorsement Guides — 2023 revision remains the current version as of June 2026"
+    url: "https://www.ecfr.gov/current/title-16/chapter-I/subchapter-B/part-255"
+  - cite: "FR Doc. 2025-01361 (Jan. 17, 2025)"
+    title: "FTC Adjustments to Civil Penalty Amounts — $53,088 maximum, carried unchanged into 2026 per OMB M-26-11"
+    url: "https://www.federalregister.gov/documents/2025/01/17/2025-01361/adjustments-to-civil-penalty-amounts"
+  - cite: "16 C.F.R. Part 465"
+    title: "Trade Regulation Rule on the Use of Consumer Reviews and Testimonials, effective October 21, 2024"
+    url: "https://www.ecfr.gov/current/title-16/chapter-I/subchapter-D/part-465"
+  - cite: "FTC Consumer Review Rule warning letters (Dec. 2025)"
+    title: "FTC Warns 10 Companies About Possible Violations of the Agency's New Consumer Review Rule"
+    url: "https://www.ftc.gov/news-events/news/press-releases/2025/12/ftc-warns-10-companies-about-possible-violations-agencys-new-consumer-review-rule"
+  - cite: "15 U.S.C. § 45b"
+    title: "Consumer Review Fairness Act"
+    url: "https://www.law.cornell.edu/uscode/text/15/45b"
+  - cite: "FTC v. Epic Games (Dec. 2022)"
+    title: "$520M total: $275M COPPA civil penalty plus $245M consumer refunds for billing dark patterns"
+    url: "https://www.ftc.gov/news-events/news/press-releases/2022/12/fortnite-video-game-maker-epic-games-pay-more-half-billion-dollars-over-ftc-allegations"
+  - cite: "90 FR 16918 (Apr. 22, 2025)"
+    title: "Amended COPPA Rule — effective June 23, 2025"
+    url: "https://www.federalregister.gov/documents/2025/04/22/2025-05904/childrens-online-privacy-protection-rule"
 ---
 # Influencer Disclosures
 
@@ -15,7 +38,7 @@ Applies to any arrangement where a brand compensates or provides something of va
 
 - **What**: Updated Guides substantially expand FTC expectations for endorsement disclosures, defining when and how material connections must be disclosed; apply to endorsers, advertisers, and intermediaries
 - **Threshold/Timeline**: Key 2023 changes: (1) endorsements by virtual influencers (AI-generated personas) require same disclosures; (2) brands cannot use endorsements they know or should know are deceptive; (3) procured reviews must be disclosed; (4) "results not typical" disclaimers without disclosing typical results are insufficient; (5) children and teens require heightened protections; (6) advertiser liability for endorser non-compliance is explicit
-- **Consequence**: FTC can pursue enforcement against advertisers, endorsers, PR agencies, and affiliate networks; civil penalties up to $50,120 per violation for knowing violations of FTC rules; Section 5 enforcement through consent orders; recent FTC actions have included monetary penalties ranging from $4.2M (Fashion Nova, 2022) to $600M (Epic Games/Fortnite, 2022, which included dark patterns)
+- **Consequence**: FTC can pursue enforcement against advertisers, endorsers, PR agencies, and affiliate networks; civil penalties up to $53,088 per violation for knowing violations of FTC rules (the FTC's January 2025 inflation adjustment, carried unchanged into 2026 after OMB cancelled the 2026 adjustments); Section 5 enforcement through consent orders; recent FTC actions have included monetary penalties ranging from $4.2M (Fashion Nova, 2022) to $520M (Epic Games/Fortnite, December 2022 — a $275M COPPA civil penalty plus $245M in consumer refunds over billing dark patterns)
 
 ### Material Connection Definition
 
@@ -57,14 +80,14 @@ Applies to any arrangement where a brand compensates or provides something of va
 ### Reviews and Testimonials
 
 - **What**: Online reviews are endorsements under FTC Guides; fake reviews, suppressed negative reviews, and incentivized reviews without disclosure are deceptive practices
-- **Threshold/Timeline**: FTC 2023 proposed rule on fake reviews and testimonials: prohibits fake reviews, incentivized reviews without disclosure, insider reviews without disclosure, company-controlled review websites presented as independent, and review suppression; businesses may not condition transactions on leaving positive reviews or imply legal threats against negative reviewers (Consumer Review Fairness Act, 15 U.S.C. 45b)
-- **Consequence**: FTC penalties for fake review schemes; Consumer Review Fairness Act voids contract provisions restricting honest reviews ($50,120 civil penalty per violation); state AG enforcement under UDAP statutes; class action risk for review manipulation; platform policies independently prohibit fake reviews with account-level sanctions
+- **Threshold/Timeline**: FTC Trade Regulation Rule on the Use of Consumer Reviews and Testimonials (16 CFR Part 465, finalized August 2024, effective October 21, 2024): prohibits fake reviews, incentivized reviews conditioned on sentiment, insider reviews without disclosure, company-controlled review websites presented as independent, and review suppression; businesses may not condition transactions on leaving positive reviews or imply legal threats against negative reviewers (Consumer Review Fairness Act, 15 U.S.C. 45b)
+- **Consequence**: Part 465 violations carry civil penalties up to $53,088 per violation (the FTC issued its first warning letters under the rule in December 2025); Consumer Review Fairness Act voids contract provisions restricting honest reviews, with rule-level civil penalties for violations; state AG enforcement under UDAP statutes; class action risk for review manipulation; platform policies independently prohibit fake reviews with account-level sanctions
 
 ### Children and Teens
 
 - **What**: Endorsements and advertising directed at children and adolescents receive heightened scrutiny; FTC, COPPA, and CARU (Children's Advertising Review Unit) guidelines apply
 - **Threshold/Timeline**: COPPA applies to collection of personal information from children under 13 in connection with endorsement campaigns; CARU Self-Regulatory Guidelines recommend that advertising directed to children be clearly distinguishable from content; FTC has expressed concern about "kidfluencers" whose content blurs advertising and entertainment; influencer campaigns targeting minors must ensure disclosures are understandable by the target age group
-- **Consequence**: COPPA violations up to $50,120 per violation; FTC has signaled increased enforcement focus on advertising to children through influencers; platforms may restrict branded content involving minors; state laws (e.g., Illinois, California) impose specific requirements for minor influencers including trust accounts (similar to Coogan Law)
+- **Consequence**: COPPA violations carry civil penalties up to $53,088 per violation (2025 adjusted figure, carried into 2026); the amended COPPA Rule took effect June 23, 2025; FTC has signaled increased enforcement focus on advertising to children through influencers; platforms may restrict branded content involving minors; state laws (e.g., Illinois, California) impose specific requirements for minor influencers including trust accounts (similar to Coogan Law)
 
 ## Interaction with Other Areas
 

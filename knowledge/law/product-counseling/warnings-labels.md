@@ -1,7 +1,35 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "27 CCR §§ 25601–25607.53 (OEHHA Clear and Reasonable Warnings; short-form amendment adopted Dec. 2024)"
+    title: "Proposition 65 safe-harbor warning regulations; revised short-form warning (new format required for products manufactured on or after Jan. 1, 2028) — checked 2026-06-11"
+    url: "https://oehha.ca.gov/proposition-65/crnr/proposition-65-clear-and-reasonable-warnings-safe-harbor-methods-and-content"
+  - cite: "Cal. Health & Safety Code § 25249.5 et seq. (Proposition 65)"
+    title: "Safe Drinking Water and Toxic Enforcement Act of 1986 — checked 2026-06-11"
+    url: "https://www.p65warnings.ca.gov/"
+  - cite: "29 C.F.R. 1910.1200 (OSHA Hazard Communication Standard)"
+    title: "OSHA HCS; current maximum penalties (serious $16,550 / willful $165,514, eff. Jan. 2026) — checked 2026-06-11"
+    url: "https://www.osha.gov/penalties"
+  - cite: "FASTER Act of 2021 (Pub. L. 117-11); 21 U.S.C. 321(qq)"
+    title: "Sesame as ninth major food allergen; labeling required as of Jan. 1, 2023 — checked 2026-06-11"
+    url: "https://www.fda.gov/food/food-allergies/faster-act-sesame-ninth-major-food-allergen"
+  - cite: "MoCRA (Pub. L. 117-328, Div. FF, Title III)"
+    title: "Modernization of Cosmetics Regulation Act of 2022; fragrance-allergen labeling rule still pending as of review — checked 2026-06-11"
+    url: "https://www.fda.gov/cosmetics/cosmetics-laws-regulations/modernization-cosmetics-regulation-act-2022-mocra"
+  - cite: "Minn. Stat. § 116.943 (Amara's Law)"
+    title: "Minnesota PFAS-in-products prohibitions and reporting; 11 categories banned Jan. 1, 2025, near-total ban Jan. 1, 2032 — checked 2026-06-11"
+    url: "https://www.pca.state.mn.us/air-water-land-climate/pfas-use-prohibitions-and-reporting"
+  - cite: "Cal. AB 1817 (2022); Cal. Health & Safety Code § 108970 et seq."
+    title: "California PFAS-in-textiles ban effective Jan. 1, 2025 (100 ppm TOF; 50 ppm Jan. 1, 2027) — checked 2026-06-11"
+    url: "https://leginfo.legislature.ca.gov/faces/billTextClient.xhtml?bill_id=202120220AB1817"
+  - cite: "38 M.R.S. § 1614 (as amended by LD 1537 / P.L. 2023 c. 630)"
+    title: "Maine PFAS-in-products law; phased prohibitions to 2032 catch-all unless currently-unavoidable use — checked 2026-06-11"
+    url: "https://www.maine.gov/dep/spills/topics/pfas/PFAS-products/"
+  - cite: "FDA Market Phase-Out of Grease-Proofing Substances Containing PFAS"
+    title: "FDA announcement (Feb. 28, 2024) that grease-proofing PFAS are no longer sold for U.S. food-contact use — checked 2026-06-11"
+    url: "https://www.fda.gov/food/process-contaminants-food/market-phase-out-grease-proofing-substances-containing-pfas"
 ---
 # Warnings and Labels
 
@@ -73,11 +101,15 @@ Load this file when a matter involves product warning adequacy, labeling require
   - **Threshold:** Use of specific warning language prescribed in 27 CCR Section 25603 et seq., tailored by product type.
   - **Consequence:** Safe harbor warnings provide a rebuttable presumption of adequacy. Short-form and long-form options available. Must be prominently displayed on product, packaging, shelf tag, or at point of sale. Online sellers must provide warning before purchase — cannot be buried in post-purchase documentation. Catalog sellers must provide in a manner the purchaser is likely to see before completing the purchase.
 
+- **Prop 65 short-form warning amendment (adopted December 2024)**
+  - **Threshold:** OEHHA amended 27 CCR Sections 25601, 25602, 25603, and 25607.2 and added Sections 25607.50–25607.53 to revise the short-form safe-harbor warning, effective January 1, 2025.
+  - **Consequence:** The revised short-form warning must include at least one named listed chemical (in addition to the symbol, signal word, and URL), and the regulation adds tailored short-form options and clarified internet/catalog short-form rules. There is a transition period: products manufactured and labeled before January 1, 2028 may continue to use the prior short-form and retain safe-harbor protection, but a short-form warning used to claim safe harbor on products manufactured on or after January 1, 2028 must use the new format. Businesses may adopt the new format earlier. Verify the exact required content and the current effective/compliance dates against the OEHHA regulation before relying on a short-form warning.
+
 ### OSHA Hazard Communication Standard (HCS)
 
 - **Safety Data Sheets (SDS)**
   - **Threshold:** All chemical manufacturers and importers must prepare a 16-section SDS for hazardous chemicals; employers must maintain accessible SDS for all workplace hazardous chemicals.
-  - **Consequence:** GHS-aligned 16-section format: (1) identification, (2) hazard identification, (3) composition, (4) first-aid, (5) fire-fighting, (6) accidental release, (7) handling/storage, (8) exposure controls/PPE, (9) physical/chemical properties, (10) stability/reactivity, (11) toxicological, (12) ecological, (13) disposal, (14) transport, (15) regulatory, (16) other. Updated SDS required within 3 months of new significant information. Penalties: serious violation up to $16,131; willful up to $161,323.
+  - **Consequence:** GHS-aligned 16-section format: (1) identification, (2) hazard identification, (3) composition, (4) first-aid, (5) fire-fighting, (6) accidental release, (7) handling/storage, (8) exposure controls/PPE, (9) physical/chemical properties, (10) stability/reactivity, (11) toxicological, (12) ecological, (13) disposal, (14) transport, (15) regulatory, (16) other. Updated SDS required within 3 months of new significant information. Penalties (OSHA maximums adjust annually for inflation; amounts effective January 2026): serious violation up to $16,550; willful or repeated up to $165,514. Verify the current-year figures against the OSHA penalties page before citing.
 
 - **Container labels (HCS)**
   - **Threshold:** All containers of hazardous chemicals shipped or in the workplace must bear HCS-compliant labels.
@@ -87,15 +119,23 @@ Load this file when a matter involves product warning adequacy, labeling require
 
 - **Food labeling**
   - **Threshold:** All packaged food products sold in the U.S.
-  - **Consequence:** Nutrition Facts panel (21 C.F.R. Part 101), ingredient list in descending order of predominance, allergen declaration under FALCPA — Top 9 allergens (milk, eggs, fish, shellfish, tree nuts, peanuts, wheat, soybeans, sesame under FASTER Act 2021) in plain English. Misbranding is a prohibited act under FDCA. FDA Warning Letters and recall authority. Country of origin labeling (COOL) for certain products.
+  - **Consequence:** Nutrition Facts panel (21 C.F.R. Part 101), ingredient list in descending order of predominance, allergen declaration under FALCPA — Top 9 allergens (milk, eggs, fish, shellfish, tree nuts, peanuts, wheat, soybeans, and sesame, added by the FASTER Act of 2021 with sesame labeling required as of January 1, 2023) in plain English. Misbranding is a prohibited act under FDCA. FDA Warning Letters and recall authority. Country of origin labeling (COOL) for certain products.
 
 - **Cosmetics labeling**
   - **Threshold:** All cosmetic products sold in the U.S.
-  - **Consequence:** INCI ingredient names in descending order, net quantity, distributor/manufacturer identity, warnings for specific ingredients (coal tar dyes, sunscreen drug facts). MoCRA (2022) adds: mandatory serious adverse event reporting (15 business days), facility registration, product listing with ingredient disclosure to FDA, FDA mandatory recall authority, fragrance allergen disclosure (phased implementation).
+  - **Consequence:** INCI ingredient names in descending order, net quantity, distributor/manufacturer identity, warnings for specific ingredients (coal tar dyes, sunscreen drug facts). MoCRA (2022) adds: mandatory serious adverse event reporting (15 business days; enforceable since December 29, 2023), facility registration (renewable every two years) and product listing with ingredient disclosure to FDA, and FDA mandatory recall authority. MoCRA also directs FDA to issue a rule identifying fragrance allergens that must be disclosed on the label; as of this review FDA has not yet issued that fragrance-allergen labeling rule, so confirm the rule's status and any compliance date before advising. (UNCERTAIN — rule pending.)
 
 - **Chemical labeling (TSCA / state laws)**
   - **Threshold:** Chemical substances manufactured, imported, or processed in the U.S.
   - **Consequence:** EPA may require labeling under TSCA Section 6 risk management rules. SNURs under TSCA Section 5(a)(2) may impose notification and labeling obligations. State laws add requirements: CA Cleaning Product Right to Know Act (SB 258) requires ingredient disclosure; WA Children's Safe Products Act requires reporting of chemicals of high concern.
+
+- **PFAS in products — state restrictions and reporting (rapidly evolving)**
+  - **Threshold:** Products containing intentionally added per- and polyfluoroalkyl substances (PFAS) sold in states with PFAS-in-products statutes.
+  - **Consequence:** A growing wave of state laws restricts intentionally added PFAS in consumer products and adds disclosure/reporting duties; thresholds, covered categories, and dates differ by state, so check the governing statute for each state of sale. Key examples as of this review: Minnesota's Amara's Law (Minn. Stat. § 116.943) bans intentionally added PFAS in 11 product categories (carpets/rugs, cleaning products, cookware, cosmetics, dental floss, fabric treatments, products for children under 12, menstruation products, textile furnishings, ski wax, upholstered furniture) effective January 1, 2025, requires PFAS-in-products reporting (initial reports due 2026), and bans intentionally added PFAS in nearly all products from January 1, 2032 absent a determined currently-unavoidable use. California AB 1817 bans regulated PFAS in textile articles from January 1, 2025 (≥100 ppm total organic fluorine, dropping to ≥50 ppm January 1, 2027), with severe-wet-condition outdoor apparel exempt until January 1, 2028 (subject to a "Made with PFAS chemicals" disclosure in the interim). Maine's PFAS-in-products law (38 M.R.S. § 1614), as amended by LD 1537 / P.L. 2023 c. 630 (effective August 9, 2024), phases in category prohibitions (e.g., a 2026 sales prohibition) leading to a 2032 catch-all prohibition unless a use is determined a currently-unavoidable use by rule. Other states have cookware, juvenile-product, food-packaging, and textile PFAS statutes. (UNCERTAIN at the per-state level — verify each state's current statute, covered categories, and effective dates before advising.)
+
+- **PFAS in food packaging (FDA)**
+  - **Threshold:** Grease-proofing PFAS substances historically authorized for paper/paperboard food-contact use (fast-food wrappers, microwave popcorn bags, take-out containers, pet food bags).
+  - **Consequence:** FDA announced on February 28, 2024 that grease-proofing substances containing PFAS are no longer sold by manufacturers for food-contact use in the U.S., completing the voluntary market phase-out FDA secured from industry. This addresses the primary dietary-exposure source from authorized food-contact uses but does not displace separate state PFAS-in-packaging statutes.
 
 ## Interaction with Other Areas
 

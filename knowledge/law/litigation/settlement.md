@@ -1,7 +1,21 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, international]
+authorities:
+  - cite: "Fed. R. Evid. 408"
+    title: "Compromise offers and negotiations"
+    url: "https://www.law.cornell.edu/rules/fre/rule_408"
+  - cite: "Fed. R. Civ. P. 23(e)"
+    title: "Class action settlement approval"
+    url: "https://www.law.cornell.edu/rules/frcp/rule_23"
+  - cite: "26 U.S.C. § 104(a)(2)"
+    title: "Exclusion for damages on account of personal physical injuries or sickness"
+    url: "https://www.law.cornell.edu/uscode/text/26/104"
+  - cite: "Cal. Civ. Code § 1542"
+    title: "General release does not extend to unknown claims absent express waiver"
+    url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=1542&lawCode=CIV"
 ---
 # Settlement
 
@@ -69,7 +83,7 @@ Load when any matter involves settlement negotiations, release agreements, settl
 
 - **Litigation (Privilege)**: Settlement negotiation communications are protected by FRE 408 but may be discoverable for non-liability purposes; mediation communications have additional protections
 - **Litigation (Class Actions)**: Class settlements require FRCP 23(e) approval process with notice and fairness hearing
-- **Employment**: ADEA/OWBPA settlements require specific knowing-and-voluntary waiver provisions (21-day consideration, 7-day revocation); FLSA settlements require DOJ or court approval; Title VII settlements have EEOC notice requirements
+- **Employment**: ADEA/OWBPA settlements require specific knowing-and-voluntary waiver provisions (21-day consideration, 7-day revocation); FLSA settlements generally require Department of Labor supervision or court approval to effect a valid waiver of wage claims; settlement agreements cannot bar an individual from filing an EEOC charge or cooperating with the EEOC
 - **Data Privacy**: Settlement of data breach claims may require notification to regulators and affected individuals; settlement terms must not conflict with ongoing compliance obligations
 - **Consumer Protection**: FTC and state AG settlements often take the form of consent decrees with ongoing compliance obligations and monitoring
 - **Insurance**: Carriers must consent to settlement; settlement triggers coverage obligations and may affect future premiums

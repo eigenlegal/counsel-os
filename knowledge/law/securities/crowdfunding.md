@@ -1,7 +1,21 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "17 CFR Part 227"
+    title: "Regulation Crowdfunding — offering limit, investment limits, intermediary and Form C requirements"
+    url: "https://www.ecfr.gov/current/title-17/chapter-II/part-227"
+  - cite: "SEC Regulation Crowdfunding overview for small businesses"
+    title: "Current $5M offering limit and $124,000/$618,000/$1,235,000 inflation-adjusted thresholds"
+    url: "https://www.sec.gov/resources-small-businesses/exempt-offerings/regulation-crowdfunding"
+  - cite: "15 U.S.C. 77d(a)(6)"
+    title: "Securities Act Section 4(a)(6) crowdfunding exemption"
+    url: "https://www.law.cornell.edu/uscode/text/15/77d"
+  - cite: "15 U.S.C. 77r(b)(4), (c)(2)(F)"
+    title: "Covered-security status of Reg CF securities and the two-state limit on notice filings"
+    url: "https://www.law.cornell.edu/uscode/text/15/77r"
 ---
 # Regulation CF — Crowdfunding
 
@@ -26,7 +40,7 @@ Load when ANY of the following is present: crowdfunding offering, Regulation CF,
 ### Form C Disclosure Requirements
 
 - **What**: Issuers must file Form C with the SEC and provide it to investors and the intermediary, containing specified disclosures about the company, offering terms, and financial condition.
-- **Threshold/Timeline**: Required disclosures include: business description, officer/director information and compensation, ownership structure and capital structure, intended use of proceeds, offering terms (security type, price, target and maximum amounts), related-party transactions, risk factors, and financial statements. Financial statement requirements based on amount offered: (1) up to $124,000: financial statements certified by principal executive officer and most recent tax return; (2) $124,001 to $618,000: financial statements reviewed by independent public accountant; (3) over $618,000: audited financial statements (for first-time Reg CF issuers offering $618,001 to $1,235,000, reviewed statements are acceptable). Form C-U (progress update) required within 5 business days of reaching the target offering amount. Annual report on Form C-AR due within 120 days of fiscal year end for as long as securities are outstanding.
+- **Threshold/Timeline**: Required disclosures include: business description, officer/director information and compensation, ownership structure and capital structure, intended use of proceeds, offering terms (security type, price, target and maximum amounts), related-party transactions, risk factors, and financial statements. Financial statement requirements based on amount offered: (1) up to $124,000: financial statements certified by principal executive officer and most recent tax return; (2) $124,001 to $618,000: financial statements reviewed by independent public accountant; (3) over $618,000: audited financial statements (for first-time Reg CF issuers offering $618,001 to $1,235,000, reviewed statements are acceptable). Form C-U (progress update) required within 5 business days of reaching 50% and 100% of the target offering amount — or, if the intermediary publicly displays offering progress on its platform, a single final Form C-U reporting the total amount sold within 5 business days after the offering deadline. Annual report on Form C-AR due within 120 days of fiscal year end for as long as securities are outstanding.
 - **Consequence**: Material misstatements or omissions in Form C create issuer liability under Section 4A(c) of the Securities Act — purchasers may sue for rescission or damages. Failure to file required annual reports may disqualify the issuer from future Reg CF offerings.
 
 ### Resale Restrictions
@@ -38,7 +52,7 @@ Load when ANY of the following is present: crowdfunding offering, Regulation CF,
 ### State Preemption
 
 - **What**: Securities sold under Regulation CF are "covered securities" under NSMIA Section 18(b)(4)(C), preempting state registration requirements.
-- **Threshold/Timeline**: States may NOT require registration or qualification of Reg CF offerings or impose conditions on the offering (e.g., merit review, additional disclosures, investor suitability requirements). States RETAIN authority to: (1) require notice filings and collect fees; (2) enforce anti-fraud provisions; (3) investigate and bring enforcement actions for fraud. Some states have adopted complementary intrastate crowdfunding exemptions that allow offerings to in-state investors outside the federal Reg CF framework, with varying limits and requirements.
+- **Threshold/Timeline**: States may NOT require registration or qualification of Reg CF offerings or impose conditions on the offering (e.g., merit review, additional disclosures, investor suitability requirements). States RETAIN authority to: (1) require notice filings and collect fees — but under Section 18(c)(2)(F), only the state of the issuer's principal place of business and any state where purchasers of 50% or more of the aggregate offering reside may do so; (2) enforce anti-fraud provisions; (3) investigate and bring enforcement actions for fraud. Some states have adopted complementary intrastate crowdfunding exemptions that allow offerings to in-state investors outside the federal Reg CF framework, with varying limits and requirements.
 - **Consequence**: Issuers should verify state notice filing requirements in states where they operate or where investors reside. State anti-fraud enforcement can proceed independently of federal compliance.
 
 ### Eligible Issuers and Exclusions

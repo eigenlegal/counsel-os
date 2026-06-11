@@ -1,7 +1,39 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, international]
+authorities:
+  - cite: "17 U.S.C. §§ 101-1511"
+    title: "Copyright Act of 1976"
+    url: "https://www.law.cornell.edu/uscode/text/17"
+  - cite: "U.S. Copyright Office fee schedule"
+    title: "Current registration and Special Handling fees"
+    url: "https://www.copyright.gov/about/fees.html"
+  - cite: "Copyright Office Fees, proposed rule (Fed. Reg. Mar. 20, 2026)"
+    title: "Pending fee rulemaking (would raise Special Handling to $1,100)"
+    url: "https://www.federalregister.gov/documents/2026/03/20/2026-05529/copyright-office-fees"
+  - cite: "U.S. Copyright Office, Registration Processing Times"
+    title: "Average processing time ~4.1 months (Oct. 2025-Mar. 2026 data)"
+    url: "https://www.copyright.gov/registration/docs/processing-times-faqs.pdf"
+  - cite: "Thaler v. Perlmutter, No. 23-5233 (D.C. Cir. Mar. 18, 2025)"
+    title: "Human authorship required for copyright; cert. denied No. 25-449 (Mar. 2, 2026)"
+    url: "https://media.cadc.uscourts.gov/opinions/docs/2025/03/23-5233.pdf"
+  - cite: "U.S. Copyright Office, Copyright and Artificial Intelligence reports"
+    title: "Part 1 (Digital Replicas), Part 2 (Copyrightability, Jan. 2025), Part 3 (Generative AI Training, pre-publication May 2025)"
+    url: "https://www.copyright.gov/ai/"
+  - cite: "Bartz v. Anthropic PBC, No. 3:24-cv-05417 (N.D. Cal.)"
+    title: "Training fair use order (June 2025); $1.5B class settlement docket"
+    url: "https://www.courtlistener.com/docket/69058235/bartz-v-anthropic-pbc/"
+  - cite: "Kadrey v. Meta Platforms, Inc., No. 3:23-cv-03417 (N.D. Cal.)"
+    title: "Summary judgment for Meta on fair use (June 25, 2025); market-dilution dictum"
+    url: "https://www.courtlistener.com/docket/67569326/kadrey-v-meta-platforms-inc/"
+  - cite: "Thomson Reuters Enterprise Centre GmbH v. Ross Intelligence Inc., No. 25-2153 (3d Cir.)"
+    title: "Interlocutory appeal of D. Del. no-fair-use ruling; argued June 11, 2026"
+    url: "https://www.courtlistener.com/docket/70622297/thomson-reuters-enterprise-centre-gmbh-v-ross-intelligence-inc/"
+  - cite: "Berne Convention"
+    title: "WIPO treaty page — 182 contracting parties"
+    url: "https://www.wipo.int/en/web/treaties/ip/berne/index"
 ---
 # Copyrights
 
@@ -32,7 +64,7 @@ procedures, content licensing, software copyright, AI-generated content, or mora
   - Innocent infringement: as low as **$200 per work**
   - Without timely registration, only actual damages and infringer's profits are recoverable
 
-- **Processing time**: Standard registration takes **3-10 months**. Expedited processing (Special Handling) available for **$800** when needed for litigation, customs enforcement, or contractual deadlines.
+- **Processing time**: Standard registration currently averages about **4 months** (check current figures at copyright.gov/registration). Expedited processing (Special Handling) available for **$800** when needed for litigation, customs enforcement, or contractual deadlines; a March 2026 proposed rule would raise this fee to **$1,100**.
 
 ### Work for Hire (17 U.S.C. 101, 201)
 
@@ -99,10 +131,15 @@ procedures, content licensing, software copyright, AI-generated content, or mora
 
 ### AI-Generated Content
 
-- **Human authorship required**: U.S. Copyright Office guidance (February 2023) and *Thaler v. Perlmutter* (2023): copyright protection requires **human authorship**. Purely AI-generated content (no human creative input directing expressive elements) is **not copyrightable**.
+- **Human authorship required**: U.S. Copyright Office guidance (February 2023) and *Thaler v. Perlmutter* (D.D.C. 2023, aff'd D.C. Cir. March 2025, cert. denied March 2026): copyright protection requires **human authorship**. Purely AI-generated content (no human creative input directing expressive elements) is **not copyrightable**. The Office's report *Copyright and Artificial Intelligence, Part 2: Copyrightability* (January 2025) confirms the framework: prompts alone generally do not supply authorship, but human selection, arrangement, or modification of AI output can support registration of the human contribution.
 - **AI-assisted works**: Works created with AI assistance may be copyrightable **to the extent of human creative contribution**. The human must exercise creative control over the expressive elements.
 - **Registration disclosure**: Copyright Office requires disclosure of AI-generated content in applications. AI-generated portions must be disclaimed. Failure to disclose may result in cancellation.
-- **Evolving area**: AI training on copyrighted works raises separate infringement questions (multiple pending lawsuits as of 2024-2025). No settled law yet on whether training constitutes fair use.
+- **AI training litigation (unsettled at the appellate level)**: Whether training on copyrighted works is fair use has produced split district-court results; no appellate decision yet as of mid-2026.
+  - *Bartz v. Anthropic* (N.D. Cal. June 2025): training on lawfully acquired books held fair use ("exceedingly transformative"), but downloading and retaining pirated "shadow library" copies was not. The piracy claims settled for **$1.5 billion** (~$3,000 per work); preliminary approval September 2025, final approval pending after the May 14, 2026 fairness hearing.
+  - *Kadrey v. Meta* (N.D. Cal. June 2025): summary judgment for Meta on fair use, but the court flagged **market dilution** (AI output competing with the works it trained on) as the theory that could defeat fair use on a properly developed record.
+  - *Thomson Reuters v. Ross Intelligence* (D. Del. February 2025): fair use **rejected** for copying Westlaw headnotes to build a non-generative legal research tool; on interlocutory appeal to the Third Circuit (argued June 11, 2026) — the first appellate test.
+  - *NYT v. OpenAI* (S.D.N.Y.): dismissal motions largely denied March 2025; discovery ongoing, no trial date set.
+  - Copyright Office report *Part 3: Generative AI Training* (pre-publication version, May 2025) treats training fair use as fact-specific. A final version has not issued; the Register's removal is in litigation (*Perlmutter v. Blanche*, D.D.C./D.C. Cir., injunction-pending-appeal before the Supreme Court), leaving the report's official status unsettled.
 
 ### Moral Rights — VARA (17 U.S.C. 106A)
 
@@ -114,7 +151,7 @@ procedures, content licensing, software copyright, AI-generated content, or mora
 
 ### Berne Convention
 
-- **Automatic protection**: Under the Berne Convention (U.S. acceded 1989), copyright is automatic upon creation and fixation. No formalities required for protection in **181 member countries**.
+- **Automatic protection**: Under the Berne Convention (U.S. acceded 1989), copyright is automatic upon creation and fixation. No formalities required for protection in **182 contracting parties**.
 - **National treatment**: Each member must provide foreign works the same protection as domestic works.
 - **Minimum standards**: Life + 50 years (many countries exceed this), moral rights protections, exclusive rights of reproduction, adaptation, and public performance.
 - **Practical impact**: While formalities are not required for international protection, U.S. registration remains essential for the litigation and statutory damages benefits described above.

@@ -1,7 +1,24 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, international]
+authorities:
+  - cite: "15 U.S.C. § 57b-1"
+    title: "FTC civil investigative demand authority"
+    url: "https://www.law.cornell.edu/uscode/text/15/57b-1"
+  - cite: "16 C.F.R. § 1.98"
+    title: "FTC civil penalty amounts as adjusted for inflation (2025 levels carried into 2026)"
+    url: "https://www.ecfr.gov/current/title-16/chapter-I/subchapter-A/part-1/subpart-L/section-1.98"
+  - cite: "DOJ Justice Manual 9-47.120"
+    title: "Criminal Division Corporate Enforcement and Voluntary Self-Disclosure Policy (revised May 12, 2025)"
+    url: "https://www.justice.gov/jm/jm-9-47000-corporate-fraud"
+  - cite: "SEC Release No. 34-44969 (Seaboard Report)"
+    title: "SEC cooperation framework"
+    url: "https://www.sec.gov/litigation/investreport/34-44969.htm"
+  - cite: "Upjohn Co. v. United States, 449 U.S. 383 (1981)"
+    title: "Corporate attorney-client privilege in investigations"
+    url: "https://www.law.cornell.edu/supremecourt/text/449/383"
 ---
 # Regulatory Inquiries and Government Investigations
 
@@ -22,15 +39,15 @@ Load when any matter involves government investigations, regulatory examinations
 ### Agency-Specific Timelines
 
 - **SEC Wells process** / **Timeline**: After staff completes investigation, issues Wells notice; target has **30 days** to submit Wells submission arguing against enforcement / **Consequence**: Failure to submit Wells response waives opportunity to persuade staff before Commissioners vote on enforcement action
-- **DOJ Corporate Enforcement Policy** / **Timeline**: Voluntary self-disclosure should occur "reasonably promptly" after discovery; no fixed deadline but delay undermines credit / **Consequence**: Timely voluntary disclosure with full cooperation can result in declination of prosecution
-- **FTC CIDs** / **Timeline**: Typically 30-60 days to comply; 20 days to file petition to quash with the FTC / **Consequence**: Failure to comply may result in FTC enforcement action in federal court; court may impose civil penalties up to $50,120/day
+- **DOJ Corporate Enforcement Policy** / **Timeline**: Voluntary self-disclosure should occur "reasonably promptly" after discovery; no fixed deadline but delay undermines credit / **Consequence**: Under the revised CEP (May 12, 2025), a company that voluntarily self-discloses, fully cooperates, timely and appropriately remediates, and has no aggravating circumstances receives a declination -- no longer merely a presumption of one
+- **FTC CIDs** / **Timeline**: Typically 30-60 days to comply; 20 days to file petition to quash with the FTC / **Consequence**: Failure to comply may result in FTC enforcement action in federal court; FTC Act civil penalties run up to $53,088 per violation (the 2025 inflation-adjusted maximum under 16 C.F.R. 1.98, carried into 2026 after OMB cancelled the 2026 adjustment)
 - **CFPB CIDs** / **Timeline**: Compliance deadline set in CID (typically 30-45 days); petition to modify or set aside within 20 days of service / **Consequence**: Non-compliance may result in enforcement petition in federal district court
 - **State AG investigations** / **Timeline**: Varies by state; typically 30-60 days for document requests / **Consequence**: Non-compliance may result in civil contempt, penalties, or escalation to enforcement action
 
 ### Cooperation vs. Adversarial Strategy
 
 **Cooperation benefits** (when appropriate):
-- DOJ: Presumption of declination under Corporate Enforcement Policy for voluntary self-disclosure + full cooperation + timely remediation
+- DOJ: Declination under the Corporate Enforcement Policy (revised May 12, 2025) for voluntary self-disclosure + full cooperation + timely and appropriate remediation + no aggravating circumstances; "near miss" self-disclosures can earn an NPA with a term under three years, no monitor, and a 75% reduction off the low end of the Guidelines range
 - SEC: Cooperation credit may reduce sanctions; Seaboard Report (Release No. 34-44969) framework evaluates self-policing, self-reporting, remediation, cooperation
 - DPAs and NPAs: Available only when company demonstrates genuine cooperation
 - Reduced monitoring obligations and penalty amounts
@@ -57,7 +74,8 @@ Load when any matter involves government investigations, regulatory examinations
 ### Voluntary Disclosure and Self-Reporting
 
 - **Mandatory self-reporting**: Some regimes require it (e.g., OFAC sanctions violations, SOX Section 302 certifications, banking SARs)
-- **Voluntary self-reporting programs**: DOJ Corporate Enforcement Policy, SEC cooperation framework, FCPA Pilot Program (now permanent), antitrust leniency program (first-in-the-door immunity)
+- **Voluntary self-reporting programs**: DOJ Corporate Enforcement Policy (revised May 2025), SEC cooperation framework, antitrust leniency program (first-in-the-door immunity)
+- **FCPA enforcement posture**: FCPA enforcement was paused by executive order in February 2025 and resumed June 9, 2025 under DOJ Guidelines that prioritize cartel/transnational-criminal-organization links, harm to identifiable U.S. interests, and individual accountability; verify the current FCPA enforcement policy before advising on disclosure strategy
 - **Cost-benefit analysis**: Weigh potential benefits (declination, reduced penalties) against risks (creating a roadmap for enforcement, waiving privilege, private litigation exposure)
 
 ### Consent Decrees and Consent Orders
@@ -81,7 +99,8 @@ Load when any matter involves government investigations, regulatory examinations
 ## Sources
 
 - SEC Seaboard Report, Release No. 34-44969 (cooperation framework): https://www.sec.gov/litigation/investreport/34-44969.htm
-- DOJ Corporate Enforcement Policy (Justice Manual 9-47.120): https://www.justice.gov/jm/jm-9-47000-corporate-fraud
+- DOJ Corporate Enforcement Policy, Justice Manual 9-47.120 (revised May 12, 2025): https://www.justice.gov/jm/jm-9-47000-corporate-fraud
+- FTC civil penalty amounts, 16 C.F.R. 1.98: https://www.ecfr.gov/current/title-16/chapter-I/subchapter-A/part-1/subpart-L/section-1.98
 - *Upjohn Co. v. United States*, 449 U.S. 383 (1981): https://www.law.cornell.edu/supremecourt/text/449/383
 - FTC Act Section 20 (CID authority): https://www.law.cornell.edu/uscode/text/15/57b-1
 - Federal Rules of Criminal Procedure, Rule 6(e) (grand jury secrecy): https://www.law.cornell.edu/rules/frcrmp/rule_6

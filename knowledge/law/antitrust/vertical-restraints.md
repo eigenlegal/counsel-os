@@ -1,7 +1,24 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "Leegin Creative Leather Products, Inc. v. PSKS, Inc., 551 U.S. 877 (2007)"
+    title: "Minimum RPM under the rule of reason"
+    url: "https://supreme.justia.com/cases/federal/us/551/877/"
+  - cite: "Continental T.V., Inc. v. GTE Sylvania Inc., 433 U.S. 36 (1977)"
+    title: "Nonprice vertical restraints under the rule of reason"
+    url: "https://supreme.justia.com/cases/federal/us/433/36/"
+  - cite: "Illinois Tool Works Inc. v. Independent Ink, Inc., 547 U.S. 28 (2006)"
+    title: "No presumption of market power from a patent in tying cases"
+    url: "https://supreme.justia.com/cases/federal/us/547/28/"
+  - cite: "15 U.S.C. § 14"
+    title: "Clayton Act Section 3 (exclusive dealing and tying in goods)"
+    url: "https://www.law.cornell.edu/uscode/text/15/14"
+  - cite: "FTC v. Amazon.com, Inc. (W.D. Wash., filed Sept. 2023)"
+    title: "FTC case page — monopoly-maintenance suit challenging anti-discounting/price-parity practices"
+    url: "https://www.ftc.gov/legal-library/browse/cases-proceedings/1910129-1910130-amazoncom-inc-amazon-ecommerce"
 ---
 # Vertical Restraints
 
@@ -75,7 +92,7 @@ Unlike horizontal restraints, most vertical restraints are analyzed under the ru
 
 - **Wide MFN**
   - **What:** Seller must offer the platform its lowest price across all sales channels, including competing platforms.
-  - **Threshold/Timeline:** Under active enforcement: DOJ sued Google over wide MFN clauses (2023). FTC and state AGs have challenged Amazon's wide MFN practices. EU vertical block exemption (Regulation 2022/720) excludes wide MFNs from the safe harbor.
+  - **Threshold/Timeline:** Under active enforcement: the FTC and a coalition of state AGs sued Amazon (September 2023, W.D. Wash.) alleging its anti-discounting/price-parity practices punish sellers who offer lower prices on other channels; the bench trial is scheduled for March 2027. EU vertical block exemption (Regulation 2022/720) excludes wide retail parity (MFN) clauses from the safe harbor.
   - **Consequence:** Wide MFNs can dampen price competition across platforms and facilitate tacit collusion. Likely subject to rule of reason challenge; may be condemned if the platform has significant market power.
 
 - **Narrow MFN**
@@ -116,3 +133,4 @@ Unlike horizontal restraints, most vertical restraints are analyzed under the ru
 - [Continental T.V. v. GTE Sylvania (1977) — Supreme Court](https://supreme.justia.com/cases/federal/us/433/36/)
 - [FTC Act Section 5 (15 U.S.C. 45) — Cornell LII](https://www.law.cornell.edu/uscode/text/15/45)
 - [Clayton Act Section 3 (15 U.S.C. 14) — Cornell LII](https://www.law.cornell.edu/uscode/text/15/14)
+- [FTC v. Amazon.com, Inc. — FTC case page](https://www.ftc.gov/legal-library/browse/cases-proceedings/1910129-1910130-amazoncom-inc-amazon-ecommerce)

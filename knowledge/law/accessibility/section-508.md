@@ -1,7 +1,17 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal, us-state, technical-standard]
+authorities:
+  - cite: "29 U.S.C. 794d (verified 2026-06-11)"
+    title: "Section 508 of the Rehabilitation Act"
+    url: "https://www.law.cornell.edu/uscode/text/29/794d"
+  - cite: "36 CFR Part 1194 (2017 ICT Refresh; incorporates WCAG 2.0 Level AA)"
+    title: "U.S. Access Board ICT Standards and Guidelines"
+    url: "https://www.access-board.gov/ict/"
+  - cite: "GSA Section508.gov program"
+    title: "Government-wide IT Accessibility Program"
+    url: "https://www.section508.gov/"
 ---
 # Section 508 — Federal ICT Accessibility
 

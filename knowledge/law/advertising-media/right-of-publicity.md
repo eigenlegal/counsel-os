@@ -1,7 +1,33 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "Cal. Civ. Code § 3344"
+    title: "California right of publicity (living persons)"
+    url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CIV&sectionNum=3344"
+  - cite: "Cal. Civ. Code § 3344.1"
+    title: "California post-mortem right of publicity (70 years)"
+    url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CIV&sectionNum=3344.1"
+  - cite: "N.Y. Civ. Rights Law § 50-f"
+    title: "New York post-mortem right of publicity (40 years; effective May 29, 2021) and deceased-performer digital replicas"
+    url: "https://www.nysenate.gov/legislation/laws/CVR/50-F"
+  - cite: "Tenn. ELVIS Act (2024), Tenn. Code Ann. § 47-25-1101 et seq."
+    title: "Ensuring Likeness Voice and Image Security Act — voice protection against AI replication"
+    url: "https://www.tn.gov/governor/news/2024/3/21/photos--gov--lee-signs-elvis-act-into-law.html"
+  - cite: "765 ILCS 1075 (as amended by HB 4875, eff. Jan. 1, 2025)"
+    title: "Illinois Right of Publicity Act — digital replica coverage"
+    url: "https://www.ilga.gov/legislation/ilcs/ilcs3.asp?ActID=2241&ChapterID=62"
+  - cite: "S. 1367, 119th Congress (introduced Apr. 9, 2025)"
+    title: "NO FAKES Act of 2025 — pending, not enacted as of June 2026"
+    url: "https://www.congress.gov/bill/119th-congress/senate-bill/1367"
+  - cite: "Pub. L. 119-12 (May 19, 2025)"
+    title: "TAKE IT DOWN Act — NCII digital forgeries; platform removal process required by May 19, 2026"
+    url: "https://www.govinfo.gov/content/pkg/PLAW-119publ12/pdf/PLAW-119publ12.pdf"
+  - cite: "16 C.F.R. Part 461 (eff. Apr. 1, 2024)"
+    title: "FTC Impersonation Rule (government/business); individual-impersonation SNPRM pending as of June 2026"
+    url: "https://www.ecfr.gov/current/title-16/chapter-I/subchapter-D/part-461"
 ---
 # Right of Publicity
 
@@ -26,7 +52,7 @@ Applies when a person's name, image, likeness, voice, or other identifying chara
 ### New York (Civil Rights Law Sections 50/51)
 
 - **What**: Statutory right of privacy (not publicity) prohibiting use of name, portrait, picture, or voice for advertising or trade purposes without written consent; narrower than California
-- **Threshold/Timeline**: Section 50 (misdemeanor — criminal); Section 51 (civil cause of action); requires use for "advertising purposes" or "purposes of trade"; newsworthy use and public interest exceptions are broad; no post-mortem protection under current statute (legislation proposed but not enacted as of 2025)
+- **Threshold/Timeline**: Section 50 (misdemeanor — criminal); Section 51 (civil cause of action); requires use for "advertising purposes" or "purposes of trade"; newsworthy use and public interest exceptions are broad; Section 50-f (added 2020, effective May 29, 2021) created a post-mortem right of publicity — 40 years after death for "deceased personalities" domiciled in New York at death, plus digital-replica protection for "deceased performers" — with remedies of the greater of $2,000 or compensatory damages plus attributable profits
 - **Consequence**: Compensatory damages, injunctive relief, and punitive damages available; "incidental use" doctrine permits use in news, entertainment, and creative works with public interest connection; fictional works receive broader protection than commercial advertising
 
 ### Deceased Personality Rights
@@ -36,15 +62,15 @@ Applies when a person's name, image, likeness, voice, or other identifying chara
   - **California**: 70 years post-mortem (Civil Code 3344.1); applies to personality whose likeness has commercial value at death; transferable/devisable
   - **Indiana**: 100 years post-mortem (IC 32-36); broadest duration
   - **Tennessee**: 10 years post-mortem, unlimited if continuously exploited (Personal Rights Protection Act)
-  - **New York**: No post-mortem statutory protection (common law claim dies with person)
+  - **New York**: 40 years post-mortem for deceased personalities domiciled in New York at death (Civil Rights Law 50-f, effective May 29, 2021 — applies only to deaths on or after that date; includes digital-replica protection for deceased performers)
   - **Many states**: No post-mortem protection at all
 - **Consequence**: Choice of law is critical — estate should consider which state's law provides strongest protection; post-mortem rights are property rights (transferable, licensable, devisable); estates of major personalities actively license and enforce (e.g., estate of Marilyn Monroe, Elvis Presley, MLK Jr.)
 
 ### AI-Generated Likenesses
 
 - **What**: Emerging area addressing use of artificial intelligence to generate realistic depictions of individuals' faces, voices, and mannerisms without consent; deepfakes and synthetic media create new enforcement challenges
-- **Threshold/Timeline**: NO FAKES Act (Nurture Originals, Foster Art, and Keep Entertainment Safe Act) — federal legislation introduced but not yet enacted as of early 2026; would create federal right to control digital replicas of voice and visual likeness; Tennessee ELVIS Act (2024) — first state to explicitly protect voice from AI replication; California AB 2602 and AB 1836 (2024) — requirements for consent to digital replicas in entertainment contracts and post-mortem digital replica protection; FTC proposed rule on AI impersonation (2024)
-- **Consequence**: Existing right of publicity statutes apply to AI-generated likenesses in most jurisdictions even without AI-specific legislation; platforms implementing AI tools face contributory liability risk; consent for AI training on likeness should be explicitly addressed in talent agreements; "digital replica" provisions increasingly standard in SAG-AFTRA and entertainment contracts following 2023 strike
+- **Threshold/Timeline**: NO FAKES Act (Nurture Originals, Foster Art, and Keep Entertainment Safe Act) — reintroduced as S. 1367 (119th Congress) in April 2025, still in committee and not enacted as of June 2026; would create a federal right to control digital replicas of voice and visual likeness; Tennessee ELVIS Act (2024) — first state to explicitly protect voice from AI replication, with a growing set of state analogs: Illinois HB 4875 (digital replicas under the Right of Publicity Act) and the Illinois Digital Voice and Likeness Protection Act (both effective January 1, 2025), Arkansas HB 1071 (2025, voice and digital replicas), and Montana's publicity statute (effective January 1, 2026); California AB 2602 and AB 1836 (2024) — requirements for consent to digital replicas in entertainment contracts and post-mortem digital replica protection; the FTC's Government and Business Impersonation Rule took effect April 1, 2024, but its proposed extension to impersonation of individuals (including AI deepfakes) remained pending and not finalized as of June 2026
+- **Consequence**: Existing right of publicity statutes apply to AI-generated likenesses in most jurisdictions even without AI-specific legislation; the federal TAKE IT DOWN Act (Pub. L. 119-12, May 19, 2025) criminalizes non-consensual intimate "digital forgeries" of identifiable individuals and required covered platforms to stand up a 48-hour notice-and-removal process by May 19, 2026; platforms implementing AI tools face contributory liability risk; consent for AI training on likeness should be explicitly addressed in talent agreements; "digital replica" provisions increasingly standard in SAG-AFTRA and entertainment contracts following 2023 strike
 
 ### First Amendment Limits
 

@@ -1,7 +1,21 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, international]
+authorities:
+  - cite: "15 C.F.R. Part 760"
+    title: "EAR Restrictive Trade Practices or Boycotts (anti-boycott regulations)"
+    url: "https://www.ecfr.gov/current/title-15/subtitle-B/chapter-VII/subchapter-C/part-760"
+  - cite: "50 U.S.C. §§ 4841-4843"
+    title: "Anti-Boycott Act of 2018 (part II of ECRA; penalties per 50 U.S.C. § 4819)"
+    url: "https://www.law.cornell.edu/uscode/text/50/4842"
+  - cite: "BIS Office of Antiboycott Compliance"
+    title: "OAC guidance, reporting forms, and enforcement"
+    url: "https://www.bis.gov/OAC"
+  - cite: "IRC Section 999; IRS Form 5713"
+    title: "International Boycott Report and tax-benefit denial provisions"
+    url: "https://www.irs.gov/forms-pubs/about-form-5713"
 ---
 # Anti-Boycott Compliance
 
@@ -29,7 +43,7 @@ Applies when any transaction, agreement, or business activity involves:
   5. **Implementing boycott-conditioned letters of credit**: Taking action to implement or support a restrictive trade practice or boycott imposed by a foreign country against another country friendly to the US
   6. **Paying, honoring, or confirming letters of credit**: Paying, honoring, confirming, or otherwise implementing letters of credit containing prohibited boycott conditions
 - **Threshold/Timeline**: Applies to "US persons" — citizens, residents, domestic concerns, and controlled-in-fact foreign subsidiaries of US companies — in connection with transactions in the "interstate or foreign commerce of the United States." No minimum transaction value. Agreement need not be written — oral agreements and conduct demonstrating compliance are covered
-- **Consequence**: Civil penalties up to $250,000 per violation under BIS enforcement; criminal penalties up to $1,000,000 and 5 years imprisonment per willful violation. Each prohibited act (each refusal, each furnishing of information, each letter of credit) is a separate violation
+- **Consequence**: Under the Anti-Boycott Act of 2018 (part II of ECRA), civil penalties up to the greater of $374,474 per violation or twice the transaction value (inflation-adjusted Jan. 2025; no 2026 adjustment was published); criminal penalties up to $1,000,000 and 20 years imprisonment per willful violation (50 U.S.C. § 4819). Each prohibited act (each refusal, each furnishing of information, each letter of credit) is a separate violation
 
 ### Reporting Requirements (15 C.F.R. Section 760.5)
 
@@ -40,8 +54,8 @@ Applies when any transaction, agreement, or business activity involves:
   - Negative certificates of origin ("goods not of Israeli origin" or "not containing Israeli-origin components")
   - Shipping restrictions ("vessel has not called at Israeli ports within the last 6 months")
   - Blacklist certifications ("manufacturer/supplier is not on the [country's] blacklist")
-- **Threshold/Timeline**: Reports filed on Form BIS-621 (Single Transaction Report) or BIS-6051 (Multiple Transaction Report). Filing deadline: end of the month following the calendar quarter in which the request was received. Example: request received January 15 must be reported by April 30
-- **Consequence**: Failure to report a boycott request is an independent violation carrying the same penalty structure as engaging in prohibited conduct ($250,000 civil / $1,000,000 + 5 years criminal). Many enforcement actions are based primarily on failure to report rather than substantive boycott compliance. BIS audits specifically test reporting compliance
+- **Threshold/Timeline**: Reports filed on Form BIS-621P (Single Transaction Report) or BIS-6051P (Multiple Transaction Report). Filing deadline: end of the month following the calendar quarter in which the request was received. Example: request received January 15 must be reported by April 30
+- **Consequence**: Failure to report a boycott request is an independent violation carrying the same ECRA penalty structure as engaging in prohibited conduct (civil up to the greater of $374,474 or twice the transaction value / criminal up to $1,000,000 and 20 years). Many enforcement actions are based primarily on failure to report rather than substantive boycott compliance. BIS audits specifically test reporting compliance
 
 ### Tax Penalties (IRC Section 999)
 
@@ -51,7 +65,7 @@ Applies when any transaction, agreement, or business activity involves:
     1. Loss of foreign tax credit under IRC Section 908
     2. Loss of tax deferral on earnings of controlled foreign corporations under IRC Section 952
     3. Loss of IC-DISC benefits under IRC Section 995
-- **Threshold/Timeline**: Form 5713 due with annual tax return. "Operations" is broadly defined to include sales, purchases, employment, and licensing in boycotting countries. Even companies that reject all boycott requests must report operations in boycotting countries if the operations meet the threshold. Boycotting countries listed annually in IRS guidance
+- **Threshold/Timeline**: Form 5713 due with annual tax return. "Operations" is broadly defined to include sales, purchases, employment, and licensing in boycotting countries. Even companies that reject all boycott requests must report operations in boycotting countries if the operations meet the threshold. Treasury publishes the boycotting-country list quarterly in the Federal Register — as of the July 2025 notice: Iraq, Kuwait, Lebanon, Libya, Qatar, Saudi Arabia, Syria, and Yemen (unchanged since the UAE's removal in April 2021)
 - **Consequence**: Tax penalties often exceed BIS civil penalties in economic impact. Loss of foreign tax credits can be substantial for companies with significant international operations. Double penalty exposure — BIS civil/criminal plus IRS tax penalties — makes anti-boycott compliance uniquely costly when violated
 
 ### Exceptions to Prohibited Conduct (EAR Section 760.3)
@@ -97,7 +111,7 @@ Applies when any transaction, agreement, or business activity involves:
 
 ## Interaction with Other Areas
 
-- **Sanctions**: Anti-boycott rules are distinct from OFAC sanctions. OFAC administers US-imposed sanctions; anti-boycott rules prohibit participation in foreign-imposed boycotts that are not sanctioned by the US. A country may be both a boycotting country and subject to US sanctions (e.g., Syria — subject to both US comprehensive sanctions and participant in the Arab League boycott)
+- **Sanctions**: Anti-boycott rules are distinct from OFAC sanctions. OFAC administers US-imposed sanctions; anti-boycott rules prohibit participation in foreign-imposed boycotts that are not sanctioned by the US. A country may be both a boycotting country and subject to US sanctions, and the regimes move independently — Syria remains a Treasury-listed boycotting country even though the comprehensive US Syria sanctions program was revoked in June 2025 (E.O. 14312)
 - **Export Controls**: Anti-boycott provisions are housed within the EAR (Part 760) and enforced by BIS Office of Antiboycott Compliance alongside BIS export control enforcement. A single transaction may trigger export control licensing, sanctions screening, and anti-boycott reporting obligations simultaneously
 - **Financial Services**: Letters of credit with boycott conditions are a primary vector for anti-boycott issues. Banks must train trade finance, letter of credit, and documentary collections staff to identify boycott language and refuse prohibited conditions. Bank compliance must coordinate with both OFAC and BIS requirements
 - **Corporate (International Operations)**: Companies with subsidiaries or operations in boycotting countries face heightened compliance obligations. "Controlled-in-fact" foreign subsidiaries of US companies are subject to the full scope of anti-boycott prohibitions. Joint ventures with boycotting-country partners create particular risk

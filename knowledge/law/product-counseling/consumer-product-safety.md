@@ -1,6 +1,6 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal, us-state]
 ---
 # Consumer Product Safety
@@ -23,7 +23,7 @@ Load this file when a matter involves consumer product manufacturing, importing,
 
 - **Banned hazardous products**
   - **Threshold:** Products presenting an unreasonable risk of injury that cannot be made safe through a safety standard.
-  - **Consequence:** CPSC may ban outright under Section 8 of CPSA. Current bans include: lawn darts with elongated tips, unstable refuse bins, fireworks with certain chemical mixtures, products containing certain asbestos forms, and small high-powered magnets marketed to children (effective 2023). Manufacturing, importing, distributing, or selling a banned product is a prohibited act subject to civil and criminal penalties.
+  - **Consequence:** CPSC may ban outright under Section 8 of CPSA. Current bans include: lawn darts with elongated tips, unstable refuse bins, fireworks with certain chemical mixtures, and products containing certain asbestos forms. Manufacturing, importing, distributing, or selling a banned product is a prohibited act subject to civil and criminal penalties. (High-powered magnets are addressed through a mandatory performance standard, not an outright ban — see "Magnets and button-cell/coin batteries" below.)
 
 - **Consumer product safety rules**
   - **Threshold:** CPSC issues mandatory rules under Section 7 for product categories where voluntary standards are inadequate.
@@ -62,8 +62,8 @@ Load this file when a matter involves consumer product manufacturing, importing,
   - **Consequence:** CPSC works with CBP to screen imports. CPSC's Risk Assessment Methodology (RAM) system targets high-risk shipments based on product type, country of origin, manufacturer, importer history, and prior violations. Non-compliant products may be detained, refused entry, seized, or destroyed. Importers bear the same obligations as domestic manufacturers.
 
 - **Filing of certificates**
-  - **Threshold:** Electronic filing of CPC or GCC with CBP may be required upon importation under CPSC's eFiling program.
-  - **Consequence:** Filed electronically through CBP's Automated Commercial Environment (ACE). Must be in English. Products without proper certification may be denied entry. The eFiling program is expanding to require electronic submission for an increasing range of product categories.
+  - **Threshold:** Electronic filing of certificate-of-compliance data with CBP upon importation under CPSC's eFiling program (final rule revising 16 C.F.R. Part 1110).
+  - **Consequence:** Filed electronically through CBP's Automated Commercial Environment (ACE). Must be in English. Products without proper certification may be denied entry. Under the eFiling final rule, requirements for most regulated imported (and domestically produced) consumer products take effect July 8, 2026, with a later effective date (January 8, 2027) for products imported into a Foreign Trade Zone and subsequently entered for consumption or warehousing. Confirm the current effective/enforcement dates and the covered product scope against the CPSC eFiling page before advising on import timing.
 
 - **Importer obligations**
   - **Threshold:** Importer of record is the responsible party for CPSC compliance of imported products.
@@ -92,6 +92,16 @@ Load this file when a matter involves consumer product manufacturing, importing,
 - **Age determination guidelines**
   - **Threshold:** Manufacturers must accurately determine and label the intended age group for toys.
   - **Consequence:** CPSC Age Determination Guidelines provide criteria based on developmental stages and play patterns. Mis-aging (marketing small-parts toys to under-3) may violate mandatory safety rules, trigger enforcement, and create product liability exposure. Age grading determines which CPSIA requirements apply — products for children 12 and under trigger full CPSIA obligations; toys for under-3 trigger small parts regulations (16 C.F.R. 1501).
+
+### Magnets and Button-Cell/Coin Batteries
+
+- **Safety Standard for Magnets (16 C.F.R. Part 1262)**
+  - **Threshold:** Subject consumer products containing a loose or separable magnet that fits within the small-parts cylinder.
+  - **Consequence:** Mandatory CPSC performance standard (not an outright ban) effective October 21, 2022, applying to subject magnet products manufactured after that date. Each such magnet must have a flux index below 50 kG²·mm² (i.e., either too weak or too large to pose the high-powered-magnet ingestion hazard). The standard addresses serious internal injuries from ingesting multiple high-powered magnets. Confirm scope and exclusions against the rule.
+
+- **Reese's Law — button-cell and coin batteries (16 C.F.R. Part 1263)**
+  - **Threshold:** Consumer products containing button-cell or coin batteries, and button-cell/coin batteries sold separately, intended to protect children six and under from ingestion hazards.
+  - **Consequence:** Implements Reese's Law (Pub. L. 117-171). CPSC adopted a child-resistant performance and labeling standard (incorporating UL 4200A) plus separate battery-packaging warning-label requirements at 16 C.F.R. § 1263.4. The battery-packaging warning-label requirements apply to packaging manufactured or imported after September 21, 2024; product packaging, the product itself (where practicable), and accompanying instructions must bear the prescribed warnings, and covered battery packaging must be certified compliant. Verify the applicable compliance dates for the performance standard versus the labeling requirements before advising.
 
 ## Interaction with Other Areas
 

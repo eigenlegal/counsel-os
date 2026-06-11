@@ -1,7 +1,15 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities-checked: "2026-06-11"
+authorities:
+  - cite: "ISO Commercial General Liability Coverage Form CG 00 01 04 13 (current edition, eff. Apr. 1, 2013)"
+    title: "Standard occurrence-based CGL form; 04 13 revisions narrowed additional-insured and professional-services language"
+    url: "https://www.irmi.com/term/insurance-definitions/commercial-general-liability"
+  - cite: "ISO Additional Insured Endorsements CG 20 10 / CG 20 37 / CG 20 33"
+    title: "Ongoing-operations, completed-operations, and blanket automatic additional-insured forms; post-2004 'caused, in whole or in part, by' standard"
+    url: "https://www.irmi.com/term/insurance-definitions/additional-insured"
 ---
 # Commercial General Liability (CGL)
 

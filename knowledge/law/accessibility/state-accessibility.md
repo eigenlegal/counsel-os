@@ -1,7 +1,23 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal, us-state, technical-standard]
+authorities:
+  - cite: "Cal. Civ. Code 51 (Unruh Civil Rights Act; verified 2026-06-11)"
+    title: "California Unruh Civil Rights Act — $4,000 statutory minimum per occurrence"
+    url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CIV&sectionNum=51."
+  - cite: "N.Y. Exec. Law 296"
+    title: "New York Human Rights Law"
+    url: "https://www.nysenate.gov/legislation/laws/EXC/296"
+  - cite: "NYC Admin. Code 8-107"
+    title: "New York City Human Rights Law"
+    url: "https://www.nyc.gov/site/cchr/law/the-law.page"
+  - cite: "740 ILCS 14 (BIPA)"
+    title: "Illinois Biometric Information Privacy Act"
+    url: "https://www.ilga.gov/legislation/ilcs/ilcs3.asp?ActID=3004"
+  - cite: "Colo. HB 21-1110 (state/local government web accessibility, eff. July 1, 2024)"
+    title: "Colorado HB 21-1110"
+    url: "https://leg.colorado.gov/bills/hb21-1110"
 ---
 # State Accessibility Laws
 
@@ -18,6 +34,7 @@ Applies to organizations subject to state disability discrimination and accessib
 - **ADA Violation = Unruh Violation** / Violation of ADA constitutes a per se violation of the Unruh Civil Rights Act (Civil Code Section 51(f)) / **Consequence**: Federal ADA claim automatically creates state Unruh claim with monetary damages; plaintiff need not prove independent state violation
 - **Independent Unruh Claims** / Unruh claims can also be brought without ADA violation; broader "arbitrary discrimination" standard / **Consequence**: Conduct not reaching ADA violation may still violate Unruh; lower threshold for liability
 - **Statute of Limitations** / 2 years for damages; 3 years for injunctive relief / **Consequence**: Multiple visits over limitation period each generate separate damages claims
+- **AB 1757 (Not Enacted)** / California AB 1757 (2023-2024 session) would have codified WCAG 2.1 AA as the statutory web-accessibility standard and clarified developer/vendor liability under Unruh; it was held in committee under submission (Aug. 15, 2024) and did not pass / **Consequence**: As of mid-2026 there is no California statute expressly fixing a WCAG version; Unruh exposure continues to flow through the ADA per se hook and the arbitrary-discrimination standard. Watch for reintroduction in later sessions
 
 ### New York Human Rights Law (NYHRL)
 

@@ -1,7 +1,24 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "17 CFR 240.10b5-1"
+    title: "Rule 10b5-1 trading plan affirmative defense, as amended effective February 27, 2023 (cooling-off periods, certifications, overlapping-plan limits)"
+    url: "https://www.ecfr.gov/current/title-17/chapter-II/part-240/subpart-A/subject-group-ECFRb26aborOctf5b/section-240.10b5-1"
+  - cite: "SEC Press Release 2022-222"
+    title: "Adoption of Rule 10b5-1 amendments and Item 408 disclosure requirements"
+    url: "https://www.sec.gov/newsroom/press-releases/2022-222"
+  - cite: "15 U.S.C. 78p"
+    title: "Section 16 reporting (Forms 3/4/5 deadlines) and short-swing profit disgorgement"
+    url: "https://www.law.cornell.edu/uscode/text/15/78p"
+  - cite: "SEC v. Panuwat, No. 21-cv-06322 (N.D. Cal.), SEC Litigation Release LR-25970 (Apr. 2024); appeal pending, No. 24-6882 (9th Cir.)"
+    title: "First 'shadow trading' jury verdict under the misappropriation theory"
+    url: "https://www.sec.gov/enforcement-litigation/litigation-releases/lr-25970"
+  - cite: "SEC Office of the Whistleblower"
+    title: "Dodd-Frank Section 21F whistleblower awards and anti-retaliation protections"
+    url: "https://www.sec.gov/whistleblower"
 ---
 # Insider Trading
 
@@ -21,7 +38,7 @@ Load when ANY of the following is present: insider trading allegation or risk, m
 
 - **What**: Two legal theories under which insider trading liability arises, each based on a different relationship and duty of trust.
 - **Threshold/Timeline**: Classical theory: corporate insiders (officers, directors, employees) and temporary insiders (attorneys, accountants, consultants with access to MNPI) trade on MNPI in breach of their fiduciary duty to the corporation and its shareholders. Misappropriation theory (established in United States v. O'Hagan, 1997): any person who misappropriates confidential information for securities trading purposes, in breach of a duty owed to the source of the information. Applies even when the trader has no relationship with the company whose securities are traded — the duty runs to the source of the information (e.g., employer, client, family member).
-- **Consequence**: Both theories carry identical criminal and civil penalties. The misappropriation theory significantly expanded insider trading liability beyond traditional corporate insiders to anyone who obtains MNPI through a relationship of trust and confidence and trades on it.
+- **Consequence**: Both theories carry identical criminal and civil penalties. The misappropriation theory significantly expanded insider trading liability beyond traditional corporate insiders to anyone who obtains MNPI through a relationship of trust and confidence and trades on it. "Shadow trading" — trading in the securities of an economically linked company (e.g., a peer of the company whose MNPI the trader possesses) — was upheld as a misappropriation violation by a jury in SEC v. Panuwat (N.D. Cal., verdict April 2024; post-trial motions denied September 2024); the case is on appeal to the Ninth Circuit (No. 24-6882) as of mid-2026, and broad insider trading policy language covering economically linked issuers was central to the SEC's theory.
 
 ### Tipper-Tippee Liability
 

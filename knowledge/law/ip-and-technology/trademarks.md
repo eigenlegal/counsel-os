@@ -1,7 +1,27 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, international]
+authorities:
+  - cite: "15 U.S.C. §§ 1051-1141n"
+    title: "Lanham Act"
+    url: "https://www.law.cornell.edu/uscode/text/15/chapter-22"
+  - cite: "USPTO trademark fee schedule"
+    title: "Current fees — Jan. 18, 2025 restructure ($350/class base application plus surcharges; TEAS Plus/Standard tiers eliminated)"
+    url: "https://www.uspto.gov/trademarks/trademark-fee-information"
+  - cite: "USPTO Summary of 2025 trademark fee changes"
+    title: "Fee restructure detail (insufficient-information, free-form ID, and character-count surcharges)"
+    url: "https://www.uspto.gov/trademarks/fees-payment-information/summary-2025-trademark-fee-changes"
+  - cite: "USPTO Trademarks Dashboard"
+    title: "Pendency data — FY2025 first action pendency 5.6 months, total pendency 11.7 months"
+    url: "https://www.uspto.gov/dashboard/trademarks/"
+  - cite: "USPTO Trademark Search"
+    title: "Cloud-based search system that replaced TESS (Nov. 30, 2023)"
+    url: "https://tmsearch.uspto.gov/"
+  - cite: "Madrid System Members (WIPO)"
+    title: "116 members covering 132 countries as of 2026"
+    url: "https://www.wipo.int/en/web/madrid-system/members/index"
 ---
 # Trademarks
 
@@ -25,7 +45,7 @@ domain name disputes involving trademark rights, or M&A brand due diligence.
   - Basis for international registrations under the Madrid Protocol
 - **Supplemental Register**: For marks not yet distinctive but capable of becoming distinctive. Limited benefits (federal court access, (R) symbol) but no presumption of validity or constructive notice.
 - **Use in commerce requirement**: Federal registration requires use in interstate commerce, or bona fide intent to use with Statement of Use filed within **6 months** (extendable up to **36 months total**).
-- **Application timeline**: Filing, examination (typically **8-12 months** to first office action), publication for opposition (**30-day period**, extendable), registration. Total: approximately **12-18 months** if uncontested.
+- **Application timeline**: Filing, examination (first office action averaged **5.6 months** in FY2025 — the post-pandemic backlog has eased; check the USPTO Trademarks Dashboard for current pendency), publication for opposition (**30-day period**, extendable), registration. Total: approximately **10-14 months** if uncontested.
 
 ### Trademark Strength Hierarchy
 
@@ -119,6 +139,6 @@ domain name disputes involving trademark rights, or M&A brand due diligence.
 ## Sources
 
 - [Lanham Act (15 U.S.C. 1051 et seq.) - Cornell LII](https://www.law.cornell.edu/uscode/text/15/chapter-22)
-- [USPTO Trademark Electronic Search System (TESS)](https://tess2.uspto.gov/)
+- [USPTO Trademark Search (replaced TESS in November 2023)](https://tmsearch.uspto.gov/)
 - [TTAB Manual of Procedure (TBMP)](https://www.uspto.gov/trademarks/guides-and-manuals/tbmp)
 - [INTA (International Trademark Association)](https://www.inta.org/)

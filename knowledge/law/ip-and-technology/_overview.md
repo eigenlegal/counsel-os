@@ -1,7 +1,24 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, international]
+authorities:
+  - cite: "35 U.S.C. § 261"
+    title: "Patent assignment — written instrument requirement"
+    url: "https://www.law.cornell.edu/uscode/text/35/261"
+  - cite: "17 U.S.C. § 101"
+    title: "Copyright Act definitions — work made for hire categories"
+    url: "https://www.law.cornell.edu/uscode/text/17/101"
+  - cite: "15 U.S.C. § 1051 et seq."
+    title: "Lanham Act — use in commerce and registration requirements"
+    url: "https://www.law.cornell.edu/uscode/text/15/chapter-22"
+  - cite: "18 U.S.C. § 1833(b)"
+    title: "DTSA whistleblower immunity notice requirement"
+    url: "https://www.law.cornell.edu/uscode/text/18/1833"
+  - cite: "Thaler v. Perlmutter, No. 23-5233 (D.C. Cir. Mar. 18, 2025)"
+    title: "Human authorship required for copyright; cert. denied (Mar. 2026)"
+    url: "https://media.cadc.uscourts.gov/opinions/docs/2025/03/23-5233.pdf"
 ---
 # Intellectual Property and Technology
 
@@ -32,7 +49,7 @@ These are non-overridable legal requirements from this area. They cannot be modi
 - State invention assignment statutes (California Labor Code 2870, Delaware Code Title 19 Section 805, etc.) prohibit employers from requiring assignment of inventions made entirely on the employee's own time without company resources, unless the invention relates to the employer's business.
 - AI systems cannot be named as inventors on patent applications (USPTO guidance; *Thaler v. Vidal*). Only natural persons qualify as inventors.
 - Copyright ownership vests in the author by default; work-for-hire status requires either an employment relationship (within scope of employment) or a written agreement for a qualifying category of commissioned work (17 U.S.C. 101). Only 9 statutory categories qualify for commissioned works for hire.
-- Purely AI-generated content (with no human creative input) is not copyrightable under current U.S. Copyright Office guidance. Human authorship is required.
+- Purely AI-generated content (with no human creative input) is not copyrightable. Human authorship is required (U.S. Copyright Office guidance; *Thaler v. Perlmutter*, D.C. Cir. 2025, cert. denied 2026).
 - Copyright registration (or refusal) is required before filing an infringement suit for U.S. works (*Fourth Estate v. Wall-Street.com*, 2019).
 - Trademark rights require use in commerce; federal registration on the Principal Register requires either actual use or bona fide intent to use with statement of use filed within 36 months.
 - A trademark owner who licenses the mark must exercise adequate quality control; failure constitutes naked licensing and results in abandonment of trademark rights.

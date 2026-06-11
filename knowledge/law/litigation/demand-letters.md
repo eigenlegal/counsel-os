@@ -1,7 +1,21 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, international]
+authorities:
+  - cite: "Fed. R. Evid. 408"
+    title: "Compromise offers and negotiations"
+    url: "https://www.law.cornell.edu/rules/fre/rule_408"
+  - cite: "28 U.S.C. § 2675"
+    title: "Federal Tort Claims Act administrative claim prerequisite"
+    url: "https://www.law.cornell.edu/uscode/text/28/2675"
+  - cite: "15 U.S.C. § 1692 et seq."
+    title: "Fair Debt Collection Practices Act"
+    url: "https://www.law.cornell.edu/uscode/text/15/chapter-41/subchapter-V"
+  - cite: "U.C.C. § 2-607"
+    title: "Buyer's notice of breach requirement"
+    url: "https://www.law.cornell.edu/ucc/2/2-607"
 ---
 # Demand Letters and Pre-Litigation Communications
 

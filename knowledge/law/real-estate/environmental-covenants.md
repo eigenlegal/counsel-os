@@ -1,7 +1,20 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
-jurisdiction: [us-state, local]
+content-version: "2026-06-11"
+jurisdiction: [us-federal, us-state, local]
+authorities:
+  - cite: "42 U.S.C. §§ 9601-9675 (CERCLA)"
+    title: "Strict, joint-and-several, retroactive liability; § 101(35)/(40) AAI and bona fide prospective purchaser provisions"
+    url: "https://www.law.cornell.edu/uscode/text/42/chapter-103"
+  - cite: "40 CFR Part 312 (All Appropriate Inquiries Rule)"
+    title: "EPA AAI rule recognizing ASTM E1527-21 (and E2247-23 for forestland/rural) as compliant; E1527-13 no longer satisfies AAI after Feb. 13, 2024"
+    url: "https://www.ecfr.gov/current/title-40/chapter-I/subchapter-J/part-312"
+  - cite: "ASTM E1527-21"
+    title: "Current Phase I ESA standard for AAI — not superseded as of June 2026 (no E1527-25 in force)"
+    url: "https://www.astm.org/e1527-21.html"
+  - cite: "IRC § 198"
+    title: "Expensing of environmental remediation costs — brownfield incentive lapsed for expenditures after Dec. 31, 2011; not reauthorized as of June 2026"
+    url: "https://www.law.cornell.edu/uscode/text/26/198"
 ---
 # Environmental Covenants in Real Estate
 
@@ -33,7 +46,7 @@ Applies when a real property transaction involves potential environmental contam
 ### Brownfield Redevelopment
 
 - **Voluntary Cleanup Programs (VCPs)** / State programs allowing prospective purchasers to remediate and obtain liability protection (comfort letters, no-further-action letters, covenants not to sue). / **Consequence**: VCP enrollment must occur BEFORE or concurrent with acquisition; post-acquisition enrollment may not provide retroactive protection.
-- **Brownfield Tax Incentives** / Federal tax deduction under IRC Section 198 for environmental remediation expenditures at qualified contaminated sites (subject to periodic reauthorization). / **Consequence**: Deduction availability depends on congressional reauthorization; verify current status before relying on the incentive in transaction economics.
+- **Brownfield Tax Incentives** / Federal tax deduction under IRC Section 198 for environmental remediation expenditures at qualified contaminated sites. / **Consequence**: **SOURCE CHECK NEEDED.** Section 198 by its terms does not apply to expenditures paid or incurred after December 31, 2011, and Congress has not reauthorized it; as of June 2026 it is lapsed (reauthorization bills such as H.R. 815 in the 119th Congress remain pending, not enacted). Do not assume the deduction is available — verify current enacted status before relying on it in transaction economics.
 
 ### Environmental Indemnities
 

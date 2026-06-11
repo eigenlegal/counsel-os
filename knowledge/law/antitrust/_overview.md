@@ -1,7 +1,21 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "15 U.S.C. §§ 1-2"
+    title: "Sherman Act Sections 1 and 2"
+    url: "https://www.law.cornell.edu/uscode/text/15/1"
+  - cite: "15 U.S.C. § 18a"
+    title: "Hart-Scott-Rodino Act premerger notification"
+    url: "https://www.law.cornell.edu/uscode/text/15/18a"
+  - cite: "DOJ/FTC 2023 Merger Guidelines"
+    title: "Merger Guidelines (retained per February 2025 FTC and DOJ memoranda)"
+    url: "https://www.justice.gov/atr/2023-merger-guidelines"
+  - cite: "90 FR 5580 (Jan. 17, 2025), Doc. 2025-01361"
+    title: "FTC Adjustments to Civil Penalty Amounts — HSR maximum $53,088 per day; no 2026 adjustment occurred (OMB M-26-11, Apr. 17, 2026, cancelled 2026 adjustments), so 2025 levels carry forward"
+    url: "https://www.federalregister.gov/documents/2025/01/17/2025-01361/adjustments-to-civil-penalty-amounts"
 ---
 # Antitrust
 
@@ -11,7 +25,7 @@ Load this area when the document or matter involves ANY of the following:
 
 **Keywords:** antitrust, competition, anticompetitive, restraint of trade, monopoly, monopolization, market power, market share, market definition, relevant market, horizontal agreement, vertical agreement, price fixing, bid rigging, market allocation, customer allocation, territorial allocation, group boycott, tying, bundling, exclusive dealing, resale price maintenance, RPM, predatory pricing, below-cost pricing, most favored nation, MFN, most favored customer, price parity, cartel, collusion, conspiracy, per se illegal, rule of reason, merger review, HSR, Hart-Scott-Rodino, competitive effects, market concentration, HHI, Herfindahl-Hirschman Index, joint venture, competitor collaboration, standard-setting, FRAND, essential facility, refusal to deal, no-poach, wage-fixing, non-compete between competitors, information exchange
 **Clause types:** non-compete clauses between competitors, exclusivity provisions, MFN/price parity clauses, resale price restrictions, territorial restrictions, customer restrictions, tying arrangements, bundled pricing, joint venture governance and scope limitations, information sharing provisions between competitors, standard-setting participation terms, licensing restrictions
-**Regulatory references:** Sherman Act Section 1 (15 U.S.C. 1), Sherman Act Section 2 (15 U.S.C. 2), Clayton Act (15 U.S.C. 12-27), Hart-Scott-Rodino Act (15 U.S.C. 18a), FTC Act Section 5, Robinson-Patman Act, DOJ/FTC Horizontal Merger Guidelines, DOJ/FTC Vertical Merger Guidelines, DOJ Antitrust Division Leniency Program, EU Treaty Article 101 and 102, EU Merger Regulation, state antitrust statutes
+**Regulatory references:** Sherman Act Section 1 (15 U.S.C. 1), Sherman Act Section 2 (15 U.S.C. 2), Clayton Act (15 U.S.C. 12-27), Hart-Scott-Rodino Act (15 U.S.C. 18a), FTC Act Section 5, Robinson-Patman Act, DOJ/FTC 2023 Merger Guidelines, DOJ Antitrust Division Leniency Program, EU Treaty Article 101 and 102, EU Merger Regulation, state antitrust statutes
 **Relationship patterns:** competitor/competitor (horizontal), manufacturer/distributor (vertical), platform/seller (marketplace), standard-setting organization/members, joint venture partners, licensor/licensee (patent pools), franchisor/franchisee, employer/employer (no-poach)
 
 ## Sub-Files
@@ -28,7 +42,7 @@ These are non-overridable legal requirements from this area. They cannot be modi
 
 - Horizontal price-fixing, bid rigging, and market allocation agreements between competitors are per se illegal under Sherman Act Section 1 and are federal crimes subject to imprisonment and substantial fines.
 - No-poach and wage-fixing agreements between competing employers are treated as criminal antitrust violations by the DOJ Antitrust Division.
-- HSR Act pre-merger notification is required for transactions meeting applicable thresholds; closing before expiration of the waiting period is a violation subject to penalties of up to $51,744 per day.
+- HSR Act pre-merger notification is required for transactions meeting applicable thresholds; closing before expiration of the waiting period is a violation subject to penalties of up to $53,088 per day (2025 adjustment, carried into 2026 — the 2026 inflation adjustment was cancelled by OMB M-26-11).
 - Antitrust criminal investigations carry substantial individual liability, including imprisonment (up to 10 years per Sherman Act violation) and individual fines (up to $1M per violation).
 - Antitrust leniency programs incentivize self-reporting of cartel conduct; the first participant to report and cooperate may receive immunity from criminal prosecution (DOJ Leniency Program).
 - Treble damages are available to private plaintiffs in antitrust civil actions under Clayton Act Section 4, creating substantial financial exposure for antitrust violations.

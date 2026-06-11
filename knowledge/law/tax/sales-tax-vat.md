@@ -1,7 +1,27 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-state, international]
+authorities:
+  - cite: "South Dakota v. Wayfair, Inc., 585 U.S. 162 (2018)"
+    title: "Economic nexus standard for state sales tax"
+    url: "https://www.law.cornell.edu/supremecourt/text/17-494"
+  - cite: "Council Directive 2006/112/EC"
+    title: "EU VAT Directive"
+    url: "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32006L0112"
+  - cite: "HMRC VAT Notice 700"
+    title: "UK VAT guide (registration threshold GBP 90,000)"
+    url: "https://www.gov.uk/guidance/vat-guide-notice-700"
+  - cite: "Louisiana Department of Revenue"
+    title: "Sales tax reform FAQ — digital products taxable from January 1, 2025"
+    url: "https://revenue.louisiana.gov/tax-education-and-faqs/faqs/sales-tax-reform/are-digital-products-subject-to-sales-and-use-tax/"
+  - cite: "Comptroller of Maryland"
+    title: "2025 tax updates — 3% sales and use tax on data and IT services effective July 1, 2025"
+    url: "https://www.marylandcomptroller.gov/individuals/2025-tax-updates.html"
+  - cite: "Streamlined Sales Tax Governing Board"
+    title: "Streamlined Sales and Use Tax Agreement"
+    url: "https://www.streamlinedsalestax.org/"
 ---
 # Sales Tax and VAT
 
@@ -16,18 +36,20 @@ Sales and use tax is a transaction-level tax imposed on the sale of tangible per
 ### Economic Nexus — South Dakota v. Wayfair (2018)
 
 - **What**: The U.S. Supreme Court in South Dakota v. Wayfair, Inc. (585 U.S. ___, 2018) eliminated the physical presence requirement for sales tax nexus, replacing it with an economic nexus standard based on sales volume or transaction count.
-- **Threshold/Timeline**: The South Dakota model (adopted by most states) triggers nexus at $100,000 in gross sales OR 200 separate transactions in the state within the current or prior calendar year.
-  - Some states have adopted only a dollar threshold: California ($500,000), Texas ($500,000), New York ($500,000 plus 100 transactions).
+- **Threshold/Timeline**: The original South Dakota model triggered nexus at $100,000 in gross sales OR 200 separate transactions in the state within the current or prior calendar year.
+  - The clear trend is toward dollar-only thresholds: South Dakota repealed its own 200-transaction test effective July 1, 2023 (S.B. 30), and a wave of states followed (including Utah effective July 1, 2025, and Illinois effective January 1, 2026; Kentucky's repeal takes effect August 1, 2026). As of early 2026, most sales-tax states use a dollar threshold alone; roughly 15 states plus DC and Puerto Rico still apply a transaction-count test — verify the current rule in each state before advising.
+  - Higher dollar-only thresholds in some large states: California ($500,000), Texas ($500,000); New York requires both $500,000 AND more than 100 transactions.
   - Thresholds are measured per state and must be monitored on a rolling basis.
   - Once nexus is established, the seller must register, collect, and remit — typically within 30-60 days.
-  - As of 2025, 45 states plus DC impose sales tax, and all of them (plus territories) have adopted economic nexus standards.
+  - 45 states plus DC impose sales tax, and all of them (plus territories) have adopted economic nexus standards.
 - **Consequence**: Failure to register and collect after nexus is triggered exposes the seller to retroactive assessment of uncollected tax plus penalties (typically 5-25% of unpaid tax) and interest. Purchasers remain liable for use tax on untaxed purchases, but seller-side enforcement is the primary mechanism. Audit lookback periods typically reach 3-4 years, but can extend to 7 years for non-filers.
 
 ### SaaS and Digital Goods Taxability
 
 - **What**: Taxability of software-as-a-service (SaaS), cloud computing, digital downloads, and streaming services varies dramatically by state. There is no federal framework governing SaaS taxability.
 - **Threshold/Timeline**: Approximately half of U.S. states tax SaaS as either tangible personal property, a taxable service, or a specifically enumerated digital product.
-  - States taxing SaaS include (as of 2025): Connecticut, Hawaii, Iowa, Massachusetts, New Mexico, New York, Ohio, Pennsylvania, South Carolina, South Dakota, Tennessee, Texas, Utah, Washington, and West Virginia, among others.
+  - States taxing SaaS include (as of 2026): Connecticut, Hawaii, Iowa, Louisiana, Massachusetts, New Mexico, New York, Ohio, Pennsylvania, South Carolina, South Dakota, Tennessee, Texas, Utah, Washington, and West Virginia, among others.
+  - Recent expansions: Louisiana began taxing digital products, including SaaS, effective January 1, 2025 (and raised its state rate to 5%); Maryland imposes a 3% sales and use tax on data and information technology services (including business-use SaaS) effective July 1, 2025, while consumer digital products remain taxed at Maryland's 6% rate.
   - States generally not taxing SaaS include: California, Colorado, Florida, Illinois, and Virginia (though this landscape changes frequently through legislation and administrative rulings).
   - Digital downloads (music, e-books, software) are taxed in roughly 30+ states.
   - Streaming services are increasingly taxed, often under "amusement" or "communications" tax frameworks.
@@ -89,7 +111,7 @@ Sales and use tax is a transaction-level tax imposed on the sale of tangible per
 ### Digital Services Taxes (DSTs)
 
 - **What**: Several countries have implemented or proposed unilateral digital services taxes targeting revenue from digital activities (online advertising, digital marketplaces, data monetization) by large technology companies, pending resolution of the OECD Pillar One framework.
-- **Threshold/Timeline**: Examples: France (3% on revenue from targeted advertising and digital intermediation, for companies with global revenue exceeding EUR 750M and French revenue exceeding EUR 25M), UK (2% on revenue from social media platforms, search engines, and online marketplaces, for companies with global revenue exceeding GBP 500M and UK revenue exceeding GBP 25M), Italy (3%, similar scope), India (2% equalization levy on e-commerce supply of services).
+- **Threshold/Timeline**: Examples: France (3% on revenue from targeted advertising and digital intermediation, for companies with global revenue exceeding EUR 750M and French revenue exceeding EUR 25M), UK (2% on revenue from social media platforms, search engines, and online marketplaces, for companies with global revenue exceeding GBP 500M and UK revenue exceeding GBP 25M), Italy (3%, similar scope). India repealed its equalization levies — the 2% levy on e-commerce operators effective August 1, 2024 (Finance (No. 2) Act, 2024) and the 6% levy on online advertising effective April 1, 2025 (Finance Act, 2025).
   - DSTs are generally levied on gross revenue, not profit — making them particularly burdensome for low-margin businesses.
   - The OECD Pillar One framework, if fully implemented, would replace unilateral DSTs with a multilateral reallocation of taxing rights.
 - **Consequence**: DSTs create double taxation risk because they are not creditable against income tax in most jurisdictions. The U.S. has threatened retaliatory tariffs against countries imposing DSTs on U.S. companies. Companies must track DST obligations on a country-by-country basis.

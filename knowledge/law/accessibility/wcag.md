@@ -1,7 +1,17 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [technical-standard, global, us-federal, us-state]
+authorities:
+  - cite: "WCAG 2.1 (W3C Recommendation, June 5, 2018; verified 2026-06-11)"
+    title: "Web Content Accessibility Guidelines 2.1"
+    url: "https://www.w3.org/TR/WCAG21/"
+  - cite: "WCAG 2.2 (W3C Recommendation, Oct. 5, 2023; updated Dec. 12, 2024; ISO/IEC 40500:2025)"
+    title: "Web Content Accessibility Guidelines 2.2 — current W3C Recommendation"
+    url: "https://www.w3.org/TR/WCAG22/"
+  - cite: "WCAG 3.0 (W3C Working Draft, Mar. 3, 2026)"
+    title: "W3C Accessibility Guidelines 3.0 — draft, not a standard"
+    url: "https://www.w3.org/TR/wcag-3.0/"
 ---
 # WCAG — Web Content Accessibility Guidelines
 
@@ -15,7 +25,8 @@ Applies to web content, electronic documents, software, and mobile applications 
 
 - **WCAG 2.0 (2008)** / Original widely adopted standard; incorporated into Section 508 (2017 refresh), EN 301 549 (EU), and many national standards / **Consequence**: Minimum baseline for most legal requirements; still the formal Section 508 standard
 - **WCAG 2.1 (2018)** / Added 17 new success criteria addressing mobile accessibility, low vision, and cognitive disabilities / **Consequence**: Adopted in DOJ Title II rulemaking (April 2024); increasingly the standard referenced in litigation and consent decrees; backward compatible with 2.0
-- **WCAG 2.2 (2023)** / Added 9 new success criteria; removed one from 2.1 (4.1.1 Parsing); enhanced focus on cognitive accessibility, authentication, and consistent help / **Consequence**: Latest version; not yet widely adopted in legal standards but represents current best practice; backward compatible with 2.1
+- **WCAG 2.2 (2023)** / Current W3C Recommendation (published Oct. 5, 2023; editorial update Dec. 12, 2024; now also ISO/IEC 40500:2025). Added 9 new success criteria; removed one from 2.1 (4.1.1 Parsing); enhanced focus on cognitive accessibility, authentication, and consistent help / **Consequence**: Latest finalized version; still not the standard adopted in the DOJ Title II rule or Section 508 (which reference 2.1 and 2.0 respectively), but represents current best practice; backward compatible with 2.1
+- **WCAG 3.0 (draft)** / Remains a W3C Working Draft (most recent Mar. 3, 2026); not a standard and not expected to be finalized for several years. WCAG 3 will not supersede WCAG 2, and WCAG 2 will not be deprecated for years after WCAG 3 is finalized / **Consequence**: Do not treat WCAG 3.0 as a compliance target; it is informational only
 
 ### Four Principles (POUR)
 

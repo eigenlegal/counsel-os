@@ -1,7 +1,20 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
-jurisdiction: [us-state, local]
+content-version: "2026-06-11"
+jurisdiction: [us-federal, us-state, local]
+authorities:
+  - cite: "IRC § 1031"
+    title: "Like-kind exchanges — preserved unchanged for real property by the One Big Beautiful Bill Act (Pub. L. 119-21, July 4, 2025); the proposed $500,000 deferral cap was not enacted"
+    url: "https://www.law.cornell.edu/uscode/text/26/1031"
+  - cite: "FinCEN Residential Real Estate Rule (31 CFR 1031)"
+    title: "Reporting on non-financed residential transfers to entities/trusts — vacated by the U.S. District Court for the E.D. Tex. on Mar. 19, 2026 (Kernodle, J.); FinCEN/DOJ notice of appeal to the 5th Cir. filed May 11, 2026"
+    url: "https://www.fincen.gov/rre"
+  - cite: "FinCEN Residential Real Estate FAQs"
+    title: "Post-vacatur guidance: reporting persons are not required to file Real Estate Reports and face no liability for not filing while the order stands"
+    url: "https://www.fincen.gov/rre-faqs"
+  - cite: "Tex. S.B. 17 (2025, eff. Sept. 1, 2025)"
+    title: "Texas restriction on real-property acquisition by persons/entities tied to designated countries; 5th Cir. affirmed dismissal of the facial challenge"
+    url: "https://capitol.texas.gov/BillLookup/History.aspx?LegSess=89R&Bill=SB17"
 ---
 # Real Estate Transactions
 
@@ -50,6 +63,15 @@ Applies to the acquisition, disposition, and financing of real property, includi
 - **Recording Sequence** / Deed records first, followed by the mortgage/deed of trust. / **Consequence**: Incorrect recording sequence can affect lien priority; simultaneous closings (like-kind exchanges) require careful coordination.
 - **Race-Notice Jurisdictions** / Majority of states are race-notice: a subsequent bona fide purchaser who records first prevails over a prior unrecorded interest. / **Consequence**: Prompt recording after closing is critical; even a brief delay creates risk in race-notice jurisdictions.
 
+### Federal AML Reporting (Non-Financed Residential Transfers)
+
+- **FinCEN Residential Real Estate Rule** / FinCEN's August 2024 final rule (31 CFR Part 1031) would have required reporting persons in the settlement/closing chain to report beneficial-ownership information on non-financed residential transfers to a legal entity or trust. Originally effective December 1, 2025; FinCEN postponed it to March 1, 2026. / **Consequence**: **SOURCE CHECK NEEDED.** On March 19, 2026, the U.S. District Court for the Eastern District of Texas vacated the rule nationwide as exceeding FinCEN's Bank Secrecy Act authority (a Middle District of Florida court had reached the opposite conclusion in February 2026). FinCEN and DOJ filed a notice of appeal to the Fifth Circuit on May 11, 2026. Per FinCEN's updated FAQs, while the vacatur stands **reporting persons are not required to file Real Estate Reports and face no liability for not filing.** Confirm the current operative status before advising — the appeal could reinstate the rule.
+- **Geographic Targeting Orders (GTOs)** / The title-insurer GTOs that historically captured high-value all-cash purchases through shell entities were the predecessor regime the RRE Rule was meant to replace. The most recent renewal ran effective October 10, 2025 and expired February 28, 2026 (timed to the RRE Rule's then-effective date). / **Consequence**: **SOURCE CHECK NEEDED** on whether FinCEN has reissued GTOs in the gap created by the rule's vacatur; check the FinCEN newsroom before assuming either the GTO or the RRE reporting obligation currently applies.
+
+### Foreign Ownership Restrictions
+
+- **State Foreign-Ownership Statutes** / A growing number of states restrict acquisition of real property (especially agricultural land and land near military/critical infrastructure) by individuals or entities tied to designated foreign countries. Florida's SB 264 (2023) and Texas's SB 17 (effective September 1, 2025) are leading examples. / **Consequence**: **SOURCE CHECK NEEDED** — statutes vary on covered countries, covered property, registration/affidavit requirements, and penalties (Texas SB 17 carries civil and criminal exposure). As of mid-2026 the facial constitutional challenges have largely failed on standing: the Eleventh Circuit left Florida SB 264 in effect (the Shen plaintiffs voluntarily dismissed), and the Fifth Circuit affirmed dismissal of the SB 17 challenge. Screen the buyer's ownership chain and check the specific state's current statute and any required closing affidavit. CFIUS may separately review foreign acquisitions near sensitive sites.
+
 ### Transfer Taxes
 
 - **State Transfer Taxes** / Vary widely by state: California ($1.10/$1,000), New York (0.4% base + 0.25% mansion tax for $1M+), Pennsylvania (2%), Delaware (4% combined state/county). / **Consequence**: Transfer taxes can be a significant closing cost; allocation between buyer and seller is negotiable and varies by local custom.
@@ -70,5 +92,9 @@ Applies to the acquisition, disposition, and financing of real property, includi
 - [ALTA/NSPS Minimum Standard Detail Requirements for Land Title Surveys (2021)](https://www.alta.org/surveying/)
 - [Uniform Real Property Transfer on Death Act](https://www.uniformlaws.org/committees/community-home?CommunityKey=a4caf5c7-a9e1-4774-adcb-3645e7f49d5d)
 - [IRC Section 1031 — Like-Kind Exchanges](https://www.law.cornell.edu/uscode/text/26/1031)
+- [FinCEN — Residential Real Estate Rule](https://www.fincen.gov/rre)
+- [FinCEN — Residential Real Estate FAQs](https://www.fincen.gov/rre-faqs)
+
+> Residential brokerage note: Following the NAR antitrust settlement (practice changes effective August 17, 2024), MLSs no longer carry offers of buyer-broker compensation and a written buyer-representation agreement is generally required before showings. This is brokerage-side practice, not a transactional-document requirement, but it affects how buyer-side commissions are documented in residential deals. The DOJ has signaled continued antitrust scrutiny of the mandatory buyer-agreement provision, and the Eighth Circuit appeal was argued January 14, 2026 with a ruling pending — confirm current status for residential brokerage matters.
 
 ---

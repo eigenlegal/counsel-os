@@ -1,7 +1,21 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "Uniform Prudent Management of Institutional Funds Act (UPMIFA)"
+    title: "Uniform Law Commission — enacted in 49 states, DC, and USVI; Pennsylvania has not adopted (uses Act 141)"
+    url: "https://www.uniformlaws.org/committees/community-home?CommunityKey=043b9067-a7a0-4320-8066-e3a80f5e51cf"
+  - cite: "FASB ASC 958"
+    title: "Not-for-Profit Entities — net asset classification (with/without donor restrictions)"
+    url: "https://asc.fasb.org/"
+  - cite: "26 U.S.C. §§ 4966-4967"
+    title: "Excise taxes on donor-advised funds (taxable distributions; prohibited benefits)"
+    url: "https://www.law.cornell.edu/uscode/text/26/4966"
+  - cite: "REG-142338-07"
+    title: "Proposed donor-advised-fund regulations under § 4966 (Nov. 14, 2023) — still proposed, not finalized as of June 2026"
+    url: "https://www.federalregister.gov/documents/2023/11/14/2023-24982/taxes-on-taxable-distributions-from-donor-advised-funds-under-section-4966"
+# authorities checked 2026-06-11
 ---
 # Donor Restrictions
 
@@ -20,10 +34,10 @@ Applies to nonprofit organizations receiving restricted gifts, managing endowmen
 
 ### UPMIFA — Uniform Prudent Management of Institutional Funds Act
 
-- **Adoption** / Enacted in 49 states plus DC (Pennsylvania has not adopted; uses its own statute) / **Consequence**: Governs endowment management for charities in adopting jurisdictions
+- **Adoption** / Enacted in 49 states, DC, and the US Virgin Islands (Pennsylvania has not adopted; uses Act 141, which permits annual spending of 2%-7% of fair market value) / **Consequence**: Governs endowment management for charities in adopting jurisdictions
 - **Prudent Spending Standard** / Institution must act in good faith, with care of an ordinarily prudent person, considering: (1) duration and preservation of the fund, (2) purposes of the institution, (3) general economic conditions, (4) possible effect of inflation/deflation, (5) expected total return, (6) other resources, (7) investment policy / **Consequence**: Imprudent spending = personal liability for board members; AG enforcement
-- **7% Presumptive Ceiling** / Appropriation of more than 7% of fair market value (using a 3-year trailing average or longer) is presumed imprudent; rebuttable presumption / **Consequence**: Board bears burden of proving prudence for distributions exceeding 7%
-- **Spending Below 7%** / Spending at or below 7% is not automatically prudent — board must still consider the 7 factors / **Consequence**: Even spending within the presumption requires documented analysis
+- **7% Presumptive Ceiling (optional UPMIFA provision — NOT universal)** / The uniform act's optional rule treats appropriation of more than 7% of fair market value (3-year trailing average or longer) as presumptively imprudent / **Threshold (checked 2026-06-11)**: This optional presumption was adopted by only about ten states; most UPMIFA states did not enact it and rely solely on the general prudence standard and the seven factors. Confirm whether the governing state actually has the 7% rule before treating it as a ceiling / **Consequence**: In states that adopted it, the board bears the burden of proving prudence for distributions exceeding 7%
+- **Spending Below 7%** / Even in states with the 7% presumption, spending at or below 7% is not automatically prudent — board must still consider the seven factors / **Consequence**: Spending within the presumption still requires documented analysis
 - **Release or Modification of Restrictions** / Donor consent (preferred); if donor unavailable, court approval required for funds with restrictions; for small/old funds (<$25K and >20 years in many states), institution may modify with 60-day notice to AG / **Consequence**: Unauthorized modification = breach; AG standing to enforce
 
 ### Cy Pres Doctrine
@@ -34,7 +48,7 @@ Applies to nonprofit organizations receiving restricted gifts, managing endowmen
 ### Variance Power
 
 - **Community Foundation Variance Power** / Community foundations may retain variance power allowing them to redirect restricted funds if original purpose becomes unnecessary, incapable of fulfillment, or inconsistent with charitable needs / **Consequence**: Enables community foundations to maintain public charity status; donors relinquish ultimate control
-- **Donor-Advised Funds** / Donors may make recommendations but cannot exercise legal control; sponsoring organization has legal discretion / **Consequence**: Donor advisory privilege only; excessive donor control may jeopardize fund's tax treatment (IRC 4966-4967)
+- **Donor-Advised Funds** / Donors may make recommendations but cannot exercise legal control; sponsoring organization has legal discretion / **Consequence**: Donor advisory privilege only; excessive donor control may jeopardize fund's tax treatment (IRC 4966-4967) / **Regs status (checked 2026-06-11)**: Treasury's first installment of proposed DAF regulations under § 4966 (REG-142338-07, Nov. 14, 2023) remains PROPOSED — not finalized as of June 2026. Apply the statute and proposed-reg definitions cautiously and check for a final rule before relying on the proposed-reg positions.
 
 ### Donor Standing and Enforcement
 

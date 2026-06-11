@@ -1,7 +1,21 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, industry-standard]
+authorities:
+  - cite: "AICPA Trust Services Criteria (2017, revised points of focus 2022)"
+    title: "AICPA & CIMA — System and Organization Controls (SOC) Suite of Services"
+    url: "https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2"
+  - cite: "ISO/IEC 27001:2022"
+    title: "Information security, cybersecurity and privacy protection — Information security management systems — Requirements"
+    url: "https://www.iso.org/standard/27001"
+  - cite: "FedRAMP Authorization Act, 44 U.S.C. § 3609"
+    title: "FedRAMP program (GSA) — authorization paths and FedRAMP 20x"
+    url: "https://www.fedramp.gov/"
+  - cite: "HITRUST CSF"
+    title: "HITRUST Alliance — HITRUST CSF framework"
+    url: "https://hitrustalliance.net/hitrust-csf/"
 ---
 # Security Standards and Certifications
 
@@ -24,7 +38,7 @@ Applies to organizations seeking, maintaining, or contractually required to hold
 
 - **Scope** / International standard for Information Security Management Systems (ISMS); published by ISO and IEC / **Consequence**: Globally recognized; required in many international contracts and government procurements
 - **Certification Cycle** / 3-year certification cycle: (1) Stage 1 — documentation review; (2) Stage 2 — full audit; (3) Annual surveillance audits in years 2 and 3; (4) Recertification in year 3 / **Timeline**: Initial certification typically 3-6 months preparation + audit / **Consequence**: Lapsed certification = loss of status; must recertify
-- **Annex A Controls** / 93 controls in 4 themes (ISO 27001:2022): Organizational (37), People (8), Physical (14), Technological (34) / **Consequence**: Statement of Applicability (SoA) documents which controls apply and justifies exclusions
+- **Annex A Controls** / 93 controls in 4 themes (ISO 27001:2022): Organizational (37), People (8), Physical (14), Technological (34) / **Consequence**: Statement of Applicability (SoA) documents which controls apply and justifies exclusions; the 2013-to-2022 transition window closed October 31, 2025, so any certificate still on ISO 27001:2013 is no longer valid
 - **Risk-Based Approach** / Must conduct formal risk assessment (ISO 27005 methodology recommended); controls selected based on identified risks / **Consequence**: Prescriptive control implementation without risk assessment = non-conformity
 - **Continuous Improvement** / PDCA (Plan-Do-Check-Act) cycle; management review; internal audit required / **Consequence**: Surveillance audit findings must be addressed; failure to demonstrate improvement = non-conformity or certification suspension
 
@@ -32,7 +46,8 @@ Applies to organizations seeking, maintaining, or contractually required to hold
 
 - **Scope** / Mandatory for cloud service providers (CSPs) offering services to federal agencies / **Consequence**: No FedRAMP authorization = cannot sell cloud services to federal government; growing adoption by state/local governments
 - **Impact Levels** / (1) Li-SaaS (Low Impact SaaS — self-attestation for low-risk SaaS); (2) Low (categorized per FIPS 199); (3) Moderate (most common — approx. 325 controls from NIST 800-53); (4) High (highest sensitivity — approx. 420 controls) / **Consequence**: Impact level determines control baseline, assessment rigor, and cost
-- **Authorization Paths** / (1) Agency Authorization (single agency sponsor); (2) Joint Authorization Board (JAB) — being replaced by FedRAMP Board under FedRAMP Authorization Act of 2022 / **Timeline**: Agency path: 6-12 months; JAB/Board path: 12-18 months / **Consequence**: Authorization requires 3PAO assessment; continuous monitoring thereafter
+- **Authorization Path** / Single path: Agency Authorization (federal agency sponsors and authorizes; other agencies reuse). The Joint Authorization Board (JAB) path was discontinued in 2024, replaced by the FedRAMP Board under the FedRAMP Authorization Act of 2022 / **Timeline**: Agency path: 6-12 months typical / **Consequence**: Authorization requires 3PAO assessment; continuous monitoring thereafter
+- **FedRAMP 20x Modernization (2025-2027)** / GSA's phased overhaul replacing static document review with machine-readable (OSCAL-based) key security indicators and automated validation; pilots for Low and Moderate ran 2025-2026, with consolidated 20x requirements being finalized and broader application intake expected late FY2026 / **Consequence**: The legacy "Rev 5" agency-authorization process sunsets at the end of FY2027 (September 30, 2027); CSPs starting now should evaluate 20x readiness rather than building to the outgoing process
 - **3PAO Assessment** / Third-Party Assessment Organization (accredited by A2LA) conducts independent security assessment / **Consequence**: 3PAO must be independent; assessment costs $200K-$1M+ depending on impact level and system complexity
 - **Continuous Monitoring** / Monthly vulnerability scanning, annual assessment, ongoing POA&M management, significant change reporting / **Consequence**: Failure to maintain continuous monitoring = authorization revocation; agency must stop using service
 - **FedRAMP Authorization Act (2022)** / Codified FedRAMP into law; established FedRAMP Board; presumption of adequacy for authorized CSPs across agencies / **Consequence**: Once authorized, other agencies can reuse authorization with limited additional review
@@ -60,9 +75,10 @@ Applies to organizations seeking, maintaining, or contractually required to hold
 
 ## Sources
 
-- [AICPA SOC 2 Trust Services Criteria](https://www.aicpa.org/interestareas/frc/assuranceadvisoryservices/sorhome)
+- [AICPA & CIMA — SOC Suite of Services](https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2)
+- [AICPA 2017 Trust Services Criteria (revised points of focus 2022)](https://www.aicpa-cima.com/resources/download/2017-trust-services-criteria-with-revised-points-of-focus-2022)
 - [ISO/IEC 27001:2022](https://www.iso.org/standard/27001)
-- [FedRAMP Authorization Act](https://www.fedramp.gov/)
+- [FedRAMP (program site, authorization paths, FedRAMP 20x)](https://www.fedramp.gov/)
 - [HITRUST CSF](https://hitrustalliance.net/hitrust-csf/)
 
 ---

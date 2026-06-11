@@ -1,7 +1,18 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, international]
+authorities:
+  - cite: "Federal Rules of Civil Procedure"
+    title: "Current FRCP text, including the December 1, 2025 amendments (new Rule 16.1; Rules 16 and 26 privilege-log planning)"
+    url: "https://www.law.cornell.edu/rules/frcp"
+  - cite: "Federal Rules of Evidence"
+    title: "Current FRE text, including FRE 702 as amended December 1, 2023"
+    url: "https://www.law.cornell.edu/rules/fre"
+  - cite: "9 U.S.C. §§ 1-16"
+    title: "Federal Arbitration Act"
+    url: "https://www.law.cornell.edu/uscode/text/9/chapter-1"
 ---
 # Litigation
 
@@ -13,7 +24,7 @@ Load this area when the document or matter involves ANY of the following:
 
 **Clause types:** dispute resolution clauses (arbitration, mediation, litigation), forum selection and venue provisions, choice of law provisions, jury trial waivers, class action waivers, limitation of liability provisions, indemnification and defense obligations, insurance coverage triggers, notice of claim provisions, statute of limitations contractual modifications, prevailing party attorney's fees provisions, liquidated damages clauses, limitation on remedies, release and settlement provisions, confidentiality of settlement, arbitration clause drafting, delegation clauses, mass arbitration protocols, compelled disclosure carve-outs in NDAs
 
-**Regulatory references:** Federal Rules of Civil Procedure (FRCP), Federal Rules of Evidence (FRE), Federal Arbitration Act (FAA), state arbitration acts, Uniform Arbitration Act, state civil procedure rules, state evidence rules, CPLR (New York), CCP (California), JAMS rules, AAA rules, ICC rules, UNCITRAL rules, Class Action Fairness Act (CAFA), state class action statutes, Electronic Discovery Reference Model (EDRM), Federal Rule 37(e) (ESI spoliation), FRE 502 (privilege waiver), FRE 408 (settlement offers), New York Convention (foreign arbitral awards), Hague Evidence Convention
+**Regulatory references:** Federal Rules of Civil Procedure (FRCP), FRCP 16.1 (MDL initial management, effective December 1, 2025), Federal Rules of Evidence (FRE), Federal Arbitration Act (FAA), state arbitration acts, Uniform Arbitration Act, state civil procedure rules, state evidence rules, CPLR (New York), CCP (California), JAMS rules, AAA rules, ICC rules, UNCITRAL rules, Class Action Fairness Act (CAFA), state class action statutes, Electronic Discovery Reference Model (EDRM), Federal Rule 37(e) (ESI spoliation), FRE 502 (privilege waiver), FRE 408 (settlement offers), New York Convention (foreign arbitral awards), Hague Evidence Convention
 
 **Relationship patterns:** plaintiff/defendant, claimant/respondent (arbitration), company/regulator (enforcement), company/third party (pre-litigation dispute), insured/insurer (coverage dispute), indemnitor/indemnitee, client/outside counsel, class representative/class member, joint defense group members
 

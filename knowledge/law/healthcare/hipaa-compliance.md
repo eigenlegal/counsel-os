@@ -1,7 +1,24 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "45 CFR Parts 160, 162, 164"
+    title: "HIPAA Administrative Simplification rules"
+    url: "https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-C"
+  - cite: "90 FR 898 (Jan. 6, 2025)"
+    title: "HIPAA Security Rule To Strengthen the Cybersecurity of Electronic Protected Health Information (proposed rule)"
+    url: "https://www.federalregister.gov/documents/2025/01/06/2024-30983/hipaa-security-rule-to-strengthen-the-cybersecurity-of-electronic-protected-health-information"
+  - cite: "Purl v. HHS, No. 2:24-cv-00228-Z (N.D. Tex. June 18, 2025)"
+    title: "Nationwide vacatur of the 2024 HIPAA reproductive health privacy rule"
+    url: "https://www.hhs.gov/hipaa/for-professionals/special-topics/reproductive-health/final-rule-fact-sheet/index.html"
+  - cite: "HHS final rule (Jan. 28, 2026); 45 CFR 102.3"
+    title: "HHS annual civil monetary penalties inflation adjustment"
+    url: "https://www.federalregister.gov/documents/2026/01/28/2026-01688/annual-civil-monetary-penalties-inflation-adjustment"
+  - cite: "HHS OCR enforcement"
+    title: "HIPAA compliance and enforcement"
+    url: "https://www.hhs.gov/hipaa/for-professionals/compliance-enforcement/index.html"
 ---
 # HIPAA Compliance
 
@@ -29,6 +46,12 @@ Applies to covered entities (health plans, healthcare clearinghouses, healthcare
 - **Threshold/Timeline**: Administrative safeguards — risk analysis (required, not addressable), workforce training, security officer designation, access management; Physical safeguards — facility access controls, workstation security, device/media disposal; Technical safeguards — access controls, audit controls, integrity controls, transmission security (encryption addressable but effectively required)
 - **Consequence**: Security Rule violations are independently enforceable; failure to conduct risk analysis is the most frequently cited violation in OCR enforcement actions; "addressable" specifications require implementation or documented alternative — they are not optional
 
+### Rulemaking and Litigation Posture (as of June 2026)
+
+- **What**: Two recent developments change the compliance trajectory: (1) a proposed overhaul of the Security Rule, and (2) nationwide vacatur of the 2024 reproductive health privacy rule
+- **Threshold/Timeline**: Security Rule NPRM (90 FR 898, January 6, 2025) would mandate multi-factor authentication, encryption of ePHI at rest and in transit, asset inventories/network maps, annual penetration testing, and would eliminate the required/addressable distinction; comment period closed March 7, 2025 and the rule remains PROPOSED — not finalized as of June 2026. The 2024 HIPAA reproductive health privacy rule was declared unlawful and vacated nationwide in Purl v. HHS, No. 2:24-cv-00228-Z (N.D. Tex. June 18, 2025); appeals were dropped in September 2025
+- **Consequence**: The reproductive-health attestation requirement no longer applies; the only surviving piece of the 2024 rule is the Notice of Privacy Practices amendments relating to substance use disorder (42 CFR Part 2) records, with an NPP compliance date of February 16, 2026. Do not advise to the proposed Security Rule requirements as current law — verify finalization status before relying on them
+
 ### Breach Notification Rule (45 CFR Part 164 Subpart D)
 
 - **What**: Requires notification following discovery of a breach of unsecured PHI (PHI not rendered unusable through encryption or destruction)
@@ -44,12 +67,12 @@ Applies to covered entities (health plans, healthcare clearinghouses, healthcare
 ### OCR Enforcement and Penalties
 
 - **What**: HHS Office for Civil Rights (OCR) enforces HIPAA through complaint investigations, compliance reviews, and resolution agreements
-- **Threshold/Timeline**: Four penalty tiers based on culpability:
-  - Tier 1 (did not know/could not have known): $100-$50,000 per violation
-  - Tier 2 (reasonable cause, not willful neglect): $1,000-$50,000 per violation
-  - Tier 3 (willful neglect, corrected within 30 days): $10,000-$50,000 per violation
-  - Tier 4 (willful neglect, not corrected): $50,000 per violation
-  - Annual cap: $1.5M per identical provision violated per year (adjusted for inflation, currently approximately $2.07M)
+- **Threshold/Timeline**: Four penalty tiers based on culpability; amounts adjusted annually for inflation under 45 CFR 102.3 (figures below per the HHS adjustment published January 28, 2026):
+  - Tier 1 (did not know/could not have known): $145-$73,011 per violation
+  - Tier 2 (reasonable cause, not willful neglect): $1,461-$73,011 per violation
+  - Tier 3 (willful neglect, corrected within 30 days): $14,602-$73,011 per violation
+  - Tier 4 (willful neglect, not corrected): $73,011-$2,190,294 per violation
+  - Annual cap: $1.5M statutory base per identical provision violated per year (inflation-adjusted to $2,190,294); OCR's April 2019 Notice of Enforcement Discretion applies lower annual caps for Tiers 1-3 ($25,000 / $100,000 / $250,000 base, inflation-adjusted) and remains in effect but can be rescinded at any time
 - **Consequence**: Criminal penalties enforced by DOJ: $50K/1 year (knowing), $100K/5 years (false pretenses), $250K/10 years (intent to sell/use for commercial advantage or malicious harm); state attorneys general may bring civil actions under HITECH Section 13410(e) seeking damages on behalf of residents
 
 ### HITECH Act Enhancements
@@ -62,7 +85,7 @@ Applies to covered entities (health plans, healthcare clearinghouses, healthcare
 
 - **What**: Individuals have the right to access and obtain copies of their PHI maintained in designated record sets
 - **Threshold/Timeline**: Response within 30 days (one 30-day extension with written explanation); fees limited to reasonable cost-based amounts for labor, supplies, and postage; electronic format if maintained electronically; OCR Right of Access Initiative launched 2019 with active enforcement
-- **Consequence**: OCR has settled 45+ cases under Right of Access Initiative with penalties ranging from $3,500 to $240,000; failure to provide timely access is a standalone violation regardless of other compliance posture
+- **Consequence**: OCR had brought 54 enforcement actions under the Right of Access Initiative as of December 2025, with penalties ranging from $3,500 to $240,000; failure to provide timely access is a standalone violation regardless of other compliance posture
 
 ## Interaction with Other Areas
 

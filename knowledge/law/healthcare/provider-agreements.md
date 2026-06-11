@@ -1,7 +1,24 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "CMS notice (Dec. 3, 2025)"
+    title: "Provider Enrollment Application Fee Amount for Calendar Year 2026"
+    url: "https://www.federalregister.gov/documents/2025/12/03/2025-21877/medicare-medicaid-and-childrens-health-insurance-programs-provider-enrollment-application-fee-amount"
+  - cite: "CMS Provider Enrollment"
+    title: "Medicare provider enrollment and certification"
+    url: "https://www.cms.gov/Medicare/Provider-Enrollment-and-Certification"
+  - cite: "CMS No Surprises Act"
+    title: "No Surprises Act implementation rules and notices"
+    url: "https://www.cms.gov/nosurprises"
+  - cite: "Federal IDR Operations Final Rule (May 2026)"
+    title: "CMS fact sheet: Federal Independent Dispute Resolution Operations final rule"
+    url: "https://www.cms.gov/newsroom/fact-sheets/federal-independent-dispute-resolution-operations-final-rule"
+  - cite: "Ky. Ass'n of Health Plans, Inc. v. Miller, 538 U.S. 329 (2003)"
+    title: "Any willing provider laws not preempted by ERISA as applied to insured plans"
+    url: "https://supreme.justia.com/cases/federal/us/538/329/"
 ---
 # Provider Agreements
 
@@ -14,7 +31,7 @@ Applies to agreements between healthcare providers and payers, health systems an
 ### Participation Agreements (Medicare/Medicaid)
 
 - **What**: Agreements between healthcare providers and CMS (or state Medicaid agencies) establishing terms of participation in federal healthcare programs; providers agree to accept program rates and comply with Conditions of Participation (CoPs)
-- **Threshold/Timeline**: Medicare enrollment through PECOS (Provider Enrollment, Chain, and Ownership System); revalidation every 3-5 years depending on risk category (high, moderate, limited); Medicaid enrollment varies by state; application screening fees ($632 for institutional providers)
+- **Threshold/Timeline**: Medicare enrollment through PECOS (Provider Enrollment, Chain, and Ownership System); revalidation every 3-5 years depending on risk category (high, moderate, limited); Medicaid enrollment varies by state; application screening fee for institutional providers is $750 for CY2026 (adjusted annually by CPI-U; published each year in the Federal Register)
 - **Consequence**: Participation requires acceptance of Medicare assignment (accepting Medicare-approved amount as full payment); non-participating providers limited to 115% of Medicare fee schedule for non-assigned claims; termination from program for cause results in exclusion; billing beneficiaries for covered services above program rates prohibited
 
 ### Managed Care Contracting Models
@@ -39,7 +56,7 @@ Applies to agreements between healthcare providers and payers, health systems an
 ### Any Willing Provider Laws
 
 - **What**: State laws requiring health plans to accept any qualified provider willing to meet the plan's terms and conditions; approximately 30 states have some form of AWP law
-- **Threshold/Timeline**: Scope varies significantly by state — some apply only to pharmacies, others to all provider types; typically apply to network plans (PPO, HMO); Kentucky v. UnitedHealthcare (2003) upheld state AWP laws against ERISA preemption challenge for insured (not self-funded) plans
+- **Threshold/Timeline**: Scope varies significantly by state — some apply only to pharmacies, others to all provider types; typically apply to network plans (PPO, HMO); Kentucky Ass'n of Health Plans, Inc. v. Miller, 538 U.S. 329 (2003), upheld state AWP laws against ERISA preemption challenge for insured (not self-funded) plans
 - **Consequence**: AWP laws limit plan's ability to create narrow/tiered networks; exempt from plans not subject to state insurance regulation (self-funded ERISA plans, federal employee plans); compliance required before excluding willing providers
 
 ### Assignment of Benefits
@@ -52,7 +69,7 @@ Applies to agreements between healthcare providers and payers, health systems an
 
 - **What**: Limitations on provider's ability to bill patients for the difference between billed charges and the amount paid by insurer
 - **Threshold/Timeline**: No Surprises Act (2022) — prohibits balance billing for emergency services at out-of-network facilities and for non-emergency services at in-network facilities by out-of-network providers (unless patient provides written consent with specific disclosure requirements at least 72 hours prior); independent dispute resolution (IDR) process for payment disputes between providers and plans; qualifying payment amount (QPA) based on median in-network rate
-- **Consequence**: Balance billing violations under No Surprises Act subject to $10,000 per violation; state surprise billing laws may impose additional restrictions (28+ states had laws pre-NSA); IDR process timelines: open negotiation (30 days), IDR entity selection (3 business days), IDR decision (30 days); IDR initiation fee approximately $50 per party per dispute
+- **Consequence**: Balance billing violations under No Surprises Act subject to $10,000 per violation; state surprise billing laws may impose additional restrictions (28+ states had laws pre-NSA); IDR process timelines: open negotiation (30 business days), IDR entity selection (3 business days), IDR decision (30 business days); the Federal IDR Operations final rule (May 2026) cut the administrative fee from $115 to $15 per party per dispute and overhauled procedures — open negotiation must now be initiated through the federal IDR portal, the receiving party must respond by business day 15, IDR entities must make eligibility determinations within 5 business days, and a new IDR Gateway platform phases in during late 2026; verify current procedure before initiating a dispute
 
 ### Network Adequacy
 

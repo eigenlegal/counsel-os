@@ -1,7 +1,18 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "Pub. L. 119-27 (July 18, 2025)"
+    title: "GENIUS Act — payment stablecoins of permitted issuers excluded from the federal securities-law definition of 'security'"
+    url: "https://www.congress.gov/119/plaws/publ27/PLAW-119publ27.pdf"
+  - cite: "H.R. 3633, 119th Congress"
+    title: "Digital Asset Market Clarity (CLARITY) Act — passed House July 17, 2025; on Senate calendar as of June 2026"
+    url: "https://www.congress.gov/bill/119th-congress/house-bill/3633"
+  - cite: "15 U.S.C. 77e"
+    title: "Securities Act Section 5 registration requirement"
+    url: "https://www.law.cornell.edu/uscode/text/15/77e"
 ---
 # Securities
 
@@ -9,7 +20,7 @@ jurisdiction: [us-federal, us-state]
 
 Load this area when the document or matter involves ANY of the following:
 
-**Keywords:** securities, stock, shares, equity, preferred stock, common stock, convertible note, SAFE, Simple Agreement for Future Equity, warrant, option, stock option plan, equity incentive plan, restricted stock, RSU, restricted stock unit, vesting, capitalization, cap table, dilution, anti-dilution, liquidation preference, investment, fundraising, round, Series A, Series B, seed round, pre-seed, venture capital, angel investor, accredited investor, qualified purchaser, private placement, offering, prospectus, registration statement, exempt offering, blue sky, securities filing, Form D, Regulation D, Rule 506, Regulation A, Regulation CF, crowdfunding, Regulation S, IPO, initial public offering, SPAC, direct listing, secondary sale, Rule 144, restricted securities, control securities, legend, transfer restriction, stockholders agreement, investors rights agreement, right of first refusal, ROFR, co-sale, voting agreement, registration rights, drag-along, tag-along, QSBS, qualified small business stock, insider trading, MNPI, material nonpublic information, 10b5-1 plan, Section 16, short-swing profits, blackout period, Sarbanes-Oxley, SOX, 10-K, 10-Q, 8-K, proxy statement, Regulation FD, say-on-pay, audit committee, internal controls, state notice filing, NSMIA, merit review, NASAA, funding portal, Form C, investment adviser, RIA, Form ADV, fiduciary duty, custody rule, pay-to-play, exempt reporting adviser
+**Keywords:** securities, stock, shares, equity, preferred stock, common stock, convertible note, SAFE, Simple Agreement for Future Equity, warrant, option, stock option plan, equity incentive plan, restricted stock, RSU, restricted stock unit, vesting, capitalization, cap table, dilution, anti-dilution, liquidation preference, investment, fundraising, round, Series A, Series B, seed round, pre-seed, venture capital, angel investor, accredited investor, qualified purchaser, private placement, offering, prospectus, registration statement, exempt offering, blue sky, securities filing, Form D, Regulation D, Rule 506, Regulation A, Regulation CF, crowdfunding, Regulation S, IPO, initial public offering, SPAC, direct listing, secondary sale, Rule 144, restricted securities, control securities, legend, transfer restriction, stockholders agreement, investors rights agreement, right of first refusal, ROFR, co-sale, voting agreement, registration rights, drag-along, tag-along, QSBS, qualified small business stock, insider trading, MNPI, material nonpublic information, 10b5-1 plan, Section 16, short-swing profits, blackout period, Sarbanes-Oxley, SOX, 10-K, 10-Q, 8-K, proxy statement, Regulation FD, say-on-pay, audit committee, internal controls, state notice filing, NSMIA, merit review, NASAA, funding portal, Form C, investment adviser, RIA, Form ADV, fiduciary duty, custody rule, pay-to-play, exempt reporting adviser, digital asset, crypto asset, token, tokenized security, stablecoin, payment stablecoin, investment contract, Howey
 **Clause types:** subscription agreement provisions, stock purchase agreement terms, convertible note terms (discount, cap, interest, maturity, conversion mechanics), SAFE terms (post-money vs. pre-money, valuation cap, discount), investor rights provisions (information rights, registration rights, preemptive rights, ROFR, co-sale), protective provisions/veto rights, anti-dilution provisions (broad-based weighted average, full ratchet), liquidation preference (participating vs. non-participating, multiple), pay-to-play provisions, lock-up agreements, transfer restriction provisions, insider trading policy provisions, 10b5-1 plan terms, CEO/CFO certification provisions, audit committee charter provisions, advisory agreement terms, custody provisions, clawback provisions
 **Regulatory references:** Securities Act of 1933, Securities Exchange Act of 1934, Regulation D (Rules 501-508), Rule 506(b), Rule 506(c), Regulation A (Tier 1, Tier 2), Regulation CF, Regulation S, Rule 144, Rule 701, Form D, state blue sky laws, SEC Rule 10b-5, SEC Rule 10b5-1, SEC Regulation FD, JOBS Act, Jumpstart Our Business Startups Act, Investment Company Act of 1940, Investment Advisers Act of 1940, Regulation Best Interest, Sarbanes-Oxley Act of 2002, Dodd-Frank Act, Section 16 (Exchange Act), NSMIA, NASAA, Regulation 14A, Form ADV, Custody Rule (206(4)-2), Rule 10D-1 (Clawback)
 **Relationship patterns:** company/investor (venture capital, angel, institutional), founder/company (equity grants), company/employee (equity compensation), underwriter/issuer, broker-dealer/customer, issuer/transfer agent, SPAC sponsor/investors, investment adviser/client, funding portal/issuer, public company/shareholder, insider/company
@@ -40,5 +51,6 @@ These are non-overridable legal requirements from this area. They cannot be modi
 - Regulation FD prohibits selective disclosure of MNPI by public companies to market professionals; intentional disclosure requires simultaneous public dissemination.
 - Investment advisers owe a fiduciary duty to clients that cannot be waived by contract; hedge clauses purporting to limit fiduciary liability are void.
 - Reg CF securities are subject to a mandatory 1-year resale restriction from the date of purchase.
+- Payment stablecoins issued by a permitted payment stablecoin issuer are excluded by statute from the definition of "security" under the federal securities laws (GENIUS Act, Pub. L. 119-27, July 18, 2025); other digital assets remain subject to investment-contract (Howey) analysis — as of mid-2026 under the March 2026 joint SEC-CFTC classification framework, with market-structure legislation (CLARITY Act) passed by the House and pending on the Senate calendar.
 
 ---

@@ -1,7 +1,24 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, international]
+authorities:
+  - cite: "26 U.S.C. § 482"
+    title: "Allocation of income and deductions among taxpayers"
+    url: "https://www.law.cornell.edu/uscode/text/26/482"
+  - cite: "26 C.F.R. § 1.6038-4"
+    title: "Country-by-country reporting requirement for U.S. MNE groups ($850 million threshold)"
+    url: "https://www.ecfr.gov/current/title-26/chapter-I/subchapter-A/part-1/section-1.6038-4"
+  - cite: "Rev. Proc. 2015-41"
+    title: "Procedures for advance pricing agreements"
+    url: "https://www.irs.gov/pub/irs-drop/rp-15-41.pdf"
+  - cite: "IRS APMA"
+    title: "Update to APA user fees (current fee schedule)"
+    url: "https://www.irs.gov/businesses/corporations/update-to-apa-user-fees"
+  - cite: "OECD (2022)"
+    title: "OECD Transfer Pricing Guidelines for Multinational Enterprises and Tax Administrations"
+    url: "https://www.oecd.org/tax/transfer-pricing/"
 ---
 # Transfer Pricing
 
@@ -41,7 +58,7 @@ Transfer pricing governs the prices charged between related entities (parent-sub
 - **Threshold/Timeline**:
   - **(1) Master File**: Provides an overview of the multinational group's global business, organizational structure, intangible property, intercompany financial activities, and transfer pricing policies. Filed in the parent jurisdiction and available to all relevant tax authorities.
   - **(2) Local File**: Contains detailed information about specific intercompany transactions of the local entity, including comparability analysis, method selection, and financial data. Required in each jurisdiction where the entity has material intercompany transactions.
-  - **(3) Country-by-Country Report (CbCR)**: Required for multinational groups with consolidated group revenue of EUR 750 million or more (approximately $800M USD). Reports revenue, profit/loss, tax paid, tax accrued, number of employees, tangible assets, and stated capital on a jurisdiction-by-jurisdiction basis.
+  - **(3) Country-by-Country Report (CbCR)**: Required for multinational groups with consolidated group revenue of EUR 750 million or more (the U.S. implements this as $850 million for U.S. MNE groups under Treas. Reg. 1.6038-4). Reports revenue, profit/loss, tax paid, tax accrued, number of employees, tangible assets, and stated capital on a jurisdiction-by-jurisdiction basis.
     - U.S. filing: Form 8975, due with the annual income tax return.
     - CbCR data is exchanged automatically between tax authorities under multilateral or bilateral agreements.
     - Over 100 jurisdictions require CbCR filing or exchange as of 2025.
@@ -60,7 +77,7 @@ Transfer pricing governs the prices charged between related entities (parent-sub
   - Typical APA term: 5 years prospective, with possible rollback to prior open years (typically 2-3 years).
   - U.S. APA process: Revenue Procedure 2015-41 (IRS APMA program).
   - Average processing time: 3-5 years for bilateral APAs (longer in some jurisdictions).
-  - Filing fee: $113,500 for large cases (annual revenue > $500M), $60,000 for small cases.
+  - User fees (for APA requests filed after January 1, 2024): $121,600 for a new APA, $65,900 for a renewal, $57,500 for a small case APA, $24,600 for an amendment.
   - Renewal APAs are generally faster and less expensive than initial APAs.
   - The taxpayer must comply with the APA's terms and critical assumptions throughout the APA period.
 - **Consequence**: APAs provide certainty and eliminate audit risk for covered transactions, but require significant upfront investment. Bilateral APAs eliminate double taxation risk; unilateral APAs do not (the other jurisdiction may still challenge the pricing). Failure to comply with the APA's critical assumptions can void the agreement retroactively.

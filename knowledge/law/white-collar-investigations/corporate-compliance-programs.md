@@ -1,7 +1,20 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal, us-state, international]
+authorities:
+  - cite: "DOJ Criminal Division — Evaluation of Corporate Compliance Programs"
+    title: "ECCP — three fundamental questions framework"
+    url: "https://www.justice.gov/criminal/criminal-fraud/page/file/937501/dl"
+    checked: "2026-06-11"
+  - cite: "U.S. Sentencing Guidelines Manual §8B2.1 (eff. Nov. 1, 2025)"
+    title: "Effective Compliance and Ethics Program — seven minimum requirements"
+    url: "https://www.ussc.gov/guidelines/2025-guidelines-manual/annotated-2025-chapter-8"
+    checked: "2026-06-11"
+  - cite: "DOJ Criminal Division Memo (May 12, 2025)"
+    title: "Focus, Fairness, and Efficiency in the Fight Against White-Collar Crime (Galeotti memo) — fewer/narrowly tailored monitorships"
+    url: "https://www.justice.gov/criminal/media/1400046/dl"
+    checked: "2026-06-11"
 ---
 # Corporate Compliance Programs
 
@@ -45,6 +58,9 @@ Applies to organizations designing, implementing, or evaluating corporate compli
 
 ### USSG Chapter 8 — Compliance as Sentencing Factor
 
+> The operative manual is the U.S. Sentencing Guidelines Manual effective November 1, 2025. The November 1, 2025 amendment cycle (Amendment 836) deleted most departure provisions in Chapters 4 and 5 but did not substantively change §8B2.1 (Effective Compliance and Ethics Program) or the §8C2.5 culpability-score mechanics; the seven minimum requirements below remain current. Verify §8B2.1 directly before relying.
+
+
 - **Effective Program** / Organization with effective compliance program at time of offense may receive reduced culpability score (3-point reduction) / **Threshold**: Program must have been in place and functioning (not adopted after the fact); high-level personnel must not have participated in or condoned the offense / **Consequence**: Culpability score reduction translates to significantly lower fine range (multiplier can drop from 2.0 to 0.4)
 - **Seven Minimum Requirements** / (1) Compliance standards and procedures; (2) specific high-level oversight; (3) due care in delegating authority; (4) effective communication and training; (5) monitoring, auditing, and reporting; (6) consistent enforcement and discipline; (7) response and remediation after detection / **Consequence**: Must meet all seven; failure on any = program not "effective" for sentencing purposes
 - **Post-Offense Conduct** / Even if program was not effective at time of offense, post-offense adoption of effective program and cooperation = additional sentencing credit / **Consequence**: Remediation after detection is valuable but less powerful than pre-existing effective program
@@ -61,8 +77,9 @@ Applies to organizations designing, implementing, or evaluating corporate compli
 ## Sources
 
 - [DOJ Criminal Division — Evaluation of Corporate Compliance Programs (June 2020 + 2023 Updates)](https://www.justice.gov/criminal/criminal-fraud/page/file/937501/dl)
-- [U.S. Sentencing Guidelines Chapter 8 — Effective Compliance and Ethics Program (USSG 8B2.1)](https://www.ussc.gov/guidelines/2021-guidelines-manual/annotated-2021-chapter-8)
-- [DOJ Monaco Memo — Further Revisions to Corporate Criminal Enforcement Policies (2022)](https://www.justice.gov/dag/page/file/1552421/dl)
-- [DOJ Criminal Division — Compensation Incentives and Clawbacks Pilot Program (2023)](https://www.justice.gov/criminal/criminal-fraud/)
+- [U.S. Sentencing Guidelines Manual Chapter 8 — Effective Compliance and Ethics Program (§8B2.1, eff. Nov. 1, 2025)](https://www.ussc.gov/guidelines/2025-guidelines-manual/annotated-2025-chapter-8)
+- [DOJ Criminal Division Memo — "Focus, Fairness, and Efficiency in the Fight Against White-Collar Crime" (May 12, 2025)](https://www.justice.gov/criminal/media/1400046/dl)
+- [DOJ Monaco Memo — Further Revisions to Corporate Criminal Enforcement Policies (2022 — background)](https://www.justice.gov/dag/page/file/1552421/dl)
+- [DOJ Criminal Division — Corporate Enforcement (current policy hub, incl. compensation incentives/clawbacks)](https://www.justice.gov/criminal/criminal-division-corporate-enforcement)
 
 ---

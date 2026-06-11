@@ -1,7 +1,30 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "New York Times Co. v. Sullivan, 376 U.S. 254 (1964)"
+    title: "Actual malice standard for public officials/figures"
+    url: "https://supreme.justia.com/cases/federal/us/376/254/"
+  - cite: "Wynn v. Associated Press, No. 24-829 (cert. denied Mar. 24, 2025)"
+    title: "Most recent Supreme Court refusal to revisit Sullivan — no noted dissents"
+    url: "https://www.supremecourt.gov/search.aspx?filename=/docket/docketfiles/html/public/24-829.html"
+  - cite: "47 U.S.C. § 230"
+    title: "Communications Decency Act Section 230 — unamended as of June 2026"
+    url: "https://www.law.cornell.edu/uscode/text/47/230"
+  - cite: "Moody v. NetChoice, LLC, 603 U.S. 707 (2024)"
+    title: "First Amendment scrutiny of state platform-moderation laws; remanded"
+    url: "https://www.supremecourt.gov/opinions/23pdf/22-277_d18f.pdf"
+  - cite: "Cal. Code Civ. Proc. § 425.16"
+    title: "California anti-SLAPP statute"
+    url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CCP&sectionNum=425.16"
+  - cite: "Uniform Public Expression Protection Act (ULC)"
+    title: "UPEPA — 16 state adoptions as of early 2026 (incl. Michigan 2025, South Dakota 2026)"
+    url: "https://www.uniformlaws.org/committees/community-home?CommunityKey=4f486460-199c-49d7-9fac-05570be1e7b1"
+  - cite: "28 U.S.C. §§ 4101-4105"
+    title: "SPEECH Act — foreign defamation judgment enforcement limits"
+    url: "https://www.law.cornell.edu/uscode/text/28/4101"
 ---
 # Defamation & Section 230
 
@@ -24,7 +47,7 @@ Applies to claims involving false statements of fact that damage reputation, inc
   - **Limited purpose public figures**: Actual malice required only for statements related to the particular controversy that made them a public figure
   - **Private figures**: Must prove at least negligence (Gertz v. Robert Welch, Inc., 418 U.S. 323 (1974)); states may impose higher standards; presumed/punitive damages still require actual malice proof
 - **Threshold/Timeline**: Public figure status is a question of law for the court; factors: general fame/notoriety, voluntary injection into public controversy, access to media to counter claims; involuntary public figures are rare; corporations may be public figures for defamation purposes
-- **Consequence**: Actual malice standard is extremely difficult to meet — plaintiff must show subjective awareness of probable falsity by clear and convincing evidence; summary judgment frequently granted to defendants in public figure cases; discovery into editorial processes and journalist state of mind is permitted (Herbert v. Lando)
+- **Consequence**: Actual malice standard is extremely difficult to meet — plaintiff must show subjective awareness of probable falsity by clear and convincing evidence; summary judgment frequently granted to defendants in public figure cases; discovery into editorial processes and journalist state of mind is permitted (Herbert v. Lando); despite periodic calls by individual Justices to revisit Sullivan, the Supreme Court has repeatedly declined — most recently denying certiorari in Wynn v. Associated Press, No. 24-829 (Mar. 24, 2025), with no noted dissents
 
 ### Defenses
 
@@ -54,7 +77,7 @@ Applies to claims involving false statements of fact that damage reputation, inc
 ### Anti-SLAPP Statutes
 
 - **What**: Strategic Lawsuits Against Public Participation (SLAPP) statutes provide expedited mechanism to dismiss meritless claims targeting protected speech, typically with fee-shifting to deter abusive litigation
-- **Threshold/Timeline**: 28+ states and D.C. have anti-SLAPP statutes; California (CCP 425.16) is the strongest — applies to statements in connection with public issue or issue of public interest; motion filed within 60 days of service; discovery stayed pending motion resolution; two-step analysis: (1) defendant shows speech on matter of public concern, (2) burden shifts to plaintiff to show probability of prevailing
+- **Threshold/Timeline**: Roughly 40 states and D.C. have anti-SLAPP statutes — 16 states had adopted the Uniform Public Expression Protection Act (UPEPA) or close analogs as of early 2026, including Michigan (October 2025, its first anti-SLAPP law) and South Dakota (March 2026); California (CCP 425.16) is among the strongest — applies to statements in connection with public issue or issue of public interest; motion filed within 60 days of service; discovery stayed pending motion resolution; two-step analysis: (1) defendant shows speech on matter of public concern, (2) burden shifts to plaintiff to show probability of prevailing
 - **Consequence**: Successful anti-SLAPP motion results in dismissal and mandatory attorney fees to defendant; immediate right to appeal denial of anti-SLAPP motion in most jurisdictions (California, Texas, D.C.); no federal anti-SLAPP statute (though legislation proposed); federal courts in diversity cases may or may not apply state anti-SLAPP laws (circuit split — Ninth Circuit applies, some circuits do not)
 
 ### Online Defamation Specifics

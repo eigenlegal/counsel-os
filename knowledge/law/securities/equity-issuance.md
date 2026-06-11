@@ -1,7 +1,27 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "Pub. L. 119-21, sec. 70431 (July 4, 2025)"
+    title: "One Big Beautiful Bill Act amendments to IRC Section 1202 (tiered exclusion, $15M cap, $75M gross asset test for stock acquired after July 4, 2025)"
+    url: "https://www.congress.gov/119/plaws/publ21/PLAW-119publ21.pdf"
+  - cite: "26 U.S.C. 1202"
+    title: "Qualified small business stock exclusion"
+    url: "https://www.law.cornell.edu/uscode/text/26/1202"
+  - cite: "26 U.S.C. 83"
+    title: "Property transferred in connection with performance of services; 83(b) election 30-day deadline"
+    url: "https://www.law.cornell.edu/uscode/text/26/83"
+  - cite: "IRS Form 15620 (Rev. 4-2025)"
+    title: "Standardized Section 83(b) election form; electronic submission available"
+    url: "https://www.irs.gov/pub/irs-pdf/f15620.pdf"
+  - cite: "26 U.S.C. 422"
+    title: "Incentive stock options ($100K limit, holding periods, 110%/5-year rules for 10% shareholders)"
+    url: "https://www.law.cornell.edu/uscode/text/26/422"
+  - cite: "17 CFR 230.701"
+    title: "Rule 701 compensatory issuance exemption ($10M enhanced disclosure threshold)"
+    url: "https://www.ecfr.gov/current/title-17/chapter-II/part-230/section-230.701"
 ---
 # Equity Compensation and Capitalization
 
@@ -32,7 +52,7 @@ Load when ANY of the following is present: stock option grant, equity incentive 
 ### Section 83(b) Elections
 
 - **What**: Election to recognize taxable income on restricted property (typically restricted stock or early-exercised options) at the time of transfer rather than at vesting, based on the value at grant/purchase rather than the (presumably higher) value at vesting.
-- **Threshold/Timeline**: Must be filed with the IRS within 30 calendar days of the property transfer (grant date for restricted stock; exercise date for early-exercised options). This deadline is absolute — there is no extension, no late filing, and no relief for missed deadlines. Filing method: mail to IRS service center with copy to employer; retain proof of mailing (certified mail recommended). Must also attach copy to the taxpayer's federal income tax return for the year of transfer.
+- **Threshold/Timeline**: Must be filed with the IRS within 30 calendar days of the property transfer (grant date for restricted stock; exercise date for early-exercised options). This deadline is absolute — there is no extension, no late filing, and no relief for missed deadlines. Filing method: the IRS released standardized Form 15620 (November 2024) and now accepts electronic submission of Form 15620 through the IRS website (ID.me sign-in); mailing the election (Form 15620 or a compliant statement) to the IRS service center remains permitted — use one method only, and retain proof of filing (certified mail or the electronic confirmation). A copy must be provided to the employer/issuer.
 - **Consequence**: Missed 83(b) election: income recognized at each vesting tranche based on then-current FMV (which may be substantially higher than grant date value), taxed as ordinary income. If the recipient forfeits unvested shares (e.g., leaves the company), they cannot recover taxes paid under the 83(b) election — the tax paid on forfeited shares is lost. For early-stage restricted stock where current FMV is near zero, the 83(b) election is almost always advantageous.
 
 ### Vesting Schedules
@@ -55,9 +75,9 @@ Load when ANY of the following is present: stock option grant, equity incentive 
 
 ### QSBS — Qualified Small Business Stock (Section 1202)
 
-- **What**: Federal capital gains exclusion for stock in qualifying C corporations held for more than 5 years.
-- **Threshold/Timeline**: Exclusion: up to the greater of $10M or 10x adjusted basis in gain from federal taxation (for stock acquired after September 27, 2010). Requirements: (1) stock issued by a domestic C corporation; (2) corporation's aggregate gross assets did not exceed $50M at any time before or immediately after issuance; (3) corporation uses at least 80% of assets (by value) in active conduct of one or more qualified trades or businesses; (4) stock acquired at original issuance in exchange for money, property, or services. Excluded industries: professional services (health, law, engineering, accounting, consulting, financial services, performing arts, athletics), banking/insurance/leasing/financing, farming, mining/oil/gas, hotels/motels/restaurants. 5-year holding period is mandatory; no partial credit for shorter holding.
-- **Consequence**: Failure to maintain QSBS eligibility (e.g., S-corp election, asset test failure, exceeding $50M gross assets) eliminates the exclusion retroactively for all stockholders. Stock received in conversion of convertible notes or SAFEs may not qualify as "original issuance" — structure matters. Some states (e.g., California) do not conform to the federal QSBS exclusion.
+- **What**: Federal capital gains exclusion for stock in qualifying C corporations. The One Big Beautiful Bill Act (Pub. L. 119-21, July 4, 2025) significantly expanded Section 1202 for stock acquired after July 4, 2025; the acquisition date now determines which regime applies.
+- **Threshold/Timeline**: Stock acquired after July 4, 2025: tiered exclusion — 50% after a 3-year holding period, 75% after 4 years, 100% after 5 years; per-issuer cap of the greater of $15M (inflation-indexed for tax years beginning after 2026) or 10x adjusted basis; corporation's aggregate gross assets must not exceed $75M (inflation-indexed) at any time before or immediately after issuance. Stock acquired on or before July 4, 2025 (including stock acquired after September 27, 2010): prior regime — 100% exclusion only, mandatory 5-year holding period with no partial credit, cap of the greater of $10M or 10x adjusted basis, $50M gross asset test. Common requirements under both regimes: (1) stock issued by a domestic C corporation; (2) gross asset test satisfied; (3) corporation uses at least 80% of assets (by value) in active conduct of one or more qualified trades or businesses; (4) stock acquired at original issuance in exchange for money, property, or services. Excluded industries: professional services (health, law, engineering, accounting, consulting, financial services, performing arts, athletics), banking/insurance/leasing/financing, farming, mining/oil/gas, hotels/motels/restaurants.
+- **Consequence**: Failure to maintain QSBS eligibility (e.g., S-corp election, asset test failure, exceeding the applicable gross asset cap) eliminates the exclusion retroactively for all stockholders. Stock received in conversion of convertible notes or SAFEs may not qualify as "original issuance" — structure matters, and conversion timing relative to July 4, 2025 determines which regime applies. Some states (e.g., California) do not conform to the federal QSBS exclusion.
 
 ### Cap Table Management
 
@@ -74,7 +94,7 @@ Load when ANY of the following is present: stock option grant, equity incentive 
 - Failure to update 409A valuations after material events, creating mispricing risk for subsequent grants.
 - Pre-IPO RSU structures that fail to comply with Section 409A short-term deferral or double-trigger requirements.
 - Equity incentive plans with insufficient share reserves requiring frequent stockholder approval.
-- QSBS eligibility assumptions not validated against the $50M gross asset test or active business requirement.
+- QSBS eligibility assumptions not validated against the applicable gross asset test ($50M for stock issued on or before July 4, 2025; $75M after) or active business requirement.
 - Section 280G golden parachute analysis not performed before change-of-control transactions.
 - Post-termination exercise periods that are too short (less than 90 days) or too long (triggering ISO-to-NSO conversion after 90 days for ISOs).
 
@@ -94,6 +114,7 @@ Load when ANY of the following is present: stock option grant, equity incentive 
 - [IRC Section 83 — Property Transferred in Connection with Services (26 USC 83)](https://www.law.cornell.edu/uscode/text/26/83)
 - [IRC Section 1202 — Qualified Small Business Stock (26 USC 1202)](https://www.law.cornell.edu/uscode/text/26/1202)
 - [Rule 701 — Compensatory Securities Exemption (17 CFR 230.701)](https://www.ecfr.gov/current/title-17/chapter-II/part-230/section-230.701)
-- [SEC Staff Guidance on 409A Valuations](https://www.sec.gov/divisions/corpfin/guidance/valuationguidance.htm)
+- [Treas. Reg. 1.409A-1(b)(5)(iv)(B) — Stock Valuation Safe Harbors (26 CFR 1.409A-1)](https://www.ecfr.gov/current/title-26/chapter-I/subchapter-A/part-1/subject-group-ECFR4960ab964083d51/section-1.409A-1)
+- [IRS Form 15620 — Section 83(b) Election](https://www.irs.gov/pub/irs-pdf/f15620.pdf)
 
 ---

@@ -1,7 +1,15 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities-checked: "2026-06-11"
+authorities:
+  - cite: "Cornerstone Research / Stanford Securities Class Action Clearinghouse — Securities Class Action Settlements (2024 and 2025 reports)"
+    title: "Settlement-size benchmarks: 2024 average ~$42.4M; 2025 average down ~7%; mega-settlements ($100M+) drive Side C limit erosion"
+    url: "https://www.cornerstone.com/insights/reports/securities-class-action-settlements/"
+  - cite: "8 Del. C. § 145"
+    title: "Delaware indemnification and advancement of expenses for directors and officers; limits on indemnification in derivative suits"
+    url: "https://delcode.delaware.gov/title8/c001/sc04/index.html"
 ---
 # Directors & Officers (D&O) Liability Insurance
 

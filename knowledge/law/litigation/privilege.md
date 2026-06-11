@@ -1,7 +1,21 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, international]
+authorities:
+  - cite: "Fed. R. Evid. 502"
+    title: "Limitations on waiver of attorney-client privilege and work product"
+    url: "https://www.law.cornell.edu/rules/fre/rule_502"
+  - cite: "Fed. R. Civ. P. 26(b)(3)"
+    title: "Work product protection"
+    url: "https://www.law.cornell.edu/rules/frcp/rule_26"
+  - cite: "Upjohn Co. v. United States, 449 U.S. 383 (1981)"
+    title: "Corporate attorney-client privilege extends beyond the control group"
+    url: "https://www.law.cornell.edu/supremecourt/text/449/383"
+  - cite: "In re Grand Jury, No. 21-1397 (U.S. Jan. 23, 2023)"
+    title: "Cert. dismissed as improvidently granted — dual-purpose communication test left unresolved"
+    url: "https://www.law.cornell.edu/supct/cert/21-1397"
 ---
 # Privilege
 
@@ -18,7 +32,7 @@ The attorney-client privilege protects confidential communications between a cli
 - **Attorney-client relationship** / **Threshold**: Communication must be with a licensed attorney (or agent of the attorney) acting in a legal capacity / **Consequence**: Communications with attorneys acting in business (not legal) capacity are not privileged
 - **Communication** / **Threshold**: Oral or written communication (including electronic) between attorney and client / **Consequence**: Underlying facts are never privileged -- only the communication itself; client cannot shield facts by communicating them to counsel
 - **Confidentiality** / **Threshold**: Communication must be made in confidence and kept confidential; presence of third parties (other than agents necessary to facilitate communication) destroys privilege / **Consequence**: Copying non-essential third parties on attorney communications waives privilege for that communication
-- **Purpose of obtaining legal advice** / **Threshold**: The dominant purpose of the communication must be seeking or providing legal advice (not business advice) / **Consequence**: Mixed-purpose communications are evaluated under the "primary purpose" test in most circuits; *In re Kellogg Brown & Root* (D.C. Cir. 2014) applied a "significant purpose" test (more protective)
+- **Purpose of obtaining legal advice** / **Threshold**: The dominant purpose of the communication must be seeking or providing legal advice (not business advice) / **Consequence**: Mixed-purpose communications are evaluated under the "primary purpose" test in most circuits; *In re Kellogg Brown & Root* (D.C. Cir. 2014) applied a "significant purpose" test (more protective). The Supreme Court granted certiorari on the dual-purpose test in *In re Grand Jury*, No. 21-1397, but dismissed the writ as improvidently granted (Jan. 23, 2023), leaving the circuit split (primary purpose in most circuits vs. D.C. Circuit significant purpose vs. the Seventh Circuit's per se rule against privilege for dual-purpose tax-return communications) unresolved -- it remains unresolved as of mid-2026
 
 ### Corporate Attorney-Client Privilege (Upjohn)
 
@@ -78,5 +92,6 @@ The attorney-client privilege protects confidential communications between a cli
 - Federal Rules of Civil Procedure, Rule 26(b)(3) (work product): https://www.law.cornell.edu/rules/frcp/rule_26
 - *Upjohn Co. v. United States*, 449 U.S. 383 (1981): https://www.law.cornell.edu/supremecourt/text/449/383
 - *In re Kellogg Brown & Root, Inc.*, 756 F.3d 754 (D.C. Cir. 2014): "significant purpose" test for in-house counsel
+- *In re Grand Jury*, No. 21-1397 (U.S. Jan. 23, 2023) (cert. dismissed as improvidently granted): https://www.law.cornell.edu/supct/cert/21-1397
 - *United States v. Adlman*, 134 F.3d 1194 (2d Cir. 1998): "because of" test for work product
 - Restatement (Third) of the Law Governing Lawyers, Sections 68-93 (privilege): https://www.law.cornell.edu
