@@ -1,0 +1,38 @@
+{
+  "findings": [
+    {
+      "title": "Children's data flowing to PayLane triggers COPPA — consent coverage and written service-provider assurances required",
+      "severity": "red",
+      "clause": "(vendor receipt of under-13 user profile data, including birthdates and transaction histories)",
+      "rationale": "Our app collects personal information from children under 13, and this deal discloses it to a service provider — squarely within the data-privacy law area (law/data-privacy.md). Two constraints the agreement must address: (1) verifiable parental consent under 16 C.F.R. § 312.5 must cover disclosure to PayLane — confirm our consent flow describes payment-vendor sharing; (2) 16 C.F.R. § 312.8 permits release of children's personal information only to service providers capable of maintaining its confidentiality, security, and integrity who provide written assurances that they will do so — the PayLane agreement needs those written assurances expressly, plus retention/deletion obligations mirroring 16 C.F.R. § 312.10. We stay liable for PayLane's handling, so audit and flow-down terms are Tier 1. CCPA/CPRA adds opt-in requirements for under-16 data and service-provider contract terms under Cal. Civ. Code § 1798.100(d). Our data-protection standard requires the heightened children's-data addendum (practice/standards/data-protection.md). COPPA penalties run $53,088 per violation.",
+      "citations": [
+        "law/data-privacy.md",
+        "COPPA, 15 U.S.C. §§ 6501-6506",
+        "16 C.F.R. § 312.5",
+        "16 C.F.R. § 312.8",
+        "16 C.F.R. § 312.10",
+        "Cal. Civ. Code § 1798.100(d)",
+        "practice/standards/data-protection.md"
+      ]
+    },
+    {
+      "title": "Card processing and the parent-funded wallet trigger the financial-services layer — PCI DSS flow-down, Regulation E prepaid obligations, money transmitter diligence",
+      "severity": "red",
+      "clause": "(PayLane's card processing, stored payment credentials, and the stored-value allowance wallet)",
+      "rationale": "Three constraints from law/financial-services.md the agreement must address. (1) PCI DSS: PayLane stores and processes cardholder data on our behalf, so it must be a validated PCI DSS service provider and the agreement needs the written responsibility acknowledgment (PCI DSS Req. 12.8), compliance representations, annual AOC delivery, and breach/forensics cooperation — card network rules make us answerable for PayLane's compliance. (2) Regulation E: the parent-funded allowance wallet is a prepaid account under the Prepaid Accounts Rule (12 C.F.R. § 1005.18); the agreement must allocate operational support for error resolution within Reg E timelines (10-business-day provisional credit, 45/90-day investigation limits) and disclosure/statement support. (3) Money transmission: PayLane receives and holds consumer funds, so we need ongoing representations of state money transmitter licensure or a stated exemption basis (agent-of-the-payee or bank sponsorship) — unlicensed transmission carries state enforcement and 18 U.S.C. § 1960 exposure. Per the profile, vendors handling user funds get the full regulatory picture before signature.",
+      "citations": [
+        "law/financial-services.md",
+        "PCI DSS Req. 12.8",
+        "Regulation E, 12 C.F.R. § 1005.18",
+        "18 U.S.C. § 1960",
+        "practice/profile.md"
+      ]
+    }
+  ],
+  "citations": [
+    "law/data-privacy.md",
+    "law/financial-services.md",
+    "practice/standards/data-protection.md",
+    "practice/profile.md"
+  ]
+}

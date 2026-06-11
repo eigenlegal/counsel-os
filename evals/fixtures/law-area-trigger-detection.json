@@ -1,0 +1,104 @@
+{
+  "id": "law-area-trigger-detection",
+  "title": "Behavior: a business scenario triggers the right law areas without naming a statute",
+  "document_type": "vendor deal regulatory scoping",
+  "vault": "law-area-trigger-detection",
+  "task": "We're finalizing a vendor agreement with PayLane Processing, Inc. PayLane will process the card payments parents use to fund their kids' allowance wallets in our app, store the payment credentials on file, and receive user profile data — including birthdates, since spending controls differ for users under 13. Before I send comments on their draft, what legal constraints does this deal implicate that the agreement has to address? Check against our standards and applicable law.",
+  "input": {
+    "contract_text": "(no draft text provided — regulatory scoping request for the PayLane Processing vendor agreement: card payment processing, stored payment credentials, parent-funded child allowance wallets, vendor receipt of under-13 user profile data including birthdates)"
+  },
+  "expected_catches": [
+    {
+      "id": "childrens-privacy-constraint-surfaced",
+      "severity": "red",
+      "clause": "(vendor receipt of under-13 user profile data, including birthdates)",
+      "why": "Disclosing children's personal information to a payment vendor is COPPA territory: verifiable parental consent must cover the disclosure, and 16 CFR 312.8 requires written confidentiality/security/integrity assurances from the service provider in the agreement.",
+      "match_any": ["coppa", "verifiable parental consent", "children's online privacy", "16 cfr 312", "16 c.f.r. 312", "312.8", "written assurance"]
+    },
+    {
+      "id": "payments-constraint-surfaced",
+      "severity": "red",
+      "clause": "(card processing, stored payment credentials, and the parent-funded stored-value wallet)",
+      "why": "Card processing and the stored-value wallet trigger the financial-services layer: PCI DSS flow-down via card network rules, Regulation E / Prepaid Accounts Rule obligations for the wallet, and money transmitter licensing diligence on the vendor.",
+      "match_any": ["pci dss", "pci-dss", "payment card industry", "prepaid", "regulation e", "reg e", "reg. e", "1005", "electronic fund transfer", "money transmit"]
+    }
+  ],
+  "negative_checks": [
+    {
+      "id": "regulatory-layers-dismissed",
+      "why": "The failure under test: treating this as an ordinary commercial vendor deal and answering without the regulatory layer.",
+      "match_any": ["no regulatory constraints", "no special legal requirements", "ordinary commercial agreement", "no children's privacy requirements apply", "no payment-specific regulations apply", "standard commercial terms are sufficient"]
+    }
+  ],
+  "expected_citations": [
+    {
+      "id": "law-data-privacy-loaded",
+      "aliases": ["law/data-privacy", "data-privacy.md"]
+    },
+    {
+      "id": "law-financial-services-loaded",
+      "aliases": ["law/financial-services", "financial-services.md"]
+    }
+  ],
+  "allowed_citation_aliases": [
+    "law/",
+    "data-privacy",
+    "data privacy",
+    "financial-services",
+    "financial services",
+    "data-protection",
+    "data protection",
+    "practice/standards",
+    "profile",
+    "memory/",
+    "patterns.md",
+    "coppa",
+    "children's online privacy",
+    "15 u.s.c",
+    "6501",
+    "6502",
+    "16 cfr",
+    "16 c.f.r",
+    "312",
+    "ftc",
+    "verifiable parental consent",
+    "pci",
+    "payment card industry",
+    "card network",
+    "visa",
+    "mastercard",
+    "nacha",
+    "ach",
+    "efta",
+    "electronic fund transfer",
+    "regulation e",
+    "reg e",
+    "reg. e",
+    "12 cfr",
+    "12 c.f.r",
+    "1005",
+    "prepaid",
+    "cfpb",
+    "money transmi",
+    "1960",
+    "fincen",
+    "bank secrecy",
+    "31 cfr",
+    "msb",
+    "glba",
+    "gramm-leach",
+    "safeguards rule",
+    "314",
+    "ccpa",
+    "cpra",
+    "1798",
+    "cal. civ",
+    "age-appropriate design",
+    "aadc",
+    "section 5",
+    "udap",
+    "udaap",
+    "consumer protection",
+    "employment"
+  ]
+}

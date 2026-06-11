@@ -1,0 +1,57 @@
+{
+  "findings": [
+    {
+      "title": "No indemnification provision anywhere in the draft — Tier 1 gap",
+      "severity": "red",
+      "clause": "(absent — the draft contains no indemnity language)",
+      "rationale": "The coverage checklist marks indemnification as required in every services agreement, and the indemnification position classifies an agreement with no indemnification provision as RED. As drafted, Davenport gives us no IP-infringement defense obligation and no recovery path for claims arising from their data handling. Counter: insert our standard vendor indemnity — third-party IP claims and vendor breach of data obligations, IP with a 2x super-cap.",
+      "citations": [
+        "practice/standards/indemnification.md",
+        "practice/methods/contract-review.md",
+        "matters/davenport-msa-draft.md"
+      ]
+    },
+    {
+      "title": "Draft is silent on limitation of liability — Tier 1 gap, and silence does not favor us",
+      "severity": "red",
+      "clause": "(absent — no liability cap, no consequential-damages waiver, no carve-outs)",
+      "rationale": "The position requires an express limitation-of-liability structure in every services agreement and classifies silence as RED. Without it we have no consequential-damages waiver to rely on and no carve-out architecture protecting data and indemnity recovery — silence leaves remedies to background contract law (Hadley consequential-damages limits cut against us as the damaged customer). Counter: mutual 12-month cap, mutual consequential-damages waiver, carve-outs for indemnification, confidentiality, and data protection.",
+      "citations": [
+        "practice/standards/limitation-of-liability.md",
+        "practice/methods/contract-review.md"
+      ]
+    },
+    {
+      "title": "Vendor hosts end-user account and transaction records with no data protection terms — Tier 1 gap and a compliance exposure",
+      "severity": "red",
+      "clause": "Section 1: Provider's platform 'ingests, hosts, and analyzes Customer Data — including end-user account and transaction records' — with no data protection terms anywhere in the draft",
+      "rationale": "The data-protection position classifies personal-data processing with no data protection terms as RED. This is also a law-layer problem, not just a position gap: GDPR Art. 28(3) requires a binding processor contract with mandatory terms (instructions-only processing, security, sub-processors, deletion/return, audit), and Cal. Civ. Code § 1798.100(d) requires service-provider contract restrictions for California consumers' personal information — without them the disclosure can constitute a sale or sharing. Davenport is a UK entity, so transfer terms need checking too. Counter: attach our DPA with the security exhibit, 48-hour breach notice, sub-processor disclosure, and deletion on termination.",
+      "citations": [
+        "practice/standards/data-protection.md",
+        "law/data-privacy.md",
+        "GDPR Art. 28(3)",
+        "Cal. Civ. Code § 1798.100(d)",
+        "practice/methods/contract-review.md"
+      ]
+    },
+    {
+      "title": "Present clauses are workable: Customer Data ownership confirmed; fees, term, confidentiality, warranties, assignment, and governing law are near standard",
+      "severity": "green",
+      "clause": "Sections 2-9",
+      "rationale": "Of the text on the page: Customer Data ownership sits with us and the license to Davenport is limited to providing the Services (Section 5) — good. Net 30 with 1.5%/month late interest, one-year auto-renewal with 60-day non-renewal notice, mutual confidentiality with standard exclusions and three-year survival, a material-conformance warranty with a standard disclaimer, consent-based assignment with affiliate/merger exceptions, and Delaware law are all within normal range for a deal this size. The issues in this draft are the omissions above, not the drafting that's present.",
+      "citations": [
+        "matters/davenport-msa-draft.md",
+        "practice/methods/contract-review.md"
+      ]
+    }
+  ],
+  "citations": [
+    "practice/methods/contract-review.md",
+    "practice/standards/indemnification.md",
+    "practice/standards/limitation-of-liability.md",
+    "practice/standards/data-protection.md",
+    "law/data-privacy.md",
+    "practice/profile.md",
+    "matters/davenport-msa-draft.md"
+  ]
+}

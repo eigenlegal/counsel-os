@@ -1,0 +1,15 @@
+{
+  "model": "claude-fable-5",
+  "date": "2026-06-11",
+  "scores": {
+    "entity-override-scoping": 1.0,
+    "escalation-trigger": 1.0,
+    "green-yellow-red-calibration": 1.0,
+    "law-area-trigger-detection": 1.0,
+    "law-beats-practice": 1.0,
+    "missing-provision-coverage": 1.0,
+    "redline-roundtrip": 1.0,
+    "reference-never-governs": 1.0
+  },
+  "mean": 1.0
+}

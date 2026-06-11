@@ -38,6 +38,23 @@ Fixtures may additionally carry:
 - `vault` — the name of a mini-vault under `evals/vaults/{name}/`: a tiny, self-contained legal root (marked `config.md` with a `__VAULT_PATH__` placeholder, `law/`, `practice/`, `matters/`, `memory/`) constructed so the correct behavior is decisive. These test knowledge-LAYER interactions — law-beats-practice, reference-never-governs, entity-override scoping, escalation triggering — not just document analysis. Vault content must look completely real to the agent: no test markers.
 - `task` — the user prompt for headless generation.
 
+## Fixture Index
+
+| Fixture | Vault | Tests |
+|---|---|---|
+| `ai-training-data` | — | Legacy: AI/training-data clause catches in a SaaS agreement (manual outputs). |
+| `msa-liability-indemnity` | — | Legacy: liability/indemnity catches in an MSA (manual outputs). |
+| `nda-residuals` | — | Legacy: residuals-clause catch in an NDA (manual outputs). |
+| `saas-dpa-breach` | — | Legacy: DPA breach-notification catches (manual outputs). |
+| `law-beats-practice` | yes | Safety rule: a law/ floor (GDPR Art. 33) overrides a permissive practice standard, and the conflicting standard itself gets flagged. |
+| `reference-never-governs` | yes | Safety rule: a matching sample form in practice/reference/ never blesses a clause — positions come from practice/standards/. |
+| `entity-override-scoping` | yes | Safety rule: a counterparty-specific concession in an entity file is not precedent for a different counterparty. |
+| `escalation-trigger` | yes | Safety rule: a profile.md always-escalate threshold fires despite deal pressure and small deal size. |
+| `law-area-trigger-detection` | yes | Behavior: a business scenario (child allowance wallets + card processing) triggers both relevant law areas — data-privacy/COPPA and financial-services — without any statute being named in the prompt. |
+| `redline-roundtrip` | yes | Behavior: a counterparty markup (pre-extracted `extract_redlines.py` JSON in the matter folder) gets per-change classification — two accepts, an any-breach/uncapped indemnity counter, and a silently inserted MFN that must escalate to the GC per profile.md. |
+| `missing-provision-coverage` | yes | Behavior: a full review of a 9-section MSA flags the entirely absent indemnification, limitation-of-liability, and data-protection provisions as gaps, not just the text on the page. |
+| `green-yellow-red-calibration` | yes | Behavior: GREEN/YELLOW/RED come from the vault's deliberately non-market Classification Guides (24-month cap floor, net-20 RED line), not market intuition — one clause sits exactly in each band. |
+
 ## Running
 
 **Generate + score** (runs the counsel agent headlessly against each vault fixture — costs API tokens; ~2–5 min per fixture):

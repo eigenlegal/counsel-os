@@ -1,0 +1,106 @@
+{
+  "id": "missing-provision-coverage",
+  "title": "Behavior: a full review flags absent provisions, not just the text on the page",
+  "document_type": "full MSA review",
+  "vault": "missing-provision-coverage",
+  "task": "Davenport Analytics sent over their draft MSA for the hosted analytics deal — we're the customer, roughly $250K a year. The draft is saved at matters/davenport-msa-draft.md in our legal root. Run a full review against our standards and tell me where we stand.",
+  "input": {
+    "contract_text": "(nine-section vendor MSA — see matters/davenport-msa-draft.md in the fixture vault: services/fees/term/confidentiality/IP/warranties/assignment/governing-law/entire-agreement present; indemnification, limitation of liability, and data protection entirely absent while the vendor hosts end-user account and transaction records)"
+  },
+  "expected_catches": [
+    {
+      "id": "missing-indemnification",
+      "severity": "red",
+      "clause": "(absent provision — no indemnification anywhere in the draft)",
+      "why": "The indemnification position classifies an agreement with no indemnification provision as RED; the document contains no indemnity language at all, so any finding mentioning indemnification is necessarily flagging the gap.",
+      "match_any": ["indemnif"]
+    },
+    {
+      "id": "missing-limitation-of-liability",
+      "severity": "red",
+      "clause": "(absent provision — no limitation of liability anywhere in the draft)",
+      "why": "The position requires an express limitation-of-liability structure in every services agreement and classifies silence as RED — including the loss of the carve-out architecture and consequential-damages waiver.",
+      "match_any": ["limitation of liability", "limitation-of-liability", "liability cap", "cap on liability", "uncapped", "no cap"]
+    },
+    {
+      "id": "missing-data-protection",
+      "severity": "red",
+      "clause": "(absent provision — vendor hosts end-user account and transaction records with no data protection terms)",
+      "why": "The data-protection position classifies personal-data processing with no data protection terms as RED, and the law layer requires processor contract terms (GDPR Art. 28(3); Cal. Civ. Code 1798.100(d)).",
+      "match_any": ["data protection", "data-protection", "data processing agreement", "security exhibit", "no dpa", "art. 28", "article 28"]
+    }
+  ],
+  "negative_checks": [
+    {
+      "id": "coverage-declared-complete",
+      "why": "The failure under test: a review that only assesses what is present and pronounces the draft in good shape.",
+      "match_any": ["no material gaps", "no missing provisions", "no gaps identified", "the draft covers all", "nothing is missing", "complete and ready for signature"]
+    }
+  ],
+  "expected_citations": [
+    {
+      "id": "indemnification-standard-cited",
+      "aliases": ["standards/indemnification", "indemnification.md"]
+    },
+    {
+      "id": "liability-standard-cited",
+      "aliases": ["limitation-of-liability"]
+    },
+    {
+      "id": "data-protection-standard-cited",
+      "aliases": ["standards/data-protection", "data-protection.md"]
+    }
+  ],
+  "allowed_citation_aliases": [
+    "practice/standards",
+    "practice/methods",
+    "methods/contract-review",
+    "contract-review",
+    "indemnification",
+    "limitation-of-liability",
+    "limitation of liability",
+    "data-protection",
+    "data protection",
+    "law/",
+    "data-privacy",
+    "data privacy",
+    "profile",
+    "memory/",
+    "patterns.md",
+    "matters/",
+    "davenport",
+    "gdpr",
+    "article 28",
+    "art. 28",
+    "art 28",
+    "article 83",
+    "art. 83",
+    "ccpa",
+    "cpra",
+    "1798",
+    "cal. civ",
+    "service provider",
+    "data processing agreement",
+    "dpa",
+    "standard contractual clauses",
+    "sccs",
+    "uk gdpr",
+    "transfer",
+    "ucc",
+    "uniform commercial",
+    "2-316",
+    "2-719",
+    "hadley",
+    "consequential damages",
+    "delaware",
+    "confidentiality",
+    "ip ownership",
+    "customer data",
+    "warrant",
+    "assignment",
+    "governing law",
+    "fees",
+    "termination",
+    "auto-renew"
+  ]
+}

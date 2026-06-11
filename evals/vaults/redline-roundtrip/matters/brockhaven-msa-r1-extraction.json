@@ -1,0 +1,116 @@
+{
+  "file": "Tessara-Brockhaven MSA v1 (Brockhaven markup 2026-06-09).docx",
+  "summary": {
+    "changed_paragraphs": 4,
+    "inserted_fragments": 5,
+    "deleted_fragments": 4,
+    "comments": 2,
+    "authors": [
+      "Rachel Calloway"
+    ]
+  },
+  "changes": [
+    {
+      "paragraph_index": 21,
+      "section_context": "4. Fees and Payment",
+      "kind": "replacement",
+      "original": "4.2 Payment. Customer shall pay all undisputed invoices within thirty (30) days of the invoice date. Late payments accrue interest at 1.5% per month or the maximum lawful rate, whichever is less.",
+      "revised": "4.2 Payment. Customer shall pay all undisputed invoices within forty-five (45) days of the invoice date. Late payments accrue interest at 1.5% per month or the maximum lawful rate, whichever is less.",
+      "inserted": [
+        "forty-five (45)"
+      ],
+      "deleted": [
+        "thirty (30)"
+      ],
+      "authors": [
+        "Rachel Calloway"
+      ],
+      "dates": [
+        "2026-06-09"
+      ],
+      "comment_ids": [
+        "1"
+      ]
+    },
+    {
+      "paragraph_index": 38,
+      "section_context": "9. Indemnification",
+      "kind": "replacement",
+      "original": "9.1 By Provider. Provider shall indemnify, defend, and hold harmless Customer from and against third-party claims arising from (a) Provider's infringement of third-party intellectual property rights, or (b) Provider's gross negligence or willful misconduct. Provider's indemnification obligations under this Section 9 are subject to the limitations set forth in Section 10.",
+      "revised": "9.1 By Provider. Provider shall indemnify, defend, and hold harmless Customer from and against any and all claims, losses, damages, liabilities, costs, and expenses arising out of or relating to any breach of this Agreement by Provider. Provider's indemnification obligations under this Section 9 shall not be subject to the limitations set forth in Section 10.",
+      "inserted": [
+        "any and all claims, losses, damages, liabilities, costs, and expenses arising out of or relating to any breach of this Agreement by Provider.",
+        "shall not be"
+      ],
+      "deleted": [
+        "third-party claims arising from (a) Provider's infringement of third-party intellectual property rights, or (b) Provider's gross negligence or willful misconduct.",
+        "are"
+      ],
+      "authors": [
+        "Rachel Calloway"
+      ],
+      "dates": [
+        "2026-06-09"
+      ],
+      "comment_ids": []
+    },
+    {
+      "paragraph_index": 47,
+      "section_context": "11. Term; Renewal",
+      "kind": "replacement",
+      "original": "11.2 Renewal. This Agreement automatically renews for successive one-year terms unless either party gives written notice of non-renewal at least sixty (60) days before the end of the then-current term.",
+      "revised": "11.2 Renewal. This Agreement automatically renews for successive one-year terms unless either party gives written notice of non-renewal at least thirty (30) days before the end of the then-current term.",
+      "inserted": [
+        "thirty (30)"
+      ],
+      "deleted": [
+        "sixty (60)"
+      ],
+      "authors": [
+        "Rachel Calloway"
+      ],
+      "dates": [
+        "2026-06-09"
+      ],
+      "comment_ids": [
+        "2"
+      ]
+    },
+    {
+      "paragraph_index": 54,
+      "section_context": "12. General Provisions",
+      "kind": "insertion",
+      "original": "",
+      "revised": "12.9 Most Favored Customer. Provider represents and covenants that the fees charged to Customer under this Agreement are, and throughout the Term will remain, no less favorable than the fees Provider charges any other customer for comparable services and volumes. If Provider offers more favorable pricing to any other customer, such pricing shall automatically be extended to Customer, retroactive to the start of the then-current Term.",
+      "inserted": [
+        "12.9 Most Favored Customer. Provider represents and covenants that the fees charged to Customer under this Agreement are, and throughout the Term will remain, no less favorable than the fees Provider charges any other customer for comparable services and volumes. If Provider offers more favorable pricing to any other customer, such pricing shall automatically be extended to Customer, retroactive to the start of the then-current Term."
+      ],
+      "deleted": [],
+      "authors": [
+        "Rachel Calloway"
+      ],
+      "dates": [
+        "2026-06-09"
+      ],
+      "comment_ids": []
+    }
+  ],
+  "comments": [
+    {
+      "id": "1",
+      "author": "Rachel Calloway",
+      "date": "2026-06-09",
+      "text": "Our AP cycle runs on 45 days — this is a hard systems constraint on our side, not a negotiating position.",
+      "paragraph_index": 21,
+      "anchor_excerpt": "4.2 Payment. Customer shall pay all undisputed invoices within forty-five (45) days of the invoice date. Late payments accrue interest at 1.5% per month or the m"
+    },
+    {
+      "id": "2",
+      "author": "Rachel Calloway",
+      "date": "2026-06-09",
+      "text": "Sixty days' non-renewal notice is longer than our procurement calendar supports; thirty is what our other software vendors take.",
+      "paragraph_index": 47,
+      "anchor_excerpt": "11.2 Renewal. This Agreement automatically renews for successive one-year terms unless either party gives written notice of non-renewal at least thirty (30) day"
+    }
+  ]
+}
