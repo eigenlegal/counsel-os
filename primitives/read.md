@@ -95,6 +95,36 @@ After extracting the text, identify:
    - Whether comments were found, with count and authors
    - If neither was found, note that explicitly so the user knows it was checked
 
+---
+
+## --redline
+
+Structured ingestion of a **returned markup** — the counterparty (or a colleague) sent back a `.docx` with tracked changes and comments, and the goal is a change-by-change assessment and response, not just visibility. (For a quick read, the pandoc inline method above is still fine; this mode is for working the document.)
+
+### Instructions
+
+1. **Extract structured changes:**
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/extract_redlines.py" "<file>" --format json
+   ```
+   Each change record carries the paragraph's original (reject-all) vs revised (accept-all) text, the inserted/deleted fragments, author and date, section context, and the IDs of comments anchored in that paragraph; the `comments` array carries the comment text. `--format markdown` renders a human-readable review table.
+
+2. **Classify every change against the effective position.** For each change: identify the clause type → assemble the effective position (the procedure in counsel/SKILL.md) → classify:
+   - **ACCEPT** — within the effective position
+   - **COUNTER** — outside the position; draft specific counter-language (draft --counter-language)
+   - **ESCALATE** — hits an always-escalate trigger from profile.md or a law/ floor
+   - **CLARIFY** — intent unclear; the anchored comment often explains the ask — address comments explicitly, they are negotiation asks, not decoration
+
+3. **Hunt the silent movers.** Flag any substantive change that is NOT explained by a comment or the cover email — definition edits, scope words in remote sections, deleted carve-outs. Changes the counterparty didn't draw attention to deserve more scrutiny, not less.
+
+4. **Produce the delta report:** a table — section, what changed, their stated rationale (from comments), classification, our response — ordered Tier 1 first, with the silent movers flagged.
+
+5. **Log the round to the matter** (`remember --matter`): what they conceded, what they pushed back on, what we're countering, and any comment that reveals their constraints. Negotiation history is what makes the next round start ahead.
+
+6. **Respond:** feed COUNTER items into draft --counter-language / --redline against the counterparty's latest version.
+
+---
+
 ### Gather context
 
 If the document doesn't make certain things obvious, ask targeted questions. Do NOT ask all of these — infer what you can:

@@ -142,7 +142,7 @@ When updating, preserve existing content and append:
 - Update ## Open Issues (check off resolved, add new)
 - Update ## Next Action
 - Add new outputs to ## Generated Outputs
-- Update `stage` and `updated` in frontmatter
+- ALWAYS set `updated:` to today in frontmatter on every write — staleness detection and retro turnaround analytics depend on it. Update `stage` when it advanced.
 
 ---
 
