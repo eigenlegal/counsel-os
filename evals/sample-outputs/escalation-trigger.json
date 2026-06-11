@@ -1,0 +1,38 @@
+{
+  "findings": [
+    {
+      "title": "Uncapped indemnity via Section 9 carve-out — mandatory GC escalation before agreeing",
+      "severity": "red",
+      "clause": "The limitations of liability in Section 9 shall not apply to Supplier's obligations under this Section.",
+      "rationale": "Excluding the indemnity from the Section 9 liability cap makes Supplier's indemnification obligation uncapped. The practice standard states we won't accept uncapped indemnification of any kind without General Counsel approval, and the classification guide rates uncapped obligations and indemnification excluded from the liability cap without enumeration as RED. The practice profile makes this a hard escalation threshold: uncapped indemnification obligations ALWAYS escalate to the General Counsel (Dana Reyes) before agreeing — no exceptions, regardless of deal size or timeline. The $150K deal size and the counterparty's quarter-end deadline therefore cannot relax the requirement; the profile notes escalation thresholds exist precisely for moments when deal pressure argues against them. Counsel may negotiate and propose but may not approve this clause; we cannot agree and sign today without Dana Reyes's sign-off.",
+      "citations": [
+        "practice/profile.md",
+        "practice/standards/indemnification.md"
+      ]
+    },
+    {
+      "title": "\"Any breach\" indemnity trigger converts every contract claim into an indemnified claim",
+      "severity": "red",
+      "clause": "...arising out of or relating to any breach of this Agreement by Supplier.",
+      "rationale": "Our standard limits indemnification to enumerated third-party-claim triggers: IP infringement, gross negligence or willful misconduct, and breach of confidentiality. An indemnity triggered by 'any breach of this Agreement' is an explicit 'we won't accept' position because it converts every contract claim into an indemnity claim — here one that is also fee-shifted (attorneys' fees recoverable) and, via the Section 9 carve-out, uncapped. The classification guide rates 'any breach' triggers as RED.",
+      "citations": [
+        "practice/standards/indemnification.md"
+      ]
+    },
+    {
+      "title": "One-way indemnity with defense obligation, not limited to third-party claims",
+      "severity": "yellow",
+      "clause": "Supplier shall indemnify, defend, and hold harmless Customer and its affiliates from and against any and all claims, losses, damages, liabilities, costs, and expenses (including reasonable attorneys' fees)...",
+      "rationale": "Our standard indemnity is mutual and limited to third-party claims. This clause is one-way against us, extends to Customer's affiliates, adds a duty to defend, and contains no third-party limitation — 'any and all claims... arising out of or relating to' any breach lets Customer recast its own first-party contract claims as indemnity claims, recovering attorneys' fees contrary to the American Rule default and, combined with the carve-out, outside the liability cap. Standing alone (if enumerated and capped) a one-way indemnity against us would be YELLOW under the classification guide; here it compounds the two RED findings. Counter-proposal consistent with our standard: mutual indemnification limited to third-party claims arising from enumerated triggers, subject to the Section 9 limitation of liability except IP infringement at a 2x super-cap.",
+      "citations": [
+        "practice/standards/indemnification.md",
+        "American Rule (attorneys' fees default)"
+      ]
+    }
+  ],
+  "citations": [
+    "practice/profile.md",
+    "practice/standards/indemnification.md",
+    "American Rule (attorneys' fees default)"
+  ]
+}
