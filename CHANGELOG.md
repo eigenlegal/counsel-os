@@ -6,6 +6,16 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.9.20] — 2026-06-11
+
+Law library fully attested (26 areas + 3 state tables), behavioral eval suite + per-model baselines
+
+- Law refresh tranches 2-3 + dedicated state-table passes: every area source-verified against primary records and stamped; attestations due 390 -> 11
+- Headline law now encoded: Learning Resources v. Trump (IEEPA tariffs invalidated, CBP refunds); OBBBA across tax/nonprofit/securities (NCTI/FDDEI, BEAT 10.5%, QSBS tiers, 4960 expansion, 1% remittance excise tax); GENIUS Act stablecoin exclusion; FinCEN RRE rule vacated (on appeal); 2025 HSR form vacated (pre-2025 form operative); SEC climate rescission proposed; NY FAIR Business Practices Act; DOJ Title II web deadlines extended to 2027/2028
+- Errors killed at the gate: stale $50,120 FTC penalty x2 and false 'Congress restored 13(b)' claim; a fabricated $54,540 HSR penalty (no FTC 2026 adjustment exists - OMB M-26-11); 7 fabricated credit-monitoring mandates in the breach table; Utah missing from the MTL table; franchise $615 threshold misread; Cumis citation, Lloyd's LMA clause numbers, notice-prejudice split (insurance)
+- Key Constraints sections added to 12 thin area overviews; authorities blocks now on every attested file
+- Eval suite: 4 new behavioral fixtures (law-area trigger detection, redline round-trip, missing-provision coverage, GREEN/YELLOW/RED calibration) - all 1.0 on live generation; run_evals.py --save-baseline/--compare-baseline with regression gating; release.sh eval-freshness warning; first baseline claude-fable-5 @ 2026-06-11 mean 1.0
+
 ## [0.9.19] — 2026-06-11
 
 Doctor skill, 7 new methods, cross-round redline diffing, durable backups, ops + confidentiality docs
