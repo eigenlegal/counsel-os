@@ -2,6 +2,14 @@
 counsel-os-type: law-area
 content-version: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "15 U.S.C. §§ 1011-1015"
+    title: "McCarran-Ferguson Act (state primacy in insurance regulation)"
+    url: "https://www.law.cornell.edu/uscode/text/15/chapter-20"
+  - cite: "NAIC Model Bulletin: Use of AI Systems by Insurers (2023)"
+    title: "Adopted by roughly half the states as of early 2026"
+    url: "https://content.naic.org/sites/default/files/inline-files/2023-12-4%20Model%20Bulletin_Adopted_0.pdf"
+last-reviewed: "2026-06-11"
 ---
 # Insurance
 

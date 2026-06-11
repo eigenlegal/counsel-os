@@ -1,7 +1,15 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
-jurisdiction: [us-state, local]
+last-reviewed: "2026-06-11"
+jurisdiction: [us-federal, us-state, local]
+authorities:
+  - cite: "40 U.S.C. §§ 3131-3134 (Miller Act)"
+    title: "Federal performance and payment bond requirements for construction contracts"
+    url: "https://www.law.cornell.edu/uscode/text/40/subtitle-II/part-A/chapter-31/subchapter-III"
+  - cite: "FAR 28.102-1 / 28.102-2"
+    title: "Bonds over $150,000; alternative payment protections for contracts $35,000-$150,000 (clause 52.228-13)"
+    url: "https://www.acquisition.gov/far/28.102-1"
 ---
 # Construction Law
 
@@ -21,8 +29,8 @@ Applies when a matter involves construction contracts, mechanic's liens, payment
 
 ### Miller Act (Federal Projects)
 
-- **Payment Bond** / Required for all federal construction contracts exceeding **$35,000**. / **Consequence**: Subcontractors and suppliers may assert claims against the payment bond in lieu of lien rights (federal property cannot be liened).
-- **Performance Bond** / Required for federal contracts exceeding **$150,000**. / **Consequence**: Surety must complete the project or pay damages if the principal contractor defaults.
+- **Performance and Payment Bonds (over $150,000)** / Under 40 U.S.C. ch. 31 subch. III (the Miller Act) and FAR 28.102-1, both a performance bond AND a payment bond are required for any federal construction contract exceeding **$150,000** (limited foreign-work/other waivers aside). / **Consequence**: Surety must complete the project or pay damages on the performance bond if the prime defaults; subcontractors and suppliers may assert claims against the payment bond in lieu of lien rights (federal property cannot be liened).
+- **Alternative Payment Protection ($35,000-$150,000)** / For construction contracts greater than **$35,000** but not greater than **$150,000**, the Miller Act does not require a bond; instead the contracting officer selects two or more alternative payment protections (e.g., irrevocable letter of credit, tripartite escrow, payment bond, deposit of assets) under FAR 28.102-1(b) and clause 52.228-13. / **Consequence**: Do not assume a Miller Act payment bond exists below $150,000; check which alternative protection the contract actually specifies before advising a downstream claimant.
 - **Notice Requirements** / Claimants without a direct contract with the prime contractor must give written notice to the prime within **90 days** of last furnishing. / **Consequence**: Failure to provide timely notice bars the bond claim.
 - **Suit Deadline** / Bond claim suit must be filed within **1 year** after last furnishing but not before **90 days** after notice. / **Consequence**: Missing either the floor or ceiling deadline bars recovery.
 

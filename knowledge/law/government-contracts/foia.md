@@ -1,7 +1,21 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal]
+authorities:
+  - cite: "5 U.S.C. 552"
+    title: "Freedom of Information Act; checked 2026-06-11"
+    url: "https://www.law.cornell.edu/uscode/text/5/552"
+  - cite: "Food Marketing Institute v. Argus Leader Media, 588 U.S. 427 (2019)"
+    title: "Exemption 4 — 'confidential' standard, no competitive-harm showing required (still controlling); checked 2026-06-11"
+    url: "https://supreme.justia.com/cases/federal/us/588/427/"
+  - cite: "EO 12600"
+    title: "Predisclosure notification procedures for confidential commercial information (submitter notice; in effect); checked 2026-06-11"
+    url: "https://www.archives.gov/federal-register/codification/executive-order/12600.html"
+  - cite: "DOJ OIP FOIA Guide"
+    title: "Department of Justice Office of Information Policy — current FOIA guidance"
+    url: "https://www.justice.gov/oip/foia-guide"
 ---
 # Freedom of Information Act (FOIA)
 

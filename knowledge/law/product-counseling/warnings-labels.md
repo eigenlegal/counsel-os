@@ -1,6 +1,7 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
 authorities:
   - cite: "27 CCR §§ 25601–25607.53 (OEHHA Clear and Reasonable Warnings; short-form amendment adopted Dec. 2024)"

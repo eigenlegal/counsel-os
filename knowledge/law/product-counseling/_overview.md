@@ -1,7 +1,21 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "Consumer Product Safety Act § 15(b), 15 U.S.C. 2064(b); 16 C.F.R. Part 1115"
+    title: "24-hour substantial-product-hazard reporting duty (Key Constraint) — checked 2026-06-11"
+    url: "https://www.cpsc.gov/Business--Manufacturing/Recall-Guidance"
+  - cite: "CPSC civil penalties, 15 U.S.C. 2069"
+    title: "Current maximums $120,000/violation; $17.15M related series (unchanged — CPSA five-year adjustment cycle; 2026 inflation adjustment canceled by OMB M-26-11) — checked 2026-06-11"
+    url: "https://www.cpsc.gov/Business--Manufacturing/Civil-and-Criminal-Penalties"
+  - cite: "CPSIA lead (100 ppm) and phthalate (0.1%) limits; 15 U.S.C. 1278a, 2057c"
+    title: "Absolute children's-product content limits (Key Constraint) — checked 2026-06-11"
+    url: "https://www.cpsc.gov/Business--Manufacturing/Business-Education/Lead/Lead-in-Childrens-Products"
+  - cite: "California Proposition 65, Cal. Health & Safety Code § 25249.5 et seq.; 27 CCR § 25600 et seq."
+    title: "Clear-and-reasonable warning requirement; $2,500/day private-enforcement penalty (Key Constraint) — checked 2026-06-11"
+    url: "https://www.p65warnings.ca.gov/"
 ---
 # Product Counseling
 

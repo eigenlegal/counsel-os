@@ -1,6 +1,7 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, technical-standard]
 authorities:
   - cite: "Acheson Hotels, LLC v. Laufer, 601 U.S. 1 (2023) (verified 2026-06-11)"

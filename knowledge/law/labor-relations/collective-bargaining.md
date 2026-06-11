@@ -1,7 +1,22 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal]
+authorities:
+  - cite: "29 U.S.C. 158(d)"
+    title: "NLRA Section 8(d) — duty to bargain and contract-modification notice requirements"
+    url: "https://www.law.cornell.edu/uscode/text/29/158"
+  - cite: "NLRB v. Burns International Security Services, 406 U.S. 272 (1972)"
+    title: "Successor must recognize and bargain but is not bound by predecessor's CBA"
+    url: "https://supreme.justia.com/cases/federal/us/406/272/"
+  - cite: "Fall River Dyeing Corp. v. NLRB, 482 U.S. 27 (1987)"
+    title: "Substantial-continuity test for successor bargaining obligation"
+    url: "https://supreme.justia.com/cases/federal/us/482/27/"
+  - cite: "United Steelworkers v. Warrior & Gulf Navigation Co., 363 U.S. 574 (1960) (Steelworkers Trilogy)"
+    title: "Judicial deference to labor-arbitration awards drawing their essence from the CBA"
+    url: "https://supreme.justia.com/cases/federal/us/363/574/"
+# authorities checked 2026-06-11
 ---
 # Collective Bargaining
 

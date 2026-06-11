@@ -1,6 +1,7 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal]
 authorities:
   - cite: "EO 14173 (Jan. 21, 2025), 90 FR 8633"

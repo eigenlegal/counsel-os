@@ -1,6 +1,7 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, eu, international]
 authorities:
   - cite: "SEC Release No. 33-11421 (May 29, 2026)"

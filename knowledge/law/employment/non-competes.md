@@ -1,6 +1,6 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal, us-state]
 last-reviewed: "2026-06-10"
 authorities:
@@ -22,6 +22,9 @@ authorities:
   - cite: "RCW 49.62"
     title: "Washington Noncompetition Covenants Act"
     url: "https://app.leg.wa.gov/rcw/default.aspx?cite=49.62"
+  - cite: "Va. SB 170 (2026)"
+    title: "Virginia noncompete restrictions expansion effective July 1, 2026 (severance-condition requirement per firm analyses — verify enacted text)"
+    url: "https://lis.virginia.gov/bill-details/20261/SB170"
 ---
 # Non-Competition and Post-Employment Restrictive Covenants
 
@@ -88,7 +91,7 @@ issues, or compliance with rapidly evolving state and federal restrictions.
 | **Massachusetts** | Limited (ch. 149, 24L) | Garden leave (50% of highest base salary) or mutually agreed consideration required. Void for non-exempt, terminated-without-cause, or laid-off employees, undergrad/grad interns. | **12 months** |
 | **Washington** | Limited now; ban from June 30, 2027 (RCW 49.62; ESHB 1155, 2026) | **$126,858.83** minimum compensation for employees, **$317,147.09** for contractors (2026; adjusted annually by L&I). Void if employee laid off unless garden leave. Employer pays actual damages and attorneys' fees if enforcement fails. ESHB 1155 (signed March 2026) voids ALL non-competes effective **June 30, 2027**, regardless of when signed — non-solicits, confidentiality, and sale-of-business (1%+ ownership) covenants excluded; written notice to affected workers required by October 1, 2027. | **18 months** (until ban) |
 | **Oregon** | Limited (ORS 653.295) | **$119,541** minimum (2026; CPI-adjusted annually as of year of termination). Must be in writing, signed, and provided at least 2 weeks before employment start or upon bona fide advancement. SB 951 (June 2025) bans non-competes with medical licensees, with narrow exceptions. | **12 months** |
-| **Virginia** | Limited (Va. Code 40.1-28.7:8) | Void for "low-wage employees" — expanded effective July 1, 2025 (SB 1218) to cover all employees who are overtime-eligible (non-exempt) under the FLSA, regardless of earnings. Not retroactive to agreements entered or renewed before that date. | Reasonable |
+| **Virginia** | Limited (Va. Code 40.1-28.7:8) | Void for "low-wage employees" — expanded effective July 1, 2025 (SB 1218) to cover all FLSA overtime-eligible (non-exempt) employees regardless of earnings. Further expanded effective July 1, 2026 (2026 SB 170): per early firm analyses, noncompetes for remaining (exempt) employees become unenforceable unless the agreement defines an up-front severance benefit payable on departure — verify the enacted text's exact scope before relying; not retroactive to earlier agreements. Separately, Virginia banned post-term noncompetes in retail franchise agreements signed on/after July 1, 2026 (HB 69/SB 240, Retail Franchising Act). | Reasonable |
 | **Most other states** | Enforceable if reasonable | Reasonable scope, adequate consideration, legitimate business interest. Typically requires case-by-case analysis. | **1-2 years typical** |
 
 State legislatures moved fast in 2025-26, in both directions. Florida's CHOICE Act

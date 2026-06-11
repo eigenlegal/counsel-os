@@ -1,6 +1,7 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, technical-standard]
 authorities:
   - cite: "29 U.S.C. 794d (verified 2026-06-11)"

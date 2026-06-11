@@ -1,7 +1,18 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "Consumer Product Safety Act § 15, 15 U.S.C. 2064"
+    title: "CPSC reporting and corrective-action (recall) authority — checked 2026-06-11"
+    url: "https://www.cpsc.gov/Business--Manufacturing/Recall-Guidance"
+  - cite: "49 U.S.C. 30118-30120; 49 C.F.R. 578.6"
+    title: "NHTSA recall obligations and civil penalty amounts ($27,874/violation; $139,356,994 max series) — checked 2026-06-11"
+    url: "https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-578/section-578.6"
+  - cite: "21 C.F.R. Part 7 (FDA recall procedures); 21 U.S.C. 360h"
+    title: "FDA recall classification (Class I/II/III) and device mandatory-recall authority — checked 2026-06-11"
+    url: "https://www.fda.gov/safety/recalls-market-withdrawals-safety-alerts"
 ---
 # Product Recalls
 
@@ -19,7 +30,7 @@ Load this file when a matter involves a product safety incident, potential or ac
 
 - **Mandatory recall (CPSC)**
   - **Threshold:** CPSC determines through administrative proceedings that a product presents a substantial product hazard and the company refuses voluntary corrective action.
-  - **Consequence:** CPSC issues an order under Section 15(c)-(d) of CPSA compelling recall, repair, replacement, or refund. Requires formal adjudication with hearing before an administrative law judge. Additional civil penalties for failure to comply. Mandatory recalls are rare (fewer than 1% of all CPSC recalls) but signal maximum regulatory confrontation. The mandatory process is slow — typically 12-18 months — during which the defective product may remain on the market, increasing liability exposure.
+  - **Consequence:** CPSC issues an order under Section 15(c)-(d) of CPSA compelling recall, repair, replacement, or refund. Requires formal adjudication with hearing before an administrative law judge. Additional civil penalties for failure to comply. Mandatory recalls are rare (fewer than 1% of all CPSC recalls) but signal maximum regulatory confrontation. The mandatory process is slow — typically 12-18 months — during which the defective product may remain on the market, increasing liability exposure. Note: CPSC commissioner composition is in flux (three Democratic commissioners were removed in May 2025; the Supreme Court stayed their reinstatement in July 2025, and subsequent departures left the Commission operating with a reduced membership), which can affect the timing and posture of contested rulemaking and adjudicated mandatory recalls. Confirm the Commission's current composition and quorum status before relying on assumptions about enforcement pace.
 
 - **FDA Class I recall**
   - **Threshold:** Reasonable probability that use of or exposure to the product will cause serious adverse health consequences or death.
@@ -53,7 +64,7 @@ Load this file when a matter involves a product safety incident, potential or ac
 
 - **NHTSA Early Warning Reporting (EWR)**
   - **Timeline:** Quarterly reports for manufacturers meeting production thresholds (500+ vehicles/year); defect and noncompliance reports within 5 business days of determination.
-  - **Consequence:** Failure subject to civil penalties up to $26,315 per violation, $131.6 million maximum. TREAD Act requires quarterly reporting of: property damage claims, injuries, deaths, warranty claims for specified components, consumer complaints, and field reports. Must also report foreign safety recalls within 5 business days.
+  - **Consequence:** Failure subject to civil penalties under 49 U.S.C. 30165 / 49 C.F.R. 578.6 (figures adjust annually for inflation) — currently up to $27,874 per violation with a $139,356,994 maximum for a related series. TREAD Act requires quarterly reporting of: property damage claims, injuries, deaths, warranty claims for specified components, consumer complaints, and field reports. Must also report foreign safety recalls within 5 business days. Verify the current-year figures against 49 C.F.R. 578.6 before citing.
 
 ### Recall Process Steps
 

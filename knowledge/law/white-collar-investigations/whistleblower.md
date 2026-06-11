@@ -1,13 +1,31 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, international]
+authorities:
+  - cite: "18 U.S.C. § 1514A (SOX § 806)"
+    title: "Whistleblower protection for employees of publicly traded companies"
+    url: "https://www.law.cornell.edu/uscode/text/18/1514A"
+    checked: "2026-06-11"
+  - cite: "15 U.S.C. § 78u-6 (Dodd-Frank § 922)"
+    title: "SEC whistleblower incentives and protection"
+    url: "https://www.law.cornell.edu/uscode/text/15/78u-6"
+    checked: "2026-06-11"
+  - cite: "31 U.S.C. §§ 3729-3733"
+    title: "False Claims Act — qui tam and anti-retaliation provisions"
+    url: "https://www.law.cornell.edu/uscode/text/31/3729"
+    checked: "2026-06-11"
+  - cite: "DOJ Corporate Whistleblower Awards Pilot Program (rev. May 12, 2025)"
+    title: "Expanded subject areas — added trade/tariff/customs fraud, fraud victimizing U.S. investors, national-security/sanctions, and digital-asset crimes"
+    url: "https://www.justice.gov/criminal/media/1400036/dl"
+    checked: "2026-06-11"
 ---
 # Whistleblower Protections and Programs
 
 ## Applicability
 
-Applies to organizations subject to federal and state whistleblower protection statutes, including public companies, government contractors, healthcare providers, and financial institutions. Covers Sarbanes-Oxley Section 806, Dodd-Frank SEC Whistleblower Program, False Claims Act qui tam provisions, and state whistleblower laws.
+Applies to organizations subject to federal and state whistleblower protection statutes, including public companies, government contractors, healthcare providers, and financial institutions. Covers Sarbanes-Oxley Section 806, Dodd-Frank SEC Whistleblower Program, the DOJ Corporate Whistleblower Awards Pilot Program, False Claims Act qui tam provisions, and state whistleblower laws.
 
 ## Key Requirements
 
@@ -27,6 +45,14 @@ Applies to organizations subject to federal and state whistleblower protection s
 - **Anti-Retaliation** / Prohibits retaliation by employers against individuals who: (1) provide information to SEC, (2) initiate or assist in SEC investigation, (3) make disclosures required by SOX, securities laws, or other laws under SEC jurisdiction / **Consequence**: Private right of action in federal court (no OSHA filing required); 2x back pay, reinstatement, attorney fees; 6-year statute of limitations (3 years from when facts known, but no more than 6 years from violation)
 - **Internal Reporting Credit** / SEC considers whether whistleblower reported internally first (120-day safe harbor: report internally, then to SEC within 120 days and receive credit as of internal reporting date) / **Consequence**: Internal reporting encouraged but not required; organizations benefit from effective internal reporting channels
 - **Confidentiality** / SEC prohibited from disclosing whistleblower identity except as required by court or in connection with public proceeding / **Consequence**: Whistleblower identity protected; but practical identification may occur through nature of information disclosed
+
+- **Program Currency (FY2025)** / The Dodd-Frank SEC whistleblower program remains in effect with its statutory structure intact. In FY2025 the SEC awarded roughly $60M to whistleblowers — a sharp drop from $255M in FY2024 — while tips rose to ~27,000 / **Consequence**: Lower payout totals reflect enforcement-mix and staffing changes, not a change in the law; the 10-30% award range and $1M sanctions threshold are unchanged. Confirm current figures against the SEC's latest annual whistleblower report
+
+### DOJ Corporate Whistleblower Awards Pilot Program
+
+- **Overview** / Criminal Division pilot program awarding individuals who report original information leading to criminal or civil forfeiture; distinct from the SEC program / **Consequence**: Provides a DOJ-side incentive parallel to Dodd-Frank; available for conduct outside the SEC's securities focus
+- **Expanded Subject Areas (rev. May 12, 2025)** / The May 2025 revision aligned the program with the administration's enforcement priorities and added subject areas: trade, tariff, and customs fraud; fraud that victimizes U.S. investors (Ponzi/investment fraud, elder fraud, servicemember fraud); conduct threatening U.S. national security (including sanctions violations and material support to foreign terrorist organizations); and complex money laundering and crimes involving digital assets — alongside the preexisting domestic-bribery, federal-healthcare, and financial-institution categories / **Consequence**: Tariff/trade-fraud whistleblowing is now a live DOJ pathway (reinforced by the DOJ-DHS Trade Fraud Task Force launched September 2025). Verify the current program guidance before advising
+- **Award Structure** / Up to 30% of the first $100M in net proceeds forfeited and up to 5% of net proceeds between $100M and $500M / **Consequence**: Award is discretionary and contingent on successful forfeiture; confirm the operative percentages and eligibility conditions
 
 ### False Claims Act (FCA) — Qui Tam Provisions
 
@@ -62,6 +88,7 @@ Applies to organizations subject to federal and state whistleblower protection s
 
 - [Sarbanes-Oxley Act Section 806 (18 U.S.C. 1514A)](https://www.law.cornell.edu/uscode/text/18/1514A)
 - [Dodd-Frank Act Section 922 (15 U.S.C. 78u-6)](https://www.law.cornell.edu/uscode/text/15/78u-6)
-- [SEC Office of the Whistleblower](https://www.sec.gov/whistleblower)
+- [SEC Office of the Whistleblower](https://www.sec.gov/enforcement-litigation/whistleblower-program)
+- [DOJ Corporate Whistleblower Awards Pilot Program (rev. May 12, 2025)](https://www.justice.gov/criminal/media/1400036/dl)
 - [False Claims Act (31 U.S.C. 3729-3733)](https://www.law.cornell.edu/uscode/text/31/3729)
-- [DOJ Civil Division — Fraud Statistics](https://www.justice.gov/d9/2024-10/fca_stats.pdf)
+- [DOJ Civil Division — Fraud Statistics](https://www.justice.gov/civil/false-claims-act)

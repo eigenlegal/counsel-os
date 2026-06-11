@@ -1,6 +1,7 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal]
 authorities:
   - cite: "NLRB v. Mackay Radio & Telegraph Co., 304 U.S. 333 (1938)"

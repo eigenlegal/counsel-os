@@ -1,7 +1,21 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, international]
+authorities:
+  - cite: "Upjohn Co. v. United States, 449 U.S. 383 (1981)"
+    title: "Attorney-client privilege in corporate internal investigations"
+    url: "https://supreme.justia.com/cases/federal/us/449/383/"
+    checked: "2026-06-11"
+  - cite: "ABA Model Rule of Professional Conduct 1.13"
+    title: "Organization as client — report-up obligations"
+    url: "https://www.americanbar.org/groups/professional_responsibility/publications/model_rules_of_professional_conduct/rule_1_13_organization_as_client/"
+    checked: "2026-06-11"
+  - cite: "17 CFR Part 205"
+    title: "SEC Standards of Professional Conduct for Attorneys (SOX § 307)"
+    url: "https://www.law.cornell.edu/cfr/text/17/part-205"
+    checked: "2026-06-11"
 ---
 # Internal Investigations
 
