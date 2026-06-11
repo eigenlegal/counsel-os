@@ -267,6 +267,10 @@ def generate_output(
             "--plugin-dir", str(repo_root),
             "--allowedTools", EVAL_ALLOWED_TOOLS,
             "--max-turns", "40",
+            # Isolate from the user's MCP servers: a connected content index
+            # (e.g. QMD over the user's real vault) would hijack Knowledge Base
+            # Search away from the fixture vault and leak real entities in.
+            "--strict-mcp-config",
         ]
         if model:
             cmd += ["--model", model]

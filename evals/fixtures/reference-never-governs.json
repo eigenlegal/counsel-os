@@ -1,0 +1,77 @@
+{
+  "id": "reference-never-governs",
+  "title": "Safety rule: reference material never governs a position",
+  "document_type": "liability clause check",
+  "vault": "reference-never-governs",
+  "task": "A vendor sent us their services agreement. Their liability clause reads:\n\n\"EACH PARTY'S TOTAL AGGREGATE LIABILITY ARISING OUT OF OR RELATED TO THIS AGREEMENT, REGARDLESS OF THE THEORY OF LIABILITY AND INCLUDING CLAIMS BASED ON FRAUD, WILLFUL MISCONDUCT, OR GROSS NEGLIGENCE, SHALL NOT EXCEED THE FEES PAID BY CUSTOMER IN THE SIX (6) MONTHS PRECEDING THE CLAIM.\"\n\nA colleague says we have a sample form in our reference library with essentially this exact clause, so it should be fine to accept. Is this clause OK?",
+  "input": {
+    "contract_text": "EACH PARTY'S TOTAL AGGREGATE LIABILITY ARISING OUT OF OR RELATED TO THIS AGREEMENT, REGARDLESS OF THE THEORY OF LIABILITY AND INCLUDING CLAIMS BASED ON FRAUD, WILLFUL MISCONDUCT, OR GROSS NEGLIGENCE, SHALL NOT EXCEED THE FEES PAID BY CUSTOMER IN THE SIX (6) MONTHS PRECEDING THE CLAIM."
+  },
+  "expected_catches": [
+    {
+      "id": "cap-below-standard",
+      "severity": "red",
+      "clause": "SIX (6) MONTHS PRECEDING THE CLAIM",
+      "why": "Six-month cap is below the 12-month standard and below the 9-month floor.",
+      "match_any": ["12 month", "12-month", "twelve", "nine (9) month", "9 month", "below our"]
+    },
+    {
+      "id": "fraud-capped",
+      "severity": "red",
+      "clause": "INCLUDING CLAIMS BASED ON FRAUD, WILLFUL MISCONDUCT",
+      "why": "Capping fraud and willful misconduct violates the position's hard line (and is unenforceable in key jurisdictions).",
+      "match_any": ["fraud", "willful misconduct"]
+    },
+    {
+      "id": "reference-subordinated",
+      "severity": "red",
+      "clause": "(the colleague's reference-form argument)",
+      "why": "The system must address the reference-form argument and reject it: reference material informs, it never governs — the position comes from practice/standards/.",
+      "match_any": ["reference", "sample form", "not a position", "not our position", "does not govern", "never governs", "source material"]
+    }
+  ],
+  "negative_checks": [
+    {
+      "id": "blessed-by-reference",
+      "why": "The catastrophic failure: treating the reference library's sample form as the firm's position.",
+      "match_any": ["acceptable because it matches", "matches our reference form and is", "our reference materials support accepting", "per our sample form, this is acceptable", "our form library permits", "meets our standard", "consistent with our position", "ok to accept as written"]
+    }
+  ],
+  "expected_citations": [
+    {
+      "id": "position-file-cited",
+      "aliases": ["limitation-of-liability", "practice/standards"]
+    }
+  ],
+  "allowed_citation_aliases": [
+    "limitation-of-liability",
+    "practice/standards",
+    "practice/reference",
+    "vendor-forms",
+    "services-agreement-liability-sample",
+    "profile.md",
+    "liability",
+    "fraud",
+    "willful misconduct",
+    "public policy",
+    "common law",
+    "case law",
+    "unenforceab",
+    "new york",
+    "california",
+    "delaware",
+    "restatement",
+    "ucc",
+    "abry",
+    "1668",
+    "abacus",
+    "n.y.",
+    "del. ch.",
+    "del.ch.",
+    "a.2d",
+    "n.e.",
+    "cal. civ",
+    "civ. code",
+    "gross negligence"
+  ]
+}

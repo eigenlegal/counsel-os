@@ -1,0 +1,32 @@
+{
+  "findings": [
+    {
+      "title": "24-month liability cap exceeds practice walk-away (RED)",
+      "severity": "red",
+      "clause": "Each party's total aggregate liability arising out of or related to this Agreement shall not exceed the fees paid or payable by Customer in the twenty-four (24) months preceding the event giving rise to the claim.",
+      "rationale": "Practice standard is a mutual cap on direct damages at 12 months of fees (GREEN), with up to 18 months acceptable only for strategic deals with internal sign-off (YELLOW). Caps at 24 months or above are expressly classified RED ('We won't accept'). On a ~$200K/year deal this clause sets exposure at roughly $400K, disproportionate to deal economics per the stated position, and it also exceeds the practice profile's escalation threshold (liability caps above 18 months of exposure must be flagged for review). Effective position for Northwind Robotics Ltd is the practice default of a 12-month mutual cap: no entity file or matter exists for Northwind, so no entity-level override applies, and no law-layer constraint was found in the vault bearing on cap duration. Recommended counter: mutual cap at fees paid or payable in the 12 months preceding the claim; fallback up to 18 months only with internal sign-off.",
+      "citations": [
+        "practice/standards/limitation-of-liability.md",
+        "practice/profile.md"
+      ]
+    },
+    {
+      "title": "Counterparty's 'you accepted 24-month caps before' claim relies on a non-transferable entity-specific concession",
+      "severity": "red",
+      "clause": "Each party's total aggregate liability arising out of or related to this Agreement shall not exceed the fees paid or payable by Customer in the twenty-four (24) months preceding the event giving rise to the claim.",
+      "rationale": "The only recorded acceptance of a 24-month cap is in the Aurelia Systems GmbH entity file (2025 MSA renewal). That concession is documented as deal-specific — granted because Aurelia's procurement required vendor parity, and exchanged for a 3-year committed term and a 15% pricing uplift — and the entity file states it 'applies to the Aurelia relationship only.' Under the knowledge-system precedence rules, entity overrides supersede practice defaults only for that counterparty; the limitation-of-liability standard's Practical Guidance likewise states counterparty-specific concessions 'are not precedent for other deals.' Northwind Robotics Ltd is a new counterparty (~$200K/year, no comparable strategic consideration), so the Aurelia concession does not extend to this deal and the practice default of a 12-month mutual cap governs. Northwind's counsel's framing should be rejected; if Northwind wants a longer cap, it would require equivalent consideration and would still hit the RED walk-away at 24 months.",
+      "citations": [
+        "entities/aurelia-systems.md",
+        "practice/standards/limitation-of-liability.md",
+        "practice/profile.md",
+        "memory/patterns.md"
+      ]
+    }
+  ],
+  "citations": [
+    "practice/standards/limitation-of-liability.md",
+    "entities/aurelia-systems.md",
+    "practice/profile.md",
+    "memory/patterns.md"
+  ]
+}

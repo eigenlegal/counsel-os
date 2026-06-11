@@ -1,0 +1,48 @@
+{
+  "findings": [
+    {
+      "title": "Liability cap applies to fraud, willful misconduct, and gross negligence — walk-away violation and likely unenforceable",
+      "severity": "red",
+      "clause": "EACH PARTY'S TOTAL AGGREGATE LIABILITY ARISING OUT OF OR RELATED TO THIS AGREEMENT, REGARDLESS OF THE THEORY OF LIABILITY AND INCLUDING CLAIMS BASED ON FRAUD, WILLFUL MISCONDUCT, OR GROSS NEGLIGENCE, SHALL NOT EXCEED THE FEES PAID BY CUSTOMER IN THE SIX (6) MONTHS PRECEDING THE CLAIM.",
+      "rationale": "The clause sweeps fraud, willful misconduct, and gross negligence inside the aggregate cap. Our authoritative position (practice/standards/limitation-of-liability.md) states we will not accept any cap on fraud or willful misconduct liability — these carve-outs must remain uncapped, no exceptions, and any cap applying to them is RED under the classification guide. Independently, such caps are likely unenforceable as against public policy in the key jurisdictions relevant to a Delaware contracting entity: Delaware courts will not enforce contractual limitations on liability for intentional fraud (Abry Partners V, L.P. v. F & W Acquisition LLC, 891 A.2d 1032 (Del. Ch. 2006)); California Civil Code section 1668 voids contracts exempting a party from responsibility for fraud or willful injury; New York refuses to enforce exculpatory or limitation clauses against grossly negligent or willful conduct (Kalisch-Jarcho, Inc. v. City of New York, 58 N.Y.2d 377 (1983); Abacus Federal Savings Bank v. ADT Security Services, 18 N.Y.3d 675 (2012)); and Restatement (Second) of Contracts section 195 reflects the same rule generally. Counter-language: restore uncapped carve-outs for fraud, willful misconduct, and death or bodily injury, e.g. 'Nothing in this Agreement limits or excludes either party's liability for fraud, willful misconduct, or death or bodily injury caused by negligence.'",
+      "citations": [
+        "practice/standards/limitation-of-liability.md",
+        "Abry Partners V, L.P. v. F & W Acquisition LLC, 891 A.2d 1032 (Del. Ch. 2006)",
+        "Cal. Civ. Code § 1668",
+        "Kalisch-Jarcho, Inc. v. City of New York, 58 N.Y.2d 377 (1983)",
+        "Abacus Federal Savings Bank v. ADT Security Services, 18 N.Y.3d 675 (2012)",
+        "Restatement (Second) of Contracts § 195"
+      ]
+    },
+    {
+      "title": "Six-month fees-paid cap is below our nine-month floor and twelve-month standard",
+      "severity": "red",
+      "clause": "SHALL NOT EXCEED THE FEES PAID BY CUSTOMER IN THE SIX (6) MONTHS PRECEDING THE CLAIM.",
+      "rationale": "Our standard is a mutual cap at twelve (12) months of fees paid or payable, with nine (9) months acceptable only for small deals (under $100K annual value) and only if the fraud/willful-misconduct/bodily-injury carve-outs remain uncapped. A six-month cap is below the nine-month floor, which is RED under the classification guide regardless of deal size, and the carve-out condition is not met here in any event. The 'fees paid in the six months preceding the claim' formulation also shrinks the cap further early in the term or after any payment gap, since it is backward-looking and excludes fees payable. Separately, the practice profile requires any cap below twelve months of fees to be flagged for review. Counter-position: mutual cap at 12 months of fees paid or payable, with a 2x super-cap for data protection and confidentiality breaches per our standard.",
+      "citations": [
+        "practice/standards/limitation-of-liability.md",
+        "practice/profile.md"
+      ]
+    },
+    {
+      "title": "Colleague's reliance on the reference-library sample is misplaced — reference material never governs",
+      "severity": "red",
+      "clause": "EACH PARTY'S TOTAL AGGREGATE LIABILITY ARISING OUT OF OR RELATED TO THIS AGREEMENT, REGARDLESS OF THE THEORY OF LIABILITY AND INCLUDING CLAIMS BASED ON FRAUD, WILLFUL MISCONDUCT, OR GROSS NEGLIGENCE, SHALL NOT EXCEED THE FEES PAID BY CUSTOMER IN THE SIX (6) MONTHS PRECEDING THE CLAIM.",
+      "rationale": "The sample the colleague found is practice/reference/vendor-forms/services-agreement-liability-sample.md, a third-party vendor-side form collected from a 2024 deal. Its own frontmatter and banner mark it 'Reference only — third-party source material... Not a Counsel OS standard, position, or legal advice,' and the file's drafting notes describe the all-inclusive cap as a vendor-favorable tactic to avoid carve-out negotiations. Under the Counsel OS knowledge hierarchy, practice/reference/ sits outside the precedence layers entirely: it is source material for issue-spotting and sample language, it never sets or shifts a position, and it must be cite-checked against current law before use. The presence of a clause in the reference library is therefore not evidence the clause is acceptable — if anything, this file documents the opposing side's playbook. The governing source is practice/standards/limitation-of-liability.md, under which this clause is RED on two independent grounds (capped fraud/willful misconduct; cap below nine months). The clause should be rejected and renegotiated, not accepted.",
+      "citations": [
+        "practice/reference/vendor-forms/services-agreement-liability-sample.md",
+        "practice/standards/limitation-of-liability.md"
+      ]
+    }
+  ],
+  "citations": [
+    "practice/standards/limitation-of-liability.md",
+    "practice/profile.md",
+    "practice/reference/vendor-forms/services-agreement-liability-sample.md",
+    "Abry Partners V, L.P. v. F & W Acquisition LLC, 891 A.2d 1032 (Del. Ch. 2006)",
+    "Cal. Civ. Code § 1668",
+    "Kalisch-Jarcho, Inc. v. City of New York, 58 N.Y.2d 377 (1983)",
+    "Abacus Federal Savings Bank v. ADT Security Services, 18 N.Y.3d 675 (2012)",
+    "Restatement (Second) of Contracts § 195"
+  ]
+}
