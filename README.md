@@ -223,7 +223,7 @@ Only relevant if you're developing Counsel OS itself:
 | `scripts/lint_knowledge.py [--check-versions]` | Lints `knowledge/` conventions (no checkboxes, no H2-before-H1, frontmatter present) and, with the flag, verifies the four manifests agree. Runs in CI. | Before committing knowledge content changes. |
 | `scripts/bump_content_versions.py [--date YYYY-MM-DD]` | Hashes each content group and bumps `content-version` frontmatter for groups that changed — this is what lets `/counsel-os:update` detect upstream law/practice changes. | After editing anything under `knowledge/law/` or `knowledge/practice-seed/`. |
 | `scripts/validate_law_frontmatter.py` | Validates law-area frontmatter against `knowledge/law/frontmatter-policy.json`; reports attestations coming due. Runs in CI. | After editing law frontmatter; periodically to see attestation debt. |
-| `scripts/run_evals.py [--self-test]` | Scores golden-matter eval outputs in `evals/`; `--self-test` validates the scorer itself. Runs in CI. | After changing primitives or evaluation behavior. |
+| `scripts/run_evals.py [--generate] [--model <id>] [--only <fixture>] [--self-test]` | Scores golden-matter eval outputs in `evals/`; `--generate` runs the counsel agent headlessly against each fixture's mini-vault first (costs API tokens); `--self-test` validates the scorer itself (free, runs in CI). | Full generate+score before releases and when qualifying a new model; see `evals/README.md`. |
 
 ---
 
@@ -294,6 +294,8 @@ The plugin discovers content through two mechanisms:
 | Lowest | `memory/` | Context only — informs, doesn't override | Automatic (via `remember` when counsel proposes) |
 
 **Example:** Your standard liability cap is 12 months (`practice/standards/`). But for Acme Corp you've pre-approved 24 months (in your Acme Corp entity file). When reviewing an Acme contract, the system uses 24 months — but if GDPR requires a specific data processing provision (`law/`), that's non-negotiable regardless.
+
+**These rules are tested, not just stated.** The repo ships safety-rule evals (`evals/`) — live agent runs against fixture vaults engineered to tempt each failure: a practice standard that permits what law forbids, a reference form presented as "our position," another counterparty's concession offered as precedent, and an always-escalate threshold under sign-today deal pressure. All four must pass before release. See `evals/README.md`.
 
 ### Continuous Learning
 

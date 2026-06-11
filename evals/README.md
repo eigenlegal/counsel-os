@@ -58,3 +58,11 @@ python3 scripts/run_evals.py --self-test
 The self-test scores bundled sample outputs to verify the scorer itself. It does not call an LLM. When adding a fixture, also add a passing output to `evals/sample-outputs/` or CI's self-test will report it missing.
 
 **Cadence:** full generate+score before each release and when qualifying a new model (compare per-fixture scores across `--model` runs). Anchors must stay decisive — a fixture that flakes gets its anchors tightened or runs N=3/require-2; never leave a known-flaky fixture in the suite.
+
+## Fixture-Authoring Lessons (from the 2026-06 calibration pass)
+
+- **`allowed_citation_aliases` must include every vault-internal path** the agent may legitimately consult (`memory/`, `patterns.md`, `profile.md`, entity files) — the effective-position procedure instructs checking them, and citing them is correct behavior.
+- **Include the doctrine's canonical real-world authorities.** A capable model cites genuine case law and statutes from training (e.g., *Abry Partners*, Cal. Civ. Code § 1668 for fraud-cap unenforceability). The fabricated-citation detector must not punish correct lawyering — anticipate the leading authorities for whatever doctrine the fixture touches, especially when the vault ships no `law/` file.
+- **Negative-check anchors must be phrases that can ONLY appear in wrong answers** ("acceptable because it matches our reference"), never words a correct answer might use while rejecting the trap ("reference", "Aurelia"). Substring matching has no negation.
+- **Generation runs are MCP-isolated** (`--strict-mcp-config` in the runner): a connected content index over the user's real vault would hijack Knowledge Base Search away from the fixture and leak real entities into eval runs. Don't remove that flag.
+- **Vaults must look completely real** — no test markers, no hints. The decisiveness lives in the *content* (unambiguous violations, hard-line positions), not in labels.
