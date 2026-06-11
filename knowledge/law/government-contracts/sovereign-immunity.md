@@ -1,7 +1,24 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal]
+authorities:
+  - cite: "28 U.S.C. 1491"
+    title: "Tucker Act — Court of Federal Claims jurisdiction (>$10,000); checked 2026-06-11"
+    url: "https://www.law.cornell.edu/uscode/text/28/1491"
+  - cite: "28 U.S.C. 1346(a)(2)"
+    title: "Little Tucker Act — concurrent district-court jurisdiction (<=$10,000); checked 2026-06-11"
+    url: "https://www.law.cornell.edu/uscode/text/28/1346"
+  - cite: "41 U.S.C. 7101-7109"
+    title: "Contract Disputes Act — certification required for claims over $100,000 (41 U.S.C. 7103); checked 2026-06-11"
+    url: "https://www.law.cornell.edu/uscode/text/41/subtitle-III/chapter-71"
+  - cite: "28 U.S.C. 2671-2680"
+    title: "Federal Tort Claims Act — administrative claim and exceptions; checked 2026-06-11"
+    url: "https://www.law.cornell.edu/uscode/text/28/part-VI/chapter-171"
+  - cite: "28 U.S.C. 1602-1611"
+    title: "Foreign Sovereign Immunities Act; checked 2026-06-11"
+    url: "https://www.law.cornell.edu/uscode/text/28/chapter-97"
 ---
 # Sovereign Immunity
 

@@ -1,7 +1,24 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal]
+authorities:
+  - cite: "FAR 6.304"
+    title: "Approval of the justification — J&A approval-authority dollar levels (updated by FAC 2025-06); checked 2026-06-11"
+    url: "https://www.acquisition.gov/far/6.304"
+  - cite: "90 FR 41872 (Aug. 27, 2025)"
+    title: "FAR inflation adjustment of acquisition-related thresholds (eff. Oct. 1, 2025) — micro-purchase $15K, SAT $350K; checked 2026-06-11"
+    url: "https://www.federalregister.gov/documents/2025/08/27/2025-16412/federal-acquisition-regulation-inflation-adjustment-of-acquisition-related-thresholds"
+  - cite: "FY2025 NDAA §885; 10 U.S.C. 3406(f)"
+    title: "DoD task-order GAO protest threshold raised from $25M to $35M; checked 2026-06-11"
+    url: "https://www.law.cornell.edu/uscode/text/10/3406"
+  - cite: "4 CFR Part 21"
+    title: "GAO Bid Protest Regulations"
+    url: "https://www.ecfr.gov/current/title-4/chapter-I/subchapter-B/part-21"
+  - cite: "28 U.S.C. 1491(b)"
+    title: "Court of Federal Claims bid-protest jurisdiction"
+    url: "https://www.law.cornell.edu/uscode/text/28/1491"
 ---
 # Procurement Methods & Bid Protests
 

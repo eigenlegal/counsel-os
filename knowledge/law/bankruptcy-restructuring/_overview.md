@@ -1,6 +1,7 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal]
 authorities:
   - cite: "Harrington v. Purdue Pharma L.P., 603 U.S. 204 (2024)"

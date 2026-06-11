@@ -1,7 +1,22 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "Ryan, LLC v. FTC, No. 3:24-cv-00986 (N.D. Tex. Aug. 20, 2024)"
+    title: "Nationwide vacatur of the FTC Non-Compete Clause Rule (16 CFR Part 910)"
+    url: "https://www.ftc.gov/legal-library/browse/cases-proceedings/ryan-llc-v-ftc"
+  - cite: "FTC accession to vacatur (Sept. 5, 2025); removal of 16 CFR Part 910 (91 Fed. Reg., Feb. 12, 2026)"
+    title: "FTC dismissed appeals and removed the Non-Compete Rule from the CFR"
+    url: "https://www.federalregister.gov/documents/2026/02/12/2026-02866/revision-of-the-negative-option-rule-withdrawal-of-the-cars-rule-removal-of-the-non-compete-rule-to"
+  - cite: "Virginia HB 69 / SB 240 (signed Apr 13, 2026, eff. July 1, 2026); Va. Code 13.1-557 et seq."
+    title: "Virginia Retail Franchising Act — post-term noncompete ban; mandatory Virginia governing law"
+    url: "https://law.lis.virginia.gov/vacode/title13.1/chapter8/"
+  - cite: "NASAA Franchise Advisory on Post-Term Non-Competes (Feb 21, 2025)"
+    title: "NASAA guidance that post-term franchise noncompetes should be reasonable in scope, territory, and duration"
+    url: "https://www.nasaa.org/wp-content/uploads/2025/02/NASAA_Franchise_Advisory_Noncompetes_2-21-2025.pdf"
+# Checked 2026-06-11
 ---
 # Franchise Agreements
 
@@ -30,7 +45,7 @@ Applies to the negotiation, drafting, and review of franchise agreements, area d
 ### Non-Compete Provisions
 
 - **In-Term Non-Compete** / Franchisee prohibited from operating competing business during term of franchise agreement / **Consequence**: Generally enforceable; prevents diversion of resources and trade secrets
-- **Post-Term Non-Compete** / Restriction on competing business after termination or expiration / **Threshold**: Typical duration 1-2 years post-termination; geographic scope typically within franchise territory plus radius (15-25 miles for retail, larger for service) / **Consequence**: Enforceability varies by state; overbroad restrictions may be modified (blue-pencil) or voided; FTC has proposed (but not finalized) broader non-compete restrictions that may exempt franchise non-competes
+- **Post-Term Non-Compete** / Restriction on competing business after termination or expiration / **Threshold**: Typical duration 1-2 years post-termination; geographic scope typically within franchise territory plus radius (15-25 miles for retail, larger for service) / **Consequence**: Enforceability varies by state; overbroad restrictions may be modified (blue-pencil) or voided. Key currency points: (a) the FTC's 2024 Non-Compete Clause Rule (16 CFR Part 910) was vacated nationwide (Ryan v. FTC, N.D. Tex. Aug. 20, 2024); the FTC acceded to vacatur (Sept. 5, 2025) and formally removed the rule from the CFR (final rule eff. 2026), so there is no federal franchise-noncompete rule — state law governs; (b) Virginia bans post-term franchise noncompetes in agreements offered or entered after July 1, 2026 (narrow 2-year exception only on sale of the franchise; see `relationship-laws.md` and `state-franchise-laws.md`); (c) NASAA's Feb. 2025 advisory urges registration states to require that post-term franchise noncompetes be reasonable in scope, territory, and duration as a registration condition
 - **Business Type Restriction** / Non-compete typically covers "same or similar" business; scope of "similar" frequently litigated / **Consequence**: Narrow definition preferred by franchisee; broad definition preferred by franchisor; ambiguity invites litigation
 
 ### Transfer Provisions
@@ -63,6 +78,7 @@ Applies to the negotiation, drafting, and review of franchise agreements, area d
 
 - **Mandatory Arbitration** / Many franchise agreements require arbitration of disputes / **Consequence**: Arbitration typically limits discovery and appeal rights; some states restrict mandatory arbitration in franchise context
 - **Venue Selection** / Agreements typically specify franchisor's home jurisdiction for dispute resolution / **Consequence**: Franchisee forced to litigate in distant forum; some state relationship laws prohibit out-of-state venue requirements
+- **Governing Law** / Agreements typically choose the franchisor's home-state law / **Consequence**: Many relationship-law states void choice-of-law clauses that strip franchisee protections; Virginia goes further — agreements offered or entered after July 1, 2026 contemplating a Virginia place of business must be governed by Virginia law (see `state-franchise-laws.md`)
 - **Waiver of Jury Trial** / Common in franchise agreements / **Consequence**: Enforceability varies by state; some states prohibit prospective jury waiver
 
 ## Interaction with Other Areas
@@ -77,6 +93,9 @@ Applies to the negotiation, drafting, and review of franchise agreements, area d
 
 - [ABA Forum on Franchising — Franchise Agreement Fundamentals](https://www.americanbar.org/groups/franchising/)
 - [FTC Franchise Rule (16 CFR 436) — Items 5-12, 17](https://www.ecfr.gov/current/title-16/chapter-I/subchapter-D/part-436)
+- [FTC removal of the Non-Compete Rule (Federal Register, Feb 12, 2026)](https://www.federalregister.gov/documents/2026/02/12/2026-02866/revision-of-the-negative-option-rule-withdrawal-of-the-cars-rule-removal-of-the-non-compete-rule-to)
+- [Virginia Retail Franchising Act (Va. Code 13.1-557 et seq.)](https://law.lis.virginia.gov/vacode/title13.1/chapter8/)
+- [NASAA Franchise Advisory on Post-Term Non-Competes (Feb 2025)](https://www.nasaa.org/wp-content/uploads/2025/02/NASAA_Franchise_Advisory_Noncompetes_2-21-2025.pdf)
 - [IFA — International Franchise Association](https://www.franchise.org/)
 - [Emerson, Franchise Contract Clauses and the Franchisor's Duty of Care](https://scholarship.law.ufl.edu/facultypub/)
 

@@ -1,6 +1,7 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, local]
 authorities:
   - cite: "42 U.S.C. §§ 9601-9675 (CERCLA)"

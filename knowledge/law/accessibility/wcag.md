@@ -1,6 +1,7 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [technical-standard, global, us-federal, us-state]
 authorities:
   - cite: "WCAG 2.1 (W3C Recommendation, June 5, 2018; verified 2026-06-11)"

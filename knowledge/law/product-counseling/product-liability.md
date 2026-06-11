@@ -1,7 +1,21 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "Restatement (Third) of Torts: Products Liability (1998), §§ 1-21"
+    title: "Manufacturing/design/warning defect framework and defenses — checked 2026-06-11"
+    url: "https://www.law.cornell.edu/wex/products_liability"
+  - cite: "Wyeth v. Levine, 555 U.S. 555 (2009); Riegel v. Medtronic, 552 U.S. 312 (2008)"
+    title: "Federal preemption of state product claims (drugs vs. Class III PMA devices) — checked 2026-06-11"
+    url: "https://www.law.cornell.edu/wex/products_liability"
+  - cite: "Regulation (EU) 2023/988 (General Product Safety Regulation)"
+    title: "EU GPSR; directly applicable since December 13, 2024 — checked 2026-06-11"
+    url: "https://eur-lex.europa.eu/eli/reg/2023/988/oj/eng"
+  - cite: "Directive (EU) 2024/2853 (revised Product Liability Directive)"
+    title: "Applies to products placed on the market/put into service after Dec. 9, 2026; transposition due Dec. 9, 2026 — checked 2026-06-11"
+    url: "https://eur-lex.europa.eu/eli/dir/2024/2853/oj/eng"
 ---
 # Product Liability
 
@@ -107,7 +121,7 @@ Load this file when a matter involves product defect claims, product safety inci
 - **Consumer Product Safety (consumer-product-safety.md):** CPSC Section 15(b) reporting is triggered by the same defect analysis underlying product liability. CPSC enforcement actions and consent decrees are discoverable.
 - **Insurance:** CGL policies cover product liability (Products-Completed Operations hazard) but exclude recall costs. Punitive damages coverage varies by state.
 - **Data Privacy:** Connected/IoT products with security vulnerabilities causing physical harm create product liability exposure alongside data breach obligations.
-- **International Trade:** Export markets impose separate product safety regimes (EU Product Liability Directive, EU General Product Safety Regulation 2023).
+- **International Trade:** Export markets impose separate product safety and liability regimes. In the EU, the General Product Safety Regulation (Regulation (EU) 2023/988) has applied since December 13, 2024 (directly applicable, replacing the 2001 General Product Safety Directive), and a revised Product Liability Directive (Directive (EU) 2024/2853) applies to products placed on the market or put into service after December 9, 2026, with member states required to transpose it by that date (Directive 85/374/EEC continues to govern products placed on the market earlier). Confirm applicability and transposition status for the relevant member states before advising on EU exposure.
 - **Litigation:** MDL, class actions, expert testimony (Daubert), extensive document discovery, and privilege issues are common in product liability.
 
 ## Sources

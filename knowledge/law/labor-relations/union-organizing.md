@@ -1,6 +1,7 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
 authorities:
   - cite: "Cemex Construction Materials Pacific, LLC, 372 NLRB No. 130 (2023)"

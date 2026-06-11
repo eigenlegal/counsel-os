@@ -1,7 +1,19 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "26 U.S.C. § 4958"
+    title: "Taxes on excess benefit transactions (intermediate sanctions; 25%/200% on disqualified person, 10% up to $20,000 on managers)"
+    url: "https://www.law.cornell.edu/uscode/text/26/4958"
+  - cite: "26 C.F.R. § 53.4958-6"
+    title: "Rebuttable presumption of reasonableness (independent approval, comparability data, contemporaneous documentation)"
+    url: "https://www.law.cornell.edu/cfr/text/26/53.4958-6"
+  - cite: "IRS — Governance and Related Topics, 501(c)(3) Organizations"
+    title: "IRS governance guidance and Form 990 governance disclosures"
+    url: "https://www.irs.gov/charities-non-profits/governance-and-related-topics-501c3-organizations"
+# authorities checked 2026-06-11
 ---
 # Nonprofit Governance
 

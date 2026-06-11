@@ -1,7 +1,19 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "California AB 676 (2022, eff. Jan 1, 2023)"
+    title: "Amendments to the California Franchise Relations Act and Franchise Investment Law"
+    url: "https://leginfo.legislature.ca.gov/faces/billTextClient.xhtml?bill_id=202120220AB676"
+  - cite: "Virginia HB 69 / SB 240 (signed Apr 13, 2026, eff. July 1, 2026); Va. Code 13.1-557 et seq."
+    title: "Virginia Retail Franchising Act — ban on post-term noncompetes; mandatory Virginia governing law"
+    url: "https://law.lis.virginia.gov/vacode/title13.1/chapter8/"
+  - cite: "NASAA Franchise Advisory on Post-Term Non-Competes (Feb 21, 2025)"
+    title: "NASAA guidance that post-term franchise noncompetes should be reasonable in scope, territory, and duration"
+    url: "https://www.nasaa.org/wp-content/uploads/2025/02/NASAA_Franchise_Advisory_Noncompetes_2-21-2025.pdf"
+# Checked 2026-06-11
 ---
 # Franchise Relationship Laws
 
@@ -51,8 +63,15 @@ Applies to the ongoing franchise relationship, particularly termination, non-ren
 #### California — Franchise Relations Act (Bus & Prof Code 20000-20043)
 - **Good Cause** / Required for termination and non-renewal
 - **Notice** / Written notice specifying grounds; reasonable opportunity to cure
-- **Transfer** / Cannot unreasonably withhold consent to transfer
+- **Transfer** / Cannot unreasonably withhold consent to transfer; under AB 676 (eff. Jan 1, 2023) the franchisor must approve or disapprove a transfer within 60 days of a complete application, and the reasonableness of a denial is a question of fact
+- **AB 676 (eff. Jan 1, 2023)** / Also voids FDD/acknowledgment/questionnaire provisions disclaiming franchisee reliance on franchisor representations or on the FDD; restricts offsets against amounts owed to a franchisee on termination/non-renewal to amounts the franchisee agrees to or that are finally adjudicated; bars requiring a general release or modifying terms in exchange for emergency-related assistance; bars discrimination in granting franchises or financial assistance (see `state-franchise-laws.md`)
 - **Consequence**: Strong franchisee protections; active enforcement
+
+#### Virginia — Retail Franchising Act (Va. Code 13.1-557 et seq.)
+- **Post-Term Noncompete Ban (HB 69 / SB 240, eff. July 1, 2026)** / Unlawful to offer or enter a franchise agreement (offered or entered after July 1, 2026) containing a noncompete that restricts a former franchisee from offering, selling, or distributing competing goods/services at retail after termination or expiration; narrow exception permits up to a 2-year restriction where the franchisee sells the franchise at a mutually agreed price to a third party or back to the franchisor
+- **Mandatory Virginia Governing Law** / Any franchise agreement contemplating a place of business in Virginia (offered or entered after July 1, 2026) must be governed by Virginia law; out-of-state choice-of-law clauses are barred
+- **Prospective Only** / Does not impair agreements entered into, extended, or modified on or before July 1, 2026
+- **Consequence**: Revise Virginia franchise forms to drop post-term noncompetes and out-of-state governing-law clauses; the SCC Division of Securities and Retail Franchising has directed franchisors to conform FDDs
 
 #### Iowa — Iowa Franchise Act (Iowa Code 523H)
 - **Good Cause** / Required for termination
@@ -79,6 +98,10 @@ Applies to the ongoing franchise relationship, particularly termination, non-ren
 - **Choice of Law** / Franchise agreements typically select franchisor's home state law; many relationship law states prohibit choice-of-law provisions that would deprive franchisee of state protections / **Consequence**: Choice-of-law clause may be unenforceable as to franchisees in states that prohibit waiver; must apply state law where franchise is located
 - **Merger/Integration Clause** / Does not prevent application of state relationship law protections / **Consequence**: Statutory rights exist independent of contract; integration clause cannot exclude them
 
+### Regulator Guidance on Post-Term Noncompetes (NASAA, Feb 2025)
+
+- **NASAA Franchise Noncompete Advisory (Feb 21, 2025)** / NASAA's Franchise and Business Opportunities Project Group issued an advisory stating that post-term noncompetes are acceptable only if reasonable in duration, geographic scope, and activity restricted, and should be drafted narrowly so a departing franchisee can still earn a living / **Consequence**: Nonbinding, but registration-state examiners frequently follow NASAA guidance and may require narrower covenants as a condition of FDD registration. Distinct from Virginia's statutory ban; see also `franchise-agreements.md`
+
 ## Interaction with Other Areas
 
 - **Antitrust** (`antitrust/`): encroachment and sourcing restrictions may implicate competition law
@@ -90,6 +113,9 @@ Applies to the ongoing franchise relationship, particularly termination, non-ren
 ## Sources
 
 - [California Franchise Relations Act (Bus & Prof Code 20000-20043)](https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?lawCode=BPC&division=8.&title=&part=&chapter=5.5.&article=)
+- [California AB 676 (2022)](https://leginfo.legislature.ca.gov/faces/billTextClient.xhtml?bill_id=202120220AB676)
+- [Virginia Retail Franchising Act (Va. Code 13.1-557 et seq.)](https://law.lis.virginia.gov/vacode/title13.1/chapter8/)
+- [NASAA Franchise Advisory on Post-Term Non-Competes (Feb 2025)](https://www.nasaa.org/wp-content/uploads/2025/02/NASAA_Franchise_Advisory_Noncompetes_2-21-2025.pdf)
 - [New Jersey Franchise Practices Act (N.J.S.A. 56:10-1)](https://law.justia.com/codes/new-jersey/title-56/section-56-10-1/)
 - [Iowa Franchise Act (Iowa Code Chapter 523H)](https://www.legis.iowa.gov/law/iowaCode/sections?codeChapter=523H)
 - [Minnesota Franchise Act (Minn. Stat. 80C)](https://www.revisor.mn.gov/statutes/cite/80C)

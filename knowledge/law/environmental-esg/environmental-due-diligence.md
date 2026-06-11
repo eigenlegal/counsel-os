@@ -1,7 +1,21 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, eu, international]
+authorities:
+  - cite: "40 CFR Part 312 (All Appropriate Inquiries Rule)"
+    title: "AAI rule recognizing ASTM E1527-21 for CERCLA landowner-liability defenses"
+    url: "https://www.ecfr.gov/current/title-40/chapter-I/subchapter-J/part-312"
+    checked: "2026-06-11"
+  - cite: "ASTM E1527-21"
+    title: "Standard Practice for Phase I Environmental Site Assessment (current EPA-recognized AAI standard as of this check)"
+    url: "https://store.astm.org/e1527-21.html"
+    checked: "2026-06-11"
+  - cite: "89 Fed. Reg. 39124 (May 8, 2024)"
+    title: "Designation of PFOA and PFOS as CERCLA Hazardous Substances (effective July 8, 2024; under D.C. Cir. challenge, No. 24-1193)"
+    url: "https://www.epa.gov/superfund/designation-perfluorooctanoic-acid-pfoa-and-perfluorooctanesulfonic-acid-pfos-cercla"
+    checked: "2026-06-11"
 ---
 # Environmental Due Diligence
 
@@ -49,7 +63,8 @@ Applies when a transaction, financing, or business combination requires assessme
 
 - **Standard Database Searches** / Phase I includes searches of federal and state databases: NPL, CERCLIS, RCRA CORRACTS/TSD, state equivalent lists, leaking UST registries, within specified search distances (**0.25 to 1.0 mile** depending on database). / **Consequence**: Database hits within search distances create "adjoining property" RECs that may indicate off-site contamination migrating onto the subject property; these RECs require further evaluation.
 - **Historical Use Records** / Sanborn fire insurance maps, aerial photographs, city directories, building permits, and historical topographic maps. / **Consequence**: Historical records revealing former gas stations, dry cleaners, auto repair shops, or industrial operations are strong indicators of potential contamination; absence from current databases does not mean absence of contamination.
-- **Tribal and Military Records** / Properties near tribal lands or former military installations require additional searches of tribal environmental databases and Department of Defense records (FUDS — Formerly Used Defense Sites). / **Consequence**: Military contamination (unexplored ordnance, PFAS, TCE) can affect properties miles from the former installation; standard database searches may not capture these conditions.
+- **Tribal and Military Records** / Properties near tribal lands or former military installations require additional searches of tribal environmental databases and Department of Defense records (FUDS — Formerly Used Defense Sites). / **Consequence**: Military contamination (unexploded ordnance, PFAS, TCE) can affect properties miles from the former installation; standard database searches may not capture these conditions.
+- **PFAS / Emerging Contaminants** / PFOA and PFOS are CERCLA hazardous substances (effective July 8, 2024; designation under D.C. Cir. challenge, No. 24-1193), and ASTM E1527-21 expressly addresses evaluation of emerging contaminants such as PFAS where relevant. / **Consequence**: PFAS exposure (from AFFF/firefighting foam, plating, textiles, landfills, biosolids application) can create Superfund response-cost and contribution liability that a conventional Phase I scoped only to listed hazardous substances may miss; scope PFAS investigation explicitly when site history warrants, and confirm the current designation/litigation status before pricing PFAS risk into indemnities or insurance.
 
 ## Interaction with Other Areas
 

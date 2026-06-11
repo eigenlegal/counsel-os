@@ -1,7 +1,24 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "Consumer Product Safety Act, 15 U.S.C. §§ 2051–2089; CPSIA of 2008 (Pub. L. 110-314)"
+    title: "CPSA/CPSIA statutory framework; lead, phthalate, certification, and tracking-label requirements — checked 2026-06-11"
+    url: "https://www.cpsc.gov/Regulations-Laws--Standards/Statutes"
+  - cite: "16 C.F.R. Part 1110 (eFiling final rule revising certificate requirements)"
+    title: "CPSC eFiling of certificates of compliance; most imports eff. July 8, 2026, FTZ eff. Jan. 8, 2027 — checked 2026-06-11"
+    url: "https://www.cpsc.gov/Business--Manufacturing/Business-Education/Business-Guidance/Certificates"
+  - cite: "16 C.F.R. Part 1262 (Safety Standard for Magnets), 87 FR 57756"
+    title: "Mandatory magnet performance standard effective Oct. 21, 2022 (flux index < 50 kG²·mm²) — checked 2026-06-11"
+    url: "https://www.cpsc.gov/Business--Manufacturing/Business-Education/Business-Guidance/Magnets"
+  - cite: "16 C.F.R. Part 1263 (Reese's Law; Pub. L. 117-171); UL 4200A"
+    title: "Button-cell/coin-battery child-resistance and warning-label requirements; packaging label rule eff. Sept. 21, 2024 — checked 2026-06-11"
+    url: "https://www.cpsc.gov/Business--Manufacturing/Business-Education/Business-Guidance/Button-Cell-and-Coin-Battery"
+  - cite: "ASTM F963 (Standard Consumer Safety Specification for Toy Safety)"
+    title: "Mandatory toy safety standard incorporated under CPSIA § 106 — checked 2026-06-11"
+    url: "https://www.cpsc.gov/Business--Manufacturing/Business-Education/Toy-Safety"
 ---
 # Consumer Product Safety
 

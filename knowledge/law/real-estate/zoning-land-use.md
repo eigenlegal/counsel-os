@@ -1,7 +1,15 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
-jurisdiction: [us-state, local]
+last-reviewed: "2026-06-11"
+jurisdiction: [us-federal, us-state, local]
+authorities:
+  - cite: "Cal. AB 130 / SB 131 (2025, eff. July 1, 2025)"
+    title: "CEQA reform — statutory infill-housing exemption and narrowed 'near-miss' review"
+    url: "https://www.gov.ca.gov/2025/06/30/governor-newsom-signs-into-law-groundbreaking-reforms-to-build-more-housing-affordability/"
+  - cite: "Cal. Pub. Res. Code § 21000 et seq. (CEQA)"
+    title: "California Environmental Quality Act"
+    url: "https://leginfo.legislature.ca.gov/faces/codesTOCSelected.xhtml?tocCode=PRC&tocTitle=+Public+Resources+Code+-+PRC"
 ---
 # Zoning and Land Use
 
@@ -48,7 +56,7 @@ Applies when a real estate matter involves permitted uses, development approvals
 
 ### Environmental Review
 
-- **CEQA (California)** / Projects with potential significant environmental impacts require an Environmental Impact Report (EIR). Categorical exemptions for minor projects. / **Consequence**: EIR process adds **12-24 months** to project timeline; inadequate EIR is grounds for project invalidation.
+- **CEQA (California)** / Projects with potential significant environmental impacts require an Environmental Impact Report (EIR). Categorical exemptions for minor projects. / **Consequence**: EIR process adds **12-24 months** to project timeline; inadequate EIR is grounds for project invalidation. **SOURCE CHECK NEEDED:** the 2025 budget bills AB 130 and SB 131 (signed June 30, 2025, effective July 1, 2025) created a broad statutory CEQA exemption for qualifying infill housing (sites generally under 20 acres in urban areas meeting local zoning, requiring only a Phase I ESA) and narrowed "near-miss" review to the single disqualifying condition — confirm whether a California infill or covered project now qualifies for the new exemption before assuming a full EIR is required.
 - **NEPA (Federal)** / Required for federal actions (permits, funding, land). Environmental Assessment (EA) or full Environmental Impact Statement (EIS). / **Consequence**: EIS process typically takes **18-36 months**; legal challenges under NEPA can delay projects for years.
 - **Mitigated Negative Declaration** / Available when mitigation measures reduce all impacts to less-than-significant levels. / **Consequence**: Faster than full EIR (**4-8 months**) but vulnerable to challenge if mitigation is inadequate.
 
@@ -57,7 +65,7 @@ Applies when a real estate matter involves permitted uses, development approvals
 - **Environmental & ESG** — Environmental review requirements overlay zoning approvals; contamination may limit permitted uses
 - **Construction** — Building permits require zoning compliance; construction cannot begin before zoning approvals
 - **Corporate** — Entity structuring for development projects; development agreements may require specific entity types
-- **Real Estate Transactions** — Zoning due diligence is critical in acquisitions; representations regarding permitted uses
+- **Real Estate Transactions** — Zoning due diligence is critical in acquisitions; representations regarding permitted uses; state foreign-ownership statutes (e.g., FL SB 264, TX SB 17) may bar acquisition regardless of zoning (see `real-estate-transactions.md`)
 
 ## Sources
 
