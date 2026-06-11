@@ -49,6 +49,7 @@ Optional overrides (defaults shown):
 entities_path: entities
 matters_path: matters
 auto_apply_law_updates: false
+law_management: plugin
 entity_properties:
   type_field: counsel-os-type
   values: [counterparty, vendor, customer, prospect, matter]
@@ -57,6 +58,12 @@ entity_properties:
 `auto_apply_law_updates: true` lets `/counsel-os:update` apply plugin-managed law
 content without per-area approval (one-time consent instead of every-update
 prompts). Practice content always requires approval regardless of this flag.
+
+`law_management: user` makes the ENTIRE law library user-owned: update stops
+syncing law content entirely, and `/counsel-os:law-refresh` maintains it instead.
+For per-file ownership, set `managed-by: user` in an individual law file's
+frontmatter — update skips marked files (even under auto-apply) and law-refresh
+maintains them. Custom law areas the user creates are user-owned automatically.
 
 ## Path resolution
 
