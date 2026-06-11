@@ -2,7 +2,20 @@
 counsel-os-type: law-area
 content-version: "2026-06-11"
 jurisdiction: [us-federal, us-state, network-rules, industry-standard]
-last-reviewed: "2026-06-10"
+last-reviewed: "2026-06-11"
+authorities:
+  - cite: "31 U.S.C. § 5311 et seq."
+    title: "Bank Secrecy Act (BSA) — AML program, registration, and reporting framework"
+    url: "https://www.law.cornell.edu/uscode/text/31/5311"
+  - cite: "18 U.S.C. § 1960"
+    title: "Prohibition of unlicensed money transmitting businesses"
+    url: "https://www.law.cornell.edu/uscode/text/18/1960"
+  - cite: "Pub. L. 119-27 (GENIUS Act, July 18, 2025)"
+    title: "Guiding and Establishing National Innovation for U.S. Stablecoins Act — federal payment-stablecoin framework"
+    url: "https://www.congress.gov/119/plaws/publ27/PLAW-119publ27.pdf"
+  - cite: "CSBS Money Transmission Modernization Act"
+    title: "Model state money-transmission law — 32 states enacted in full or part as of May 2026"
+    url: "https://www.csbs.org/csbs-money-transmission-modernization-act-mtma"
 ---
 # Financial Services
 
