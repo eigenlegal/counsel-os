@@ -1,0 +1,42 @@
+{
+  "findings": [
+    {
+      "title": "Five-business-day processor breach notice violates GDPR Art. 33 — law overrides our practice standard",
+      "severity": "red",
+      "clause": "Processor shall notify Controller of any Personal Data Breach within five (5) business days of becoming aware of such breach.",
+      "rationale": "Our practice standard (practice/standards/data-protection.md) classifies a five-business-day processor notice window as GREEN, but this processing involves EU personal data and law takes precedence over practice. GDPR Art. 33(2) requires the processor to notify the controller without undue delay; GDPR Art. 33(1) gives us, as controller, only 72 clock hours from awareness to notify the competent supervisory authority. Five business days (up to seven calendar days) consumes or exceeds our entire 72-hour window before we even learn of the breach, and supervisory guidance treats multi-business-day processor notice windows as non-compliant for GDPR-scope processing (law/data-privacy.md). This is a law conflict, not a negotiation item: require 'without undue delay and in any event within forty-eight (48) hours of becoming aware' (or shorter), the accepted contractual pattern that preserves the 72-hour chain. Exposure for Art. 33 violations is up to EUR 10M or 2% of worldwide annual turnover under GDPR Art. 83(4). Our profile also requires flagging any deviation on data-breach obligations (practice/profile.md). Tier 1 — must change before signature.",
+      "citations": [
+        "law/data-privacy.md",
+        "GDPR Art. 33(1)",
+        "GDPR Art. 33(2)",
+        "GDPR Art. 83(4)",
+        "practice/standards/data-protection.md",
+        "practice/profile.md"
+      ]
+    },
+    {
+      "title": "Controller 'solely responsible' for notifications — allocation is correct but processor assistance obligations must not be displaced",
+      "severity": "yellow",
+      "clause": "Controller shall be solely responsible for any required notifications to supervisory authorities or data subjects.",
+      "rationale": "The allocation itself matches GDPR: the controller, not the processor, owes the Art. 33(1) notification to supervisory authorities and the Art. 34 communication to data subjects. But 'solely responsible' paired with a bare notice obligation risks being read to relieve the processor of its mandatory assistance duties. GDPR Art. 28(3)(f) requires the DPA to obligate the processor to assist the controller in complying with Arts. 32-36, and we cannot make a compliant Art. 33(1) filing without the breach details described in Art. 33(3) (nature of the breach, categories and approximate numbers of data subjects and records, likely consequences, measures taken). Revise to add: processor shall provide the information described in GDPR Art. 33(3) in phases as it becomes available, cooperate with and reasonably assist Controller in meeting its obligations under GDPR Arts. 33-34, and not notify any supervisory authority or data subject on Controller's behalf without instruction. If equivalent assistance language exists elsewhere in the DPA, this sentence is acceptable; if this clause is the entirety of the breach provision, the missing Art. 28(3)(f) assistance term is a compliance gap and escalates to red. Tier 2.",
+      "citations": [
+        "GDPR Art. 28(3)(f)",
+        "GDPR Art. 33(1)",
+        "GDPR Art. 33(3)",
+        "GDPR Art. 34",
+        "law/data-privacy.md"
+      ]
+    }
+  ],
+  "citations": [
+    "law/data-privacy.md",
+    "practice/standards/data-protection.md",
+    "practice/profile.md",
+    "GDPR Art. 28(3)(f)",
+    "GDPR Art. 33(1)",
+    "GDPR Art. 33(2)",
+    "GDPR Art. 33(3)",
+    "GDPR Art. 34",
+    "GDPR Art. 83(4)"
+  ]
+}
