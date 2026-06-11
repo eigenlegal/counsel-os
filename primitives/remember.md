@@ -267,7 +267,7 @@ The user says "import these agreements / this form book / this folder as referen
    ```bash
    bash "${CLAUDE_PLUGIN_ROOT}/scripts/import_reference.sh" <source-dir> <collection-slug> --source "<attribution, vintage>"
    ```
-   Conversion note baked into the script: pandoc's `markdown` flavor, never `gfm` — gfm silently drops complex tables.
+   Conversion note baked into the script: pandoc's `markdown` flavor with raw HTML stripped, never `gfm` — with raw HTML disabled, gfm collapses complex tables to a bare "[TABLE]" placeholder, while the `markdown` flavor keeps them as grid tables. (Plain `gfm` preserves tables only by embedding raw HTML, which defeats the clean-markdown goal.)
 3. **Without shell (Cowork):** ask the user for markdown/text versions, then create the files by hand following the same convention: `counsel-os-type: reference` + `reference-collection` + `source` + `imported` + `caution` frontmatter, the "⚠️ Reference only" banner as the first body line, an `_index.md` per collection, and a line in `practice/reference/_index.md`.
 4. **Reindex** if a content index is connected (`qmd update && qmd embed`), so the material is retrievable in the next matter.
 5. **Offer distillation as a follow-up, not a default.** The raw import is a quarry. The durable upgrade is mining it later: clause language re-expressed into `practice/library/` variants, checklists into `practice/methods/` — clean-room re-expression, with stale citations dropped and current law supplied by `law/`.

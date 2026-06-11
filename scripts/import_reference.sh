@@ -9,8 +9,10 @@
 #
 # Handles: .docx (pandoc), legacy .doc (textutil → pandoc, macOS only),
 # .md/.markdown/.txt (passed through). Other types are skipped with a warning.
-# Uses pandoc's `markdown` flavor, NOT gfm — gfm silently drops complex
-# tables as "[TABLE]".
+# Uses pandoc's `markdown` flavor with raw_html disabled, NOT gfm: with raw
+# HTML stripped, gfm collapses complex tables to a bare "[TABLE]" placeholder,
+# while the markdown flavor keeps them as grid tables. (Plain gfm preserves
+# tables only as embedded raw HTML — also unwanted here.)
 #
 # Reference content is source material OUTSIDE the precedence layers: it
 # informs issue-spotting and sample language, never governs, and must be
@@ -105,7 +107,7 @@ echo "$LIST" | while IFS= read -r f; do
       printf -- '---\n'
       printf 'counsel-os-type: reference\n'
       printf 'reference-collection: %s\n' "$COLLECTION"
-      printf 'source: "%s"\n' "$ATTRIBUTION"
+      printf 'source: "%s — %s"\n' "$ATTRIBUTION" "$title"
       printf 'title: "%s"\n' "$title"
       printf 'imported: %s\n' "$TODAY"
       printf 'caution: "Third-party reference. Issue-spotting and sample language only; verify against current law/ before relying. Not a Counsel OS position or legal advice."\n'

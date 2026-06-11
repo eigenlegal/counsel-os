@@ -16,11 +16,29 @@ Exit codes: 0 clean, 1 findings.
 import argparse
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 KNOWLEDGE = REPO / "knowledge"
+
+
+def knowledge_files() -> list[Path]:
+    """Lint only git-tracked files. Checkouts can carry gitignored leftovers
+    under knowledge/ (e.g. the pre-removal seed templates ignored since
+    ae365c1) that aren't repo content and must not fail the gate."""
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(REPO), "ls-files", "knowledge/"],
+            capture_output=True, text=True, check=True,
+        ).stdout
+        files = [REPO / line for line in out.splitlines() if line.endswith(".md")]
+        if files:
+            return sorted(files)
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        pass  # not a git checkout (e.g. plugin cache) — fall back to the filesystem
+    return sorted(KNOWLEDGE.rglob("*.md"))
 
 # Documentation files that live inside knowledge/ but aren't content —
 # exempt from frontmatter requirements.
@@ -37,7 +55,7 @@ def split_frontmatter(text: str) -> tuple[str, str]:
 
 def lint_knowledge() -> list[str]:
     problems = []
-    for f in sorted(KNOWLEDGE.rglob("*.md")):
+    for f in knowledge_files():
         if f.name in DOC_FILES:
             continue
         rel = f.relative_to(REPO)
