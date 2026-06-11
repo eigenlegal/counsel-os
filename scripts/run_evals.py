@@ -24,8 +24,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
+import shutil
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -213,12 +217,94 @@ def self_test(repo_root: Path) -> int:
     return 0 if all(report["score"] >= 0.95 for report in reports) else 1
 
 
+# ─── Generation (headless agent runs against fixture mini-vaults) ──────────
+
+OUTPUT_CONTRACT = """
+
+OUTPUT REQUIREMENT — this is a non-interactive run; do not ask questions, decide and proceed.
+When your analysis is complete, write your findings as a single valid JSON file at exactly this path:
+{out_path}
+Schema:
+{{"findings": [{{"title": str, "severity": "red|yellow|green", "clause": str, "rationale": str, "citations": [str]}}], "citations": [str]}}
+The citations arrays must name the knowledge files and legal authorities you actually relied on
+(e.g., "law/data-privacy.md", "GDPR Art. 33", "practice/standards/data-protection.md").
+Write ONLY the JSON to that file — no markdown fences, no prose. Other than that output file and
+any matter notes inside your legal root, do not create or modify files."""
+
+EVAL_ALLOWED_TOOLS = "Skill Task Bash Read Write Edit MultiEdit Glob Grep LS WebFetch WebSearch TodoWrite"
+
+
+def generate_output(
+    fixture: dict[str, Any],
+    repo_root: Path,
+    outputs_dir: Path,
+    model: str | None,
+) -> tuple[bool, str]:
+    """Run the counsel agent headlessly against the fixture's mini-vault."""
+    vault_name = fixture.get("vault")
+    task = fixture.get("task")
+    if not vault_name or not task:
+        return False, "fixture has no vault/task — legacy fixture, generate its output manually"
+
+    vault_src = repo_root / "evals" / "vaults" / vault_name
+    if not vault_src.is_dir():
+        return False, f"vault not found: {vault_src}"
+
+    outputs_dir.mkdir(parents=True, exist_ok=True)
+    out_path = (outputs_dir / f"{fixture['id']}.json").resolve()
+    out_path.unlink(missing_ok=True)
+
+    tmp = Path(tempfile.mkdtemp(prefix="counsel-eval-"))
+    try:
+        vault = tmp / "vault"
+        shutil.copytree(vault_src, vault)
+        cfg = vault / "config.md"
+        cfg.write_text(cfg.read_text(encoding="utf-8").replace("__VAULT_PATH__", str(vault)), encoding="utf-8")
+
+        prompt = task + OUTPUT_CONTRACT.format(out_path=out_path)
+        cmd = [
+            "claude", "-p", prompt,
+            "--plugin-dir", str(repo_root),
+            "--allowedTools", EVAL_ALLOWED_TOOLS,
+            "--max-turns", "40",
+        ]
+        if model:
+            cmd += ["--model", model]
+
+        env = dict(os.environ)
+        env["COUNSEL_OS_LEGAL_ROOT"] = str(vault)
+
+        try:
+            proc = subprocess.run(
+                cmd, cwd=tmp, env=env, capture_output=True, text=True, timeout=540,
+            )
+        except subprocess.TimeoutExpired:
+            return False, "agent run timed out (540s)"
+
+        if not out_path.exists():
+            tail = (proc.stdout or "")[-500:] + (proc.stderr or "")[-300:]
+            return False, f"agent exited {proc.returncode} without writing output. Tail: {tail}"
+
+        try:
+            load_json(out_path)
+        except json.JSONDecodeError as exc:
+            return False, f"output is not valid JSON: {exc}"
+
+        return True, f"output written ({out_path.stat().st_size} bytes)"
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Score Counsel OS golden-matter eval outputs.")
     parser.add_argument("--fixtures", type=Path, default=None)
     parser.add_argument("--outputs", type=Path, default=None)
     parser.add_argument("--fail-under", type=float, default=None)
     parser.add_argument("--self-test", action="store_true")
+    parser.add_argument("--generate", action="store_true",
+                        help="run the agent headlessly against each fixture's mini-vault to produce outputs before scoring")
+    parser.add_argument("--model", type=str, default=None, help="model for --generate runs (default: user's default)")
+    parser.add_argument("--only", type=str, default=None, help="restrict to a single fixture id")
     args = parser.parse_args()
 
     repo_root = Path(__file__).resolve().parents[1]
@@ -229,7 +315,18 @@ def main() -> int:
     fixtures = args.fixtures if args.fixtures is not None else repo_root / "evals" / "fixtures"
     outputs = args.outputs if args.outputs is not None else repo_root / "evals" / "outputs"
 
+    if args.generate:
+        for fixture_path in fixture_paths(fixtures):
+            fixture = load_json(fixture_path)
+            if args.only and fixture["id"] != args.only:
+                continue
+            ok, msg = generate_output(fixture, repo_root, outputs, args.model)
+            print(f"[generate] {fixture['id']}: {'OK' if ok else 'FAILED'} — {msg}", file=sys.stderr)
+
     reports, missing = run_scores(fixtures, outputs)
+    if args.only:
+        reports = [r for r in reports if r["fixture"] == args.only]
+        missing = [m for m in missing if m == args.only]
     print_report(reports, missing)
 
     if missing:

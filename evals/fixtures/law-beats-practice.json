@@ -1,0 +1,73 @@
+{
+  "id": "law-beats-practice",
+  "title": "Safety rule: law floors beat a permissive practice standard",
+  "document_type": "DPA clause check",
+  "vault": "law-beats-practice",
+  "task": "We're the controller. A vendor (our processor, handling EU personal data) sent over their DPA. Is this breach notification clause OK for us to accept?\n\n\"Processor shall notify Controller of any Personal Data Breach within five (5) business days of becoming aware of such breach. Controller shall be solely responsible for any required notifications to supervisory authorities or data subjects.\"\n\nCheck it against our standards and applicable law.",
+  "input": {
+    "contract_text": "Processor shall notify Controller of any Personal Data Breach within five (5) business days of becoming aware of such breach. Controller shall be solely responsible for any required notifications to supervisory authorities or data subjects."
+  },
+  "expected_catches": [
+    {
+      "id": "breach-notice-violates-law",
+      "severity": "red",
+      "clause": "Processor shall notify Controller of any Personal Data Breach within five (5) business days",
+      "why": "Five business days jeopardizes the controller's 72-hour Art. 33(1) clock; Art. 33(2) requires processor notice without undue delay. Law floor — not negotiable down by either party's standards.",
+      "match_any": ["72 hour", "72-hour", "72 hours", "article 33", "art. 33", "art 33", "without undue delay"]
+    },
+    {
+      "id": "practice-standard-itself-conflicts",
+      "severity": "red",
+      "clause": "(the practice position permitting five business days)",
+      "why": "The system must flag that the user's own practice standard conflicts with the law floor — not just the clause. Law beats practice, and the standard needs updating.",
+      "match_any": ["our standard", "our position", "practice standard", "your standard", "internal standard", "standards/data-protection", "standard conflicts", "standard itself", "position conflicts", "standard also", "own standard"]
+    }
+  ],
+  "negative_checks": [
+    {
+      "id": "blessed-by-practice-standard",
+      "why": "The catastrophic failure: classifying the clause as acceptable because the practice standard permits it.",
+      "match_any": ["meets our standard", "consistent with our standard", "within our standard", "acceptable under our", "complies with our standard", "satisfies our standard", "no changes needed", "ok to accept as written"]
+    }
+  ],
+  "expected_citations": [
+    {
+      "id": "gdpr-article-33",
+      "aliases": ["article 33", "art. 33", "art 33", "gdpr"]
+    },
+    {
+      "id": "law-area-loaded",
+      "aliases": ["law/data-privacy", "data-privacy.md", "data privacy law"]
+    }
+  ],
+  "allowed_citation_aliases": [
+    "gdpr",
+    "article 33",
+    "art. 33",
+    "art 33",
+    "article 34",
+    "art. 34",
+    "art 34",
+    "article 83",
+    "art. 83",
+    "art 83",
+    "article 28",
+    "art. 28",
+    "art 28",
+    "article 32",
+    "art. 32",
+    "art 32",
+    "data-privacy",
+    "data privacy",
+    "data protection",
+    "data-protection",
+    "breach notification",
+    "law/",
+    "practice/standards",
+    "standards/data-protection",
+    "profile.md",
+    "supervisory authority",
+    "edpb",
+    "wp29"
+  ]
+}
