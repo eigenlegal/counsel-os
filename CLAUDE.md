@@ -32,7 +32,7 @@ templates/memory/    — Seed template for patterns.md
 - **Positions/methods/library**: Edit in `knowledge/practice-seed/`. Users get these via `/counsel-os:setup` (initial) and `/counsel-os:update` (sync). Practice content is user-owned — update offers suggestions, never overwrites.
 - **Law areas**: Edit in `knowledge/law/`. These are plugin-managed — update overwrites the user's copies.
 - **Scripts**: Python/bash in `scripts/`. Test locally before pushing.
-- **Version / release**: Run `scripts/release.sh <X.Y.Z> -m "subject" [-b "body"]` — bumps all four manifests (VERSION, package.json, .claude-plugin/plugin.json, .claude-plugin/marketplace.json), runs the knowledge lint + version-sync check, commits the working tree as one release commit, and pushes. `--tag` additionally creates a `claude plugin tag` release tag.
+- **Version / release**: Run `scripts/release.sh <X.Y.Z> -m "subject" [-b "body"]` — bumps all four manifests (VERSION, package.json, .claude-plugin/plugin.json, .claude-plugin/marketplace.json), prepends the CHANGELOG entry, runs the knowledge lint + version-sync check, commits the working tree as one release commit, tags `vX.Y.Z` (fires the release-binaries workflow), and pushes commit + tag. `--no-tag` skips tagging.
 
 ## Testing
 

@@ -1,7 +1,21 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "MCA 39-2-901 et seq."
+    title: "Montana Wrongful Discharge From Employment Act"
+    url: "https://mca.legmt.gov/bills/mca/title_0390/chapter_0020/part_0090/sections_index.html"
+  - cite: "MCA 39-2-904"
+    title: "WDEA elements of wrongful discharge, including the 12-month default probationary period (18-month maximum) added by the 2021 amendments"
+    url: "https://mca.legmt.gov/bills/mca/title_0390/chapter_0020/part_0090/section_0040/0390-0020-0090-0040.html"
+  - cite: "Restatement of Employment Law (ALI 2015)"
+    title: "Chapter 2 — at-will default rule and exceptions (implied contract, public policy, good faith)"
+    url: "https://www.ali.org/publications/show/employment-law/"
+  - cite: "BLS Monthly Labor Review (Jan. 2001)"
+    title: "The employment-at-will doctrine: three major exceptions — state-by-state recognition survey (counts vary by source)"
+    url: "https://www.bls.gov/opub/mlr/2001/01/art1full.pdf"
 ---
 # At-Will Employment
 
@@ -25,7 +39,7 @@ in all US states except Montana.
 
 ### Three Exception Categories
 
-**1. Implied Contract Exception (recognized in ~38 states)**
+**1. Implied Contract Exception (recognized in most states — commonly cited counts range from the mid-30s to low 40s, varying by source)**
 
 - **What**: Employer statements, policies, or conduct can create an implied promise of
   continued employment or termination-only-for-cause, overriding at-will status.
@@ -43,7 +57,7 @@ in all US states except Montana.
   promising "permanent" employment, supervisor emails referencing job security,
   practices of always following progressive discipline before termination.
 
-**2. Public Policy Exception (recognized in ~44 states)**
+**2. Public Policy Exception (recognized in roughly 42-44 states; counts vary by source)**
 
 - **What**: Termination that violates a clear mandate of public policy is actionable
   as wrongful discharge in tort, regardless of at-will status.
@@ -60,19 +74,21 @@ in all US states except Montana.
   Tameny v. Atlantic Richfield Co. (1980). Public policy sources include statutes,
   constitutional provisions, administrative regulations, and judicial decisions.
   This is one of the broadest public policy exceptions in the nation.
-- **States not recognizing**: Georgia, Louisiana, Rhode Island, and Maine do not
-  recognize a general public policy exception. Florida and New York recognize it only
+- **States not recognizing**: Alabama, Georgia, Louisiana, Rhode Island, and Maine do
+  not recognize a general public policy exception. Florida and New York recognize it only
   in narrow statutory contexts, relying instead on specific whistleblower statutes.
 
-**3. Implied Covenant of Good Faith and Fair Dealing (recognized in ~11 states)**
+**3. Implied Covenant of Good Faith and Fair Dealing (recognized in ~11 states; counts vary by source)**
 
 - **What**: An implied covenant prevents termination made in bad faith, typically
   to deprive the employee of compensation already substantially earned.
 - **Threshold**: Requires showing the employer terminated the employee specifically to
   avoid paying commissions, bonuses, pensions, or other accrued benefits that were
   substantially earned. This is the narrowest of the three exceptions.
-- **Consequence**: Contract damages in most states. Some jurisdictions (Montana, Alaska)
-  allow tort damages including punitive damages for bad-faith discharge.
+- **Consequence**: Contract damages in nearly all recognizing states — California
+  expressly limited the claim to contract remedies in Foley. Montana's pre-WDEA cases
+  treated bad-faith discharge as a tort, but the WDEA (1987) displaced common-law
+  wrongful-discharge claims there.
 - **Key states**: California (narrow — Fortune v. National Cash Register Co. principle,
   limited to preventing employers from terminating to deny already-earned compensation),
   Massachusetts (Fortune v. National Cash Register Co., 1977), Alaska (Mitford v.
@@ -82,24 +98,31 @@ in all US states except Montana.
 
 - **What**: Montana is the only state requiring "good cause" for termination after a
   probationary period. Good cause means reasonable job-related grounds for dismissal
-  based on failure to satisfactorily perform, disruption of operations, or other
-  legitimate business reason.
-- **Probationary period**: Defaults to 6 months unless extended by written agreement.
-  Some positions may have up to 12 months. During probation, at-will rules apply.
+  based on failure to satisfactorily perform, disruption of operations, the employee's
+  material or repeated violation of an express provision of the employer's written
+  policies (prong added by the 2021 amendments), or other legitimate business reason
+  (MCA 39-2-903).
+- **Probationary period**: Under the 2021 amendments (MCA 39-2-904(2)), if the employer
+  does not establish a specific period (or provide that there is none) at or before
+  hire, the probationary period is 12 months from the date the employee begins work.
+  The employer may extend it before it expires, but the total may not exceed 18 months.
+  During probation, at-will rules apply.
 - **Consequence**: Wrongful discharge damages capped at 4 years of lost wages and
   benefits. Punitive damages available only if employer acted with actual fraud or
   malice. Claim must be filed within 1 year of discharge or within 1 year of
   exhausting internal remedies. Jury trial is available.
 - **Practical impact**: Montana employers must document cause before terminating
   post-probationary employees. No other state has enacted a comparable statute,
-  though similar proposals have been introduced in multiple state legislatures.
+  though similar proposals have been introduced in multiple state legislatures, and
+  a few localities (e.g., New York City for fast-food workers) have enacted
+  sector-specific just-cause ordinances.
 
 ### Handbook as Contract Risk
 
 - **What**: Employee handbooks containing progressive discipline policies, termination
   procedures, or benefit promises can create binding contractual obligations.
 - **Threshold**: Handbooks without conspicuous, prominently placed disclaimers are
-  at risk in the ~38 states recognizing implied contract claims. Disclaimers must be
+  at risk in the majority of states recognizing implied contract claims. Disclaimers must be
   consistent throughout — a disclaimer on page 1 can be undermined by specific
   promises on page 30.
 - **Consequence**: Courts in California (Guz v. Bechtel National, 2000), Michigan
@@ -159,6 +182,6 @@ in all US states except Montana.
 ## Sources
 
 - [Restatement of Employment Law, Third](https://www.ali.org/publications/show/employment-law/) — ALI restatement covering at-will doctrine and exceptions
-- [Montana WDEA, MCA 39-2-901 et seq.](https://leg.mt.gov/bills/mca/title_0390/chapter_0020/part_0090/sections_index.html) — Montana's statutory modification of at-will
+- [Montana WDEA, MCA 39-2-901 et seq.](https://mca.legmt.gov/bills/mca/title_0390/chapter_0020/part_0090/sections_index.html) — Montana's statutory modification of at-will (as amended 2021)
 - [BLS: Employment at Will (Monthly Labor Review)](https://www.bls.gov/opub/mlr/2001/01/art1full.pdf) — Historical analysis of the at-will doctrine
 - [NOLO: At-Will Employment by State](https://www.nolo.com/legal-encyclopedia/employment-at-will-definition-30022.html) — State-by-state exception recognition guide

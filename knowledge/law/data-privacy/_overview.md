@@ -1,7 +1,21 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, eu, international]
+authorities:
+  - cite: "Regulation (EU) 2016/679"
+    title: "General Data Protection Regulation"
+    url: "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32016R0679"
+  - cite: "Cal. Civ. Code § 1798.100 et seq."
+    title: "California Consumer Privacy Act of 2018, as amended by the California Privacy Rights Act (Prop. 24)"
+    url: "https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?article=&chapter=&division=3.&lawCode=CIV&part=4.&title=1.81.5."
+  - cite: "15 U.S.C. §§ 6501-6506"
+    title: "Children's Online Privacy Protection Act (COPPA)"
+    url: "https://www.law.cornell.edu/uscode/text/15/chapter-91"
+  - cite: "15 U.S.C. §§ 6801-6809"
+    title: "Gramm-Leach-Bliley Act privacy provisions (financial institution privacy and safeguards)"
+    url: "https://www.law.cornell.edu/uscode/text/15/chapter-94/subchapter-I"
 ---
 # Data Privacy
 
@@ -21,7 +35,7 @@ Load this area when the document or matter involves ANY of the following:
 | `us-eu-core.md` | Any US, California, EU/EEA, GDPR, SCC, CCPA/CPRA, US state privacy, COPPA, or GLBA privacy issue is present; load first as the source map before relying on detailed summaries |
 | `gdpr.md` | Parties are in the EU/EEA, data subjects are EU residents, UK GDPR applies, or GDPR is referenced explicitly |
 | `ccpa-cpra.md` | California residents' data is involved, "sale" or "sharing" of personal information is discussed, or CCPA/CPRA is referenced |
-| `us-state-privacy.md` | Company operates in or targets residents of Virginia, Colorado, Connecticut, Utah, Texas, Oregon, Montana, Iowa, Indiana, Tennessee, Delaware, Maryland, Minnesota, Nebraska, New Hampshire, New Jersey, Kentucky, Rhode Island, or other states with comprehensive privacy laws (~20 as of mid-2026) |
+| `us-state-privacy.md` | Company operates in or targets residents of Virginia, Colorado, Connecticut, Utah, Texas, Oregon, Montana, Iowa, Indiana, Tennessee, Delaware, Maryland, Minnesota, Nebraska, New Hampshire, New Jersey, Kentucky, Rhode Island, or other states with comprehensive privacy laws (~22 enacted as of mid-2026, counting Florida's narrower law — Oklahoma (SB 546, eff. Jan. 1, 2027) and Alabama (APDPA, eff. May 1, 2027) were enacted in spring 2026) |
 | `international.md` | Parties or data subjects are in Canada, Brazil, Singapore, Australia, Japan, South Korea, India, China, or other non-US/EU jurisdictions |
 | `coppa.md` | Product or service is directed to children under 13, collects data from children, or involves age verification or parental consent |
 | `consent-mechanics.md` | Agreement addresses consent collection, cookie consent, opt-in/opt-out mechanisms, consent withdrawal, or granular consent for multiple processing purposes |

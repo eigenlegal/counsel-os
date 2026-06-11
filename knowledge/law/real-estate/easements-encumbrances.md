@@ -1,7 +1,15 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-state, local]
+authorities:
+  - cite: "Restatement (Third) of Property: Servitudes (ALI 2000)"
+    title: "Modern doctrine for easements, covenants, and servitudes — creation, scope, assignability of commercial easements in gross, and termination"
+    url: "https://www.ali.org/publications/show/property-servitudes/"
+  - cite: "42 U.S.C. §§ 3601-3619"
+    title: "Fair Housing Act — discriminatory covenants and CC&R provisions unenforceable"
+    url: "https://www.law.cornell.edu/uscode/text/42/chapter-45"
 ---
 # Easements and Encumbrances
 

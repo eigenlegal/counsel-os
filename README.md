@@ -228,7 +228,7 @@ Only relevant if you're developing Counsel OS itself:
 
 | Script | What it does | When |
 |--------|-------------|------|
-| `scripts/release.sh <X.Y.Z> -m "subject" [-b "body"] [--tag] [--no-push]` | One-command release: bumps all four version manifests, runs the lint + version-sync gate, commits the working tree, pushes. `--tag` adds a `claude plugin tag` release tag. | Every release. Never bump the four manifests by hand. |
+| `scripts/release.sh <X.Y.Z> -m "subject" [-b "body"] [--no-tag] [--no-push]` | One-command release: bumps all four version manifests, prepends the CHANGELOG entry, runs the lint + version-sync gate, commits the working tree, tags `vX.Y.Z` (fires the release-binaries workflow), pushes commit + tag. | Every release. Never bump the four manifests by hand. |
 | `scripts/lint_knowledge.py [--check-versions]` | Lints `knowledge/` conventions (no checkboxes, no H2-before-H1, frontmatter present) and, with the flag, verifies the four manifests agree. Runs in CI. | Before committing knowledge content changes. |
 | `scripts/bump_content_versions.py [--date YYYY-MM-DD]` | Hashes each content group and bumps `content-version` frontmatter for groups that changed — this is what lets `/counsel-os:update` detect upstream law/practice changes. | After editing anything under `knowledge/law/` or `knowledge/practice-seed/`. |
 | `scripts/validate_law_frontmatter.py` | Validates law-area frontmatter against `knowledge/law/frontmatter-policy.json`; reports attestations coming due. Runs in CI. | After editing law frontmatter; periodically to see attestation debt. |

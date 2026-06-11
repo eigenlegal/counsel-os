@@ -2,7 +2,7 @@
 counsel-os-type: law-area
 content-version: "2026-06-11"
 jurisdiction: [us-state]
-last-reviewed: "2026-06-10"
+last-reviewed: "2026-06-11"
 authorities:
   - cite: "Code of Virginia Chapter 53"
     title: "Virginia Consumer Data Protection Act"
@@ -31,7 +31,7 @@ For current state privacy work, load `us-eu-core.md` before relying on this file
 
 ## Applicability
 
-A growing number of US states have enacted comprehensive consumer privacy laws. These laws vary in scope, consumer rights, business obligations, and enforcement mechanisms, creating a patchwork of requirements. This file covers laws outside of California (see `ccpa-cpra.md` for CCPA/CPRA). As of mid-2026, **twenty states** have enacted comprehensive privacy legislation (counting Florida's narrower Digital Bill of Rights), and all but a handful are now in effect — Indiana, Kentucky, and Rhode Island took effect January 1, 2026. No new comprehensive law was enacted in 2025, but several states materially amended existing laws (notably Connecticut and Montana).
+A growing number of US states have enacted comprehensive consumer privacy laws. These laws vary in scope, consumer rights, business obligations, and enforcement mechanisms, creating a patchwork of requirements. This file covers laws outside of California (see `ccpa-cpra.md` for CCPA/CPRA). As of mid-2026, **twenty-two states** have enacted comprehensive privacy legislation (counting Florida's narrower Digital Bill of Rights), and all but a handful are now in effect — Indiana, Kentucky, and Rhode Island took effect January 1, 2026. No new comprehensive law was enacted in 2025, but several states materially amended existing laws (notably Connecticut and Montana); the 2026 session then added two: **Oklahoma (SB 546, signed March 20, 2026, effective January 1, 2027)** and **Alabama (APDPA, HB 351, signed April 16, 2026, effective May 1, 2027)**.
 
 Load this sub-file when the company operates in, is incorporated in, or targets residents of states with comprehensive privacy laws, or when structuring multi-state compliance programs.
 
@@ -105,6 +105,8 @@ Maryland's Online Data Privacy Act is the strictest of the state laws and breaks
 - **Delaware (DPDPA, effective January 1, 2025):** Applies to entities processing data of 35,000+ consumers (or 10,000+ if deriving 20%+ revenue from sale). Notably covers non-profits. No cure period after December 31, 2025.
 - **Kentucky (KCDPA, effective January 1, 2026):** Virginia-model law. AG enforcement, 30-day cure period.
 - **New Hampshire, New Jersey, Nebraska, Minnesota, Rhode Island:** All now in effect (New Hampshire, New Jersey, and Nebraska January 2025; Minnesota July 31, 2025; Rhode Island January 1, 2026), with varying thresholds and nuances — Minnesota adds a right to question profiling results; Nebraska follows the Texas non-small-business model.
+- **Oklahoma (OCDPA, SB 546, signed March 20, 2026 — effective January 1, 2027):** Twentieth comprehensive state law after a seven-year legislative push. Virginia-model rights package; notably uses the narrow monetary-consideration-only definition of "sale." AG enforcement.
+- **Alabama (APDPA, HB 351, signed April 16, 2026 — effective May 1, 2027):** Among the more business-friendly laws enacted to date. Distinctive "sale" definition: reaches monetary or other valuable consideration, but only where the controller receives a material benefit and the recipient is unrestricted in downstream use. AG enforcement.
 
 ### Comparison Matrix — Key Dimensions
 

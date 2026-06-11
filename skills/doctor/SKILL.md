@@ -39,11 +39,15 @@ If this check fails with ❌, still run checks 3, 5, and 6 (they don't need a le
 
 ## Step 2: Vault Structure
 
+**Read the overrides first.** `{legal_root}/config.md` may relocate matters and entities via `matters_path:` and `entities_path:` (paths relative to the legal root). Use the overridden paths in the check below — a vault with `entities_path: knowledge-base/companies` and no `entities/` directory is correctly configured, not missing anything.
+
 Check the expected directories and count files per area:
 
 ```bash
 LEGAL_ROOT="{legal_root}"
-for d in law practice/standards practice/methods practice/library practice/reference matters memory entities; do
+MATTERS_PATH=$(grep -m1 '^matters_path:' "$LEGAL_ROOT/config.md" | sed 's/^matters_path:[[:space:]]*//')
+ENTITIES_PATH=$(grep -m1 '^entities_path:' "$LEGAL_ROOT/config.md" | sed 's/^entities_path:[[:space:]]*//')
+for d in law practice/standards practice/methods practice/library practice/reference "${MATTERS_PATH:-matters}" memory "${ENTITIES_PATH:-entities}"; do
   if [ -d "$LEGAL_ROOT/$d" ]; then
     n=$(find "$LEGAL_ROOT/$d" -type f -name '*.md' | wc -l | tr -d ' ')
     echo "$d: $n md files"
@@ -54,9 +58,9 @@ done
 test -f "$LEGAL_ROOT/practice/profile.md" && echo "practice/profile.md: present" || echo "practice/profile.md: MISSING"
 ```
 
-- All present → ✅ with the per-area counts in the detail (e.g. `law 120 · standards 24 · methods 9 · library 8 · reference 1 · matters 14 · memory 3 · entities 11`).
+- All present → ✅ with the per-area counts in the detail (e.g. `law 120 · standards 24 · methods 9 · library 8 · reference 1 · matters 14 · memory 3 · entities 11`). When an override is in play, show the overridden path in the detail (e.g. `entities@knowledge-base/companies 30`).
 - `law/` or `practice/standards/` missing or empty → ❌, fix: `/counsel-os:setup` (re-seeding is safe — setup detects an existing install).
-- Any other directory missing → ⚠️, same fix. Empty `matters/` or `entities/` with the directory present is normal on a fresh install — ✅, note "empty (fresh install)".
+- Any other directory missing → ⚠️. For default `matters/`/`entities/` missing, first suggest the override fix if the user's files plausibly live elsewhere (`add entities_path: <relative/path> to {legal_root}/config.md`); otherwise `/counsel-os:setup`. Empty `matters/` or `entities/` with the directory present is normal on a fresh install — ✅, note "empty (fresh install)".
 
 ## Step 3: Plugin Version
 
