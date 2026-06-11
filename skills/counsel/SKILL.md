@@ -35,6 +35,7 @@ Match the user's request to primitives. This is guidance, not rigid rules — us
 | "Draft a response to [specific issue]" | research --entity --library → draft --counter-language |
 | "Summarize this for [person/team]" | read (if needed) → draft --summary --for [audience] |
 | "Create a redline" | read → research → evaluate → draft --redline → remember --matter |
+| "They sent back a redline / what did they change?" | read --redline → research → evaluate → draft --counter-language → remember --matter |
 | "Is this [document] compliant with [regulation]?" | read → research --law → evaluate --compliance |
 | "Update the [counterparty] file" | remember --entity |
 | "Close this matter" | remember --matter (stage → closed) → remember --entity → remember --knowledge |
@@ -254,6 +255,8 @@ Every substantive legal task lives inside a matter — a plain markdown file wit
 
 **Backwards compatible:** If no matter file exists, proceed using conversation context. The matter system enhances persistence, it doesn't gate functionality.
 
+**Lifecycle hygiene:** when you list, resume, or look up matters, glance at the others you see in passing. Any non-closed matter whose `updated` date is more than ~30 days old, or whose ## Next Action appears already done, earns a one-line bundled proposal — "these matters look finished or stale: [list]. Close them or update their next actions?" At most once per session, never blocking the user's actual request. Closing is where remember proposes entity, library, and knowledge harvests — stale-open matters starve the learning loop.
+
 See `primitives/remember.md` for the full matter file format and management instructions.
 
 ---
@@ -315,6 +318,7 @@ Plugin (methodology + tooling):
     word_compare.sh                            # Drive Word Compare via AppleScript
     resolve_legal_root.sh                      # Canonical legal-root discovery (exit 0/1/2)
     import_reference.sh                        # Import third-party material into practice/reference/ (see remember --reference)
+    extract_redlines.py                        # Structured tracked-changes + comments extraction (see read --redline)
 
 User's vault (all knowledge — discovered via config + Knowledge Base Search):
   {legal_root}/
