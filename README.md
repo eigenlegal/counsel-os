@@ -19,9 +19,10 @@ No terminal required.
 
 The setup skill walks you through choosing a folder for your legal content, seeds the 26 law areas and practice content into it, and configures your practice profile through chat. No file editing, no terminal commands.
 
-> **Note:** Two features require Claude Code's CLI access and aren't available in Cowork:
+> **Note:** Three features require Claude Code's CLI access and aren't available in Cowork:
 > - **`/counsel-os:browse`** — headless browser for portals and document extraction
 > - **Native Word `.docx` redlines with tracked changes** — counsel can produce a real Microsoft Word file with tracked changes attributed to you and counterparty-facing comments, ready to drop into your Review/Accept workflow. Requires python-docx + AppleScript driving Word's Compare. Cowork produces markdown redlines instead — same edits, different format.
+> - **Structured markup ingestion** — when a counterparty returns a `.docx` with tracked changes, counsel extracts every change and comment into a change-by-change assessment (`read --redline`, via `scripts/extract_redlines.py`). In Cowork, share the returned redline as text or markdown instead.
 >
 > All other skills work identically.
 
@@ -55,7 +56,7 @@ The setup skill auto-detects what you have and configures accordingly.
 
 ### Claude Code marketplace — experimental
 
-Claude Code's plugin marketplace is the "official" install path, but its cache invalidation is currently fragile — installs can get stuck on old manifests, and updates require a full Cmd-Q restart. If your install gets stuck, the local-install path above is the reliable fallback.
+Claude Code's plugin marketplace is the "official" install path. On current Claude Code builds, updates flow cleanly through `/counsel-os:update` followed by `/reload-plugins`. On older builds the cache invalidation is fragile — installs can get stuck on old manifests, and updates can require a full Cmd-Q restart. If your install gets stuck, the local-install path above is the reliable fallback.
 
 ```
 /plugin marketplace add eigenlegal/counsel-os
@@ -110,6 +111,8 @@ There is no pipeline and no slash-command-per-phase. You describe what you need 
 > Draft a response to section 7.3 — they want uncapped indemnity
 > Summarize this MSA for the CFO
 > Create a redline of this agreement
+> Opposing counsel sent back a markup — assess the changes
+> Import this folder of form agreements as reference
 > Is this compliant with GDPR?
 > Close this matter
 ```
@@ -148,14 +151,12 @@ For authenticated portals, import your browser cookies first:
 /counsel-os:retro
 ```
 
-Analyzes your decision history and produces insights:
-- Matters closed by type and complexity
-- Most-negotiated clauses (where you're spending energy)
-- Counterparties that push back hardest
-- Standards that keep getting overridden (maybe the standard is wrong?)
-- Trends compared to previous retros
+Analyzes your matter history and produces insights, calibrated to the shape of your practice:
 
-Run weekly or monthly to calibrate your practice.
+- **High-volume practices** (many similar contracts against the same positions) get the full statistical pass: most-negotiated clauses, acceptance and exception rates, counterparties that push back hardest, standards that keep getting overridden (maybe the standard is wrong?), and trends compared to previous retros. Per-clause statistics only run where there are roughly 10+ comparable matters — below that, deviations are reported as case notes, not percentages.
+- **Low-volume, heterogeneous practices** (most solo and in-house work) skip the statistics and center on **harvesting promotable knowledge**: sweeping matter and entity files for deal-archetype playbooks, regulatory-posture notes, and proven clause language that has outgrown its matter and belongs in `practice/`.
+
+Run monthly to calibrate your practice.
 
 #### Update — Pull Latest Content
 
@@ -234,7 +235,7 @@ Only relevant if you're developing Counsel OS itself:
 Counsel OS separates **methodology** (how to do legal work) from **knowledge** (what you know).
 
 **The plugin provides methodology + tooling:**
-- 5 skills: `counsel` (the orchestrator), `browse`, `retro`, `setup`, `update`
+- 6 skills: `counsel` (the orchestrator), `browse`, `retro`, `setup`, `update`, `law-refresh`
 - 5 primitives (read, research, evaluate, draft, remember) that `counsel` composes dynamically based on intent
 - Headless browser for document extraction
 - Narrow deterministic helpers for backup/restore, Word redlines, formatting, and browser automation

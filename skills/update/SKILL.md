@@ -184,14 +184,18 @@ Law areas are plugin-managed by default, so updates are safe to apply after user
 
 ### Practice seed: user-owned
 
-Compare `knowledge/practice-seed/` in the plugin root against `{legal_root}/practice/`.
+Practice files are user-owned and diverge from the seed by design — positions filled in, methods customized, local notes added. A direct seed-vs-vault diff therefore flags nearly every file and is pure noise. Never present raw seed-vs-vault differences as "updated guidance," and never overwrite practice files blindly.
 
-Practice files are user-owned. Never overwrite them blindly.
+Detect genuine upstream changes by diffing the new seed against the PREVIOUSLY INSTALLED version's seed:
 
-For each seed file:
+1. Locate the prior version's seed. Marketplace cache installs keep old versions on disk: `~/.claude/plugins/cache/{marketplace}/counsel-os/{prior_version}/knowledge/practice-seed/`. For local clones, use `git diff {prior_ref} -- knowledge/practice-seed/`.
+2. `diff -rq` the prior seed against the new seed. Only files changed or added upstream are candidates — everything else is either already reconciled or user-customized, and is skipped.
+3. Filter out purely cosmetic upstream changes (version-stamp bumps, formatting cleanups). Report them as "N seed files re-stamped upstream, no content changes" rather than offering merges.
+4. If no prior seed exists on disk (cache cleaned, fresh machine), fall back to seed-vs-vault comparison — but say so explicitly, and frame differences as "may be your edits or may be upstream changes — review before merging."
+
+For each candidate file:
 1. If the vault file is missing, offer it as **new practice content**.
-2. If the vault file exists, compare content while preserving the user's `## Our Position` section where applicable.
-3. If the seed has new reference guidance, offer a reviewable merge.
+2. If the vault file exists, show the upstream delta and offer a reviewable merge that preserves the user's `## Our Position` section and local edits.
 
 ## Step 5: Present Changes
 
@@ -240,18 +244,33 @@ Flag conflicts clearly:
 Action needed: updated data-privacy law guidance affects practice/standards/data-protection.md. Review breach notification timing before the next DPA.
 ```
 
-## Step 8: Version Control
+## Step 8: Reindex
 
-If `{legal_root}` is a git repo and changes were applied, offer to commit:
+If a content index is connected (e.g. QMD) and law or practice files were written, refresh it so the new content is retrievable immediately:
 
 ```bash
-git -C {legal_root} add -A
-git -C {legal_root} commit -m "Update Counsel OS law and practice content"
+qmd update && qmd embed
 ```
+
+The index does not watch the vault — without this step, knowledge-base searches keep returning pre-update content. Skip silently when no index tool is available.
+
+## Step 9: Version Control
+
+If `{legal_root}` is a git repo and changes were applied, offer to commit — scoped to what this update actually touched, never `git add -A`:
+
+1. Check `git -C {legal_root} status --short` first. Vaults routinely carry unrelated in-progress work (staged matter files, profile edits, untracked notes); a blanket `add -A` — or a bare `git commit` against a pre-loaded index — sweeps it into the update commit.
+2. Stage and commit by pathspec so only update-touched paths land, regardless of what else is staged:
+
+```bash
+git -C {legal_root} add law/ practice/
+git -C {legal_root} commit -m "Update Counsel OS law and practice content" -- law/ practice/
+```
+
+Narrow the pathspec to the directories actually written this run.
 
 If it is not a git repo, mention that version control is available but do not push it. The user can ask `/counsel-os:setup` to configure it.
 
-## Step 9: Summary
+## Step 10: Summary
 
 End with:
 
