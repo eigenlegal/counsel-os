@@ -1,7 +1,24 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "42 U.S.C. § 2000e et seq."
+    title: "Title VII of the Civil Rights Act of 1964 (employment discrimination)"
+    url: "https://www.law.cornell.edu/uscode/text/42/chapter-21/subchapter-VI"
+  - cite: "29 U.S.C. § 201 et seq."
+    title: "Fair Labor Standards Act (minimum wage, overtime, non-waivability)"
+    url: "https://www.law.cornell.edu/uscode/text/29/chapter-8"
+  - cite: "29 U.S.C. § 151 et seq."
+    title: "National Labor Relations Act (Section 7 concerted-activity rights)"
+    url: "https://www.law.cornell.edu/uscode/text/29/chapter-7/subchapter-II"
+  - cite: "29 U.S.C. § 2101 et seq."
+    title: "WARN Act (60-day notice for covered plant closings and mass layoffs)"
+    url: "https://www.law.cornell.edu/uscode/text/29/chapter-23"
+  - cite: "29 U.S.C. § 626(f)"
+    title: "OWBPA requirements for valid ADEA releases (21/45-day consideration, 7-day revocation)"
+    url: "https://www.law.cornell.edu/uscode/text/29/626"
 ---
 # Employment
 

@@ -8,12 +8,13 @@
 # knowledge lint, commits the working tree, and pushes.
 #
 # Usage:
-#   scripts/release.sh <new-version> -m "subject" [-b "body"] [--tag] [--no-push]
+#   scripts/release.sh <new-version> -m "subject" [-b "body"] [--no-tag] [--no-push]
 #
 # Notes:
 #   - Commits ALL working-tree changes (the feature + the bump), matching the
 #     repo's convention of one commit per version.
-#   - --tag runs `claude plugin tag` (creates counsel-os--vX.Y.Z) if available.
+#   - Tags vX.Y.Z by default and pushes the tag — release-binaries.yml triggers
+#     on it. --no-tag skips tagging.
 #   - bash-3.2 compatible (stock macOS).
 set -euo pipefail
 
@@ -29,13 +30,14 @@ shift
 
 SUBJECT=""
 BODY=""
-DO_TAG=0
+DO_TAG=1
 DO_PUSH=1
 while [ $# -gt 0 ]; do
   case "$1" in
     -m) SUBJECT="${2:-}"; shift 2 ;;
     -b) BODY="${2:-}"; shift 2 ;;
     --tag) DO_TAG=1; shift ;;
+    --no-tag) DO_TAG=0; shift ;;
     --no-push) DO_PUSH=0; shift ;;
     *) echo "Unknown argument: $1" >&2; exit 1 ;;
   esac
@@ -157,17 +159,19 @@ else
 fi
 
 if [ "$DO_TAG" -eq 1 ]; then
+  # Plain git tag vX.Y.Z — this is what .github/workflows/release-binaries.yml
+  # triggers on (tags: v*). `claude plugin tag` creates counsel-os--vX.Y.Z,
+  # which does NOT match that trigger, so it is best-effort secondary only.
+  git tag -a "v$VERSION_NEW" -m "v$VERSION_NEW — $SUBJECT"
   if command -v claude >/dev/null 2>&1; then
-    claude plugin tag . || echo "claude plugin tag failed — continuing without tag" >&2
-  else
-    echo "claude CLI not found — skipping tag" >&2
+    claude plugin tag . 2>/dev/null || echo "claude plugin tag failed — continuing (git tag created)" >&2
   fi
 fi
 
 if [ "$DO_PUSH" -eq 1 ]; then
   git push origin HEAD
   if [ "$DO_TAG" -eq 1 ]; then
-    git push origin --tags || true
+    git push origin "v$VERSION_NEW" || true
   fi
 fi
 

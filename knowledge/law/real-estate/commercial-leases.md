@@ -1,7 +1,15 @@
 ---
 counsel-os-type: law-area
 content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-state, local]
+authorities:
+  - cite: "Restatement (Second) of Property: Landlord and Tenant (ALI 1977)"
+    title: "Common-law framework for landlord-tenant obligations, assignment/sublease consent, and remedies; commercial leases are otherwise governed by state common law and the lease contract"
+    url: "https://www.ali.org/publications/show/property-landlord-and-tenant/"
+  - cite: "UCC Article 2A"
+    title: "Leases of personal property (goods) — contrast framework only; real-property leases are excluded from the UCC"
+    url: "https://www.law.cornell.edu/ucc/2A"
 ---
 # Commercial Leases
 
