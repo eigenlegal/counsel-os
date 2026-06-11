@@ -273,7 +273,7 @@ Offer to set up git for the user's legal knowledge:
 
 > Your legal knowledge — positions, counterparty history, decision patterns — is valuable and worth tracking. Want me to set up version control for your legal root?
 >
-> This creates a private git repo in `{legal_root}` so you can see how your practice evolves over time. Every time you close a matter and update your knowledge, the changes are committed automatically.
+> This creates a private git repo in `{legal_root}` so you can see how your practice evolves over time. When you close a matter, the files that closeout touched — the matter file plus any entity or knowledge updates — are committed automatically, scoped to just those paths; unrelated in-progress work in your vault is left alone.
 
 ### If yes:
 

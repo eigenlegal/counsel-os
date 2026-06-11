@@ -104,19 +104,19 @@
     "hash": "ae8101aa66974661c0e82aead2affa7f0a6c726bfc208eb11098ea4c71844419"
   },
   "practice-seed/library": {
-    "content-version": "2026-06-10",
-    "hash": "bfd718ff087c37720a9db41491f09668ef1147e91ea4ba17b473adf9d87c5b6b"
+    "content-version": "2026-06-11",
+    "hash": "e200f74f68e8c2a94a7969e0bc0056363d13439cc0dff3da1b794433ab571996"
   },
   "practice-seed/methods": {
-    "content-version": "2026-06-10",
-    "hash": "498d283a03ba6191144e87b469219eabce657e3f548dfabcf4364ecabda7e26c"
+    "content-version": "2026-06-11",
+    "hash": "0277174f6fb14d5a38b6677e6917e72f05f81e7f5d3c401b8600127c90c5f51e"
   },
   "practice-seed/reference": {
     "content-version": "2026-06-10",
     "hash": "37843a5b423deb088d14a12e9ac32eb7a90c5a762e2223313d2740d9e96cc159"
   },
   "practice-seed/standards": {
-    "content-version": "2026-06-10",
-    "hash": "ca4e7655de4dde36413f743160fc07c51259f370de64b545ed9bdbbdbbd7f6ba"
+    "content-version": "2026-06-11",
+    "hash": "7b34f31155bf01795df97e4865e9c01a9d77878d9decd5383cfaa51bf5856b1e"
   }
 }

@@ -1,20 +1,20 @@
 ---
 counsel-os-type: practice
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 ---
 # Transition Assistance — Position
 
 ## Our Position
-**Our standard:** 90-day transition assistance at then-current rates (at cost for vendor-breach termination). Data return within 30 days in structured, machine-readable format. Deletion within 90 days with officer-level certification. Vendor cooperates with successor provider including knowledge transfer. Service levels maintained during transition.
+**Our standard:** 90-day transition assistance at then-current rates (at cost for vendor-breach termination). Data return within 30 days in structured, machine-readable format. Deletion from production within 30 days and from backups within 90 days, with officer-level certification. Vendor cooperates with successor provider including knowledge transfer. Service levels maintained during transition.
 **We'll accept:** 60-day transition period, data return within 60 days, proprietary export format, deletion within 120 days, limited successor cooperation (documentation only), or T&M rates for all scenarios, provided some transition assistance exists and data return has a defined timeline.
 **We won't accept:** No transition assistance provision, data return "upon request" with no timeline, data in proprietary format requiring vendor's paid services to migrate, no deletion obligation, vendor refusing to cooperate with successor, or transition at premium rates (2x+ normal).
 **Auto-escalate:** No transition assistance provision; data return timeline exceeds 60 days or undefined; data in proprietary format requiring vendor paid services; no deletion obligation or certification; vendor refuses successor cooperation; service levels not maintained during transition; premium transition pricing creating lock-in.
 
 ## Market Standard
-Upon termination or expiration, vendor provides transition assistance for 90 days at then-current rates to facilitate migration to a successor provider or in-house solution. Data return in a structured, portable format within 30 days of termination. Data deletion within 90 days with written certification. Vendor cooperates with successor provider, including reasonable knowledge transfer. Service levels maintained during the transition period.
+Upon termination or expiration, vendor provides transition assistance for 90 days at then-current rates to facilitate migration to a successor provider or in-house solution. Data return in a structured, portable format within 30 days of termination. Data deletion from production within 30 days and from backups within 90 days, with written certification. Vendor cooperates with successor provider, including reasonable knowledge transfer. Service levels maintained during the transition period.
 
 ## Classification Guide
-- **GREEN**: 90-day transition assistance period at then-current rates (or at cost for termination for vendor's breach); data return within 30 days in structured, machine-readable format (CSV, JSON, API export); data deletion within 90 days with officer-level written certification; vendor cooperates with successor provider including knowledge transfer sessions; service levels maintained during transition without degradation; transition plan documented within 15 days of termination notice; assistance includes configuration documentation and API specifications; no additional fees for standard transition activities.
+- **GREEN**: 90-day transition assistance period at then-current rates (or at cost for termination for vendor's breach); data return within 30 days in structured, machine-readable format (CSV, JSON, API export); data deletion from production within 30 days and from backups within 90 days with officer-level written certification; vendor cooperates with successor provider including knowledge transfer sessions; service levels maintained during transition without degradation; transition plan documented within 15 days of termination notice; assistance includes configuration documentation and API specifications; no additional fees for standard transition activities.
 - **YELLOW**: 60-day transition period; data return within 60 days; proprietary export format only (not machine-readable); deletion within 120 days with employee-level certification; limited cooperation with successor (documentation only, no knowledge transfer); no obligation to maintain SLAs during transition; transition at T&M rates (not at cost) for all scenarios; no documented transition plan.
 - **RED**: No transition assistance provision; data return only "upon request" with no defined timeline; data in proprietary format that cannot be migrated without vendor's paid professional services; no deletion obligation or certification; vendor refuses to cooperate with successor provider; service degraded or terminated immediately; transition assistance at premium rates (2x+ normal); vendor retains data indefinitely post-termination.
 
@@ -39,7 +39,7 @@ Upon termination or expiration, vendor provides transition assistance for 90 day
 ## Key Negotiation Points
 1. **Duration** — 90 days standard; 180 days for complex enterprise systems; extendable by 30 days if migration is incomplete.
 2. **Data return** — within 30 days in structured, machine-readable format; at no additional charge.
-3. **Data deletion** — within 90 days of return confirmation; written certification from an officer (not just an employee).
+3. **Data deletion** — from production within 30 days and from backups within 90 days of return confirmation; written certification from an officer (not just an employee).
 4. **Successor cooperation** — vendor participates in knowledge transfer; provides configuration documentation, API specifications, and integration details.
 5. **Pricing** — at cost for vendor-breach termination; at then-current rates for convenience termination; no premium pricing.
 

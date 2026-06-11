@@ -2,8 +2,10 @@
 # Counsel OS release helper.
 #
 # Bumps the version in all four manifests (VERSION, package.json,
-# .claude-plugin/plugin.json, .claude-plugin/marketplace.json), verifies they
-# agree, runs the knowledge lint, commits the working tree, and pushes.
+# .claude-plugin/plugin.json, .claude-plugin/marketplace.json), prepends a
+# CHANGELOG.md entry from the -m/-b message (skipped if the developer already
+# wrote a heading for that version), verifies the manifests agree, runs the
+# knowledge lint, commits the working tree, and pushes.
 #
 # Usage:
 #   scripts/release.sh <new-version> -m "subject" [-b "body"] [--tag] [--no-push]
@@ -68,6 +70,48 @@ for f in ["package.json", ".claude-plugin/plugin.json", ".claude-plugin/marketpl
         raise SystemExit(f"could not bump version in {f}")
     p.write_text(t2, encoding="utf-8")
 print(f"bumped manifests to {v}")
+PY
+
+# Prepend a CHANGELOG.md entry for this release. If the developer already
+# wrote a "## [X.Y.Z]" heading, leave the file untouched.
+if [ ! -f CHANGELOG.md ]; then
+  echo "CHANGELOG.md is missing — every release needs a changelog entry. Restore it before releasing." >&2
+  exit 1
+fi
+python3 - "$VERSION_NEW" "$SUBJECT" "$BODY" <<'PY'
+import re
+import sys
+from datetime import date
+from pathlib import Path
+
+v, subject, body = sys.argv[1], sys.argv[2], sys.argv[3]
+p = Path("CHANGELOG.md")
+text = p.read_text(encoding="utf-8")
+
+if re.search(rf"^## \[{re.escape(v)}\]", text, flags=re.M):
+    print(f"CHANGELOG.md already has an entry for {v} — leaving it as-is")
+    raise SystemExit(0)
+
+lines = [f"## [{v}] — {date.today():%Y-%m-%d}", "", subject.strip()]
+bullets = []
+for raw in body.splitlines():
+    s = raw.strip()
+    if not s:
+        continue
+    bullets.append(s if s.startswith(("- ", "* ")) else f"- {s}")
+if bullets:
+    lines.append("")
+    lines.extend(bullets)
+entry = "\n".join(lines) + "\n\n"
+
+# Insert before the first version heading; append if none exists yet.
+m = re.search(r"^## \[", text, flags=re.M)
+if m:
+    text = text[: m.start()] + entry + text[m.start():]
+else:
+    text = text.rstrip("\n") + "\n\n" + entry
+p.write_text(text, encoding="utf-8")
+print(f"prepended CHANGELOG.md entry for {v}")
 PY
 
 # Verify sync + content conventions before committing

@@ -1,6 +1,6 @@
 ---
 counsel-os-type: practice
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 ---
 # Termination & Renewal — Position
 
@@ -31,13 +31,13 @@ Either party may terminate for material breach with 30 days written notice and c
 - Auto-renewal terms are the most common source of unintended lock-in. Calendar the non-renewal notice deadline immediately upon execution — missing it by one day typically locks you in for another full term.
 - "Termination for convenience" is standard in services agreements but often absent from SaaS subscriptions with committed terms. For committed-term SaaS, negotiate early termination with a reasonable wind-down fee (e.g., 50% of remaining committed fees).
 - Cure periods should be specific. "30 days to cure" is clear. "Reasonable time to cure" is an invitation to dispute.
-- Post-termination obligations are where vendors have the most leverage — you need the data, they have it. Negotiate data return in a portable, machine-readable format (not proprietary exports) within 30 days, followed by deletion within 90 days with written certification.
+- Post-termination obligations are where vendors have the most leverage — you need the data, they have it. Negotiate data return in a portable, machine-readable format (not proprietary exports) within 30 days, followed by deletion from production within 30 days and from backups within 90 days, with written certification.
 - Survival clauses are often overlooked. If confidentiality, indemnification, and limitation of liability do not survive termination, they vanish when you need them most.
 
 ## Key Negotiation Points
 1. **Auto-renewal mechanics** — 1-year renewal terms (not matching the initial term); 60-90 day non-renewal window; written notice requirement.
 2. **Termination for convenience** — mutual right with 60-90 days notice; pro-rata refund of prepaid fees; reasonable wind-down fee for committed terms.
-3. **Data return/portability** — within 30 days in structured, portable format; deletion within 90 days with officer certification.
+3. **Data return/portability** — within 30 days in structured, portable format; deletion from production within 30 days and from backups within 90 days, with officer certification.
 4. **Transition assistance** — 90 days at then-current rates; vendor cooperates with successor; no degradation of service during transition.
 5. **Survival provisions** — explicitly list which sections survive and for how long.
 

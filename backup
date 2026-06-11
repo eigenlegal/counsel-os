@@ -2,10 +2,20 @@
 set -euo pipefail
 
 COUNSEL_DIR="$(cd "$(dirname "$0")" && pwd)"
-BACKUP_DIR="$COUNSEL_DIR/backups"
-TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
-BACKUP_NAME="counsel-os-backup-$TIMESTAMP"
-BACKUP_PATH="$BACKUP_DIR/$BACKUP_NAME"
+
+# Backups live OUTSIDE the plugin directory. Marketplace installs run from a
+# versioned cache (~/.claude/plugins/cache/...) that is replaced wholesale on
+# every plugin update — anything stored inside it dies with the old version.
+BACKUP_DIR="$HOME/.counsel-os/backups"
+LEGACY_BACKUP_DIR="$COUNSEL_DIR/backups"
+TIMESTAMP="$(date +%Y-%m-%d-%H%M%S)"
+BACKUP_PATH="$BACKUP_DIR/$TIMESTAMP"
+if [ -e "$BACKUP_PATH" ]; then
+  n=2
+  while [ -e "$BACKUP_PATH-$n" ]; do n=$((n + 1)); done
+  BACKUP_PATH="$BACKUP_PATH-$n"
+fi
+PAYLOAD_PATH="$BACKUP_PATH/root"
 
 LEGAL_ROOT="$(bash "$COUNSEL_DIR/scripts/resolve_legal_root.sh" || true)"
 
@@ -21,62 +31,73 @@ if [ ! -f "$LEGAL_ROOT/config.md" ] || ! grep -q '^counsel-os-config: true$' "$L
   exit 1
 fi
 
-has_content=0
-for dir in law practice matters memory entities; do
-  if [ -d "$LEGAL_ROOT/$dir" ] && [ "$(find "$LEGAL_ROOT/$dir" -type f ! -name '.gitkeep' | head -1)" ]; then
-    has_content=1
-    break
-  fi
-done
+mkdir -p "$BACKUP_DIR"
 
-if [ "$has_content" -eq 0 ]; then
+# Migrate backups created by older versions, which stored them inside the
+# plugin directory (lost on plugin update). Move them to the durable home.
+if [ -d "$LEGACY_BACKUP_DIR" ]; then
+  for old in "$LEGACY_BACKUP_DIR"/*/; do
+    [ -d "$old" ] || continue
+    name="$(basename "$old")"
+    if [ -e "$BACKUP_DIR/$name" ]; then
+      echo "Legacy backup $name already exists in $BACKUP_DIR; leaving in place: $old"
+      continue
+    fi
+    if mv "$old" "$BACKUP_DIR/$name" 2>/dev/null; then
+      echo "Migrated legacy backup: $name -> $BACKUP_DIR/$name"
+    else
+      echo "Warning: could not migrate legacy backup $old to $BACKUP_DIR/$name" >&2
+    fi
+  done
+  rmdir "$LEGACY_BACKUP_DIR" 2>/dev/null || true
+fi
+
+# Anything beyond config.md worth backing up? (Skip .git and leftover
+# restore work directories.)
+content_probe="$(cd "$LEGAL_ROOT" && find . -name .git -prune -o -name '.counsel-os-restore.*' -prune -o -type f ! -name '.gitkeep' -print 2>/dev/null | grep -v '^\./config\.md$' | head -1 || true)"
+
+if [ -z "$content_probe" ]; then
   echo "Nothing to back up. Run /counsel-os:setup first."
   exit 0
 fi
 
-mkdir -p "$BACKUP_PATH"
+mkdir -p "$PAYLOAD_PATH"
 
-for dir in law practice matters memory entities; do
-  if [ -d "$LEGAL_ROOT/$dir" ]; then
-    cp -R "$LEGAL_ROOT/$dir" "$BACKUP_PATH/$dir"
-  fi
+# Back up the ENTIRE legal root (it is all markdown — cheap), so configured
+# path overrides (matters_path, entities_path) and any other vault content
+# are captured, not just a hardcoded list of default subdirectories.
+# Excluded: .git (use git's own tooling for that) and restore work dirs.
+shopt -s dotglob
+for entry in "$LEGAL_ROOT"/*; do
+  [ -e "$entry" ] || [ -L "$entry" ] || continue
+  name="$(basename "$entry")"
+  case "$name" in
+    .git|.counsel-os-restore.*) continue ;;
+  esac
+  cp -R "$entry" "$PAYLOAD_PATH/$name"
 done
+shopt -u dotglob
 
-cp "$LEGAL_ROOT/config.md" "$BACKUP_PATH/config.md"
-
-count_files() {
-  local dir="$1"
-  if [ -d "$BACKUP_PATH/$dir" ]; then
-    find "$BACKUP_PATH/$dir" -type f ! -name '.gitkeep' | wc -l | tr -d ' '
-  else
-    echo 0
-  fi
-}
+if [ ! -f "$PAYLOAD_PATH/config.md" ]; then
+  echo "Backup payload is missing config.md; aborting." >&2
+  rm -rf "$BACKUP_PATH"
+  exit 1
+fi
 
 VERSION="$(cat "$COUNSEL_DIR/VERSION" 2>/dev/null || echo "unknown")"
-LAW_COUNT="$(count_files law)"
-PRACTICE_COUNT="$(count_files practice)"
-MATTERS_COUNT="$(count_files matters)"
-MEMORY_COUNT="$(count_files memory)"
-ENTITIES_COUNT="$(count_files entities)"
+FILE_COUNT="$(find "$PAYLOAD_PATH" -type f ! -name '.gitkeep' | wc -l | tr -d ' ')"
 
-python3 - "$BACKUP_PATH/manifest.json" "$TIMESTAMP" "$VERSION" "$LEGAL_ROOT" \
-  "$LAW_COUNT" "$PRACTICE_COUNT" "$MATTERS_COUNT" "$MEMORY_COUNT" "$ENTITIES_COUNT" <<'PY'
+python3 - "$BACKUP_PATH/manifest.json" "$TIMESTAMP" "$VERSION" "$LEGAL_ROOT" "$FILE_COUNT" <<'PY'
 import json
 import sys
 
-manifest_path, timestamp, version, source, law, practice, matters, memory, entities = sys.argv[1:]
+manifest_path, timestamp, version, source, files = sys.argv[1:]
 manifest = {
+    "format": "full-root",
     "timestamp": timestamp,
     "version": version,
     "source": source,
-    "contents": {
-        "law": int(law),
-        "practice": int(practice),
-        "matters": int(matters),
-        "memory": int(memory),
-        "entities": int(entities),
-    },
+    "files": int(files),
 }
 
 with open(manifest_path, "w", encoding="utf-8") as f:
@@ -85,9 +106,18 @@ with open(manifest_path, "w", encoding="utf-8") as f:
 PY
 
 echo "Backup created: $BACKUP_PATH"
-echo "  source:   $LEGAL_ROOT"
-echo "  law:      $LAW_COUNT files"
-echo "  practice: $PRACTICE_COUNT files"
-echo "  matters:  $MATTERS_COUNT files"
-echo "  memory:   $MEMORY_COUNT files"
-echo "  entities: $ENTITIES_COUNT files"
+echo "  source: $LEGAL_ROOT"
+echo "  files:  $FILE_COUNT"
+echo "  contents:"
+shopt -s dotglob
+for entry in "$PAYLOAD_PATH"/*; do
+  [ -e "$entry" ] || continue
+  name="$(basename "$entry")"
+  if [ -d "$entry" ]; then
+    count="$(find "$entry" -type f ! -name '.gitkeep' | wc -l | tr -d ' ')"
+    echo "    $name/ ($count files)"
+  else
+    echo "    $name"
+  fi
+done
+shopt -u dotglob
