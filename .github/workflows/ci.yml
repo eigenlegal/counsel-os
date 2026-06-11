@@ -40,6 +40,11 @@ jobs:
       - name: Knowledge conventions + manifest version sync
         run: python3 scripts/lint_knowledge.py --check-versions
 
+      - name: Browse command reference drift
+        run: |
+          python3 scripts/gen_browse_reference.py
+          git diff --exit-code skills/browse/SKILL.md
+
       - name: Script syntax (python + shell)
         run: |
           python3 -m py_compile scripts/*.py

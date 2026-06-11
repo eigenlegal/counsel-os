@@ -166,6 +166,26 @@ For Claude Desktop / Cowork marketplace installs, tell the user to update or rei
 
 After updating methodology, tell the user whether a restart is needed. In most plugin runtimes, changed skill files load reliably only in a new conversation or after restarting the host.
 
+### Rebuild the Browse Runtime
+
+The browse daemon's dependencies and compiled binary are built per cache directory, so a freshly installed version has no `node_modules/` and no `browse/dist/browse`. The browse CLI does not rebuild itself — `browse/bin/find-browse` just fails with "browse binary not found" — so without this step the first `/counsel-os:browse` use after an update breaks.
+
+If the user uses `/counsel-os:browse`, shell access is available, and the new version's plugin root lacks `browse/dist/browse` or `node_modules/`, rebuild there:
+
+```bash
+cd ~/.claude/plugins/cache/{marketplace}/counsel-os/{new_version}
+bun install
+bun run build
+```
+
+Notes:
+
+- The Playwright Chromium browser is installed per-user and survives plugin updates; run `bunx playwright install chromium` only if it is missing.
+- If a browse server from the old version is still running (`/tmp/browse-server.json` exists), run `browse/dist/browse restart` from the new root so the next browse use runs the new build.
+- Without shell access, tell the user to run `bun install && bun run build` from the new plugin root before their next browse use.
+
+Skip silently if the user does not use browse.
+
 ## Step 4: Compare Vault Content
 
 Compare the plugin's shipped content to the user's vault.

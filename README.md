@@ -177,6 +177,14 @@ config_version: 1
 legal_root: /path/to/your/legal/root
 ```
 
+#### Doctor — Health Check
+
+```
+/counsel-os:doctor
+```
+
+Read-only diagnostic: verifies legal-root resolution and config, vault structure, plugin version vs latest, law-content currency, optional dependencies (pandoc, python-docx, bun, Playwright, QMD), browse daemon build, backup freshness, and vault git hygiene — one ✅/⚠️/❌ table with a fix command per row. Run monthly and after every update. See `docs/operations.md` for recommended cadences across all the maintenance skills.
+
 ### Backup and Restore
 
 ```bash
@@ -190,7 +198,7 @@ legal_root: /path/to/your/legal/root
 ./restore counsel-os-backup-20260313-143022
 ```
 
-Backups are stored locally in `backups/` (gitignored). For routine use, prefer your vault's normal backup or version-control workflow; these scripts are local Claude Code helpers.
+Backups are stored in `~/.counsel-os/backups/` — outside the plugin directory, so they survive plugin updates and reinstalls. Backups created by older versions inside the plugin's `backups/` folder are migrated automatically the next time `./backup` runs, and `./restore` still finds them in the meantime. For routine use, prefer your vault's normal backup or version-control workflow; these scripts are local Claude Code helpers.
 
 ### Scripts Reference
 
@@ -225,6 +233,31 @@ Only relevant if you're developing Counsel OS itself:
 | `scripts/bump_content_versions.py [--date YYYY-MM-DD]` | Hashes each content group and bumps `content-version` frontmatter for groups that changed — this is what lets `/counsel-os:update` detect upstream law/practice changes. | After editing anything under `knowledge/law/` or `knowledge/practice-seed/`. |
 | `scripts/validate_law_frontmatter.py` | Validates law-area frontmatter against `knowledge/law/frontmatter-policy.json`; reports attestations coming due. Runs in CI. | After editing law frontmatter; periodically to see attestation debt. |
 | `scripts/run_evals.py [--generate] [--model <id>] [--only <fixture>] [--self-test]` | Scores golden-matter eval outputs in `evals/`; `--generate` runs the counsel agent headlessly against each fixture's mini-vault first (costs API tokens); `--self-test` validates the scorer itself (free, runs in CI). | Full generate+score before releases and when qualifying a new model; see `evals/README.md`. |
+
+---
+
+## Confidentiality & Data Flow
+
+Counsel OS handles client material. Know where data goes before pointing it at privileged or confidential documents.
+
+**What leaves your machine:**
+
+- Conversation content, and the contents of any file Claude reads — contracts, matter files, vault notes — go to the Anthropic API (or whichever model provider your Claude installation is configured to use) for processing. This is how Claude works; the plugin neither adds to it nor can remove it.
+- Web research sends your queries and visited URLs to search engines and the sites being fetched.
+- Retention of API traffic is governed by your Anthropic plan and organization settings, not by this plugin. Check your organization's AI usage policy and its API data-retention configuration before processing privileged material — no retention promises are made here, because retention is a property of your account, not of Counsel OS.
+
+**What stays local:**
+
+- **Your vault.** All law, practice, matter, entity, and memory content is plain markdown in a folder you chose. It is mirrored elsewhere only if you put the vault somewhere synced (iCloud, Dropbox, a git remote).
+- **The QMD search index**, if installed, is built and queried locally.
+- **The browse skill** runs a local headless Chromium; its daemon binds to 127.0.0.1 only, and pages it visits are fetched directly from your machine, like any browser you run.
+- **Backups** (`./backup`) are written to `~/.counsel-os/backups/` on your machine — never to the plugin directory, a remote, or anywhere synced unless your home folder is.
+
+**Git history is permanent.** If you version your vault with git (recommended), closed matters and deleted files persist in history: deleting a file removes it from the working tree, not from past commits. Keep vault remotes private. The only true deletion is rewriting history (`git filter-repo` or equivalent, then a force-push) — and even that does not reach clones that already exist.
+
+**Browser cookie hygiene.** The browse skill's `cookie-import` command reads cookie JSON files you export from your browser; the skill expects them under `/tmp` or the working directory. Those files contain live session credentials and stay on disk until you delete them — delete them after import. `cookie-import-browser` decrypts cookies directly from a local Chromium browser's store into the running session without writing an export file. Imported cookies live in the headless browser's memory and are discarded when the daemon exits (it auto-stops after 30 minutes idle); the daemon's `/tmp/browse-server*.json` state file holds only a port, PID, and local auth token — no cookies. If you use a third-party cookie-export tool, check where it writes its files.
+
+**No telemetry.** The plugin makes no network calls of its own — no analytics, no phone-home, no external services beyond the model API and the sites you ask it to research or browse.
 
 ---
 

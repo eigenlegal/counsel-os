@@ -2,8 +2,13 @@
 set -euo pipefail
 
 COUNSEL_DIR="$(cd "$(dirname "$0")" && pwd)"
-BACKUP_DIR="$COUNSEL_DIR/backups"
-RESTORE_DIRS=(law practice matters memory entities)
+
+# Backups live OUTSIDE the plugin directory (see ./backup). The legacy
+# location inside the plugin tree is still checked so pre-migration backups
+# remain restorable.
+BACKUP_DIR="$HOME/.counsel-os/backups"
+LEGACY_BACKUP_DIR="$COUNSEL_DIR/backups"
+LEGACY_RESTORE_DIRS=(law practice matters memory entities)
 RESTORE_WORKDIR=""
 STAGE_PATH=""
 ROLLBACK_PATH=""
@@ -11,6 +16,8 @@ PRESERVE_RESTORE_WORKDIR=0
 MOVED_TO_ROLLBACK=()
 MOVED_TO_LIVE=()
 EXISTED_BEFORE=()
+RESTORE_ITEMS=()
+REMOVE_ITEMS=()
 
 cleanup_restore_workdir() {
   if [ -n "$RESTORE_WORKDIR" ] && [ -d "$RESTORE_WORKDIR" ]; then
@@ -86,6 +93,27 @@ rollback_restore() {
 trap rollback_restore ERR
 trap cleanup_restore_workdir EXIT
 
+is_backup_dir() {
+  [ -f "$1/root/config.md" ] || [ -f "$1/config.md" ]
+}
+
+newest_backup_in() {
+  local base="$1"
+  local candidate
+
+  [ -d "$base" ] || return 1
+
+  while IFS= read -r candidate; do
+    candidate="${candidate%/}"
+    if is_backup_dir "$candidate"; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done < <(ls -dt "$base"/*/ 2>/dev/null)
+
+  return 1
+}
+
 LEGAL_ROOT="$(bash "$COUNSEL_DIR/scripts/resolve_legal_root.sh" || true)"
 
 if [ -z "$LEGAL_ROOT" ]; then
@@ -97,27 +125,47 @@ fi
 if [ -n "${1:-}" ]; then
   if [ -d "$BACKUP_DIR/$1" ]; then
     BACKUP_PATH="$BACKUP_DIR/$1"
+  elif [ -d "$LEGACY_BACKUP_DIR/$1" ]; then
+    BACKUP_PATH="$LEGACY_BACKUP_DIR/$1"
+    echo "Note: using backup from the legacy location inside the plugin directory:"
+    echo "  $BACKUP_PATH"
+    echo "Backups there are lost on plugin update. Run ./backup once to migrate them to $BACKUP_DIR."
   elif [ -d "$1" ]; then
     BACKUP_PATH="$1"
   else
     echo "Backup not found: $1"
+    echo "Looked in: $BACKUP_DIR and $LEGACY_BACKUP_DIR"
     echo "Usage: ./restore [backup-name-or-path]"
     exit 1
   fi
 else
-  if [ ! -d "$BACKUP_DIR" ] || [ -z "$(ls -A "$BACKUP_DIR" 2>/dev/null)" ]; then
-    echo "No backups found in $BACKUP_DIR"
-    echo "Run ./backup first to create one."
-    exit 1
-  fi
-  BACKUP_PATH="$(ls -dt "$BACKUP_DIR"/counsel-os-backup-* 2>/dev/null | head -1)"
+  BACKUP_PATH="$(newest_backup_in "$BACKUP_DIR" || true)"
   if [ -z "$BACKUP_PATH" ]; then
-    echo "No backups found."
+    BACKUP_PATH="$(newest_backup_in "$LEGACY_BACKUP_DIR" || true)"
+    if [ -n "$BACKUP_PATH" ]; then
+      echo "Note: no backups in $BACKUP_DIR; using backup from the legacy location inside the plugin directory:"
+      echo "  $BACKUP_PATH"
+      echo "Backups there are lost on plugin update. Run ./backup once to migrate them to $BACKUP_DIR."
+    fi
+  fi
+  if [ -z "$BACKUP_PATH" ]; then
+    echo "No backups found in $BACKUP_DIR (or legacy $LEGACY_BACKUP_DIR)."
+    echo "Run ./backup first to create one."
     exit 1
   fi
 fi
 
-if [ ! -f "$BACKUP_PATH/config.md" ] || ! grep -q '^counsel-os-config: true$' "$BACKUP_PATH/config.md"; then
+# Two layouts: full-root backups carry the entire legal root under root/;
+# legacy backups carry config.md plus the default subdirectories at top level.
+if [ -f "$BACKUP_PATH/root/config.md" ]; then
+  BACKUP_FORMAT="full-root"
+  PAYLOAD_PATH="$BACKUP_PATH/root"
+else
+  BACKUP_FORMAT="legacy"
+  PAYLOAD_PATH="$BACKUP_PATH"
+fi
+
+if [ ! -f "$PAYLOAD_PATH/config.md" ] || ! grep -q '^counsel-os-config: true$' "$PAYLOAD_PATH/config.md"; then
   echo "Backup is not a marked Counsel OS backup: $BACKUP_PATH"
   exit 1
 fi
@@ -130,9 +178,38 @@ if [ -f "$BACKUP_PATH/manifest.json" ]; then
   echo "  current version:      $(cat "$COUNSEL_DIR/VERSION" 2>/dev/null || echo "unknown")"
 fi
 
+# Build the list of top-level items to restore. Never restore .git or
+# leftover restore work directories, whatever the backup contains.
+if [ "$BACKUP_FORMAT" = "full-root" ]; then
+  shopt -s dotglob
+  for entry in "$PAYLOAD_PATH"/*; do
+    [ -e "$entry" ] || [ -L "$entry" ] || continue
+    name="$(basename "$entry")"
+    case "$name" in
+      .git|.counsel-os-restore.*) continue ;;
+    esac
+    RESTORE_ITEMS+=("$name")
+  done
+  shopt -u dotglob
+else
+  RESTORE_ITEMS+=(config.md)
+  for dir in "${LEGACY_RESTORE_DIRS[@]}"; do
+    if [ -d "$PAYLOAD_PATH/$dir" ]; then
+      RESTORE_ITEMS+=("$dir")
+    elif [ -e "$LEGAL_ROOT/$dir" ]; then
+      # Preserve legacy semantics: default dirs absent from the backup are
+      # removed from the legal root.
+      REMOVE_ITEMS+=("$dir")
+    fi
+  done
+fi
+
 has_existing=0
-for dir in "${RESTORE_DIRS[@]}"; do
-  if [ -d "$LEGAL_ROOT/$dir" ] && [ "$(find "$LEGAL_ROOT/$dir" -type f ! -name '.gitkeep' | head -1)" ]; then
+for item in ${RESTORE_ITEMS[@]+"${RESTORE_ITEMS[@]}"} ${REMOVE_ITEMS[@]+"${REMOVE_ITEMS[@]}"}; do
+  if [ "$item" = "config.md" ]; then
+    continue
+  fi
+  if [ -e "$LEGAL_ROOT/$item" ]; then
     has_existing=1
     break
   fi
@@ -141,8 +218,10 @@ done
 if [ "$has_existing" -eq 1 ]; then
   echo ""
   echo "WARNING: Existing Counsel OS content found at legal root."
-  echo "Restoring will replace current law/, practice/, matters/, memory/, and entities/"
-  echo "with the backup contents. Files not present in the backup will be removed."
+  echo "Restoring will replace the current copies of everything present in the"
+  echo "backup. Content at the legal root that is not in the backup is kept"
+  echo "(except legacy-format restores, which remove the default Counsel OS"
+  echo "directories that are absent from the backup)."
   echo ""
   read -r -p "Continue? (y/N) " confirm
   if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
@@ -160,36 +239,64 @@ STAGE_PATH="$RESTORE_WORKDIR/stage"
 ROLLBACK_PATH="$RESTORE_WORKDIR/rollback"
 mkdir -p "$STAGE_PATH"
 
-cp "$BACKUP_PATH/config.md" "$STAGE_PATH/config.md"
-
-for dir in "${RESTORE_DIRS[@]}"; do
-  if [ -d "$BACKUP_PATH/$dir" ]; then
-    cp -R "$BACKUP_PATH/$dir" "$STAGE_PATH/$dir"
-  fi
+for item in ${RESTORE_ITEMS[@]+"${RESTORE_ITEMS[@]}"}; do
+  cp -R "$PAYLOAD_PATH/$item" "$STAGE_PATH/$item"
 done
 
 mkdir -p "$ROLLBACK_PATH"
 
-for item in config.md "${RESTORE_DIRS[@]}"; do
-  if [ -e "$LEGAL_ROOT/$item" ]; then
+for item in ${RESTORE_ITEMS[@]+"${RESTORE_ITEMS[@]}"} ${REMOVE_ITEMS[@]+"${REMOVE_ITEMS[@]}"}; do
+  if [ -e "$LEGAL_ROOT/$item" ] || [ -L "$LEGAL_ROOT/$item" ]; then
     EXISTED_BEFORE+=("$item")
     mv "$LEGAL_ROOT/$item" "$ROLLBACK_PATH/$item"
     MOVED_TO_ROLLBACK+=("$item")
   fi
 done
 
-mv "$STAGE_PATH/config.md" "$LEGAL_ROOT/config.md"
-MOVED_TO_LIVE+=("config.md")
-
-for dir in "${RESTORE_DIRS[@]}"; do
-  if [ -d "$STAGE_PATH/$dir" ]; then
-    mv "$STAGE_PATH/$dir" "$LEGAL_ROOT/$dir"
-    MOVED_TO_LIVE+=("$dir")
-    echo "  restored: $dir/"
-  elif contains_item "$dir" ${EXISTED_BEFORE[@]+"${EXISTED_BEFORE[@]}"}; then
-    echo "  removed:  $dir/ (not present in backup)"
+for item in ${RESTORE_ITEMS[@]+"${RESTORE_ITEMS[@]}"}; do
+  mv "$STAGE_PATH/$item" "$LEGAL_ROOT/$item"
+  MOVED_TO_LIVE+=("$item")
+  if [ -d "$LEGAL_ROOT/$item" ]; then
+    echo "  restored: $item/"
+  else
+    echo "  restored: $item"
   fi
 done
+
+for item in ${REMOVE_ITEMS[@]+"${REMOVE_ITEMS[@]}"}; do
+  if contains_item "$item" ${EXISTED_BEFORE[@]+"${EXISTED_BEFORE[@]}"} && ! contains_item "$item" ${MOVED_TO_LIVE[@]+"${MOVED_TO_LIVE[@]}"}; then
+    echo "  removed:  $item/ (not present in backup)"
+  fi
+done
+
+# A backup restored to a different location must not carry the old path:
+# rewrite legal_root in the restored config.md to the actual destination.
+# (Done before the rollback dir is discarded, so a failure here still rolls
+# back cleanly.)
+CONFIG_FILE="$LEGAL_ROOT/config.md"
+old_root="$(sed -n 's/^legal_root:[[:space:]]*//p' "$CONFIG_FILE" | head -1)"
+if [ "$old_root" != "$LEGAL_ROOT" ]; then
+  if grep -q '^legal_root:' "$CONFIG_FILE"; then
+    awk -v root="$LEGAL_ROOT" '
+      /^legal_root:/ && !done { print "legal_root: " root; done = 1; next }
+      { print }
+    ' "$CONFIG_FILE" > "$RESTORE_WORKDIR/config.md.tmp"
+    mv "$RESTORE_WORKDIR/config.md.tmp" "$CONFIG_FILE"
+  else
+    printf 'legal_root: %s\n' "$LEGAL_ROOT" >> "$CONFIG_FILE"
+  fi
+  echo "  updated:  config.md legal_root -> $LEGAL_ROOT"
+fi
+
+# Keep the per-machine pointer cache in sync with where the content now lives.
+POINTER_FILE="$HOME/.counsel-os/legal-root"
+if [ -f "$POINTER_FILE" ]; then
+  pointer="$(tr -d '\n' < "$POINTER_FILE")"
+  if [ "$pointer" != "$LEGAL_ROOT" ]; then
+    printf '%s' "$LEGAL_ROOT" > "$POINTER_FILE"
+    echo "  updated:  ~/.counsel-os/legal-root pointer -> $LEGAL_ROOT"
+  fi
+fi
 
 rm -rf "$ROLLBACK_PATH"
 

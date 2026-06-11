@@ -311,6 +311,7 @@ Plugin (methodology + tooling):
     setup/SKILL.md                             # /counsel-os:setup — Guided onboarding
     update/SKILL.md                            # /counsel-os:update — Pull latest content
     law-refresh/SKILL.md                       # /counsel-os:law-refresh — Refresh USER-OWNED law content (custom areas, managed-by: user files)
+    doctor/SKILL.md                            # /counsel-os:doctor — Read-only health check (config, deps, currency, backups)
   scripts/                                     # Automation
     apply_redlines.py                          # Apply text replacements + comments to .docx
     clean_format.py                            # Reformat .docx to professional standards
@@ -319,6 +320,7 @@ Plugin (methodology + tooling):
     resolve_legal_root.sh                      # Canonical legal-root discovery (exit 0/1/2)
     import_reference.sh                        # Import third-party material into practice/reference/ (see remember --reference)
     extract_redlines.py                        # Structured tracked-changes + comments extraction (see read --redline)
+    diff_rounds.py                             # Round-over-round redline comparison: ACCEPTED/REVERTED/MODIFIED/NEW (see read --redline)
 
 User's vault (all knowledge — discovered via config + Knowledge Base Search):
   {legal_root}/

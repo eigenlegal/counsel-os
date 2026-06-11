@@ -144,6 +144,17 @@ When updating, preserve existing content and append:
 - Add new outputs to ## Generated Outputs
 - ALWAYS set `updated:` to today in frontmatter on every write — staleness detection and retro turnaround analytics depend on it. Update `stage` when it advanced.
 
+### Version control on close
+
+When a matter's stage advances to `closed` and `{legal_root}` is a git repo (`git -C {legal_root} rev-parse --is-inside-work-tree` succeeds), commit the files this closeout actually touched — the matter file plus any entity, practice, or memory files written as part of the close. Stage and commit by pathspec, never `git add -A` — vaults routinely carry unrelated in-progress work that must not be swept into the closeout commit:
+
+```bash
+git -C {legal_root} add <touched paths>
+git -C {legal_root} commit -m "Close matter: {matter-id}" -- <touched paths>
+```
+
+Skip silently when `{legal_root}` is not a git repo.
+
 ---
 
 ## --entity

@@ -1,25 +1,21 @@
 # Connectors
 
-## How tool references work
+Counsel OS ships no MCP servers and no connector configuration — its `.mcp.json` is empty, and there is no placeholder or customization system. The plugin uses whatever tools are connected in your Claude session, detected at runtime.
 
-Plugin files use `~~category` as a placeholder for whatever tool the user connects in that category. For example, `~~cloud storage` might mean Google Drive, Box, or any other storage provider with an MCP server.
+Three integrations matter in practice:
 
-Plugins are **tool-agnostic** — they describe workflows in terms of categories rather than specific products. The `.mcp.json` pre-configures specific MCP servers, but any MCP server in that category works.
+## Content index (QMD) — recommended
 
-## Connectors for this plugin
+[QMD](https://github.com/tobi/qmd) is a local content-index MCP server, installed separately as its own Claude plugin (works in Claude Code and Cowork). When it's connected, every knowledge-base search — entity lookup, matter discovery, related-precedent search — goes through the index, and entity files are discovered anywhere in your vault by `counsel-os-type` frontmatter instead of a fixed directory layout. Any MCP server exposing an equivalent `query` tool over markdown frontmatter works the same way.
 
-| Category | Placeholder | Recommended | Other options |
-|----------|-------------|-------------|---------------|
-| Chat | `~~chat` | — (use native connection) | Slack, Microsoft Teams |
-| Cloud storage | `~~cloud storage` | — (use native connection) | Google Drive, Box, Dropbox, SharePoint |
-| Office suite | `~~office suite` | — (use native connection) | Microsoft 365, Google Workspace |
-| Content index | `~~content index` | [QMD](https://github.com/tobi/qmd) | Any MCP server exposing `query` over markdown frontmatter |
+Without an index, Counsel OS falls back to filesystem search: entity files must live under `{legal_root}/entities/` and matters under `{legal_root}/matters/`.
 
-All connectors use whatever is natively connected in your environment (Claude Desktop, Claude Code, etc.) rather than plugin-managed MCP servers.
+Detection is per-session and automatic — there is no configuration setting. See "Knowledge Base Search" in `skills/counsel/SKILL.md` for the exact procedure.
 
-## How connectors are used
+## Other connected MCP servers
 
-- **~~chat**: Receive contract review requests, post results and summaries to channels, notify stakeholders
-- **~~cloud storage**: Access agreements stored in cloud drives, pull contracts for review, save outputs
-- **~~office suite**: Read and edit Word documents for redlining, access email for context, calendar for deadlines
-- **~~content index**: Discover counterparty, vendor, customer, prospect, and matter files anywhere in your vault by querying frontmatter (`counsel-os-type`) instead of relying on a fixed directory layout. Without it, Counsel OS falls back to filesystem grep under `{legal_root}/entities/` and `{legal_root}/matters/`.
+If your session has other tools connected — cloud storage, chat, email, project trackers — Counsel OS can use them opportunistically when a task calls for it (pulling a contract from a connected drive, posting a summary to a channel), the same way any Claude session uses connected tools. Nothing is required, pre-configured, or assumed.
+
+## The browse skill
+
+For web portals that need a real browser — data rooms, e-signature platforms, government filing sites — `/counsel-os:browse` runs a local headless Chromium (Claude Code only). This is a bundled skill, not a connector. See `skills/browse/SKILL.md`.

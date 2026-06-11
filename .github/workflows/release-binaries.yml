@@ -1,0 +1,86 @@
+name: Release binaries
+
+# Builds standalone `counsel-browse` binaries (the browse/ bun + Playwright
+# daemon) for each supported platform and attaches them to the GitHub release
+# for the pushed tag.
+#
+# Note on Playwright: the binary bundles the daemon code only, NOT the
+# Chromium browser. Playwright Chromium is installed on first use
+# (`bunx playwright install chromium` — see skills/setup/SKILL.md and
+# skills/browse/SKILL.md). The smoke test below only verifies the binary
+# starts and prints usage; `--help` exits before any browser is launched.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  # Create the release once, before the build matrix fans out. This avoids
+  # the race where concurrent matrix jobs all try `gh release create` for
+  # the same tag and one of them fails.
+  create-release:
+    name: Create release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create GitHub release if missing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "Release $GITHUB_REF_NAME already exists — skipping create."
+          else
+            gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes
+          fi
+
+  build:
+    name: Build ${{ matrix.artifact }}
+    needs: create-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            artifact: counsel-browse-darwin-arm64
+          - os: macos-13
+            artifact: counsel-browse-darwin-x64
+          - os: ubuntu-latest
+            artifact: counsel-browse-linux-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.13
+
+      # Dependencies (playwright) live in the repo-root package.json /
+      # bun.lock — browse/ has no package.json of its own.
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Mirrors the root package.json "build" script (same entrypoint and
+      # externals), but with a per-platform output name.
+      - name: Compile standalone binary
+        run: >
+          bun build --target=bun --compile -e electron -e 'chromium-bidi/*'
+          browse/src/cli.ts
+          --outfile "browse/dist/${{ matrix.artifact }}"
+
+      # `--help` prints usage and exits 0 without contacting the daemon or
+      # launching Chromium, so it is safe on a runner with no browsers.
+      - name: Smoke test
+        run: ./browse/dist/${{ matrix.artifact }} --help
+
+      - name: Upload binary to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" "browse/dist/${{ matrix.artifact }}" --clobber

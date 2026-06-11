@@ -18,6 +18,21 @@ if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   exit 1
 fi
 
+# Guards: this helper only ever fast-forwards a clean main. Anything else is
+# a state the user needs to resolve deliberately, not have merged over.
+BRANCH="$(git symbolic-ref --short -q HEAD || echo "(detached)")"
+if [ "$BRANCH" != "main" ]; then
+  echo "Refusing to update: current branch is '$BRANCH', not 'main'."
+  echo "Switch back with: git checkout main"
+  exit 1
+fi
+
+if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+  echo "Refusing to update: working tree has uncommitted changes."
+  echo "Commit or stash them first (git stash), then re-run ./update."
+  exit 1
+fi
+
 OLD_VERSION="$(cat VERSION 2>/dev/null || echo unknown)"
 OLD_COMMIT="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
 
@@ -27,6 +42,19 @@ echo ""
 echo "Pulling latest plugin files with git..."
 
 git fetch origin
+
+if ! git rev-parse --verify -q origin/main >/dev/null; then
+  echo "Refusing to update: origin/main not found after fetch."
+  exit 1
+fi
+
+if ! git merge-base --is-ancestor HEAD origin/main; then
+  echo "Refusing to update: local main has commits that are not on origin/main,"
+  echo "so the merge would not be a fast-forward."
+  echo "Rebase or reconcile manually (e.g. git rebase origin/main), then re-run ./update."
+  exit 1
+fi
+
 git merge --ff-only origin/main
 
 NEW_VERSION="$(cat VERSION 2>/dev/null || echo unknown)"

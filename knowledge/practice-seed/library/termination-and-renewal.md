@@ -1,6 +1,6 @@
 ---
 counsel-os-type: practice
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 ---
 # Termination & Renewal — Clause Library
 
@@ -58,7 +58,7 @@ Vendor-Favorable language imposing early termination fees equal to the remaining
 ## Post-Termination Obligations
 
 ### Standard
-> Upon termination or expiration: (a) all rights and licenses shall immediately cease; (b) each party shall return or destroy Confidential Information and certify within thirty (30) days; (c) Vendor shall make Customer Data available for download in a standard, machine-readable format for thirty (30) days, then delete within thirty (30) additional days and certify deletion; (d) accrued payment obligations survive and are immediately due; and (e) the following sections survive: [list sections -- Confidentiality, Liability, Indemnification, IP Ownership, Dispute Resolution, and survival clause].
+> Upon termination or expiration: (a) all rights and licenses shall immediately cease; (b) each party shall return or destroy Confidential Information and certify within thirty (30) days; (c) Vendor shall make Customer Data available for download in a standard, machine-readable format for thirty (30) days, then delete from production systems within thirty (30) additional days and from backup systems within ninety (90) days, and certify deletion; (d) accrued payment obligations survive and are immediately due; and (e) the following sections survive: [list sections -- Confidentiality, Liability, Indemnification, IP Ownership, Dispute Resolution, and survival clause].
 
 ### Aggressive (Customer-Favorable)
 > Upon termination or expiration for any reason: (a) Customer's rights continue for a ninety (90) day transition period; (b) Vendor shall provide transition assistance at Vendor's then-current rates (or at no charge if termination is due to Vendor's breach or Vendor's convenience); (c) Vendor shall make all Customer Data available for export in standard, machine-readable format (including via API) throughout the transition period; (d) upon expiration of the transition period, Vendor shall permanently delete all Customer Data (including backups) within thirty (30) days and provide signed officer certification; (e) each party shall return Confidential Information within thirty (30) days; and (f) specified provisions survive.
@@ -75,7 +75,7 @@ Vendor-Favorable language with no transition period, a 15-day export window, ven
 ## Data Return and Deletion
 
 ### Standard
-> Upon termination, expiration, or Customer's written request, Vendor shall: (a) make Customer Data available for export in a standard, machine-readable format for thirty (30) days; and (b) thereafter delete all Customer Data from Vendor's systems, including copies and backups, within thirty (30) additional days. Vendor shall certify deletion upon request. Vendor may retain data only as required by applicable law, subject to continued confidentiality and data protection obligations.
+> Upon termination, expiration, or Customer's written request, Vendor shall: (a) make Customer Data available for export in a standard, machine-readable format for thirty (30) days; and (b) thereafter delete all Customer Data from production systems within thirty (30) additional days and purge all copies from backup and archival systems within ninety (90) days. Vendor shall certify deletion upon completion. Vendor may retain data only as required by applicable law, subject to continued confidentiality and data protection obligations.
 
 ### Aggressive (Customer-Favorable)
 > Upon termination, expiration, or Customer's request at any time: (a) Vendor shall make all Customer Data available for export via API and bulk download in at least two (2) non-proprietary formats (e.g., CSV, JSON, XML) for sixty (60) days; (b) Vendor shall provide technical migration assistance at no additional charge; (c) upon expiration of the export period, Vendor shall permanently delete all Customer Data from all systems, backups, and disaster recovery sites within fifteen (15) days; (d) Vendor shall provide signed officer certification specifying systems and deletion methods; and (e) Vendor shall not retain copies except as required by law, in which case Vendor shall notify Customer, limit retention, and protect data until deleted.
@@ -84,10 +84,10 @@ Vendor-Favorable language with no transition period, a 15-day export window, ven
 > Upon termination, Vendor shall make Customer Data available for download in Vendor's standard export format for a period of fifteen (15) days. Customer is responsible for completing the export within this period. After the export period, Vendor shall delete Customer Data in accordance with its standard data retention and destruction policies. Vendor may retain anonymized or aggregated data derived from Customer Data indefinitely. Vendor shall have no obligation to maintain or export Customer Data in any particular format.
 
 ### Minimum Acceptable
-> Upon termination, Vendor shall make Customer Data available for retrieval for thirty (30) days and shall delete Customer Data from its systems thereafter.
+> Upon termination, Vendor shall make Customer Data available for retrieval for thirty (30) days, and shall thereafter delete Customer Data from production systems within thirty (30) days and from backups within ninety (90) days.
 
 ### Notes
-Vendor-Favorable language with a 15-day window, vendor-standard format only, and retention of anonymized/aggregated data provides weak protection. Push for non-proprietary formats and at least a 30-day export window. The right to retain anonymized data should be scrutinized carefully -- ensure the anonymization is genuine and the derived data does not enable re-identification. Deletion must extend to backups and disaster recovery copies.
+Vendor-Favorable language with a 15-day window, vendor-standard format only, and retention of anonymized/aggregated data provides weak protection. Push for non-proprietary formats and at least a 30-day export window. The right to retain anonymized data should be scrutinized carefully -- ensure the anonymization is genuine and the derived data does not enable re-identification. Deletion must extend to backups and disaster recovery copies. House position: deletion from production within 30 days and from backups within 90 days maximum, with written certification.
 
 ## Renewal Notice Mechanics
 

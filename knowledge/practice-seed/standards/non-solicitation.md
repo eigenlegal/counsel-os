@@ -1,6 +1,6 @@
 ---
 counsel-os-type: practice
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 ---
 # Non-Solicitation — Position
 
