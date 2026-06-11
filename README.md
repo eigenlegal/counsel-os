@@ -393,15 +393,22 @@ Next time you review a contract from that counterparty, the overrides load autom
 
 You can edit `practice/standards/` and `practice/library/` files directly any time — they're plain markdown in your vault. But you usually won't need to: counsel proactively suggests updates as it works (see [Continuous Learning](#continuous-learning) above for how this loop runs).
 
-### Adding New Legal Areas
+### Law Content: Who Maintains What
 
-Create a new `.md` file in `{legal_root}/law/`:
+Law files are physical copies in your vault, but by default they're **plugin-managed**: the maintainers refresh the shipped content against primary sources (with dated `last-reviewed` attestations and cited authorities), and `/counsel-os:update` syncs the results into your vault. You get currency without doing the maintenance.
 
-```
-{legal_root}/law/new-area.md
-```
+Ownership is a dial, not a switch:
 
-Include trigger conditions at the top. The `research` primitive will automatically detect and load it — no other changes needed.
+| You want | Do this | Then |
+|----------|---------|------|
+| Batteries included (default) | Nothing | Law arrives via `/counsel-os:update`; set `auto_apply_law_updates: true` in `config.md` to skip per-update prompts |
+| Add your own law area | Create `{legal_root}/law/your-area/` (or a single `.md`) with trigger conditions at the top | It's yours automatically — update never touches areas it doesn't ship; the `research` primitive auto-detects it; `/counsel-os:law-refresh` keeps it current |
+| Customize one shipped file and keep your edits | Add `managed-by: user` to that file's frontmatter | Update permanently skips it (even with auto-apply); `/counsel-os:law-refresh` maintains it. You own its currency from then on |
+| Own the whole law library | Set `law_management: user` in `config.md` | Update stops syncing law entirely; `/counsel-os:law-refresh` is your maintenance tool |
+
+**`/counsel-os:law-refresh`** runs the same verify-and-patch method the maintainers use upstream — extract perishable claims, verify against primary sources, patch the deltas, and stamp attestations after your review — but only on content *you* own. Run it quarterly for fast-moving custom areas.
+
+**The responsibility line, plainly:** Counsel OS ships law content with dated, source-cited attestations — but it is not legal advice, attestations are point-in-time, and nothing here replaces a lawyer's professional duty to verify current law before relying on it. Content you take ownership of is yours to keep current.
 
 ---
 

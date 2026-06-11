@@ -36,6 +36,14 @@ authorities:
 - `authorities` means the cited statute, rule, case, regulator page, or other source was verified for this file.
 - Do not add empty `last-reviewed:` or `authorities: []`. Empty attestation fields create a false signal.
 
+### Ownership Marker (user vaults only)
+
+```yaml
+managed-by: user
+```
+
+Set by the USER on a law file in their vault to take permanent ownership of it: `/counsel-os:update` stops syncing that file (even with `auto_apply_law_updates: true`), and `/counsel-os:law-refresh` maintains it instead. Absence means plugin-managed (the default). A `law_management: user` line in the vault's `config.md` applies the same treatment to the entire law library. Files shipped in this repo never carry this marker.
+
 ## Staleness Policy
 
 Do not mass-add per-file `stale-after`. Staleness is computed from `last-reviewed` plus the per-area cadence in `frontmatter-policy.json`.

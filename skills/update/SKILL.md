@@ -66,6 +66,7 @@ legal_root: {resolved legal root}
 # entities_path: entities
 # matters_path: matters
 # auto_apply_law_updates: false   # true = update applies law content without per-area approval
+# law_management: plugin          # 'user' = you own ALL law content; update stops syncing it (/counsel-os:law-refresh maintains it)
 # entity_properties:
 #   type_field: counsel-os-type
 #   values: [counterparty, vendor, customer, prospect, matter]
@@ -169,18 +170,17 @@ After updating methodology, tell the user whether a restart is needed. In most p
 
 Compare the plugin's shipped content to the user's vault.
 
-### Law areas: plugin-managed
+### Law areas: plugin-managed by default
 
-Compare `knowledge/law/` in the plugin root against `{legal_root}/law/`.
+**Ownership check first.** If `{legal_root}/config.md` sets `law_management: user`, skip the entire law comparison — the user owns their law library and maintains it with `/counsel-os:law-refresh`. Report that law sync was skipped and why.
 
-For each law area:
-1. Read the plugin file's `content-version`.
-2. Read the vault file's `content-version`.
-3. If the vault file is missing, classify as **new law content**.
-4. If the plugin version is newer, classify as **upstream law update**.
-5. If versions match, skip.
+Otherwise, compare `knowledge/law/` in the plugin root against `{legal_root}/law/`:
 
-Law areas are plugin-managed, so these are safe to apply after user approval — or automatically, when the user's `{legal_root}/config.md` sets `auto_apply_law_updates: true`.
+1. **Compare by CONTENT, not by `content-version` date.** Same-day releases produce identical dates with different content — date comparison silently misses them. With shell access, `diff -rq` each plugin area directory against the vault copy. Without shell, compare `content-version` dates but warn that same-day changes may be missed.
+2. If the vault area is missing, classify as **new law content**. If content differs, classify as **upstream law update**. If identical, skip.
+3. Vault-only areas (the user created them) are user-owned — never touch them.
+
+Law areas are plugin-managed by default, so updates are safe to apply after user approval — or automatically, when the user's `{legal_root}/config.md` sets `auto_apply_law_updates: true`. **Exception: any vault law file whose frontmatter contains `managed-by: user` is permanently user-owned — never overwrite it, even under auto-apply.** When applying an area that contains marked files, copy file-by-file, skip the marked ones, and report them ("skipped N user-owned law files").
 
 ### Practice seed: user-owned
 
@@ -218,8 +218,8 @@ Ask what to apply. Apply law updates only after approval — unless `auto_apply_
 ## Step 6: Apply Approved Changes
 
 For approved law updates:
-1. Copy the plugin law file or directory into `{legal_root}/law/`.
-2. Preserve no local edits unless the user explicitly says they customized law content and wants a merge.
+1. Copy the plugin law file or directory into `{legal_root}/law/` — skipping any vault file marked `managed-by: user` (copy file-by-file when an area contains marked files).
+2. Preserve no other local edits unless the user explicitly says they customized law content and wants a merge — and when they say that, offer the durable fix: mark the file `managed-by: user` so future updates skip it automatically and `/counsel-os:law-refresh` maintains it.
 
 For approved practice updates:
 1. Preserve user-owned sections, especially `## Our Position`.

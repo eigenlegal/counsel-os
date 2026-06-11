@@ -80,6 +80,7 @@ legal_root: {user's path}
 # entities_path: entities
 # matters_path: matters
 # auto_apply_law_updates: false   # true = update applies law content without per-area approval
+# law_management: plugin          # 'user' = you own ALL law content; update stops syncing it (/counsel-os:law-refresh maintains it)
 # entity_properties:
 #   type_field: counsel-os-type
 #   values: [counterparty, vendor, customer, prospect, matter]

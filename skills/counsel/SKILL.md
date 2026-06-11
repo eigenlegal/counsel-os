@@ -307,6 +307,7 @@ Plugin (methodology + tooling):
     retro/SKILL.md                             # /counsel-os:retro — Practice analytics
     setup/SKILL.md                             # /counsel-os:setup — Guided onboarding
     update/SKILL.md                            # /counsel-os:update — Pull latest content
+    law-refresh/SKILL.md                       # /counsel-os:law-refresh — Refresh USER-OWNED law content (custom areas, managed-by: user files)
   scripts/                                     # Automation
     apply_redlines.py                          # Apply text replacements + comments to .docx
     clean_format.py                            # Reformat .docx to professional standards
