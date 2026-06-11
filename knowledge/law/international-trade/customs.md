@@ -1,7 +1,27 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, international]
+authorities:
+  - cite: "19 U.S.C. § 1592"
+    title: "Customs penalties for fraud, gross negligence, and negligence"
+    url: "https://www.law.cornell.edu/uscode/text/19/1592"
+  - cite: "Learning Resources, Inc. v. Trump, 607 U.S. ___ (2026) (No. 24-1287, Feb. 20, 2026)"
+    title: "Supreme Court decision holding IEEPA does not authorize tariffs"
+    url: "https://www.supremecourt.gov/opinions/25pdf/24-1287_4gcj.pdf"
+  - cite: "CBP IEEPA Duty Refunds"
+    title: "CBP refund process (CAPE) for invalidated IEEPA tariffs"
+    url: "https://www.cbp.gov/trade/programs-administration/trade-remedies/ieepa-duty-refunds"
+  - cite: "91 Fed. Reg. (Feb. 25, 2026)"
+    title: "Proclamation imposing a temporary import surcharge under Section 122, Trade Act of 1974"
+    url: "https://www.federalregister.gov/documents/2026/02/25/2026-03824/imposing-a-temporary-import-surcharge-to-address-fundamental-international-payments-problems"
+  - cite: "Harmonized Tariff Schedule of the United States"
+    title: "USITC HTS (current tariff rates, including Section 232/301 chapter 99 provisions)"
+    url: "https://hts.usitc.gov"
+  - cite: "DHS UFLPA Entity List"
+    title: "UFLPA Entity List (144 entities following the January 2025 additions)"
+    url: "https://www.dhs.gov/uflpa-entity-list"
 ---
 # Customs and Import Compliance
 
@@ -19,6 +39,15 @@ Applies when any transaction, agreement, or business activity involves:
 - Bonded warehouse or in-transit shipments through the US
 
 ## Key Requirements
+
+### Tariff Landscape and De Minimis (2025-2026 — rates change rapidly; verify current proclamations and CBP CSMS messages at entry)
+
+- **IEEPA tariffs invalidated**: The 2025 IEEPA-based tariffs (February 2025 Canada/Mexico/China "fentanyl" tariffs and the April 2025 global "reciprocal" tariffs) were held unlawful in Learning Resources, Inc. v. Trump, 607 U.S. ___ (2026) (No. 24-1287, decided Feb. 20, 2026, 6-3, Roberts, C.J.): IEEPA's power to "regulate ... importation" does not include the power to impose tariffs. All IEEPA tariffs were terminated
+- **Refunds**: Following a Court of International Trade order (Mar. 4, 2026) directing liquidation/reliquidation without IEEPA duties, CBP is processing refunds through the CAPE (Consolidated Administration and Processing of Entries) tool in the ACE Portal; Phase 1 claim filing opened Apr. 20, 2026. Monitor CBP's IEEPA Duty Refunds page and FAQs for phase coverage and documentation requirements
+- **Section 122 surcharge**: A temporary global import surcharge under Section 122 of the Trade Act of 1974 took effect Feb. 24, 2026 (imposed at 10%, with an announced increase toward the 15% statutory cap — verify the rate in effect at entry). Section 122 is capped at 15% ad valorem and 150 days; the surcharge expires July 24, 2026 absent congressional extension. The CIT held the surcharge invalid on May 7, 2026, but relief was limited to the plaintiff importers and the government's Federal Circuit appeal (with a stay) is pending — most importers must continue depositing the duty
+- **Section 232 actions**: Steel, aluminum, and copper are at 50%, and effective Apr. 6, 2026 the duties apply to the entire customs value of covered articles and derivative products regardless of metal content; a June 1, 2026 proclamation (effective June 8, 2026) further modified coverage and expanded a reduced 15% rate for certain equipment categories. Autos and auto parts are at 25%. Additional Section 232 actions cover or have been initiated for semiconductors, pharmaceuticals, heavy trucks, lumber/timber, and furniture at varying rates — verify the current proclamation for each product
+- **Section 301 (China)**: The pre-2025 Section 301 tariffs (25% on most covered lists; higher rates such as 50% on solar and 100% on EVs from the 2024 review) remain in effect, alongside the US-China arrangement announced after the October 2025 Trump-Xi meeting
+- **De minimis (Section 321)**: Duty-free de minimis treatment was eliminated for China/Hong Kong (May 2, 2025) and suspended for all countries effective Aug. 29, 2025 — all commercial shipments now require entry and duty payment regardless of value. Statutory repeal of commercial de minimis takes effect July 1, 2027 under the One Big Beautiful Bill Act
 
 ### HS Classification (19 U.S.C. Section 1484)
 
@@ -57,7 +86,7 @@ Applies when any transaction, agreement, or business activity involves:
 - **What**: Designated areas within the US where foreign and domestic merchandise may be admitted without formal customs entry or duty payment. Key benefits:
   - **Duty deferral**: Duties not owed until goods enter US commerce
   - **Duty elimination**: No duties on goods re-exported from the FTZ
-  - **Inverted tariff**: Pay the lower duty rate on finished goods rather than higher rate on components (if components have higher rates)
+  - **Inverted tariff**: Pay the lower duty rate on finished goods rather than higher rate on components (if components have higher rates). Note: merchandise subject to Section 232 actions must generally be admitted in privileged foreign status, which locks in the component-level duty and eliminates the inverted-tariff benefit for those goods
   - **Quota avoidance**: Quota-restricted goods may be held in FTZ until quota opens
 - **Threshold/Timeline**: Must be authorized by the Foreign-Trade Zones Board (Dept. of Commerce). Annual reporting to CBP required. Merchandise admitted under proper FTZ status: privileged foreign, non-privileged foreign, zone-restricted, or domestic
 - **Consequence**: Non-compliance with FTZ procedures: potential revocation of FTZ activation, duty liability on all merchandise, and Section 1592 penalties
@@ -83,7 +112,7 @@ Applies when any transaction, agreement, or business activity involves:
 
 - **What**: Creates a rebuttable presumption that goods mined, produced, or manufactured wholly or in part in the Xinjiang Uyghur Autonomous Region (XUAR) of China, or by entities on the UFLPA Entity List, are produced with forced labor and prohibited from US importation under 19 U.S.C. Section 1307
 - **Threshold/Timeline**: Effective June 21, 2022. Applies to goods with any connection to XUAR supply chains — not just direct imports from XUAR. Includes downstream products containing XUAR-sourced inputs. Burden on the importer to provide "clear and convincing" evidence to rebut the presumption, including complete supply chain mapping and traceability documentation
-- **Consequence**: Detention and exclusion of merchandise at the border. Priority enforcement sectors: cotton/textiles, polysilicon/solar panels, tomato products, PVC/plastics, electronics components, and metals/minerals. Release from detention requires substantial documentation that CBP may reject. Rebuttal success rate is low
+- **Consequence**: Detention and exclusion of merchandise at the border. Priority enforcement sectors: cotton/textiles, polysilicon/solar panels, tomato products, PVC/plastics, electronics components, seafood, and metals/minerals; the 2025 DHS strategy update added caustic soda, copper, jujubes (red dates), lithium, and steel as high-priority sectors. The UFLPA Entity List stands at 144 entities following the January 2025 additions (the largest single expansion to date). Release from detention requires substantial documentation that CBP may reject. Rebuttal success rate is low
 
 ### Antidumping and Countervailing Duties (AD/CVD) (19 U.S.C. Sections 1673-1677n)
 
@@ -124,3 +153,6 @@ Applies when any transaction, agreement, or business activity involves:
 - CBP Informed Compliance Publications: https://www.cbp.gov/trade/rulings/informed-compliance-publications
 - 19 U.S.C. Sections 1304 (marking), 1401a (valuation), 1484 (entry), 1592 (penalties), 1307 (forced labor), 1313 (drawback)
 - AD/CVD Orders and Reviews (ITA): https://www.trade.gov/enforcement-and-compliance
+- Learning Resources, Inc. v. Trump, No. 24-1287 (U.S. Feb. 20, 2026): https://www.supremecourt.gov/opinions/25pdf/24-1287_4gcj.pdf
+- CBP IEEPA Duty Refunds (CAPE): https://www.cbp.gov/trade/programs-administration/trade-remedies/ieepa-duty-refunds
+- Section 122 import surcharge proclamation (Feb. 2026): https://www.federalregister.gov/documents/2026/02/25/2026-03824/imposing-a-temporary-import-surcharge-to-address-fundamental-international-payments-problems

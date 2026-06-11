@@ -1,7 +1,27 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "17 CFR 230.501-508"
+    title: "Regulation D, including Rule 501(a) accredited investor definition and Rule 506(b)/(c) exemptions"
+    url: "https://www.ecfr.gov/current/title-17/chapter-II/part-230/subject-group-ECFR6e651a4c86c0174"
+  - cite: "SEC Division of Corporation Finance no-action letter, Latham & Watkins LLP (Mar. 12, 2025)"
+    title: "Rule 506(c) accredited investor verification via minimum investment amounts plus written representations"
+    url: "https://www.sec.gov/rules-regulations/no-action-interpretive-exemptive-letters/division-corporation-finance-no-action/latham-watkins-503c-031225"
+  - cite: "17 CFR 230.144"
+    title: "Rule 144 safe harbor for resales of restricted and control securities"
+    url: "https://www.ecfr.gov/current/title-17/chapter-II/part-230/section-230.144"
+  - cite: "17 CFR 230.152"
+    title: "Rule 152 integration safe harbors"
+    url: "https://www.ecfr.gov/current/title-17/chapter-II/part-230/section-230.152"
+  - cite: "SEC Regulation A resources for small businesses"
+    title: "Regulation A Tier 1 ($20M) and Tier 2 ($75M) offering limits"
+    url: "https://www.sec.gov/resources-small-businesses/exempt-offerings/regulation"
+  - cite: "SEC EDGAR Next transition"
+    title: "EDGAR Next enrollment deadline (Dec. 19, 2025) and Form ID requirement for unenrolled filers"
+    url: "https://www.sec.gov/newsroom/whats-new/one-week-until-edgar-next-compliance-required-file"
 ---
 # Securities Registration Exemptions
 
@@ -20,7 +40,7 @@ Load when ANY of the following is present: private placement, Regulation D offer
 ### Regulation D — Rule 506(c) (General Solicitation Permitted)
 
 - **What**: Unlimited capital raise with general solicitation permitted, but ALL purchasers must be verified accredited investors. Self-certification alone is insufficient.
-- **Threshold/Timeline**: No dollar cap. 100% accredited investors required. Issuer must take "reasonable steps to verify" status using: (1) tax returns for prior 2 years showing $200K individual/$300K joint income with reasonable expectation of same; (2) bank/brokerage statements showing $1M+ net worth excluding primary residence; (3) written confirmation from registered broker-dealer, SEC-registered investment adviser, licensed CPA, or attorney; or (4) existing investor re-verification via certification of continued status.
+- **Threshold/Timeline**: No dollar cap. 100% accredited investors required. Issuer must take "reasonable steps to verify" status using: (1) tax returns for prior 2 years showing $200K individual/$300K joint income with reasonable expectation of same; (2) bank/brokerage statements showing $1M+ net worth excluding primary residence; (3) written confirmation from registered broker-dealer, SEC-registered investment adviser, licensed CPA, or attorney; or (4) existing investor re-verification via certification of continued status. Under a March 12, 2025 SEC staff no-action letter (Latham & Watkins), an issuer may also satisfy the verification requirement through high minimum investment amounts — at least $200K for natural persons and $1M for entities — coupled with written representations that the purchaser is accredited and that the investment is not financed by a third party for the specific purpose of making the investment.
 - **Consequence**: A single non-accredited purchaser, or failure to verify accredited status through reasonable steps, voids the 506(c) exemption for the entire offering. The issuer may face rescission liability to all investors.
 
 ### Accredited Investor Definition (Rule 501(a))
@@ -62,7 +82,7 @@ Load when ANY of the following is present: private placement, Regulation D offer
 ### Form D Filing Requirements
 
 - **What**: Notice filing with SEC for Regulation D offerings on Form D.
-- **Threshold/Timeline**: Initial filing within 15 calendar days of first sale. Amendments required for material changes and annually if the offering is ongoing. State notice filings typically due within 15 days of first sale in that state, but deadlines vary by state (some require pre-sale filing). Filing fees range from $0 to $750+ depending on state and amount raised.
+- **Threshold/Timeline**: Initial filing within 15 calendar days of first sale. Amendments required for material changes and annually if the offering is ongoing. State notice filings typically due within 15 days of first sale in that state, but deadlines vary by state (some require pre-sale filing). Filing fees range from $0 to $750+ depending on state and amount raised. Form D is filed on EDGAR, which since late 2025 requires EDGAR Next access — first-time filers must obtain filer credentials via Form ID (allow lead time; SEC review of Form ID can take days), and legacy filers who missed the December 19, 2025 enrollment deadline must re-apply via Form ID. Most states accept Rule 506 notice filings electronically through NASAA's Electronic Filing Depository (EFD).
 - **Consequence**: Late Form D filing does not automatically void the federal exemption, but certain states (notably New York) may deny the state exemption for late filings. SEC may bring enforcement actions for failure to file. Pattern of non-filing may be considered in future exemption reliance.
 
 ### Rule 144 (Resale of Restricted and Control Securities)

@@ -1,7 +1,21 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, international]
+authorities:
+  - cite: "18 U.S.C. § 1836"
+    title: "Defend Trade Secrets Act — civil cause of action and ex parte seizure"
+    url: "https://www.law.cornell.edu/uscode/text/18/1836"
+  - cite: "18 U.S.C. § 1833(b)"
+    title: "DTSA whistleblower immunity and employer notice requirement"
+    url: "https://www.law.cornell.edu/uscode/text/18/1833"
+  - cite: "18 U.S.C. §§ 1831-1839"
+    title: "Economic Espionage Act"
+    url: "https://www.law.cornell.edu/uscode/text/18/part-I/chapter-90"
+  - cite: "Uniform Trade Secrets Act (ULC)"
+    title: "UTSA adoption — 48 states plus D.C., P.R., U.S.V.I.; New York common law; North Carolina has its own closely modeled statute"
+    url: "https://www.uniformlaws.org/committees/community-home?CommunityKey=3a2538fb-e030-4e2d-a9e2-90373dc05792"
 ---
 # Trade Secrets
 
@@ -49,8 +63,10 @@ engineering disputes.
 
 ### State Protection: UTSA
 
-- **Uniform Trade Secrets Act**: Adopted in **48 states** plus D.C. (New York and North Carolina
-  have their own common law frameworks). State and federal claims can be brought concurrently.
+- **Uniform Trade Secrets Act**: Adopted in **48 states** plus D.C., Puerto Rico, and the U.S.
+  Virgin Islands. **New York** is the lone common-law holdout; **North Carolina** has its own
+  Trade Secrets Protection Act (N.C. Gen. Stat. 66-152 et seq.), closely modeled on the UTSA.
+  State and federal claims can be brought concurrently.
 - **Key state variations**:
   - Statute of limitations ranges from **2 to 5 years** (UTSA default: 3 years)
   - Definition of "improper means" varies
@@ -156,6 +172,6 @@ engineering disputes.
 ## Sources
 
 - [DTSA (18 U.S.C. 1836) - Cornell LII](https://www.law.cornell.edu/uscode/text/18/1836)
-- [Uniform Trade Secrets Act - Uniform Law Commission](https://www.uniformlaws.org/committees/community-home?CommunityKey=3a2538fb-e030-4e2d-a9e2-90373dc05b93)
+- [Uniform Trade Secrets Act - Uniform Law Commission](https://www.uniformlaws.org/committees/community-home?CommunityKey=3a2538fb-e030-4e2d-a9e2-90373dc05792)
 - [Economic Espionage Act (18 U.S.C. 1831-1839) - Cornell LII](https://www.law.cornell.edu/uscode/text/18/part-I/chapter-90)
 - [Restatement (Third) of Unfair Competition, Sections 39-45](https://www.ali.org/)

@@ -1,7 +1,24 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, international]
+authorities:
+  - cite: "Fed. R. Civ. P. 23"
+    title: "Class actions — certification, settlement approval"
+    url: "https://www.law.cornell.edu/rules/frcp/rule_23"
+  - cite: "Fed. R. Civ. P. 16.1"
+    title: "Multidistrict litigation — initial management (effective Dec. 1, 2025)"
+    url: "https://www.law.cornell.edu/rules/frcp/rule_16.1"
+  - cite: "28 U.S.C. § 1332(d)"
+    title: "Class Action Fairness Act jurisdiction"
+    url: "https://www.law.cornell.edu/uscode/text/28/1332"
+  - cite: "Laboratory Corp. of America Holdings v. Davis, No. 24-304 (U.S. June 5, 2025)"
+    title: "Cert. dismissed as improvidently granted — uninjured class member question left open"
+    url: "https://www.supremecourt.gov/opinions/24pdf/24-304_3e04.pdf"
+  - cite: "Fed. R. Evid. 702"
+    title: "Expert testimony standard as amended Dec. 1, 2023"
+    url: "https://www.law.cornell.edu/rules/fre/rule_702"
 ---
 # Class Actions
 
@@ -31,7 +48,8 @@ All four must be satisfied for class certification:
 - **Predominance** / **Threshold**: Common issues must predominate over individual issues; damages can be common-issue if measurable on a class-wide basis (*Comcast Corp. v. Behrend*, 569 U.S. 27 (2013)) / **Consequence**: Individual damages calculations do not necessarily defeat predominance, but individual liability questions typically do
 - **Wal-Mart v. Dukes standard** / **Threshold**: Rigorous analysis required at certification; court must resolve factual disputes relevant to certification even if they overlap with the merits / **Consequence**: Certification denied for 1.5 million Wal-Mart employees due to lack of common policy producing common injury
 - **Ascertainability (circuit split)** / **Threshold**: Third Circuit requires administratively feasible mechanism to identify class members (*Byrd v. Aaron's Inc.*); other circuits (Second, Sixth, Seventh, Ninth) reject a heightened ascertainability requirement / **Consequence**: In Third Circuit, claims with no reliable records identifying class members (e.g., retail purchasers without receipts) face certification barriers
-- **Expert evidence at certification**: *Daubert* analysis applies to expert evidence offered to support or oppose certification (*In re Hydrogen Peroxide*, 3d Cir.)
+- **Uninjured class members (open question)** / **Threshold**: Whether a damages class may be certified when it includes members with no Article III injury remains unresolved -- the Supreme Court dismissed *Laboratory Corp. of America Holdings v. Davis*, No. 24-304 (U.S. June 5, 2025), as improvidently granted (8-1, Kavanaugh, J., dissenting) without deciding the question / **Consequence**: Circuit approaches continue to diverge (e.g., the D.C. Circuit requires that all but a de minimis number of class members be injured); pair with *TransUnion v. Ramirez* concrete-harm analysis
+- **Expert evidence at certification**: *Daubert* analysis applies to expert evidence offered to support or oppose certification (*In re Hydrogen Peroxide*, 3d Cir.); FRE 702 as amended December 1, 2023 requires the proponent to show admissibility is more likely than not and that the opinion reflects a reliable application of the methodology to the facts -- cite the amended rule, not pre-2023 "liberal admissibility" case framing
 
 ### Class Action Fairness Act (CAFA)
 
@@ -45,11 +63,12 @@ All four must be satisfied for class certification:
 - **Epic Systems Corp. v. Lewis (584 U.S. 497, 2018)** / **Threshold**: Class action waivers in employment arbitration agreements are enforceable under the FAA; NLRA does not override FAA / **Consequence**: Employers may require individual arbitration, foreclosing class and collective actions
 - **AT&T Mobility v. Concepcion (563 U.S. 333, 2011)** / **Threshold**: FAA preempts state laws that condition arbitration enforcement on availability of class procedures / **Consequence**: California's *Discover Bank* rule (unconscionability of class waivers) preempted; class waiver in consumer arbitration agreements enforceable
 - **Exceptions**: PAGA claims in California may not be waivable (*Viking River Cruises v. Moriana*, 596 U.S. 639 (2022) -- partially; individual PAGA claims must be arbitrated but non-individual claims status is evolving under state law); SEC anti-waiver provision (Securities Act Section 14, Exchange Act Section 29(a)) may limit waivers in securities context
-- **Mass arbitration risk** / **Threshold**: When class waivers push thousands of individual claims into arbitration, companies face massive filing fees (AAA: $1,500-$2,200 per consumer case) / **Consequence**: Mass arbitration can cost defendants more than class litigation; drafting must account for this risk
+- **Mass arbitration risk** / **Threshold**: When class waivers push thousands of individual claims into arbitration, companies face large aggregate fees (the AAA Mass Arbitration Supplementary Rules, effective 2024, use a flat initiation fee -- $3,125 claimant share / $8,125 business share -- with per-case fees deferred until after process-arbitrator review) / **Consequence**: Mass arbitration can cost defendants more than class litigation; drafting must account for this risk; see `arbitration.md` for current AAA/JAMS procedures and *Heckman v. Live Nation* (9th Cir. 2024)
 
 ### Multidistrict Litigation (MDL)
 
 - **28 U.S.C. 1407** / **Threshold**: Civil actions involving common questions of fact pending in different districts may be transferred to a single district for coordinated pretrial proceedings / **Consequence**: JPML transfers for pretrial only; cases remanded for trial (though most settle during MDL)
+- **FRCP 16.1 (effective December 1, 2025)** / **Threshold**: First MDL-specific civil rule; applies after JPML transfer / **Consequence**: Transferee court should schedule an initial MDL management conference, order the parties to meet and submit a pre-conference report (addressing court-designated matters and, unless ordered otherwise, views on appointing leadership counsel and its responsibilities and authority), and enter an initial MDL management order that controls the proceedings unless modified
 - **Bellwether trials**: MDL courts select representative cases for trial to establish settlement value and test legal theories
 - **MDL vs. class action**: MDL consolidates individual cases; no class certification required; each plaintiff retains individual claims but coordinated discovery and pretrial
 
@@ -70,3 +89,5 @@ All four must be satisfied for class certification:
 - *Epic Systems Corp. v. Lewis*, 584 U.S. 497 (2018): https://www.law.cornell.edu/supremecourt/text/16-285
 - *AT&T Mobility LLC v. Concepcion*, 563 U.S. 333 (2011): https://www.law.cornell.edu/supremecourt/text/09-893
 - 28 U.S.C. 1407 (MDL): https://www.law.cornell.edu/uscode/text/28/1407
+- Federal Rules of Civil Procedure, Rule 16.1 (MDL management, effective Dec. 1, 2025): https://www.law.cornell.edu/rules/frcp/rule_16.1
+- *Laboratory Corp. of America Holdings v. Davis*, No. 24-304 (U.S. June 5, 2025) (per curiam, DIG): https://www.supremecourt.gov/opinions/24pdf/24-304_3e04.pdf

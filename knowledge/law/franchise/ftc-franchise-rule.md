@@ -1,7 +1,27 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "16 CFR Part 436"
+    title: "FTC Franchise Rule — Disclosure Requirements and Prohibitions Concerning Franchising"
+    url: "https://www.ecfr.gov/current/title-16/chapter-I/subchapter-D/part-436"
+  - cite: "16 CFR 436.8"
+    title: "Franchise Rule exemptions (minimum-payment, large-investment, large-franchisee thresholds)"
+    url: "https://www.law.cornell.edu/cfr/text/16/436.8"
+  - cite: "89 Fed. Reg. 56882 (July 12, 2024)"
+    title: "FTC inflation-adjusted monetary thresholds — $735 / $1,469,600 / $7,348,000 (effective July 12, 2024)"
+    url: "https://www.federalregister.gov/documents/2024/07/12/2024-15338/disclosure-requirements-and-prohibitions-concerning-franchising"
+  - cite: "FTC Policy Statement on Franchisors' Use of Contract Provisions (July 2024)"
+    title: "Non-disparagement, goodwill, and confidentiality clauses — adopted 3-2; Ferguson and Holyoak dissenting"
+    url: "https://www.ftc.gov/legal-library/browse/policy-statement-of-the-ftc-on-franchisors-use-of-contract-provisions"
+  - cite: "FTC Staff Guidance on the Unlawfulness of Undisclosed Fees (July 2024)"
+    title: "Franchisor undisclosed 'junk fees' guidance under Section 5"
+    url: "https://www.ftc.gov/system/files/ftc_gov/pdf/Franchise-Staff-Guidance.pdf"
+  - cite: "16 CFR 1.98(d); OMB Memorandum M-26-11 (Apr 2026)"
+    title: "FTC Act Section 5(m) civil penalty maximum $53,088 (effective Jan 17, 2025); 2026 inflation adjustment cancelled"
+    url: "https://www.federalregister.gov/documents/2025/01/17/2025-01361/adjustments-to-civil-penalty-amounts"
+# Checked 2026-06-11
 ---
 # FTC Franchise Rule
 
@@ -13,7 +33,7 @@ Applies to all franchisors offering or selling franchises in the United States. 
 
 ### Definition of Franchise
 
-- **Three-Element Test** / A franchise exists when: (1) the franchisee is granted the right to operate a business identified or associated with the franchisor's trademark; (2) the franchisor exerts or has authority to exert significant control over, or provides significant assistance in, the franchisee's method of operation; (3) the franchisee is required to make a payment of $615 or more (adjusted periodically) to the franchisor or its affiliate before or within 6 months after commencing operations / **Consequence**: Meeting all three elements = franchise; must comply with FTC Rule regardless of what parties call the relationship
+- **Three-Element Test** / A franchise exists when: (1) the franchisee is granted the right to operate a business identified or associated with the franchisor's trademark; (2) the franchisor exerts or has authority to exert significant control over, or provides significant assistance in, the franchisee's method of operation; (3) the franchisee is required to make a payment, or commit to make a payment, to the franchisor or its affiliate before or within 6 months after commencing operations / **Consequence**: Meeting all three elements = franchise; must comply with FTC Rule regardless of what parties call the relationship. The definition itself (16 CFR 436.1(h)) has no de minimis dollar floor — any "required payment" satisfies element 3. The dollar figure that is sometimes mistaken for a definitional floor is the **minimum-payment exemption** threshold ($735 as of July 12, 2024; see Exemptions below), under which the Rule does not apply if total required payments are less than that amount.
 - **Business Opportunity Variant** / Where there is no trademark but franchisor makes express or implied representations about income/sales, the relationship may still be covered / **Consequence**: Must analyze whether arrangement is a franchise or business opportunity under FTC and state law
 
 ### Franchise Disclosure Document (FDD) — 23 Items
@@ -57,16 +77,23 @@ Applies to all franchisors offering or selling franchises in the United States. 
 
 ### Exemptions
 
-- **Minimum Investment Exemption** / Franchise not covered if franchisee's total investment (minus cost of unimproved land and any franchisor financing) exceeds a specified threshold / **Threshold**: Currently evaluated case-by-case; historically very high thresholds / **Consequence**: Exemption is narrow; most franchises are covered
+- **Minimum-Payment Exemption** / Franchise not covered if total required payments to the franchisor or affiliate from before through 6 months after the franchisee begins operating are less than the threshold / **Threshold**: Less than $735 (effective July 12, 2024; previously $615) / **Consequence**: Narrow; applies only to very low-payment arrangements
+- **Large-Investment Exemption** / Franchise not covered if the franchisee's initial investment (excluding the cost of unimproved land and any franchisor financing) totals at least the threshold and the franchisee signs the required acknowledgment / **Threshold**: At least $1,469,600 (effective July 12, 2024; previously $1,233,000) / **Consequence**: Available for substantial-investment franchises that meet the acknowledgment requirement
+- **Large-Franchisee Exemption** / Franchise not covered for sales to an entity that has been in business at least 5 years and has a net worth at or above the threshold / **Threshold**: Net worth at least $7,348,000 (effective July 12, 2024; previously $6,165,000) / **Consequence**: Available for experienced, well-capitalized franchisee entities. NOTE: These three monetary thresholds (16 CFR 436.8) are adjusted for inflation every 4 years; the next scheduled adjustment is for 2028.
 - **Fractional Franchise Exemption** / Large businesses adding a franchise component to existing operations (franchisee already in same type of business, franchise is no more than 20% of sales) / **Consequence**: Exemption reduces compliance burden for supplemental product/service offerings
 - **Leased Department Exemption** / Arrangements to operate a department within a retailer's store / **Consequence**: Must meet specific criteria; does not apply to most franchise-like arrangements
-- **Large Franchisee Exemption** / Some states exempt sales to experienced, sophisticated franchisees (varies by state) / **Consequence**: Federal FTC Rule does not have this exemption; state-only benefit
+- **Fractional Franchise / Other Exemptions** / The Rule also exempts fractional franchises, leased departments, and petroleum marketers under the Petroleum Marketing Practices Act / **Consequence**: Confirm against 16 CFR 436.8 before relying on any exemption
 
 ### Penalties and Enforcement
 
-- **FTC Enforcement** / FTC may bring enforcement action for Rule violations; penalties up to $50,120 per violation (adjusted for inflation); injunctive relief; rescission / **Consequence**: Each franchise sold in violation = separate violation; penalties compound rapidly
+- **FTC Enforcement** / FTC may bring enforcement action for Rule violations; civil penalties up to $53,088 per violation (FTC Act Section 5(m) maximum, effective Jan 17, 2025; the 2026 inflation adjustment was cancelled government-wide by OMB Memorandum M-26-11 (Apr 2026), so this amount remains current); injunctive relief; rescission / **Consequence**: Each franchise sold in violation = separate violation; penalties compound rapidly
 - **No Private Right of Action** / FTC Rule does not create a federal private right of action; franchisees must rely on state law claims / **Consequence**: Franchisees sue under state franchise statutes, state UDAP laws, or common law fraud; FTC Rule violations are evidence in state proceedings
 - **State Enforcement** / State regulators independently enforce registration and disclosure requirements; may issue stop orders, impose penalties, deny registration / **Consequence**: Multi-state enforcement exposure; must comply with both FTC and state requirements
+
+### 2024 FTC Franchise Position Statements (verify current status before relying)
+
+- **Non-Disparagement / Gag-Clause Policy Statement (July 2024)** / The FTC issued a Policy Statement on Franchisors' Use of Contract Provisions, Including Non-Disparagement, Goodwill, and Confidentiality Clauses, taking the position that such clauses are unfair or deceptive under Section 5 to the extent they prohibit or deter a franchisee from communicating with a government agency about potential law violations / **Consequence**: A franchisor may not enforce, threaten to enforce, or retaliate using such clauses against a franchisee who reports to a regulator. NOTE: Adopted 3-2; Commissioners Ferguson (now FTC Chairman) and Holyoak dissented. The Policy Statement and staff guidance remain published on the FTC's site as of mid-2026 and have not been formally withdrawn, but currency should be confirmed before relying on FTC posture.
+- **Undisclosed-Fee Staff Guidance (July 2024)** / FTC staff guidance states that imposing and collecting fees on franchisees that were not disclosed in the FDD ("junk fees") is unlawful / **Consequence**: All material fees must be disclosed (FDD Items 5-6); undisclosed fees expose the franchisor to Section 5 and FDD-deficiency exposure. NOTE: This is staff guidance under Section 5, NOT the FTC Rule on Unfair or Deceptive Fees (16 CFR Part 464), which as finalized covers only live-event tickets and short-term lodging and does not reach franchise fees.
 
 ## Interaction with Other Areas
 
@@ -80,6 +107,10 @@ Applies to all franchisors offering or selling franchises in the United States. 
 
 - [FTC Franchise Rule (16 CFR Part 436)](https://www.ecfr.gov/current/title-16/chapter-I/subchapter-D/part-436)
 - [FTC Franchise Rule Compliance Guide](https://www.ftc.gov/legal-library/browse/compliance-guidance/franchise-rule-compliance-guide)
+- [FTC 2024 Inflation-Adjusted Monetary Thresholds (eff. July 12, 2024)](https://www.federalregister.gov/documents/2024/07/12/2024-15338/disclosure-requirements-and-prohibitions-concerning-franchising)
+- [FTC Policy Statement on Franchisors' Use of Contract Provisions (July 2024)](https://www.ftc.gov/legal-library/browse/policy-statement-of-the-ftc-on-franchisors-use-of-contract-provisions)
+- [FTC Staff Guidance on Undisclosed Franchise Fees (July 2024)](https://www.ftc.gov/system/files/ftc_gov/pdf/Franchise-Staff-Guidance.pdf)
+- [FTC Franchise Guidance feature page](https://www.ftc.gov/news-events/features/franchise-guidance)
 - [NASAA Franchise Registration and Comment Guidelines](https://www.nasaa.org/industry-resources/franchise-resources/)
 - [FTC Enforcement Actions — Franchises](https://www.ftc.gov/legal-library/browse/cases-proceedings?search_api_fulltext=franchise)
 

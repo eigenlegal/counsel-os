@@ -1,7 +1,30 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, international]
+authorities:
+  - cite: "Pub. L. 119-21 (2025)"
+    title: "One Big Beautiful Bill Act — international tax provisions (Title VII, incl. NCTI rename at sec. 70323 and BEAT at sec. 70331)"
+    url: "https://www.govinfo.gov/app/details/PLAW-119publ21"
+  - cite: "26 U.S.C. § 951A"
+    title: "Net CFC tested income included in gross income of United States shareholders (formerly GILTI)"
+    url: "https://www.law.cornell.edu/uscode/text/26/951A"
+  - cite: "26 U.S.C. § 250"
+    title: "Foreign-derived deduction eligible income and net CFC tested income"
+    url: "https://www.law.cornell.edu/uscode/text/26/250"
+  - cite: "26 U.S.C. § 59A"
+    title: "Base erosion and anti-abuse tax"
+    url: "https://www.law.cornell.edu/uscode/text/26/59A"
+  - cite: "26 U.S.C. § 897"
+    title: "Disposition of investment in United States real property (FIRPTA)"
+    url: "https://www.law.cornell.edu/uscode/text/26/897"
+  - cite: "OECD/G20 Inclusive Framework (Jan. 2026)"
+    title: "GloBE Rules (Pillar Two) — Side-by-Side Package"
+    url: "https://www.oecd.org/content/dam/oecd/en/topics/policy-sub-issues/global-minimum-tax/side-by-side-package.pdf"
+  - cite: "U.S. Department of the Treasury"
+    title: "U.S. Model Income Tax Convention and treaty documents"
+    url: "https://home.treasury.gov/policy-issues/tax-policy/treaties"
 ---
 # International Tax
 
@@ -54,17 +77,17 @@ International tax rules determine how cross-border income is taxed, which countr
   - Common PE triggers: employees traveling to client sites, home office arrangements of foreign employees, server locations, warehouses, dependent agents, and long-term project sites.
 - **Consequence**: An inadvertent PE triggers local income tax filing obligations, potential historical tax assessments (from the date PE status was established), local transfer pricing requirements for attributing profits to the PE, and possible penalties for failure to file. PE risk is one of the most frequently underappreciated cross-border tax risks.
 
-### GILTI — Global Intangible Low-Taxed Income (IRC 951A)
+### GILTI / NCTI — Net CFC Tested Income (IRC 951A)
 
-- **What**: GILTI imposes a current U.S. tax on the income of controlled foreign corporations (CFCs) that exceeds a routine return on tangible assets, targeting income shifted to low-tax jurisdictions. Enacted by the Tax Cuts and Jobs Act of 2017.
-- **Threshold/Timeline**: GILTI = net CFC tested income minus net deemed tangible income return (DTIR).
-  - DTIR = 10% of qualified business asset investment (QBAI — the average adjusted tax basis of depreciable tangible property used in a trade or business).
-  - Effective minimum tax rate: approximately 10.5% for C-corporation shareholders (after 50% deduction under IRC 250, applicable through 2025).
-  - After 2025: the IRC 250 deduction decreases to 37.5%, increasing the effective GILTI rate to approximately 13.125%.
-  - Foreign tax credits (FTCs) are available against GILTI but limited to 80% of foreign taxes paid and subject to a separate GILTI FTC basket (no cross-crediting with other income categories).
+- **What**: IRC 951A imposes a current U.S. tax on the income of controlled foreign corporations (CFCs), targeting income shifted to low-tax jurisdictions. Enacted as "GILTI" by the Tax Cuts and Jobs Act of 2017; renamed "net CFC tested income" (NCTI) and substantially revised by the One Big Beautiful Bill Act (OBBBA, Pub. L. 119-21, enacted July 4, 2025, sec. 70323), effective for tax years beginning after December 31, 2025.
+- **Threshold/Timeline**: For tax years beginning after December 31, 2025 (OBBBA rules):
+  - The inclusion equals net CFC tested income — OBBBA eliminated the net deemed tangible income return (the 10%-of-QBAI routine-return carve-out), so there is no longer any exclusion for a routine return on tangible assets.
+  - IRC 250 deduction: 40% of the NCTI inclusion, yielding an effective rate of approximately 12.6% (at the 21% corporate rate) before foreign tax credit effects.
+  - Foreign tax credits: 90% of foreign taxes attributable to tested income are creditable (OBBBA reduced the haircut from 20% to 10%), still in a separate FTC basket (no cross-crediting). A CFC paying foreign tax at roughly 14% or more generally results in no residual U.S. tax on NCTI.
+  - Pre-2026 (TCJA) rules: inclusion reduced by 10% of QBAI; 50% IRC 250 deduction (about 10.5% effective rate); 80% FTC limitation. The TCJA's scheduled drop of the deduction to 37.5% (about 13.125% effective rate) for post-2025 years was repealed by OBBBA and never took effect.
   - Individual CFC shareholders do not receive the IRC 250 deduction unless they make an election under IRC 962 to be taxed as a corporation on CFC inclusions.
-  - High-tax exclusion: CFC income taxed at an effective rate exceeding 90% of the U.S. corporate rate (currently 18.9%) may be excluded from GILTI by election (Treas. Reg. 1.951A-2(c)(7)).
-- **Consequence**: GILTI eliminates the benefit of deferring offshore income in low-tax jurisdictions. Companies with significant foreign IP income and limited tangible assets abroad (high GILTI, low QBAI) face substantial inclusions. GILTI interacts with Pillar Two — companies may face both regimes.
+  - High-tax exclusion: CFC income taxed at an effective rate exceeding 90% of the U.S. corporate rate (currently 18.9%) may be excluded by election (Treas. Reg. 1.951A-2(c)(7)).
+- **Consequence**: NCTI eliminates the benefit of deferring offshore income in low-tax jurisdictions. With the QBAI carve-out repealed, even routine returns on foreign tangible assets are swept into the inclusion — capital-intensive foreign operations that previously benefited from the DTIR face larger inclusions starting in 2026. NCTI interacts with Pillar Two — see the side-by-side discussion below.
 
 ### BEAT — Base Erosion and Anti-Abuse Tax (IRC 59A)
 
@@ -74,21 +97,23 @@ International tax rules determine how cross-border income is taxed, which countr
   - A "base erosion percentage" of 3% or more (2% for certain banks and securities dealers).
   - Base erosion payments include: deductible amounts paid to foreign related parties (25%+ ownership) for services, royalties, interest, rents, and certain reinsurance premiums.
   - Excluded from base erosion payments: cost of goods sold (except for certain cost sharing payments post-2018), payments subject to full NRA withholding, and qualified derivative payments.
-  - BEAT rate: 10% for tax years beginning after 2018; 12.5% for tax years beginning after 2025.
+  - BEAT rate: 10% for tax years beginning after 2018 and before 2026; 10.5% permanently for tax years beginning after December 31, 2025 (OBBBA sec. 70331, which repealed the TCJA's scheduled increase to 12.5% and made the favorable treatment of credits in the BEAT computation permanent).
   - The BEAT tax = excess of (BEAT rate x modified taxable income) over (regular tax liability reduced by certain credits other than R&D credits).
   - Modified taxable income = regular taxable income computed without deductions for base erosion payments and without the base erosion percentage of any NOL deduction.
 - **Consequence**: BEAT effectively disallows a portion of deductions for payments to foreign affiliates when the resulting U.S. tax is too low. Companies with large intercompany royalty, service, or interest payments to offshore entities are most affected. BEAT planning requires modeling the interaction between base erosion payments, regular tax, and FTCs.
 
 ### Pillar Two — GloBE Rules (Global Anti-Base Erosion)
 
-- **What**: The OECD/G20 Inclusive Framework's Pillar Two establishes a global minimum effective tax rate of 15% on the profits of large multinational enterprises (MNEs), regardless of where profits are booked. As of 2025, over 40 jurisdictions have enacted or are enacting Pillar Two legislation.
+- **What**: The OECD/G20 Inclusive Framework's Pillar Two establishes a global minimum effective tax rate of 15% on the profits of large multinational enterprises (MNEs), regardless of where profits are booked. As of 2026, over 40 jurisdictions (including the EU member states and the UK) have enacted Pillar Two legislation.
 - **Threshold/Timeline**: Scope: MNE groups with consolidated annual revenue of EUR 750 million or more in at least 2 of the 4 preceding fiscal years.
   - Effective tax rate (ETR) is calculated on a jurisdictional basis (not entity-by-entity) using GloBE income (financial accounting income with specific adjustments for timing differences, stock-based compensation, and policy disallowances) as the base.
   - If the ETR in any jurisdiction is below 15%, a "top-up tax" is imposed to bring the effective rate to 15%.
   - Charging rules (in order of priority): (1) Qualified Domestic Minimum Top-Up Tax (QDMTT) — the low-tax jurisdiction itself imposes the top-up; (2) Income Inclusion Rule (IIR) — the parent jurisdiction imposes top-up tax on low-taxed subsidiaries; (3) Undertaxed Profits Rule (UTPR) — a backstop that denies deductions or imposes equivalent adjustments.
   - Substance-based income exclusion (SBIE): a portion of income equal to 5% of tangible assets and 5% of payroll costs in each jurisdiction is excluded from the GloBE base (after a transition period through 2032 with higher percentages).
-  - Transitional safe harbors (through 2026): simplified calculations based on CbCR data for jurisdictions meeting specified revenue, profit, and ETR thresholds.
-- **Consequence**: Pillar Two fundamentally changes international tax planning by eliminating the benefit of tax incentives and low-tax regimes below the 15% floor. MNEs must model jurisdiction-by-jurisdiction ETRs and assess exposure to top-up taxes. Compliance requires significant new data collection and computation infrastructure.
+  - Transitional safe harbors (fiscal years beginning on or before December 31, 2026): simplified calculations based on CbCR data for jurisdictions meeting specified revenue, profit, and ETR thresholds.
+  - U.S. "side-by-side" treatment: on June 28, 2025, the G7 announced a political accord under which the U.S. tax system (including GILTI/NCTI) would coexist "side by side" with the GloBE rules; in exchange, the proposed IRC 899 retaliatory tax was dropped from OBBBA before enactment. In January 2026, the Inclusive Framework released the Side-by-Side Package, including an elective Side-by-Side (SbS) Safe Harbor: MNE groups whose ultimate parent is in a jurisdiction with a "Qualified Side-by-Side Regime" may elect a deemed top-up tax of zero under both the IIR and the UTPR, for fiscal years beginning on or after January 1, 2026. The U.S. is the only jurisdiction with a Qualified SbS Regime as of January 1, 2026.
+  - Limits of the side-by-side accord: QDMTTs are unaffected — low-tax-jurisdiction domestic top-up taxes still apply to entities of U.S.-parented groups; fiscal years 2024-2025 remain subject to the unmodified GloBE rules; and the safe harbor takes effect in each jurisdiction only as implemented in local law or guidance. Treat the framework as evolving, not final.
+- **Consequence**: Pillar Two fundamentally changes international tax planning by eliminating the benefit of tax incentives and low-tax regimes below the 15% floor. MNEs must model jurisdiction-by-jurisdiction ETRs and assess exposure to top-up taxes. Compliance requires significant new data collection and computation infrastructure. U.S.-parented groups should track adoption of the SbS Safe Harbor in each jurisdiction where they operate rather than assuming blanket relief.
 
 ### Subpart F Income — IRC 951-964
 
@@ -112,9 +137,11 @@ International tax rules determine how cross-border income is taxed, which countr
 ## Sources
 
 - [IRC Section 897 — FIRPTA (26 USC 897)](https://www.law.cornell.edu/uscode/text/26/897) — Foreign investment in real property tax
-- [IRC Section 951A — GILTI (26 USC 951A)](https://www.law.cornell.edu/uscode/text/26/951A) — Global intangible low-taxed income
+- [IRC Section 951A — Net CFC Tested Income (26 USC 951A)](https://www.law.cornell.edu/uscode/text/26/951A) — NCTI (formerly GILTI) inclusion rules
 - [IRC Section 59A — BEAT (26 USC 59A)](https://www.law.cornell.edu/uscode/text/26/59A) — Base erosion and anti-abuse tax
 - [IRC Sections 951-964 — Subpart F (26 USC 951)](https://www.law.cornell.edu/uscode/text/26/951) — CFC income inclusion rules
+- [One Big Beautiful Bill Act, Pub. L. 119-21 (2025)](https://www.govinfo.gov/app/details/PLAW-119publ21) — NCTI/FDDEI renames and rates, FTC changes, BEAT rate (Title VII)
 - [OECD Pillar Two Model Rules (GloBE)](https://www.oecd.org/tax/beps/pillar-two-model-rules.htm) — Global minimum tax framework
+- [OECD Side-by-Side Package (January 2026)](https://www.oecd.org/content/dam/oecd/en/topics/policy-sub-issues/global-minimum-tax/side-by-side-package.pdf) — SbS Safe Harbor for U.S.-parented groups
 - [IRS Publication 519 — U.S. Tax Guide for Aliens](https://www.irs.gov/publications/p519) — NRA and FIRPTA guidance
 - [U.S. Model Income Tax Convention (2016)](https://home.treasury.gov/policy-issues/tax-policy/treaties) — U.S. treaty policy and LOB provisions

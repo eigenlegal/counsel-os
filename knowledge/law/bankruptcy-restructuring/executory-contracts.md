@@ -1,7 +1,18 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal]
+authorities:
+  - cite: "11 U.S.C. § 365"
+    title: "Executory contracts and unexpired leases (assumption, rejection, assignment, deadlines)"
+    url: "https://www.law.cornell.edu/uscode/text/11/365"
+  - cite: "11 U.S.C. § 502(b)(6)"
+    title: "Landlord rejection-damage cap"
+    url: "https://www.law.cornell.edu/uscode/text/11/502"
+  - cite: "Mission Product Holdings v. Tempnology, LLC, 587 U.S. 370 (2019)"
+    title: "Rejection of a contract is a breach, not a termination of counterparty rights"
+    url: "https://supreme.justia.com/cases/federal/us/587/17-1657/"
+# authorities checked 2026-06-11
 ---
 # Executory Contracts
 

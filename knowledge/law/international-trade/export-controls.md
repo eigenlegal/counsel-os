@@ -1,7 +1,30 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, international]
+authorities:
+  - cite: "15 C.F.R. Parts 730-774"
+    title: "Export Administration Regulations"
+    url: "https://www.ecfr.gov/current/title-15/subtitle-B/chapter-VII/subchapter-C"
+  - cite: "22 C.F.R. Parts 120-130"
+    title: "International Traffic in Arms Regulations"
+    url: "https://www.ecfr.gov/current/title-22/chapter-I/subchapter-M"
+  - cite: "90 Fed. Reg. 47193 (Sept. 30, 2025)"
+    title: "Expansion of End-User Controls To Cover Affiliates of Certain Listed Entities (Affiliates Rule)"
+    url: "https://www.federalregister.gov/documents/2025/09/30/2025-19001/expansion-of-end-user-controls-to-cover-affiliates-of-certain-listed-entities"
+  - cite: "90 Fed. Reg. (Nov. 12, 2025)"
+    title: "One Year Suspension of the Affiliates Rule (through Nov. 9, 2026)"
+    url: "https://www.federalregister.gov/documents/2025/11/12/2025-19846/one-year-suspension-of-expansion-of-end-user-controls-for-affiliates-of-certain-listed-entities"
+  - cite: "BIS Press Release (May 13, 2025)"
+    title: "Rescission of the AI Diffusion Rule and related AI chip guidance"
+    url: "https://www.bis.gov/press-release/department-commerce-announces-rescission-biden-era-artificial-intelligence-diffusion-rule-strengthens"
+  - cite: "90 Fed. Reg. (Sept. 2, 2025)"
+    title: "Relaxing Export Controls for Syria (License Exception SPP; Syria remains Country Group E:1)"
+    url: "https://www.federalregister.gov/documents/2025/09/02/2025-16724/relaxing-export-controls-for-syria"
+  - cite: "90 Fed. Reg. (Jan. 15, 2025)"
+    title: "Civil monetary penalty inflation adjustments (2025 levels, carried into 2026)"
+    url: "https://www.federalregister.gov/documents/2025/01/15/2025-00786/inflation-adjustment-of-civil-monetary-penalties"
 ---
 # Export Controls
 
@@ -23,7 +46,7 @@ Applies when any transaction, agreement, or business activity involves:
 
 - **What**: All items subject to EAR must be classified. Items on the Commerce Control List (CCL) receive an Export Control Classification Number (ECCN) formatted as [digit][letter][digit][digit][digit] (e.g., 3A001). Items not on the CCL are designated EAR99 (generally exportable without a license to most destinations)
 - **Threshold/Timeline**: License requirement determined by cross-referencing the ECCN against the destination country on the Commerce Country Chart (Supplement No. 1 to Part 738). Additional license requirements apply based on end use (Section 744), end user, or list-based restrictions
-- **Consequence**: Export without required license: civil penalties up to $364,992 per violation (adjusted annually); criminal penalties up to $1,000,000 and 20 years imprisonment per willful violation. Each shipment, transmission, or disclosure is a separate violation
+- **Consequence**: Export without required license: civil penalties up to the greater of $374,474 per violation or twice the transaction value (inflation-adjusted Jan. 2025; no 2026 adjustment was published); criminal penalties up to $1,000,000 and 20 years imprisonment per willful violation. Each shipment, transmission, or disclosure is a separate violation
 
 ### EAR License Exceptions
 
@@ -47,7 +70,7 @@ Applies when any transaction, agreement, or business activity involves:
   - **DSP-73**: Temporary export license
   - **TAA**: Technical Assistance Agreement (for defense services and technical data)
   - **MLA**: Manufacturing License Agreement (for foreign manufacture of defense articles)
-- **Consequence**: AECA penalties: civil up to $1,216,326 per violation; criminal up to $1,000,000 and 20 years imprisonment. Debarment from defense trade (statutory debarment under ITAR Section 127.7). ITAR has NO de minimis exception — any defense article remains ITAR-controlled regardless of integration into a larger system
+- **Consequence**: AECA penalties: civil up to the greater of $1,271,078 per violation or twice the transaction value (inflation-adjusted Jan. 2025); criminal up to $1,000,000 and 20 years imprisonment. Debarment from defense trade (statutory debarment under ITAR Section 127.7). ITAR has NO de minimis exception — any defense article remains ITAR-controlled regardless of integration into a larger system
 
 ### Deemed Exports and Deemed Re-exports
 
@@ -67,13 +90,20 @@ Applies when any transaction, agreement, or business activity involves:
 - **Threshold/Timeline**: Mass-market path: one-time self-classification report to BIS (crypt@bis.doc.gov and enc@nsa.gov) before export, then semi-annual sales reporting. Non-mass-market: may require ENC classification request (30-day BIS review period) or individual license depending on algorithm strength, product functionality, and destination
 - **Consequence**: Unauthorized export of encryption items carries standard EAR penalties. Open source encryption source code publicly available is generally outside EAR scope if notification to BIS is provided (Section 742.15(b)). Proprietary encryption without proper classification is a common enforcement target
 
+### Advanced Computing and AI Chip Controls (status as of June 2026)
+
+- **What**: The advanced-computing and semiconductor manufacturing equipment controls built out in 2022-2024 (ECCNs 3A090, 4A090, related software/technology, and end-use rules in Section 744.23) remain in force. The January 2025 "AI Diffusion Rule" (worldwide tiered controls on advanced AI chips and model weights) was rescinded on May 13, 2025 before its compliance date and never took effect
+- **Threshold/Timeline**: In place of the Diffusion Rule, BIS issued May 2025 policy guidance: (a) using Huawei Ascend 910-series chips presumptively violates General Prohibition 10 because they were likely produced in violation of the EAR; (b) exporters face red-flag-based due-diligence expectations when advanced computing items may be used to train AI models for or in Country Group D:5 destinations (including China) or Macau. A replacement rule has been promised but not issued
+- **Consequence**: BIS has signaled "high probability" enforcement attention on AI and semiconductor supply chains. Transactions touching Chinese advanced-computing end users require ECCN-level analysis, end-use/end-user diligence, and screening against the Entity List chip-sector designations; this area changes quickly and should be verified against current BIS rules before advising
+
 ### Restricted Party Screening (Entity List, Denied Persons List, Unverified List)
 
 - **What**: BIS maintains multiple restricted party lists with different consequences:
-  - **Entity List** (Supplement No. 4 to Part 744): License requirements with specified review policies (often presumption of denial). Over 600 entities as of 2025
+  - **Entity List** (Supplement No. 4 to Part 744): License requirements with specified review policies (often presumption of denial)
   - **Denied Persons List**: Absolute bar on all export transactions — no license available
   - **Unverified List** (UVL): Enhanced due diligence required; no license exceptions available. UVL parties have 60 days to resolve status or face Entity List addition
   - **Military End User List** (MEU): License required for items in Supplement No. 2 to Part 744 to listed military end users
+- **Affiliates Rule (status)**: BIS's interim final rule (Sept. 29, 2025) extends Entity List and MEU List restrictions to any non-listed entity owned 50% or more, directly or indirectly, by one or more listed entities (an OFAC-style 50% rule for the EAR). The rule was suspended for one year (Nov. 10, 2025 through Nov. 9, 2026) as part of the US-China trade arrangement; absent further rulemaking it automatically takes effect again on Nov. 10, 2026. Ownership diligence on listed-entity affiliates should be built now
 - **Threshold/Timeline**: Screen all parties — buyer, consignee, intermediate consignee, end user, and any other party to the transaction. Screen at each transaction. Lists updated via Federal Register notices
 - **Consequence**: Export to denied person: per se violation, full penalties. Export to Entity List party without license: standard violation. Failure to perform UVL due diligence: loss of license exception eligibility and potential violation
 
@@ -139,3 +169,5 @@ Applies when any transaction, agreement, or business activity involves:
 - BIS VSD Guidelines: https://www.bis.gov/enforcement/oee/voluntary-self-disclosure
 - DOJ National Security Division VSD Policy (October 2023): https://www.justice.gov/nsd/nsd-vsd-policy
 - Wassenaar Arrangement Control Lists: https://www.wassenaar.org/control-lists/
+- Affiliates Rule (Sept. 30, 2025) and one-year suspension (Nov. 12, 2025): https://www.federalregister.gov/documents/2025/09/30/2025-19001/expansion-of-end-user-controls-to-cover-affiliates-of-certain-listed-entities and https://www.federalregister.gov/documents/2025/11/12/2025-19846/one-year-suspension-of-expansion-of-end-user-controls-for-affiliates-of-certain-listed-entities
+- BIS AI Diffusion Rule rescission and AI chip guidance (May 13, 2025): https://www.bis.gov/press-release/department-commerce-announces-rescission-biden-era-artificial-intelligence-diffusion-rule-strengthens

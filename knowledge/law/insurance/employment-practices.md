@@ -1,7 +1,18 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities-checked: "2026-06-11"
+authorities:
+  - cite: "Title VII (42 U.S.C. § 2000e et seq.), ADA, ADEA, GINA"
+    title: "Federal employment-discrimination statutes underlying covered EPLI wrongful acts"
+    url: "https://www.eeoc.gov/statutes/title-vii-civil-rights-act-1964"
+  - cite: "EEOC Enforcement and Litigation Statistics"
+    title: "Charge-filing data; FY2024 saw 88,531 charges (retaliation most prevalent for the 17th consecutive year)"
+    url: "https://www.eeoc.gov/data/enforcement-and-litigation-statistics-0"
+  - cite: "ISO Employment-Related Practices Exclusion (CG 21 47)"
+    title: "CGL exclusion of employment-related practices; the gap EPLI fills"
+    url: "https://www.irmi.com/term/insurance-definitions/employment-practices-liability-insurance"
 ---
 # Employment Practices Liability Insurance (EPLI)
 
@@ -122,6 +133,6 @@ other management liability coverages (D&O, fiduciary).
 ## Sources
 
 - [NAIC — Employment Practices Liability Insurance](https://content.naic.org/cipr-topics/employment-practices-liability)
-- [EEOC — Charge Statistics (FY 1997–2023)](https://www.eeoc.gov/data/charge-statistics-charges-filed-eeoc-fy-1997-through-fy-2023)
+- [EEOC — Enforcement and Litigation Statistics](https://www.eeoc.gov/data/enforcement-and-litigation-statistics-0)
 - [IRMI — EPLI Coverage Analysis](https://www.irmi.com/term/insurance-definitions/employment-practices-liability-insurance)
 - [U.S. Department of Labor — Wage and Hour Division](https://www.dol.gov/agencies/whd)

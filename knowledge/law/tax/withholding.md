@@ -1,13 +1,39 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, international]
+authorities:
+  - cite: "26 U.S.C. §§ 1441-1446"
+    title: "Withholding of tax on nonresident aliens and foreign corporations"
+    url: "https://www.law.cornell.edu/uscode/text/26/1441"
+  - cite: "26 U.S.C. §§ 1471-1474"
+    title: "Taxes to enforce reporting on certain foreign accounts (FATCA)"
+    url: "https://www.law.cornell.edu/uscode/text/26/1471"
+  - cite: "26 U.S.C. § 3406"
+    title: "Backup withholding"
+    url: "https://www.law.cornell.edu/uscode/text/26/3406"
+  - cite: "REG-132881-17, 83 Fed. Reg. 64757 (Dec. 18, 2018)"
+    title: "Proposed regulations reducing burden under FATCA and chapter 3 (eliminating gross proceeds withholding)"
+    url: "https://www.federalregister.gov/documents/2018/12/18/2018-27290/regulations-reducing-burden-under-fatca-and-chapter-3"
+  - cite: "26 U.S.C. § 4475"
+    title: "Excise tax on remittance transfers (added by Pub. L. 119-21, sec. 70604)"
+    url: "https://www.law.cornell.edu/uscode/text/26/4475"
+  - cite: "Excise Tax on Remittance Transfers (proposed regulations, Apr. 13, 2026)"
+    title: "Treasury/IRS notice of proposed rulemaking under IRC 4475"
+    url: "https://www.federalregister.gov/documents/2026/04/13/2026-07085/excise-tax-on-remittance-transfers"
+  - cite: "Rev. Proc. 2022-43"
+    title: "Qualified intermediary agreement (current cycle)"
+    url: "https://www.irs.gov/irb/2023-02_IRB#REV-PROC-2022-43"
+  - cite: "IRS Publication 515"
+    title: "Withholding of Tax on Nonresident Aliens and Foreign Entities"
+    url: "https://www.irs.gov/publications/p515"
 ---
 # Withholding Tax
 
 ## Applicability
 
-Load when ANY of the following is present: backup withholding, nonresident alien (NRA) withholding, FATCA withholding, W-8BEN, W-8BEN-E, W-8IMY, W-9, qualified intermediary (QI) agreement, state nonresident withholding, withholding agent obligations, treaty-reduced withholding rates, or cross-border payments subject to U.S. source taxation.
+Load when ANY of the following is present: backup withholding, nonresident alien (NRA) withholding, FATCA withholding, W-8BEN, W-8BEN-E, W-8IMY, W-9, qualified intermediary (QI) agreement, state nonresident withholding, withholding agent obligations, treaty-reduced withholding rates, the remittance transfer excise tax (IRC 4475), or cross-border payments subject to U.S. source taxation.
 
 Withholding tax is a mechanism by which the payor deducts tax at source on payments to the payee and remits it to the government. In cross-border transactions, withholding is the primary enforcement tool for taxing non-U.S. persons on U.S.-source income.
 
@@ -53,7 +79,7 @@ Withholding tax is a mechanism by which the payor deducts tax at source on payme
 ### FATCA Withholding — IRC 1471-1474
 
 - **What**: The Foreign Account Tax Compliance Act (FATCA) imposes a 30% withholding tax on certain U.S.-source payments to foreign financial institutions (FFIs) that do not comply with FATCA reporting requirements, and to non-financial foreign entities (NFFEs) that do not certify their substantial U.S. owners.
-- **Threshold/Timeline**: Rate: 30% on withholdable payments (U.S.-source FDAP income). Gross proceeds withholding has been deferred indefinitely by IRS notice.
+- **Threshold/Timeline**: Rate: 30% on withholdable payments (U.S.-source FDAP income). Withholding on gross proceeds was eliminated in 2018 proposed regulations (REG-132881-17), on which taxpayers and withholding agents may rely pending finalization.
   - FFIs must either: (1) enter into an FFI Agreement with the IRS to identify and report U.S. account holders; (2) be covered by an intergovernmental agreement (IGA) between their jurisdiction and the U.S. — Model 1 (FFI reports to local government, which exchanges with IRS) or Model 2 (FFI reports directly to IRS with government consent); or (3) qualify for an exemption (deemed-compliant FFI categories including retirement funds, non-reporting IGAs, and certain small local banks).
   - NFFEs must certify on W-8BEN-E either that they have no substantial U.S. owners (>10% ownership) or disclose the identity of such owners (name, address, TIN).
   - Over 110 jurisdictions have signed IGAs with the U.S. as of 2025.
@@ -78,6 +104,15 @@ Withholding tax is a mechanism by which the payor deducts tax at source on payme
   - QIs cannot assume primary withholding responsibility for U.S. persons — they must provide U.S. payor documentation upstream.
   - Qualified derivatives dealers (QDDs) may assume primary withholding on dividend equivalent payments under a specialized QI arrangement.
 - **Consequence**: QI status simplifies cross-border payment flows but creates significant compliance obligations. Failure to comply with the QI agreement can result in revocation of QI status, retroactive withholding liability, and penalties. The IRS has increased QI enforcement in recent years.
+
+### Remittance Transfer Excise Tax — IRC 4475
+
+- **What**: The One Big Beautiful Bill Act (Pub. L. 119-21, sec. 70604) added IRC 4475, a 1% excise tax on certain cross-border remittance transfers, collected at source by the remittance transfer provider. While an excise rather than income tax withholding, it operates as a collection-at-source obligation on payment providers.
+- **Threshold/Timeline**: Applies to remittance transfers occurring after December 31, 2025.
+  - Applies only where the sender funds the transfer with cash, a money order, a cashier's check, or a similar physical instrument.
+  - Exempt: transfers funded from an account held at a regulated financial institution (31 U.S.C. 5312(a)(2)(A)-(H)) and transfers funded with a U.S.-issued debit or credit card.
+  - The tax is imposed on the sender; the provider collects and remits it quarterly. Treasury published proposed regulations on April 13, 2026, and the IRS provided initial deposit-penalty relief (Notice 2025-55).
+- **Consequence**: Remittance transfer providers that fail to collect are secondarily liable for the uncollected tax. Cross-border payment businesses must classify funding sources at the point of sale to apply the cash-funding test, and should monitor the proposed regulations for definitional scope (e.g., treatment of digital-asset-funded transfers) before treating any flow as out of scope.
 
 ### State Nonresident Withholding
 

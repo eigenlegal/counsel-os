@@ -1,7 +1,30 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, international]
+authorities:
+  - cite: "Pub. L. 119-21 (2025)"
+    title: "One Big Beautiful Bill Act — tax provisions (Title VII)"
+    url: "https://www.govinfo.gov/app/details/PLAW-119publ21"
+  - cite: "26 U.S.C. § 83"
+    title: "Property transferred in connection with performance of services (83(b) elections)"
+    url: "https://www.law.cornell.edu/uscode/text/26/83"
+  - cite: "26 U.S.C. § 409A"
+    title: "Inclusion in gross income of deferred compensation under nonqualified deferred compensation plans"
+    url: "https://www.law.cornell.edu/uscode/text/26/409A"
+  - cite: "26 U.S.C. § 897"
+    title: "Disposition of investment in United States real property (FIRPTA)"
+    url: "https://www.law.cornell.edu/uscode/text/26/897"
+  - cite: "26 U.S.C. § 482"
+    title: "Allocation of income and deductions among taxpayers"
+    url: "https://www.law.cornell.edu/uscode/text/26/482"
+  - cite: "26 U.S.C. § 1471"
+    title: "Withholdable payments to foreign financial institutions (FATCA)"
+    url: "https://www.law.cornell.edu/uscode/text/26/1471"
+  - cite: "OECD/G20 Inclusive Framework (Jan. 2026)"
+    title: "GloBE Rules (Pillar Two) — Side-by-Side Package"
+    url: "https://www.oecd.org/content/dam/oecd/en/topics/policy-sub-issues/global-minimum-tax/side-by-side-package.pdf"
 ---
 # Tax
 
@@ -9,7 +32,7 @@ jurisdiction: [us-federal, us-state, international]
 
 Load this area when the document or matter involves ANY of the following:
 
-**Keywords:** tax, sales tax, use tax, VAT, value-added tax, withholding, backup withholding, NRA withholding, FATCA, CRS, transfer pricing, arm's length, FIRPTA, 409A, 83(b), gross-up, tax indemnity, nexus, economic nexus, AMT, alternative minimum tax, ISO, NSO, RSU, equity compensation tax, tax-free reorganization, IRC 368, tax sharing, tax equalization, GILTI, BEAT, Pillar Two, GloBE, Subpart F, permanent establishment, PE, treaty benefits, withholding agent, W-8BEN, W-9, CbCR, country-by-country reporting, BEPS, digital services tax, marketplace facilitator, Wayfair, Streamlined Sales Tax
+**Keywords:** tax, sales tax, use tax, VAT, value-added tax, withholding, backup withholding, NRA withholding, FATCA, CRS, transfer pricing, arm's length, FIRPTA, 409A, 83(b), gross-up, tax indemnity, nexus, economic nexus, AMT, alternative minimum tax, ISO, NSO, RSU, equity compensation tax, tax-free reorganization, IRC 368, tax sharing, tax equalization, GILTI, NCTI, net CFC tested income, FDDEI, BEAT, Pillar Two, GloBE, side-by-side, Subpart F, permanent establishment, PE, treaty benefits, withholding agent, W-8BEN, W-9, CbCR, country-by-country reporting, BEPS, digital services tax, marketplace facilitator, Wayfair, Streamlined Sales Tax
 
 **Clause types:** tax indemnification provisions, gross-up clauses, withholding provisions, tax representations and warranties, tax-sharing agreements, tax equalization clauses, change-in-law provisions, transfer pricing arrangements, intercompany agreements, tax-free reorganization conditions, FIRPTA withholding provisions, tax covenant clauses, sales tax collection obligations, VAT provisions
 
@@ -25,7 +48,7 @@ Load this area when the document or matter involves ANY of the following:
 | `withholding.md` | Backup withholding, NRA withholding, FATCA, W-8/W-9 forms, qualified intermediary agreements, or state nonresident withholding is involved |
 | `transfer-pricing.md` | Intercompany transactions, arm's length pricing, transfer pricing documentation, APAs, country-by-country reporting, or BEPS compliance is involved |
 | `tax-indemnities.md` | Gross-up provisions, tax representations, withholding indemnification, tax-free reorganization conditions, tax sharing agreements, or change-in-law clauses are involved |
-| `international-tax.md` | FIRPTA withholding, treaty benefits, permanent establishment risk, GILTI, BEAT, Pillar Two, Subpart F, or cross-border tax structuring is involved |
+| `international-tax.md` | FIRPTA withholding, treaty benefits, permanent establishment risk, GILTI/NCTI, BEAT, Pillar Two, Subpart F, or cross-border tax structuring is involved |
 | `equity-compensation-tax.md` | 409A valuations, 83(b) elections, ISO vs. NSO tax treatment, RSU taxation, AMT exposure, or equity compensation structuring is involved |
 
 **Cross-area loading:** If equity compensation is involved, also load `securities/equity-issuance.md`. If employment tax or worker classification matters arise, also load `employment/`. If cross-border data flows create PE risk, flag interaction with `international-trade/`.
@@ -40,4 +63,4 @@ These are non-overridable legal requirements from this area. They cannot be modi
 - FIRPTA requires the buyer to withhold 15% of the amount realized on dispositions of U.S. real property interests by foreign persons; failure to withhold is strict liability on the buyer.
 - Transfer pricing between related parties must satisfy the arm's length standard (IRC 482, OECD Guidelines); penalties of 20-40% apply to adjustments when documentation is inadequate.
 - FATCA imposes 30% withholding on payments to non-participating foreign financial institutions with no treaty override.
-- The Pillar Two global minimum tax (15% effective rate) applies to MNE groups with EUR 750M+ consolidated revenue.
+- The Pillar Two global minimum tax (15% effective rate) applies to MNE groups with EUR 750M+ consolidated revenue. Under the OECD's January 2026 side-by-side package, U.S.-parented groups may elect a safe harbor from the IIR and UTPR for fiscal years beginning on or after January 1, 2026, but QDMTTs in low-tax jurisdictions still apply.

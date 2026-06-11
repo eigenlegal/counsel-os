@@ -1,7 +1,27 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, international]
+authorities:
+  - cite: "26 U.S.C. § 409A"
+    title: "Inclusion in gross income of deferred compensation under nonqualified deferred compensation plans"
+    url: "https://www.law.cornell.edu/uscode/text/26/409A"
+  - cite: "26 U.S.C. § 83"
+    title: "Property transferred in connection with performance of services"
+    url: "https://www.law.cornell.edu/uscode/text/26/83"
+  - cite: "IRS Form 15620"
+    title: "Section 83(b) Election (standardized form; online filing available)"
+    url: "https://www.irs.gov/pub/irs-pdf/f15620.pdf"
+  - cite: "26 U.S.C. § 422"
+    title: "Incentive stock options"
+    url: "https://www.law.cornell.edu/uscode/text/26/422"
+  - cite: "26 U.S.C. § 56"
+    title: "Adjustments in computing alternative minimum taxable income (ISO exercise preference)"
+    url: "https://www.law.cornell.edu/uscode/text/26/56"
+  - cite: "Social Security Administration"
+    title: "Contribution and benefit base ($184,500 for 2026)"
+    url: "https://www.ssa.gov/oact/cola/cbb.html"
 ---
 # Equity Compensation Tax
 
@@ -47,6 +67,7 @@ This file covers the tax rules governing equity compensation instruments. For se
   - This deadline is absolute — there is no extension, no late-filing relief, no equitable tolling, and no remedy for a missed deadline (even by one day).
   - Filing mechanics:
     - File a written statement with the IRS service center where the taxpayer files their return (certified mail with return receipt recommended for proof of timely mailing).
+    - Alternatively, use IRS Form 15620 (standardized 83(b) election form released November 2024); since mid-2025 the IRS also accepts online submission of Form 15620 through the taxpayer's IRS Online Account, which provides a time-stamped confirmation of receipt. Use one method only — online or mail, not both.
     - Provide a copy to the transferor (employer/company).
     - Attach a copy to the taxpayer's federal income tax return for the year of transfer.
   - The election is irrevocable once made — it cannot be revoked without IRS consent, which is granted only in extraordinary circumstances (not buyer's remorse or stock value decline).
@@ -86,7 +107,7 @@ This file covers the tax rules governing equity compensation instruments. For se
   - Exercise price must be at or above FMV on the grant date to avoid Section 409A treatment.
   - Withholding at exercise (employer obligations):
     - Federal income tax: supplemental rate of 22% (37% for amounts exceeding $1 million in the calendar year).
-    - Social Security: 6.2% up to the wage base ($176,100 for 2025).
+    - Social Security: 6.2% up to the wage base ($184,500 for 2026, per SSA).
     - Medicare: 1.45% (plus 0.9% additional Medicare tax on wages exceeding $200,000).
     - Applicable state and local income tax.
   - The company receives an income tax deduction equal to the ordinary income recognized by the recipient (IRC 83(h)), subject to the IRC 162(m) limitation ($1 million annual deduction cap) for "covered employees" of publicly traded companies.
@@ -134,3 +155,4 @@ This file covers the tax rules governing equity compensation instruments. For se
 - [IRC Section 422 — Incentive Stock Options (26 USC 422)](https://www.law.cornell.edu/uscode/text/26/422) — ISO eligibility, limits, and holding period requirements
 - [IRC Section 56(b)(3) — AMT Adjustments for ISOs (26 USC 56)](https://www.law.cornell.edu/uscode/text/26/56) — AMT preference item for ISO exercises
 - [IRS Notice 2005-1 — Section 409A Guidance](https://www.irs.gov/irb/2005-02_IRB#NOT-2005-1) — Initial 409A interpretive guidance and transitional rules
+- [IRS Form 15620 — Section 83(b) Election](https://www.irs.gov/pub/irs-pdf/f15620.pdf) — Standardized 83(b) election form (paper or online filing)

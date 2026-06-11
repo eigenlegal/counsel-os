@@ -1,7 +1,21 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, international]
+authorities:
+  - cite: "15 U.S.C. §§ 78dd-1 to 78dd-3, 78m, 78ff"
+    title: "Foreign Corrupt Practices Act"
+    url: "https://www.law.cornell.edu/uscode/text/15/78dd-1"
+  - cite: "Executive Order 14209 (Feb. 10, 2025)"
+    title: "Pausing Foreign Corrupt Practices Act Enforcement to Further American Economic and National Security"
+    url: "https://www.whitehouse.gov/presidential-actions/2025/02/pausing-foreign-corrupt-practices-act-enforcement-to-further-american-economic-and-national-security/"
+  - cite: "DOJ Guidelines for Investigations and Enforcement of the FCPA (June 9, 2025)"
+    title: "Deputy Attorney General guidelines lifting the FCPA enforcement pause"
+    url: "https://www.justice.gov/criminal/criminal-fraud/fcpa-guidance"
+  - cite: "UK Bribery Act 2010"
+    title: "UK Bribery Act 2010 and Ministry of Justice adequate-procedures guidance"
+    url: "https://www.legislation.gov.uk/ukpga/2010/23"
 ---
 # Anti-Corruption
 
@@ -29,7 +43,7 @@ Applies when any transaction, agreement, or business activity involves:
   - Inducing the official to use influence with a foreign government or instrumentality
   All for the purpose of obtaining or retaining business
 - **Threshold/Timeline**: No minimum dollar threshold — any payment, gift, or thing of value can violate the statute. "Anything of value" interpreted broadly: cash, gifts, meals, travel, entertainment, internships or jobs for officials' family members, charitable donations at an official's direction, political/campaign contributions, and below-market transactions. "Foreign official" includes employees of state-owned enterprises (SOEs), sovereign wealth funds, public international organizations (World Bank, UN agencies), and state-controlled universities or hospitals
-- **Consequence**: Criminal penalties: individuals up to $250,000 and 5 years imprisonment per violation; entities up to $2,000,000 per violation (or alternatively, twice the gross gain or loss under 18 U.S.C. Section 3571, which often yields substantially higher fines). Civil penalties: up to $16,000 per violation (SEC enforcement, adjusted for inflation). Disgorgement of profits and pre-judgment interest are standard in SEC settlements. Average corporate FCPA resolution has exceeded $100 million in recent years
+- **Consequence**: Criminal penalties: individuals up to $250,000 and 5 years imprisonment per violation; entities up to $2,000,000 per violation (or alternatively, twice the gross gain or loss under 18 U.S.C. Section 3571, which often yields substantially higher fines). Civil penalties: SEC-administered, per violation (statutory base $10,000, adjusted for inflation). Disgorgement of profits and pre-judgment interest are standard in SEC settlements
 
 ### FCPA Books-and-Records and Internal Controls (15 U.S.C. Section 78m)
 
@@ -37,7 +51,7 @@ Applies when any transaction, agreement, or business activity involves:
   - **Books and records**: Make and keep books, records, and accounts which, in reasonable detail, accurately and fairly reflect the transactions and dispositions of assets. "Reasonable detail" means the level of detail that would satisfy prudent officials in the conduct of their own affairs
   - **Internal accounting controls**: Devise and maintain a system of internal accounting controls sufficient to provide reasonable assurances that: (a) transactions are executed in accordance with management's general or specific authorization, (b) transactions are recorded as necessary to permit preparation of financial statements and maintain accountability for assets, (c) access to assets is permitted only with management authorization, (d) recorded accountability for assets is compared with existing assets at reasonable intervals
 - **Threshold/Timeline**: No materiality threshold — any inaccuracy in books and records can violate the provision, even if immaterial to the financial statements. Applies to the entire worldwide operations of the issuer and all consolidated subsidiaries, regardless of where located. Internal controls must be designed, implemented, periodically tested, and updated
-- **Consequence**: Criminal penalties for knowing circumvention or knowing falsification: individuals up to $5,000,000 and 20 years imprisonment; entities up to $25,000,000. Civil penalties: SEC can seek up to $16,000 per violation plus disgorgement. Books-and-records charges require a lower burden of proof than anti-bribery charges (no need to prove corrupt intent) and are frequently brought alongside or as an alternative to anti-bribery charges
+- **Consequence**: Criminal penalties for knowing circumvention or knowing falsification: individuals up to $5,000,000 and 20 years imprisonment; entities up to $25,000,000. Civil penalties: SEC can seek tiered civil penalties (Exchange Act Section 21(d)(3), inflation-adjusted) plus disgorgement. Books-and-records charges require a lower burden of proof than anti-bribery charges (no need to prove corrupt intent) and are frequently brought alongside or as an alternative to anti-bribery charges
 
 ### FCPA Jurisdictional Reach
 
@@ -66,14 +80,20 @@ Applies when any transaction, agreement, or business activity involves:
 - **Threshold/Timeline**: No minimum value threshold. "Relevant commercial organisation" includes any body corporate or partnership that "carries on a business, or part of a business" in the UK — interpreted broadly to include even minimal UK commercial presence. "Associated person" includes employees, agents, subsidiaries, joint venture partners, and any person performing services for or on behalf of the organization
 - **Consequence**: Unlimited fines for corporate offenses (Section 7). Individuals: up to 10 years imprisonment and unlimited fines. Deferred Prosecution Agreements (DPAs) available in the UK for corporate offenders. The "adequate procedures" defense is evaluated against six Ministry of Justice principles: (1) proportionate procedures, (2) top-level commitment, (3) risk assessment, (4) due diligence, (5) communication and training, (6) monitoring and review
 
+### DOJ FCPA Enforcement Posture (2025-2026)
+
+- **What**: Executive Order 14209 (Feb. 10, 2025) paused new DOJ FCPA investigations and enforcement pending revised guidelines. The pause was lifted by the Deputy Attorney General's "Guidelines for Investigations and Enforcement of the Foreign Corrupt Practices Act" (June 9, 2025), which restarted enforcement under new prioritization factors: (1) ties to cartels and transnational criminal organizations, (2) national-security implications and strategic sectors (defense, infrastructure, critical minerals), (3) harm to specific, identifiable US companies' ability to compete fairly, and (4) serious misconduct indicia (substantial bribes, sophisticated concealment, obstruction) — as opposed to routine business courtesies. New FCPA investigations and actions require authorization from Criminal Division leadership rather than the FCPA Unit alone
+- **Threshold/Timeline**: The statute is unchanged and the limitations period (generally 5 years; 6 for certain securities-law violations) outlasts any enforcement-policy cycle — conduct occurring during the reduced-enforcement period remains chargeable by future administrations. Individual prosecutions continued through 2025-26. The SEC's civil FCPA program was not covered by the EO and its posture remains less defined; UK SFO, France PNF, and other non-US enforcers remain active
+- **Consequence**: Reduced corporate enforcement volume relative to pre-2025 levels, but compliance-program expectations are unchanged and resolution risk persists for conduct touching the priority factors. Advise on the statute, not the current enforcement mood
+
 ### DOJ Corporate Enforcement Policy (CEP)
 
 - **What**: DOJ's framework (formalized in the Justice Manual, Section 9-47.120) provides significant incentives for voluntary self-disclosure, cooperation, and remediation in FCPA matters:
-  - **Voluntary self-disclosure (VSD)**: Companies that voluntarily disclose FCPA violations, fully cooperate, and timely remediate receive a presumption of declination (no prosecution) absent aggravating factors (executive involvement, significant profits, recidivism)
+  - **Voluntary self-disclosure (VSD)**: Under the May 2025 Criminal Division CEP revision, prosecutors WILL decline prosecution (not merely a presumption) for companies that voluntarily self-disclose, fully cooperate, and timely and appropriately remediate, absent aggravating circumstances (e.g., egregiousness/pervasiveness of the misconduct, severity of harm). In March 2026, DOJ issued its first department-wide Corporate Enforcement and Voluntary Self-Disclosure Policy extending this framework beyond the Criminal Division
   - **Full cooperation**: Disclosure of all relevant facts, identification of all individuals substantially involved, making witnesses available, providing foreign evidence, attributing facts to specific sources
   - **Timely remediation**: Root cause analysis, discipline of responsible personnel, compensation clawback from wrongdoers, compliance program enhancements, selection of compliance monitors (if appropriate)
 - **Threshold/Timeline**: VSD must be made before the company has an imminent threat of disclosure or an ongoing government investigation. Cooperation must be ongoing and complete. DOJ expects companies to identify and disclose individual wrongdoers — "individual accountability" is a cornerstone of the policy
-- **Consequence**: VSD + full cooperation + timely remediation: presumption of declination, or at minimum a 50%+ reduction below the low end of the US Sentencing Guidelines fine range. No VSD: fine within or above the Guidelines range. Compliance monitors imposed for 2-3 years in many resolutions. DOJ's Whistleblower Awards Pilot Program (August 2024) further incentivizes reporting through financial awards to individual whistleblowers
+- **Consequence**: VSD + full cooperation + timely remediation + no aggravating circumstances: declination under the May 2025 CEP. Where declination is unavailable, substantial fine reductions below the US Sentencing Guidelines range remain available; no VSD: fine within or above the Guidelines range. Compliance monitors are now imposed more sparingly under DOJ's May 2025 monitor-selection guidance. DOJ's Corporate Whistleblower Awards Pilot Program (August 2024, expanded May 2025 to additional priority areas including trade/sanctions and cartel-related corporate crime) further incentivizes reporting through financial awards to individual whistleblowers
 
 ### Compliance Program Expectations (DOJ/SEC Evaluation Framework)
 
@@ -81,7 +101,7 @@ Applies when any transaction, agreement, or business activity involves:
   - **Part 1 — Design**: Is the program well-designed? Key elements: risk assessment, policies and procedures (gifts/entertainment, travel, third-party management, M&A due diligence, charitable giving, political contributions), code of conduct, training, reporting mechanisms (hotline, non-retaliation policy)
   - **Part 2 — Implementation**: Is the program being applied earnestly and in good faith? Key elements: senior/middle management commitment, autonomy and resources of compliance function, incentive structure, disciplinary enforcement consistency, third-party due diligence execution, data analytics and monitoring
   - **Part 3 — Effectiveness**: Does it work in practice? Key elements: testing and auditing (by compliance, internal audit, or external), continuous improvement based on lessons learned, investigation response protocols, root cause analysis of violations
-- **Threshold/Timeline**: Programs evaluated both at the time of the misconduct and at the time of resolution. DOJ guidance (updated March 2023) specifically asks whether the company invests in compliance technology, uses data analytics, and tests its systems. Compliance function must be "adequately resourced and empowered to function effectively"
+- **Threshold/Timeline**: Programs evaluated both at the time of the misconduct and at the time of resolution. DOJ's Evaluation of Corporate Compliance Programs guidance (most recently updated September 2024, adding emphasis on AI/emerging-technology risk, data analytics, and whistleblower protection) specifically asks whether the company invests in compliance technology, uses data analytics, and tests its systems. Compliance function must be "adequately resourced and empowered to function effectively"
 - **Consequence**: An effective compliance program at the time of misconduct is a significant mitigating factor and can result in declination. A paper program that is not implemented provides no mitigation. Compliance monitors (typically 2-3 year term) may be imposed as part of resolutions when the existing program is deemed insufficient
 
 ### Third-Party Risk Management
@@ -137,4 +157,6 @@ Applies when any transaction, agreement, or business activity involves:
 - UK Bribery Act 2010 and Ministry of Justice Guidance on Adequate Procedures: https://www.legislation.gov.uk/ukpga/2010/23
 - Transparency International Corruption Perceptions Index: https://www.transparency.org/cpi
 - FCPA (15 U.S.C. Sections 78dd-1, 78dd-2, 78dd-3, 78m, 78ff)
-- DOJ Whistleblower Awards Pilot Program (2024): https://www.justice.gov/criminal/criminal-fraud/whistleblower-awards
+- DOJ Whistleblower Awards Pilot Program (2024, expanded 2025): https://www.justice.gov/criminal/criminal-fraud/whistleblower-awards
+- Executive Order 14209, Pausing FCPA Enforcement (Feb. 10, 2025): https://www.whitehouse.gov/presidential-actions/2025/02/pausing-foreign-corrupt-practices-act-enforcement-to-further-american-economic-and-national-security/
+- DOJ Guidelines for Investigations and Enforcement of the FCPA (June 9, 2025): see the DOJ FCPA guidance page above

@@ -1,13 +1,32 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal, us-state, international]
+authorities:
+  - cite: "15 U.S.C. §§ 78dd-1 et seq."
+    title: "Foreign Corrupt Practices Act — anti-bribery provisions"
+    url: "https://www.law.cornell.edu/uscode/text/15/78dd-1"
+    checked: "2026-06-11"
+  - cite: "Exec. Order 14209 (Feb. 10, 2025)"
+    title: "Pausing Foreign Corrupt Practices Act Enforcement to Further American Economic and National Security (180-day pause; directed revised guidelines)"
+    url: "https://www.federalregister.gov/documents/2025/02/18/2025-02736/pausing-foreign-corrupt-practices-act-enforcement-to-further-american-economic-and-national-security"
+    checked: "2026-06-11"
+  - cite: "DOJ DAG Memo — Guidelines for Investigations and Enforcement of the FCPA (June 9, 2025)"
+    title: "Blanche memo ending the pause; reframes priorities (cartels/TCOs, U.S. competitiveness, national security, individual misconduct)"
+    url: "https://www.justice.gov/dag/media/1403031/dl"
+    checked: "2026-06-11"
+  - cite: "DOJ FCPA Resource Guide (2d ed.)"
+    title: "Joint DOJ/SEC guidance on FCPA scope and enforcement"
+    url: "https://www.justice.gov/criminal/criminal-fraud/file/1292051/dl"
+    checked: "2026-06-11"
 ---
 # FCPA Enforcement
 
 ## Applicability
 
 Applies to organizations and individuals subject to the Foreign Corrupt Practices Act, which prohibits bribing foreign government officials and requires accurate books and records for issuers. Covers dual DOJ/SEC enforcement tracks, resolution types, declination factors, disgorgement, and coordination with international enforcement authorities.
+
+> **Current enforcement posture (verify before relying):** On February 10, 2025, Executive Order 14209 directed DOJ to pause new FCPA investigations and enforcement for up to 180 days and to issue revised guidelines. On June 9, 2025, DAG Todd Blanche issued "Guidelines for Investigations and Enforcement of the FCPA," ending the pause and reframing priorities toward conduct tied to cartels/transnational criminal organizations, harm to U.S. economic competitiveness, threats to national security, and serious individual misconduct with strong indicia of corrupt intent. The FCPA statute itself is unchanged; only DOJ's charging priorities shifted. Confirm the operative guidelines and current enforcement practice before advising. Cross-check `international-trade/` for the anti-corruption overlap.
 
 ## Key Requirements
 
@@ -23,7 +42,7 @@ Applies to organizations and individuals subject to the Foreign Corrupt Practice
 - **Guilty Plea** / Company or individual pleads guilty to FCPA charges / **Consequence**: Most severe; conviction triggers collateral consequences; reserved for most egregious cases or repeat offenders
 - **Deferred Prosecution Agreement (DPA)** / Charges filed but deferred; dismissed upon compliance with terms / **Timeline**: Typically 3 years / **Consequence**: Public filing; financial penalties; compliance and cooperation obligations; monitor may be imposed
 - **Non-Prosecution Agreement (NPA)** / Agreement not to prosecute; less formal than DPA / **Timeline**: Typically 3 years / **Consequence**: No charges filed; less public stigma than DPA; still involves financial penalties and compliance commitments
-- **Declination** / DOJ declines to prosecute / **Consequence**: Best outcome; DOJ Corporate Enforcement Policy creates presumption of declination for voluntary self-disclosure + full cooperation + timely remediation; may require disgorgement
+- **Declination** / DOJ declines to prosecute / **Consequence**: Best outcome; under the current Corporate Enforcement and Voluntary Self-Disclosure Policy a qualifying company **will** receive a declination (voluntary self-disclosure + full cooperation + timely remediation + no aggravating circumstances), a firmer formulation than the prior "presumption"; may require disgorgement and victim compensation. See `doj-cooperation.md` for the current CEP framework and the near-miss NPA path
 - **SEC Administrative Orders** / Cease-and-desist orders for books-and-records and internal-controls violations / **Consequence**: Civil penalties; disgorgement; public order; may require compliance undertakings
 
 ### Declination Factors
@@ -71,8 +90,10 @@ Applies to organizations and individuals subject to the Foreign Corrupt Practice
 ## Sources
 
 - [Foreign Corrupt Practices Act (15 U.S.C. 78dd-1 et seq.)](https://www.law.cornell.edu/uscode/text/15/78dd-1)
+- [Executive Order 14209 — Pausing FCPA Enforcement (Feb. 10, 2025)](https://www.federalregister.gov/documents/2025/02/18/2025-02736/pausing-foreign-corrupt-practices-act-enforcement-to-further-american-economic-and-national-security)
+- [DOJ DAG Memo — Guidelines for Investigations and Enforcement of the FCPA (June 9, 2025)](https://www.justice.gov/dag/media/1403031/dl)
 - [DOJ FCPA Resource Guide (Second Edition, 2020)](https://www.justice.gov/criminal/criminal-fraud/file/1292051/dl)
-- [DOJ Criminal Division Corporate Enforcement and Voluntary Self-Disclosure Policy](https://www.justice.gov/criminal/criminal-fraud/page/file/1562571/dl)
+- [DOJ Criminal Division — Corporate Enforcement (current CEP)](https://www.justice.gov/criminal/criminal-division-corporate-enforcement)
 - [SEC FCPA Enforcement Actions](https://www.sec.gov/enforcement/sec-enforcement-actions-fcpa-cases)
 - [Kokesh v. SEC, 581 U.S. 455 (2017)](https://supreme.justia.com/cases/federal/us/581/455/)
 

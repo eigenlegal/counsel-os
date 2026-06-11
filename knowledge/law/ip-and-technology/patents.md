@@ -1,7 +1,33 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, international]
+authorities:
+  - cite: "35 U.S.C. §§ 1-390"
+    title: "Patent Act"
+    url: "https://www.law.cornell.edu/uscode/text/35"
+  - cite: "USPTO (Feb. 28, 2025)"
+    title: "Rescission of the June 2022 (Vidal) memorandum on discretionary denial procedures"
+    url: "https://www.uspto.gov/about-us/news-updates/uspto-rescinds-memorandum-addressing-discretionary-denial-procedures"
+  - cite: "USPTO Chief APJ guidance memo (Mar. 24, 2025)"
+    title: "Guidance on rescission of the interim Fintiv procedure (Sotera stipulations no longer dispositive)"
+    url: "https://www.uspto.gov/sites/default/files/documents/guidance_memo_on_interim_procedure_recission_20250324.pdf"
+  - cite: "USPTO Interim Director Discretionary Process"
+    title: "Bifurcated discretionary/merits institution process (effective for POPRs due after Mar. 26, 2025)"
+    url: "https://www.uspto.gov/patents/ptab/interim-director-discretionary-process"
+  - cite: "90 Fed. Reg. 48335 (Oct. 17, 2025)"
+    title: "Revision to Rules of Practice Before the PTAB — proposed rule codifying discretionary-denial restrictions"
+    url: "https://www.federalregister.gov/documents/2025/10/17/2025-19580/revision-to-rules-of-practice-before-the-patent-trial-and-appeal-board"
+  - cite: "PCT Contracting States (WIPO)"
+    title: "158 contracting states as of May 1, 2026"
+    url: "https://www.wipo.int/en/web/pct-system/pct_contracting_states"
+  - cite: "S. 1546, 119th Cong. (2025)"
+    title: "Patent Eligibility Restoration Act — in committee, not enacted"
+    url: "https://www.congress.gov/bill/119th-congress/senate-bill/1546"
+  - cite: "S. 1553, 119th Cong. (2025)"
+    title: "PREVAIL Act — in committee, not enacted"
+    url: "https://www.congress.gov/bill/119th-congress/senate-bill/1553"
 ---
 # Patents
 
@@ -93,6 +119,8 @@ patent due diligence in M&A, inter partes review, or patent marking.
   - Institution requires reasonable likelihood of prevailing on at least one claim
   - Final written decision within **12-18 months** of institution
   - Estoppel: petitioner cannot later raise grounds that were raised or reasonably could have been raised in the IPR
+  - **Discretionary denial (2025-26 shift — institution is much harder to obtain)**: In February 2025 the USPTO rescinded the 2022 Vidal memo that had limited *Fintiv* parallel-litigation denials; a *Sotera* stipulation is no longer dispositive. Since March 26, 2025, institution decisions are **bifurcated** — the Director decides discretionary considerations before the panel reaches the merits — and petitions are being denied based on patent-owner "**settled expectations**" (long-issued, unchallenged patents). Discretionary denial rates rose sharply; mandamus challenges to the framework are pending at the Federal Circuit.
+  - **Pending rulemaking**: An October 17, 2025 proposed rule (90 Fed. Reg. 48335) would codify the restrictions — requiring petitioner stipulations not to re-raise invalidity elsewhere, barring institution against claims that survived any prior validity challenge, and barring institution where a district court or ITC trial will likely conclude before the final written decision. Final rule pending as of mid-2026; verify current institution practice before relying on IPR availability.
 
 - **Post-grant review (PGR)**
   - Available for any ground of invalidity, not limited to prior art

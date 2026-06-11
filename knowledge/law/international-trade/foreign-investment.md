@@ -1,7 +1,27 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, international]
+authorities:
+  - cite: "50 U.S.C. § 4565"
+    title: "Defense Production Act Section 721 (CFIUS), as amended by FIRRMA"
+    url: "https://www.law.cornell.edu/uscode/text/50/4565"
+  - cite: "31 C.F.R. Parts 800-802"
+    title: "CFIUS regulations (covered transactions and real estate)"
+    url: "https://www.ecfr.gov/current/title-31/subtitle-B/chapter-VIII/part-800"
+  - cite: "America First Investment Policy (NSPM, Feb. 21, 2025)"
+    title: "National security presidential memorandum on inbound and outbound investment policy"
+    url: "https://www.whitehouse.gov/presidential-actions/2025/02/america-first-investment-policy/"
+  - cite: "31 C.F.R. Part 850"
+    title: "Outbound Investment Security Program (effective Jan. 2, 2025)"
+    url: "https://www.ecfr.gov/current/title-31/subtitle-B/chapter-VIII/part-850"
+  - cite: "Treasury Outbound Investment Security Program"
+    title: "Treasury program page (including COINS Act implementation status)"
+    url: "https://home.treasury.gov/policy-issues/international/outbound-investment-program"
+  - cite: "Treasury CFIUS page"
+    title: "CFIUS guidance, enforcement, and the November 2024 penalty/enforcement final rule (effective Dec. 26, 2024)"
+    url: "https://home.treasury.gov/policy-issues/international/the-committee-on-foreign-investment-in-the-united-states-cfius"
 ---
 # Foreign Investment Review (CFIUS/FIRRMA)
 
@@ -35,7 +55,7 @@ Applies when any transaction, agreement, or business activity involves:
   2. **Critical technology + export control nexus**: Investment where the US business produces critical technology that would require US export authorization (under EAR, ITAR, or other regimes) for the foreign acquirer or its country
   3. **Substantial interest by a foreign government**: A foreign government holds a "substantial interest" (25%+ direct/indirect voting interest) in the foreign acquirer, and the acquirer will obtain a 25%+ voting interest in a TID US business
 - **Threshold/Timeline**: Mandatory declaration must be filed at least 30 days before the completion date (closing). "Critical technology" defined by reference to export control lists: ECCN items, USML items, nuclear regulatory items, select agents/toxins, and emerging/foundational technologies designated by Commerce. CFIUS has 30 days to respond to a declaration with one of four outcomes: request a full notice, initiate a unilateral review, inform parties that review is concluded (clearance), or notify that it is unable to conclude review based on the declaration
-- **Consequence**: Closing a mandatory-filing transaction without the required declaration: civil penalty up to the value of the transaction. CFIUS retains authority to review the transaction and impose conditions or recommend unwinding retroactively
+- **Consequence**: Closing a mandatory-filing transaction without the required declaration: civil penalty up to the greater of $5,000,000 or the value of the transaction (maximums increased effective Dec. 26, 2024). CFIUS retains authority to review the transaction and impose conditions or recommend unwinding retroactively
 
 ### Voluntary Notice and Safe Harbor
 
@@ -82,7 +102,7 @@ Applies when any transaction, agreement, or business activity involves:
   - US government audit and inspection rights
   - Annual compliance reporting to CFIUS monitoring agencies
 - **Threshold/Timeline**: Negotiated during the review/investigation period. Must typically be executed before CFIUS concludes its review. Compliance is ongoing and monitored (usually by DOJ, DOD, or DHS depending on the industry). Mitigation agreements can remain in effect indefinitely
-- **Consequence**: Breach of a mitigation agreement: civil penalties up to $250,000 per violation or the value of the transaction (whichever is greater), injunctive relief, or recommendation for presidential action to unwind. CFIUS has increasingly pursued enforcement for mitigation breaches
+- **Consequence**: Breach of a mitigation agreement (entered on or after Dec. 26, 2024): civil penalties up to the greatest of $5,000,000 per violation, the value of the violator's interest in the US business (at the time of the transaction or of the violation), or the transaction value; injunctive relief; or recommendation for presidential action to unwind. CFIUS has increasingly pursued enforcement for mitigation breaches
 
 ### Excepted Investors and Transactions
 
@@ -90,7 +110,7 @@ Applies when any transaction, agreement, or business activity involves:
   - Not subject to relevant foreign government direction
   - No relevant compliance violations in the prior 10 years
   - 75%+ of board seats and 75%+ of voting interest held by nationals of excepted foreign states or the US
-- **Threshold/Timeline**: Exception applies only to non-controlling TID investments and mandatory declarations — controlling acquisitions remain fully reviewable regardless of investor nationality. Exception status must be verified at the time of the transaction
+- **Threshold/Timeline**: Exception applies only to non-controlling TID investments and mandatory declarations — controlling acquisitions remain fully reviewable regardless of investor nationality. Exception status must be verified at the time of the transaction (Treasury's determinations for the United Kingdom and New Zealand were most recently renewed in January 2025)
 - **Consequence**: Incorrectly claiming excepted investor status does not create safe harbor and the transaction remains subject to full CFIUS jurisdiction. The excepted foreign state list is reviewed periodically and can change
 
 ### Real Estate Transactions (31 C.F.R. Part 802)
@@ -101,14 +121,26 @@ Applies when any transaction, agreement, or business activity involves:
 
 ### Penalties and Enforcement
 
-- **What**: CFIUS enforcement has increased significantly since FIRRMA. Key penalty authorities:
-  - **Failure to file mandatory declaration**: Civil penalty up to the value of the transaction
-  - **Material misstatement or omission**: Civil penalty up to $250,000 per violation. Intentional or grossly negligent material misstatements may void the safe harbor, allowing CFIUS to re-open review
-  - **Breach of mitigation agreement**: Civil penalty up to $250,000 per violation or the value of the transaction (whichever is greater). Injunctive relief available. CFIUS may recommend presidential action
-  - **Violation of presidential order**: Civil penalty up to $250,000 per violation. Criminal penalties available for willful violations
+- **What**: CFIUS enforcement has increased significantly since FIRRMA, and Treasury's final rule effective December 26, 2024 raised the maximum penalties twenty-fold and expanded subpoena and information-gathering authority. Key penalty authorities:
+  - **Failure to file mandatory declaration**: Civil penalty up to the greater of $5,000,000 or the value of the transaction
+  - **Material misstatement or omission**: Civil penalty up to $5,000,000 per violation (raised from $250,000), now covering misstatements outside formal filings (e.g., responses to CFIUS inquiries and monitoring requests). Intentional or grossly negligent material misstatements may void the safe harbor, allowing CFIUS to re-open review
+  - **Breach of mitigation agreement**: For agreements entered on or after Dec. 26, 2024, civil penalty up to the greatest of $5,000,000 per violation, the value of the violator's interest in the US business, or the transaction value. Injunctive relief available. CFIUS may recommend presidential action
+  - **Violation of presidential order**: Civil penalty up to $5,000,000 per violation. Criminal penalties available for willful violations
   - **Interim measures**: CFIUS can require a standstill during review (no integration, no access to sensitive assets)
 - **Threshold/Timeline**: DOJ enforces CFIUS penalties on behalf of Treasury. Statute of limitations not established — CFIUS retains authority indefinitely absent safe harbor. Enforcement actions have increased since 2020 with dedicated DOJ resources
 - **Consequence**: Beyond monetary penalties, CFIUS enforcement results in forced divestiture (the most severe remedy), operational restrictions, and reputational harm. Companies that fail to file or violate mitigation agreements face existential business risk
+
+### Policy Direction — America First Investment Policy (2025)
+
+- **What**: The America First Investment Policy memorandum (NSPM, Feb. 21, 2025) directs a two-track posture: facilitating investment from allies and partners while restricting investment linked to foreign adversaries (particularly the PRC). Key directives include an expedited "fast-track" process for specified allied/partner investors (conditioned on distance from adversary partners), reduced reliance on open-ended mitigation agreements in favor of clearer decisions, and signaled expansion of CFIUS attention to greenfield investment, farmland, and real estate near sensitive facilities
+- **Threshold/Timeline**: Treasury is piloting a Known Investor Program (KIP) to pre-collect investor information ahead of filings. Implementation is rolling — verify current Treasury rules and pilot status before advising on timing or eligibility
+- **Consequence**: PRC-linked investors (including through intermediaries and limited-partner structures) face heightened scrutiny and lower clearance probability; allied investors may see faster reviews. Deal terms should still allocate full CFIUS risk until the fast-track mechanisms are formalized in regulations
+
+### Outbound Investment Security Program (Reverse CFIUS)
+
+- **What**: Treasury's Outbound Investment Security Program (31 C.F.R. Part 850, effective Jan. 2, 2025) prohibits or requires notification of certain US-person investments in entities of countries of concern (China, Hong Kong, Macau) engaged in semiconductors and microelectronics, quantum information technologies, and artificial intelligence. The COINS Act, enacted in the FY2026 NDAA (Dec. 18, 2025), codifies the program and expands it: covered sectors add hypersonics and high-performance computing/supercomputing, and "countries of concern" expand to include Cuba, Iran, North Korea, Russia, and Venezuela under the Maduro regime
+- **Threshold/Timeline**: Covered transactions include equity acquisitions, certain debt with equity-like features, greenfield/JV formations, and certain LP commitments. Knowledge standard applies — reasonable diligence on target activities is required. The existing Part 850 rules remain in effect until Treasury issues COINS Act implementing regulations (statutory deadline approximately March 2027)
+- **Consequence**: Civil penalties up to the IEEPA maximum per violation, divestment orders, and potential criminal liability for willful violations. US investors in China-facing tech transactions need outbound screening as a standard diligence workstream alongside inbound CFIUS analysis
 
 ### Practical Considerations for Transaction Structuring
 
@@ -138,3 +170,5 @@ Applies when any transaction, agreement, or business activity involves:
 - CFIUS Annual Reports to Congress: https://home.treasury.gov/policy-issues/international/the-committee-on-foreign-investment-in-the-united-states-cfius/cfius-reports
 - DOJ CFIUS Enforcement and Penalty Guidelines: https://www.justice.gov/nsd/cfius
 - Treasury CFIUS Case Studies and Precedent: Published presidential orders (e.g., Ralls Corp., Aixtron, Qualcomm/Broadcom)
+- America First Investment Policy (Feb. 21, 2025): https://www.whitehouse.gov/presidential-actions/2025/02/america-first-investment-policy/
+- Outbound Investment Security Program (31 C.F.R. Part 850): https://home.treasury.gov/policy-issues/international/outbound-investment-program

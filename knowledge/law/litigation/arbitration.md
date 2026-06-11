@@ -1,7 +1,27 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, international]
+authorities:
+  - cite: "9 U.S.C. §§ 1-16"
+    title: "Federal Arbitration Act"
+    url: "https://www.law.cornell.edu/uscode/text/9/chapter-1"
+  - cite: "Smith v. Spizzirri, 601 U.S. 472 (2024)"
+    title: "FAA § 3 requires a stay, not dismissal, when a dispute is arbitrable and a stay is requested"
+    url: "https://www.supremecourt.gov/opinions/23pdf/22-1218_5357.pdf"
+  - cite: "Coinbase, Inc. v. Suski, 602 U.S. 143 (2024)"
+    title: "Court, not arbitrator, decides which of two conflicting contracts governs arbitrability"
+    url: "https://www.supremecourt.gov/opinions/23pdf/23-3_879d.pdf"
+  - cite: "Jules v. Andre Balazs Properties, No. 25-83 (U.S. May 14, 2026)"
+    title: "Court that stays a case under FAA § 3 retains jurisdiction over later §§ 9-10 motions"
+    url: "https://www.supremecourt.gov/opinions/25pdf/25-83_3e04.pdf"
+  - cite: "AAA Mass Arbitration Supplementary Rules and Fee Schedule"
+    title: "AAA mass arbitration rules (effective Jan. 15, 2024; amended Apr. 1, 2024)"
+    url: "https://www.adr.org/rules-forms-and-fees/mass-arbitration/"
+  - cite: "JAMS Mass Arbitration Procedures and Guidelines"
+    title: "JAMS mass arbitration procedures and fee schedule (effective May 1, 2024)"
+    url: "https://www.jamsadr.com/mass-arbitration-procedures"
 ---
 # Arbitration
 
@@ -16,11 +36,12 @@ Load when any matter involves arbitration agreements, arbitration clause draftin
 - **Strong federal policy favoring arbitration** / **Threshold**: FAA (9 U.S.C. 1-16) establishes that arbitration agreements "shall be valid, irrevocable, and enforceable" (Section 2) / **Consequence**: Courts must enforce arbitration agreements according to their terms; doubts resolved in favor of arbitration (*Moses H. Cone Memorial Hospital v. Mercury Construction*)
 - **Commerce requirement** / **Threshold**: FAA applies to contracts "involving commerce" -- broadly interpreted to reach the full extent of Congress's Commerce Clause power / **Consequence**: Virtually all commercial contracts are covered; purely local transactions may fall outside FAA but are rare
 - **Section 2 savings clause** / **Threshold**: Arbitration agreements are enforceable "save upon such grounds as exist at law or in equity for the revocation of any contract" / **Consequence**: General contract defenses (fraud, duress, unconscionability) may invalidate arbitration clauses, but defenses that target arbitration specifically are preempted (*Concepcion*)
-- **Delegation clauses** / **Threshold**: Parties may delegate threshold arbitrability questions to the arbitrator ("who decides") by clear and unmistakable evidence / **Consequence**: Incorporation of AAA or JAMS rules that grant arbitrator jurisdiction over arbitrability constitutes delegation (*Henry Schein v. Archer & White Sales*)
+- **Delegation clauses** / **Threshold**: Parties may delegate threshold arbitrability questions to the arbitrator ("who decides") by clear and unmistakable evidence / **Consequence**: Incorporation of AAA or JAMS rules that grant arbitrator jurisdiction over arbitrability constitutes delegation (*Henry Schein v. Archer & White Sales*); but where parties have multiple agreements that conflict on arbitrability, a court -- not the arbitrator -- decides which contract governs, even if the earlier contract contains a delegation clause (*Coinbase, Inc. v. Suski*, 602 U.S. 143 (2024))
+- **Stay, not dismissal (FAA Section 3)** / **Threshold**: When a dispute is arbitrable and a party requests a stay, the court must stay the action; it lacks discretion to dismiss (*Smith v. Spizzirri*, 601 U.S. 472 (2024)) / **Consequence**: The stayed court retains jurisdiction, including over later motions to confirm or vacate the award under Sections 9-10 without an independent jurisdictional basis (*Jules v. Andre Balazs Properties*, No. 25-83 (U.S. May 14, 2026))
 
 ### Major Arbitral Institutions and Rules
 
-- **AAA (American Arbitration Association)**: Commercial Arbitration Rules (general commercial), Consumer Arbitration Rules (consumer contracts with $75K+ threshold for in-person hearing), Employment Arbitration Rules
+- **AAA (American Arbitration Association)**: Commercial Arbitration Rules (general commercial), Consumer Arbitration Rules (amended effective May 1, 2025 -- claims of $25,000 or less are decided on documents only unless the arbitrator decides a hearing is necessary), Employment Arbitration Rules, Mass Arbitration Supplementary Rules
 - **JAMS**: Comprehensive Arbitration Rules; Streamlined Rules for claims under $250K; Employment Rules; known for retired judges as arbitrators
 - **ICC (International Chamber of Commerce)**: Rules of Arbitration for international commercial disputes; ICC Court administers but does not decide; higher administrative fees
 - **UNCITRAL**: Ad hoc arbitration rules (no administering institution); widely used in investor-state and international commercial arbitration; UNCITRAL Model Law adopted by 80+ jurisdictions
@@ -43,7 +64,7 @@ Essential elements for an enforceable, effective clause:
 - **Epic Systems Corp. v. Lewis (2018)** / **Threshold**: Class and collective action waivers in employment arbitration agreements enforceable under FAA / **Consequence**: Individual arbitration can be required; NLRA Section 7 does not override FAA
 - **AT&T Mobility v. Concepcion (2011)** / **Threshold**: FAA preempts state rules conditioning arbitration enforcement on class procedure availability / **Consequence**: State unconscionability doctrines cannot be used to invalidate class waivers in arbitration
 - **Lamps Plus v. Varela (2019)** / **Threshold**: Ambiguous arbitration clauses cannot be construed to authorize class arbitration; consent to class arbitration must be clear / **Consequence**: Silence or ambiguity on class arbitration means individual arbitration only
-- **Mass arbitration** / **Threshold**: When class waivers channel thousands of individual claims into separate arbitrations / **Consequence**: Companies face enormous filing fees ($1,500-$3,500 per case); mass arbitration has become a strategic tool for plaintiffs; new AAA mass arbitration procedures address fee and process issues
+- **Mass arbitration** / **Threshold**: When class waivers channel thousands of individual claims into separate arbitrations / **Consequence**: Per-case fees make mass filings a strategic tool for plaintiffs. AAA Mass Arbitration Supplementary Rules (effective Jan. 15, 2024; amended Apr. 1, 2024) replace up-front per-case fees with a flat initiation fee ($3,125 claimant share / $8,125 business share), counsel attestation requirements, and a process arbitrator who vets claims before per-case fees attach. JAMS Mass Arbitration Procedures (effective May 1, 2024) use a $7,500 initiation fee (company pays at least $5,000) and a Process Administrator, but apply only if the parties' agreement adopts them. Bespoke mass-arbitration protocols are not immune from unconscionability review -- *Heckman v. Live Nation Entertainment* (9th Cir. 2024) held a New Era ADR batching/precedent protocol unconscionable (cert. denied 2025)
 
 ### Unconscionability Challenges
 
@@ -69,7 +90,7 @@ Essential elements for an enforceable, effective clause:
 
 ### Cost Allocation in Arbitration
 
-- **Consumer arbitration**: AAA Consumer Rules and JAMS Consumer Rules cap consumer's share of fees (AAA: filing fee only for claims under $75K; JAMS: $250 filing fee for claims under $250K)
+- **Consumer arbitration**: AAA Consumer Rules and JAMS Consumer Arbitration Minimum Standards cap the consumer's share of fees (AAA: $225 filing fee cap; JAMS: $250 filing fee); the business bears the remaining administrative and arbitrator fees
 - **Employment arbitration**: Employer typically must bear all unique costs of arbitration (*Green Tree Financial v. Randolph*, 531 U.S. 79 (2000) -- prohibitive cost may render agreement unenforceable)
 - **Commercial arbitration**: Parties typically split filing fees and arbitrator compensation; prevailing party provisions may shift costs
 - **Fee-splitting provisions** / **Threshold**: Provisions requiring consumers or employees to split arbitration costs may render agreement unconscionable or unenforceable / **Consequence**: Draft to comply with applicable consumer/employment arbitration rules
@@ -88,6 +109,10 @@ Essential elements for an enforceable, effective clause:
 - Federal Arbitration Act, 9 U.S.C. 1-16: https://www.law.cornell.edu/uscode/text/9/chapter-1
 - *Hall Street Associates, L.L.C. v. Mattel, Inc.*, 552 U.S. 576 (2008): https://www.law.cornell.edu/supremecourt/text/06-989
 - *Epic Systems Corp. v. Lewis*, 584 U.S. 497 (2018): https://www.law.cornell.edu/supremecourt/text/16-285
+- *Smith v. Spizzirri*, 601 U.S. 472 (2024): https://www.supremecourt.gov/opinions/23pdf/22-1218_5357.pdf
+- *Jules v. Andre Balazs Properties*, No. 25-83 (U.S. May 14, 2026): https://www.supremecourt.gov/opinions/25pdf/25-83_3e04.pdf
+- AAA Mass Arbitration Rules and Fees: https://www.adr.org/rules-forms-and-fees/mass-arbitration/
+- JAMS Mass Arbitration Procedures: https://www.jamsadr.com/mass-arbitration-procedures
 - New York Convention on the Recognition and Enforcement of Foreign Arbitral Awards (1958): https://www.newyorkconvention.org
 - AAA Rules and Procedures: https://www.adr.org/Rules
 - UNCITRAL Model Law on International Commercial Arbitration: https://uncitral.un.org/en/texts/arbitration/modellaw/commercial_arbitration

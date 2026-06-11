@@ -1,7 +1,21 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, international]
+authorities:
+  - cite: "Fed. R. Civ. P. 45"
+    title: "Subpoena issuance, service, objection, and cost-shifting"
+    url: "https://www.law.cornell.edu/rules/frcp/rule_45"
+  - cite: "Fed. R. Crim. P. 6(e)"
+    title: "Grand jury secrecy"
+    url: "https://www.law.cornell.edu/rules/frcrmp/rule_6"
+  - cite: "18 U.S.C. §§ 2701-2712"
+    title: "Stored Communications Act restrictions on provider disclosure"
+    url: "https://www.law.cornell.edu/uscode/text/18/part-I/chapter-121"
+  - cite: "Braswell v. United States, 487 U.S. 99 (1988)"
+    title: "Entity custodians cannot resist document production on Fifth Amendment grounds"
+    url: "https://www.law.cornell.edu/supremecourt/text/487/99"
 ---
 # Subpoenas
 

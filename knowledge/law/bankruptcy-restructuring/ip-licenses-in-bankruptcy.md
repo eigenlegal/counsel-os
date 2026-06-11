@@ -1,7 +1,18 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal]
+authorities:
+  - cite: "11 U.S.C. § 365(n)"
+    title: "Intellectual property license election on licensor rejection"
+    url: "https://www.law.cornell.edu/uscode/text/11/365"
+  - cite: "11 U.S.C. § 101(35A)"
+    title: "Definition of intellectual property (excludes trademarks)"
+    url: "https://www.law.cornell.edu/uscode/text/11/101"
+  - cite: "Mission Product Holdings v. Tempnology, LLC, 587 U.S. 370 (2019)"
+    title: "Rejection is breach, not rescission; trademark question left open"
+    url: "https://supreme.justia.com/cases/federal/us/587/17-1657/"
+# authorities checked 2026-06-11
 ---
 # IP Licenses in Bankruptcy
 

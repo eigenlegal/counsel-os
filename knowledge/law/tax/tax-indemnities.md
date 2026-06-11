@@ -1,7 +1,21 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, international]
+authorities:
+  - cite: "26 U.S.C. § 368"
+    title: "Definitions relating to corporate reorganizations"
+    url: "https://www.law.cornell.edu/uscode/text/26/368"
+  - cite: "26 C.F.R. § 1.368-1"
+    title: "Purpose and scope of exception of reorganization exchanges (continuity requirements)"
+    url: "https://www.ecfr.gov/current/title-26/chapter-I/subchapter-A/part-1/section-1.368-1"
+  - cite: "26 U.S.C. § 1502"
+    title: "Consolidated return regulations authority"
+    url: "https://www.law.cornell.edu/uscode/text/26/1502"
+  - cite: "Rev. Rul. 99-58"
+    title: "Continuity of interest guidance for reorganizations"
+    url: "https://www.irs.gov/pub/irs-drop/rr-99-58.pdf"
 ---
 # Tax Indemnities
 

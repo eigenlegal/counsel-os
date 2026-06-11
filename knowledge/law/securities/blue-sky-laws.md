@@ -1,7 +1,21 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "15 U.S.C. 77r"
+    title: "Securities Act Section 18 — covered securities and state preemption (including 18(b)(4)(C) crowdfunding and 18(c)(2)(F) notice-filing limits)"
+    url: "https://www.law.cornell.edu/uscode/text/15/77r"
+  - cite: "NASAA Electronic Filing Depository"
+    title: "Multi-state electronic notice filing portal for Rule 506 offerings"
+    url: "https://www.nasaa.org/industry-resources/securities-issuers/efd/"
+  - cite: "NASAA Form D fees matrix (as of Jan. 1, 2026)"
+    title: "State-by-state Rule 506 notice filing fees"
+    url: "https://www.nasaa.org/wp-content/uploads/efd/Form-D-fees-matrix.pdf"
+  - cite: "NASAA Coordinated Review — Regulation A offerings"
+    title: "State filing requirements and coordinated review for Regulation A Tier 1"
+    url: "https://www.nasaa.org/industry-resources/securities-issuers/coordinated-review/regulation-a-offerings/state-filing-requirements/"
 ---
 # Blue Sky Laws (State Securities Regulation)
 
@@ -14,12 +28,12 @@ Load when ANY of the following is present: state securities filing, state notice
 ### NSMIA Preemption for Covered Securities
 
 - **What**: The National Securities Markets Improvement Act of 1996 (NSMIA) preempts state registration and merit review for "covered securities," limiting states to notice filing requirements and anti-fraud enforcement.
-- **Threshold/Timeline**: Covered securities include: (1) securities listed on NYSE, Nasdaq, or other national exchanges designated by SEC; (2) securities sold in Rule 506(b) or 506(c) offerings; (3) securities sold to "qualified purchasers" as defined by SEC; (4) securities offered under Regulation A Tier 2; (5) securities issued in certain exempt transactions under Section 18 of the Securities Act. Regulation A Tier 1, Regulation CF, and intrastate offerings are NOT covered securities and remain subject to full state regulation.
+- **Threshold/Timeline**: Covered securities include: (1) securities listed on NYSE, Nasdaq, or other national exchanges designated by SEC; (2) securities sold in Rule 506(b) or 506(c) offerings; (3) securities sold to "qualified purchasers" as defined by SEC; (4) securities offered under Regulation A Tier 2; (5) securities sold under Regulation CF (Section 4(a)(6), added by JOBS Act Section 305 — notice filings limited under Section 18(c)(2)(F) to the issuer's principal-place-of-business state and any state where purchasers of 50% or more of the aggregate offering reside); (6) securities issued in certain other exempt transactions under Section 18 of the Securities Act. Regulation A Tier 1 and intrastate offerings (Rule 147/147A) are NOT covered securities and remain subject to full state regulation.
 - **Consequence**: For covered securities, states may only require notice filings and collect filing fees — they cannot impose substantive conditions, merit review, or deny the offering. For non-covered securities, states retain full authority to require registration, conduct merit review, impose conditions, and deny offerings.
 
 ### State Notice Filing Requirements
 
-- **What**: Even for preempted Rule 506 offerings, most states require notice filings, typically consisting of a copy of the federal Form D, a consent to service of process, and a state-specific filing fee.
+- **What**: Even for preempted Rule 506 offerings, most states require notice filings, typically consisting of a copy of the federal Form D, a consent to service of process, and a state-specific filing fee. Most states accept these filings electronically through NASAA's Electronic Filing Depository (EFD); NASAA maintains a current Form D fee matrix.
 - **Threshold/Timeline**: Filing deadlines vary by state — most require filing within 15 days of first sale to residents of that state, but some states (e.g., Connecticut, Maryland) require pre-sale filing. Filing fees range from $0 (e.g., New York for certain exempt offerings) to $750+ per filing. States where filings are commonly required: state of incorporation, state of principal office, and every state where investors or offerees reside. Late filing penalties vary: some states impose fines; New York may deny the state exemption for late filings; some states require "late fee" payments.
 - **Consequence**: Failure to make required state filings can result in state enforcement actions, fines, rescission rights for investors in that state, and potential disqualification from future state exemptions. While failure to make a state notice filing does not void the federal Rule 506 exemption, it can create significant compliance exposure at the state level.
 
@@ -44,7 +58,7 @@ Load when ANY of the following is present: state securities filing, state notice
 ## Common Contract Issues
 
 - Offering documents that fail to identify all states where notice filings are required based on investor and offeree locations.
-- Reliance on NSMIA preemption for offerings that do not qualify (e.g., Reg A Tier 1, intrastate offerings, offerings not conducted under Rule 506).
+- Reliance on NSMIA preemption for offerings that do not qualify (e.g., Reg A Tier 1, intrastate offerings, offerings not conducted under Rule 506, Reg A Tier 2, or Reg CF).
 - Late state notice filings creating compliance gaps, especially in states with pre-sale filing requirements.
 - Multi-state offerings using state-specific exemptions without a comprehensive state compliance matrix.
 - Subscription agreements that do not capture investor state of residence for blue sky compliance tracking.
@@ -52,8 +66,8 @@ Load when ANY of the following is present: state securities filing, state notice
 
 ## Interaction with Other Areas
 
-- **Securities (Exemptions)**: Rule 506 offerings are covered securities under NSMIA with state preemption, but Reg A Tier 1, Reg CF, and state-only offerings require full state compliance; integration analysis must account for state-level rules.
-- **Securities (Crowdfunding)**: Reg CF is not preempted from state regulation, though most states have adopted exemptions or streamlined filing processes for Reg CF offerings.
+- **Securities (Exemptions)**: Rule 506 offerings are covered securities under NSMIA with state preemption, but Reg A Tier 1, intrastate, and state-only offerings require full state compliance; integration analysis must account for state-level rules.
+- **Securities (Crowdfunding)**: Reg CF securities are covered securities — state registration and merit review are preempted, with notice filings limited to the issuer's principal-place-of-business state and any state where 50%+ of the offering is purchased; states retain full anti-fraud authority.
 - **Corporate (Entity Formation)**: State of incorporation and state of principal office determine primary blue sky filing obligations; multi-entity structures may implicate multiple state filings.
 - **Consumer Protection**: State consumer protection statutes may provide additional remedies for defrauded investors beyond state securities laws.
 

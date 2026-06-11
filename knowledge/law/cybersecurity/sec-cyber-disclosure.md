@@ -1,7 +1,21 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, industry-standard]
+authorities:
+  - cite: "17 CFR 229.106"
+    title: "Regulation S-K Item 106 — Cybersecurity"
+    url: "https://www.law.cornell.edu/cfr/text/17/229.106"
+  - cite: "SEC Release No. 33-11216 (July 26, 2023)"
+    title: "Cybersecurity Risk Management, Strategy, Governance, and Incident Disclosure — final rule"
+    url: "https://www.sec.gov/rules/final/2023/33-11216.pdf"
+  - cite: "SEC CorpFin C&DIs, Exchange Act Form 8-K (June 24, 2024)"
+    title: "Compliance & Disclosure Interpretations on Item 1.05 and ransomware payments"
+    url: "https://www.sec.gov/rules-regulations/staff-guidance/compliance-disclosure-interpretations/exchange-act-form-8-k"
+  - cite: "Joint Petition for Rulemaking (May 2025)"
+    title: "Petition to rescind Form 8-K Item 1.05 and Form 6-K cyber incident requirements"
+    url: "https://www.sec.gov/rules-regulations/2025/05/joint-petition-rulemaking-amend-sec-cybersecurity-risk-management-strategy-governance-incident"
 ---
 # SEC Cybersecurity Disclosure
 
@@ -19,6 +33,8 @@ Applies to public companies subject to SEC reporting requirements. Governs discl
 - **National Security Delay** / US Attorney General may authorize delay if disclosure would pose substantial risk to national security or public safety / **Timeline**: Initial delay up to 30 days; may be extended up to 60 days; extraordinary circumstances up to 120 days (SEC approval required beyond 60) / **Consequence**: Must request delay from DOJ before filing deadline; company remains responsible for filing promptly when delay expires
 - **Aggregation** / Series of individually immaterial incidents may be material in the aggregate; companies must assess cumulative impact / **Consequence**: Must maintain tracking of all cybersecurity incidents, not just major ones
 - **Amendment Obligation** / Must amend Form 8-K if material information was unknown at the time of initial filing / **Consequence**: Ongoing monitoring and supplemental disclosure required
+- **Voluntary / Pre-Materiality Disclosure (staff guidance, May-June 2024)** / CorpFin directed that Item 1.05 be reserved for incidents determined material; voluntary disclosure of immaterial incidents or incidents whose materiality is undetermined should be made under another item (e.g., Item 8.01) / **Consequence**: Filing under Item 1.05 signals a materiality determination was made; mislabeling invites comment letters
+- **Ransomware Payments (C&DIs, June 24, 2024)** / Making a ransomware payment, ending of the incident, or insurance reimbursement does not by itself make an incident immaterial or end the materiality assessment; a series of related ransomware incidents may be material in the aggregate / **Consequence**: Materiality analysis must continue through and after payment or remediation
 
 ### Annual Disclosure (Form 10-K, Regulation S-K Item 106)
 
@@ -37,6 +53,8 @@ Applies to public companies subject to SEC reporting requirements. Governs discl
 - **Securities Act Violations** / Failure to file timely or accurate 8-K or 10-K disclosure / **Consequence**: SEC enforcement action; civil penalties up to $1M per violation for companies; officer/director liability for materially false or misleading statements
 - **Internal Controls** / Cybersecurity processes may be considered part of disclosure controls and procedures under SOX 302/906 / **Consequence**: CEO/CFO certifications extend to adequacy of cyber disclosure processes
 - **Private Litigation** / Material misstatements or omissions regarding cybersecurity may give rise to 10b-5 claims / **Consequence**: Securities class action risk; increased D&O insurance costs
+- **Enforcement Posture (as of June 2026)** / SEC v. SolarWinds and CISO Timothy Brown (S.D.N.Y., filed Oct. 2023): the court dismissed most claims in July 2024, and on November 20, 2025 the SEC voluntarily dismissed its remaining claims with prejudice, without monetary settlement / **Consequence**: SEC appetite for cyber-disclosure fraud cases against companies and CISOs has receded, but the rules remain in force and private 10b-5 and derivative exposure is unchanged
+- **Rule Status (as of June 2026)** / In May 2025, SIFMA, the American Bankers Association, Bank Policy Institute, ICBA, and IIB petitioned the SEC to rescind Item 1.05 of Form 8-K and the parallel Form 6-K requirement; the petition remains pending and no amendment has been adopted / **Consequence**: Item 1.05 and Item 106 obligations continue to apply in full; monitor for a reproposal or rescission rulemaking
 
 ### Smaller Reporting Companies
 
@@ -55,6 +73,7 @@ Applies to public companies subject to SEC reporting requirements. Governs discl
 - [SEC Final Rule: Cybersecurity Risk Management, Strategy, Governance, and Incident Disclosure (Release No. 33-11216)](https://www.sec.gov/rules/final/2023/33-11216.pdf)
 - [SEC Regulation S-K Item 106](https://www.law.cornell.edu/cfr/text/17/229.106)
 - [SEC Form 8-K Item 1.05](https://www.sec.gov/files/form8-k.pdf)
-- [SEC Division of Corporation Finance — Cybersecurity Disclosure Guidance](https://www.sec.gov/corpfin/cybersecurity-disclosure-guidance)
+- [SEC CorpFin C&DIs — Exchange Act Form 8-K (Item 1.05 ransomware interpretations, June 2024)](https://www.sec.gov/rules-regulations/staff-guidance/compliance-disclosure-interpretations/exchange-act-form-8-k)
+- [Joint Petition for Rulemaking to rescind Item 1.05 (May 2025)](https://www.sec.gov/rules-regulations/2025/05/joint-petition-rulemaking-amend-sec-cybersecurity-risk-management-strategy-governance-incident)
 
 ---

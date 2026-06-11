@@ -1,7 +1,15 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities-checked: "2026-06-11"
+authorities:
+  - cite: "OFAC, Updated Advisory on Potential Sanctions Risks for Facilitating Ransomware Payments (Sept. 21, 2021)"
+    title: "Strict-liability sanctions exposure for ransom payments; cyber insurers and IR firms covered; cybersecurity as mitigating factor"
+    url: "https://ofac.treasury.gov/recent-actions/20210921"
+  - cite: "Lloyd's Market Association Cyber War Clauses (LMA5564–LMA5567 and 'A' revisions)"
+    title: "State-backed cyber-attack exclusion suite; standalone cyber policies require an exclusion from 31 Mar 2023 per Market Bulletin Y5381"
+    url: "https://lmalloyds.com/specialist-areas/underwriting/wordings/cyber-war-clauses/"
 ---
 # Cyber Liability Insurance
 
@@ -70,7 +78,7 @@ agreements or assessing adequacy of an organization's cyber coverage.
 | Unencrypted data | Loss/theft of unencrypted data or portable devices | Encryption safe harbors may reduce notification obligations but not this exclusion |
 | Known vulnerabilities | Failure to patch within 30–90 days of patch release | CVSS 7.0+ vulnerabilities are the primary focus; underwriters increasingly enforce |
 | Infrastructure failure | Power grid, telecom, internet backbone outages | Only covers the insured's own network failures |
-| War/cyber war | Nation-state attacks, cyber warfare | Lloyd's LMA 9574–9577 mandates explicit exclusions with attribution frameworks; NotPetya highlighted the gap |
+| War/cyber war | Nation-state attacks, cyber warfare | Lloyd's cyber war exclusion clauses LMA5564–LMA5567 (and revised "A" versions, with LMA5567A most common) require explicit state-backed-attack exclusions for standalone cyber policies from 31 Mar 2023 per Market Bulletin Y5381; attribution frameworks vary by clause; NotPetya highlighted the gap |
 | Intentional/criminal acts | Insured's own criminal conduct or intentional violations | Standard across all insurance lines |
 | Prior known events | Events known before policy inception | Includes pre-existing breaches discovered during underwriting |
 | Contractual liability | Liability assumed under contract beyond common law | Review whether contractual indemnity for data breaches is covered |
@@ -88,8 +96,10 @@ agreements or assessing adequacy of an organization's cyber coverage.
 ### Typical Market Limits
 
 - **What**: Policy limit ranges by company size.
-- **Threshold/Timeline**: Pricing stabilized 2024–2025 after significant
-  2021–2023 rate increases driven by ransomware losses.
+- **Threshold/Timeline**: After steep 2021–2023 rate increases driven by ransomware
+  losses, the market softened through 2024–2025 into a buyer's market, with flat-to-
+  declining renewal rates continuing into 2026 even as claim frequency rose. Confirm
+  current market conditions at placement; pricing and capacity move quickly.
 
 | Company Size | Revenue | Typical Aggregate |
 |-------------|---------|-------------------|
@@ -117,5 +127,5 @@ agreements or assessing adequacy of an organization's cyber coverage.
 
 - [NAIC — Cybersecurity and Data Privacy](https://content.naic.org/cipr-topics/cybersecurity)
 - [ISO — Cyber Liability Coverage Forms](https://www.iso.com)
-- [Lloyd's Market Association — Cyber War Exclusion Clauses (LMA 9574–9577)](https://www.lmalloyds.com/LMA/Underwriting/Non-Marine/Cyber/LMA_Cyber_Clauses.aspx)
-- [OFAC — Sanctions Compliance Guidance for Ransomware Payments](https://ofac.treasury.gov/recent-actions/20201001)
+- [Lloyd's Market Association — Cyber War and Cyber Operation Exclusion Clauses (LMA5564–LMA5567 and "A" revisions)](https://lmalloyds.com/specialist-areas/underwriting/wordings/cyber-war-clauses/)
+- [OFAC — Updated Advisory on Potential Sanctions Risks for Facilitating Ransomware Payments (Sept. 21, 2021)](https://ofac.treasury.gov/recent-actions/20210921)

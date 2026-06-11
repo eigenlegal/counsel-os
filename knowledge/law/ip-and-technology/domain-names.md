@@ -1,7 +1,27 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, international]
+authorities:
+  - cite: "ICANN UDRP"
+    title: "Uniform Domain-Name Dispute-Resolution Policy"
+    url: "https://www.icann.org/resources/pages/help/dndr/udrp-en"
+  - cite: "15 U.S.C. § 1125(d)"
+    title: "Anticybersquatting Consumer Protection Act"
+    url: "https://www.law.cornell.edu/uscode/text/15/1125"
+  - cite: "ICANN announcement (Jan. 27, 2025)"
+    title: "Launching RDAP; sunsetting WHOIS for gTLDs effective Jan. 28, 2025"
+    url: "https://www.icann.org/en/announcements/details/icann-update-launching-rdap-sunsetting-whois-27-01-2025-en"
+  - cite: "ICANN RDRS"
+    title: "Registration Data Request Service — extended up to two years beyond the pilot (through 2027)"
+    url: "https://www.icann.org/rdrs-en"
+  - cite: "WIPO-ICA UDRP Review Final Report (Dec. 2, 2025)"
+    title: "Expert review recommending incremental UDRP improvements, no extensive reform"
+    url: "https://www.wipo.int/amc/en/domains/resources/wipo-icaudrpreview.html"
+  - cite: "WIPO Arbitration and Mediation Center"
+    title: "Domain name dispute resolution resources and case database"
+    url: "https://www.wipo.int/amc/en/domains/"
 ---
 # Domain Names
 
@@ -86,10 +106,13 @@ transfers, or ccTLD-specific policies.
   - Transfer includes remaining registration period (no loss of paid time)
 
 - **WHOIS/RDAP**:
-  - Registration data lookup service
-  - Post-GDPR: many registrars redact personal data from public WHOIS for EU/EEA registrants
+  - Registration data lookup service. ICANN **sunset the WHOIS protocol for gTLDs on
+    January 28, 2025** — RDAP is now the authoritative lookup protocol (ccTLD adoption varies)
+  - Post-GDPR: most registrars redact personal registrant data from public output
   - ICANN Registration Data Request Service (RDRS) provides mechanism for non-public data
-    requests for legitimate purposes (trademark enforcement, law enforcement, legal proceedings)
+    requests for legitimate purposes (trademark enforcement, law enforcement, legal proceedings);
+    after the two-year pilot ended November 2025, the ICANN Board extended RDRS for up to two
+    more years (through 2027) while permanent disclosure policy work continues
 
 - **New gTLDs**: ICANN's new gTLD program has introduced hundreds of new extensions (.app,
   .tech, .law, etc.). Each has its own registry agreement and potentially unique policies.

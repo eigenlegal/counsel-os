@@ -1,7 +1,15 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities-checked: "2026-06-11"
+authorities:
+  - cite: "Oregon State Bar Professional Liability Fund (Oregon RPC / OSB Bylaws)"
+    title: "Oregon is the only state with a mandatory bar-run primary legal-malpractice fund; out-of-state Oregon licensees must carry equivalent coverage from Jan. 1, 2025"
+    url: "https://www.osbar.org/plf/"
+  - cite: "IRMI — Claims-Made and Reported Policy"
+    title: "Claims-made trigger, retroactive date, and ERP/tail mechanics for E&O policies"
+    url: "https://www.irmi.com/term/insurance-definitions/claims-made-and-reported-policy"
 ---
 # Professional Liability (Errors & Omissions)
 

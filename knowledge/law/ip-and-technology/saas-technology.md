@@ -1,7 +1,21 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, international]
+authorities:
+  - cite: "11 U.S.C. § 365(n)"
+    title: "Bankruptcy protection for licensees of intellectual property"
+    url: "https://www.law.cornell.edu/uscode/text/11/365"
+  - cite: "AICPA SOC 2 Trust Services Criteria"
+    title: "SOC 2 Type I/Type II framework"
+    url: "https://www.aicpa.org/topic/audit-assurance/audit-and-assurance-greater-than-soc-2"
+  - cite: "FedRAMP"
+    title: "Federal cloud authorization program — FedRAMP 20x overhaul in phased rollout (2025-26)"
+    url: "https://www.fedramp.gov/"
+  - cite: "ISO/IEC 27001"
+    title: "Information security management systems standard"
+    url: "https://www.iso.org/standard/27001"
 ---
 # SaaS and Technology Agreements
 
@@ -84,7 +98,10 @@ technology partnership agreements, SLA negotiation, source code escrow, or techn
 - **FedRAMP**:
   - Required for cloud services used by U.S. federal agencies
   - Three authorization levels: Low, Moderate, High (based on FIPS 199 impact levels)
-  - Authorization process: **12-18+ months**, costs **$1-3M+**
+  - Legacy authorization process: **12-18+ months**, costs **$1-3M+**. The **FedRAMP 20x**
+    overhaul (launched March 2025) targets 90-180 day authorizations via machine-readable
+    (OSCAL) submissions and continuous monitoring; phased rollout through 2026 — check
+    fedramp.gov for the currently available paths
   - FedRAMP Authorized status is a significant market differentiator
 
 - **HITRUST CSF**:

@@ -1,7 +1,17 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal, us-state, technical-standard]
+authorities:
+  - cite: "Acheson Hotels, LLC v. Laufer, 601 U.S. 1 (2023) (verified 2026-06-11)"
+    title: "ADA tester standing vacated as moot; circuit split unresolved"
+    url: "https://www.supremecourt.gov/opinions/23pdf/22-429_new_p8k0.pdf"
+  - cite: "Seyfarth Shaw ADA Title III News & Insights — 2025 federal web-accessibility filing data"
+    title: "Federal Court Website Accessibility Lawsuit Filings (3,117 in 2025; 2,452 in 2024)"
+    url: "https://www.adatitleiii.com/2026/03/federal-court-website-accessibility-lawsuit-filings-bounce-back-in-2025/"
+  - cite: "Directive (EU) 2019/882 (European Accessibility Act; applies from June 28, 2025)"
+    title: "European Accessibility Act — relevant to US companies selling into the EU"
+    url: "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32019L0882"
 ---
 # Website Accessibility Litigation
 
@@ -13,7 +23,7 @@ Applies to organizations facing or seeking to prevent accessibility litigation r
 
 ### Litigation Trends
 
-- **Filing Volume** / Over 10,000 digital accessibility lawsuits filed annually in federal court (4,000+ ADA Title III web cases in 2023); additional thousands of demand letters that never reach court / **Consequence**: Digital accessibility litigation is high-volume and growing; any business with a website is a potential target
+- **Filing Volume** / Thousands of federal website-accessibility lawsuits are filed each year, plus many more pre-suit demand letters that never reach court. Per Seyfarth's tracker, federal web-accessibility filings were roughly 2,749 in 2023, 2,452 in 2024, and 3,117 in 2025 (about 36% of all ADA Title III federal filings) / **Consequence**: Digital accessibility litigation remains high-volume; the 2024 dip reversed in 2025; any business with a website is a potential target
 - **Jurisdictional Concentration** / Approximately 80% of filings concentrated in New York (Southern and Eastern Districts), California (Central and Northern Districts), and Florida (Southern District) / **Consequence**: Filing jurisdiction affects available claims (state law overlay), standing analysis, and settlement dynamics
 - **Industry Targets** / E-commerce/retail (largest category), food service, travel/hospitality, entertainment, financial services, healthcare / **Consequence**: Industries with significant online transactions face highest risk; but any web presence is potentially subject to suit
 - **Growth Drivers** / Remote commerce acceleration, expanded case law supporting digital accessibility claims, plaintiff attorney fee incentives, automated testing tools lowering cost of identifying defendants / **Consequence**: Filing volume expected to continue increasing; compliance is the most effective risk mitigation
@@ -48,9 +58,13 @@ Applies to organizations facing or seeking to prevent accessibility litigation r
 ### Serial Plaintiff Issue
 
 - **Pattern** / Small number of individuals and law firms file hundreds or thousands of accessibility claims; some plaintiffs file 100+ cases per year / **Consequence**: Creates perception of litigation as shakedown; but underlying accessibility barriers are real
-- **Standing Challenges** / Defendants increasingly challenge standing of serial plaintiffs: (1) no genuine intent to use goods/services; (2) no actual injury; (3) manufactured standing / **Consequence**: Acheson Hotels v. Laufer (2023) — Supreme Court vacated as moot without resolving tester standing; issue remains unsettled
+- **Standing Challenges** / Defendants increasingly challenge standing of serial plaintiffs: (1) no genuine intent to use goods/services; (2) no actual injury; (3) manufactured standing / **Consequence**: Acheson Hotels, LLC v. Laufer, 601 U.S. 1 (2023) — Supreme Court vacated as moot without resolving tester standing; the circuit split remains "very much alive" (1st/4th/11th find standing; 2nd/5th/10th reject it) as of mid-2026
 - **Judicial Scrutiny** / Some judges have sanctioned serial plaintiffs for abuse of process; others have limited fee awards for high-volume filers / **Consequence**: Judicial attitudes vary significantly; serial plaintiff status does not automatically defeat claim; underlying barriers must still be addressed
 - **Legislative Response** / Some states have enacted pre-suit notice requirements to reduce abusive filings (e.g., Florida HB 613 requiring 120-day pre-suit notice with detailed barrier description) / **Consequence**: Pre-suit notice gives businesses opportunity to remediate; but does not eliminate liability
+
+### Cross-Border Exposure — European Accessibility Act
+
+- **EAA Applicability** / The European Accessibility Act (Directive (EU) 2019/882) applies from June 28, 2025. It reaches non-EU companies — including US companies — that place covered consumer products or offer covered services (e-commerce, banking, e-books, certain consumer hardware/operating systems, and more) to consumers in the EU. The technical baseline is harmonized standard EN 301 549, which incorporates WCAG 2.1 Level AA / **Consequence**: A US company with EU consumer-facing digital offerings can face Member-State enforcement and penalties independent of US ADA/Section 504 exposure. Member States set their own penalties (commonly per-violation fines). Confirm scope and any micro-enterprise/services carve-outs under the implementing law of each Member State before advising
 
 ### Risk Mitigation
 
@@ -70,5 +84,6 @@ Applies to organizations facing or seeking to prevent accessibility litigation r
 
 - [UsableNet Annual ADA Web Accessibility Lawsuit Report](https://blog.usablenet.com/web-accessibility-lawsuits)
 - [Seyfarth Shaw ADA Title III Lawsuit Tracker](https://www.adatitleiii.com/)
-- [Acheson Hotels, LLC v. Laufer, 601 U.S. ___ (2023)](https://www.supremecourt.gov/opinions/23pdf/22-429_new_p8k0.pdf)
+- [Acheson Hotels, LLC v. Laufer, 601 U.S. 1 (2023)](https://www.supremecourt.gov/opinions/23pdf/22-429_new_p8k0.pdf)
+- [European Accessibility Act — Directive (EU) 2019/882](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32019L0882)
 - [Structured Negotiation — Lainey Feingold](https://www.lflegal.com/negotiations/)

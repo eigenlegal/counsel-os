@@ -1,7 +1,27 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "21 U.S.C. 829(e)"
+    title: "Ryan Haight Act telemedicine prescribing requirements"
+    url: "https://www.law.cornell.edu/uscode/text/21/829"
+  - cite: "DEA/HHS temporary rule (Dec. 31, 2025)"
+    title: "Fourth Temporary Extension of COVID-19 Telemedicine Flexibilities for Prescription of Controlled Medications"
+    url: "https://www.federalregister.gov/documents/2025/12/31/2025-24123/fourth-temporary-extension-of-covid-19-telemedicine-flexibilities-for-prescription-of-controlled"
+  - cite: "DEA proposed rule (Jan. 17, 2025)"
+    title: "Special Registrations for Telemedicine and Limited State Telemedicine Registrations (proposed rule)"
+    url: "https://www.federalregister.gov/documents/2025/01/17/2025-01099/special-registrations-for-telemedicine-and-limited-state-telemedicine-registrations"
+  - cite: "Telehealth.HHS.gov policy updates"
+    title: "Current Medicare telehealth flexibility expiration dates"
+    url: "https://telehealth.hhs.gov/providers/telehealth-policy/telehealth-policy-updates"
+  - cite: "CMS Telehealth FAQ (Feb. 26, 2026)"
+    title: "CMS frequently asked questions on Medicare telehealth after the Consolidated Appropriations Act, 2026"
+    url: "https://www.cms.gov/files/document/telehealth-faq-updated-02-26-2026.pdf"
+  - cite: "Interstate Medical Licensure Compact"
+    title: "IMLC participating states and process"
+    url: "https://www.imlcc.org/"
 ---
 # Telehealth
 
@@ -20,19 +40,19 @@ Applies to the delivery of healthcare services via telecommunications technology
 ### Prescribing via Telehealth (Ryan Haight Act)
 
 - **What**: The Ryan Haight Online Pharmacy Consumer Protection Act (21 U.S.C. 829(e)) requires at least one in-person medical evaluation before prescribing controlled substances via telemedicine, unless an exception applies
-- **Threshold/Timeline**: In-person evaluation required before initial prescription of Schedule II-V controlled substances; exceptions: DEA-registered telemedicine practitioners, public health emergency declarations, Indian Health Service, Veterans Health Administration, practitioners in DEA-registered hospitals/clinics with patient present at registered facility; DEA COVID-era flexibilities allowed prescribing without in-person visit during public health emergency — DEA proposed permanent rule requiring at least one in-person visit for Schedule II prescriptions and initial 30-day telemedicine prescription for Schedule III-V with follow-up in-person within 6 months
+- **Threshold/Timeline**: In-person evaluation required before initial prescription of Schedule II-V controlled substances; exceptions: DEA-registered telemedicine practitioners, public health emergency declarations, Indian Health Service, Veterans Health Administration, practitioners in DEA-registered hospitals/clinics with patient present at registered facility; the COVID-era flexibility permitting Schedule II-V telemedicine prescribing without a prior in-person evaluation remains in effect through December 31, 2026 under DEA/HHS's Fourth Temporary Extension (published December 31, 2025); DEA's proposed permanent framework — the Special Registrations for Telemedicine rule (proposed January 17, 2025, creating three special registration types, platform registration, and heightened recordkeeping) — had NOT been finalized as of June 2026
 - **Consequence**: Violation of Ryan Haight Act is a federal felony (same penalties as illegal distribution of controlled substances); state prescribing laws may impose additional requirements; practitioners must verify patient identity and location; electronic prescribing of controlled substances (EPCS) requires two-factor authentication
 
 ### Reimbursement Parity
 
 - **What**: State parity laws require private insurers to reimburse telehealth services at the same rate as equivalent in-person services; coverage parity requires covering telehealth if in-person equivalent is covered
-- **Threshold/Timeline**: 43+ states and D.C. have some form of telehealth parity law; parity types vary: coverage parity only (must cover), payment parity (must pay same rate), both, or neither; Medicare telehealth reimbursement historically limited to rural originating sites — expanded significantly during COVID (many expansions extended through legislation); Medicaid telehealth coverage varies by state (all states cover some telehealth)
+- **Threshold/Timeline**: 43+ states and D.C. have some form of telehealth parity law; parity types vary: coverage parity only (must cover), payment parity (must pay same rate), both, or neither; Medicare telehealth reimbursement historically limited to rural originating sites — the COVID-era expansions have been carried forward by a series of short-term extensions (with brief lapses during the October-November 2025 government shutdown and again January 31-February 2, 2026) and are now extended through December 31, 2027 by the Consolidated Appropriations Act, 2026 (signed February 3, 2026); Medicaid telehealth coverage varies by state (all states cover some telehealth)
 - **Consequence**: Parity laws typically apply to state-regulated fully insured plans; self-funded ERISA plans exempt from state parity requirements; Medicare telehealth reimbursement rates generally equal to in-person rates for covered services; audio-only reimbursement increasingly recognized (many states and Medicare now cover); cost-sharing for telehealth may not be waived unless plan specifically provides
 
 ### Originating Site and Modality Requirements
 
 - **What**: Payer rules may restrict where the patient must be located (originating site) and what technology modalities qualify for reimbursement
-- **Threshold/Timeline**: Traditional Medicare required originating site in rural HPSA or non-MSA county (expanded during and after COVID — home now permitted for many services through at least 2024 legislation); Medicaid increasingly permits home as originating site; three primary modalities: synchronous (real-time audio/video), asynchronous/store-and-forward (transmission of recorded data), and remote patient monitoring (RPM, continuous or intermittent device-transmitted data)
+- **Threshold/Timeline**: Traditional Medicare required originating site in rural HPSA or non-MSA county — under the Consolidated Appropriations Act, 2026, geographic restrictions are waived and the patient's home is a permissible originating site for non-behavioral telehealth through December 31, 2027 (audio-only delivery also permitted through that date); for behavioral/mental health telehealth, home as originating site and audio-only delivery are PERMANENT; Medicaid increasingly permits home as originating site; three primary modalities: synchronous (real-time audio/video), asynchronous/store-and-forward (transmission of recorded data), and remote patient monitoring (RPM, continuous or intermittent device-transmitted data)
 - **Consequence**: Services delivered via non-qualifying modality may not be reimbursable; documentation must reflect modality used; place of service codes (POS 02 for telehealth, POS 10 for patient home) affect reimbursement rates; some payers apply facility/non-facility rate differentials to telehealth
 
 ### Remote Patient Monitoring (RPM)

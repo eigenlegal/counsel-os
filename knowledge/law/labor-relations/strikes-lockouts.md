@@ -1,7 +1,24 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal]
+authorities:
+  - cite: "NLRB v. Mackay Radio & Telegraph Co., 304 U.S. 333 (1938)"
+    title: "Employer may hire permanent replacements for economic strikers"
+    url: "https://supreme.justia.com/cases/federal/us/304/333/"
+  - cite: "American Ship Building Co. v. NLRB, 380 U.S. 300 (1965)"
+    title: "Offensive (bargaining) lockout lawful after good-faith impasse"
+    url: "https://supreme.justia.com/cases/federal/us/380/300/"
+  - cite: "29 U.S.C. 158(b)(4)"
+    title: "NLRA Section 8(b)(4) — secondary boycott prohibition"
+    url: "https://www.law.cornell.edu/uscode/text/29/158"
+  - cite: "Boys Markets, Inc. v. Retail Clerks Union, 398 U.S. 235 (1970)"
+    title: "Injunction available against strike over arbitrable grievance despite Norris-LaGuardia"
+    url: "https://supreme.justia.com/cases/federal/us/398/235/"
+  - cite: "Glacier Northwest, Inc. v. Teamsters Local 174, 598 U.S. 771 (2023)"
+    title: "NLRA does not preempt state tort suits where strikers fail to take reasonable precautions to protect employer property"
+    url: "https://www.supremecourt.gov/opinions/22pdf/21-1449_d9eh.pdf"
+# authorities checked 2026-06-11
 ---
 # Strikes and Lockouts
 
@@ -34,6 +51,10 @@ Applies to work stoppages, economic actions, and related activities by unions an
 
 - **Partial Strike** / Strike by some but not all bargaining unit employees; or slowdowns, work-to-rule actions / **Consequence**: Partial strikes and slowdowns are generally unprotected activity; employer may discipline participants without committing ULP
 - **Intermittent Strike** / Repeated short-duration work stoppages designed to disrupt operations without full strike / **Consequence**: Intermittent strikes are unprotected; employees engaging in intermittent strikes may be discharged; distinguishable from single protected strike followed by return to work
+
+### Reasonable-Precautions Duty and State Tort Exposure
+
+- **Duty to Protect Employer Property** / The NLRA does not protect strikers who fail to take "reasonable precautions" to protect the employer's property from foreseeable, aggravated, and imminent danger caused by the sudden cessation of work (Glacier Northwest, Inc. v. Teamsters Local 174, 598 U.S. 771 (2023)) / **Consequence**: Where a strike is timed or conducted so as to destroy perishable products or damage equipment, the conduct is at least arguably unprotected, so Garmon does not preempt the employer's state-law tort claim; the union may face state-court damages liability. Timing a work stoppage to maximize property damage is a litigation risk for unions and a potential affirmative claim for employers.
 
 ### Lockouts
 
@@ -93,5 +114,6 @@ Applies to work stoppages, economic actions, and related activities by unions an
 - [NLRA Section 8(b)(4) — Secondary Boycotts (29 U.S.C. 158(b)(4))](https://www.law.cornell.edu/uscode/text/29/158)
 - [Moore Dry Dock Co., 92 NLRB 547 (1950)](https://www.nlrb.gov/cases-decisions/decisions)
 - [Boys Markets, Inc. v. Retail Clerks Union, 398 U.S. 235 (1970)](https://supreme.justia.com/cases/federal/us/398/235/)
+- [Glacier Northwest, Inc. v. Teamsters Local 174, 598 U.S. 771 (2023)](https://www.supremecourt.gov/opinions/22pdf/21-1449_d9eh.pdf)
 
 ---

@@ -1,7 +1,30 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "42 U.S.C. 1320a-7b"
+    title: "Anti-Kickback Statute (criminal penalties for acts involving federal health care programs)"
+    url: "https://www.law.cornell.edu/uscode/text/42/1320a-7b"
+  - cite: "42 CFR 1001.952"
+    title: "AKS safe harbor regulations"
+    url: "https://www.ecfr.gov/current/title-42/chapter-V/subchapter-B/part-1001/subpart-C/section-1001.952"
+  - cite: "42 U.S.C. 1320a-7a"
+    title: "Civil Monetary Penalties Law"
+    url: "https://www.law.cornell.edu/uscode/text/42/1320a-7a"
+  - cite: "42 CFR Part 1008"
+    title: "OIG advisory opinion procedures and fees"
+    url: "https://www.ecfr.gov/current/title-42/chapter-V/subchapter-B/part-1008"
+  - cite: "OIG Advisory Opinions"
+    title: "HHS-OIG advisory opinion library"
+    url: "https://oig.hhs.gov/compliance/advisory-opinions/"
+  - cite: "28 CFR 85.5"
+    title: "DOJ inflation-adjusted False Claims Act penalty amounts"
+    url: "https://www.ecfr.gov/current/title-28/chapter-I/part-85/section-85.5"
+  - cite: "DOJ Civil Division"
+    title: "False Claims Act enforcement"
+    url: "https://www.justice.gov/civil/false-claims-act"
 ---
 # Anti-Kickback Statute (AKS)
 
@@ -15,7 +38,7 @@ Applies to any arrangement involving remuneration (direct or indirect, cash or i
 
 - **What**: Prohibits knowingly and willfully offering, paying, soliciting, or receiving anything of value to induce or reward referrals for items or services reimbursable by federal healthcare programs
 - **Threshold/Timeline**: Applies to both sides of the transaction (offeror and recipient); covers referrals, purchases, leases, orders, recommendations, and arrangements for any item or service; no minimum dollar threshold — even nominal remuneration can violate AKS
-- **Consequence**: Criminal penalties up to $100,000 per violation and 10 years imprisonment; civil monetary penalties up to $100,000 per violation under CMPL; exclusion from federal healthcare programs; treble damages under False Claims Act (ACA Section 6402(f) established that AKS violation is automatic FCA violation)
+- **Consequence**: Criminal penalties up to $100,000 per violation and 10 years imprisonment; civil monetary penalties of $100,000 per kickback violation under CMPL (statutory base, adjusted annually for inflation under 45 CFR 102.3); exclusion from federal healthcare programs; treble damages under False Claims Act (ACA Section 6402(f) established that AKS violation is automatic FCA violation)
 
 ### One Purpose Test
 
@@ -49,26 +72,26 @@ Applies to any arrangement involving remuneration (direct or indirect, cash or i
 ### OIG Advisory Opinions
 
 - **What**: Binding opinions from OIG on whether a specific arrangement constitutes grounds for sanctions under AKS; requestor-specific and fact-specific
-- **Threshold/Timeline**: Processing typically 60-90 days after complete submission; $250 initial fee plus hourly fees; binding only on OIG and requesting party; may not be relied upon by third parties
+- **Threshold/Timeline**: Processing typically 60-90 days after complete submission; requestor pays OIG's actual costs of processing (42 CFR 1008.31; written cost estimate and triggering-amount cap available on request); binding only on OIG and requesting party; may not be relied upon by third parties
 - **Consequence**: Favorable advisory opinion provides significant practical protection; OIG publishes opinions publicly (redacted) providing guidance to industry; unfavorable opinions typically result in arrangement restructuring
 
 ### OIG Special Fraud Alerts and Advisory Bulletins
 
 - **What**: OIG periodically issues Special Fraud Alerts identifying arrangement types of concern and Advisory Bulletins providing compliance guidance
-- **Threshold/Timeline**: Recent focus areas include: speaker programs and consulting arrangements (2020 Special Fraud Alert), physician compensation arrangements above FMV, telehealth fraud schemes, laboratory arrangements
-- **Consequence**: Arrangements matching patterns identified in Special Fraud Alerts face heightened scrutiny; not binding law but strong indication of enforcement priorities
+- **Threshold/Timeline**: Recent focus areas include: speaker programs and consulting arrangements (2020 Special Fraud Alert), physician compensation arrangements above FMV, telehealth fraud schemes, laboratory arrangements; on January 27, 2026, OIG issued a Special Advisory Bulletin on manufacturer direct-to-consumer prescription drug sales to federally insured patients, with a companion Request for Information on possible new safe harbors or exceptions (comments closed March 30, 2026 — watch for rulemaking)
+- **Consequence**: Arrangements matching patterns identified in Special Fraud Alerts face heightened scrutiny; not binding law but strong indication of enforcement priorities; notable 2025 advisory opinions include 25-03 (favorable: telehealth platform MSO model), 25-08 (unfavorable: flat annual fee failed the personal services safe harbor — flat fees are not immune), and 25-11 (December 15, 2025: discount safe harbor treatment of upfront discounts, market-share rebates, and bundled price concessions)
 
 ### Civil Monetary Penalties Law (CMPL)
 
 - **What**: Administrative enforcement mechanism allowing OIG to impose civil monetary penalties without criminal prosecution
-- **Threshold/Timeline**: $100,000 per AKS violation; $50,000 per false/fraudulent claim; 3x damages; assessment based on OIG CMPL factors including nature/circumstances, degree of culpability, compliance history, and financial condition
+- **Threshold/Timeline**: $100,000 per AKS violation (42 U.S.C. 1320a-7a(a)(7)); $20,000 per item or service falsely claimed; both are statutory base amounts adjusted annually for inflation under 45 CFR 102.3; 3x damages; assessment based on OIG CMPL factors including nature/circumstances, degree of culpability, compliance history, and financial condition
 - **Consequence**: CMPL actions are easier for government to prove than criminal cases (preponderance vs. beyond reasonable doubt); consent to exclusion frequently part of settlement; Corporate Integrity Agreements (CIAs) impose monitoring for 5 years
 
 ### False Claims Act Connection
 
 - **What**: ACA Section 6402(f) established that claims resulting from AKS violations constitute false claims under the False Claims Act (31 U.S.C. 3729)
-- **Threshold/Timeline**: FCA penalties of $11,665-$23,331 per false claim plus treble damages; 6-year statute of limitations (10 years under Wartime Suspension of Limitations Act for certain periods); qui tam relators entitled to 15-30% of recovery
-- **Consequence**: FCA exposure dramatically increases financial risk of AKS violations; AKS-based FCA cases have resulted in settlements exceeding $1 billion; whistleblower incentives drive enforcement
+- **Threshold/Timeline**: FCA penalties of $14,308-$28,619 per false claim (2025 inflation adjustment, 28 CFR 85.5; the 2026 annual adjustment was cancelled, so 2025 amounts carry into 2026) plus treble damages; statute of limitations is 6 years, extendable to up to 10 years under 31 U.S.C. 3731(b)(2) (available to relators per Cochise Consultancy v. United States ex rel. Hunt (2019)); qui tam relators entitled to 15-30% of recovery
+- **Consequence**: FCA exposure dramatically increases financial risk of AKS violations; AKS-based FCA cases have resulted in settlements exceeding $1 billion; whistleblower incentives drive enforcement — FY2025 was a record year (DOJ reported $6.8B+ in total FCA recoveries, $5.7B+ healthcare-related, and a record 1,297 qui tam suits filed), with Stark/AKS physician-compensation arrangements and manufacturer kickbacks (copay assistance, honoraria, meals/travel) among the leading theories
 
 ## Interaction with Other Areas
 

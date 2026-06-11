@@ -1,7 +1,24 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, industry-standard]
+authorities:
+  - cite: "NIST CSF 2.0 (Feb. 2024)"
+    title: "NIST Cybersecurity Framework 2.0"
+    url: "https://www.nist.gov/cyberframework"
+  - cite: "NIST SP 800-171 Rev 2"
+    title: "Protecting Controlled Unclassified Information in Nonfederal Systems and Organizations"
+    url: "https://csrc.nist.gov/pubs/sp/800/171/r2/upd1/final"
+  - cite: "NIST SP 800-171 Rev 3 (May 2024)"
+    title: "Protecting Controlled Unclassified Information in Nonfederal Systems and Organizations, Revision 3"
+    url: "https://csrc.nist.gov/pubs/sp/800/171/r3/final"
+  - cite: "NIST SP 800-53 Rev 5 (Release 5.2.0, Aug. 27, 2025)"
+    title: "Security and Privacy Controls for Information Systems and Organizations"
+    url: "https://csrc.nist.gov/News/2025/nist-releases-revision-to-sp-800-53-controls"
+  - cite: "DFARS 252.204-7012"
+    title: "Safeguarding Covered Defense Information and Cyber Incident Reporting"
+    url: "https://www.acquisition.gov/dfars/252.204-7012"
 ---
 # NIST Cybersecurity Frameworks
 
@@ -24,7 +41,7 @@ Applies to organizations subject to federal cybersecurity requirements, handling
 - **Scope** / Mandatory for non-federal organizations processing, storing, or transmitting CUI on behalf of federal agencies (primarily DoD contractors under DFARS 252.204-7012) / **Consequence**: Non-compliance = potential loss of federal contracts; False Claims Act liability; debarment
 - **110 Security Controls** / Organized in 14 control families: Access Control, Awareness and Training, Audit and Accountability, Configuration Management, Identification and Authentication, Incident Response, Maintenance, Media Protection, Personnel Security, Physical Protection, Risk Assessment, Security Assessment, System and Communications Protection, System and Information Integrity / **Consequence**: All 110 controls must be implemented or documented in Plan of Action and Milestones (POA&M)
 - **Self-Assessment** / Contractor self-assessment using NIST SP 800-171A methodology; score submitted to Supplier Performance Risk System (SPRS) / **Threshold**: Maximum score 110; each unimplemented control reduces score by 1-5 points / **Consequence**: Score below contracting officer's threshold = ineligible for award; false score = False Claims Act liability
-- **Revision 3 (2024)** / Updated controls aligned with SP 800-53 Rev 5; increased from 110 to 117 controls; enhanced requirements for cloud, mobile, and supply chain / **Consequence**: DoD transition timeline applies; contractors must plan migration
+- **Revision 3 (May 2024)** / Aligned with SP 800-53 Rev 5; consolidates 110 requirements into 97 across 17 families; introduces organization-defined parameters (ODPs); adds planning, system/services acquisition, and supply chain risk management families / **Consequence**: Not yet operative in DoD contracting — a May 2024 DoD class deviation keeps DFARS 252.204-7012 (and CMMC) pegged to Rev 2 until rescinded; DoD published its ODP values for Rev 3 in April 2025 and is expected to adopt Rev 3 through future rulemaking; contractors should plan migration but assess against Rev 2 today
 
 ### NIST SP 800-53 — Federal Information Systems
 
@@ -32,6 +49,7 @@ Applies to organizations subject to federal cybersecurity requirements, handling
 - **20 Control Families** / Access Control (AC), Awareness and Training (AT), Audit and Accountability (AU), Assessment/Authorization/Monitoring (CA), Configuration Management (CM), Contingency Planning (CP), Identification and Authentication (IA), Incident Response (IR), Maintenance (MA), Media Protection (MP), Physical and Environmental Protection (PE), Planning (PL), Program Management (PM), Personnel Security (PS), PII Processing and Transparency (PT), Risk Assessment (RA), System and Services Acquisition (SA), System and Communications Protection (SC), System and Information Integrity (SI), Supply Chain Risk Management (SR) / **Consequence**: Control selection based on system categorization (FIPS 199: Low, Moderate, High)
 - **Control Baselines** / Low (approx. 130 controls), Moderate (approx. 325 controls), High (approx. 420 controls) / **Consequence**: Baseline selection drives compliance scope and cost
 - **Continuous Monitoring** / Ongoing assessment of security controls rather than point-in-time compliance / **Threshold**: NIST SP 800-137 provides monitoring guidance; frequency varies by control / **Consequence**: ATO conditional on continuous monitoring program
+- **Release 5.2.0 (August 2025)** / Patch release responding to Executive Order 14306; adds and updates controls on software update integrity, secure patch deployment, root cause analysis, logging syntax, and cyber resiliency by design / **Consequence**: Baselines and overlays referencing "Rev 5" should confirm which release applies; FedRAMP and agency overlays adopt on their own timelines
 
 ### Interaction Between Frameworks
 
@@ -49,8 +67,10 @@ Applies to organizations subject to federal cybersecurity requirements, handling
 ## Sources
 
 - [NIST Cybersecurity Framework 2.0](https://www.nist.gov/cyberframework)
-- [NIST SP 800-171 Rev 3](https://csrc.nist.gov/publications/detail/sp/800-171/rev-3/final)
-- [NIST SP 800-53 Rev 5](https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final)
+- [NIST SP 800-171 Rev 2 (current DoD baseline)](https://csrc.nist.gov/pubs/sp/800/171/r2/upd1/final)
+- [NIST SP 800-171 Rev 3](https://csrc.nist.gov/pubs/sp/800/171/r3/final)
+- [NIST SP 800-53 Rev 5](https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final)
+- [NIST SP 800-53 Release 5.2.0 announcement (Aug. 2025)](https://csrc.nist.gov/News/2025/nist-releases-revision-to-sp-800-53-controls)
 - [DFARS 252.204-7012](https://www.acquisition.gov/dfars/252.204-7012)
 
 ---

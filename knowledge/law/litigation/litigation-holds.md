@@ -1,7 +1,18 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, international]
+authorities:
+  - cite: "Fed. R. Civ. P. 37(e)"
+    title: "Failure to preserve electronically stored information — sanctions framework"
+    url: "https://www.law.cornell.edu/rules/frcp/rule_37"
+  - cite: "FTC/DOJ Antitrust Division joint guidance (Jan. 26, 2024)"
+    title: "Updated preservation obligations for collaboration tools and ephemeral messaging"
+    url: "https://www.ftc.gov/news-events/news/press-releases/2024/01/ftc-doj-update-guidance-reinforces-parties-preservation-obligations-collaboration-tools-ephemeral"
+  - cite: "The Sedona Conference, Commentary on Legal Holds (2019)"
+    title: "Legal hold framework and reasonable-anticipation trigger"
+    url: "https://thesedonaconference.org/publication/Commentary_on_Legal_Holds"
 ---
 # Litigation Holds and Document Preservation
 
@@ -34,7 +45,7 @@ The *Zubulake v. UBS Warburg* line of decisions (S.D.N.Y. 2003-2004) established
 - **Custodians**: All individuals likely to possess relevant information -- current and former employees, executives, board members, contractors, relevant third parties
 - **Data sources**: Email, text messages, chat/Slack/Teams messages, documents (paper and electronic), databases, cloud storage (Google Drive, Dropbox, OneDrive, SharePoint), CRM systems, financial systems, HR systems, engineering repositories (Git, JIRA), social media, voicemail, metadata
 - **Timeframe**: Relevant time period for the claims plus reasonable buffer; preservation scope should be defined and documented
-- **Ephemeral messaging** / **Threshold**: Signal, disappearing messages, auto-delete features / **Consequence**: Failure to disable auto-delete for relevant custodians is a preservation failure; *WeChat* and similar platforms increasingly scrutinized
+- **Ephemeral messaging** / **Threshold**: Signal, disappearing messages, and auto-delete features on chat/collaboration platforms (Slack, Teams) / **Consequence**: Failure to disable auto-delete for relevant custodians is a preservation failure; the FTC and DOJ Antitrust Division updated their standard preservation letters and process specifications in January 2024 to expressly cover collaboration tools and ephemeral messaging, and courts have imposed spoliation sanctions where parties left auto-delete running after the duty attached
 - **Backup tapes** / **Threshold**: Generally not required to preserve unless they are the only source of relevant information (*Zubulake I*) / **Consequence**: Routine recycling of backup tapes may continue if information is preserved from accessible sources
 
 ### Implementation Steps
@@ -85,4 +96,5 @@ The *Zubulake v. UBS Warburg* line of decisions (S.D.N.Y. 2003-2004) established
 - *Zubulake v. UBS Warburg LLC*, 220 F.R.D. 212 (S.D.N.Y. 2003): foundational litigation hold duties
 - *Zubulake v. UBS Warburg LLC*, 229 F.R.D. 422 (S.D.N.Y. 2004): counsel's affirmative monitoring obligations
 - The Sedona Conference, Commentary on Legal Holds (2019): https://thesedonaconference.org/publication/Commentary_on_Legal_Holds
+- FTC/DOJ guidance on preservation of collaboration tools and ephemeral messaging (Jan. 2024): https://www.ftc.gov/news-events/news/press-releases/2024/01/ftc-doj-update-guidance-reinforces-parties-preservation-obligations-collaboration-tools-ephemeral
 - *GN Netcom, Inc. v. Plantronics, Inc.*, 2016 WL 3792833 (D. Del. 2016): leading 37(e) intent analysis

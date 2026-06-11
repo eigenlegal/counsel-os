@@ -1,7 +1,26 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal, us-state, technical-standard]
+authorities:
+  - cite: "42 U.S.C. 12181-12189"
+    title: "ADA Title III — Public Accommodations (verified 2026-06-11)"
+    url: "https://www.law.cornell.edu/uscode/text/42/12181"
+  - cite: "42 U.S.C. 12205"
+    title: "ADA attorney's fees and costs"
+    url: "https://www.law.cornell.edu/uscode/text/42/12205"
+  - cite: "Robles v. Domino's Pizza, LLC, 913 F.3d 898 (9th Cir. 2019), cert. denied"
+    title: "Website/app as extension of place of public accommodation"
+    url: "https://casetext.com/case/robles-v-dominos-pizza-llc-2"
+  - cite: "Acheson Hotels, LLC v. Laufer, 601 U.S. 1 (2023)"
+    title: "ADA tester standing vacated as moot; circuit split unresolved"
+    url: "https://www.supremecourt.gov/opinions/23pdf/22-429_new_p8k0.pdf"
+  - cite: "DOJ Title II web rule, 89 FR 31320 (Apr. 24, 2024); 28 CFR Part 35"
+    title: "Accessibility of Web Information and Services of State and Local Government Entities"
+    url: "https://www.ada.gov/resources/2024-03998/"
+  - cite: "Extension of Compliance Dates IFR, eff. Apr. 20, 2026 (verified 2026-06-11)"
+    title: "DOJ one-year extension of Title II web rule compliance dates"
+    url: "https://www.federalregister.gov/documents/2026/04/20/2026-07663/extension-of-compliance-dates-for-nondiscrimination-on-the-basis-of-disability-accessibility-of-web"
 ---
 # ADA Title III — Public Accommodations
 
@@ -22,7 +41,7 @@ Applies to private entities that own, operate, lease, or lease to places of publ
   - **Nexus Required**: Some circuits (notably 3rd, 6th, 9th pre-Robles) require website to have connection to physical location
   - **No Nexus Required**: Other courts (1st, 7th, and growing trend) treat websites as places of public accommodation regardless of physical presence
   - **Robles v. Domino's Pizza (9th Cir. 2019)**: Website and app that facilitated access to physical restaurant were extensions of a place of public accommodation; denial of certiorari by Supreme Court / **Consequence**: Trend is toward broader digital coverage; but circuit split creates uncertainty; analyze jurisdiction carefully
-- **DOJ Position** / DOJ has consistently taken the position that ADA Title III applies to websites of public accommodations; April 2024 rulemaking establishes WCAG 2.1 AA standard for state and local government websites (Title II); Title III web accessibility rulemaking anticipated / **Consequence**: DOJ rulemaking for Title II signals likely Title III standard; businesses should prepare for WCAG 2.1 AA as de facto standard
+- **DOJ Position** / DOJ has consistently taken the position that ADA Title III applies to websites of public accommodations; April 2024 rulemaking establishes WCAG 2.1 AA standard for state and local government websites (Title II); no separate Title III web accessibility rule has been issued as of mid-2026 / **Consequence**: DOJ rulemaking for Title II signals likely Title III standard; businesses should prepare for WCAG 2.1 AA as de facto standard. A parallel HHS Section 504 rule (May 9, 2024) imposes WCAG 2.1 A/AA on recipients of HHS financial assistance — see `_overview.md` and `state-accessibility.md` for deadlines
 - **Undue Burden Defense** / Entity not required to take actions that would result in undue burden (significant difficulty or expense) / **Threshold**: Case-by-case analysis considering: entity's resources, nature and cost of action required, impact on operations / **Consequence**: Defense rarely succeeds for large entities; small businesses may have stronger argument; must document burden analysis
 
 ### Standing Requirements
@@ -30,7 +49,7 @@ Applies to private entities that own, operate, lease, or lease to places of publ
 - **Article III Standing** / Plaintiff must demonstrate: (1) injury in fact (concrete and particularized); (2) traceable to defendant's conduct; (3) redressable by judicial relief / **Consequence**: Standing is frequently litigated in digital accessibility cases
 - **Tester Plaintiffs** / Individuals who visit websites specifically to test accessibility and file suit; courts divided on whether testers have standing:
   - **Standing Found**: Where tester demonstrates intent to use goods/services and was deterred by inaccessibility
-  - **Standing Denied**: Where tester cannot demonstrate genuine intent to use goods/services (Acheson Hotels v. Laufer, Supreme Court vacated as moot 2023, leaving question unresolved) / **Consequence**: Tester standing remains unsettled; jurisdictional analysis critical
+  - **Standing Denied**: Where tester cannot demonstrate genuine intent to use goods/services (Acheson Hotels, LLC v. Laufer, 601 U.S. 1 (Dec. 5, 2023), Supreme Court vacated as moot, expressly leaving the question unresolved) / **Consequence**: Tester standing remains unsettled as of mid-2026; the circuit split is "very much alive" — the 1st, 4th, and 11th Circuits have found tester standing while the 2nd, 5th, and 10th have rejected it; jurisdictional analysis critical
 - **Deterrent Effect** / Plaintiff need not actually attempt to access the website if they were aware of barriers that deterred them / **Consequence**: Broadens potential plaintiff class; knowledge of inaccessibility alone may suffice
 
 ### Remedies and Penalties
@@ -42,7 +61,7 @@ Applies to private entities that own, operate, lease, or lease to places of publ
 
 ### DOJ Rulemaking — Title II (April 2024)
 
-- **Scope** / Final rule for state and local government entities (Title II) requiring WCAG 2.1 Level AA conformance for web content and mobile applications / **Timeline**: Large entities (population 50K+): compliance by April 2026; smaller entities: April 2027 / **Consequence**: First formal ADA web accessibility standard; expected to influence Title III enforcement and litigation standards
+- **Scope** / Final rule for state and local government entities (Title II) requiring WCAG 2.1 Level AA conformance for web content and mobile applications (89 FR 31320, Apr. 24, 2024) / **Timeline**: DOJ extended the original deadlines by one year via an interim final rule effective April 20, 2026 — large entities (population 50K+) now must comply by April 26, 2027; smaller public entities and special district governments by April 26, 2028 / **Consequence**: First formal ADA web accessibility standard; the technical standard (WCAG 2.1 AA) is unchanged by the extension; expected to influence Title III enforcement and litigation standards. The extension applies only to Title II public entities — it does not move any private Title III obligation
 - **Covered Content** / All web content and mobile apps made available by a public entity; includes third-party content posted by the entity / **Consequence**: Third-party widgets, embedded content, and social media content controlled by entity must conform
 - **Exceptions** / Archived content, content posted by third parties (not the entity), conventional electronic documents (transitional), password-protected class or course content (for education) / **Consequence**: Exceptions are narrow; most digital content must conform
 
@@ -65,6 +84,7 @@ Applies to private entities that own, operate, lease, or lease to places of publ
 - [ADA Title III (42 U.S.C. 12181-12189)](https://www.law.cornell.edu/uscode/text/42/12181)
 - [Robles v. Domino's Pizza, LLC, 913 F.3d 898 (9th Cir. 2019)](https://casetext.com/case/robles-v-dominos-pizza-llc-2)
 - [DOJ Final Rule — Accessibility of Web Information and Services of State and Local Government Entities (April 2024)](https://www.ada.gov/resources/2024-03998/)
+- [DOJ Interim Final Rule — Extension of Title II Web Rule Compliance Dates (eff. April 20, 2026)](https://www.federalregister.gov/documents/2026/04/20/2026-07663/extension-of-compliance-dates-for-nondiscrimination-on-the-basis-of-disability-accessibility-of-web)
 - [DOJ Guidance on Web Accessibility and the ADA](https://www.ada.gov/resources/web-guidance/)
 
 ---

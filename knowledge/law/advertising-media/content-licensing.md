@@ -1,7 +1,24 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "17 U.S.C. §§ 101, 203, 204, 504"
+    title: "Copyright Act — work for hire, termination rights, transfers, statutory damages"
+    url: "https://www.law.cornell.edu/uscode/text/17"
+  - cite: "37 C.F.R. § 385.11; FR Doc. 2025-21695 (Dec. 1, 2025)"
+    title: "CRB cost-of-living adjustment — 2026 mechanical rate of 13.1¢ / 2.52¢ per minute for physical and permanent downloads"
+    url: "https://www.federalregister.gov/documents/2025/12/01/2025-21695/cost-of-living-adjustment-to-royalty-rates-and-terms-for-making-and-distributing-phonorecords"
+  - cite: "SAG-AFTRA 2025 Commercials Contract (eff. Apr. 1, 2025)"
+    title: "2025 Commercials Contract rate sheets — on-camera principal session fee $783.10 (year one); 4%/3% increases in years two/three"
+    url: "https://www.sagaftra.org/contracts-industry-resources/commercials/2025-commercials-contracts"
+  - cite: "17 U.S.C. § 115; Music Modernization Act (2018)"
+    title: "Compulsory mechanical license; blanket digital license administered by the MLC"
+    url: "https://www.themlc.com/"
+  - cite: "YouTube Help — payment thresholds"
+    title: "YouTube Partner Program revenue thresholds — $100 standard payout threshold"
+    url: "https://support.google.com/youtube/answer/14727140"
 ---
 # Content Licensing
 
@@ -29,14 +46,14 @@ Applies to agreements involving the licensing, distribution, and use of creative
   - **Master Use License**: Right to use specific sound recording (negotiated with record label or recording owner)
   - **Mechanical License**: Right to reproduce and distribute musical composition in audio format (compulsory license available under 17 U.S.C. 115; administered through Mechanical Licensing Collective (MLC) for digital uses post-Music Modernization Act 2018)
   - **Public Performance License**: Right to publicly perform musical composition (obtained through PROs: ASCAP, BMI, SESAC, GMR); blanket licenses cover repertoire
-- **Threshold/Timeline**: Sync license fees range widely based on use (major label: $15K-$500K+ for advertising, less for indie/emerging); mechanical royalty rate set by Copyright Royalty Board (currently $0.12 per copy or $0.0231 per minute for physical/download); streaming mechanical rates set through CRB proceedings; public performance blanket license fees based on venue/audience size
+- **Threshold/Timeline**: Sync license fees range widely based on use (major label: $15K-$500K+ for advertising, less for indie/emerging); mechanical royalty rate set by Copyright Royalty Board and adjusted annually for CPI under Phonorecords IV (for 2026: 13.1 cents per copy or 2.52 cents per minute of playing time, whichever is larger, for physical/permanent downloads — effective January 1, 2026); streaming mechanical rates set through CRB proceedings; public performance blanket license fees based on venue/audience size
 - **Consequence**: Using music without proper licenses constitutes copyright infringement for both composition and recording; statutory damages per work infringed; PROs actively monitor and enforce; DMCA takedown for unauthorized digital use; Music Modernization Act (2018) created blanket mechanical license for digital music services through the MLC
 
 ### Union and Guild Requirements (SAG-AFTRA)
 
 - **What**: SAG-AFTRA (Screen Actors Guild - American Federation of Television and Radio Artists) agreements govern terms for performers in covered productions including commercials, new media, television, and film
-- **Threshold/Timeline**: SAG-AFTRA Commercials Contract: session fees (minimum $720.25/day for on-camera broadcast, 2024 rates); use fees/residuals based on media type and market; New Media Agreement covers content for internet/new media platforms — tiered based on budget (under/over $50K per episode); waiver process available for low-budget productions; 13-week maximum use cycle for broadcast commercials before renegotiation
-- **Consequence**: Using SAG-AFTRA talent without signatory agreement subjects producer to Global Rule One enforcement; financial core (fi-core) performers may work non-union but lose membership benefits; non-union productions may face organizing campaigns; pension and health contribution obligations (current rate ~19% of gross compensation); late payment penalties
+- **Threshold/Timeline**: SAG-AFTRA 2025 Commercials Contract (three-year term effective April 1, 2025; ratified June 2025): on-camera principal session fee $783.10 per 8-hour day in year one, with negotiated wage increases of 4% effective April 1, 2026 and 3% effective April 1, 2027 — consult the current SAG-AFTRA rate sheet before budgeting; use fees/residuals based on media type and market; waiver process available for low-budget productions; 13-week maximum use cycle for broadcast commercials before renegotiation
+- **Consequence**: Using SAG-AFTRA talent without signatory agreement subjects producer to Global Rule One enforcement; financial core (fi-core) performers may work non-union but lose membership benefits; non-union productions may face organizing campaigns; pension and health contribution obligations on covered earnings (roughly 20% — the rate varies by agreement and JPC-authorizer status; verify against the current rate sheet); late payment penalties
 
 ### User-Generated Content (UGC)
 
@@ -47,7 +64,7 @@ Applies to agreements involving the licensing, distribution, and use of creative
 ### Platform Licensing and Distribution
 
 - **What**: Distribution agreements with digital platforms (streaming services, social media, app stores) involve platform-specific licensing terms, revenue sharing, and content requirements
-- **Threshold/Timeline**: Major platform standard terms: YouTube (45/55 revenue share for Partner Program, $500 minimum payout); App Store/Google Play (70/30 revenue share, reduced to 85/15 for subscriptions after year 1 and small developers under $1M); Spotify (per-stream rates approximately $0.003-$0.005); most platforms require worldwide, non-exclusive license with broad sublicensing rights
+- **Threshold/Timeline**: Major platform standard terms: YouTube Partner Program (55% creator share of long-form ad revenue, 45% for Shorts; $100 AdSense payment threshold); App Store/Google Play (70/30 revenue share, reduced to 85/15 for subscriptions after year 1 and small developers under $1M); Spotify (per-stream rates approximately $0.003-$0.005); most platforms require worldwide, non-exclusive license with broad sublicensing rights
 - **Consequence**: Platform terms are generally non-negotiable for smaller creators; content removal risk for policy violations; platform algorithm changes may dramatically affect visibility/revenue; exclusivity requirements may limit multi-platform distribution; DMCA compliance obligations for platforms hosting third-party content
 
 ### Residuals and Reuse Fees

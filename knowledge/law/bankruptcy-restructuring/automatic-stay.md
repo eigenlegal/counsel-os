@@ -1,7 +1,15 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal]
+authorities:
+  - cite: "11 U.S.C. § 362"
+    title: "Automatic stay — scope, exceptions, relief, willful-violation damages, serial-filer limits"
+    url: "https://www.law.cornell.edu/uscode/text/11/362"
+  - cite: "11 U.S.C. § 541"
+    title: "Property of the estate"
+    url: "https://www.law.cornell.edu/uscode/text/11/541"
+# authorities checked 2026-06-11
 ---
 # Automatic Stay
 

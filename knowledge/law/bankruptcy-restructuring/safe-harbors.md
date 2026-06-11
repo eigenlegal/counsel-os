@@ -1,7 +1,18 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal]
+authorities:
+  - cite: "11 U.S.C. §§ 546(e), 555-561"
+    title: "Safe harbors for financial contracts"
+    url: "https://www.law.cornell.edu/uscode/text/11/546"
+  - cite: "Merit Management Group v. FTI Consulting, 583 U.S. 366 (2018)"
+    title: "§ 546(e) does not protect transfers where a financial institution is a mere conduit"
+    url: "https://supreme.justia.com/cases/federal/us/583/16-784/"
+  - cite: "11 U.S.C. § 101"
+    title: "Definitions — financial-contract counterparties and financial participant thresholds"
+    url: "https://www.law.cornell.edu/uscode/text/11/101"
+# authorities checked 2026-06-11
 ---
 # Safe Harbors for Financial Contracts
 

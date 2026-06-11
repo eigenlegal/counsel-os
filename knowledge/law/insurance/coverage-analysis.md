@@ -1,7 +1,15 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities-checked: "2026-06-11"
+authorities:
+  - cite: "ISO commercial lines policy forms and endorsements (CG 25 03 per-project aggregate; CG 20 01 primary/non-contributory; CG 24 04 waiver of subrogation)"
+    title: "Aggregate, priority, and subrogation endorsement forms referenced for coverage coordination"
+    url: "https://www.irmi.com/online/insurance-glossary/default.aspx"
+  - cite: "ACORD 25 / ACORD 28 Certificate of Insurance forms"
+    title: "Standard COI forms; certificates are informational and do not modify, extend, or alter policy coverage"
+    url: "https://www.acord.org/standards-architecture/acord-forms"
 ---
 # Coverage Analysis
 

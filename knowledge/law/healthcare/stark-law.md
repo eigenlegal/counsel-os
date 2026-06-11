@@ -1,7 +1,24 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "42 U.S.C. 1395nn"
+    title: "Stark Law (limitation on certain physician referrals)"
+    url: "https://www.law.cornell.edu/uscode/text/42/1395nn"
+  - cite: "42 CFR Part 411, Subpart J"
+    title: "Stark Law regulations (financial relationships and exceptions)"
+    url: "https://www.ecfr.gov/current/title-42/chapter-IV/subchapter-B/part-411/subpart-J"
+  - cite: "CMS Physician Self-Referral"
+    title: "CMS physician self-referral law information and annual DHS code list"
+    url: "https://www.cms.gov/Medicare/Fraud-and-Abuse/PhysicianSelfReferral"
+  - cite: "45 CFR 102.3"
+    title: "HHS inflation-adjusted civil monetary penalty table"
+    url: "https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-A/part-102"
+  - cite: "28 CFR 85.5"
+    title: "DOJ inflation-adjusted False Claims Act penalty amounts"
+    url: "https://www.ecfr.gov/current/title-28/chapter-I/part-85/section-85.5"
 ---
 # Stark Law (Physician Self-Referral)
 
@@ -15,7 +32,7 @@ Applies when a physician (or immediate family member) has a financial relationsh
 
 - **What**: A physician who has a financial relationship (ownership/investment interest or compensation arrangement) with an entity may not refer patients to that entity for designated health services payable by Medicare or Medicaid, unless an exception applies
 - **Threshold/Timeline**: Prohibition is absolute — applies regardless of whether the referral was clinically appropriate or the arrangement was fair; "referral" interpreted broadly to include any request for, or ordering of, a DHS item or service
-- **Consequence**: Claims for DHS rendered pursuant to prohibited referral are not payable by Medicare; entity must refund amounts collected; penalties of $15,000 per claim submitted, assessment of up to 3 times the amount claimed; CMP of up to $100,000 for circumvention schemes; exclusion from federal healthcare programs
+- **Consequence**: Claims for DHS rendered pursuant to prohibited referral are not payable by Medicare; entity must refund amounts collected; penalties of $15,000 per claim submitted and up to $100,000 for circumvention schemes (statutory base amounts, adjusted annually for inflation under 45 CFR 102.3), assessment of up to 3 times the amount claimed; exclusion from federal healthcare programs
 
 ### Designated Health Services (10 Categories)
 
@@ -67,7 +84,7 @@ Applies when a physician (or immediate family member) has a financial relationsh
 ### Enforcement Mechanisms
 
 - **What**: Stark is enforced through Medicare claims denial, CMP actions, False Claims Act qui tam suits, and CMS self-referral disclosure protocol
-- **Threshold/Timeline**: False Claims Act treble damages ($11,665-$23,331 per claim plus 3x damages) for submitting claims for DHS furnished pursuant to prohibited referral; 6-year statute of limitations for FCA; 60-day repayment obligation under ACA Section 6402 once overpayment identified
+- **Threshold/Timeline**: False Claims Act penalties of $14,308-$28,619 per claim (2025 inflation adjustment, 28 CFR 85.5, carried into 2026) plus treble damages for submitting claims for DHS furnished pursuant to prohibited referral; FCA statute of limitations is 6 years, extendable to up to 10 years under 31 U.S.C. 3731(b)(2); 60-day repayment obligation under ACA Section 6402 once overpayment identified
 - **Consequence**: Stark violations frequently surface through whistleblower (qui tam) suits; FCA relators entitled to 15-30% of recovery; largest Stark settlements have exceeded $100M; violation also triggers exclusion authority
 
 ## Interaction with Other Areas

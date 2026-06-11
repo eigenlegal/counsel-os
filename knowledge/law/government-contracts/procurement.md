@@ -1,6 +1,6 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-federal]
 ---
 # Procurement Methods & Bid Protests
@@ -26,20 +26,20 @@ Applies when engaging in federal procurement processes, responding to solicitati
 ### Sole Source Justification
 
 - **What**: Contract awarded without full and open competition; requires written Justification and Approval (J&A) per FAR 6.302
-- **Threshold/Timeline**: J&A approval levels: contracting officer (up to $750K), competition advocate ($750K-$15M), head of procuring activity ($15M-$100M), senior procurement executive/designee ($100M+)
+- **Threshold/Timeline**: J&A approval levels (FAR 6.304, as updated by FAC 2025-06): contracting officer (up to $900K), competition advocate ($900K-$20M), head of procuring activity ($20M-$90M, or $150M for DoD/NASA/Coast Guard), senior procurement executive/designee (over $90M, or over $150M for DoD/NASA/Coast Guard)
 - **Consequence**: Unauthorized sole source awards are subject to protest; agency may be required to re-compete; potential procurement integrity violations
 
 ### GSA Schedule (Federal Supply Schedule)
 
 - **What**: Pre-negotiated government-wide contracts (Multiple Award Schedule) administered by GSA; agencies issue task/delivery orders against established schedule contracts
-- **Threshold/Timeline**: Schedule contract term is 20 years (5-year base + three 5-year options); orders under $250K follow modified competition procedures; orders $250K+ require formal competition among schedule holders
+- **Threshold/Timeline**: Schedule contract term is 20 years (5-year base + three 5-year options); orders at or under the simplified acquisition threshold (now $350K, raised from $250K effective Oct. 1, 2025) follow modified competition procedures; orders above the SAT require formal competition among schedule holders
 - **Consequence**: Pricing must be consistent with Most Favored Customer (MFC) disclosure; Price Reductions Clause requires notification of commercial price decreases; CSP (Commercial Sales Practices) misrepresentations trigger False Claims Act risk
 
 ### Task and Delivery Orders (IDIQ)
 
 - **What**: Indefinite-delivery/indefinite-quantity contracts establishing ceiling for orders; minimum guaranteed amount must be obligated
-- **Threshold/Timeline**: Fair opportunity required for orders over micro-purchase threshold ($10K); exceptions for urgency, unique capability, logical follow-on, or minimum guarantee; minimum order guarantee must be more than nominal
-- **Consequence**: Task order protests to GAO permitted for orders exceeding $10M (civilian) or $25M (DoD); protests below thresholds limited to agency-level
+- **Threshold/Timeline**: Fair opportunity required for orders over the micro-purchase threshold (now $15K, raised from $10K effective Oct. 1, 2025); exceptions for urgency, unique capability, logical follow-on, or minimum guarantee; minimum order guarantee must be more than nominal
+- **Consequence**: Task order protests to GAO permitted for orders exceeding $10M (civilian) or $35M (DoD — raised from $25M by FY2025 NDAA §885); protests below thresholds limited to agency-level
 
 ### GAO Bid Protests
 

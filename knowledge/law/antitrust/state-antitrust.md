@@ -1,7 +1,30 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state]
+authorities:
+  - cite: "15 U.S.C. § 15c"
+    title: "Clayton Act Section 4C parens patriae authority"
+    url: "https://www.law.cornell.edu/uscode/text/15/15c"
+  - cite: "Cal. Bus. & Prof. Code §§ 16700-16770"
+    title: "Cartwright Act (penalties increased by SB 763, effective Jan. 1, 2026)"
+    url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=BPC&sectionNum=16720."
+  - cite: "Cal. SB 763 (2025)"
+    title: "Conspiracy against trade: punishment — Cartwright Act fine increases"
+    url: "https://leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=202520260SB763"
+  - cite: "Wash. SB 5122 (2025)"
+    title: "Washington Uniform Antitrust Premerger Notification Act (effective July 27, 2025)"
+    url: "https://app.leg.wa.gov/billsummary?BillNumber=5122&Year=2025"
+  - cite: "Colo. SB25-126 (2025)"
+    title: "Colorado Uniform Antitrust Pre-Merger Notification Act (effective Aug. 6, 2025)"
+    url: "https://leg.colorado.gov/bills/sb25-126"
+  - cite: "N.Y. S335 (2025-2026 Session)"
+    title: "Twenty-First Century Antitrust Act (proposed; not enacted)"
+    url: "https://www.nysenate.gov/legislation/bills/2025/S335"
+  - cite: "Uniform Law Commission"
+    title: "Antitrust Pre-Merger Notification Act — model act and enactment tracking"
+    url: "https://www.uniformlaws.org/committees/community-home?CommunityKey=6bf5d101-d698-4c72-b7c1-0191302a6a95"
 ---
 # State Antitrust
 
@@ -40,12 +63,12 @@ State antitrust law is not preempted by federal antitrust law. Both regimes appl
 
 - **California Cartwright Act (Cal. Bus. & Prof. Code 16700-16770)**
   - **What:** California's primary antitrust statute, broader than the Sherman Act in several respects.
-  - **Threshold/Timeline:** Covers trusts formed to "prevent competition" (a lower threshold than the federal "restraint of trade" standard). Maintains per se treatment of minimum RPM (California has not adopted Leegin). California also enforces the Unfair Competition Law (Bus. & Prof. Code 17200) for injunctive and restitutionary relief.
-  - **Consequence:** Criminal penalties: up to $250,000 fine and 3 years imprisonment for individuals. Treble damages for private plaintiffs. AG may seek injunctive relief and civil penalties.
+  - **Threshold/Timeline:** Covers trusts formed to "prevent competition" (a lower threshold than the federal "restraint of trade" standard). Maintains per se treatment of minimum RPM (California has not adopted Leegin). California also enforces the Unfair Competition Law (Bus. & Prof. Code 17200) for injunctive and restitutionary relief. AB 325 (effective January 1, 2026) extends Cartwright Act liability to using or distributing a common pricing algorithm trained on nonpublic competitor data.
+  - **Consequence:** Criminal penalties (increased by SB 763, effective January 1, 2026): fines up to $6M for corporations and $1M for individuals (previously $1M/$250,000), plus up to 3 years imprisonment for individuals. Civil penalties up to $1M per violation in AG or district attorney actions. Treble damages for private plaintiffs. AG may seek injunctive relief.
 
 - **New York Donnelly Act (N.Y. Gen. Bus. Law 340-347)**
   - **What:** New York's primary antitrust statute, modeled on the Sherman Act but interpreted independently by New York courts.
-  - **Threshold/Timeline:** Per se treatment of minimum RPM (rejecting Leegin). Broadly interpreted to cover conduct "within this state."
+  - **Threshold/Timeline:** Per se treatment of minimum RPM (rejecting Leegin). Broadly interpreted to cover conduct "within this state." The proposed Twenty-First Century Antitrust Act (S335/A2015), which would add an EU-style abuse-of-dominance standard (dominance presumed at 40% share), has passed the Senate in multiple sessions but had not passed the Assembly or become law as of June 2026.
   - **Consequence:** Class E felony for individuals (up to 4 years imprisonment). Civil penalties up to $1M per violation. NY AG has been active in antitrust enforcement against technology platforms and pharmaceutical companies.
 
 - **Texas Free Enterprise and Antitrust Act (Tex. Bus. & Com. Code 15.01-15.52)**
@@ -72,6 +95,11 @@ State antitrust law is not preempted by federal antitrust law. Both regimes appl
 
 ### State Merger Review
 
+- **State premerger notification laws (UAPNA)**
+  - **What:** Washington, Colorado, and California have enacted the Uniform Antitrust Pre-Merger Notification Act, requiring a person that files a federal HSR notification and has an in-state nexus to contemporaneously submit a complete electronic copy of the HSR filing (and, on request, documentary attachments) to the state attorney general. Nexus generally means a principal place of business in the state or in-state annual net sales of the goods/services involved of at least 20% of the HSR size-of-transaction threshold; Washington also covers healthcare providers.
+  - **Threshold/Timeline:** Washington: SB 5122, effective July 27, 2025 (first state). Colorado: SB25-126, effective August 6, 2025. California: SB 25, signed February 10, 2026, applies to HSR filings made on or after January 1, 2027. No state filing fee. Additional states have introduced UAPNA bills — check current adoption status for any multistate deal.
+  - **Consequence:** Civil penalties for noncompliance (up to $10,000 per day in Washington and Colorado). State AGs gain contemporaneous visibility into reportable deals without waiting for federal referral; filings remain confidential under UAPNA's confidentiality provisions.
+
 - **State AG merger challenges**
   - **What:** State AGs have authority to challenge mergers under both federal and state antitrust law, independent of federal agency decisions.
   - **Threshold/Timeline:** States may challenge mergers that the DOJ/FTC decline to challenge, particularly when competitive effects are concentrated in state or regional markets.
@@ -94,7 +122,7 @@ State antitrust law is not preempted by federal antitrust law. Both regimes appl
 - **Threshold/Timeline:** State criminal prosecution is most likely for conduct with a direct nexus to the state: bid rigging on state/local government contracts, price-fixing affecting state consumers, and antitrust violations by in-state businesses.
 
 - **State criminal penalties (selected):**
-  - California: up to $250,000 fine, 3 years imprisonment.
+  - California: up to $1M fine for individuals and $6M for corporations (SB 763, effective 2026), 3 years imprisonment.
   - New York: Class E felony, up to 4 years imprisonment.
   - Illinois: Class 4 felony, up to 3 years imprisonment.
   - Texas: civil penalties up to $1M per violation (criminal prosecution rare).
@@ -116,5 +144,8 @@ State antitrust law is not preempted by federal antitrust law. Both regimes appl
 - [New York Donnelly Act (N.Y. Gen. Bus. Law 340) — NY Senate](https://www.nysenate.gov/legislation/laws/GBS/340)
 - [Illinois Brick Co. v. Illinois (1977) — Supreme Court](https://supreme.justia.com/cases/federal/us/431/720/)
 - [NAAG Antitrust Task Force](https://www.naag.org/issues/antitrust/)
+- [Uniform Law Commission — Antitrust Pre-Merger Notification Act](https://www.uniformlaws.org/committees/community-home?CommunityKey=6bf5d101-d698-4c72-b7c1-0191302a6a95)
+- [Washington SB 5122 (2025) — Uniform Antitrust Premerger Notification Act](https://app.leg.wa.gov/billsummary?BillNumber=5122&Year=2025)
+- [Colorado SB25-126 (2025) — Uniform Antitrust Pre-Merger Notification Act](https://leg.colorado.gov/bills/sb25-126)
 
 ---

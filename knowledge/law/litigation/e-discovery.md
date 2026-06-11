@@ -1,7 +1,24 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
+last-reviewed: "2026-06-11"
 jurisdiction: [us-federal, us-state, international]
+authorities:
+  - cite: "Fed. R. Civ. P. 26"
+    title: "Discovery scope, proportionality, 26(f) conference (amended Dec. 1, 2025 — privilege-log timing and method)"
+    url: "https://www.law.cornell.edu/rules/frcp/rule_26"
+  - cite: "Fed. R. Civ. P. 34"
+    title: "Production of documents and ESI"
+    url: "https://www.law.cornell.edu/rules/frcp/rule_34"
+  - cite: "Fed. R. Evid. 502"
+    title: "Attorney-client privilege and work product — waiver limitations"
+    url: "https://www.law.cornell.edu/rules/fre/rule_502"
+  - cite: "U.S. Courts, Recent and Proposed Amendments to Federal Rules (2025)"
+    title: "December 1, 2025 amendments to Rules 16, 16.1, and 26"
+    url: "https://www.uscourts.gov/data-news/reports/annual-reports/directors-annual-report/annual-report-2025/recent-and-proposed-amendments-federal-rules-annual-report-2025"
+  - cite: "Societe Nationale Industrielle Aerospatiale v. U.S. District Court, 482 U.S. 522 (1987)"
+    title: "Comity analysis for cross-border discovery conflicts"
+    url: "https://www.law.cornell.edu/supremecourt/text/482/522"
 ---
 # E-Discovery
 
@@ -15,6 +32,7 @@ Load when any matter involves electronic discovery, ESI production, discovery pl
 
 - **Timing** / **Threshold**: Parties must confer at least 21 days before the scheduling conference or scheduling order deadline (FRCP 26(f)(1)) / **Consequence**: Failure to participate in good faith may result in sanctions and waiver of objections to discovery plan
 - **Required topics**: Preservation obligations, ESI sources and formats, search methodology, privilege review protocol, production format (native vs. TIFF/PDF), cost allocation, phased discovery plan, clawback agreement
+- **Privilege-log planning (December 1, 2025 amendments)**: As amended effective December 1, 2025, FRCP 26(f)(3) requires the discovery plan to state the parties' views on the timing and method for complying with the FRCP 26(b)(5)(A) withholding-description requirement, and FRCP 16(b)(3) permits the scheduling order to address it -- raise privilege-log format (document-by-document, categorical, metadata-based) at the 26(f) conference
 - **Discovery plan**: Must be submitted to the court within 14 days after the Rule 26(f) conference (FRCP 26(f)(2))
 - **Early attention to ESI**: Courts increasingly expect parties to address ESI issues at the earliest stage; failure to raise format or scope issues early may constitute waiver
 
@@ -33,10 +51,11 @@ The 2015 amendments elevated proportionality to a central discovery principle. D
 - **Rio Tinto standard** / **Threshold**: *Rio Tinto PLC v. Vale S.A.* (S.D.N.Y. 2015) -- court held requesting party could not dictate producing party's review methodology as long as results are defensible / **Consequence**: Producing party has discretion to choose TAR workflow; transparency about methodology and validation may be required
 - **Validation**: Courts expect statistical validation of TAR results (recall and precision metrics); seed set disclosure may be required in TAR 1.0 (but not TAR 2.0 continuous active learning)
 - **Quality control**: Random sampling of non-responsive set to validate recall; document quality control (QC) protocols should be documented
+- **AI-generated and machine-generated evidence (pending rule)**: Proposed FRE 707 (published for public comment August 2025; comment period closed February 16, 2026; not yet adopted) would subject machine-generated evidence offered without an expert witness to the FRE 702(a)-(d) reliability requirements; until adopted, authenticity and reliability challenges to AI-generated or "deepfake" evidence proceed under existing FRE 702 and 901
 
 ### Privilege Review and Logs (FRCP 26(b)(5))
 
-- **Privilege log requirement** / **Threshold**: Party withholding documents on privilege grounds must describe them sufficiently to enable assessment without revealing privileged content (FRCP 26(b)(5)(A)) / **Consequence**: Failure to produce timely, adequate privilege log may result in waiver (*Burlington Northern*)
+- **Privilege log requirement** / **Threshold**: Party withholding documents on privilege grounds must describe them sufficiently to enable assessment without revealing privileged content (FRCP 26(b)(5)(A)) / **Consequence**: Failure to produce timely, adequate privilege log may result in waiver (*Burlington Northern*); since December 1, 2025, log timing and method are mandatory discovery-plan topics under FRCP 26(f)(3)
 - **Log elements**: Date, author, all recipients, general subject matter, privilege asserted (attorney-client, work product, or both)
 - **Categorical logs**: Courts increasingly permit categorical logging for voluminous privilege withholdings (grouping similar communications)
 - **FRE 502(d) orders**: Stipulated or court-ordered protection against inadvertent privilege waiver; should be sought at the outset of every case -- provides case-specific and cross-case protection
@@ -65,7 +84,7 @@ The 2015 amendments elevated proportionality to a central discovery principle. D
 
 ### International Cross-Border Discovery
 
-- **GDPR conflict** / **Threshold**: EU data protection law restricts transfer of personal data outside the EU/EEA; U.S. discovery requests may conflict with GDPR / **Consequence**: Producing party must implement safeguards (SCCs, anonymization, pseudonymization); *Aerotel v. Huawei* and similar cases address the tension
+- **GDPR conflict** / **Threshold**: EU data protection law restricts transfer of personal data outside the EU/EEA; U.S. discovery requests may conflict with GDPR / **Consequence**: Producing party must implement safeguards (SCCs, anonymization, pseudonymization); U.S. courts generally weigh GDPR objections under the *Aerospatiale* comity factors and have ordered production notwithstanding GDPR
 - **Hague Evidence Convention** / **Threshold**: Some countries (notably France, Germany, China) have blocking statutes that prohibit direct discovery compliance; Hague Convention letters rogatory may be required / **Consequence**: Courts balance comity against domestic litigation needs (*Societe Nationale Industrielle Aerospatiale v. U.S. District Court*, 482 U.S. 522 (1987))
 - **French Blocking Statute (Loi de Blocage)** / **Threshold**: Prohibits production of documents located in France for use in foreign proceedings without government authorization / **Consequence**: Fines and criminal penalties; U.S. courts have generally held it does not bar discovery but weigh it as a comity factor
 - **Data localization**: Some jurisdictions require data to remain in-country; discovery compliance may require in-country review with only responsive, non-personal data exported
@@ -81,6 +100,7 @@ The 2015 amendments elevated proportionality to a central discovery principle. D
 ## Sources
 
 - Federal Rules of Civil Procedure, Rule 26: https://www.law.cornell.edu/rules/frcp/rule_26
+- U.S. Courts, December 1, 2025 amendments to Rules 16, 16.1, and 26: https://www.uscourts.gov/data-news/reports/annual-reports/directors-annual-report/annual-report-2025/recent-and-proposed-amendments-federal-rules-annual-report-2025
 - Federal Rules of Civil Procedure, Rule 34: https://www.law.cornell.edu/rules/frcp/rule_34
 - Federal Rules of Evidence, Rule 502: https://www.law.cornell.edu/rules/fre/rule_502
 - *Da Silva Moore v. Publicis Groupe*, 287 F.R.D. 182 (S.D.N.Y. 2012): TAR approval
