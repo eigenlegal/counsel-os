@@ -1,6 +1,6 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [industry-standard, network-rules]
 last-reviewed: "2026-06-10"
 authorities:

@@ -1,107 +1,107 @@
 {
   "law/accessibility": {
-    "content-version": "2026-06-10",
-    "hash": "c5564fa1e4f1f5b41205f7aaa6fc8da5504433ea9423d6344c9d2da8d97ef875"
+    "content-version": "2026-06-11",
+    "hash": "c7fe46c772bda68ddbda8b46a17dabe2f3890630979f89fadea3efc06e892081"
   },
   "law/advertising-media": {
-    "content-version": "2026-06-10",
-    "hash": "9c35808c7ddd1d44db67a9a28b5efa0666ef51a566cd43fab4efbc0e8e89cc1a"
+    "content-version": "2026-06-11",
+    "hash": "ceff705c81f7b8228f57aff2b737e5d487d5874a1b88fdc43f50246b37fb6d97"
   },
   "law/ai-and-automation": {
     "content-version": "2026-06-10",
     "hash": "1f3cc9648d64655adb6de20c951ae014e91aeff1027cef45347e01f60ae9f4f7"
   },
   "law/antitrust": {
-    "content-version": "2026-06-10",
-    "hash": "c1d46fc824e45743ce0307abfcda9da7eb7f95961aec69a28c95872e02f73112"
+    "content-version": "2026-06-11",
+    "hash": "973d069905cb1523534ab5b6dbb87d94088e754ea5d782f452ebacdf117f0407"
   },
   "law/bankruptcy-restructuring": {
-    "content-version": "2026-06-10",
-    "hash": "89da24793b51068576245236cb8b02a426776006ab63188e7f861933fa18c334"
+    "content-version": "2026-06-11",
+    "hash": "44bcd5419d8f930b01963356eaafca18dbe12e5c1a595c8dc60b25491af59620"
   },
   "law/consumer-protection": {
-    "content-version": "2026-06-10",
-    "hash": "2215a759ea02bd4481b5cd0bfe0729329e06bdd344bb2d52b4490cb62f4df99d"
+    "content-version": "2026-06-11",
+    "hash": "b93bdf020c2f173ca3102910af3d32c229fc9c39c59a012b9adf2687c36bf0ab"
   },
   "law/corporate": {
     "content-version": "2026-06-10",
     "hash": "6aabfac6222b4393533c1feceb3e0803fccf9079fa8f9ccd6c7675422f737b1c"
   },
   "law/cybersecurity": {
-    "content-version": "2026-06-10",
-    "hash": "54044255c1734a838f45902c0ece2d19352cb605f8285a5472c832cca79b4f2e"
+    "content-version": "2026-06-11",
+    "hash": "1f05489965059a99afe61affef13ab1705bdddc815716d4f286781d8292483c8"
   },
   "law/data-privacy": {
-    "content-version": "2026-06-10",
-    "hash": "0cdc2a94b988387af80db175464b784775fcf22427fd785758842325b99a7325"
+    "content-version": "2026-06-11",
+    "hash": "8e1e10c86ca6e37e85260961e1350b19a37308dbd825b7e6502fd54f823a3eeb"
   },
   "law/employment": {
-    "content-version": "2026-06-10",
-    "hash": "15f6d7bbf054fd3d322ee5de655fa0b37e7aa4b961ffdddd15d322bf58d89fc8"
+    "content-version": "2026-06-11",
+    "hash": "b1ec7be49bf0aaaf7d2a2d0d4b86fdb97d7f785757c3edfb49349c8e985b5d5e"
   },
   "law/environmental-esg": {
-    "content-version": "2026-06-10",
-    "hash": "a1a4b07435b33b14fc24936df11e97acb346c899ed8d7a39e8cf1eb5963a5771"
+    "content-version": "2026-06-11",
+    "hash": "247c004e415bdbc6e1dd164fa28269ae415705b8072b6d38367288f25e90ceb0"
   },
   "law/financial-services": {
-    "content-version": "2026-06-10",
-    "hash": "86383a259da6511284acc8b432583aaaf477c71e90647d437f9ff280982ba67c"
+    "content-version": "2026-06-11",
+    "hash": "96b9cbaab76d1cc4ca7865a9d9007da1056ffe465c9edc6ebb71cc6afa471026"
   },
   "law/franchise": {
-    "content-version": "2026-06-10",
-    "hash": "5a4bc61a3066837655e3456b182768aac27b796a900b182b8b90b3eec7fc95ab"
+    "content-version": "2026-06-11",
+    "hash": "857973c3a748e7d689b4b1496c0244a0272741bcf0297163541843fdf79af8d2"
   },
   "law/government-contracts": {
-    "content-version": "2026-06-10",
-    "hash": "44b5c3ae3baaec62b9f248e727d29df72f63842741e90799c768d105c5380214"
+    "content-version": "2026-06-11",
+    "hash": "658f5ee16a68e4f4e9c68fda9b5a9da4b004efbc5c48eff739fb4dc2b62e7117"
   },
   "law/healthcare": {
-    "content-version": "2026-06-10",
-    "hash": "a96e85ff15077eef199c569da31f76649df8e30946ba33c972d3842d4cd7c092"
+    "content-version": "2026-06-11",
+    "hash": "638b20c850919d987234579b4f5599711b88ab4adc1311280688e877792348c1"
   },
   "law/insurance": {
-    "content-version": "2026-06-10",
-    "hash": "ed9546a94fe1552cdd99cda83f2c4ce875e2cdd1241af86628a4f1217a46a384"
+    "content-version": "2026-06-11",
+    "hash": "46a45edcbcba49dbc80a1b798b05f00fc01b8599e8ff3a57c84cf379e64524cc"
   },
   "law/international-trade": {
-    "content-version": "2026-06-10",
-    "hash": "2f2ba49ebfcb23975983e6378763994b6fe2a08e4a5dabe19ca849cf5f8374c3"
+    "content-version": "2026-06-11",
+    "hash": "994ab03e128d0a0db59dea78266017037d880bd24bd5d483e3b6c91325d5b18b"
   },
   "law/ip-and-technology": {
-    "content-version": "2026-06-10",
-    "hash": "9f6ef77fc754e03744f69f74e7c1ed99dc7fab260a0ca4c4c628f5706bb5c88c"
+    "content-version": "2026-06-11",
+    "hash": "dd28bb7a2c584798b89e8c51881ca6a886a1c45ef6df46e71621a04d8780dc08"
   },
   "law/labor-relations": {
-    "content-version": "2026-06-10",
-    "hash": "8fd1e0d91b06fda7d1f490f0528b340b146fe67d2ff2cb3df637fb2892a05132"
+    "content-version": "2026-06-11",
+    "hash": "6b7051de5257a790c9d604dd9a80c8fb2537333ef1ca3700364ce789867ad59e"
   },
   "law/litigation": {
-    "content-version": "2026-06-10",
-    "hash": "76c74c1b61067e0d9e3134eb0f6c793accae93ec3f3f98ecd7fa48c5afca0b11"
+    "content-version": "2026-06-11",
+    "hash": "a4e787691812cc87276efc811ea41e518f9125da2fe5100543059729b5641a27"
   },
   "law/nonprofit": {
-    "content-version": "2026-06-10",
-    "hash": "7537f3e1e76c060732d7741cb8cd7d40e2e8c1a913b06462174812e907e1c65a"
+    "content-version": "2026-06-11",
+    "hash": "714844e7b2e272e625b00584f096671f49b908f9f3a434d37c5adb81700dcd4a"
   },
   "law/product-counseling": {
-    "content-version": "2026-06-10",
-    "hash": "60175db4b8407a52865402387b22ea046fc4b0b144fca6142291baaf76b86a90"
+    "content-version": "2026-06-11",
+    "hash": "3b9308760dd6f35560ee935a6045e1000cf23fdfad81e13f3c0e6f0dd26beacf"
   },
   "law/real-estate": {
-    "content-version": "2026-06-10",
-    "hash": "35f08216ad71d402fa0c5baea68f1f11dbf33626540d25e59095334d8a6d0b6a"
+    "content-version": "2026-06-11",
+    "hash": "8c28d0ec467208e35ee94b928a989675915e442f5a09918e3631225231ad102d"
   },
   "law/securities": {
-    "content-version": "2026-06-10",
-    "hash": "0228e67bc81d7f6f65d0339b41b2aee7e24249ab79c863f7f9c54af9f5bd0037"
+    "content-version": "2026-06-11",
+    "hash": "782dc76ae1aa877c0d8f1b4c2d40dd363cdab1737c78f2541ceea95b2eb70a4a"
   },
   "law/tax": {
-    "content-version": "2026-06-10",
-    "hash": "dc108aba576a794c173c3ba57ceec117ba6a19ab3c091e41ab69f4541a55566c"
+    "content-version": "2026-06-11",
+    "hash": "79602cb248de6110579ccdf8c847a5f1a3fc9c4cebd247f9fec1f5102179fbc3"
   },
   "law/white-collar-investigations": {
-    "content-version": "2026-06-10",
-    "hash": "ae8101aa66974661c0e82aead2affa7f0a6c726bfc208eb11098ea4c71844419"
+    "content-version": "2026-06-11",
+    "hash": "728124a46490284be9ee6f0687d7337b7e90a7c62141325272ce1d0057655433"
   },
   "practice-seed/library": {
     "content-version": "2026-06-11",
