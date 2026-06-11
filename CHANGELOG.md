@@ -6,6 +6,16 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.9.21] — 2026-06-11
+
+Attestations to zero: Montana WDEA fix, Oklahoma + Alabama privacy laws, doctor override fix, auto-tagged releases
+
+- Law library reaches ZERO attestations due (was 390): final 5 never-reviewed files verified and attested
+- at-will.md: Montana WDEA probation corrected (2021 amendments - 12-month default/18-month max, file said 6 months); good-cause policy-violation prong added
+- us-state-privacy.md: Oklahoma SB 546 (signed 3/20/2026, eff. 1/1/2027) and Alabama APDPA HB 351 (signed 4/16/2026, eff. 5/1/2027) added - 22 comprehensive state privacy laws
+- doctor: vault-structure check now honors matters_path/entities_path config overrides before flagging directories missing
+- release.sh: tags vX.Y.Z by default and pushes the tag, firing the release-binaries workflow (--no-tag to skip); the old --tag created counsel-os--vX.Y.Z which never matched the workflow trigger
+
 ## [0.9.20] — 2026-06-11
 
 Law library fully attested (26 areas + 3 state tables), behavioral eval suite + per-model baselines
