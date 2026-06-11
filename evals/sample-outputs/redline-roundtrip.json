@@ -1,0 +1,56 @@
+{
+  "findings": [
+    {
+      "title": "§4.2 payment terms, net 30 to net 45 — ACCEPT",
+      "severity": "green",
+      "clause": "Customer shall pay all undisputed invoices within forty-five (45) days of the invoice date.",
+      "rationale": "Net 45 sits inside the fees-payment GREEN band (net forty-five (45) days or shorter), and Calloway's comment frames it as a hard AP-systems constraint, consistent with the pattern we've seen across industrial customers (memory/patterns.md). Accept as drafted; no counter needed.",
+      "citations": [
+        "practice/standards/fees-payment.md",
+        "memory/patterns.md",
+        "matters/brockhaven-msa-r1-extraction.json"
+      ]
+    },
+    {
+      "title": "§11.2 non-renewal notice, 60 to 30 days — ACCEPT",
+      "severity": "green",
+      "clause": "written notice of non-renewal at least thirty (30) days before the end of the then-current term",
+      "rationale": "The termination-renewal position asks for 60 days but accepts non-renewal notice down to thirty (30) days — GREEN band is notice of 30 days or more, so this lands exactly on the acceptable floor. Their comment explains the procurement-calendar rationale. Accept; flag internally that renewal-save outreach now needs to start earlier in the cycle.",
+      "citations": [
+        "practice/standards/termination-renewal.md",
+        "matters/brockhaven-msa-r1-extraction.json"
+      ]
+    },
+    {
+      "title": "§9.1 indemnity rewritten to 'any breach' and carved out of the Section 10 cap — COUNTER, and note it arrived without a comment",
+      "severity": "red",
+      "clause": "any and all claims ... arising out of or relating to any breach of this Agreement by Provider ... shall not be subject to the limitations set forth in Section 10",
+      "rationale": "Two express won't-accepts in the indemnification position at once: the enumerated triggers (IP infringement, gross negligence/willful misconduct) were replaced with an 'any breach' trigger that converts every contract claim into an indemnity, and the obligation was carved out of the limitation of liability — an uncapped, all-claims indemnity. Both are RED under the classification guide. This was also a silent edit — no comment, unlike their other changes — so it deserves scrutiny, not deference. Counter: restore the enumerated triggers and the Section 10 linkage; we can offer adding confidentiality-breach to the enumerated list (the position's YELLOW concession) as the give.",
+      "citations": [
+        "practice/standards/indemnification.md",
+        "matters/brockhaven-msa-r1-extraction.json"
+      ]
+    },
+    {
+      "title": "New §12.9 Most Favored Customer inserted silently in boilerplate — ESCALATE to the GC before any agreement",
+      "severity": "red",
+      "clause": "12.9 Most Favored Customer ... fees ... no less favorable than the fees Provider charges any other customer ... retroactive to the start of the then-current Term",
+      "rationale": "A retroactive most-favored-customer clause was inserted without a comment in the general-provisions section — the classic silent mover. The MFN position is RED with no YELLOW: we do not grant pricing-parity commitments, and this one adds automatic retroactive true-ups. Independently, the profile's escalation thresholds say MFN/pricing-parity commitments ALWAYS escalate to the General Counsel (Priya Raman) before agreeing, regardless of deal size or timeline — I may negotiate and propose, but may not approve it. Response plan: escalate now; propose deleting 12.9 and offering the volume-based discount schedule the position recommends as the procurement-friendly substitute.",
+      "citations": [
+        "practice/standards/most-favored-nation.md",
+        "practice/profile.md",
+        "matters/brockhaven-msa-r1-extraction.json"
+      ]
+    }
+  ],
+  "citations": [
+    "matters/brockhaven-msa-r1-extraction.json",
+    "matters/2026-05-brockhaven-msa.md",
+    "practice/standards/fees-payment.md",
+    "practice/standards/termination-renewal.md",
+    "practice/standards/indemnification.md",
+    "practice/standards/most-favored-nation.md",
+    "practice/profile.md",
+    "memory/patterns.md"
+  ]
+}

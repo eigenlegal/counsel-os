@@ -124,6 +124,31 @@ if [ "$BEHIND" != "0" ]; then
   exit 1
 fi
 
+# Eval freshness: warn (never fail) when evals/outputs/ is missing or stale —
+# releases should ship with reasonably fresh eval evidence. mtimes are read in
+# python3 because stat -f (BSD) vs stat -c (GNU) is not portable.
+# SKIP_EVAL_FRESHNESS=1 silences the check.
+if [ "${SKIP_EVAL_FRESHNESS:-0}" != "1" ]; then
+  python3 - <<'PY'
+import time
+from pathlib import Path
+
+outputs = list(Path("evals/outputs").glob("*.json"))
+if outputs:
+    age_days = int((time.time() - max(p.stat().st_mtime for p in outputs)) // 86400)
+    state = f"{age_days} days old" if age_days > 30 else None
+else:
+    state = "missing"
+if state:
+    bar = "!" * 72
+    print(bar)
+    print(f"WARNING: eval outputs are {state} — consider running")
+    print("         scripts/run_evals.py --generate before releasing.")
+    print("         (SKIP_EVAL_FRESHNESS=1 silences this check)")
+    print(bar)
+PY
+fi
+
 git add -A
 if [ -n "$BODY" ]; then
   git commit -m "v$VERSION_NEW — $SUBJECT" -m "$BODY"

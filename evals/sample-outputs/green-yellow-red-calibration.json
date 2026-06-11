@@ -1,0 +1,38 @@
+{
+  "findings": [
+    {
+      "title": "Liability cap at 12 months — YELLOW under our guide, despite being market standard",
+      "severity": "yellow",
+      "clause": "shall not exceed the fees paid or payable by Customer in the twelve (12) months preceding the event giving rise to the claim",
+      "rationale": "Our classification guide sets GREEN at a cap of twenty-four (24) months of fees or higher — a deliberately buyer-side floor priced for vendor concentration and our claimant posture. A cap of at least 12 but below 24 months is YELLOW and needs head-of-legal sign-off. Meridian's 12-month mutual cap sits exactly on the YELLOW floor. A 12-month cap is common vendor paper, but market practice does not set the classification — the guide does. Recommend countering to 24 months; fall back to YELLOW-with-sign-off only if Meridian is fungible.",
+      "citations": [
+        "practice/standards/limitation-of-liability.md",
+        "practice/profile.md"
+      ]
+    },
+    {
+      "title": "Net 20 payment terms — RED under our guide",
+      "severity": "red",
+      "clause": "Customer shall pay all undisputed invoices within twenty (20) days of the invoice date",
+      "rationale": "The fees-payment guide is explicit: net twenty (20) days or shorter is RED. Our consolidated payables cycle is built for net forty-five (45) or longer (GREEN); the YELLOW band runs net twenty-one (21) to net forty-four (44) and only with a 1.5% early-payment discount. Net 20 sits exactly on the RED boundary, and the position's rationale is operational, not cosmetic — terms our payables cycle cannot reliably meet convert ordinary processing time into breach and late-fee exposure. Counter to net 45; do not soften this to negotiable.",
+      "citations": [
+        "practice/standards/fees-payment.md"
+      ]
+    },
+    {
+      "title": "Customer termination for convenience on 30 days' notice — GREEN",
+      "severity": "green",
+      "clause": "Customer may terminate this Agreement for convenience upon thirty (30) days' prior written notice to Provider",
+      "rationale": "The termination-renewal guide marks customer termination for convenience on thirty (30) days' notice or less as GREEN — this clause sits exactly on the GREEN boundary. Exit speed is the counterweight to vendor dependence in our standards, and this clause delivers it as drafted. No change requested.",
+      "citations": [
+        "practice/standards/termination-renewal.md"
+      ]
+    }
+  ],
+  "citations": [
+    "practice/standards/limitation-of-liability.md",
+    "practice/standards/fees-payment.md",
+    "practice/standards/termination-renewal.md",
+    "practice/profile.md"
+  ]
+}

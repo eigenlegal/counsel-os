@@ -30,6 +30,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -217,6 +218,94 @@ def self_test(repo_root: Path) -> int:
     return 0 if all(report["score"] >= 0.95 for report in reports) else 1
 
 
+# ─── Baselines (per-model score snapshots) ──────────────────────────────────
+
+# A fixture regresses against a baseline when its score drops by more than
+# REGRESSION_DROP, or lands below its pass threshold (optional fixture
+# "pass_threshold", defaulting to the README's --fail-under convention).
+REGRESSION_DROP = 0.1
+DEFAULT_PASS_THRESHOLD = 0.80
+
+
+def sanitize_model_id(model_id: str) -> str:
+    return re.sub(r"[/:]+", "-", model_id.strip())
+
+
+def baseline_path_for(repo_root: Path, model_id: str) -> Path:
+    return repo_root / "evals" / "baselines" / f"{sanitize_model_id(model_id)}.json"
+
+
+def pass_thresholds(fixtures_dir: Path) -> dict[str, float]:
+    thresholds: dict[str, float] = {}
+    for fixture_path in fixture_paths(fixtures_dir):
+        fixture = load_json(fixture_path)
+        thresholds[fixture["id"]] = float(fixture.get("pass_threshold", DEFAULT_PASS_THRESHOLD))
+    return thresholds
+
+
+def save_baseline(path: Path, model_id: str, date_str: str, reports: list[dict[str, Any]]) -> None:
+    scores = {report["fixture"]: report["score"] for report in reports}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as f:
+        json.dump({
+            "model": model_id,
+            "date": date_str,
+            "scores": scores,
+            "mean": round(sum(scores.values()) / len(scores), 4),
+        }, f, indent=2)
+        f.write("\n")
+
+
+def compare_to_baseline(
+    baseline: dict[str, Any],
+    reports: list[dict[str, Any]],
+    thresholds: dict[str, float],
+) -> int:
+    """Print a per-fixture delta table to stderr; return the regression count."""
+    base_scores = {k: float(v) for k, v in baseline.get("scores", {}).items()}
+    rows: list[tuple[str, str, str, str, str]] = []
+    regressions = 0
+
+    for report in reports:
+        fixture_id = report["fixture"]
+        now = report["score"]
+        threshold = thresholds.get(fixture_id, DEFAULT_PASS_THRESHOLD)
+        reasons: list[str] = []
+        if now < threshold - 1e-9:
+            reasons.append(f"below pass threshold {threshold:g}")
+
+        base = base_scores.pop(fixture_id, None)
+        if base is None:
+            if reasons:
+                regressions += 1
+            flag = f"REGRESSION ({'; '.join(reasons)})" if reasons else "new (no baseline)"
+            rows.append((fixture_id, "—", f"{now:.4f}", "—", flag))
+            continue
+
+        if base - now > REGRESSION_DROP + 1e-9:
+            reasons.append(f"dropped more than {REGRESSION_DROP:g}")
+        if reasons:
+            regressions += 1
+        flag = f"REGRESSION ({'; '.join(reasons)})" if reasons else ""
+        rows.append((fixture_id, f"{base:.4f}", f"{now:.4f}", f"{now - base:+.4f}", flag))
+
+    # Baselined fixtures with no current output regressed by definition.
+    for fixture_id in sorted(base_scores):
+        regressions += 1
+        rows.append((fixture_id, f"{base_scores[fixture_id]:.4f}", "—", "—", "REGRESSION (missing output)"))
+
+    mean_now = sum(report["score"] for report in reports) / len(reports) if reports else 0.0
+    base_mean = float(baseline.get("mean", 0.0))
+    rows.append(("mean", f"{base_mean:.4f}", f"{mean_now:.4f}", f"{mean_now - base_mean:+.4f}", ""))
+
+    width = max(len(row[0]) for row in rows)
+    print(f"[compare] vs baseline {baseline.get('model', '?')} ({baseline.get('date', '?')})", file=sys.stderr)
+    print(f"{'fixture':<{width}}  {'baseline':>8}  {'now':>8}  {'Δ':>8}  flag", file=sys.stderr)
+    for fixture_id, base, now, delta, flag in rows:
+        print(f"{fixture_id:<{width}}  {base:>8}  {now:>8}  {delta:>8}  {flag}".rstrip(), file=sys.stderr)
+    return regressions
+
+
 # ─── Generation (headless agent runs against fixture mini-vaults) ──────────
 
 OUTPUT_CONTRACT = """
@@ -309,6 +398,12 @@ def main() -> int:
                         help="run the agent headlessly against each fixture's mini-vault to produce outputs before scoring")
     parser.add_argument("--model", type=str, default=None, help="model for --generate runs (default: user's default)")
     parser.add_argument("--only", type=str, default=None, help="restrict to a single fixture id")
+    parser.add_argument("--save-baseline", type=str, default=None, metavar="MODEL_ID",
+                        help="after scoring, snapshot per-fixture scores to evals/baselines/<model-id>.json (refuses if any fixture lacks an output)")
+    parser.add_argument("--compare-baseline", type=str, default=None, metavar="MODEL_ID",
+                        help="after scoring, print a per-fixture delta table vs the saved baseline (stderr; stdout stays JSON) and exit 1 on any regression")
+    parser.add_argument("--date", type=str, default=None,
+                        help="date recorded by --save-baseline (default: today)")
     args = parser.parse_args()
 
     repo_root = Path(__file__).resolve().parents[1]
@@ -333,6 +428,37 @@ def main() -> int:
         missing = [m for m in missing if m == args.only]
     print_report(reports, missing)
 
+    regressions = 0
+    if args.compare_baseline:
+        baseline_path = baseline_path_for(repo_root, args.compare_baseline)
+        if not baseline_path.exists():
+            print(f"[compare] no baseline for {args.compare_baseline} at {baseline_path} — save one with --save-baseline first.", file=sys.stderr)
+            return 2
+        baseline = load_json(baseline_path)
+        if args.only:
+            baseline["scores"] = {k: v for k, v in baseline.get("scores", {}).items() if k == args.only}
+        regressions = compare_to_baseline(baseline, reports, pass_thresholds(fixtures))
+
+    if args.save_baseline:
+        scored = {report["fixture"] for report in reports}
+        # Baseline scope = generable fixtures only. A fixture with no vault can
+        # never appear in a --generate run, so its absence is structural, not a
+        # partial run. Fixtures WITH vaults must all be present — partial runs lie.
+        vaults_dir = repo_root / "evals" / "vaults"
+        generable = {fid for fid in pass_thresholds(fixtures) if (vaults_dir / fid).is_dir()}
+        unscored = [fid for fid in sorted(generable) if fid not in scored]
+        if unscored or not reports:
+            reason = f"no output for {', '.join(unscored)}" if unscored else "nothing was scored"
+            print(f"[baseline] refusing to save {args.save_baseline}: {reason} — a partial baseline lies.", file=sys.stderr)
+            return 2
+        skipped_legacy = sorted(fid for fid in pass_thresholds(fixtures) if fid not in generable)
+        if skipped_legacy:
+            print(f"[baseline] scope is vault fixtures only; excluding non-generable: {', '.join(skipped_legacy)}", file=sys.stderr)
+        reports = [r for r in reports if r["fixture"] in generable]
+        baseline_path = baseline_path_for(repo_root, args.save_baseline)
+        save_baseline(baseline_path, args.save_baseline, args.date or date.today().isoformat(), reports)
+        print(f"[baseline] saved {baseline_path}", file=sys.stderr)
+
     if missing:
         return 2
 
@@ -346,6 +472,9 @@ def main() -> int:
         aggregate = sum(report["score"] for report in reports) / len(reports)
         if aggregate < args.fail_under:
             return 1
+
+    if regressions:
+        return 1
 
     return 0
 

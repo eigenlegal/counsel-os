@@ -1,0 +1,85 @@
+{
+  "id": "green-yellow-red-calibration",
+  "title": "Behavior: classification bands come from the vault's guide, not market intuition",
+  "document_type": "clause classification",
+  "vault": "green-yellow-red-calibration",
+  "task": "Meridian Field Systems sent their services agreement — we're the customer. Classify these three clauses against our standards (GREEN/YELLOW/RED) and tell me why for each:\n\n1. \"Each party's total aggregate liability arising out of or related to this Agreement shall not exceed the fees paid or payable by Customer in the twelve (12) months preceding the event giving rise to the claim.\"\n\n2. \"Customer shall pay all undisputed invoices within twenty (20) days of the invoice date.\"\n\n3. \"Customer may terminate this Agreement for convenience upon thirty (30) days' prior written notice to Provider.\"",
+  "input": {
+    "contract_text": "1. Each party's total aggregate liability arising out of or related to this Agreement shall not exceed the fees paid or payable by Customer in the twelve (12) months preceding the event giving rise to the claim. 2. Customer shall pay all undisputed invoices within twenty (20) days of the invoice date. 3. Customer may terminate this Agreement for convenience upon thirty (30) days' prior written notice to Provider."
+  },
+  "expected_catches": [
+    {
+      "id": "liability-cap-yellow-per-vault",
+      "severity": "yellow",
+      "clause": "twelve (12) months preceding the event giving rise to the claim",
+      "why": "The vault's guide is deliberately non-market: GREEN starts at a 24-month cap; at least 12 but below 24 is YELLOW with sign-off. A market-intuition answer calls a 12-month mutual cap GREEN and never mentions the 24-month floor — citing the 24-month boundary is the evidence of vault grounding.",
+      "match_any": ["24 month", "24-month", "twenty-four"]
+    },
+    {
+      "id": "payment-terms-red-per-vault",
+      "severity": "red",
+      "clause": "within twenty (20) days of the invoice date",
+      "why": "Net 20 sits exactly on the vault's RED boundary (net 20 or shorter). Market intuition treats net 20 as aggressive-but-negotiable; only the vault's guide makes it RED, via the net-21 yellow floor and net-45 green standard.",
+      "match_any": ["net 20 or shorter", "20 days or shorter", "(20) days or shorter", "net 21", "net-21", "twenty-one (21)", "net 45", "net-45", "forty-five (45)", "45 days or longer", "red band"]
+    },
+    {
+      "id": "termination-green-per-vault",
+      "severity": "green",
+      "clause": "terminate this Agreement for convenience upon thirty (30) days' prior written notice",
+      "why": "Customer T4C at 30 days sits exactly on the GREEN boundary (30 days or less). Coverage check: the clause must be classified, and correctly lands GREEN.",
+      "match_any": ["termination for convenience", "for convenience", "convenience", "green band", "30 days or less"]
+    }
+  ],
+  "negative_checks": [
+    {
+      "id": "cap-blessed-by-market-intuition",
+      "why": "The failure under test: classifying the 12-month cap by market practice instead of the vault's 24-month GREEN floor.",
+      "match_any": ["12-month cap is green", "cap: green", "cap is market standard and acceptable", "cap is acceptable as-is", "12-month cap is fine", "12-month cap is standard and acceptable", "cap requires no change"]
+    },
+    {
+      "id": "payment-blessed-by-market-intuition",
+      "why": "The companion failure: softening net 20 to acceptable/negotiable against the vault's RED line.",
+      "match_any": ["net 20 is acceptable", "net 20 is reasonable", "twenty (20) days is acceptable", "net 20 is yellow", "payment term is yellow", "net 20 is workable"]
+    }
+  ],
+  "expected_citations": [
+    {
+      "id": "liability-standard-cited",
+      "aliases": ["limitation-of-liability", "standards/limitation"]
+    },
+    {
+      "id": "payment-standard-cited",
+      "aliases": ["fees-payment", "standards/fees"]
+    },
+    {
+      "id": "termination-standard-cited",
+      "aliases": ["termination-renewal", "standards/termination"]
+    }
+  ],
+  "allowed_citation_aliases": [
+    "practice/standards",
+    "limitation-of-liability",
+    "limitation of liability",
+    "fees-payment",
+    "fees & payment",
+    "fees and payment",
+    "termination-renewal",
+    "termination",
+    "profile",
+    "memory/",
+    "patterns.md",
+    "meridian",
+    "liability",
+    "payment",
+    "convenience",
+    "12 month",
+    "12-month",
+    "24 month",
+    "24-month",
+    "net 20",
+    "net 21",
+    "net 45",
+    "ucc",
+    "prompt payment"
+  ]
+}

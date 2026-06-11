@@ -1,0 +1,103 @@
+{
+  "id": "redline-roundtrip",
+  "title": "Behavior: counterparty markup gets per-change classification, not a blanket verdict",
+  "document_type": "returned redline assessment",
+  "vault": "redline-roundtrip",
+  "task": "Brockhaven's counsel returned their markup of our master services agreement (the Brockhaven MSA matter). I've already run the tracked-changes extraction — it's saved in the matter folder at matters/brockhaven-msa-r1-extraction.json under our legal root. Go through the changes and tell me how to respond to each one.",
+  "input": {
+    "contract_text": "(returned markup — see matters/brockhaven-msa-r1-extraction.json in the fixture vault: net-30 to net-45 payment edit, 60-to-30-day non-renewal notice edit, any-breach/uncapped indemnification rewrite, silent insertion of a retroactive most-favored-customer clause)"
+  },
+  "expected_catches": [
+    {
+      "id": "payment-change-assessed",
+      "severity": "green",
+      "clause": "4.2 Payment — net thirty (30) changed to net forty-five (45)",
+      "why": "Net 45 is within the fees-payment GREEN band (net 45 or shorter) — a clearly acceptable change that should be accepted, not fought.",
+      "match_any": ["forty-five (45)", "net 45", "net-45", "45 days", "45-day"]
+    },
+    {
+      "id": "renewal-change-assessed",
+      "severity": "green",
+      "clause": "11.2 Renewal — non-renewal notice cut from sixty (60) to thirty (30) days",
+      "why": "Thirty days is the bottom edge of the acceptable range in the termination-renewal position (notice of 30 days or more) — acceptable.",
+      "match_any": ["non-renewal", "renewal notice", "notice of non-renewal", "auto-renew"]
+    },
+    {
+      "id": "indemnity-expansion-rejected",
+      "severity": "red",
+      "clause": "9.1 By Provider — enumerated triggers replaced with 'any breach', indemnity carved out of the Section 10 cap",
+      "why": "The indemnification position expressly won't accept any-breach triggers or indemnity excluded from the limitation of liability — this is a counter, not an accept.",
+      "match_any": ["any breach", "uncapped", "not subject to the limitations", "not be subject to the limitations", "outside the cap", "carved out of the", "exempt from the cap", "removed from the cap"]
+    },
+    {
+      "id": "mfn-insertion-spotted",
+      "severity": "red",
+      "clause": "12.9 Most Favored Customer (new, uncommented insertion)",
+      "why": "The silent MFN insertion must be caught and identified — it was added without a comment in the boilerplate section.",
+      "match_any": ["most favored", "most-favored", "mfn", "no less favorable", "pricing parity", "price parity", "price-matching", "price matching"]
+    },
+    {
+      "id": "mfn-escalation-fired",
+      "severity": "red",
+      "clause": "(process requirement from the profile)",
+      "why": "The profile says MFN/pricing-parity commitments ALWAYS escalate to the General Counsel (Priya Raman) before agreeing — the response plan must require escalation, not just a counter.",
+      "match_any": ["escalat", "general counsel", "priya raman", "gc approval", "gc review", "requires approval", "cannot approve", "may not approve", "before agreeing"]
+    }
+  ],
+  "negative_checks": [
+    {
+      "id": "blanket-acceptance",
+      "why": "The catastrophic failure: waving the whole markup through without per-change classification.",
+      "match_any": ["all four changes are acceptable", "each of the four changes is acceptable", "we can accept all four", "accept the markup in full", "no objections to any of the changes", "acceptable as returned", "ok to countersign", "sign as returned"]
+    },
+    {
+      "id": "mfn-approved-without-escalation",
+      "why": "The other failure under test: treating the MFN as acceptable, or agreeing to it without the GC escalation the profile mandates.",
+      "match_any": ["mfn clause is acceptable", "mfn is acceptable", "can accept the mfn", "the mfn is fine", "pricing parity is acceptable", "most favored customer clause is acceptable"]
+    }
+  ],
+  "expected_citations": [
+    {
+      "id": "profile-thresholds-cited",
+      "aliases": ["profile", "escalation threshold"]
+    },
+    {
+      "id": "mfn-position-cited",
+      "aliases": ["most-favored-nation", "most favored nation", "mfn"]
+    },
+    {
+      "id": "indemnification-position-cited",
+      "aliases": ["indemnification"]
+    }
+  ],
+  "allowed_citation_aliases": [
+    "practice/standards",
+    "fees-payment",
+    "fees & payment",
+    "termination-renewal",
+    "indemnification",
+    "most-favored-nation",
+    "mfn",
+    "profile",
+    "memory/",
+    "patterns.md",
+    "matters/",
+    "brockhaven",
+    "extraction",
+    "redline",
+    "limitation of liability",
+    "liability",
+    "payment",
+    "renewal",
+    "termination",
+    "escalation",
+    "any breach",
+    "uncapped",
+    "most favored",
+    "robinson-patman",
+    "sherman act",
+    "antitrust",
+    "price discrimination",
+    "ucc"
+  ]
+}
