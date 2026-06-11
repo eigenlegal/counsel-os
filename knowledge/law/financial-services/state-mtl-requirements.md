@@ -1,23 +1,38 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-state]
-last-reviewed: "2026-06-10"
+last-reviewed: "2026-06-11"
 authorities:
-  - cite: "CSBS MTMA legislation tracker"
-    title: "2022-2026 Money Transmission Modernization Act proposed and enacted legislation"
+  - cite: "CSBS MTMA legislation tracker (April 23, 2026 update)"
+    title: "2022-2026 Money Transmission Modernization Act proposed and enacted legislation (checked 2026-06-11)"
     url: "https://www.csbs.org/state-pending-enacted-mtma-legislation"
+  - cite: "CSBS MTMA overview"
+    title: "31 states enacted in full or in part as of Feb. 26, 2026; adopting-state licensees account for 99% of reported transmission activity (checked 2026-06-11)"
+    url: "https://www.csbs.org/csbs-money-transmission-modernization-act-mtma"
+  - cite: "Okla. H.B. 3521 (2026)"
+    title: "Oklahoma Money Transmission Modernization Act — became law without the Governor's signature May 13, 2026 (checked 2026-06-11)"
+    url: "https://www.billtrack50.com/billdetail/1935983"
+  - cite: "205 ILCS 658"
+    title: "Illinois Uniform Money Transmission Modernization Act (S.B. 3412), in force Jan. 1, 2026; replaced 205 ILCS 657 (checked 2026-06-11)"
+    url: "https://www.ilga.gov/legislation/ilcs/ilcs5.asp?ActID=4549&ChapterID=20"
   - cite: "Tex. Fin. Code Chapter 152"
-    title: "Regulation of Money Services Businesses (Money Services Modernization Act, S.B. 895, eff. Sept. 1, 2023)"
+    title: "Regulation of Money Services Businesses (Money Services Modernization Act, S.B. 895, eff. Sept. 1, 2023); security at § 152.352 (checked 2026-06-11)"
     url: "https://statutes.capitol.texas.gov/Docs/FI/htm/FI.152.htm"
   - cite: "N.Y. Banking Law Article 13-B"
-    title: "Transmitters of Money (bond requirements at Section 643)"
+    title: "Transmitters of Money (bond requirements at Section 643, $500,000 minimum) (checked 2026-06-11)"
     url: "https://www.nysenate.gov/legislation/laws/BNK/A13-B"
   - cite: "Cal. DFPI"
-    title: "Digital Financial Assets Law — licensure required for activity with California residents from July 1, 2026"
+    title: "Digital Financial Assets Law — complete application due July 1, 2026 to continue operating; NMLS filings opened March 9, 2026 (checked 2026-06-11)"
     url: "https://dfpi.ca.gov/regulated-industries/digital-financial-assets/"
+  - cite: "Fla. Stat. § 560.209"
+    title: "MSB net worth ($100K plus $10K/location, max $2M) and surety bond ($50K-$2M set by rule) (checked 2026-06-11)"
+    url: "https://m.flsenate.gov/Statutes/560.209"
+  - cite: "Haw. DCCA/DFI"
+    title: "Digital Currency Innovation Lab conclusion — no Hawaii MTL required for digital-asset activity effective July 1, 2024 (checked 2026-06-11)"
+    url: "https://governor.hawaii.gov/newsroom/dcca-release-hawaii-digital-currency-innovation-lab-to-conclude/"
   - cite: "NMLS"
-    title: "Nationwide Multistate Licensing System state checklists"
+    title: "Nationwide Multistate Licensing System state checklists (checked 2026-06-11)"
     url: "https://www.nmls.org"
 ---
 # State Money Transmitter Licensing Requirements
@@ -34,15 +49,15 @@ For federal requirements (FinCEN/BSA, CFPB, OFAC), see `federal-payments-regulat
 
 ### MTMA — Money Transmission Modernization Act Framework
 
-- **What:** The CSBS Money Transmission Modernization Act (MTMA) is a model law establishing uniform nationwide standards for money transmitter licensing. Per the CSBS tracker (April 2026 update), 31 states have enacted the MTMA in full or in part — check the tracker for the current count, as the state list below may lag the most recent enactments. Licensees in MTMA-adopting states collectively account for 99% of reported money transmission activity.
+- **What:** The CSBS Money Transmission Modernization Act (MTMA) is a model law establishing uniform nationwide standards for money transmitter licensing. Per the CSBS tracker (April 23, 2026 update; count as of February 26, 2026), 31 states have enacted the MTMA in full or in part; Oklahoma's H.B. 3521 became law May 13, 2026, bringing the total to 32. Check the tracker for the current count, as the state list below may lag the most recent enactments. Licensees in MTMA-adopting states collectively account for 99% of reported money transmission activity.
 - **Standardized requirements under MTMA:**
   - **Net worth:** Tangible net worth of the greater of $100,000 or 3% of total assets for the first $100M, plus 2% of additional assets over $100M
   - **Surety bond:** Not less than $25,000 and not more than $500,000 based on the licensee's transmission activity volume; specific formula set by state
   - **Permissible investments:** Customer funds must be held in permissible investments (cash, bank deposits, federal/state government obligations, investment-grade securities, letters of credit from MTMA-qualified issuers) at not less than the aggregate outstanding money transmission obligations
   - **Key individuals:** Persons responsible for activities of the licensee must submit to background checks; includes executive officers, board members, and individuals with authority over money transmission activities
   - **Multistate examination:** States may participate in multistate examinations and accept examination reports from other states
-- **MTMA-adopting states** (enacted in full or significant part, as of Feb 2026): Arizona, Arkansas, California, Colorado, Connecticut, Georgia, Hawaii, Illinois, Indiana, Iowa, Kansas, Maine, Maryland, Massachusetts, Minnesota, Mississippi, Missouri, Nebraska, Nevada, New Hampshire, North Dakota, Rhode Island, South Carolina, South Dakota, Tennessee, Texas, Vermont, Virginia, West Virginia, Wisconsin
-- **MTMA pending 2026:** Alaska, Michigan, Oklahoma
+- **MTMA-adopting states** (enacted in full or in part, as of June 2026): Arizona, Arkansas, California, Colorado, Connecticut, Georgia, Hawaii, Illinois, Indiana, Iowa, Kansas, Maine, Maryland, Massachusetts, Minnesota, Mississippi, Missouri, Nebraska, Nevada, New Hampshire, North Dakota, Oklahoma (H.B. 3521, became law May 13, 2026), Rhode Island, South Carolina, South Dakota, Tennessee, Texas, Utah (control provisions only, S.B. 183 2022), Vermont, Virginia, West Virginia, Wisconsin
+- **MTMA pending 2026:** Alaska (S.B. 86/H.B. 99 — passed Senate; on House calendar as of May 2026, confirm end-of-session outcome), Delaware (S.B. 18, includes virtual currency provisions), Louisiana (H.B. 1230), Michigan (H.B. 5544 and S.B. 835)
 - **Source:** [CSBS MTMA Tracker](https://www.csbs.org/state-pending-enacted-mtma-legislation) | [MTMA Model Law Text](https://www.csbs.org/csbs-model-money-transmission-modernization-act)
 
 For MTMA-adopting states below, only deviations from the MTMA standard are noted. Non-MTMA states have full entries.
@@ -56,7 +71,7 @@ For MTMA-adopting states below, only deviations from the MTMA standard are noted
 - **Definition:** Receiving money or monetary value for transmission to another location by any means, including payment instrument sales and stored value
 - **MTMA:** Adopted 2022 (Ch. 236) — Full MTMA
 - **NMLS:** Yes
-- **Surety bond:** Tiered by delegates — 0-5: $25,000; 6-20: $100,000; 21-200: $100,000 + $5,000/delegate (max $250,000); 201+: $250,000 + $5,000/delegate (max $500,000)
+- **Surety bond:** Greater of $25,000 or 100% of average daily Arizona money transmission liability (most recent three-month period), max $500,000; flat $25,000 permitted if tangible net worth exceeds 10% of total assets (A.R.S. § 6-1228)
 - **Net worth:** MTMA standard ($100,000 or 3% of total assets)
 - **Permissible investments:** MTMA standard
 - **Key exemptions:** Agent of licensed transmitter (written agreement required); banks; authorized delegates acting within scope
@@ -64,11 +79,11 @@ For MTMA-adopting states below, only deviations from the MTMA standard are noted
 - **Notable:** One of the first full MTMA adopters (2022). FinTech Sandbox program available for limited regulatory relief.
 - **Penalties:** Class 6 felony for unlicensed money transmission; civil penalties up to $1,000/day
 - **Sources:** [ARS Title 6 Ch. 12](https://www.azleg.gov/arsDetail/?title=6) | [DIFI Licensing](https://difi.az.gov/node/1846) | [NMLS](https://www.nmls.org)
-- **Last verified:** 2026-Q1
+- **Last verified:** 2026-06-11 (MTMA status, bond; fees carried)
 
 ### California
 
-- **Statute:** Cal. Fin. Code Division 1.2 (Money Transmission Act); Division 24 (Digital Financial Assets Law, effective July 1, 2026)
+- **Statute:** Cal. Fin. Code Division 1.2 (Money Transmission Act); Division 1.25 (Digital Financial Assets Law, Fin. Code § 3101 et seq. — licensure operative July 1, 2026)
 - **Regulator:** Department of Financial Protection and Innovation (DFPI)
 - **Definition:** Receiving money or monetary value for the purpose of transmitting it; includes selling or issuing payment instruments, stored value, and receiving money for transmission
 - **MTMA:** Partial — A.B. 1116 (2023, effective 1/1/2025) adds MTMA provisions for exemptions, net worth, key individuals, and letters of credit for permissible investments. A.B. 1498 (2022) specifies activities must relate to person located in California.
@@ -78,10 +93,10 @@ For MTMA-adopting states below, only deviations from the MTMA standard are noted
 - **Permissible investments:** Investment-grade rated; MTMA standards with California-specific requirements for letter of credit issuers
 - **Key exemptions:** Agent of licensed transmitter; banks; limited payment processor exemption (narrower than some states); no broad PayFac exemption
 - **Application fee:** $5,000 | **Renewal:** Annual, $2,500 + assessment based on volume
-- **Notable:** Among the highest bond requirements nationally ($7M max). Digital Financial Assets Law (DFAL) creates separate licensing regime for crypto activities effective July 2026 — DFAL requires separate $500,000 bond for digital asset activity. DFPI is an active enforcer.
+- **Notable:** Among the highest bond requirements nationally ($7M max). Digital Financial Assets Law (DFAL) creates a separate licensing regime for crypto activities: a complete application must be filed by July 1, 2026 to continue operating with California residents (deadline already extended once, from July 1, 2025, by A.B. 1934 — no further delay as of June 2026); DFPI began accepting NMLS applications March 9, 2026; timely applicants may keep operating pending review. DFAL surety bond is not less than $500,000 (or trust account), with the amount set by DFPI. DFPI is an active enforcer.
 - **Penalties:** Civil penalties up to $25,000/violation; criminal penalties for willful violations
 - **Sources:** [Cal. Fin. Code Div. 1.2](https://www.law.cornell.edu/regulations/california/title-10/division-3) | [DFPI Money Transmitters](https://dfpi.ca.gov/money-transmitters/) | [DFAL](https://dfpi.ca.gov/regulated-industries/digital-financial-assets/) | [NMLS](https://www.nmls.org)
-- **Last verified:** 2026-Q1
+- **Last verified:** 2026-06-11 (MTMA status, DFAL dates and bond; MTA fees carried)
 
 ### Colorado
 
@@ -124,15 +139,15 @@ For MTMA-adopting states below, only deviations from the MTMA standard are noted
 - **Definition:** Money services business includes money transmitters — receiving currency or payment instruments for the purpose of transmitting to another location; also covers payment instrument sellers and foreign currency exchangers
 - **MTMA:** Not adopted
 - **NMLS:** Yes
-- **Surety bond:** Up to $250,000, amount determined by OFR Financial Services Commission; typically requires $100,000-$250,000 based on volume and risk profile
-- **Net worth:** $100,000 minimum for Part II (money transmitters); higher for Part III (payment instrument sellers/foreign currency) based on activity
+- **Surety bond:** $50,000 minimum; up to $2,000,000, amount set by rule based on financial condition, locations, and anticipated volume (Fla. Stat. § 560.209); collateral deposit alternative available
+- **Net worth:** $100,000 minimum, plus $10,000 per additional Florida location, max $2,000,000 (Fla. Stat. § 560.209)
 - **Permissible investments:** Customer funds must be held in permissible investments per OFR requirements; follows broadly similar categories to MTMA
 - **Key exemptions:** Authorized vendors (agents) of licensed MSBs; banks; persons appointed as agents by a licensee operating within scope of agency agreement
 - **Application fee:** $375 | **Renewal:** Annual, $375 + assessment
 - **Notable:** Non-MTMA state. Two-part licensing structure (Part II for transmitters, Part III for payment instruments/foreign currency). Relatively low application fee. OFR is an active examiner. Florida has significant MSB population due to Latin American remittance corridors.
 - **Penalties:** Third-degree felony for unlicensed money transmission; civil penalties up to $10,000/violation; OFR can impose administrative fines
 - **Sources:** [Fla. Stat. Ch. 560](http://www.leg.state.fl.us/statutes/index.cfm?App_mode=Display_Statute&URL=0500-0599/0560/0560ContentsIndex.html) | [OFR Licensing](https://flofr.gov/) | [NMLS](https://www.nmls.org)
-- **Last verified:** 2026-Q1
+- **Last verified:** 2026-06-11 (bond, net worth, MTMA status; fees carried)
 
 ### Georgia
 
@@ -149,24 +164,24 @@ For MTMA-adopting states below, only deviations from the MTMA standard are noted
 - **Notable:** Broad commissioner discretion on bond amounts. Significant MTMA adoption with state-specific enhancements. Active enforcement posture.
 - **Penalties:** Felony for unlicensed transmission; civil penalties up to $25,000/violation
 - **Sources:** [Ga. Code Title 7](https://www.law.cornell.edu/regulations/georgia) | [GA DBF](https://dbf.georgia.gov/) | [NMLS](https://www.nmls.org)
-- **Last verified:** 2026-Q1
+- **Last verified:** 2026-06-11 (bond range, MTMA status; fees carried)
 
 ### Illinois
 
-- **Statute:** 205 ILCS 657 (Transmitters of Money Act)
+- **Statute:** 205 ILCS 658 (Uniform Money Transmission Modernization Act) — S.B. 3412 (2024) replaced the Transmitters of Money Act (205 ILCS 657) effective January 1, 2026
 - **Regulator:** Illinois Department of Financial and Professional Regulation (IDFPR)
 - **Definition:** Receiving money or monetary value to transmit, deliver, or instruct to be delivered by any means; includes selling or issuing payment instruments and stored value
-- **MTMA:** Adopted 2024 (S.B. 3412) — Full MTMA, effective January 1, 2026
+- **MTMA:** Adopted 2024 (S.B. 3412) — Full MTMA, in force since January 1, 2026
 - **NMLS:** Yes
-- **Surety bond:** $50,000 or 1% of all Illinois-based activity, whichever is greater; maximum $2,000,000. Alternative: $1,000,000 + dollar-for-dollar net worth increase (max $2,000,000 total)
-- **Net worth:** MTMA standard (effective 2026)
-- **Permissible investments:** MTMA standard (effective 2026)
-- **Key exemptions:** Agent of licensed transmitter; banks; **Illinois does not recognize a broad payment processor exemption** — entities processing payments may still need licensure depending on fund flow
+- **Surety bond:** Greater of $100,000 or 100% of average daily Illinois money transmission liability, max $2,000,000 (205 ILCS 658; IDFPR licensee letter, Sept. 30, 2025); electronic surety bond filed and maintained in NMLS required from 2026
+- **Net worth:** MTMA standard
+- **Permissible investments:** MTMA standard
+- **Key exemptions:** Authorized delegates of a licensee; banks; agent-of-the-payee exemption added by the MTMA (205 ILCS 658 art. III — requires written payee-agent agreement and that payment to the agent extinguishes the payor's obligation). The exemption is new as of 2026 and its application is untested — confirm fund-flow fit before relying on it.
 - **Application fee:** $3,000 | **Renewal:** Annual, $1,000 + assessment
-- **Notable:** No broad payment processor exemption — this is a critical distinction from many other states. Full MTMA effective January 2026 standardizes many requirements. Bond formula based on Illinois-specific transmission volume.
+- **Notable:** Illinois's long-standing refusal to recognize a payment processor exemption ended with the MTMA: 205 ILCS 658 includes the model agent-of-the-payee exemption effective January 1, 2026. Bond formula scales with Illinois-specific transmission liability to a $2M cap (higher than the model act's $500K).
 - **Penalties:** Class 4 felony; civil penalties; IDFPR administrative enforcement
-- **Sources:** [205 ILCS 657](https://www.ilga.gov/legislation/ilcs/ilcs3.asp?ActID=1205) | [IDFPR](https://idfpr.illinois.gov/) | [NMLS](https://www.nmls.org)
-- **Last verified:** 2026-Q1
+- **Sources:** [205 ILCS 658](https://www.ilga.gov/legislation/ilcs/ilcs5.asp?ActID=4549&ChapterID=20) | [IDFPR](https://idfpr.illinois.gov/) | [NMLS](https://www.nmls.org)
+- **Last verified:** 2026-06-11 (statute, MTMA status, bond, exemptions; fees carried)
 
 ### Maryland
 
@@ -178,12 +193,12 @@ For MTMA-adopting states below, only deviations from the MTMA standard are noted
 - **Surety bond:** $150,000 (fixed)
 - **Net worth:** MTMA standard
 - **Permissible investments:** MTMA standard
-- **Key exemptions:** Agent of licensed transmitter; banks; limited payment processor exemption
+- **Key exemptions:** Agent of licensed transmitter; banks; limited payment processor exemption; payroll-processing agents of the payor exempt under S.B. 261 (2026), effective October 1, 2026
 - **Application fee:** $2,000 | **Renewal:** Annual, $1,000
 - **Notable:** Adopted MTMA via regulation rather than legislation — unique approach among adopting states. Fixed $150K bond is moderate. Commissioner has been active on digital asset licensing.
 - **Penalties:** Misdemeanor; civil penalties up to $5,000/violation; administrative action
 - **Sources:** [Md. Fin. Inst. Title 12](https://www.law.cornell.edu/regulations/maryland) | [MD OCFR](https://www.dllr.state.md.us/finance/) | [NMLS](https://www.nmls.org)
-- **Last verified:** 2026-Q1
+- **Last verified:** 2026-06-11 (MTMA status, 2026 payroll exemption; financial figures carried)
 
 ### Massachusetts
 
@@ -209,15 +224,15 @@ For MTMA-adopting states below, only deviations from the MTMA standard are noted
 - **Definition:** Receiving money for transmission or transmitting money by any means; includes payment instruments and stored value
 - **MTMA:** Not adopted
 - **NMLS:** Yes
-- **Surety bond:** $100,000 minimum; up to $1,000,000 based on volume (commissioner discretion)
-- **Net worth:** $100,000 minimum; may be increased based on activity
+- **Surety bond:** $100,000 minimum; up to $1,000,000 based on volume (commissioner discretion) (N.J.S.A. 17:15C-8)
+- **Net worth:** $100,000 minimum, plus $25,000 per additional NJ location or authorized agent, max $1,000,000; foreign money transmitters: $50,000 plus $10,000 per additional location, max $400,000 (N.J.S.A. 17:15C-5)
 - **Permissible investments:** State-specific requirements — customer funds in permissible investments including cash, bank deposits, government securities, investment-grade obligations
 - **Key exemptions:** Agent of licensed transmitter; banks; limited payment processor exemption
 - **Application fee:** $2,000 | **Renewal:** Annual, $500
 - **Notable:** Non-MTMA state. Commissioner has broad discretion on bond and net worth requirements. Close proximity to NY means many companies licensed in both states.
 - **Penalties:** Crime of the third degree for unlicensed transmission; civil penalties; administrative enforcement
 - **Sources:** [NJSA Title 17 Ch. 15](https://www.law.cornell.edu/regulations/new-jersey) | [NJ DOBI](https://www.nj.gov/dobi/) | [NMLS](https://www.nmls.org)
-- **Last verified:** 2026-Q1
+- **Last verified:** 2026-06-11 (bond, net worth, MTMA status; fees carried)
 
 ### New York
 
@@ -234,7 +249,7 @@ For MTMA-adopting states below, only deviations from the MTMA standard are noted
 - **Notable:** Among the most rigorous state licensing regimes. 12-24 month typical processing time. BitLicense (23 NYCRR Part 200) is a separate overlay for virtual currency business activity — requires its own application, bond, capital, and compliance program. DFS Superintendent has broad discretion over bond, capital, and examination. CCO must have 3+ years relevant experience. Two most recent audited financials required at application.
 - **Penalties:** Class E felony for unlicensed money transmission; civil penalties; DFS enforcement includes consent orders, penalties, and license revocation
 - **Sources:** [NY Banking Law Art. 13-B](https://www.nysenate.gov/legislation/laws/BNK/A13-B) | [DFS Money Transmitters](https://www.dfs.ny.gov/apps_and_licensing/money_transmitters) | [BitLicense](https://www.dfs.ny.gov/virtual_currency_businesses) | [NMLS](https://www.nmls.org)
-- **Last verified:** 2026-Q1
+- **Last verified:** 2026-06-11 (bond minimum, MTMA status, BitLicense posture; fees carried)
 
 ### Ohio
 
@@ -243,15 +258,15 @@ For MTMA-adopting states below, only deviations from the MTMA standard are noted
 - **Definition:** Receiving money or monetary value for transmission to another location; includes payment instruments and stored value
 - **MTMA:** Not adopted
 - **NMLS:** Yes
-- **Surety bond:** $200,000 minimum; may be increased based on volume and risk
-- **Net worth:** $100,000 minimum tangible net worth
+- **Surety bond:** $300,000 minimum; up to $2,000,000 at the superintendent's discretion based on financial responsibility and volume (ORC 1315.04)
+- **Net worth:** $500,000 minimum (audited financial statements required)
 - **Permissible investments:** State-specific requirements — customer funds in cash, bank deposits, federal/state government obligations, investment-grade securities
 - **Key exemptions:** Agent of licensed transmitter; banks; authorized delegates
 - **Application fee:** $1,000 | **Renewal:** Annual, $500
-- **Notable:** Non-MTMA state. Moderate requirements. Ohio has been receptive to fintech — offers expedited processing for qualified applicants.
+- **Notable:** Non-MTMA state. Mid-to-high financial requirements ($300K minimum bond, $500K net worth). Ohio has been receptive to fintech — offers expedited processing for qualified applicants.
 - **Penalties:** Felony for unlicensed activity; civil penalties; cease and desist authority
 - **Sources:** [ORC Chapter 1315](https://codes.ohio.gov/ohio-revised-code/chapter-1315) | [OH Division of Financial Institutions](https://com.ohio.gov/divisions-and-programs/financial-institutions) | [NMLS](https://www.nmls.org)
-- **Last verified:** 2026-Q1
+- **Last verified:** 2026-06-11 (bond, net worth, MTMA status; fees carried)
 
 ### Pennsylvania
 
@@ -268,7 +283,7 @@ For MTMA-adopting states below, only deviations from the MTMA standard are noted
 - **Notable:** Non-MTMA state with notably high requirements: $1M fixed bond and $500K net worth. Among the most expensive states to enter. Thorough application review process.
 - **Penalties:** Felony for unlicensed money transmission; civil penalties; administrative enforcement
 - **Sources:** [7 Pa. Stat. Ch. 61](https://www.law.cornell.edu/regulations/pennsylvania) | [PA Dept of Banking](https://www.dobs.pa.gov/) | [NMLS](https://www.nmls.org)
-- **Last verified:** 2026-Q1
+- **Last verified:** 2026-06-11 (bond, net worth, MTMA status; fees carried)
 
 ### Texas
 
@@ -277,7 +292,7 @@ For MTMA-adopting states below, only deviations from the MTMA standard are noted
 - **Definition:** Broad definition — receiving money or monetary value to transmit, deliver, or instruct to be delivered by any means; **Texas uses an expansive interpretation** that captures many activities other states may exempt
 - **MTMA:** Adopted 2023 (S.B. 895) — Full MTMA, effective September 1, 2023
 - **NMLS:** Yes
-- **Surety bond:** MTMA standard (up to $500,000 based on volume); pre-MTMA requirement was $300,000 minimum
+- **Surety bond:** Greater of $100,000 or 100% of average daily Texas money transmission liability, max $500,000; flat $100,000 if tangible net worth exceeds 10% of total assets; deposit in lieu permitted with commissioner approval (Tex. Fin. Code § 152.352)
 - **Net worth:** MTMA standard
 - **Permissible investments:** MTMA standard
 - **Key exemptions:** Agent of licensed transmitter; banks; **Texas does not recognize a broad payment processor exemption** — this is a critical distinction. Even entities that only process payments and never hold funds may need licensure depending on the specific flow.
@@ -285,7 +300,7 @@ For MTMA-adopting states below, only deviations from the MTMA standard are noted
 - **Notable:** Texas's broad definition of money transmission is one of the most expansive nationally. The lack of a clear payment processor exemption means many companies that would be exempt in other states must be licensed in TX. Full MTMA adoption (2023) standardized financial requirements. Texas Department of Banking conducts active examinations and enforcement.
 - **Penalties:** Class A misdemeanor for first offense; third-degree felony for subsequent offenses; civil penalties up to $25,000/day
 - **Sources:** [Tex. Fin. Code Ch. 152](https://statutes.capitol.texas.gov/Docs/FI/htm/FI.152.htm) | [TX Dept of Banking](https://www.dob.texas.gov/) | [NMLS](https://www.nmls.org)
-- **Last verified:** 2026-Q1
+- **Last verified:** 2026-06-11 (statute, MTMA status, bond; fees carried)
 
 ### Washington
 
@@ -294,15 +309,15 @@ For MTMA-adopting states below, only deviations from the MTMA standard are noted
 - **Definition:** Receiving money or monetary value to transmit, or transmitting money within the US or to locations abroad; includes stored value and virtual currency transmission
 - **MTMA:** Not adopted
 - **NMLS:** Yes
-- **Surety bond:** $10,000 minimum; up to $550,000 based on volume (among the widest ranges nationally)
-- **Net worth:** $30,000 minimum (relatively low); DFI may require higher based on volume and risk
+- **Surety bond:** $10,000 minimum; up to $550,000 based on volume ($10,000 per $1M of Washington transmission/payment instrument volume); director may increase up to $1,000,000 by rule (RCW 19.230.050)
+- **Net worth:** Tangible net worth of at least $10,000 and up to $3,000,000, as required by the director based on volume and risk (RCW 19.230.060)
 - **Permissible investments:** State-specific — customer funds must be held in permissible investments; virtual currency-specific provisions require holding equivalent fiat or virtual currency
 - **Key exemptions:** Agent of licensed transmitter; banks; limited payment processor exemption; authorized delegates
 - **Application fee:** $2,160 | **Renewal:** Annual, $1,610
 - **Notable:** Non-MTMA state with relatively low entry requirements (low minimum bond and net worth). Washington was an early adopter of virtual currency transmission regulation — RCW 19.230 explicitly covers virtual currency. DFI provides interpretive guidance on specific business models.
 - **Penalties:** Class B felony for unlicensed money transmission; civil penalties; DFI administrative enforcement
 - **Sources:** [RCW 19.230](https://apps.leg.wa.gov/rcw/default.aspx?cite=19.230) | [WA DFI](https://dfi.wa.gov/money-services) | [NMLS](https://www.nmls.org)
-- **Last verified:** 2026-Q1
+- **Last verified:** 2026-06-11 (bond, net worth, MTMA status; fees carried)
 
 ---
 
@@ -345,10 +360,10 @@ For MTMA-adopting states below, only deviations from the MTMA standard are noted
 - **Permissible investments:** MTMA standard including letters of credit
 - **Key exemptions:** Agent of licensed transmitter; banks; authorized delegates
 - **Application fee:** $10,000 | **Renewal:** Annual, $5,000
-- **Notable:** High application and renewal fees despite low minimum bond. Hawaii previously ran a Digital Currency Innovation Lab (sandbox) for crypto companies — check current status. Significant MTMA adoption across multiple legislative sessions.
+- **Notable:** High application and renewal fees despite low minimum bond. Crypto: the Digital Currency Innovation Lab concluded June 30, 2024 — effective July 1, 2024, DFI's position is that digital-asset activity is not money transmission under HRS ch. 489D and no Hawaii MTL is required for it (a fiat/US-dollar leg still requires licensure; federal MSB obligations unaffected). Significant MTMA adoption across multiple legislative sessions.
 - **Penalties:** Civil penalties up to $10,000/violation; criminal prosecution for unlicensed activity
-- **Sources:** [HRS Chapter 489D](https://www.capitol.hawaii.gov/hrscurrent/Vol11_Ch0476-0490/HRS0489D/) | [HI DFI](https://cca.hawaii.gov/dfi/) | [NMLS](https://www.nmls.org)
-- **Last verified:** 2026-Q1
+- **Sources:** [HRS Chapter 489D](https://www.capitol.hawaii.gov/hrscurrent/Vol11_Ch0476-0490/HRS0489D/) | [HI DFI](https://cca.hawaii.gov/dfi/) | [DCIL conclusion](https://governor.hawaii.gov/newsroom/dcca-release-hawaii-digital-currency-innovation-lab-to-conclude/) | [NMLS](https://www.nmls.org)
+- **Last verified:** 2026-06-11 (MTMA status, crypto posture; bond/fee figures carried)
 
 ### Indiana
 
@@ -479,12 +494,12 @@ For MTMA-adopting states below, only deviations from the MTMA standard are noted
 - **Surety bond:** $100,000 + $5,000/location; max $250,000
 - **Net worth:** MTMA standard
 - **Permissible investments:** MTMA standard
-- **Key exemptions:** Agent of licensed transmitter; banks; authorized delegates
+- **Key exemptions:** Agent of licensed transmitter; banks; authorized delegates; small payroll processors (L.B. 717, effective February 26, 2026 — under 20 employees or payroll services for fewer than 50 Nebraska-resident employees, with clean-record conditions)
 - **Application fee:** $500 | **Renewal:** Annual, $500
 - **Notable:** Low fees. Location-based bond calculation with relatively low cap ($250K). Full MTMA effective October 2025.
 - **Penalties:** Civil penalties; administrative enforcement; criminal prosecution
 - **Sources:** [Neb. Rev. Stat. Ch. 8 Art. 27](https://nebraskalegislature.gov/laws/browse-chapters.php?chapter=8) | [NE Dept of Banking](https://ndbf.nebraska.gov/) | [NMLS](https://www.nmls.org)
-- **Last verified:** 2026-Q1
+- **Last verified:** 2026-06-11 (MTMA status, 2026 payroll exemption; financial figures carried)
 
 ### Nevada
 
@@ -701,34 +716,34 @@ For MTMA-adopting states below, only deviations from the MTMA standard are noted
 - **Statute:** Alaska Stat. Title 06, Chapter 55 (Money Services Act)
 - **Regulator:** Alaska Division of Banking and Securities
 - **Definition:** Receiving money or monetary value for transmission; selling or issuing payment instruments or stored value
-- **MTMA:** Pending — S.B. 86/H.B. 99 (2026) full MTMA introduced, passed Senate, carried over
+- **MTMA:** Pending — S.B. 86/H.B. 99 full MTMA (includes virtual currency provisions); passed Senate 2025, on House calendar as of May 2026 (bill specifies a July 1, 2026 effective date if enacted) — confirm end-of-session outcome
 - **NMLS:** Yes
 - **Surety bond:** $25,000 + $5,000/location; max $150,000
 - **Net worth:** $100,000 minimum
 - **Permissible investments:** State-specific requirements
 - **Key exemptions:** Agent of licensed transmitter; banks; authorized delegates
 - **Application fee:** $1,000 | **Renewal:** Annual, $500
-- **Notable:** MTMA legislation pending (passed Senate). Low bond and moderate net worth requirements. Small market.
+- **Notable:** MTMA legislation pending (passed Senate; reached House floor calendar May 2026). Low bond and moderate net worth requirements. Small market.
 - **Penalties:** Civil penalties; administrative enforcement
 - **Sources:** [AS Title 06 Ch. 55](https://www.akleg.gov/basis/statutes.asp#06.55) | [AK Division of Banking](https://www.commerce.alaska.gov/web/dbs/) | [NMLS](https://www.nmls.org)
-- **Last verified:** 2026-Q1
+- **Last verified:** 2026-06-11 (MTMA bill status; financial figures carried)
 
 ### Delaware
 
 - **Statute:** Del. Code Title 5, Chapter 23 (Sale of Checks and Money Transmission)
 - **Regulator:** Delaware Office of the State Bank Commissioner
 - **Definition:** Engaging in the business of selling checks or receiving money for transmission
-- **MTMA:** Not adopted
+- **MTMA:** Pending — S.B. 18 (2026) full MTMA, including virtual currency provisions, introduced
 - **NMLS:** Yes
 - **Surety bond:** $25,000 + $5,000/location; max $250,000
 - **Net worth:** $100,000 minimum
 - **Permissible investments:** State-specific — cash, bank deposits, government securities, investment-grade obligations
 - **Key exemptions:** Agent of licensed transmitter; banks; authorized sellers
 - **Application fee:** $1,000 | **Renewal:** Annual, $500
-- **Notable:** Non-MTMA. Delaware's favorable corporate law attracts many fintech companies incorporated there, but incorporation alone does not satisfy licensing — must still obtain license to transmit money.
+- **Notable:** Non-MTMA (full MTMA bill with virtual currency provisions pending 2026). Delaware's favorable corporate law attracts many fintech companies incorporated there, but incorporation alone does not satisfy licensing — must still obtain license to transmit money.
 - **Penalties:** Civil penalties up to $5,000/violation; administrative enforcement; criminal prosecution
 - **Sources:** [Del. Code Title 5 Ch. 23](https://delcode.delaware.gov/title5/c023/) | [DE State Bank Commissioner](https://banking.delaware.gov/) | [NMLS](https://www.nmls.org)
-- **Last verified:** 2026-Q1
+- **Last verified:** 2026-06-11 (MTMA bill status; financial figures carried)
 
 ### District of Columbia
 
@@ -786,26 +801,26 @@ For MTMA-adopting states below, only deviations from the MTMA standard are noted
 - **Statute:** La. Rev. Stat. Title 6, Chapter 15-B (Sale of Checks and Money Transmission)
 - **Regulator:** Louisiana Office of Financial Institutions
 - **Definition:** Receiving money or monetary value for transmission; selling or issuing checks, payment instruments, or money orders
-- **MTMA:** Not adopted
+- **MTMA:** Pending — H.B. 1230 (2026) full MTMA introduced
 - **NMLS:** Yes
 - **Surety bond:** $25,000 + $5,000/location; max $250,000
 - **Net worth:** $100,000 minimum
 - **Permissible investments:** State-specific requirements
 - **Key exemptions:** Agent of licensed transmitter; banks; authorized sellers
 - **Application fee:** $2,000 | **Renewal:** Annual, $500
-- **Notable:** Non-MTMA. Separate Virtual Currency Business Activity license (Louisiana Virtual Currency Businesses Act, La. R.S. 6:1381 et seq.) required for virtual currency transmission — similar in concept to NY BitLicense. Low bond minimum but location-scaling.
+- **Notable:** Non-MTMA (full MTMA bill pending 2026). Separate Virtual Currency Business Activity license (Louisiana Virtual Currency Businesses Act, La. R.S. 6:1381 et seq.) required for virtual currency transmission — similar in concept to NY BitLicense. VCBA expanded by Act 369 (H.B. 483, signed June 20, 2025) to cover virtual currency kiosk operators, with daily transaction caps and blockchain analytics requirements. Low bond minimum but location-scaling.
 - **Penalties:** Civil penalties; administrative enforcement; criminal prosecution
-- **Sources:** [La. Rev. Stat. Title 6 Ch. 15-B](https://www.legis.la.gov/legis/Law.aspx?d=671262) | [LA OFI](https://ofi.la.gov/) | [NMLS](https://www.nmls.org)
-- **Last verified:** 2026-Q1
+- **Sources:** [La. Rev. Stat. Title 6 Ch. 15-B](https://www.legis.la.gov/legis/Law.aspx?d=671262) | [LA OFI](https://ofi.la.gov/) | [LA OFI Virtual Currency](https://ofi.la.gov/non-depository/virtual-currency-business-activity/) | [NMLS](https://www.nmls.org)
+- **Last verified:** 2026-06-11 (MTMA bill status, VCBA posture; financial figures carried)
 
 ### Michigan
 
 - **Statute:** Mich. Comp. Laws Chapter 487 (Money Transmission Services Act)
 - **Regulator:** Michigan Department of Insurance and Financial Services (DIFS)
 - **Definition:** Selling or issuing payment instruments or engaging in money transmission
-- **MTMA:** Pending — H.B. 5544 (2026) full MTMA introduced
+- **MTMA:** Pending — H.B. 5544 and S.B. 835 (2026) full MTMA bills introduced (in committee as of May 2026; the bills differ on payroll processor treatment)
 - **NMLS:** Yes
-- **Surety bond:** $500,000 minimum; up to $1,500,000 (commissioner discretion)
+- **Surety bond:** $500,000 for the first location plus $10,000 per additional Michigan location/authorized delegate, max $1,500,000 (MCL 487.1013)
 - **Net worth:** $100,000 minimum
 - **Permissible investments:** State-specific — customer funds in permissible investments
 - **Key exemptions:** Agent of licensed transmitter; banks; authorized delegates
@@ -813,7 +828,7 @@ For MTMA-adopting states below, only deviations from the MTMA standard are noted
 - **Notable:** MTMA legislation pending (2026). High bond minimum ($500K) but low fees. DIFS is an active examiner. Large state market.
 - **Penalties:** Civil penalties; administrative enforcement; felony for unlicensed activity
 - **Sources:** [MCL Chapter 487](https://www.legislature.mi.gov/Laws/MCL?objectName=mcl-Act-250-of-2006) | [MI DIFS](https://www.michigan.gov/difs) | [NMLS](https://www.nmls.org)
-- **Last verified:** 2026-Q1
+- **Last verified:** 2026-06-11 (bond, MTMA bill status; net worth and fees carried)
 
 ### New Mexico
 
@@ -839,32 +854,32 @@ For MTMA-adopting states below, only deviations from the MTMA standard are noted
 - **Definition:** Receiving money or monetary value for transmission to another location by any means
 - **MTMA:** Not adopted
 - **NMLS:** Yes
-- **Surety bond:** $150,000 minimum; up to $1,000,000 based on volume (commissioner discretion)
-- **Net worth:** $100,000 minimum
+- **Surety bond:** $150,000 at application; adjusted by annual NC transmission volume in tiers up to a $250,000 maximum (G.S. § 53-208.47)
+- **Net worth:** $250,000 minimum (audited financial statements)
 - **Permissible investments:** State-specific — customer funds in cash, bank deposits, government securities, investment-grade obligations
 - **Key exemptions:** Agent of licensed transmitter; banks; authorized delegates
 - **Application fee:** $1,500 | **Renewal:** Annual, $750
-- **Notable:** Non-MTMA. Bond can scale to $1M. Commissioner of Banks is an active regulator. Growing fintech market in Charlotte area.
+- **Notable:** Non-MTMA. Bond tops out at $250,000 — among the narrower ranges nationally. Commissioner of Banks is an active regulator. Growing fintech market in Charlotte area.
 - **Penalties:** Civil penalties; administrative enforcement; Class H felony for unlicensed activity
 - **Sources:** [NCGS Ch. 53 Art. 16B](https://www.ncleg.gov/Laws/GeneralStatuteSections/Chapter53) | [NC Commissioner of Banks](https://www.nccob.gov/) | [NMLS](https://www.nmls.org)
-- **Last verified:** 2026-Q1
+- **Last verified:** 2026-06-11 (bond, net worth, MTMA status; fees carried)
 
 ### Oklahoma
 
 - **Statute:** Okla. Stat. Title 6, Chapter 8 (Money Transmission Act)
 - **Regulator:** Oklahoma Department of Banking
 - **Definition:** Receiving money or monetary value for transmission; selling or issuing payment instruments or stored value
-- **MTMA:** Pending — H.B. 3521 (2026) full MTMA introduced
+- **MTMA:** Adopted 2026 (H.B. 3521) — Full MTMA (Oklahoma Money Transmission Modernization Act); became law without the Governor's signature May 13, 2026; repeals the prior Money Transmission Act. Effective date not confirmed this pass — verify from the enrolled bill before relying.
 - **NMLS:** Yes
-- **Surety bond:** $50,000 + $10,000/location; max $500,000; or $500,000 flat for money transmission and sale of checks combined
-- **Net worth:** $100,000 minimum
-- **Permissible investments:** State-specific requirements
+- **Surety bond:** Prior act: $50,000 + $10,000/location; max $500,000; or $500,000 flat for money transmission and sale of checks combined — standardizes to MTMA bond on the new act's effective date
+- **Net worth:** Prior act: $100,000 minimum — standardizes to MTMA tangible net worth on the new act's effective date
+- **Permissible investments:** State-specific under prior act — standardizes to MTMA on the new act's effective date
 - **Key exemptions:** Agent of licensed transmitter; banks; authorized delegates
 - **Application fee:** $1,000 | **Renewal:** Annual, $500
-- **Notable:** MTMA legislation pending (2026). Two bond calculation methods available. Moderate requirements.
-- **Penalties:** Civil penalties; administrative enforcement; criminal prosecution
-- **Sources:** [Okla. Stat. Title 6 Ch. 8](https://www.oscn.net/applications/oscn/Index.asp?ftdb=STOKST06) | [OK Dept of Banking](https://www.banking.ok.gov/) | [NMLS](https://www.nmls.org)
-- **Last verified:** 2026-Q1
+- **Notable:** Full MTMA enacted May 2026 (became law without the Governor's signature). The financial figures above reflect the prior act and will standardize under the Oklahoma MTMA once it takes effect — confirm the effective date and transition provisions from the enrolled H.B. 3521.
+- **Penalties:** Civil penalties; administrative enforcement; criminal prosecution (felony provisions under the new act)
+- **Sources:** [Okla. Stat. Title 6 Ch. 8](https://www.oscn.net/applications/oscn/Index.asp?ftdb=STOKST06) | [OK Dept of Banking](https://www.banking.ok.gov/) | [H.B. 3521](https://www.billtrack50.com/billdetail/1935983) | [NMLS](https://www.nmls.org)
+- **Last verified:** 2026-06-11 (MTMA enactment; prior-act figures carried)
 
 ### Oregon
 
@@ -917,6 +932,23 @@ For MTMA-adopting states below, only deviations from the MTMA standard are noted
 - **Sources:** [USVI Division of Banking](https://ltg.gov.vi/divisions/banking/) | [NMLS](https://www.nmls.org)
 - **Last verified:** 2026-Q1
 
+### Utah
+
+- **Statute:** Utah Code Title 7, Chapter 25 (Money Transmitter Act)
+- **Regulator:** Utah Department of Financial Institutions (DFI)
+- **Definition:** Engaging in the business of money transmission — receiving money or monetary value for transmission
+- **MTMA:** Partial — S.B. 183 (2022) adopted the model law's control thresholds (25% ownership triggers control; under 10% rebuttably presumed not control). Substantive licensing requirements remain state-specific; CSBS counts Utah among MTMA-adopting states on this basis.
+- **NMLS:** Yes
+- **Surety bond:** $50,000 minimum; DFI may increase based on volume and public-protection factors
+- **Net worth:** $1,000,000 minimum, demonstrated by independently audited financial statements — among the highest nationally
+- **Permissible investments:** State-specific requirements — verify against the NMLS checklist
+- **Key exemptions:** Banks and depository institutions; verify the current exemption list (including agent treatment) against Utah Code ch. 7-25 and the NMLS checklist — not verified this pass
+- **Application fee:** Verify via NMLS checklist | **Renewal:** Annual via NMLS
+- **Notable:** The $1M audited net worth is the load-bearing requirement despite the low minimum bond. Utah's 2022 control-provision amendments (S.B. 183) are what put it on the CSBS MTMA-adoption list; do not assume MTMA-standard bond, net worth, or permissible-investment rules apply.
+- **Penalties:** Administrative enforcement (penalty provisions not verified this pass)
+- **Sources:** [Utah Code Title 7 Ch. 25](https://le.utah.gov/xcode/Title7/Chapter25/7-25.html) | [UT DFI Money Transmitters](https://dfi.utah.gov/money-services/money-transmitters/) | [NMLS](https://www.nmls.org)
+- **Last verified:** 2026-06-11 (regulator, NMLS, bond minimum, net worth, MTMA status; fees and exemptions not verified)
+
 ### Wyoming
 
 - **Statute:** Wyo. Stat. Title 40, Chapter 22 (Money Transmitters)
@@ -944,7 +976,8 @@ For MTMA-adopting states below, only deviations from the MTMA standard are noted
 
 ## Sources
 
-- [CSBS MTMA Adoption Tracker](https://www.csbs.org/state-pending-enacted-mtma-legislation) — Current list of enacted and pending MTMA legislation by state
+- [CSBS MTMA Adoption Tracker](https://www.csbs.org/state-pending-enacted-mtma-legislation) — Current list of enacted and pending MTMA legislation by state (April 23, 2026 update verified 2026-06-11)
+- [CSBS MTMA Overview](https://www.csbs.org/csbs-money-transmission-modernization-act-mtma) — Adoption count and coverage statistics
 - [CSBS MTMA Model Law Text](https://www.csbs.org/csbs-model-money-transmission-modernization-act) — Full text of the model act
 - [NMLS](https://www.nmls.org) — Nationwide Multistate Licensing System, centralized multi-state application platform
 - [FinCEN MSB Registrant Search](https://www.fincen.gov/msb-registrant-search) — Verify federal MSB registration status

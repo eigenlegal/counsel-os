@@ -1,21 +1,51 @@
 ---
 counsel-os-type: law-area
-content-version: "2026-06-10"
+content-version: "2026-06-11"
 jurisdiction: [us-state]
-last-reviewed: "2026-06-10"
+last-reviewed: "2026-06-11"
 authorities:
   - cite: "Cal. Civ. Code §§ 1798.29, 1798.82"
-    title: "California breach notification statute (spot-verified)"
+    title: "California breach notification statute (checked 2026-06-11)"
     url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=1798.82.&lawCode=CIV"
   - cite: "N.Y. Gen. Bus. Law § 899-aa"
-    title: "New York breach notification statute, as amended December 2024 (spot-verified)"
+    title: "New York breach notification statute, as amended December 2024 (checked 2026-06-11)"
     url: "https://www.nysenate.gov/legislation/laws/GBS/899-AA"
   - cite: "Tex. Bus. & Com. Code § 521.053"
-    title: "Texas breach notification statute, as amended 2023 (spot-verified)"
+    title: "Texas breach notification statute, as amended 2023 (checked 2026-06-11)"
     url: "https://statutes.capitol.texas.gov/GetStatute.aspx?Code=BC&Value=521.053"
+  - cite: "10 M.R.S. § 1348"
+    title: "Maine security breach notice requirements (checked 2026-06-11)"
+    url: "https://legislature.maine.gov/statutes/10/title10sec1348.html"
+  - cite: "815 ILCS 530/10"
+    title: "Illinois PIPA — AG notice when more than 500 residents notified (checked 2026-06-11)"
+    url: "https://www.ilga.gov/legislation/ilcs/fulltext.asp?DocName=081505300K10"
+  - cite: "Utah Code § 13-44-202"
+    title: "Utah breach disclosure — AG and Utah Cyber Center notice at 500 residents, SB 127 (2023) (checked 2026-06-11)"
+    url: "https://le.utah.gov/xcode/Title13/Chapter44/13-44-S202.html"
+  - cite: "Okla. SB 626 (2025), amending Okla. Stat. tit. 24, §§ 161-166"
+    title: "Oklahoma breach notification overhaul, effective January 1, 2026 (checked 2026-06-11)"
+    url: "https://www.oklegislature.gov/cf_pdf/2025-26%20ENR/SB/SB626%20ENR.PDF"
+  - cite: "Pa. Act 33 of 2024 (SB 824), amending 73 P.S. § 2301 et seq."
+    title: "Pennsylvania breach amendments — AG notice at 500, credit monitoring mandate, effective September 26, 2024 (checked 2026-06-11)"
+    url: "https://www.legis.state.pa.us/cfdocs/legis/li/uconsCheck.cfm?yr=2024&sessInd=0&act=33"
+  - cite: "S.D. Codified Laws § 22-40-20"
+    title: "South Dakota breach notice — 60 days; AG notice when breach exceeds 250 residents (checked 2026-06-11)"
+    url: "https://sdlegislature.gov/Statutes/22-40-20"
+  - cite: "Tenn. Code Ann. § 29-34-215 (HB 2434, 2024)"
+    title: "Tennessee cybersecurity-event class action safe harbor (checked 2026-06-11)"
+    url: "https://www.thompsonhine.com/insights/tennessee-enacts-data-breach-class-action-safe-harbor/"
   - cite: "88 FR 77499 (Nov. 13, 2023)"
     title: "FTC Safeguards Rule breach-notification amendment (effective May 13, 2024)"
     url: "https://www.federalregister.gov/documents/2023/11/13/2023-24412/standards-for-safeguarding-customer-information"
+  - cite: "Perkins Coie Security Breach Notification Chart"
+    title: "50-state tracker used for cross-checks (checked 2026-06-11)"
+    url: "https://perkinscoie.com/insights/publication/security-breach-notification-chart"
+  - cite: "IAPP US State Data Breach Notification Chart"
+    title: "50-state tracker used for cross-checks (checked 2026-06-11)"
+    url: "https://iapp.org/resources/article/state-data-breach-notification-chart/"
+  - cite: "NCSL Security Breach Notification Laws"
+    title: "50-state statutory citation index (checked 2026-06-11)"
+    url: "https://www.ncsl.org/technology-and-communication/security-breach-notification-laws"
 ---
 # US Breach Notification — 50-State Reference
 
@@ -141,7 +171,7 @@ States differ on the trigger standard:
 - **Notification timeline:** In the most expedient time possible and without unreasonable delay (no specific numeric deadline). In practice, the AG has scrutinized delays beyond 30-45 days.
 - **AG notification:** Required if breach affects **more than 500 California residents**; notification must be submitted electronically to the AG
 - **Consumer notification content:** Prescriptive content requirements: name and contact of notifying entity, list of categories of PI involved, estimated date of breach, description of incident, whether notification was delayed due to law enforcement, available remedies including toll-free numbers for credit bureaus and the FTC. Must be written in plain language and formatted to be conspicuous. The AG has published a recommended notification template.
-- **Credit monitoring:** Not mandated by statute, but the AG has strongly recommended 12-24 months of free credit monitoring when SSNs are compromised. De facto expected in practice.
+- **Credit monitoring:** Offering is not mandated. But if the breached entity was the source of the breach and the breach involved SSN, driver's license, or California ID card numbers, any identity theft prevention and mitigation services offered must be provided at no cost for at least 12 months (Cal. Civ. Code § 1798.82(d)(2)(G)). Offering remains de facto expected in practice.
 - **Risk of harm exemption:** **No** — California does not have a risk-of-harm exemption. If PI is acquired without authorization, notification is required regardless of whether harm is likely.
 - **Encryption safe harbor:** Yes — encrypted data is excluded from the definition of personal information, unless the encryption key or security credential was also acquired
 - **Notable:** CCPA § 1798.150 provides a **private right of action** for breaches involving nonencrypted/nonredacted PI resulting from failure to maintain reasonable security measures. Statutory damages of **$100-$750 per consumer per incident**, plus actual damages. No cap on aggregate damages. The AG's enforcement record is aggressive. California's definition of PI is among the broadest. No risk-of-harm exemption makes California one of the strictest notification regimes.
@@ -163,16 +193,16 @@ States differ on the trigger standard:
 
 ### Connecticut
 
-- **Statute:** Conn. Gen. Stat. §§ 36a-701b (as amended through 2023)
+- **Statute:** Conn. Gen. Stat. § 36a-701b (as amended through 2021)
 - **Trigger:** Unauthorized access to or unauthorized acquisition of electronic files, media, databases, or computerized data containing personal information when access to the personal information has not been secured by encryption or by any other method or technology
 - **Personal information definition:** Name + SSN, DL/state ID, financial account number with access code, taxpayer ID, passport number, military ID. Individual health insurance policy number or subscriber ID in combination with unique identifier. Medical information, biometric data. Standalone trigger: username/email + password/security question.
 - **Notification timeline:** **60 days** after discovery of the breach (not after determination — the clock starts at discovery)
 - **AG notification:** Required for **any number** of Connecticut residents affected — no minimum threshold. AG must be notified no later than the time individuals are notified.
 - **Consumer notification content:** Must include description of incident, type of information, steps taken, contact information, toll-free numbers for credit bureaus, and identity theft prevention/mitigation information
-- **Credit monitoring:** Required to offer **free credit monitoring** for a minimum of **24 months** when SSNs are compromised (as amended in 2023)
+- **Credit monitoring:** Required to offer **free credit monitoring** for a minimum of **24 months** when SSNs or taxpayer identification numbers are compromised
 - **Risk of harm exemption:** Yes — notification not required if, after an appropriate investigation and consultation with law enforcement, the entity reasonably determines that the breach will not likely result in harm to the affected individuals
 - **Encryption safe harbor:** Yes — encrypted data is excluded from the trigger
-- **Notable:** AG notification for any number of affected residents (no threshold) is stricter than most states; 24-month credit monitoring requirement for SSN breaches is among the longest; the 2023 amendments significantly expanded the law; no private right of action but AG enforcement powers are broad
+- **Notable:** AG notification for any number of affected residents (no threshold) is stricter than most states; 24-month credit monitoring requirement for SSN breaches is among the longest; amendments in 2018 and 2021 significantly expanded the law (24-month monitoring, 60-day clock, broader PI definition); no private right of action but AG enforcement powers are broad
 - **Source:** [Conn. Gen. Stat. § 36a-701b](https://www.cga.ct.gov/current/pub/chap_669.htm#sec_36a-701b)
 
 ### Delaware
@@ -181,9 +211,9 @@ States differ on the trigger standard:
 - **Trigger:** Unauthorized acquisition of computerized data that compromises the security, confidentiality, or integrity of personal information
 - **Personal information definition:** Name + SSN, DL/state ID, financial account number with access code. Also: employee ID combined with password/security data, DNA profile, passport number, taxpayer ID, health insurance information, medical information, biometric data. Standalone trigger: username/email + password/security question.
 - **Notification timeline:** **60 days** after determination of breach
-- **AG notification:** Required if breach affects **more than 500 Delaware residents**; notification must be made to the AG before notifying the individuals
+- **AG notification:** Required if breach affects **more than 500 Delaware residents**; AG must be notified no later than the time notice is provided to the individuals
 - **Consumer notification content:** Description of the breach, type of PI involved, steps taken, contact information for the entity, and contact information for the FTC and major credit bureaus
-- **Credit monitoring:** Businesses must offer credit monitoring services when SSNs are compromised
+- **Credit monitoring:** Required to offer **free credit monitoring for 1 year** when SSNs are compromised
 - **Risk of harm exemption:** Yes — notification not required if, after an appropriate investigation, the entity reasonably determines that the breach is unlikely to result in harm
 - **Encryption safe harbor:** Yes — encrypted data excluded unless encryption key was also acquired
 - **Notable:** 2017 amendments significantly expanded the law, broadening the PI definition and adding specific content requirements; requires entities to provide notice to the AG before notifying individuals
@@ -211,7 +241,7 @@ States differ on the trigger standard:
 - **Notification timeline:** **30 days** after determination of breach or reason to believe a breach occurred — one of the strictest numeric deadlines
 - **AG notification:** Required within 30 days if breach affects **500 or more individuals**; entities must provide the AG with detailed written information about the breach
 - **Consumer notification content:** Must include a description of the incident in general terms, the type of information subject to unauthorized access, remedial actions taken, and contact information for credit bureaus
-- **Credit monitoring:** Required to offer **12 months of free credit monitoring** when SSNs are compromised; must offer **12 months of free identity theft resolution services** when the breach is likely to cause identity theft
+- **Credit monitoring:** Not mandated by FIPA — the statute does not require credit monitoring or identity theft services. Entities commonly offer them voluntarily, and the notice may describe any services offered.
 - **Risk of harm exemption:** Yes — notification not required if, after an appropriate investigation and consultation with law enforcement, the entity reasonably determines that the breach has not and will not likely result in identity theft or any other financial harm
 - **Encryption safe harbor:** Yes — encrypted data is excluded unless the encryption key was also accessed or acquired
 - **Notable:** Among the strictest state laws: 30-day deadline with fines of $1,000/day for the first 30 days after violation and $50,000/day thereafter (up to $500,000); applies to "covered entities" broadly defined to include government entities and third-party agents; FIPA requires entities to take reasonable measures to protect data
@@ -237,12 +267,12 @@ States differ on the trigger standard:
 - **Trigger:** Unauthorized access to and acquisition of unencrypted or unredacted records or data containing personal information where illegal use of the personal information has occurred, or is reasonably likely to occur, and that creates a risk of harm to a person
 - **Personal information definition:** Name + SSN, DL/state ID, financial account number with access code. Also: government-issued ID and any access code required to access a financial account.
 - **Notification timeline:** Without unreasonable delay, consistent with the legitimate needs of law enforcement and consistent with any measures necessary to determine the scope of the breach and restore integrity (no specific numeric deadline)
-- **AG notification:** Required — must notify the Hawaii Office of Consumer Protection. No minimum threshold specified.
+- **AG notification:** Office of Consumer Protection (not the AG) must be notified in writing, without unreasonable delay, when notice is provided to **more than 1,000 persons** at one time; nationwide CRAs must be notified at the same threshold (Haw. Rev. Stat. § 487N-2(f))
 - **Consumer notification content:** Description of the incident, type of PI, steps the individual can take, contact information for the entity
 - **Credit monitoring:** Not mandated
 - **Risk of harm exemption:** Yes — built into the trigger (requires "risk of harm" and "illegal use has occurred or is reasonably likely to occur")
 - **Encryption safe harbor:** Yes — unencrypted/unredacted data only
-- **Notable:** Relatively narrow trigger requiring both unauthorized access AND acquisition plus a risk-of-harm/illegal-use standard; must notify the Hawaii Office of Consumer Protection; includes credit and debit card data in the financial account category
+- **Notable:** Relatively narrow trigger requiring both unauthorized access AND acquisition plus a risk-of-harm/illegal-use standard; Office of Consumer Protection notice applies only at the more-than-1,000-person threshold; includes credit and debit card data in the financial account category
 - **Source:** [Haw. Rev. Stat. § 487N-2](https://www.capitol.hawaii.gov/hrscurrent/Vol11_Ch0476-0490/HRS0487N/HRS_0487N-0002.htm)
 
 ### Idaho
@@ -251,12 +281,12 @@ States differ on the trigger standard:
 - **Trigger:** Unauthorized acquisition of computerized data that materially compromises the security, confidentiality, or integrity of personal information
 - **Personal information definition:** Name + SSN, DL/state ID, financial account number with access code. Standard baseline definition.
 - **Notification timeline:** In the most expedient time possible and without unreasonable delay (no specific numeric deadline)
-- **AG notification:** Required — must notify the AG within 24 hours of discovering that the breach is reasonably likely to have resulted in the misuse of PI
+- **AG notification:** Public agencies only — an Idaho public agency must notify the AG within **24 hours** of discovery of a breach; commercial entities are not required to notify the AG (Idaho Code § 28-51-105(1))
 - **Consumer notification content:** General notice; no highly prescriptive content mandates beyond basic information about the breach
 - **Credit monitoring:** Not mandated
 - **Risk of harm exemption:** Yes — the trigger requires "material" compromise, and notification to the AG is tied to "reasonably likely to have resulted in misuse"
 - **Encryption safe harbor:** Yes — encrypted data is excluded
-- **Notable:** Unusual AG notification standard — 24 hours after determining misuse is likely, which is one of the shortest AG notification deadlines even though general individual notification has no specific deadline; narrow PI definition
+- **Notable:** The 24-hour AG notification applies only to public agencies (one of the shortest regulator deadlines anywhere); private entities face no AG-notice requirement and no specific individual-notice deadline; narrow PI definition
 - **Source:** [Idaho Code § 28-51-105](https://legislature.idaho.gov/statutesrules/idstat/Title28/T28CH51/)
 
 ### Illinois
@@ -265,12 +295,12 @@ States differ on the trigger standard:
 - **Trigger:** Unauthorized acquisition of computerized data that compromises the security, confidentiality, or integrity of personal information
 - **Personal information definition:** Name + SSN, DL/state ID, financial account number with access code, medical information, health insurance information, unique biometric data. Standalone trigger: username/email + password/security question.
 - **Notification timeline:** In the most expedient time possible and without unreasonable delay (no specific numeric deadline)
-- **AG notification:** Required for **any number** of Illinois residents — must notify the AG. No minimum threshold.
+- **AG notification:** Required when notice must be given to **more than 500 Illinois residents** from a single breach; AG notice in the most expedient time possible and no later than when individuals are notified (815 ILCS 530/10)
 - **Consumer notification content:** Must include information about the breach, the type of PI, what the entity is doing, and contact information for credit bureaus
 - **Credit monitoring:** Not specifically mandated under the breach notification statute; however, offering credit monitoring is considered a best practice and may be factored into enforcement decisions
 - **Risk of harm exemption:** Partial — trigger standard involves "compromise" of security/confidentiality/integrity
 - **Encryption safe harbor:** Yes — encrypted data is excluded
-- **Notable:** Illinois's **BIPA** provides a **private right of action** for violations involving biometric data (fingerprints, retina scans, voiceprints, etc.) with statutory damages of **$1,000 per negligent violation and $5,000 per intentional/reckless violation**. BIPA is among the most actively litigated privacy statutes in the US. The breach notification statute itself does not have a private right of action. AG notification has no minimum threshold.
+- **Notable:** Illinois's **BIPA** provides a **private right of action** for violations involving biometric data (fingerprints, retina scans, voiceprints, etc.) with statutory damages of **$1,000 per negligent violation and $5,000 per intentional/reckless violation**. BIPA is among the most actively litigated privacy statutes in the US. The breach notification statute itself does not have a private right of action. AG notification applies at the more-than-500-resident threshold.
 - **Source:** [815 ILCS 530/](https://www.ilga.gov/legislation/ilcs/ilcs3.asp?ActID=2702), [740 ILCS 14/ (BIPA)](https://www.ilga.gov/legislation/ilcs/ilcs3.asp?ActID=3004)
 
 ### Indiana
@@ -278,7 +308,7 @@ States differ on the trigger standard:
 - **Statute:** Ind. Code §§ 24-4.9-1-1 to 24-4.9-5-1
 - **Trigger:** Unauthorized acquisition of computerized data that compromises the security, confidentiality, or integrity of personal information
 - **Personal information definition:** Name + SSN, DL/state ID, financial account number with access code. Narrow baseline.
-- **Notification timeline:** Without unreasonable delay (no specific numeric deadline)
+- **Notification timeline:** Without unreasonable delay, but not more than **45 days** after discovery of the breach (HB 1351, effective July 1, 2022)
 - **AG notification:** Required — must notify the AG of any breach. No specific minimum threshold for individual notification, but the AG must be notified.
 - **Consumer notification content:** Must include a description of the breach, the type of PI, and contact information for credit bureaus and the FTC
 - **Credit monitoring:** Not mandated
@@ -291,14 +321,14 @@ States differ on the trigger standard:
 
 - **Statute:** Iowa Code §§ 715C.1 to 715C.2
 - **Trigger:** Unauthorized acquisition of personal information that is reasonably believed to have caused or will cause loss or injury to any resident of Iowa
-- **Personal information definition:** Name + SSN, DL/state ID, financial account number with access code, unique biometric data, taxpayer ID. Standalone trigger: username/email + password/security question (added 2023).
-- **Notification timeline:** In the most expedient manner possible and without unreasonable delay, but no later than **60 days** from discovery (amended 2023 to add the 60-day maximum and to require AG notification)
-- **AG notification:** Required within **5 business days** of giving notice to affected individuals if breach affects **500 or more Iowa residents** (added 2023)
+- **Personal information definition:** Name + SSN, DL or other government-issued unique identification number, financial account/credit/debit card number with required access code, unique electronic identifier or routing code with required access code, unique biometric data (fingerprint, retina/iris image, or other unique physical/digital representation)
+- **Notification timeline:** In the most expeditious manner possible and without unreasonable delay (no specific numeric deadline)
+- **AG notification:** Required — written notice to the Consumer Protection Division of the AG's office within **5 business days** of giving notice to consumers, when the breach requires notification of **more than 500 Iowa residents**
 - **Consumer notification content:** Must include description of breach, type of PI, steps taken, and contact information for credit bureaus
 - **Credit monitoring:** Not specifically mandated by statute
 - **Risk of harm exemption:** Yes — built into the trigger (must be "reasonably believed to have caused or will cause loss or injury")
 - **Encryption safe harbor:** Yes — encrypted data is excluded unless the encryption key was also compromised
-- **Notable:** Significantly amended in 2023 as part of Iowa's comprehensive privacy legislation; added a 60-day maximum notification timeline, AG notification requirements, and expanded the PI definition; the loss/injury trigger is a notable risk-of-harm standard
+- **Notable:** The loss/injury trigger is a meaningful risk-of-harm standard; no numeric deadline for individual notice; Iowa's comprehensive privacy law (ICDPA, effective January 1, 2025) operates alongside but does not rewrite the breach statute; violations are unlawful practices enforceable by the AG
 - **Source:** [Iowa Code § 715C.2](https://www.legis.iowa.gov/law/iowaCode/sections?codeChapter=715C)
 
 ### Kansas
@@ -318,15 +348,15 @@ States differ on the trigger standard:
 ### Kentucky
 
 - **Statute:** Ky. Rev. Stat. §§ 365.720 to 365.734
-- **Trigger:** Unauthorized acquisition of computerized data that compromises the security, confidentiality, or integrity of personally identifiable information
+- **Trigger:** Unauthorized acquisition of unencrypted, unredacted computerized data that compromises the security, confidentiality, or integrity of personally identifiable information and that actually causes, or leads the entity to reasonably believe has caused or will cause, identity theft or fraud against a Kentucky resident
 - **Personal information definition:** Name + SSN, DL/state ID, financial account number with access code. Standard narrow baseline.
 - **Notification timeline:** In the most expedient time possible and without unreasonable delay (no specific numeric deadline)
-- **AG notification:** Required — must notify the AG. Must also notify the Commissioner of the Department for Financial Institutions if the entity is a licensee. No minimum threshold for AG notification.
+- **AG notification:** Not required for private entities under KRS 365.732 — no AG or regulator notice. Nationwide CRAs must be notified when more than 1,000 persons are notified at one time. State and local government agencies are subject to a separate regime (KRS 61.931 et seq.) requiring notice to the AG, Kentucky State Police, and Auditor of Public Accounts within 72 hours.
 - **Consumer notification content:** General notice requirements
 - **Credit monitoring:** Not mandated
 - **Risk of harm exemption:** Yes — notification not required if, after a reasonable and prompt investigation, the entity determines that the breach will not likely result in the misuse of PI
 - **Encryption safe harbor:** Yes — encrypted data is excluded
-- **Notable:** Requires notification to the AG and, if applicable, the Commissioner of Financial Institutions; otherwise a relatively simple statute; no private right of action
+- **Notable:** One of the minority of states with no regulator notification for private entities; the identity theft/fraud causation element narrows the trigger; the statute creates no penalties or new cause of action, though KRS 446.070 supplies a general damages theory for statutory violations
 - **Source:** [Ky. Rev. Stat. § 365.732](https://apps.legislature.ky.gov/law/statutes/statute.aspx?id=53998)
 
 ### Louisiana
@@ -335,7 +365,7 @@ States differ on the trigger standard:
 - **Trigger:** Unauthorized acquisition of computerized data that compromises the security, confidentiality, or integrity of personal information
 - **Personal information definition:** Name + SSN, DL/state ID, financial account number with access code, passport number, biometric data. Standalone trigger: username/email + password/security question.
 - **Notification timeline:** **60 days** after discovery of the breach (amended to add a numeric deadline)
-- **AG notification:** Required — must notify the AG within 60 days. No minimum threshold.
+- **AG notification:** Required — written notice to the Consumer Protection Section of the AG's office within **10 days** of distributing notice to Louisiana residents (La. Rev. Stat. § 51:3074(I)). No minimum threshold.
 - **Consumer notification content:** Description of breach, type of PI involved, steps taken, toll-free contact numbers for credit bureaus, and the entity's contact information
 - **Credit monitoring:** Not mandated
 - **Risk of harm exemption:** Yes — notification not required if after a reasonable investigation the entity determines that there is no reasonable likelihood of harm to the affected individuals
@@ -348,14 +378,13 @@ States differ on the trigger standard:
 - **Statute:** Me. Rev. Stat. tit. 10, §§ 1346 to 1350-B
 - **Trigger:** Unauthorized acquisition, release, or use of an individual's computerized data containing personal information that compromises the security, confidentiality, or integrity of personal information
 - **Personal information definition:** Name + SSN, DL/state ID, financial account number with access code, account passwords/PINs, health insurance information, medical information. Standalone trigger: username/email + password/security question.
-- **Notification timeline:** As expediently as possible and without unreasonable delay, but not to exceed **30 days** after the entity becomes aware of the breach
-- **AG notification:** Required — must notify the Maine AG if breach affects **any number** of Maine residents. No minimum threshold. AG must be notified before or at the same time as individuals.
+- **Notification timeline:** As expediently as possible and without unreasonable delay, but not to exceed **30 days** after the entity becomes aware of the breach and identifies its scope (10 M.R.S. § 1348) — among the shortest specific deadlines
+- **AG notification:** Required for **any number** of Maine residents — entities regulated by the Department of Professional and Financial Regulation notify the appropriate regulators within that department; all others notify the AG
 - **Consumer notification content:** Description of incident, type of PI, steps taken by the entity, general description of actions to protect against further breaches, toll-free numbers for credit bureaus, and advice to remain vigilant
-- **Credit monitoring:** Required to offer **free credit monitoring** for at least **1 year** when SSNs are compromised
-- **Notification timeline:** **30 days** — among the shortest specific deadlines
+- **Credit monitoring:** Not mandated by statute
 - **Risk of harm exemption:** Yes — notification not required if, after investigation, the entity determines that the breach will not likely result in misuse of PI
 - **Encryption safe harbor:** Yes — encrypted data excluded unless encryption key was also acquired
-- **Notable:** One of the shortest deadlines at 30 days; AG notification for any number of residents; credit monitoring required for SSN breaches; revised in 2019 with stricter requirements
+- **Notable:** One of the shortest deadlines at 30 days; regulator/AG notification for any number of residents; CRA notice required when more than 1,000 persons are notified at one time; law-enforcement delay is capped at 7 business days after clearance
 - **Source:** [Me. Rev. Stat. tit. 10, § 1348](https://legislature.maine.gov/statutes/10/title10sec1348.html)
 
 ### Maryland
@@ -366,10 +395,10 @@ States differ on the trigger standard:
 - **Notification timeline:** As soon as reasonably practicable, but not later than **45 days** after discovery of the breach
 - **AG notification:** Required — must notify the AG before notifying consumers. If breach affects **more than 1,000 individuals**, must also notify consumer reporting agencies.
 - **Consumer notification content:** Description of breach, type of PI, contact information for entity, contact information for FTC and credit bureaus, advice on credit monitoring and fraud alerts
-- **Credit monitoring:** Required to offer **free credit monitoring** for at least **1 year** when SSNs are compromised (business must bear cost)
+- **Credit monitoring:** Not mandated by statute
 - **Risk of harm exemption:** Yes — notification not required if, after a good-faith investigation, the entity reasonably determines that the breach will not likely result in harm to the individual
 - **Encryption safe harbor:** Yes — encrypted data excluded unless encryption key was also compromised
-- **Notable:** Expanded significantly over time; 45-day deadline from discovery; AG must be notified before individuals; credit monitoring requirement for SSN breaches; broad PI definition including biometric data and taxpayer ID
+- **Notable:** Expanded significantly over time; 45-day deadline from discovery; AG must be notified before individuals; broad PI definition including biometric data, genetic information, and taxpayer ID
 - **Source:** [Md. Code, Com. Law § 14-3504](https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?article=gcl&section=14-3504)
 
 ### Massachusetts
@@ -432,14 +461,14 @@ States differ on the trigger standard:
 
 - **Statute:** Mo. Rev. Stat. § 407.1500
 - **Trigger:** Unauthorized acquisition of personal information that compromises the security, confidentiality, or integrity of personal information
-- **Personal information definition:** Name + SSN, DL/state ID, financial account number with access code, medical information, health insurance information. Standalone trigger: username/email + password/security question.
-- **Notification timeline:** Without unreasonable delay and no later than **60 days** after discovery (amended to add numeric deadline)
-- **AG notification:** Required — must notify the AG if breach affects **more than 500 Missouri residents**
+- **Personal information definition:** Name + SSN, DL or other government-created unique ID number, financial account/credit/debit card number with required access code, unique electronic identifier or routing code with required access code, medical information, health insurance information
+- **Notification timeline:** Without unreasonable delay (no specific numeric deadline)
+- **AG notification:** Required only when notice is provided to **more than 1,000 consumers** at one time — notify the AG's office and nationwide CRAs of the timing, distribution, and content of the notice
 - **Consumer notification content:** Description of breach, type of PI, contact information for entity, contact information for credit bureaus, and steps the individual can take
 - **Credit monitoring:** Not mandated by statute
 - **Risk of harm exemption:** Yes — notification not required if, after investigation, the entity determines that the breach will not likely result in misuse of information
 - **Encryption safe harbor:** Yes — encrypted data excluded
-- **Notable:** Amended in 2023 to add the 60-day deadline and AG notification requirement; expanded PI definition to include medical and health insurance information; covers government entities and private businesses
+- **Notable:** PI definition includes medical and health insurance information; the AG has exclusive enforcement authority, with civil penalties up to **$150,000** per breach (or series of similar breaches discovered in a single investigation); no numeric deadline for individual notice
 - **Source:** [Mo. Rev. Stat. § 407.1500](https://revisor.mo.gov/main/OneSection.aspx?section=407.1500)
 
 ### Montana
@@ -462,12 +491,12 @@ States differ on the trigger standard:
 - **Trigger:** Unauthorized acquisition of unencrypted computerized data that compromises the security, confidentiality, or integrity of personal information
 - **Personal information definition:** Name + SSN, DL/state ID, financial account number with access code, unique biometric data, username + password. Standalone trigger for credentials.
 - **Notification timeline:** As soon as possible and without unreasonable delay (no specific numeric deadline)
-- **AG notification:** Required — must notify the AG. If breach affects **500 or more Nebraska residents**, also must notify the AG with details.
+- **AG notification:** Required — must notify the AG concurrently with or before notice to affected residents. No minimum threshold.
 - **Consumer notification content:** Description of the breach, type of PI, toll-free numbers for credit bureaus, contact information for the entity
 - **Credit monitoring:** Not specifically mandated
 - **Risk of harm exemption:** Yes — notification not required if, after investigation, the entity determines that the breach will not likely result in harm
 - **Encryption safe harbor:** Yes — encrypted data excluded unless the encryption key was also compromised
-- **Notable:** Updated to include biometric data and standalone credential triggers; AG notification required with enhanced reporting at the 500-resident threshold
+- **Notable:** Updated to include biometric data and standalone credential triggers; AG notification required for any number of affected residents (added 2016)
 - **Source:** [Neb. Rev. Stat. § 87-803](https://nebraskalegislature.gov/laws/statutes.php?statute=87-803)
 
 ### Nevada
@@ -548,10 +577,10 @@ States differ on the trigger standard:
 - **Notification timeline:** Without unreasonable delay (no specific numeric deadline)
 - **AG notification:** Required — must notify the AG's Consumer Protection Division within the same timeframe. No minimum threshold.
 - **Consumer notification content:** Description of incident, type of PI, general acts taken, toll-free numbers for credit bureaus, and contact information for AG and FTC
-- **Credit monitoring:** Required to offer free credit monitoring for **24 months** when SSNs are compromised (added by amendment)
+- **Credit monitoring:** Not mandated by statute (bills proposing a credit monitoring mandate have not been enacted)
 - **Risk of harm exemption:** Yes — built into the trigger (must be "reasonably likely" to result in illegal use or create "material risk of harm")
 - **Encryption safe harbor:** Yes — encrypted and redacted data excluded
-- **Notable:** Trigger requires either illegal use or material risk of harm; 24-month credit monitoring for SSN breaches is among the longest; AG notification with no threshold; includes digital signature and biometric data
+- **Notable:** Trigger requires either illegal use or material risk of harm; AG (Consumer Protection Division) notification with no threshold; CRA notice when more than 1,000 persons are notified; includes digital signature and biometric data
 - **Source:** [N.C. Gen. Stat. § 75-65](https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_75/GS_75-65.html)
 
 ### North Dakota
@@ -584,16 +613,16 @@ States differ on the trigger standard:
 
 ### Oklahoma
 
-- **Statute:** Okla. Stat. tit. 24, §§ 161 to 166 (Oklahoma Security Breach Notification Act)
-- **Trigger:** Unauthorized acquisition of unencrypted and unredacted computerized data that compromises the security, confidentiality, or integrity of personal information
-- **Personal information definition:** Name + SSN, DL/state ID, financial account number with access code. Narrow baseline.
+- **Statute:** Okla. Stat. tit. 24, §§ 161 to 166 (Oklahoma Security Breach Notification Act, substantially amended by SB 626, effective January 1, 2026)
+- **Trigger:** Unauthorized access and acquisition of unencrypted and unredacted computerized data that causes, or that the entity reasonably believes has caused or will cause, identity theft or other fraud to a resident
+- **Personal information definition:** Name + SSN, DL/state ID, financial account number with access code, unique biometric data (fingerprints, retinal scans, and similar identifiers — added by SB 626). Standalone-credential element: electronic identification number or email address in combination with a password or security question that permits access to an online account (added by SB 626).
 - **Notification timeline:** Without unreasonable delay (no specific numeric deadline)
-- **AG notification:** Required — must notify the AG within the same timeframe. No minimum threshold.
+- **AG notification:** Required when **500 or more Oklahoma residents** must be notified — notify the AG without unreasonable delay and no later than **60 days** after providing notice to residents (SB 626; before January 1, 2026 there was no AG-notice requirement). Credit bureaus must be notified when a breach involves more than 1,000 residents.
 - **Consumer notification content:** General notice; no highly prescriptive content mandates
 - **Credit monitoring:** Not mandated
-- **Risk of harm exemption:** Yes — notification not required if, after a reasonable and prompt investigation, the entity determines that the breach will not likely result in harm to the individuals
+- **Risk of harm exemption:** Yes — the identity theft/fraud causation element in the trigger functions as a risk-of-harm threshold
 - **Encryption safe harbor:** Yes — encrypted and redacted data excluded
-- **Notable:** Relatively simple statute; AG notification with no threshold; narrow PI definition; no private right of action
+- **Notable:** SB 626 (effective January 1, 2026) overhauled the law: expanded PI definition (biometrics, online account credentials), first-time AG notice at the 500-resident threshold, credit bureau notice above 1,000 residents, and an **affirmative defense in civil actions** for entities maintaining "reasonable safeguards" (risk assessments, layered technical and physical defenses, employee training, an incident response plan); no private right of action
 - **Source:** [Okla. Stat. tit. 24, § 163](https://law.justia.com/codes/oklahoma/title-24/section-24-163/)
 
 ### Oregon
@@ -612,16 +641,16 @@ States differ on the trigger standard:
 
 ### Pennsylvania
 
-- **Statute:** 73 Pa. Stat. §§ 2301 to 2329 (Breach of Personal Information Notification Act)
+- **Statute:** 73 Pa. Stat. §§ 2301 to 2329 (Breach of Personal Information Notification Act, as amended by Act 151 of 2022 (effective May 2023) and Act 33 of 2024/SB 824 (effective September 26, 2024))
 - **Trigger:** Unauthorized access and acquisition of computerized data that materially compromises the security or confidentiality of personal information
-- **Personal information definition:** Name + SSN, DL/state ID, financial account number with access code. Narrow baseline.
-- **Notification timeline:** Without unreasonable delay (no specific numeric deadline)
-- **AG notification:** Not specifically required by statute. However, if breach affects **more than 1,000 individuals**, must notify consumer reporting agencies.
+- **Personal information definition:** Name + SSN, DL/state ID, financial account number with access code, medical information, health insurance information. Standalone trigger: username/email + password/security question (expansions added by Act 151 of 2022).
+- **Notification timeline:** Without unreasonable delay (no specific numeric deadline for private entities; shorter fixed deadlines apply to state agencies, contractors, and political subdivisions)
+- **AG notification:** Required when **more than 500 Pennsylvania residents** must be notified — notice to the AG concurrent with individual notice, submitted through the AG's online breach-reporting portal (Act 33 of 2024). If breach affects **more than 1,000 individuals**, must also notify consumer reporting agencies.
 - **Consumer notification content:** General notice requirements
-- **Credit monitoring:** Not mandated
+- **Credit monitoring:** Required — **12 months of free credit monitoring** plus access to one free independent credit report when the breach involves a name combined with SSN, driver's license/state ID number, or bank account number (Act 33 of 2024; first state to extend a monitoring mandate to driver's license and bank account breaches)
 - **Risk of harm exemption:** Yes — the trigger requires that the breach "materially compromises" security/confidentiality, and the statute requires both access AND acquisition
 - **Encryption safe harbor:** Yes — encrypted data excluded unless the encryption key was also compromised
-- **Notable:** Requires both "access and acquisition" (not just one), which narrows the trigger; "materially compromises" standard also provides a threshold; no AG notification requirement; narrow PI definition; no specific numeric deadline; considered one of the older, less comprehensive state breach notification laws
+- **Notable:** Requires both "access and acquisition" (not just one), which narrows the trigger; "materially compromises" standard also provides a threshold; the 2022-2024 amendments modernized a formerly minimal statute — expanded PI definition, AG notice at the 500-resident threshold, and a novel credit monitoring/credit report mandate; still no numeric deadline for private-entity individual notice
 - **Source:** [73 Pa. Stat. § 2303](https://www.legis.state.pa.us/cfdocs/legis/LI/uconsCheck.cfm?txtType=HTM&yr=2005&sessInd=0&smthLwInd=0&act=094)
 
 ### Rhode Island
@@ -632,24 +661,24 @@ States differ on the trigger standard:
 - **Notification timeline:** **45 days** after confirmation of the breach and determination of affected individuals
 - **AG notification:** Required within 45 days if breach affects **more than 500 Rhode Island residents**
 - **Consumer notification content:** Must include dates of the breach and discovery, description of PI, toll-free numbers for credit bureaus, and contact information for the entity
-- **Credit monitoring:** Required to offer **free credit monitoring** for at least **1 year** when SSNs are compromised
+- **Credit monitoring:** Not mandated — but the individual notice must include a clear description of any remediation services offered (including credit monitoring, if offered)
 - **Encryption safe harbor:** Yes — encrypted data excluded unless the encryption key was also acquired
 - **Risk of harm exemption:** No explicit risk-of-harm exemption — if PI is acquired without authorization and security is compromised, notification is required
-- **Notable:** 2015 act significantly modernized Rhode Island's breach notification requirements; 45-day deadline; credit monitoring required for SSN breaches; no explicit risk-of-harm exemption makes it stricter than many states; expanded PI definition; AG notification at 500-resident threshold
+- **Notable:** 2015 act significantly modernized Rhode Island's breach notification requirements; 45-day deadline; no explicit risk-of-harm exemption makes it stricter than many states; expanded PI definition; AG and CRA notification at the more-than-500-resident threshold, without delaying notice to residents
 - **Source:** [R.I. Gen. Laws § 11-49.3-4](https://law.justia.com/codes/rhode-island/title-11/chapter-11-49.3/)
 
 ### South Carolina
 
 - **Statute:** S.C. Code §§ 39-1-90 (South Carolina breach notification law); also S.C. Code § 38-99-10 et seq. (Insurance Data Security Act)
-- **Trigger:** Unauthorized acquisition of computerized data that compromises the security, confidentiality, or integrity of personal identifying information
+- **Trigger:** Unauthorized acquisition of unencrypted, unredacted computerized data containing personal identifying information, when illegal use of the information has occurred or is reasonably likely to occur, or when use of the information creates a material risk of harm to the resident
 - **Personal information definition:** Name + SSN, DL/state ID, financial account number with access code. Also includes data elements that would be sufficient to commit identity theft. Narrow baseline for general statute; Insurance Data Security Act has additional requirements for insurers.
 - **Notification timeline:** In the most expedient time possible and without unreasonable delay (no specific numeric deadline)
-- **AG notification:** Required — must notify the Consumer Protection Division of the AG's office. No specific minimum threshold. Must also notify the Department of Consumer Affairs.
+- **AG notification:** No AG notice. When notice is provided to **more than 1,000 persons** at one time, must notify the Consumer Protection Division of the SC Department of Consumer Affairs and nationwide CRAs, without unreasonable delay.
 - **Consumer notification content:** General notice requirements
-- **Credit monitoring:** Required to offer **free credit monitoring** for at least **12 months** when SSNs are compromised
-- **Risk of harm exemption:** Yes — notification not required if, after investigation, the entity determines that the breach will not likely result in harm or misuse
+- **Credit monitoring:** Not mandated by statute
+- **Risk of harm exemption:** Yes — built into the trigger (illegal use occurred/likely or material risk of harm)
 - **Encryption safe harbor:** Yes — encrypted data excluded
-- **Notable:** Must notify both the AG's Consumer Protection Division and the Department of Consumer Affairs; credit monitoring required for SSN breaches; separate Insurance Data Security Act imposes additional requirements on insurers and insurance licensees; no private right of action
+- **Notable:** Regulator notice runs to the Department of Consumer Affairs (not the AG) and only at the more-than-1,000-person threshold; knowing and willful violations carry administrative fines of $1,000 per affected resident; separate Insurance Data Security Act imposes additional requirements on insurers and insurance licensees
 - **Source:** [S.C. Code § 39-1-90](https://www.scstatehouse.gov/code/t39c001.php)
 
 ### South Dakota
@@ -658,12 +687,12 @@ States differ on the trigger standard:
 - **Trigger:** Unauthorized acquisition of unencrypted computerized data or encrypted computerized data and the encryption key that materially compromises the security, confidentiality, or integrity of personal or protected information
 - **Personal information definition:** Name + SSN, DL/state ID, financial account number with access code, health information, employee ID with authentication data, biometric data. Standalone trigger: username/email + password/security question.
 - **Notification timeline:** **60 days** after discovery of the breach
-- **AG notification:** Required within 60 days if breach affects **250 or more South Dakota residents** (one of the lower thresholds)
+- **AG notification:** Required if breach affects **more than 250 South Dakota residents** (one of the lower thresholds); disclosure to the AG by mail or email
 - **Consumer notification content:** Must include a description of the breach, type of PI, remedial actions, contact information for the entity, and toll-free numbers for credit bureaus
 - **Credit monitoring:** Not specifically mandated
-- **Risk of harm exemption:** Yes — the trigger requires "material" compromise, which serves as a threshold
+- **Risk of harm exemption:** Yes — notification to residents not required if, following an appropriate investigation **and notice to the AG**, the entity reasonably determines the breach will not likely result in harm (the harm exemption itself requires AG notice)
 - **Encryption safe harbor:** Yes — encrypted data excluded unless the encryption key was also acquired
-- **Notable:** South Dakota was one of the last two states (with Alabama) to enact a breach notification law (2018); 60-day deadline; lower AG notification threshold of 250 residents; includes biometric data and health information; no private right of action
+- **Notable:** South Dakota was one of the last two states (with Alabama) to enact a breach notification law (2018); 60-day deadline; lower AG notification threshold (more than 250 residents); includes biometric data and health information; no private right of action
 - **Source:** [S.D. Codified Laws § 22-40-21](https://sdlegislature.gov/Statutes/22-40-21)
 
 ### Tennessee
@@ -677,7 +706,7 @@ States differ on the trigger standard:
 - **Credit monitoring:** Not mandated
 - **Risk of harm exemption:** Yes — the "materially compromises" standard serves as a threshold
 - **Encryption safe harbor:** Yes — encrypted data excluded unless the encryption key was also compromised
-- **Notable:** 45-day deadline (added by amendment); "material" compromise standard; expanded PI definition to include health insurance, medical information, and taxpayer ID; no private right of action
+- **Notable:** 45-day deadline (added by amendment); "material" compromise standard; expanded PI definition to include health insurance, medical information, and taxpayer ID; no private right of action under the notification statute — and a separate 2024 law (Tenn. Code Ann. § 29-34-215, HB 2434) bars class actions arising from a cybersecurity event unless caused by the entity's gross negligence or willful and wanton misconduct
 - **Source:** [Tenn. Code § 47-18-2107](https://law.justia.com/codes/tennessee/title-47/chapter-18/part-21/section-47-18-2107/)
 
 ### Texas
@@ -700,12 +729,12 @@ States differ on the trigger standard:
 - **Trigger:** Unauthorized acquisition of computerized data that compromises the security, confidentiality, or integrity of personal information
 - **Personal information definition:** Name + SSN, DL/state ID, financial account number with access code. Narrow baseline.
 - **Notification timeline:** In the most expedient time possible and without unreasonable delay (no specific numeric deadline)
-- **AG notification:** Not specifically required by statute; however, notification to credit reporting agencies is required if breach affects more than 1,000 individuals
+- **AG notification:** Required — when a breach affects **500 or more Utah residents**, must notify the Office of the Attorney General and the **Utah Cyber Center** (SB 127, 2023). Notification to credit reporting agencies is required if breach affects 1,000 or more residents.
 - **Consumer notification content:** General notice requirements
 - **Credit monitoring:** Not mandated
 - **Risk of harm exemption:** Yes — notification not required if, after investigation, the entity determines in good faith that the breach will not likely result in harm
 - **Encryption safe harbor:** Yes — encrypted data excluded unless the encryption key was also compromised
-- **Notable:** Relatively simple statute; narrow PI definition; no AG notification requirement; the Utah Consumer Privacy Act (UCPA, effective December 2023) adds comprehensive privacy obligations but does not modify the breach notification statute significantly; no private right of action
+- **Notable:** Narrow PI definition; 2023 amendments (SB 127) added AG and Utah Cyber Center reporting at the 500-resident threshold; Utah's Cybersecurity Affirmative Defense Act (2021) gives entities with a written cybersecurity program conforming to a recognized framework an affirmative defense to breach-related tort claims; the Utah Consumer Privacy Act (UCPA, effective December 2023) adds comprehensive privacy obligations but does not modify the breach notification statute significantly; no private right of action
 - **Source:** [Utah Code § 13-44-202](https://le.utah.gov/xcode/Title13/Chapter44/13-44-S202.html)
 
 ### Vermont
@@ -730,10 +759,10 @@ States differ on the trigger standard:
 - **Notification timeline:** Without unreasonable delay (no specific numeric deadline)
 - **AG notification:** Required — must notify the AG. If breach affects **more than 1,000 Virginia residents**, must also notify consumer reporting agencies.
 - **Consumer notification content:** Description of the incident, type of PI, general description of protective actions, and contact information for the entity
-- **Credit monitoring:** Required to offer free credit monitoring services when SSNs are compromised (without specifying a minimum duration)
+- **Credit monitoring:** Not mandated by statute
 - **Risk of harm exemption:** Yes — notification not required if, after a reasonable investigation, the entity reasonably believes that the breach will not cause undue harm or identity theft
 - **Encryption safe harbor:** Yes — encrypted and redacted data excluded
-- **Notable:** Includes passport and military ID in PI definition; credit monitoring required for SSN breaches; separate health records breach notification provisions; the Virginia Consumer Data Protection Act (VCDPA) adds comprehensive privacy obligations but does not fundamentally alter the breach notification framework; AG notification with no threshold
+- **Notable:** Includes passport and military ID in PI definition; separate health records breach notification provisions; the Virginia Consumer Data Protection Act (VCDPA) adds comprehensive privacy obligations but does not fundamentally alter the breach notification framework; AG notification with no threshold
 - **Source:** [Va. Code § 18.2-186.6](https://law.lis.virginia.gov/vacode/title18.2/chapter6/section18.2-186.6/)
 
 ### Washington
