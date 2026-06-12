@@ -51,8 +51,15 @@ echo "$VERSION_NEW" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "Version mus
 
 CUR="$(tr -d '[:space:]' < VERSION)"
 if [ "$VERSION_NEW" = "$CUR" ]; then
-  echo "Version $VERSION_NEW is already current." >&2
-  exit 1
+  # Resume tolerance: an aborted run (e.g. the behind-origin guard fired after
+  # the manifest bump) leaves VERSION already at the target with the release
+  # commit not yet made. If the bump is uncommitted, continue; only refuse
+  # when this version was actually committed already.
+  if git diff --quiet -- VERSION; then
+    echo "Version $VERSION_NEW is already current and committed." >&2
+    exit 1
+  fi
+  echo "Version $VERSION_NEW already staged in the working tree — resuming the aborted release." >&2
 fi
 
 # Bump all four manifests

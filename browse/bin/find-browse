@@ -149,17 +149,18 @@ DEST="$BASE/browse/dist/browse"
 echo "browse binary not built locally — downloading prebuilt $ASSET (~65-100MB, one time)..." >&2
 if TMP="$(fetch_asset "$ASSET")"; then
   chmod +x "$TMP"
-  # Sanity check: it must execute on this machine before we install it.
-  if "$TMP" --help >/dev/null 2>&1; then
-    mv "$TMP" "$DEST"
+  mv "$TMP" "$DEST"
+  # The runtime must be in place BEFORE the smoke test: the binary resolves
+  # playwright at startup, so even --help fails without node_modules.
+  ensure_runtime "$DEST"
+  if "$DEST" --help >/dev/null 2>&1; then
     echo "installed prebuilt browse binary at $DEST" >&2
-    ensure_runtime "$DEST"
     ensure_browsers
     echo "$DEST"
     exit 0
   fi
-  rm -f "$TMP"
-  echo "downloaded binary failed its smoke test" >&2
+  rm -f "$DEST"
+  echo "downloaded binary failed its smoke test (wrong platform or incomplete runtime) — removed" >&2
 fi
 
 fail
