@@ -6,6 +6,15 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.9.23] — 2026-06-11
+
+Zero-toolchain browse: find-browse downloads prebuilt binary + matching Chromium builds
+
+- find-browse self-heals on machines without bun/node: downloads the prebuilt counsel-browse-{platform} from the release matching the plugin VERSION (fallback: latest), smoke-tests before installing, falls back to ~/.counsel-os/bin when the plugin tree is read-only, then fetches counsel-browse-{platform}-browsers.tar.gz into the ms-playwright cache when Chromium is absent. COUNSEL_OS_NO_DOWNLOAD=1 opts out
+- release-binaries workflow now packages the exact chromium + headless-shell + ffmpeg builds each binary's playwright version expects and attaches them alongside the binaries
+- Verified: the compiled daemon boots healthy from a bare directory with no node_modules - browser builds were the only missing runtime piece
+- Docs: browse SKILL auto-download setup, README bun-now-optional, setup/update skills degrade to the download path when bun is missing
+
 ## [0.9.22] — 2026-06-11
 
 Doctor + update-skill fixes from 0.9.20/0.9.21 dogfooding
