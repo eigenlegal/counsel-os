@@ -15,9 +15,21 @@ on:
   push:
     tags:
       - 'v*'
+  # Manual repair path: rebuild and re-upload assets for an existing release
+  # using the CURRENT workflow file (tag-triggered runs use the workflow as of
+  # the tagged commit, so a workflow fix can't be re-run against an old tag).
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing release tag to build assets for (e.g. v0.9.23)'
+        required: true
 
 permissions:
   contents: write
+
+env:
+  # The tag being built: the pushed tag, or the workflow_dispatch input.
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
   # Create the release once, before the build matrix fans out. This avoids
@@ -29,15 +41,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Create GitHub release if missing
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            echo "Release $GITHUB_REF_NAME already exists — skipping create."
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "Release $RELEASE_TAG already exists — skipping create."
           else
-            gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes
+            gh release create "$RELEASE_TAG" --verify-tag --generate-notes
           fi
 
   build:
@@ -57,6 +71,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
@@ -84,8 +100,10 @@ jobs:
       # Package the exact browser builds this playwright version expects
       # (chromium + chromium_headless_shell + ffmpeg, as installed into the
       # runner's ms-playwright cache) so find-browse can install them on
-      # machines with no toolchain. Tarred from inside the cache dir so the
-      # archive extracts directly into a user's ms-playwright directory.
+      # machines with no toolchain. The tar runs FROM INSIDE the cache dir so
+      # the shell expands the globs there (a -C flag changes tar's directory
+      # but not where the shell expands wildcards) and the archive extracts
+      # directly into a user's ms-playwright directory.
       - name: Package Playwright browsers
         run: |
           bunx playwright install chromium
@@ -94,15 +112,19 @@ jobs:
           else
             CACHE="$HOME/.cache/ms-playwright"
           fi
-          tar -C "$CACHE" -czf "browse/dist/browsers-${{ matrix.artifact }}.tar.gz" \
-            chromium-* chromium_headless_shell-* ffmpeg-*
-          mv "browse/dist/browsers-${{ matrix.artifact }}.tar.gz" \
-             "browse/dist/${{ matrix.artifact }}-browsers.tar.gz"
-          ls -lh browse/dist/
+          OUT="$GITHUB_WORKSPACE/browse/dist/${{ matrix.artifact }}-browsers.tar.gz"
+          cd "$CACHE"
+          DIRS=$(ls -d chromium* ffmpeg* 2>/dev/null || true)
+          if [ -z "$DIRS" ]; then
+            echo "ERROR: no browser dirs found in $CACHE:"; ls -la "$CACHE"; exit 1
+          fi
+          echo "packaging: $DIRS"
+          tar -czf "$OUT" $DIRS
+          ls -lh "$OUT"
 
       - name: Upload binary and browsers to release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload "$GITHUB_REF_NAME" "browse/dist/${{ matrix.artifact }}" --clobber
-          gh release upload "$GITHUB_REF_NAME" "browse/dist/${{ matrix.artifact }}-browsers.tar.gz" --clobber
+          gh release upload "$RELEASE_TAG" "browse/dist/${{ matrix.artifact }}" --clobber
+          gh release upload "$RELEASE_TAG" "browse/dist/${{ matrix.artifact }}-browsers.tar.gz" --clobber
