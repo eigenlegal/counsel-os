@@ -54,9 +54,9 @@ Counsel OS is skill-first: setup is written as an `.md` skill so Claude can adap
 
 The setup skill auto-detects what you have and configures accordingly.
 
-### Claude Code marketplace — experimental
+### Claude Code marketplace — recommended for everyone else
 
-Claude Code's plugin marketplace is the "official" install path. On current Claude Code builds, updates flow cleanly through `/counsel-os:update` followed by `/reload-plugins`. On older builds the cache invalidation is fragile — installs can get stuck on old manifests, and updates can require a full Cmd-Q restart. If your install gets stuck, the local-install path above is the reliable fallback.
+Claude Code's plugin marketplace is the official install path, and the most automated one: versioned releases, updates through `/counsel-os:update` followed by `/reload-plugins`, and no build toolchain required — the browse skill downloads its prebuilt binary and browser builds from the GitHub release on first use. The local clone above is only better when you're developing the plugin itself.
 
 ```
 /plugin marketplace add eigenlegal/counsel-os
@@ -65,7 +65,7 @@ Claude Code's plugin marketplace is the "official" install path. On current Clau
 
 Once installed, Claude Code caches the plugin under `~/.claude/plugins/cache/eigenlegal/counsel-os/{version}/` and updates flow through `/counsel-os:update`.
 
-If install fails or seems stuck:
+On older Claude Code builds the cache invalidation can be fragile. If install fails or seems stuck:
 
 ```bash
 # Refresh the marketplace clone
@@ -213,6 +213,7 @@ Everything in `scripts/` is a narrow, deterministic helper. The document-pipelin
 | `scripts/clean_format.py <input.docx> <output.docx> [--template <path>]` | Rebuilds a messy `.docx` against the professional style template (`scripts/legal-template.docx`): consistent heading numbering, list formatting, smart quotes. Warns on content controls and merged cells. | A counterparty draft is too mangled to redline cleanly; normalizing a doc before comparison. |
 | `scripts/import_reference.sh <source-dir> <collection> [--source "attribution"]` | Imports third-party material (sample agreements, form books, checklists — .docx/.doc/.md) into `practice/reference/<collection>/` with provenance frontmatter, the reference-only banner, and index registration. | Adding a form book or agreement set to your searchable reference quarry. Or just tell counsel: "import this folder as reference." |
 | `scripts/extract_redlines.py <input.docx> [--format markdown]` | Extracts tracked changes and comments into structured records: per changed paragraph, original vs revised text, inserted/deleted fragments, author, date, section context, anchored comments. | A counterparty returned a markup — counsel uses this for the change-by-change assessment (`read --redline`); run it directly for a quick review table. |
+| `scripts/diff_rounds.py --ours <sent.docx> --theirs <returned.docx> [--base <docx>]` | Round-over-round negotiation comparison: classifies what happened to each of your counters — ACCEPTED, REVERTED, MODIFIED, or NEW changes they introduced. `--base` (the pre-redline baseline) sharpens the classification. | Round 2+ of a negotiation — counsel runs it inside `read --redline` when a prior round exists; run directly to see what survived. |
 
 The redline flow counsel runs for you: analysis → `apply_redlines.py` (edits + comments on a copy) → `word_compare.sh` (real tracked changes) — see `primitives/draft.md` and `primitives/redline-output.md`.
 
@@ -232,7 +233,8 @@ Only relevant if you're developing Counsel OS itself:
 | `scripts/lint_knowledge.py [--check-versions]` | Lints `knowledge/` conventions (no checkboxes, no H2-before-H1, frontmatter present) and, with the flag, verifies the four manifests agree. Runs in CI. | Before committing knowledge content changes. |
 | `scripts/bump_content_versions.py [--date YYYY-MM-DD]` | Hashes each content group and bumps `content-version` frontmatter for groups that changed — this is what lets `/counsel-os:update` detect upstream law/practice changes. | After editing anything under `knowledge/law/` or `knowledge/practice-seed/`. |
 | `scripts/validate_law_frontmatter.py` | Validates law-area frontmatter against `knowledge/law/frontmatter-policy.json`; reports attestations coming due. Runs in CI. | After editing law frontmatter; periodically to see attestation debt. |
-| `scripts/run_evals.py [--generate] [--model <id>] [--only <fixture>] [--self-test]` | Scores golden-matter eval outputs in `evals/`; `--generate` runs the counsel agent headlessly against each fixture's mini-vault first (costs API tokens); `--self-test` validates the scorer itself (free, runs in CI). | Full generate+score before releases and when qualifying a new model; see `evals/README.md`. |
+| `scripts/run_evals.py [--generate] [--model <id>] [--only <fixture>] [--self-test] [--save-baseline <id>] [--compare-baseline <id>]` | Scores eval outputs in `evals/`; `--generate` runs the counsel agent headlessly against each fixture's mini-vault first (costs API tokens); `--self-test` validates the scorer (free, runs in CI); baselines snapshot per-model scores and gate on regressions. | Full generate+score before releases and when qualifying a new model; see `evals/README.md`. |
+| `scripts/gen_browse_reference.py [--check]` | Regenerates the browse skill's command reference from the source command registry; `--check` fails on drift (runs in CI). | After adding or changing a browse CLI command. |
 
 ---
 
@@ -329,7 +331,7 @@ The plugin discovers content through two mechanisms:
 
 **Example:** Your standard liability cap is 12 months (`practice/standards/`). But for Acme Corp you've pre-approved 24 months (in your Acme Corp entity file). When reviewing an Acme contract, the system uses 24 months — but if GDPR requires a specific data processing provision (`law/`), that's non-negotiable regardless.
 
-**These rules are tested, not just stated.** The repo ships safety-rule evals (`evals/`) — live agent runs against fixture vaults engineered to tempt each failure: a practice standard that permits what law forbids, a reference form presented as "our position," another counterparty's concession offered as precedent, and an always-escalate threshold under sign-today deal pressure. All four must pass before release. See `evals/README.md`.
+**These rules are tested, not just stated.** The repo ships eight live-run eval fixtures (`evals/`) — agent runs against mini-vaults engineered to tempt each failure. Four test the safety rules (a practice standard that permits what law forbids, a reference form presented as "our position," another counterparty's concession offered as precedent, an always-escalate threshold under sign-today pressure) and four test behavior (detecting the right law areas from an unlabeled scenario, classifying a returned redline round, flagging *absent* provisions, and grading clauses against deliberately non-market vault standards rather than market intuition). Per-model baselines gate regressions when the underlying model changes. See `evals/README.md`.
 
 ### Continuous Learning
 
