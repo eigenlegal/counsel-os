@@ -41,6 +41,7 @@ Reminders specific to evaluation:
 - Strictest wins when multiple `law/` areas apply.
 - Compound requirements don't replace each other (data-privacy DPA + financial-services PCI = both).
 - Cite specific regulations, not "regulations" — e.g., "GDPR Art. 33 requires 72-hour notification."
+- **Staleness flag at point of use:** when a finding relies on a `law/` file, check its `last-reviewed` frontmatter against the area's cadence in `law/frontmatter-policy.json`. If it is past cadence (or has no `last-reviewed`), say so inline in that finding: `⚠️ law last verified {date} — past its {N}-month review cadence; verify before relying`. Never let a Tier 1 call rest silently on stale law.
 
 ### Per-issue assessment format
 
