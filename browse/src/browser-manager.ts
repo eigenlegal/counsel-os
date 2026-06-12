@@ -15,7 +15,7 @@
  *   restores state. Falls back to clean slate on any failure.
  */
 
-import { chromium, type Browser, type BrowserContext, type Page, type Locator } from 'playwright';
+import type { Browser, BrowserContext, Page, Locator } from 'playwright';
 import { addConsoleEntry, addNetworkEntry, addDialogEntry, networkBuffer, type DialogEntry } from './buffers';
 
 export class BrowserManager {
@@ -44,6 +44,12 @@ export class BrowserManager {
   private dialogPromptText: string | null = null;
 
   async launch() {
+    // Lazy import: playwright is EXTERNAL in the compiled binary, and a static
+    // import gets hoisted to bundle load time — which breaks even `--help` on
+    // machines where node_modules isn't reachable from the invocation cwd.
+    // Importing here resolves it at launch time, after NODE_PATH is in place
+    // (ensurePluginNodePath seeds it in the daemon's spawn env).
+    const { chromium } = await import('playwright');
     this.browser = await chromium.launch({ headless: true });
 
     // Chromium crash → exit with clear message

@@ -6,6 +6,15 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.9.25] — 2026-06-12
+
+Zero-toolchain browse actually works: lazy playwright import + runtime-before-smoke-test
+
+- Two bugs found by end-to-end testing of the v0.9.24 assets:
+- 1. The bundler hoists external imports to bundle load time, so even --help failed unless invoked from a cwd that could resolve node_modules. Fix: browser-manager now imports playwright lazily at launch(), resolved after NODE_PATH is seeded into the daemon's spawn env. Verified cwd-independent: client from /tmp, repo node_modules hidden, daemon healthy with live Chromium.
+- 2. find-browse smoke-tested the downloaded binary BEFORE installing the playwright runtime, rejecting every good binary. Fix: install to destination, provision runtime, then smoke-test.
+- Also: release.sh resume tolerance - an aborted run (behind-origin guard after the manifest bump) no longer blocks the re-run.
+
 ## [0.9.24] — 2026-06-12
 
 Fix prebuilt browse binaries: playwright external + runtime tarball (binaries were baking build-host paths)
