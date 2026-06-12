@@ -99,8 +99,10 @@ This reports warnings and attestations due for the plugin-shipped law that `/cou
 ```bash
 grep -r --include='*.md' '^last-reviewed:' "$LEGAL_ROOT/law" 2>/dev/null
 grep -rL --include='*.md' '^last-reviewed:' "$LEGAL_ROOT/law" 2>/dev/null
-grep -rl --include='*.md' '^managed-by: user' "$LEGAL_ROOT/law" 2>/dev/null
+grep -rl --include='*.md' '^managed-by: user' "$LEGAL_ROOT/law" 2>/dev/null | grep -v 'FRONTMATTER\.md'
 ```
+
+Exclude `FRONTMATTER.md` from every Part B result: it is the frontmatter documentation file, not law content — it contains `managed-by: user` and `last-reviewed:` lines inside its own example snippets, so without the exclusion it shows up as a false "user-owned" or "never-attested" file.
 
 Then Read `${CLAUDE_PLUGIN_ROOT}/knowledge/law/frontmatter-policy.json` for `review_cadence_months`. For each vault law file with a `last-reviewed` date, the attestation is stale when today is more than the area's cadence (months) past that date — the area is the first path segment under `law/` (use `default` for areas not in the policy, e.g. custom user areas). Files with no `last-reviewed` have never been attested.
 

@@ -6,6 +6,14 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.9.22] — 2026-06-11
+
+Doctor + update-skill fixes from 0.9.20/0.9.21 dogfooding
+
+- Doctor: exclude law/FRONTMATTER.md from Part B attestation/ownership greps — its documentation snippets contain managed-by: user and last-reviewed: lines, producing a false 'user-owned law file' (observed on a real vault).
+- Update skill: practice-merge step now requires patch --no-backup-if-mismatch plus .orig/.rej cleanup before the Step 9 commit — patch backup litter inside the law/ practice/ pathspec was swept into a vault commit and had to be amended out. Failed hunks (.rej) mean hand-merge, never commit.
+- Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
 ## [0.9.21] — 2026-06-11
 
 Attestations to zero: Montana WDEA fix, Oklahoma + Alabama privacy laws, doctor override fix, auto-tagged releases
