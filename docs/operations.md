@@ -8,6 +8,7 @@
 |------|---------|------|
 | Pull plugin + content updates | `/counsel-os:update` | Weekly, or when notified of a release |
 | Health check | `/counsel-os:doctor` | Monthly, and after every update |
+| Consistency spot-check | `/counsel-os:doctor --consistency` | Before significant negotiations, and after law refreshes or manual standards edits |
 | Practice analytics + knowledge harvest | `/counsel-os:retro` | Quarterly, or every ~10 closed matters |
 | Refresh user-owned law | `/counsel-os:law-refresh` | Per the cadence tiers below |
 | Golden-matter evals | `python3 scripts/run_evals.py --generate` | Before releases and when changing models — plugin developers only, not end users |

@@ -183,7 +183,7 @@ legal_root: /path/to/your/legal/root
 /counsel-os:doctor
 ```
 
-Read-only diagnostic: verifies legal-root resolution and config, vault structure, plugin version vs latest, law-content currency, optional dependencies (pandoc, python-docx, bun, Playwright, QMD), browse daemon build, backup freshness, and vault git hygiene — one ✅/⚠️/❌ table with a fix command per row. Run monthly and after every update. See `docs/operations.md` for recommended cadences across all the maintenance skills.
+Read-only diagnostic: verifies legal-root resolution and config, vault structure, plugin version vs latest, law-content currency, optional dependencies (pandoc, python-docx, bun, Playwright, QMD), browse daemon build, backup freshness, vault git hygiene, **vault consistency** (numeric positions compared across standards ↔ library ↔ law floors — catches a standard that drifted from its clause bank or now permits what updated law forbids), and **matter-aware law impact** (open matters whose law areas were refreshed after the matter's last update) — one ✅/⚠️/❌ table with a fix command per row. `--consistency` runs only the last two as a cheap pre-deal spot-check. Run monthly and after every update. See `docs/operations.md` for recommended cadences across all the maintenance skills.
 
 ### Backup and Restore
 

@@ -1,6 +1,6 @@
 ---
 name: doctor
-description: "Health check for a Counsel OS install: legal-root config, vault structure, plugin version vs latest, law-content currency, optional dependencies (pandoc, python-docx, bun, Playwright Chromium, qmd), browse daemon, backups, vault git, and search-index freshness — one ✅/⚠️/❌ table with a one-line fix per finding. Read-only: reports and recommends, never changes anything. Use monthly, after /counsel-os:update, or when something seems off."
+description: "Health check for a Counsel OS install: legal-root config, vault structure, plugin version vs latest, law-content currency, optional dependencies (pandoc, python-docx, bun, Playwright Chromium, qmd), browse daemon, backups, vault git, search-index freshness, vault consistency (standards ↔ library ↔ law floors), and matter-aware law impact (open matters whose law areas were refreshed after their last update) — one ✅/⚠️/❌ table with a one-line fix per finding. Pass --consistency to run only the consistency + law-impact checks (cheap pre-deal spot-check). Read-only: reports and recommends, never changes anything. Use monthly, after /counsel-os:update, or when something seems off."
 ---
 
 # Doctor — Install Health Check
@@ -208,7 +208,38 @@ If the CLI is absent but a QMD MCP server is connected (a `status` tool is expos
 - Index reports documents pending update or embedding → ⚠️, fix: `qmd update && qmd embed`.
 - qmd not installed and no MCP index → ✅, detail "no index configured — filesystem search in use (optional)". Absence of QMD is not a defect.
 
-## Step 10: Report
+## Step 10: Vault Consistency (standards ↔ library ↔ law)
+
+The eval suite tests that the *plugin* respects precedence; this check tests that the *user's vault* hasn't drifted into internal contradiction — after upstream merges, manual edits, or law refreshes. This is judgment work over file contents, not a script: read the files and compare the load-bearing numbers.
+
+**Standards ↔ library.** For each `practice/standards/{topic}.md`, find the matching `practice/library/` file (names differ slightly — match by topic: `termination-renewal` ↔ `termination-and-renewal`, etc.; not every standard has a library file). Extract the numeric positions both sides state — deletion/return windows, breach-notification hours, notice and cure periods, cap amounts and multipliers, audit frequency, transition durations, insurance limits — and compare the standard's Our Position / GREEN band against the library's Standard and Minimum Acceptable variants.
+
+- A library *Aggressive* variant stricter than the standard is normal (the opening ask). A library **Standard or Minimum Acceptable** variant that contradicts the standard's accept band is a finding — UNLESS the files' Notes explain the split deliberately. Report what diverges with both numbers and file paths; recommend aligning or documenting, never auto-fix.
+
+**Practice ↔ law floors.** For standards whose topic is law-governed (breach notification, data deletion, noncompetes, auto-renewal mechanics, marketing claims), check the relevant `law/` area's Key Constraints: a standard whose *accept band* would permit violating a current legal floor is a finding (e.g., a 96-hour breach-notification accept band against a 72-hour statutory regime the practice is subject to). Use the vault's law copies; cite the specific constraint.
+
+- No contradictions → ✅ with the pair count ("N standard/library pairs + M law floors checked").
+- Findings → ⚠️ per divergence, one line each: `{topic}: standard says {X}, library Minimum Acceptable says {Y} — align or document`.
+
+## Step 11: Matter-Aware Law Impact
+
+Open matters carry a `Law areas:` field; law files carry `last-reviewed`. When law moved *after* the lawyer last touched a matter, the matter may be running on a stale understanding.
+
+```bash
+grep -l -E '^stage: (intake|working)' "$LEGAL_ROOT"/{matters_path:-matters}/*.md
+```
+
+For each open matter: read its `Law areas` and `updated:` frontmatter. For each named area, find the newest `last-reviewed` across `law/{area}/*.md`. If the area was reviewed **after** the matter's `updated:` date, the matter predates the law refresh.
+
+- No open matter behind any of its law areas → ✅.
+- Otherwise → ⚠️ with the count in the table row, and a short list under the table: `{matter} (updated {date}) — law/{area} refreshed {date}: review the area's recent changes before the next action`. Where the refresh's dated watch items are at hand (CHANGELOG, area frontmatter), name the specific development rather than just the date.
+
+## Invocation Modes
+
+- **Bare `/counsel-os:doctor`** — run every step.
+- **`--consistency`** — run ONLY Steps 10 and 11 and report just those rows plus a verdict. This is the cheap pre-deal spot-check between full monthly runs: "is my vault internally coherent and are my open matters current with the law layer?"
+
+## Step 12: Report
 
 Output exactly one table, then a verdict. Keep every Detail and Fix to one line.
 
@@ -232,11 +263,13 @@ Runtime: {Claude Code / Cowork / other} · Plugin root: {path} · Legal root: {p
 | 7 | Backups | ⚠️ | newest 47 days old | bash "${CLAUDE_PLUGIN_ROOT}/backup" |
 | 8 | Vault git | ✅ | repo · remote · 2 uncommitted | — |
 | 9 | Search index | ✅ | 1287 docs, current | — |
+| 10 | Vault consistency | ⚠️ | 1 divergence: deletion window (standard 90d vs library 30d) | align or document the split |
+| 11 | Matter law impact | ⚠️ | 2 open matters behind refreshed law areas | review listed areas before next action |
 
 **Verdict:** {one line — "healthy", "N warnings — fix X first", or "broken: {what} — run {fix} before doing legal work"}
 ```
 
-After the table, add at most two short follow-ups when warranted: a per-area staleness list from check 4, and a "skipped in this runtime" list. Order the verdict's recommendations ❌ first, then ⚠️ by impact. Do not offer to apply fixes wholesale; the user runs them (or asks for a specific one).
+After the table, add at most three short follow-ups when warranted: a per-area staleness list from check 4, the per-matter law-impact list from check 11, and a "skipped in this runtime" list. Order the verdict's recommendations ❌ first, then ⚠️ by impact. Do not offer to apply fixes wholesale; the user runs them (or asks for a specific one).
 
 ## Cowork / no-shell runtimes
 
@@ -246,4 +279,5 @@ Without shell access, run the file-based checks through Read/list/search tools a
 - **Check 2** — list directories and count files with file tools.
 - **Check 3** — Read `{plugin_root}/VERSION` for the loaded version; report "latest unknown in this runtime" (⚠️) with fix `/counsel-os:update`.
 - **Check 4** — Part A is shell-only (skip it); Part B works: Read `frontmatter-policy.json`, extract `last-reviewed:` and `managed-by:` lines from vault law files with whatever search tool exists, and do the cadence comparison yourself.
+- **Checks 10 and 11** — fully file-based: both work in Cowork via Read/search tools (slower, same results). `--consistency` mode is therefore fully Cowork-capable.
 - **Checks 5, 6, 7, 8, 9** — shell- or home-directory-dependent: report status `—` with detail "not checkable in this runtime (no shell)". Do not infer their state.
