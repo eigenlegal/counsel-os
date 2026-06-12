@@ -6,6 +6,15 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.9.26] — 2026-06-12
+
+Doctor consistency + matter-aware law-impact checks; evaluate flags stale law at point of use
+
+- doctor Step 10: vault consistency - numeric positions compared across practice/standards <-> practice/library variants and against law/ Key Constraints floors; undocumented contradictions reported with both numbers and paths (the 30/90 deletion-window divergence class); deliberate ask-vs-accept splits documented in Notes are respected
+- doctor Step 11: matter-aware law impact - open matters whose Law areas were refreshed after the matter's updated: date are flagged with the specific areas (dogfooded live: caught 2 real matters behind the 2026-06-11 law refresh)
+- /counsel-os:doctor --consistency runs only those two checks - cheap pre-deal spot-check, fully Cowork-capable
+- evaluate: findings that rely on a law file past its review cadence carry an inline staleness warning - protection at the moment of reliance, complementing doctor's monthly inventory
+
 ## [0.9.25] — 2026-06-12
 
 Zero-toolchain browse actually works: lazy playwright import + runtime-before-smoke-test
