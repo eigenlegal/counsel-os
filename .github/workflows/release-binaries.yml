@@ -85,10 +85,16 @@ jobs:
         run: bun install --frozen-lockfile
 
       # Mirrors the root package.json "build" script (same entrypoint and
-      # externals), but with a per-platform output name.
+      # externals), but with a per-platform output name. Playwright is
+      # EXTERNAL: bundling it bakes the build host's absolute node_modules
+      # path into the binary (playwright resolves its own package.json and
+      # assets from disk at runtime), which breaks on every other machine.
+      # The runtime tarball below ships the playwright packages instead; the
+      # binary resolves them from node_modules next to the install location.
       - name: Compile standalone binary
         run: >
           bun build --target=bun --compile -e electron -e 'chromium-bidi/*'
+          -e playwright -e 'playwright/*' -e playwright-core -e 'playwright-core/*'
           browse/src/cli.ts
           --outfile "browse/dist/${{ matrix.artifact }}"
 
@@ -122,9 +128,16 @@ jobs:
           tar -czf "$OUT" $DIRS
           ls -lh "$OUT"
 
-      - name: Upload binary and browsers to release
+      # The playwright runtime the external binary resolves at startup. Pure
+      # JS, platform-independent, no nested deps — every matrix job uploads
+      # the same content under one name; --clobber makes that idempotent.
+      - name: Package playwright runtime
+        run: tar -czhf "browse/dist/counsel-browse-runtime.tar.gz" node_modules/playwright node_modules/playwright-core
+
+      - name: Upload binary, browsers, and runtime to release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release upload "$RELEASE_TAG" "browse/dist/${{ matrix.artifact }}" --clobber
           gh release upload "$RELEASE_TAG" "browse/dist/${{ matrix.artifact }}-browsers.tar.gz" --clobber
+          gh release upload "$RELEASE_TAG" "browse/dist/counsel-browse-runtime.tar.gz" --clobber

@@ -6,6 +6,16 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.9.24] — 2026-06-12
+
+Fix prebuilt browse binaries: playwright external + runtime tarball (binaries were baking build-host paths)
+
+- The compiled binary bundled playwright, which resolves its own package.json and assets from disk at runtime via paths baked at BUILD time - so runner-built binaries pointed at /Users/runner/... and failed on every other machine (caught by the first true end-to-end install test; the earlier bare-directory test was a false positive because the local repo's node_modules existed at the baked path)
+- Fix: playwright/playwright-core are now externals (matching the chromium-bidi pattern); releases ship counsel-browse-runtime.tar.gz (~5MB, pure JS, platform-independent) that find-browse extracts as node_modules two directories above the binary, mirroring the dev layout
+- find-browse: downloads binary + runtime + browsers; home fallback moved to ~/.counsel-os/browse/dist/browse so the runtime geometry is uniform
+- Verified by true isolation test: fake tree + only the runtime packages + repo node_modules renamed away -> daemon boots healthy
+- release-binaries.yml: glob-expansion fix (cd into the cache before tar), workflow_dispatch repair path for existing tags, runtime tarball packaging
+
 ## [0.9.23] — 2026-06-11
 
 Zero-toolchain browse: find-browse downloads prebuilt binary + matching Chromium builds
