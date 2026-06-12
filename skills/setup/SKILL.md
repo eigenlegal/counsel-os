@@ -145,7 +145,7 @@ If shell access and plugin-tree write access are available, and the plugin has `
 1. Check if `bun` is available: `command -v bun`
 2. If yes: run `cd "${CLAUDE_PLUGIN_ROOT}" && bun install && bun run build`
 3. Check whether Playwright Chromium is installed. If shell and network access are available, run `cd "${CLAUDE_PLUGIN_ROOT}" && bunx playwright install chromium`. If network access is unavailable, tell the user the browse skill will prompt them to run that command before first use.
-4. If Bun is unavailable: note that the browse skill won't be available and suggest installing Bun.
+4. If Bun is unavailable: no action needed — `browse/bin/find-browse` downloads a prebuilt binary and the matching browser builds from the plugin's GitHub release on first browse use (~220MB, one time). Just mention that the first browse command will take a couple of minutes. `COUNSEL_OS_NO_DOWNLOAD=1` disables that fallback, in which case browse requires Bun.
 
 If shell access or plugin-tree write access is unavailable, skip this step. The rest of Counsel OS still works.
 
