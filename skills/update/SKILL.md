@@ -249,6 +249,7 @@ For approved practice updates:
 1. Preserve user-owned sections, especially `## Our Position`.
 2. Update reference sections from the seed.
 3. Write only the approved files.
+4. If you apply deltas with `patch`, pass `--no-backup-if-mismatch` and clean up afterward: `find {legal_root}/practice -name '*.orig' -delete -o -name '*.rej' -delete`. `patch` drops `.orig` backups (and `.rej` rejects on failed hunks) next to the files it touches, and the Step 9 pathspec commit will happily sweep them into the vault history. A hunk that fails entirely means the vault file diverged too far for a textual merge — fall back to applying the upstream change by hand, don't commit the `.rej`.
 
 For new practice files:
 1. Copy from `knowledge/practice-seed/`.
@@ -278,7 +279,7 @@ The index does not watch the vault — without this step, knowledge-base searche
 
 If `{legal_root}` is a git repo and changes were applied, offer to commit — scoped to what this update actually touched, never `git add -A`:
 
-1. Check `git -C {legal_root} status --short` first. Vaults routinely carry unrelated in-progress work (staged matter files, profile edits, untracked notes); a blanket `add -A` — or a bare `git commit` against a pre-loaded index — sweeps it into the update commit.
+1. Check `git -C {legal_root} status --short` first. Vaults routinely carry unrelated in-progress work (staged matter files, profile edits, untracked notes); a blanket `add -A` — or a bare `git commit` against a pre-loaded index — sweeps it into the update commit. Merge-tool litter (`*.orig`, `*.rej`) inside the pathspec gets swept too — confirm Step 6's cleanup ran before staging.
 2. Stage and commit by pathspec so only update-touched paths land, regardless of what else is staged:
 
 ```bash
