@@ -2,7 +2,7 @@
 
 Forward-looking ideas, not commitments. Each entry records the observed gap that motivated it, so future design starts from a real scenario rather than a feature name. Sourced from live-vault dogfooding (2026-06-11 session); see git history for the fixes that session already shipped.
 
-Before building anything here that assumes a single user, read `docs/architecture/team-design.md` — docket and status especially would want per-person assignment fields if team vaults land first.
+Before building anything here that assumes a single user, check the multi-lawyer vault design (drafted alongside v0.9.23 as `docs/architecture/team-design.md`, currently unpublished — see commit `5ede85c`) — docket and status especially would want per-person assignment fields if team vaults land first.
 
 ## 1. Deadline docket
 
