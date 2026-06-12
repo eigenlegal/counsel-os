@@ -2,17 +2,131 @@
 set -euo pipefail
 
 # Find the Counsel OS browse binary. Echoes path and exits 0, or exits 1 if not found.
+#
+# Search order: repo root build -> plugin root build -> ~/counsel-os build
+# -> ~/.counsel-os/bin (prior download) -> download a prebuilt binary from
+# the GitHub release matching this plugin's VERSION (fallback: latest release).
+# Downloaded installs also fetch the matching Playwright browser builds
+# (counsel-browse-{platform}-browsers.tar.gz) when the ms-playwright cache is
+# empty, so machines with no bun/node toolchain get a working daemon.
+# Set COUNSEL_OS_NO_DOWNLOAD=1 to disable all download fallbacks (airgapped /
+# build-from-source-only installs).
+#
+# bash-3.2 compatible (stock macOS).
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
 
+REPO_URL="https://github.com/eigenlegal/counsel-os"
+VERSION="$(cat "$PLUGIN_ROOT/VERSION" 2>/dev/null | tr -d '[:space:]' || true)"
+
+case "$(uname -s)-$(uname -m)" in
+  Darwin-arm64)             ASSET="counsel-browse-darwin-arm64" ;;
+  Darwin-x86_64)            ASSET="counsel-browse-darwin-x64" ;;
+  Linux-x86_64|Linux-amd64) ASSET="counsel-browse-linux-x64" ;;
+  *)                        ASSET="" ;;
+esac
+
+# Candidate release URLs for an asset name: this plugin's version first, then
+# the latest release (covers the window where a fresh release is still building).
+release_urls() {
+  [ -n "$VERSION" ] && echo "$REPO_URL/releases/download/v$VERSION/$1"
+  echo "$REPO_URL/releases/latest/download/$1"
+}
+
+# Ensure the Playwright browser builds exist for a downloaded binary. The
+# compiled daemon is self-contained EXCEPT for Chromium itself, which lives in
+# the ms-playwright cache. Best-effort: on failure, print guidance and return
+# 0 so the binary path is still usable (the daemon will report the missing
+# browser clearly on launch).
+ensure_browsers() {
+  [ "${COUNSEL_OS_NO_DOWNLOAD:-0}" = "1" ] && return 0
+  local cache
+  if [ -n "${PLAYWRIGHT_BROWSERS_PATH:-}" ]; then
+    cache="$PLAYWRIGHT_BROWSERS_PATH"
+  elif [ "$(uname -s)" = "Darwin" ]; then
+    cache="$HOME/Library/Caches/ms-playwright"
+  else
+    cache="${XDG_CACHE_HOME:-$HOME/.cache}/ms-playwright"
+  fi
+  ls "$cache"/chromium-* >/dev/null 2>&1 && return 0
+  [ -n "$ASSET" ] || return 0
+  local tmp url
+  tmp="$(mktemp "${TMPDIR:-/tmp}/counsel-browsers.XXXXXX")"
+  for url in $(release_urls "$ASSET-browsers.tar.gz"); do
+    echo "Playwright Chromium not installed — downloading matching browser builds (~150MB, one time)..." >&2
+    if curl -fSL --retry 2 --connect-timeout 10 -o "$tmp" "$url" 2>/dev/null; then
+      mkdir -p "$cache"
+      if tar -xzf "$tmp" -C "$cache" 2>/dev/null; then
+        rm -f "$tmp"
+        echo "installed Playwright browsers into $cache" >&2
+        return 0
+      fi
+    fi
+  done
+  rm -f "$tmp"
+  echo "WARNING: could not download browser builds. Install manually with: bunx playwright install chromium" >&2
+  return 0
+}
+
 if [ -n "$ROOT" ] && test -x "$ROOT/browse/dist/browse"; then
   echo "$ROOT/browse/dist/browse"
+  exit 0
 elif test -x "$PLUGIN_ROOT/browse/dist/browse"; then
   echo "$PLUGIN_ROOT/browse/dist/browse"
+  exit 0
 elif test -x "$HOME/counsel-os/browse/dist/browse"; then
   echo "$HOME/counsel-os/browse/dist/browse"
-else
+  exit 0
+elif test -x "$HOME/.counsel-os/bin/counsel-browse"; then
+  ensure_browsers
+  echo "$HOME/.counsel-os/bin/counsel-browse"
+  exit 0
+fi
+
+# --- No local binary: try the prebuilt-release fallback -----------------------
+
+fail() {
   echo "ERROR: browse binary not found. Run /counsel-os:setup or build with: bun run build" >&2
   exit 1
+}
+
+[ "${COUNSEL_OS_NO_DOWNLOAD:-0}" = "1" ] && fail
+command -v curl >/dev/null 2>&1 || fail
+if [ -z "$ASSET" ]; then
+  echo "ERROR: no prebuilt browse binary for $(uname -s)/$(uname -m). Build with: bun run build" >&2
+  exit 1
 fi
+
+# Prefer installing next to the plugin (versioned cache dir); fall back to a
+# home-directory bin when the plugin tree is not writable.
+DEST_DIR="$PLUGIN_ROOT/browse/dist"
+DEST="$DEST_DIR/browse"
+if ! mkdir -p "$DEST_DIR" 2>/dev/null || ! [ -w "$DEST_DIR" ]; then
+  DEST_DIR="$HOME/.counsel-os/bin"
+  DEST="$DEST_DIR/counsel-browse"
+  mkdir -p "$DEST_DIR"
+fi
+
+TMP="$(mktemp "${TMPDIR:-/tmp}/counsel-browse.XXXXXX")"
+trap 'rm -f "$TMP"' EXIT
+
+for url in $(release_urls "$ASSET"); do
+  echo "browse binary not built locally — downloading prebuilt $ASSET (~65-100MB, one time)..." >&2
+  if curl -fSL --retry 2 --connect-timeout 10 -o "$TMP" "$url" 2>/dev/null; then
+    chmod +x "$TMP"
+    # Sanity check: it must execute on this machine before we install it.
+    if "$TMP" --help >/dev/null 2>&1; then
+      mv "$TMP" "$DEST"
+      trap - EXIT
+      echo "installed prebuilt browse binary at $DEST" >&2
+      ensure_browsers
+      echo "$DEST"
+      exit 0
+    fi
+    echo "downloaded binary failed its smoke test — trying next source" >&2
+  fi
+done
+
+fail

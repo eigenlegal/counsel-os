@@ -168,15 +168,17 @@ After updating methodology, tell the user whether a restart is needed. In most p
 
 ### Rebuild the Browse Runtime
 
-The browse daemon's dependencies and compiled binary are built per cache directory, so a freshly installed version has no `node_modules/` and no `browse/dist/browse`. The browse CLI does not rebuild itself — `browse/bin/find-browse` just fails with "browse binary not found" — so without this step the first `/counsel-os:browse` use after an update breaks.
+The browse daemon's compiled binary is built per cache directory, so a freshly installed version has no `browse/dist/browse`. `browse/bin/find-browse` self-heals on machines with network access — it downloads the prebuilt binary (and browser builds if missing) from the plugin's GitHub release on the next browse use — but a local build is faster to first use and required when downloads are disabled.
 
-If the user uses `/counsel-os:browse`, shell access is available, and the new version's plugin root lacks `browse/dist/browse` or `node_modules/`, rebuild there:
+If the user uses `/counsel-os:browse`, shell access and bun are available, and the new version's plugin root lacks `browse/dist/browse`, rebuild there:
 
 ```bash
 cd ~/.claude/plugins/cache/{marketplace}/counsel-os/{new_version}
 bun install
 bun run build
 ```
+
+If bun is unavailable, no action needed — tell the user the first browse command after the update will download the prebuilt binary (one-time, ~1-2 minutes).
 
 Notes:
 

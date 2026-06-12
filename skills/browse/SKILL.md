@@ -18,25 +18,25 @@ You are using a headless browser to access web resources for legal work. This sk
 
 ## Setup
 
-The browse binary must be built first. If it hasn't been built (`browse/dist/browse` missing), run from the plugin root:
+Setup is automatic for most installs: `browse/bin/find-browse` downloads a prebuilt binary and the matching Playwright browser builds from the plugin's GitHub release on first use (~220MB total, one time) — no bun, node, or build step required. Set `COUNSEL_OS_NO_DOWNLOAD=1` to disable the download fallback (airgapped or build-from-source-only environments).
+
+To build from source instead (development, or when no prebuilt binary exists for the platform), run from the plugin root:
 
 ```bash
 cd [counsel-os directory]
 bun install
 bun run build
-```
-
-Install the Playwright browser if it has not been installed yet:
-```bash
-bunx playwright install chromium
+bunx playwright install chromium   # the headless browser itself
 ```
 
 ## Finding the Binary
 
-The helper script `browse/bin/find-browse` locates the browse binary. The binary can be at:
-1. `browse/dist/browse` (compiled binary)
+The helper script `browse/bin/find-browse` locates (or installs) the browse binary, in order:
+1. `browse/dist/browse` in the current git repo (development build)
 2. The active plugin root's `browse/dist/browse`
 3. `~/counsel-os/browse/dist/browse`
+4. `~/.counsel-os/bin/counsel-browse` (a previously downloaded prebuilt binary)
+5. Download fallback: the prebuilt `counsel-browse-{platform}` from the release matching the plugin VERSION (or latest), installed into the plugin root (or `~/.counsel-os/bin` if the plugin tree is read-only), plus the matching `-browsers.tar.gz` into the ms-playwright cache when Chromium is absent.
 
 ## Daemon Lifecycle
 

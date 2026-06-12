@@ -2,13 +2,14 @@ name: Release binaries
 
 # Builds standalone `counsel-browse` binaries (the browse/ bun + Playwright
 # daemon) for each supported platform and attaches them to the GitHub release
-# for the pushed tag.
+# for the pushed tag, PLUS a matching browsers tarball
+# (counsel-browse-browsers-{platform}.tar.gz) containing the exact Chromium +
+# headless-shell + ffmpeg builds the pinned playwright version expects.
+# browse/bin/find-browse downloads both on machines with no bun/node
+# toolchain, making marketplace installs fully self-sufficient.
 #
-# Note on Playwright: the binary bundles the daemon code only, NOT the
-# Chromium browser. Playwright Chromium is installed on first use
-# (`bunx playwright install chromium` — see skills/setup/SKILL.md and
-# skills/browse/SKILL.md). The smoke test below only verifies the binary
-# starts and prints usage; `--help` exits before any browser is launched.
+# The smoke test only verifies the binary starts and prints usage; `--help`
+# exits before any browser is launched.
 
 on:
   push:
@@ -80,7 +81,28 @@ jobs:
       - name: Smoke test
         run: ./browse/dist/${{ matrix.artifact }} --help
 
-      - name: Upload binary to release
+      # Package the exact browser builds this playwright version expects
+      # (chromium + chromium_headless_shell + ffmpeg, as installed into the
+      # runner's ms-playwright cache) so find-browse can install them on
+      # machines with no toolchain. Tarred from inside the cache dir so the
+      # archive extracts directly into a user's ms-playwright directory.
+      - name: Package Playwright browsers
+        run: |
+          bunx playwright install chromium
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            CACHE="$HOME/Library/Caches/ms-playwright"
+          else
+            CACHE="$HOME/.cache/ms-playwright"
+          fi
+          tar -C "$CACHE" -czf "browse/dist/browsers-${{ matrix.artifact }}.tar.gz" \
+            chromium-* chromium_headless_shell-* ffmpeg-*
+          mv "browse/dist/browsers-${{ matrix.artifact }}.tar.gz" \
+             "browse/dist/${{ matrix.artifact }}-browsers.tar.gz"
+          ls -lh browse/dist/
+
+      - name: Upload binary and browsers to release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$GITHUB_REF_NAME" "browse/dist/${{ matrix.artifact }}" --clobber
+        run: |
+          gh release upload "$GITHUB_REF_NAME" "browse/dist/${{ matrix.artifact }}" --clobber
+          gh release upload "$GITHUB_REF_NAME" "browse/dist/${{ matrix.artifact }}-browsers.tar.gz" --clobber
