@@ -128,16 +128,22 @@ jobs:
           tar -czf "$OUT" $DIRS
           ls -lh "$OUT"
 
-      # The playwright runtime the external binary resolves at startup. Pure
-      # JS, platform-independent, no nested deps — every matrix job uploads
-      # the same content under one name; --clobber makes that idempotent.
-      - name: Package playwright runtime
-        run: tar -czhf "browse/dist/counsel-browse-runtime.tar.gz" node_modules/playwright node_modules/playwright-core
-
-      - name: Upload binary, browsers, and runtime to release
+      - name: Upload binary and browsers to release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release upload "$RELEASE_TAG" "browse/dist/${{ matrix.artifact }}" --clobber
           gh release upload "$RELEASE_TAG" "browse/dist/${{ matrix.artifact }}-browsers.tar.gz" --clobber
+
+      # The playwright runtime the external binary resolves at startup. Pure
+      # JS, platform-independent, no nested deps — so exactly ONE matrix job
+      # uploads it. Concurrent uploads of the same asset name race even with
+      # --clobber (delete-then-create is not atomic; GitHub returns 422
+      # "ReleaseAsset.name already exists" to the loser).
+      - name: Package and upload playwright runtime
+        if: matrix.artifact == 'counsel-browse-linux-x64'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tar -czhf "browse/dist/counsel-browse-runtime.tar.gz" node_modules/playwright node_modules/playwright-core
           gh release upload "$RELEASE_TAG" "browse/dist/counsel-browse-runtime.tar.gz" --clobber
