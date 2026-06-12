@@ -18,7 +18,7 @@ You are using a headless browser to access web resources for legal work. This sk
 
 ## Setup
 
-Setup is automatic for most installs: `browse/bin/find-browse` downloads a prebuilt binary and the matching Playwright browser builds from the plugin's GitHub release on first use (~220MB total, one time) — no bun, node, or build step required. Set `COUNSEL_OS_NO_DOWNLOAD=1` to disable the download fallback (airgapped or build-from-source-only environments).
+Setup is automatic for most installs: `browse/bin/find-browse` downloads three assets from the plugin's GitHub release on first use (~320MB total, one time) — the prebuilt binary, the playwright runtime packages, and the matching Chromium builds. No bun, node, or build step required. Set `COUNSEL_OS_NO_DOWNLOAD=1` to disable the download fallback (airgapped or build-from-source-only environments).
 
 To build from source instead (development, or when no prebuilt binary exists for the platform), run from the plugin root:
 
@@ -35,8 +35,10 @@ The helper script `browse/bin/find-browse` locates (or installs) the browse bina
 1. `browse/dist/browse` in the current git repo (development build)
 2. The active plugin root's `browse/dist/browse`
 3. `~/counsel-os/browse/dist/browse`
-4. `~/.counsel-os/bin/counsel-browse` (a previously downloaded prebuilt binary)
-5. Download fallback: the prebuilt `counsel-browse-{platform}` from the release matching the plugin VERSION (or latest), installed into the plugin root (or `~/.counsel-os/bin` if the plugin tree is read-only), plus the matching `-browsers.tar.gz` into the ms-playwright cache when Chromium is absent.
+4. `~/.counsel-os/browse/dist/browse` (a previously downloaded prebuilt binary)
+5. Download fallback: the prebuilt `counsel-browse-{platform}` from the release matching the plugin VERSION (or latest), installed under the plugin root (or `~/.counsel-os` if the plugin tree is read-only).
+
+Downloaded installs also self-provision two companion assets when missing: `counsel-browse-runtime.tar.gz` (the playwright packages, extracted as `node_modules/` two directories above the binary — playwright is external in the compiled binary because bundling it bakes build-host paths) and `counsel-browse-{platform}-browsers.tar.gz` (the matching Chromium builds, extracted into the ms-playwright cache).
 
 ## Daemon Lifecycle
 
