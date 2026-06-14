@@ -4,6 +4,8 @@ A legal operating system for Claude. Review contracts, triage NDAs, negotiate re
 
 Built for solo practitioners, law firms, and in-house counsel.
 
+> **Want a version tailored to your practice?** [Eigen Legal](https://eigenlegal.com) builds and customizes Counsel OS for firms and in-house teams — [book a free consultation](https://eigenlegal.com).
+
 ## Installation
 
 Counsel OS runs in **Claude Code** (terminal) or **Claude Desktop (Cowork)** (no terminal) — the same skills either way. Pick by the app you already use:

@@ -6,6 +6,13 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.9.27] — 2026-06-14
+
+Setup: proactive Obsidian detection (read-only, offer-not-install); README consultation link
+
+- Setup skill now detects an installed Obsidian app and existing vaults (filesystem scan — more reliable than obsidian.json, which can report zero vaults) before asking, and leads with 'use your vault at X?'. Detection is read-only and never blocks; install is offered as a host one-liner for the user to run, never automatic. README: add a 'book a free consultation' callout up top (Eigen Legal custom builds) and the install-section reframe + skill-count fix from the prior commit.
+- Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
+
 ## [0.9.26] — 2026-06-12
 
 Doctor consistency + matter-aware law-impact checks; evaluate flags stale law at point of use

@@ -44,20 +44,38 @@ Check if it's already populated (has `law/`, `practice/`, `memory/` with content
 
 ### If no existing legal root was found:
 
-Ask the user where to store the framework content:
+**First, a quick read-only detection** (skip silently if shell/file listing is unavailable). This lets setup lead with a concrete suggestion instead of asking blind. It NEVER installs anything and NEVER blocks — if nothing turns up, fall through to the questions below unchanged and don't mention the attempt.
+
+```bash
+# Is the Obsidian app present? (macOS / Linux desktop / flatpak locations)
+ls -d /Applications/Obsidian.app "$HOME/Applications/Obsidian.app" 2>/dev/null \
+  || ls -d "$HOME"/.local/share/applications/*obsidian* /var/lib/flatpak/app/md.obsidian.Obsidian 2>/dev/null
+
+# Existing vaults: scan common roots for an .obsidian folder. This is more reliable
+# than ~/Library/Application Support/obsidian/obsidian.json, which can report zero
+# vaults even when some exist (iCloud vaults, newer Obsidian versions).
+for root in "$HOME/Documents" "$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents" "$HOME/Dropbox" "$HOME"; do
+  [ -d "$root" ] && find "$root" -maxdepth 3 -type d -name .obsidian -prune 2>/dev/null | sed 's:/\.obsidian$::'
+done | sort -u | head
+```
+
+- **Vault(s) found** → lead with it: *"I see an Obsidian vault at `{path}` — want Counsel OS to live inside it (e.g. `{path}/Counsel OS`)? It'll show up in Obsidian automatically."* If the user agrees, use that as the path and skip the "do you use Obsidian?" question below — detection already answered it.
+- **App present but no vault, or nothing found** → fall through to the questions below; do not report the miss.
+
+If detection settled the path, skip ahead to writing the config. Otherwise, ask the user where to store the framework content:
 > Where should Counsel OS store its framework content? This folder will contain your law areas, standard positions, practice profile, and memory.
 >
 > If you use Obsidian, a good choice is a top-level folder in your vault (e.g., `~/Documents/Obsidian Vault/Counsel OS`).
 > If you don't use Obsidian, any folder works (e.g., `~/legal/counsel-os`).
 
-Then ask one optional tooling question:
+Then, only if detection did not already settle it, ask one optional tooling question:
 > Do you already use Obsidian or a content-index tool like QMD?
 >
 > - If yes, I can place Counsel OS inside your existing vault and use any connected index automatically.
 > - If no, we can continue with a normal folder. Obsidian and QMD are optional.
 > - If you'd like, I can give you install/connect instructions for Obsidian or QMD after core setup is done.
 
-Do not block setup on Obsidian or QMD. If the user wants install guidance, give concise instructions appropriate to the host, but continue setup with the filesystem fallback unless the user explicitly pauses to install/connect a tool.
+Do not block setup on Obsidian or QMD, and **never install either automatically**. If the user asks for install guidance, offer the host-appropriate one-liner for THEM to run — macOS `brew install --cask obsidian`, Windows `winget install Obsidian.Obsidian`, Linux `flatpak install flathub md.obsidian.Obsidian` (or the AppImage from obsidian.md) — then continue setup with the filesystem fallback unless the user explicitly pauses to install/connect a tool.
 
 If shell or file listing is available, after the user provides a path, detect whether it looks like an Obsidian vault:
 
