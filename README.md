@@ -6,11 +6,41 @@ Built for solo practitioners, law firms, and in-house counsel.
 
 ## Installation
 
-Counsel OS runs in **Claude Desktop (Cowork)** for lawyers and in **Claude Code** for developers. Pick the path that matches the tool you already use.
+Counsel OS runs in **Claude Code** (terminal) or **Claude Desktop (Cowork)** (no terminal) — the same skills either way. Pick by the app you already use:
 
-### Claude Desktop / Cowork — recommended for lawyers
+- **Claude Code → marketplace** — recommended; the most automated path (versioned, self-updating, no build toolchain)
+- **Claude Desktop → Cowork** — no terminal required
+- **Claude Code → local clone** — only if you're developing the plugin itself
 
-No terminal required.
+### Claude Code marketplace — recommended
+
+The plugin marketplace is the official install path and the most automated one: versioned releases, updates through `/counsel-os:update` followed by `/reload-plugins`, and no build toolchain required — the browse skill downloads its prebuilt binary and browser builds from the GitHub release on first use.
+
+```
+/plugin marketplace add eigenlegal/counsel-os
+/plugin install counsel-os@eigenlegal
+```
+
+Then start a **new session** and run `/counsel-os:setup`. Claude Code caches the plugin under `~/.claude/plugins/cache/eigenlegal/counsel-os/{version}/`, and updates flow through `/counsel-os:update`.
+
+On older Claude Code builds the cache invalidation can be fragile. If install fails or seems stuck:
+
+```bash
+# Refresh the marketplace clone
+cd ~/.claude/plugins/marketplaces/eigenlegal && git pull
+
+# Then fully restart Claude Code (Cmd-Q — closing the window isn't enough,
+# Claude Code holds the manifest in memory). Retry the install.
+```
+
+If that still doesn't work, fall back to the local clone below — same content, same skills, no marketplace layer.
+
+**Optional dependencies** (Claude Code; the setup skill auto-detects what you have):
+- **pandoc** — extracting tracked changes from Word documents
+- **[QMD](https://github.com/tobi/qmd)** — content-index MCP server for entity discovery across your whole vault. Install separately as its own Claude plugin (works in Claude Code and Cowork). Without it, entity files live under `{legal_root}/entities/` and are found via filesystem search.
+- **[Bun](https://bun.sh/)** plus Playwright Chromium (`bunx playwright install chromium`) — only to build the `/counsel-os:browse` skill from source. Without them, browse downloads a prebuilt binary and matching browser builds from the GitHub release automatically on first use (set `COUNSEL_OS_NO_DOWNLOAD=1` to disable).
+
+### Claude Desktop / Cowork — no terminal required
 
 1. Open **Claude Desktop** → **Cowork** → **Customize** → **Plugins** → **Add marketplace**
 2. Paste `https://github.com/eigenlegal/counsel-os` and confirm
@@ -26,56 +56,22 @@ The setup skill walks you through choosing a folder for your legal content, seed
 >
 > All other skills work identically.
 
-### Claude Code with local install — recommended for developers
+### Claude Code local install — for plugin development
+
+If you're developing Counsel OS itself, load the plugin straight from a clone — no marketplace, no cache layer to invalidate:
 
 ```bash
 git clone https://github.com/eigenlegal/counsel-os.git ~/counsel-os
 claude --plugin-dir ~/counsel-os
 ```
 
-The `--plugin-dir` flag loads the plugin directly from the cloned directory — no marketplace, no cache layer to invalidate. Make it stick by adding an alias to `~/.zshrc` (or `~/.bashrc`):
+Make it stick with an alias in `~/.zshrc` (or `~/.bashrc`):
 
 ```bash
 alias claude='claude --plugin-dir ~/counsel-os'
 ```
 
-Then start a new Claude Code session and run:
-
-```
-/counsel-os:setup
-```
-
-Counsel OS is skill-first: setup is written as an `.md` skill so Claude can adapt it to your vault, permissions, shell environment, and connected tools. The repo's shell scripts are only narrow mechanical helpers for deterministic tasks.
-
-**Optional dependencies:**
-- **[Bun](https://bun.sh/)** plus Playwright Chromium (`bunx playwright install chromium`) — only for building the `/counsel-os:browse` browser skill from source. Without them, browse downloads a prebuilt binary and matching browser builds from the GitHub release automatically on first use (set `COUNSEL_OS_NO_DOWNLOAD=1` to disable)
-- **pandoc** — for extracting tracked changes from Word documents
-- **[QMD](https://github.com/tobi/qmd)** — content-index MCP server for entity discovery across your whole vault. Install separately as its own Claude plugin (works in Claude Code and Cowork). Without it, entity files live under `{legal_root}/entities/` and are found via filesystem search.
-
-The setup skill auto-detects what you have and configures accordingly.
-
-### Claude Code marketplace — recommended for everyone else
-
-Claude Code's plugin marketplace is the official install path, and the most automated one: versioned releases, updates through `/counsel-os:update` followed by `/reload-plugins`, and no build toolchain required — the browse skill downloads its prebuilt binary and browser builds from the GitHub release on first use. The local clone above is only better when you're developing the plugin itself.
-
-```
-/plugin marketplace add eigenlegal/counsel-os
-/plugin install counsel-os@eigenlegal
-```
-
-Once installed, Claude Code caches the plugin under `~/.claude/plugins/cache/eigenlegal/counsel-os/{version}/` and updates flow through `/counsel-os:update`.
-
-On older Claude Code builds the cache invalidation can be fragile. If install fails or seems stuck:
-
-```bash
-# Refresh the marketplace clone
-cd ~/.claude/plugins/marketplaces/eigenlegal && git pull
-
-# Then fully restart Claude Code (Cmd-Q — closing the window isn't enough,
-# Claude Code holds the manifest in memory). Retry the install.
-```
-
-If that still doesn't work, fall back to the local install above — same content, same skills, no marketplace layer.
+Then start a new Claude Code session and run `/counsel-os:setup`. Counsel OS is skill-first: setup is written as an `.md` skill so Claude adapts it to your vault, permissions, shell environment, and connected tools. The repo's shell scripts are only narrow mechanical helpers for deterministic tasks.
 
 ---
 
@@ -270,7 +266,7 @@ Counsel OS handles client material. Know where data goes before pointing it at p
 Counsel OS separates **methodology** (how to do legal work) from **knowledge** (what you know).
 
 **The plugin provides methodology + tooling:**
-- 6 skills: `counsel` (the orchestrator), `browse`, `retro`, `setup`, `update`, `law-refresh`
+- 7 skills: `counsel` (the orchestrator), `browse`, `retro`, `setup`, `update`, `law-refresh`, `doctor`
 - 5 primitives (read, research, evaluate, draft, remember) that `counsel` composes dynamically based on intent
 - Headless browser for document extraction
 - Narrow deterministic helpers for backup/restore, Word redlines, formatting, and browser automation
