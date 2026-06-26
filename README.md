@@ -4,7 +4,7 @@ A legal operating system for Claude. Review contracts, triage NDAs, negotiate re
 
 Built for solo practitioners, law firms, and in-house counsel.
 
-> **Want a version tailored to your practice?** [Eigen Legal](https://eigenlegal.com) builds and customizes Counsel OS for firms and in-house teams — [book a free consultation](https://eigenlegal.com).
+> **Want a version tailored to your practice?** [Eigen Legal](https://eigenlegal.com?utm_source=counsel-os&utm_medium=readme&utm_campaign=upgrade-path) builds and customizes Counsel OS for firms and in-house teams — [book a free consultation](https://eigenlegal.com?utm_source=counsel-os&utm_medium=readme&utm_campaign=upgrade-path).
 
 ## Installation
 
@@ -457,6 +457,6 @@ MIT
 
 ## Built by Eigen Legal
 
-Counsel OS is a free, open source tool built by [Eigen Legal](https://eigenlegal.com). We help law firms and in-house legal teams build custom AI workflows — trained on your standards, your methods, and your judgment.
+Counsel OS is a free, open source tool built by [Eigen Legal](https://eigenlegal.com?utm_source=counsel-os&utm_medium=readme&utm_campaign=upgrade-path). We help law firms and in-house legal teams build custom AI workflows — trained on your standards, your methods, and your judgment.
 
-Want a custom version built for your practice? [Book a free consultation](https://eigenlegal.com)
+Want a custom version built for your practice? [Book a free consultation](https://eigenlegal.com?utm_source=counsel-os&utm_medium=readme&utm_campaign=upgrade-path)
