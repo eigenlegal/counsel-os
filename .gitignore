@@ -19,3 +19,7 @@ knowledge/memory/
 # Python bytecode (release.sh commits with git add -A)
 __pycache__/
 *.pyc
+
+# Isolated dev worktrees (git worktree add / EnterWorktree)
+.worktrees/
+.claude/worktrees/
