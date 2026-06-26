@@ -300,7 +300,7 @@ The plugin discovers content through two mechanisms:
 
      Supported types: `counterparty`, `vendor`, `customer`, `prospect`, `matter`.
 
-     QMD ships as its own Claude plugin — install separately, no extra Counsel OS configuration needed. Works in both Claude Code and Cowork.
+     QMD ships as its own Claude plugin — install it separately, restart Claude, then point it at your vault with a one-time index (`qmd collection add <vault> --name counsel-os && qmd update` — BM25, no API key). `/counsel-os:setup` offers to walk you through all of this; no Counsel OS configuration is needed. Works in both Claude Code and Cowork.
 
    - **Filesystem fallback (when no index tool is connected)** — entity files live at a fixed location, `{legal_root}/entities/`, discovered via grep on the same `counsel-os-type` frontmatter. Same metadata, less structural flexibility — you have to put files in the entities folder for them to be found.
 

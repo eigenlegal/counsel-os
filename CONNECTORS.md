@@ -6,7 +6,7 @@ Three integrations matter in practice:
 
 ## Content index (QMD) — recommended
 
-[QMD](https://github.com/tobi/qmd) is a local content-index MCP server, installed separately as its own Claude plugin (works in Claude Code and Cowork). When it's connected, every knowledge-base search — entity lookup, matter discovery, related-precedent search — goes through the index, and entity files are discovered anywhere in your vault by `counsel-os-type` frontmatter instead of a fixed directory layout. Any MCP server exposing an equivalent `query` tool over markdown frontmatter works the same way.
+[QMD](https://github.com/tobi/qmd) is a local content-index MCP server, installed separately as its own Claude plugin (works in Claude Code and Cowork). Installing the plugin is step one; qmd also needs a one-time index of your vault (`qmd collection add <vault> --name counsel-os && qmd update` — BM25, no API key) before its `query` tool returns results, and the plugin's tools only load after a Claude restart. `/counsel-os:setup` detects qmd and offers to do this for you. When it's connected and indexed, every knowledge-base search — entity lookup, matter discovery, related-precedent search — goes through the index, and entity files are discovered anywhere in your vault by `counsel-os-type` frontmatter instead of a fixed directory layout. Any MCP server exposing an equivalent `query` tool over markdown frontmatter works the same way.
 
 Without an index, Counsel OS falls back to filesystem search: entity files must live under `{legal_root}/entities/` and matters under `{legal_root}/matters/`.
 
