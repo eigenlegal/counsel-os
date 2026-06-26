@@ -17,7 +17,7 @@ Counsel OS setup is skill-first and capability-based. Do not assume only one hos
 - **Home-directory access:** Can you write `~/.counsel-os/legal-root`?
 - **Plugin-tree write access:** Can you build optional local binaries in the plugin directory?
 - **External tooling:** Are `bun`, `pandoc`, `python3`, Microsoft Word, or other optional tools available?
-- **Connected index/search tools:** Is a content-index MCP tool such as QMD connected?
+- **Connected index/search tools:** Is a content-index `query` MCP tool (e.g. qmd's `query`) available this session? Secondarily, is the `qmd` CLI on PATH (`command -v qmd`)?
 
 Adapt to the answers:
 
@@ -41,6 +41,8 @@ Check if it's already populated (has `law/`, `practice/`, `memory/` with content
 > (A) Review and update your existing profile
 > (B) Start fresh (this will overwrite your current settings)
 > (C) Just check that everything looks good
+
+Whichever they pick, also run the qmd detection from **Optional tool: faster local search with qmd** (in Step 1, below): if qmd has become usable since first setup but no collection yet covers the vault, offer **Phase 2** to index it. This is the path for a user who installed qmd, restarted, and re-ran `/counsel-os:setup` to wire it — don't make them start fresh just to get indexed.
 
 ### If no existing legal root was found:
 
@@ -68,14 +70,42 @@ If detection settled the path, skip ahead to writing the config. Otherwise, ask 
 > If you use Obsidian, a good choice is a top-level folder in your vault (e.g., `~/Documents/Obsidian Vault/Counsel OS`).
 > If you don't use Obsidian, any folder works (e.g., `~/legal/counsel-os`).
 
-Then, only if detection did not already settle it, ask one optional tooling question:
-> Do you already use Obsidian or a content-index tool like QMD?
->
-> - If yes, I can place Counsel OS inside your existing vault and use any connected index automatically.
-> - If no, we can continue with a normal folder. Obsidian and QMD are optional.
-> - If you'd like, I can give you install/connect instructions for Obsidian or QMD after core setup is done.
+Then, only if detection did not already settle it, ask one optional placement question:
+> Do you already use Obsidian? If so, I can place Counsel OS inside your existing vault so it shows up there automatically. If not, a normal folder works fine — Obsidian is optional.
 
-Do not block setup on Obsidian or QMD, and **never install either automatically**. If the user asks for install guidance, offer the host-appropriate one-liner for THEM to run — macOS `brew install --cask obsidian`, Windows `winget install Obsidian.Obsidian`, Linux `flatpak install flathub md.obsidian.Obsidian` (or the AppImage from obsidian.md) — then continue setup with the filesystem fallback unless the user explicitly pauses to install/connect a tool.
+Do not block setup on Obsidian, and **never install it automatically**. If the user asks for install guidance, offer the host-appropriate one-liner for THEM to run — macOS `brew install --cask obsidian`, Windows `winget install Obsidian.Obsidian`, Linux `flatpak install flathub md.obsidian.Obsidian` (or the AppImage from obsidian.md) — then continue setup with the filesystem fallback unless the user explicitly pauses to install Obsidian.
+
+### Optional tool: faster local search with qmd
+
+qmd is a **separate, local, open-source Claude plugin** (works in Claude Code and Cowork) that gives Counsel OS fast on-device search and — most usefully — **entity discovery across your whole Obsidian vault by frontmatter**, so it finds a counterparty or precedent anywhere in the vault, not just under the legal root. It runs entirely on your machine and needs **no API key**. It is **not** an Obsidian-style app cask — qmd is a Claude plugin you add and then point at your vault. It is optional: without it, Counsel OS uses filesystem search, and qmd can be added anytime.
+
+**Proactively detect whether qmd is usable** and surface this offer without waiting for the user to ask:
+
+- **A content-index `query` MCP tool is available this session** (e.g. an `mcp__qmd__query`-style tool) → qmd is usable. Check whether a collection already covers the vault (`qmd collection list`). If one does, just say "qmd is wired" and continue — make no offer and create no duplicate collection. If none does, go to **Phase 2**.
+- **The `qmd` CLI is on PATH (`command -v qmd`) but no `query` tool is connected** → installed but not wired to this client. Either point the user at the plugin install + restart (**Phase 1**), or — if they installed the CLI deliberately — have them register an MCP server `{"command":"qmd","args":["mcp"]}` and restart; then index (**Phase 2**).
+- **Neither present** → offer **Phase 1**.
+
+**Phase 1 — install (qmd absent).** A `/plugin` install plus a session restart is inherently user-driven, so give the user the steps to run themselves; never auto-run them:
+> qmd would speed up search and let me find counterparties or precedents anywhere in your vault by frontmatter. It's a local, no-API-key Claude plugin — a few steps plus a restart, and skipping is totally fine (I'll use filesystem search). To add it:
+> ```
+> /plugin marketplace add tobi/qmd
+> /plugin install qmd@qmd
+> ```
+> Then restart Claude so the qmd tools load and re-run `/counsel-os:setup` — I'll point qmd at your vault.
+
+Then **continue setup to completion on the filesystem fallback** — qmd is never required to finish.
+
+**Phase 2 — index the vault (qmd usable, no collection yet).** Only with an explicit yes for this step, run these — they are local, safe, and reversible:
+```bash
+qmd collection add <vault_root> --name counsel-os
+qmd update
+```
+- `<vault_root>` = the **Obsidian vault root** that contains the legal root, so frontmatter entity discovery spans the whole vault. Resolve it by walking up from the configured `legal_root` to the nearest ancestor containing a `.obsidian/` folder; if there is no Obsidian vault, use the legal root's parent.
+- `qmd update` builds the **BM25** index only — key-free, **no model download**.
+- Confirm success with `qmd collection list` (or a trial `query`) and tell the user qmd is now wired.
+- Mention, only as an **optional** follow-up the user can run later, `qmd embed` for semantic search — note it's a one-time ~940MB local model download. **Never run `qmd embed` during setup.**
+
+**Consent & safety:** never auto-install the plugin; never run `collection add` / `update` / `embed` without an explicit yes for that step; every prompt has an obvious skip, and declining returns to normal setup on the filesystem fallback. Setup never blocks on qmd.
 
 If shell or file listing is available, after the user provides a path, detect whether it looks like an Obsidian vault:
 
