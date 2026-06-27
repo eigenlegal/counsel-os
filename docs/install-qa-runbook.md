@@ -35,6 +35,7 @@ ideal. Confirm the starting state is clean before you begin (Step 0).
 | Claude Desktop / Cowork install (Path B) | Eval quality (covered by `scripts/run_evals.py`) |
 | Browse binary + Chromium first-run download | Any real client matter or counterparty |
 | `/counsel-os:setup` end-to-end | Publishing / release (founder-gated, separate) |
+| qmd-offer flow in setup (install / index / decline) | Semantic search quality (`qmd embed` is opt-in, never run at setup) |
 | One synthetic-NDA smoke test per path | |
 | `/counsel-os:doctor` as the verification readout | |
 
@@ -56,8 +57,9 @@ bash scripts/qa/clean-machine-probe.sh
 
 **Expected:** verdict `CLEAN — no Counsel OS artifacts found`, and the toolchain section shows
 the optional dependencies you intend to test *missing* (at minimum `bun: missing` and
-`playwright-chromium: missing`, so the browse download path runs). If the probe reports
-existing artifacts, this is not a clean machine — use a fresh account/VM.
+`playwright-chromium: missing`, so the browse download path runs, and `qmd: missing` with **no**
+`qmd counsel-os collection`, so setup's qmd install-offer fires — see Step Q). If the probe
+reports existing artifacts, this is not a clean machine — use a fresh account/VM.
 
 Note for later: the probe is worth re-running **after** the pass — it then shows the binary,
 Chromium cache, and plugin cache the install created (a second confirmation the download path
@@ -131,6 +133,64 @@ Run once per install path. Point it at a **throwaway** legal root.
 Re-running setup on an already-seeded root must be **safe** — it offers Review / Start-fresh /
 Check rather than blindly overwriting. Spot-check that branch once.
 
+> Setup's optional-tools beat also proactively offers **qmd** (the on-device content index).
+> Walk that under **Step Q** below — it has its own three-branch flow and a session restart.
+
+---
+
+## Step Q — qmd offer in setup (optional local search)
+
+`/counsel-os:setup` **proactively** detects whether qmd — the optional on-device content index
+that powers fast search and **entity discovery across the whole vault by frontmatter** — is
+usable, and if not, offers to install and index it. The offer must be correct (qmd is a Claude
+**plugin**, *not* an Obsidian-style `brew --cask`), never auto-install, always skippable, and
+leave the filesystem fallback intact. This step exercises all three branches.
+
+**On a clean machine qmd is absent** (Step 0 shows `qmd: missing`, no `qmd counsel-os
+collection`), so the natural first run hits the **install offer**. The order below lets one
+clean machine cover every branch in sequence: decline first (cheap), then accept → install →
+index, then re-run to confirm the already-wired branch. If the probe shows qmd already present
+or a `counsel-os` collection, you are **not** on a clean qmd surface — note it and prefer a
+fresh account.
+
+### Q-decline — user declines the offer (filesystem fallback)
+
+| # | Action | Expected result |
+|---|--------|-----------------|
+| Q1 | During `/counsel-os:setup` (qmd absent), reach the optional-tools beat | Setup surfaces a short qmd offer **without being asked**: states the value (faster local search + entity discovery across the whole vault by frontmatter), calls it a **separate, local, open-source Claude plugin** that runs on-device with **no API key**, says it's **a few steps + a restart**, and that **skipping is completely fine**. It must **not** present qmd as a `brew --cask` (that's Obsidian's path). |
+| Q2 | Decline / skip the offer | Setup continues and **completes** on filesystem search. **No** `/plugin` command and **no** `qmd` command runs. |
+| Q3 | Verify nothing was created | Re-run `bash scripts/qa/clean-machine-probe.sh` → still `qmd counsel-os collection: none/n-a`; `~/.cache/qmd/models/` absent. The decline left zero qmd artifacts. |
+| Q4 | Verify counsel-os still works | A counsel ask (e.g. Step T's "Review this NDA") works via filesystem search — qmd absence is not a blocker. |
+| Q5 | doctor stays green | `/counsel-os:doctor`: Check **5e** (qmd CLI) **⚠️ missing** — an acceptable optional dep, **never ❌**; Check **9** (search-index freshness) **✅** "no index configured — filesystem search in use (optional)." A missing/declined qmd is **not a defect**. |
+
+### Q-accept — user accepts (install → restart → index)
+
+Two phases: Phase 1 is user-run (a `/plugin` install + restart is inherently user-driven);
+Phase 2 runs only with explicit per-step consent.
+
+| # | Action | Expected result |
+|---|--------|-----------------|
+| QA1 | Accept the offer | Setup shows **Phase 1** commands to run **yourself** — exactly `/plugin marketplace add tobi/qmd` then `/plugin install qmd@qmd` (**not** a `brew --cask` line) — then says to **restart Claude and re-run `/counsel-os:setup`**, and **continues setup to completion on the filesystem fallback** (qmd is not required to finish). |
+| QA2 | Run the two `/plugin` commands | qmd plugin installs and registers its MCP server. |
+| QA3 | **Cmd-Q**, reopen, new session, re-run `/counsel-os:setup` | The qmd `query` MCP tool is now connected. Setup detects qmd usable but **no collection yet** → offers **Phase 2** (index the vault). It does not make you start setup over. |
+| QA4 | Consent to Phase 2 | **Only after your explicit yes**, setup runs `qmd collection add <vault_root> --name counsel-os` then `qmd update`. `<vault_root>` is the **Obsidian vault root** containing the legal root (or the legal root's parent if there's no vault) — so frontmatter entity discovery spans the whole vault. |
+| QA5 | Confirm BM25-only, no model download | `qmd update` builds the **BM25** index only — **key-free, no model download**. During setup, **no** ~940MB grab into `~/.cache/qmd/models/`. A trial `query` returns vault hits; setup confirms qmd is **wired**. |
+| QA6 | Confirm `qmd embed` is only *mentioned* | Setup mentions `qmd embed` as an **optional** later step (one-time ~940MB local model download) but **does not run it**. `~/.cache/qmd/models/` stays absent. |
+| QA7 | doctor reflects it | Check **5e** (qmd CLI) **✅ found**; Check **9** **✅** *or* **⚠️ "documents pending embedding"** — the ⚠️ is **expected** because `qmd update` ran but `qmd embed` did not (embeddings are opt-in). Neither is ❌. |
+
+### Q-wired — re-run when already present + indexed (idempotency)
+
+| # | Action | Expected result |
+|---|--------|-----------------|
+| QW1 | With qmd installed and the `counsel-os` collection present (the end state of Q-accept), run `/counsel-os:setup` **again** | Setup sees the `query` tool **and** an existing collection covering the vault → simply reports **"qmd is wired"** and continues. **No offer**, and it does **not** create a duplicate collection. |
+| QW2 | Confirm no duplicate | `qmd collection list` shows a **single** `counsel-os` collection, not two. |
+
+**Reading the result.** On a minimal clean install, qmd absent is the **expected** state, and a
+deliberate decline must leave doctor green (5e ⚠️, 9 ✅) — that is a **pass**, not a blocker.
+Defects are: a hard **❌** on a qmd check; the offer mis-presenting qmd as an Obsidian
+`brew --cask`; `qmd embed` or any model download firing **during setup**; a **duplicate**
+collection on re-run; or setup **blocking** on qmd instead of completing on the fallback.
+
 ---
 
 ## Step B-browse — Browse binary + Chromium first-run (Claude Code only)
@@ -200,6 +260,7 @@ Step 0  Clean-machine probe → CLEAN .......................... [ ]
 Path A  Marketplace install A1–A5 ........................... [ ]
 Path B  Cowork install B1–B5 ................................ [ ]
 Step S  Setup S1–S5 (both paths) ............................ [ ]
+Step Q  qmd offer: decline + accept/index + re-run wired .... [ ]
 Step BR Browse download BR1–BR4 + negative BR5 .............. [ ]
 Step T  Synthetic-NDA smoke test (both paths) ............... [ ]
 Step V  doctor readout: no ❌ rows (both paths) ............. [ ]
@@ -226,3 +287,5 @@ and leave cou-4 with the specific blocker in its notes — never mark the pass d
 | Legal-root pointer | `~/.counsel-os/legal-root` |
 | User config (canonical) | `{legal_root}/config.md` |
 | Disable browse download | `COUNSEL_OS_NO_DOWNLOAD=1` |
+| qmd collections (read-only list) | `qmd collection list` |
+| qmd semantic-model cache | `~/.cache/qmd/models/` (must stay absent after a BM25-only `qmd update`) |
