@@ -49,7 +49,8 @@ MATTERS_PATH=$(grep -m1 '^matters_path:' "$LEGAL_ROOT/config.md" | sed 's/^matte
 ENTITIES_PATH=$(grep -m1 '^entities_path:' "$LEGAL_ROOT/config.md" | sed 's/^entities_path:[[:space:]]*//')
 for d in law practice/standards practice/methods practice/library practice/reference "${MATTERS_PATH:-matters}" memory "${ENTITIES_PATH:-entities}"; do
   if [ -d "$LEGAL_ROOT/$d" ]; then
-    n=$(find "$LEGAL_ROOT/$d" -type f -name '*.md' | wc -l | tr -d ' ')
+    # index.md is a navigation aid (e.g. the standards Positions Index, the methods index), not content — exclude it so counts match the documented totals (standards 24, not 25)
+    n=$(find "$LEGAL_ROOT/$d" -type f -name '*.md' ! -name 'index.md' | wc -l | tr -d ' ')
     echo "$d: $n md files"
   else
     echo "$d: MISSING"
