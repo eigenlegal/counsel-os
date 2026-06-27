@@ -36,9 +36,19 @@ fi
 # MISSING so the prebuilt-download path in browse/bin/find-browse is exercised.
 echo
 echo "Toolchain (optional deps — 'missing' is fine; see notes below)"
-for tool in claude bun node pandoc python3 curl git qmd; do
+for tool in claude bun node pandoc python3 curl git; do
   if have "$tool"; then mark "$tool:" "ok ($(command -v "$tool"))"; else mark "$tool:" "missing"; fi
 done
+
+# qmd: optional on-device content index. For the clean-machine qmd-offer test,
+# 'missing' is the wanted state — setup's Phase-1 install offer only fires when
+# qmd is absent. (Whether qmd is already wired to a vault is decided by the
+# 'counsel-os collection' artifact check below, not here.)
+if have qmd; then
+  mark "qmd:" "PRESENT ($(command -v qmd)) — setup's install-offer path won't run"
+else
+  mark "qmd:" "missing (good — setup's qmd install-offer path will run)"
+fi
 
 if have python3 && python3 -c "import docx" >/dev/null 2>&1; then
   mark "python-docx:" "ok"
@@ -97,12 +107,26 @@ else
   mark "legal-root:" "none configured"
 fi
 
+# A qmd collection named 'counsel-os' is what setup creates when it indexes the
+# vault. Its presence means qmd is already wired here, so setup would report
+# "qmd is wired" and make no offer — masking the clean-machine qmd-offer test.
+# 'qmd collection list' is read-only (no model download — that's 'qmd embed').
+if have qmd; then
+  if qmd collection list 2>/dev/null | grep -qi 'counsel-os'; then
+    mark "qmd counsel-os collection:" "FOUND — qmd already indexed a vault (see 'qmd collection list')"; note_artifact
+  else
+    mark "qmd counsel-os collection:" "none (qmd installed, no counsel-os index yet)"
+  fi
+else
+  mark "qmd counsel-os collection:" "n/a (qmd not installed)"
+fi
+
 # --- Verdict -----------------------------------------------------------------
 echo
 if [ "$ART_FOUND" -eq 0 ]; then
   echo "VERDICT: CLEAN — no Counsel OS artifacts found."
-  echo "         (Confirm bun + playwright-chromium are 'missing' above so the"
-  echo "          browse download path is actually exercised by the pass.)"
+  echo "         (Confirm bun + playwright-chromium + qmd are 'missing' above so the"
+  echo "          browse download path AND setup's qmd install-offer both run.)"
   exit 0
 else
   echo "VERDICT: NOT CLEAN — found $ART_FOUND pre-existing Counsel OS artifact(s)."
