@@ -4,6 +4,8 @@ content-version: "2026-06-11"
 ---
 # Non-Solicitation — Position
 
+> **Starting point, not legal advice.** Seeded market-default position — review and edit it to match your practice before you rely on it.
+
 ## Our Position
 **Our standard:** Mutual non-solicitation of employees for 12 months post-termination, limited to employees directly involved in the engagement. General advertising and employee-initiated contact excluded. No customer non-solicitation post-termination. Reasonable liquidated damages (50% of first-year compensation).
 **We'll accept:** Non-solicitation period of 12-18 months, covering all employees (not just those involved), no carve-out for general advertising, or liquidated damages of 100% of first-year compensation, provided the clause is mutual and not framed as "non-hire."

@@ -4,6 +4,8 @@ content-version: "2026-06-11"
 ---
 # AI & Data Use — Position
 
+> **Starting point, not legal advice.** Seeded market-default position — review and edit it to match your practice before you rely on it.
+
 ## Our Position
 **Our standard:** Vendor explicitly prohibits use of customer data for AI/ML training without opt-in consent. Customer owns all outputs generated using customer data. Vendor discloses all third-party AI providers. AI features can be disabled without losing core functionality.
 **We'll accept:** Opt-out (rather than opt-in) mechanism for AI training, or vague "service improvement" terms that could include model training, provided output ownership is clearly assigned to customer and third-party AI providers are disclosed.

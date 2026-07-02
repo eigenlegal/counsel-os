@@ -4,6 +4,8 @@ content-version: "2026-06-11"
 ---
 # Compliance & Certifications — Position
 
+> **Starting point, not legal advice.** Seeded market-default position — review and edit it to match your practice before you rely on it.
+
 ## Our Position
 **Our standard:** Vendor warrants ongoing compliance with all applicable laws (data protection, anti-corruption, sanctions, export controls). SOC 2 Type II or ISO 27001 maintained with annual reports. Vendor notifies within 5 business days of material compliance events. PCI-DSS for payment data processing.
 **We'll accept:** Compliance warranty limited to "material" applicable laws, SOC 2 Type I only, certifications on request rather than proactively, or 30-day notification of compliance events, provided some compliance warranty and certification exist.

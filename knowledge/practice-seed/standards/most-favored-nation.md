@@ -4,6 +4,8 @@ content-version: "2026-06-11"
 ---
 # Most Favored Nation (MFN) — Position
 
+> **Starting point, not legal advice.** Seeded market-default position — review and edit it to match your practice before you rely on it.
+
 ## Our Position
 **Our standard:** Narrow MFN limited to pricing for comparable customers (same industry, similar volume within 20%, comparable term). Annual written certification of compliance. Audit right at vendor's expense if violation found. Prospective adjustments only with 30-day cure period. MFN applies during the term only.
 **We'll accept:** MFN covering pricing only (no commercial terms), no verification mechanism, vendor self-certification, or "comparable customer" defined broadly, provided the MFN is limited to the contract term and does not require retroactive adjustments.

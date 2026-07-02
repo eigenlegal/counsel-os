@@ -4,6 +4,8 @@ content-version: "2026-06-11"
 ---
 # Representations & Warranties — Position
 
+> **Starting point, not legal advice.** Seeded market-default position — review and edit it to match your practice before you rely on it.
+
 ## Our Position
 **Our standard:** Mutual authority representations. Vendor warrants professional/workmanlike performance consistent with industry standards, material conformity to documentation (ongoing), non-infringement, compliance with all applicable laws, and malware/disabling-code-free deliverables. Remedy: re-performance within 15 days, then credit or refund.
 **We'll accept:** Limited warranty period under 30 days, re-performance as sole remedy with no refund backstop, vague "commercially reasonable" standard, or compliance warranty limited to "material" laws, provided some meaningful express warranties exist.

@@ -4,6 +4,8 @@ content-version: "2026-06-11"
 ---
 # Force Majeure — Position
 
+> **Starting point, not legal advice.** Seeded market-default position — review and edit it to match your practice before you rely on it.
+
 ## Our Position
 **Our standard:** Mutual force majeure with standard qualifying events (natural disasters, war, pandemic, government orders). Payment obligations explicitly excluded. Notice within 5 business days. Commercially reasonable mitigation. Either party may terminate after 60-90 days of continuous force majeure.
 **We'll accept:** Overly broad event list, no explicit pandemic inclusion/exclusion, termination trigger of 91-120 days, or cyber-attacks included without security carve-out, provided the clause is mutual and payment obligations are not excused.

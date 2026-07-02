@@ -4,6 +4,8 @@ content-version: "2026-06-11"
 ---
 # Subcontractors & Subprocessors — Position
 
+> **Starting point, not legal advice.** Seeded market-default position — review and edit it to match your practice before you rely on it.
+
 ## Our Position
 **Our standard:** Prior written consent for new subcontractors. Subprocessor list with 30+ days advance notice and right to object with termination right if not resolved. Vendor remains fully liable for all subcontractor acts and omissions. Written flowdown of all material obligations (confidentiality, security, data protection).
 **We'll accept:** Subcontractor use with notice only (no consent), 14-29 day subprocessor notice period, no termination right if objection overruled, or flowdown limited to data protection only, provided vendor remains liable and some notification mechanism exists.

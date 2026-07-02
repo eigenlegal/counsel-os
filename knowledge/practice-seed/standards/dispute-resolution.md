@@ -4,6 +4,8 @@ content-version: "2026-06-11"
 ---
 # Dispute Resolution — Position
 
+> **Starting point, not legal advice.** Seeded market-default position — review and edit it to match your practice before you rely on it.
+
 ## Our Position
 **Our standard:** Multi-step escalation (negotiation 15-30 days, then mediation or arbitration). Governing law in a well-developed commercial jurisdiction (Delaware, New York, California, England & Wales). Injunctive relief carve-out for IP and confidentiality. Prevailing party entitled to reasonable attorneys' fees.
 **We'll accept:** Direct to arbitration without negotiation step, governing law in a reasonable but less familiar jurisdiction, no mediation option, or no prevailing party fee-shifting, provided injunctive relief carve-out is preserved and venue is reasonable.
