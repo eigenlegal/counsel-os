@@ -79,13 +79,24 @@ on run argv
             -- The comparison result is now the active document
             set compDoc to active document
 
+            -- The comparison document inherits the user's "Embed fonts in
+            -- the file" preference; with it on, Word packs TrueType fonts
+            -- (word/fonts/*.odttf) into the redline and the output balloons
+            -- far past the input size (38KB in -> 6MB out in testing).
+            -- Force embedding off so output size is independent of the
+            -- user's Word preferences. The "embed truetype fonts" save
+            -- parameter below is the effective control at save time
+            -- (verified Word 16.x for Mac); the document property is a
+            -- backstop for any save path that consults it instead.
+            set embed true type fonts of compDoc to false
+
             -- VERIFIED (Word 16.109.3 for Mac, 2026-06-10): "format document"
             -- produces a real OOXML .docx here (opens with python-docx; file(1)
             -- reports "Microsoft Word 2007+"), with tracked changes correctly
             -- attributed. If a future Word build emits a legacy OLE .doc
             -- instead, switch this enum to the docx-producing value
             -- ("format document default" / OOXML document format).
-            save as compDoc file name POSIX file outputPath file format format document
+            save as compDoc file name POSIX file outputPath file format format document embed truetype fonts false
 
             -- Close all documents
             close compDoc saving no
