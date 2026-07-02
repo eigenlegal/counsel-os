@@ -4,6 +4,8 @@ content-version: "2026-06-11"
 ---
 # Data Protection — Position
 
+> **Starting point, not legal advice.** Seeded market-default position — review and edit it to match your practice before you rely on it.
+
 ## Our Position
 **Our standard:** GDPR-compliant DPA with all Article 28 requirements. Breach notification within 72 hours. Sub-processor list with 30+ days advance notice and right to object with termination right. Data return in portable format within 30 days; deletion from production within 30 days and from backups within 90 days, with certification. No AI/ML training on customer data.
 **We'll accept:** Breach notification between 72-96 hours, 14-day sub-processor notice period, SOC 2 Type I only, data processed outside EEA with SCCs, or data return within 60 days, provided a DPA exists and basic sub-processor controls are in place.

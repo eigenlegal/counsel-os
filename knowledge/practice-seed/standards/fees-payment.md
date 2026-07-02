@@ -4,6 +4,8 @@ content-version: "2026-06-11"
 ---
 # Fees & Payment — Position
 
+> **Starting point, not legal advice.** Seeded market-default position — review and edit it to match your practice before you rely on it.
+
 ## Our Position
 **Our standard:** Net 30 payment terms. Annual increases capped at the lesser of CPI or 5% with 60+ days notice. Good-faith invoice dispute rights. Late payment triggers suspension (not termination) after 30 days with 10 days notice. Pro-rata refund of prepaid fees on termination for cause. All fees disclosed.
 **We'll accept:** Net 15 payment terms, annual increases capped at 5-7%, limited usage visibility, or quarterly prepayment, provided invoice dispute rights exist and late payment does not trigger immediate termination.

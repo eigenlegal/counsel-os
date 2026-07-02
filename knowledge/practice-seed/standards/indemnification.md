@@ -4,6 +4,8 @@ content-version: "2026-06-11"
 ---
 # Indemnification — Position
 
+> **Starting point, not legal advice.** Seeded market-default position — review and edit it to match your practice before you rely on it.
+
 ## Our Position
 **Our standard:** Mutual indemnification for IP infringement, confidentiality breach, and willful misconduct. Vendor IP indemnity with cure path (modify, replace, license, or terminate with full refund). Defense obligation included. Super-cap of 2-3x the general liability cap.
 **We'll accept:** Asymmetric indemnification moderately favoring vendor, no cure path for IP infringement, broad first-party obligations beyond third-party claims, or no right to control defense, provided vendor still indemnifies for IP infringement of its own product.

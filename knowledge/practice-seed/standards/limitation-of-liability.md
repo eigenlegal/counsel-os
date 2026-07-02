@@ -4,6 +4,8 @@ content-version: "2026-06-11"
 ---
 # Limitation of Liability — Position
 
+> **Starting point, not legal advice.** Seeded market-default position — review and edit it to match your practice before you rely on it.
+
 ## Our Position
 **Our standard:** Mutual cap at 12 months of fees paid or payable. Consequential damages exclusion with carve-outs for IP indemnity, data breach, and confidentiality. Super-cap of 2-3x for carved-out obligations. Uncapped for fraud, willful misconduct, and bodily injury. Annual cap reset.
 **We'll accept:** Cap between 6-12 months of fees, asymmetric carve-outs, no data breach carve-out, per-claim (rather than aggregate) cap, cap based on amounts "paid" only, or super-cap below 2x, provided the cap is mutual and not below 6 months.

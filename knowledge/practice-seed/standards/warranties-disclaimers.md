@@ -4,6 +4,8 @@ content-version: "2026-06-11"
 ---
 # Warranties & Disclaimers — Position
 
+> **Starting point, not legal advice.** Seeded market-default position — review and edit it to match your practice before you rely on it.
+
 ## Our Position
 **Our standard:** Express warranties covering professional performance, conformity to documentation (ongoing), non-infringement, compliance with laws, and malware/disabling-code-free. Implied warranty disclaimer acceptable only when paired with robust express warranties. Remedy: re-performance within 15 days, then credit or full refund.
 **We'll accept:** Limited express warranties (performance standard only), implied warranty disclaimer with thin express warranties, warranty period under 30 days, re-performance as sole remedy, or "commercially reasonable" performance standard, provided meaningful express warranties exist.

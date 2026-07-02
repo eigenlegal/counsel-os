@@ -4,6 +4,8 @@ content-version: "2026-06-11"
 ---
 # IP Ownership — Position
 
+> **Starting point, not legal advice.** Seeded market-default position — review and edit it to match your practice before you rely on it.
+
 ## Our Position
 **Our standard:** Clear three-way delineation: each party retains pre-existing IP, customer owns customer data, custom work product assigned to customer with "hereby assigns" language. Vendor license-back limited to pre-existing IP and general tools. Open-source components disclosed.
 **We'll accept:** Vendor retaining ownership of custom deliverables with broad perpetual license to customer, "agrees to assign" rather than "hereby assigns," vague aggregated data treatment, or no escrow provision, provided customer data ownership is unambiguous.

@@ -4,6 +4,8 @@ content-version: "2026-06-11"
 ---
 # Termination & Renewal — Position
 
+> **Starting point, not legal advice.** Seeded market-default position — review and edit it to match your practice before you rely on it.
+
 ## Our Position
 **Our standard:** Mutual termination for cause with 30-day cure period. Mutual termination for convenience with 60+ days notice. Auto-renewal for 1-year terms with 60-90 day non-renewal window. Data return within 30 days in portable format. 90-day transition assistance. Pro-rata refund of prepaid fees on termination for cause.
 **We'll accept:** Asymmetric termination for convenience (vendor can, customer cannot), auto-renewal notice window under 60 days, cure period of 45-60 days, or early termination fee equal to remaining committed spend, provided termination for cause exists and data return is addressed.

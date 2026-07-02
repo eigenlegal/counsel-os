@@ -120,15 +120,34 @@ expected to be absent — that's correct behavior, not a bug.
 
 ## Step S — `/counsel-os:setup`
 
-Run once per install path. Point it at a **throwaway** legal root.
+Run once per install path. Point it at a **throwaway** legal root. Setup opens with a fork —
+**Express** (default, ~3 min) vs **Custom** (full interview). Walk **Express** here (it's what a
+new user takes); spot-check Custom once via S-custom.
+
+### S-express — Express path (default)
 
 | # | Action | Expected result |
 |---|--------|-----------------|
-| S1 | Run `/counsel-os:setup` | Detects capabilities; on a clean machine reports no existing legal root and asks where to store content (after an optional read-only Obsidian probe — it must **never** install Obsidian). |
-| S2 | Give a throwaway path, e.g. `~/cos-qa-vault` (not the iCloud vault) | Writes `{root}/config.md` containing `counsel-os-config: true` and `legal_root: ~/cos-qa-vault`; writes the pointer `~/.counsel-os/legal-root`. |
-| S3 | Let it seed content | `law/` has **26** area directories; `practice/` has `profile.md`, `standards/` (**24** files), `methods/`, `library/`, `reference/`; `matters/`, `memory/`, `entities/` created. |
-| S4 | Walk the profile + standards prompts (a couple of answers is enough) | `profile.md` gets real content; standards walkthrough updates `## Our Position` where you change something. |
-| S5 | Verify | `/counsel-os:doctor` Check 1 now ✅ (marked config) and Check 2 ✅ with per-area counts (`law … · standards 24 · …`). |
+| S1 | Run `/counsel-os:setup` | Detects capabilities; offers the **Express (default) vs Custom** fork; on a clean machine reports no existing legal root and asks where to store content (after an optional read-only Obsidian probe — it must **never** install Obsidian). |
+| S2 | Take Express; give a throwaway path, e.g. `~/cos-qa-vault` (not the iCloud vault) | Writes `{root}/config.md` containing `counsel-os-config: true` and `legal_root: ~/cos-qa-vault`; writes the pointer `~/.counsel-os/legal-root`. |
+| S3 | Answer the **three identity basics** (name, org/role, jurisdiction) and the **one practice question** | Only those ~4 decisions are asked — **no** full profile/standards interview. Seeds content: `law/` has **26** area directories; `practice/` has `profile.md`, `standards/` (**24** files), `methods/`, `library/`, `reference/`; `matters/`, `memory/`, `entities/` created. |
+| S4 | Inspect the seeded pack | Every file in `practice/standards/` carries a **"Starting point, not legal advice"** banner under its title. `profile.md` is tailored to the practice answer — a **deep** variant for in-house SaaS GC, an **honest base-default** (clearly labeled "general starting-point defaults") for any other answer, with the identity fields filled in. |
+| S5 | Reach the closing card | One git question (or silent if git already present); qmd offer (Step Q); closing card names where the practice lives, that positions are editable markdown, and points at **`/counsel-os:demo`**. Whole Express run is roughly **3 minutes**. |
+| S6 | Verify | `/counsel-os:doctor` Check 1 now ✅ (marked config) and Check 2 ✅ with per-area counts (`law … · standards 24 · …`). |
+
+**S-express-resume — the qmd restart round-trip.** If you accept the qmd install offer during
+Express (Step Q-accept), setup writes `~/.counsel-os/setup-resume`, gives the install steps, and
+finishes on the filesystem fallback. After you restart and re-run `/counsel-os:setup`, it must
+**resume Express** — pick up qmd indexing (Phase 2) and show the Express closing card — **not**
+re-ask identity/the practice question and **not** drop into the returning-user Review/Start-fresh
+branch. The marker is cleared afterward (`~/.counsel-os/setup-resume` gone).
+
+### S-custom — Custom path (spot-check once)
+
+| # | Action | Expected result |
+|---|--------|-----------------|
+| SC1 | Re-run on a second throwaway root, pick **Custom** | Runs the full interview (Steps 1–7): profile sections (Identity/Principles/Voice/Escalation) and the standards walkthrough, unchanged from before. |
+| SC2 | Walk a couple of prompts | `profile.md` gets real content; standards walkthrough updates `## Our Position` where you change something. |
 
 Re-running setup on an already-seeded root must be **safe** — it offers Review / Start-fresh /
 Check rather than blindly overwriting. Spot-check that branch once.
@@ -259,7 +278,7 @@ Plugin version under test: v________   (must equal latest release)
 Step 0  Clean-machine probe → CLEAN .......................... [ ]
 Path A  Marketplace install A1–A5 ........................... [ ]
 Path B  Cowork install B1–B5 ................................ [ ]
-Step S  Setup S1–S5 (both paths) ............................ [ ]
+Step S  Setup: Express S1–S6 + resume round-trip; Custom spot-check [ ]
 Step Q  qmd offer: decline + accept/index + re-run wired .... [ ]
 Step BR Browse download BR1–BR4 + negative BR5 .............. [ ]
 Step T  Synthetic-NDA smoke test (both paths) ............... [ ]

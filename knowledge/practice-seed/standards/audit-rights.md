@@ -4,6 +4,8 @@ content-version: "2026-06-11"
 ---
 # Audit Rights — Position
 
+> **Starting point, not legal advice.** Seeded market-default position — review and edit it to match your practice before you rely on it.
+
 ## Our Position
 **Our standard:** Annual audit right with 30 days notice. SOC 2 Type II reports satisfy routine audits. On-site audit preserved for cause (security incident, breach, regulatory requirement). Vendor bears cost if material non-compliance found (>5% variance). Remediation plan within 30 days.
 **We'll accept:** Third-party auditor only (no direct customer audit), SOC 2 Type I, customer bearing all audit costs, or 60-day advance notice, provided some audit right exists and scope covers security and data handling.

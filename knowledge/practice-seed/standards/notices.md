@@ -4,6 +4,8 @@ content-version: "2026-06-11"
 ---
 # Notices — Position
 
+> **Starting point, not legal advice.** Seeded market-default position — review and edit it to match your practice before you rely on it.
+
 ## Our Position
 **Our standard:** Tiered notice methods: email for routine notices (maintenance, SLA reports), email plus registered mail or overnight courier for formal notices (termination, breach, indemnification). Effectiveness upon receipt with deemed receipt provisions. Designated contacts with 30-day update obligation.
 **We'll accept:** All notices by email only, effectiveness upon sending, no designated notice addresses, or formal and routine notices treated identically, provided some written notice mechanism exists for termination and breach.
