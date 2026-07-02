@@ -6,6 +6,13 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.9.29] — 2026-07-02
+
+Word redline robustness: deterministic output size + stable document handles
+
+- word_compare: force font embedding OFF on the comparison-doc save (embed truetype fonts save-as parameter), so redline output size no longer depends on the user's Word preferences (cou-22, #30)
+- word_compare: bind the compare/original documents to stable name handles instead of re-resolving 'active document' specifiers, so close can't hit the wrong window mid-run (cou-23, #31)
+
 ## [0.9.28] — 2026-07-02
 
 Adoption push: /counsel-os:demo, Express setup, README overhaul, robustness fixes
