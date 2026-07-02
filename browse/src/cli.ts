@@ -135,15 +135,36 @@ async function startServer(): Promise<ServerState> {
     await Bun.sleep(100);
   }
 
-  // If we get here, server didn't start in time
-  // Try to read stderr for error message
+  // If we get here, server didn't start in time.
+  // Drain stderr (bounded) so multi-chunk startup errors surface in full
+  // rather than being truncated to the first chunk. The drain is time-boxed
+  // because the process may still be alive (slow start, not a crash), in which
+  // case stderr never closes and an unbounded read would hang the CLI.
   const stderr = proc.stderr;
-  if (stderr) {
+  if (stderr && typeof stderr !== 'number') {
     const reader = stderr.getReader();
-    const { value } = await reader.read();
-    if (value) {
-      const errText = new TextDecoder().decode(value);
-      throw new Error(`Server failed to start:\n${errText}`);
+    const decoder = new TextDecoder();
+    const deadline = Date.now() + 1000;
+    let errText = '';
+    try {
+      while (Date.now() < deadline) {
+        const remaining = deadline - Date.now();
+        const chunk = await Promise.race([
+          reader.read(),
+          Bun.sleep(remaining).then(() => 'timeout' as const),
+        ]);
+        if (chunk === 'timeout') break;
+        if (chunk.done) break;
+        if (chunk.value) errText += decoder.decode(chunk.value, { stream: true });
+      }
+      errText += decoder.decode();
+    } catch {
+      // Ignore drain errors — fall through to the generic timeout message.
+    } finally {
+      reader.cancel().catch(() => {});
+    }
+    if (errText.trim()) {
+      throw new Error(`Server failed to start:\n${errText.trim()}`);
     }
   }
   throw new Error(`Server failed to start within ${MAX_START_WAIT / 1000}s`);

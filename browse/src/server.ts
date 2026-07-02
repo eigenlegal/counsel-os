@@ -136,31 +136,32 @@ async function runExclusive<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
-// Find port: deterministic from CONDUCTOR_PORT, or scan range
-async function findPort(): Promise<number> {
+// Bind the real HTTP server to an available port, claiming it atomically.
+// Deterministic from CONDUCTOR_PORT, else scan a range. Binding the actual
+// server (rather than test-binding, stopping, and re-binding later) closes the
+// TOCTOU window in which a concurrent CLI invocation could grab the same port
+// between the probe and the real serve. The kept port is read off `.port`.
+function serveOnAvailablePort(fetch: (req: Request) => Response | Promise<Response>) {
   // Deterministic port from CONDUCTOR_PORT (e.g., 55040 - 45600 = 9440)
   if (BROWSE_PORT) {
     try {
-      const testServer = Bun.serve({ port: BROWSE_PORT, hostname: '127.0.0.1', fetch: () => new Response('ok') });
-      testServer.stop();
-      return BROWSE_PORT;
+      return Bun.serve({ port: BROWSE_PORT, hostname: '127.0.0.1', fetch });
     } catch {
       throw new Error(`[browse] Port ${BROWSE_PORT} (from CONDUCTOR_PORT ${process.env.CONDUCTOR_PORT}) is in use`);
     }
   }
 
-  // Fallback: scan range
+  // Fallback: scan range, keeping the first port we can actually bind.
   const start = parseInt(process.env.BROWSE_PORT_START || '9400', 10);
+  let lastErr: unknown;
   for (let port = start; port < start + 10; port++) {
     try {
-      const testServer = Bun.serve({ port, hostname: '127.0.0.1', fetch: () => new Response('ok') });
-      testServer.stop();
-      return port;
-    } catch {
-      continue;
+      return Bun.serve({ port, hostname: '127.0.0.1', fetch });
+    } catch (err) {
+      lastErr = err;
     }
   }
-  throw new Error(`[browse] No available port in range ${start}-${start + 9}`);
+  throw new Error(`[browse] No available port in range ${start}-${start + 9}: ${lastErr}`);
 }
 
 /**
@@ -287,16 +288,11 @@ export async function start() {
     }
   }, 60_000);
 
-  const port = await findPort();
-
   // Launch browser
   await browserManager.launch();
 
   const startTime = Date.now();
-  const server = Bun.serve({
-    port,
-    hostname: '127.0.0.1',
-    fetch: async (req) => {
+  const server = serveOnAvailablePort(async (req) => {
       resetIdleTimer();
 
       const url = new URL(req.url);
@@ -335,8 +331,11 @@ export async function start() {
       }
 
       return new Response('Not found', { status: 404 });
-    },
   });
+  const port = server.port;
+  if (port == null) {
+    throw new Error('[browse] Server bound without a TCP port');
+  }
 
   // Write state file
   const state = {
