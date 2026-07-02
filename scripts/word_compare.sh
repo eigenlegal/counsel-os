@@ -64,20 +64,38 @@ on run argv
     set authorName to item 3 of argv
     set outputPath to item 4 of argv
 
+    -- Word renames the comparison document to the output file's name when
+    -- it is saved as outputPath; derive the candidate post-save names up
+    -- front so close can target them explicitly.
+    set savedDelims to AppleScript's text item delimiters
+    set AppleScript's text item delimiters to "/"
+    set outName to last text item of outputPath
+    set AppleScript's text item delimiters to savedDelims
+    set outBase to outName
+    if outName ends with ".docx" then set outBase to text 1 thru -6 of outName
+
     -- Large compares can exceed the default AppleEvent timeout (~2 min);
     -- allow up to 10 minutes before giving up.
     with timeout of 600 seconds
         tell application "Microsoft Word"
             activate
 
-            -- Open the original document
+            -- Open the original document. A variable like this holds an
+            -- AppleScript SPECIFIER that re-resolves every time it is used
+            -- (in particular, 'active document' resolves to whatever window
+            -- is frontmost AT THAT MOMENT) — so every long-lived reference
+            -- below is pinned to a name string captured immediately, and
+            -- save/close address documents by that name, never by whatever
+            -- happens to be active later.
             set origDoc to open file name POSIX file originalPath
+            set origName to name of origDoc
 
             -- Compare with the modified document, author name set to specified author
             compare origDoc path modifiedPath author name authorName target compare target new add to recent files false
 
-            -- The comparison result is now the active document
-            set compDoc to active document
+            -- The comparison result is now the active document; bind its
+            -- name before focus can shift to another window.
+            set compName to name of active document
 
             -- The comparison document inherits the user's "Embed fonts in
             -- the file" preference; with it on, Word packs TrueType fonts
@@ -88,7 +106,7 @@ on run argv
             -- parameter below is the effective control at save time
             -- (verified Word 16.x for Mac); the document property is a
             -- backstop for any save path that consults it instead.
-            set embed true type fonts of compDoc to false
+            set embed true type fonts of (document compName) to false
 
             -- VERIFIED (Word 16.109.3 for Mac, 2026-06-10): "format document"
             -- produces a real OOXML .docx here (opens with python-docx; file(1)
@@ -96,16 +114,34 @@ on run argv
             -- attributed. If a future Word build emits a legacy OLE .doc
             -- instead, switch this enum to the docx-producing value
             -- ("format document default" / OOXML document format).
-            save as compDoc file name POSIX file outputPath file format format document embed truetype fonts false
+            save as (document compName) file name POSIX file outputPath file format format document embed truetype fonts false
 
-            -- Close all documents
-            close compDoc saving no
-            close origDoc saving no
+            -- Close exactly the documents this run created, by name. The
+            -- comparison document may keep its pre-save name or take the
+            -- output file's name (with or without extension) depending on
+            -- the Word build, so try all candidates; closing a name that
+            -- no longer matches anything is a no-op.
+            repeat with candidateName in {compName, outName, outBase}
+                if (exists document (contents of candidateName)) then ¬
+                    close document (contents of candidateName) saving no
+            end repeat
+            if (exists document origName) then close document origName saving no
+
+            -- A silent close failure is what leaves the comparison document
+            -- open in Word (holding the output file); fail loudly instead.
+            repeat with candidateName in {compName, outName, outBase, origName}
+                if (exists document (contents of candidateName)) then ¬
+                    error "document '" & (contents of candidateName) & "' is still open after close"
+            end repeat
         end tell
     end timeout
 end run
 ENDSCRIPT
 then
+    if [ ! -f "$OUTPUT" ]; then
+        echo "Error: Word reported success but no output file exists: $OUTPUT"
+        exit 1
+    fi
     echo "Success: Tracked changes document saved to $OUTPUT"
     echo "Modified input retained: $MODIFIED"
 else
