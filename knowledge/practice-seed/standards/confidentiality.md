@@ -4,6 +4,8 @@ content-version: "2026-06-11"
 ---
 # Confidentiality — Position
 
+> **Starting point, not legal advice.** Seeded market-default position — review and edit it to match your practice before you rely on it.
+
 ## Our Position
 **Our standard:** Mutual confidentiality with reasonable care standard. 3-5 year duration with perpetual trade secret carve-out. Standard exclusions. Return/destruction within 30 days of termination with officer certification. Compelled disclosure with prompt notice (5 business days).
 **We'll accept:** 2-year duration for general information, marking requirements for all information, broad residuals clause limited to general concepts, no explicit injunctive relief provision, or 60-day return/destruction window.

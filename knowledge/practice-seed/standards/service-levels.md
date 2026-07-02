@@ -4,6 +4,8 @@ content-version: "2026-06-11"
 ---
 # Service Levels (SLAs) — Position
 
+> **Starting point, not legal advice.** Seeded market-default position — review and edit it to match your practice before you rely on it.
+
 ## Our Position
 **Our standard:** 99.9%+ monthly uptime. Service credits of 10% per percentage point below target, capped at 25-30% of monthly fees. Tiered response/resolution times (P1: 1hr/4hr, P2: 4hr/1BD). Chronic failure termination right after 3 misses in 6 months. Planned maintenance limited to 4 hours/month with 48+ hours notice. Credits are non-exclusive remedies.
 **We'll accept:** 99.5-99.9% uptime, credits capped at 15-20%, response time SLAs only (no resolution targets), vendor-controlled measurement, or credits as sole remedy, provided some uptime commitment and credit mechanism exist.

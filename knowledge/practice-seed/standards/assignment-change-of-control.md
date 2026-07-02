@@ -4,6 +4,8 @@ content-version: "2026-06-11"
 ---
 # Assignment & Change of Control — Position
 
+> **Starting point, not legal advice.** Seeded market-default position — review and edit it to match your practice before you rely on it.
+
 ## Our Position
 **Our standard:** Mutual anti-assignment with consent not unreasonably withheld. Affiliate and M&A assignments permitted with written assumption of all obligations. Option to terminate within 30-60 days if acquirer is a direct competitor. IPO explicitly excluded from change of control.
 **We'll accept:** Asymmetric assignment rights moderately favoring one party, no direct competitor restriction, or mandatory pricing renegotiation on change of control, provided there is a written assumption requirement and a reasonable change-of-control definition.

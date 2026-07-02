@@ -4,6 +4,8 @@ content-version: "2026-06-11"
 ---
 # Source Code Escrow — Position
 
+> **Starting point, not legal advice.** Seeded market-default position — review and edit it to match your practice before you rely on it.
+
 ## Our Position
 **Our standard:** Source code deposited with independent escrow agent. Release conditions: bankruptcy/insolvency, material uncured breach (60 days), and product discontinuation. Escrow updated within 30 days of each major release. Annual verification testing. Customer gets perpetual, royalty-free license for internal maintenance and operation upon release.
 **We'll accept:** Release conditions limited to bankruptcy only, annual updates only (not with each release), no verification testing, or limited license upon release (e.g., 2-year term), provided an independent escrow agent holds the deposit and release does not require vendor consent.

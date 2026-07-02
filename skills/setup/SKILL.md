@@ -28,6 +28,143 @@ Adapt to the answers:
 
 Claude Code is one capable host; Cowork is usually a file-tool host without shell. Other LLM environments should follow the same capability matrix rather than a hardcoded host branch.
 
+## Step 0.5: Resume an interrupted Express run
+
+Adding qmd (below) needs a session restart, so an Express run can be interrupted mid-way. Before anything else, if home-directory reads are available, check for a resume marker:
+
+```bash
+cat ~/.counsel-os/setup-resume 2>/dev/null
+```
+
+If the marker exists **and** a legal root is already configured (the Step 1 detection finds a marked `config.md`), the user is mid-Express — they installed qmd and restarted. **Resume Express; do not restart it, and do not fall into the returning-user Review/Start-fresh branch:**
+
+1. Re-run the qmd detection in **Optional tool: faster local search with qmd** (Step 1). If qmd is now usable with no collection covering the vault, run its **Phase 2** indexing; otherwise just continue on the filesystem fallback.
+2. Go straight to the **Express closing card** (Express phase 6). Identity (phase 2) and the practice question + seeding (phase 3) already completed before the restart — **do not re-ask them.**
+3. Clear the marker: `rm -f ~/.counsel-os/setup-resume`.
+
+If there's no marker (or no configured root yet), continue normally.
+
+## Step 0.6: Choose a setup path
+
+Offer the fork before asking anything else:
+
+> How would you like to set up? I default to **Express** — about 3 minutes: where to keep your practice, a couple of identity basics, and one question about what you do, and I'll seed sensible starting positions you can edit anytime.
+>
+> - **Express** (default) — fastest path to a working practice.
+> - **Custom** — a longer interview that walks every profile section and standard with you.
+
+If the user doesn't express a preference, take **Express**. If they pick Custom, skip the **Express Setup** section entirely and run **Custom Setup** (Steps 1–7) unchanged.
+
+---
+
+# Express Setup (default, ~3 minutes)
+
+Near-zero decisions: root, identity basics, one practice question. Everything seeded is a starting point the user edits later — never present it as final or as legal advice.
+
+### Express phase 1 — Legal root
+Run the root-selection logic in **Step 1: Determine Legal Root** (the Obsidian-vault detection that leads with a concrete suggestion, the placement question only if detection didn't settle it, and writing `{legal_root}/config.md` + the `~/.counsel-os/legal-root` pointer). Do **not** run the qmd offer yet — that's phase 4. If an existing populated root is found, this is a returning user: hand off to the **Step 1 → "If an existing legal root was found"** branch instead of Express.
+
+### Express phase 2 — Identity basics
+Ask exactly these, in one short prompt (not the full Custom interview):
+
+> Three quick basics:
+> 1. Your name?
+> 2. Your organization / firm (and your role — in-house, outside counsel, solo)?
+> 3. Primary jurisdiction?
+
+Hold the answers for the profile you'll write in phase 3.
+
+### Express phase 3 — One practice question, then seed defaults
+Ask the single tailoring question:
+
+> Last question: **what kind of law do you practice, and for what kind of organization or industry?** (e.g. "in-house GC at a B2B SaaS company," "employment law for small businesses," "commercial real estate.")
+
+Then seed everything using the mechanics in **Step 2: Seed Content** (law areas, standards pack, methods, library, reference, `matters/`, `memory/`, `entities/`, browse binary + pandoc checks). Every seeded position file already carries a **"Starting point, not legal advice"** banner — don't add or restate it per-file; you'll point at it in the closing card.
+
+Then write `{legal_root}/practice/profile.md` tailored to the answer — **do not** run the Custom profile interview:
+
+- **In-house SaaS / software GC** (the answer is clearly in-house counsel at a SaaS/software company) → write the **deep tuned** profile:
+  ```markdown
+  ---
+  counsel-os-type: practice
+  ---
+  # Practice Profile
+
+  ## Identity
+  {Name}, {role — e.g. General Counsel / Head of Legal} at {Organization}. In-house counsel for a SaaS / software company. {Any industry specifics from their answer.}
+
+  ## Principles
+  Business-enabler posture: find the path to yes while managing material risk. Pragmatic — spend energy on the terms that move the needle (liability, data protection, IP, term/termination) and accept market-standard terms on the rest. Prefer mutual positions.
+
+  ## Voice
+  Professional, plain-English. Lead with an executive summary and a clear recommendation; bullets over dense paragraphs. Direct internally, measured with counterparties.
+
+  ## Escalation Thresholds
+  - **GREEN (proceed):** mutual, market-standard terms within the seeded positions.
+  - **YELLOW (one reviewer):** non-mutual liability caps, data-processing / privacy terms, IP assignment.
+  - **RED (senior review):** uncapped liability, broad indemnities, source-code escrow, anything touching regulated or customer data at scale.
+
+  _Emphasized law areas: data protection / privacy, IP ownership, commercial contracts, employment. These thresholds are starting points — set dollar triggers and adjust to your practice._
+  ```
+- **Any other answer** → write the **honest base-default** profile (fill Identity from their answer + phase 2; keep the rest as clearly-labeled general defaults):
+  ```markdown
+  ---
+  counsel-os-type: practice
+  ---
+  # Practice Profile
+
+  > These are general starting-point defaults, not tailored to your practice yet and not legal advice. Tell me how you actually work and I'll refine them.
+
+  ## Identity
+  {Name}, {role} at {Organization}. {Their practice-area / industry answer.} Primary jurisdiction: {jurisdiction}.
+
+  ## Principles
+  Pragmatic, market-standard defaults for now. Tell me your risk posture and what you fight for first, and I'll tailor this.
+
+  ## Voice
+  Professional, plain-English, executive-summary-first. Adjust anytime.
+
+  ## Escalation Thresholds
+  General defaults — escalate uncapped liability, broad indemnities, and anything touching regulated or customer data; add dollar thresholds when you're ready. Placeholders; edit to your practice.
+  ```
+
+Say plainly which one you seeded: for a non-SaaS-GC answer, tell the user the positions are common market defaults and the profile is a general starting point they should tune.
+
+### Express phase 4 — qmd + Obsidian offers (unchanged)
+Run the qmd offer exactly as in **Optional tool: faster local search with qmd** (Step 1) — proactive detect, offer, never block, never auto-install. **If the user opts to install qmd** (which requires a restart), first write the resume marker so the restart→re-run round-trip returns to Express instead of the returning-user branch:
+
+```bash
+mkdir -p ~/.counsel-os && printf 'express' > ~/.counsel-os/setup-resume
+```
+
+Then give them the Phase-1 install steps and continue to phase 5 on the filesystem fallback (qmd is never required to finish). On the next run, **Step 0.5** picks up the marker and resumes at the qmd indexing + closing card.
+
+### Express phase 5 — Version control (one question)
+```bash
+[ -d "{legal_root}/.git" ] && echo "git present" || echo "no git"
+```
+- **git already present** → keep it silently; say nothing and move on.
+- **no git** → one plain-language question, sensible default yes:
+  > Want me to track your practice history with git, so you can see how your positions evolve? (Recommended — it stays local. I'll set it up.)
+
+  If yes, run `git init`, add the `.gitignore` from **Step 6**, and make the initial commit. Skip the GitHub-remote offer in Express (that's a Custom / later step).
+
+### Express phase 6 — Closing card
+No ceremony, no exercises. Show:
+
+> **You're set up.** Your practice lives at `{legal_root}` — law areas, standard positions, and your profile are all editable markdown files you own.
+>
+> - Every position is a starting point, not legal advice — open any file in `practice/standards/` to change it, **or just tell me** e.g. *"our data-deletion window is 30 days"* and I'll update it.
+> - Want to see it work? Run **`/counsel-os:demo`**.
+
+Then stop — Express is done.
+
+---
+
+# Custom Setup (full interview)
+
+The remaining steps are the Custom path — the full guided interview. Run these only when the user chose **Custom** (or a returning user picked "Review and update"). Express uses Step 1's root logic and Step 2's seeding mechanics but does **not** run the Step 3–7 interview.
+
 ## Step 1: Determine Legal Root
 
 Check if a legal root is already configured by running the **Finding the Legal Root** procedure in `skills/counsel/SKILL.md`. That procedure looks for an existing marked `config.md` containing both `counsel-os-config: true` and `legal_root:` near the working location and reports back what it finds.

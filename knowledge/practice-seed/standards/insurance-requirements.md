@@ -4,6 +4,8 @@ content-version: "2026-06-11"
 ---
 # Insurance Requirements — Position
 
+> **Starting point, not legal advice.** Seeded market-default position — review and edit it to match your practice before you rely on it.
+
 ## Our Position
 **Our standard:** CGL $2M/$4M, Professional Liability $5M, Cyber Liability $10M+ for data-processing vendors, Workers' Comp at statutory minimums. Additional insured status, primary and non-contributory endorsement, waiver of subrogation. Certificates delivered proactively annually. 3-year tail coverage for claims-made policies.
 **We'll accept:** CGL $1M/$2M, Professional Liability $2M, Cyber Liability $5M, no additional insured status, certificates on request rather than proactively, or self-insured retention of $250K-$500K, provided core coverage types exist.

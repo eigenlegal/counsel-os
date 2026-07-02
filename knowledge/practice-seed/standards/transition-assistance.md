@@ -4,6 +4,8 @@ content-version: "2026-06-11"
 ---
 # Transition Assistance — Position
 
+> **Starting point, not legal advice.** Seeded market-default position — review and edit it to match your practice before you rely on it.
+
 ## Our Position
 **Our standard:** 90-day transition assistance at then-current rates (at cost for vendor-breach termination). Data return within 30 days in structured, machine-readable format. Deletion from production within 30 days and from backups within 90 days, with officer-level certification. Vendor cooperates with successor provider including knowledge transfer. Service levels maintained during transition.
 **We'll accept:** 60-day transition period, data return within 60 days, proprietary export format, deletion within 120 days, limited successor cooperation (documentation only), or T&M rates for all scenarios, provided some transition assistance exists and data return has a defined timeline.

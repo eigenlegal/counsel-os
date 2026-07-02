@@ -4,6 +4,8 @@ content-version: "2026-06-11"
 ---
 # Acceptable Use — Position
 
+> **Starting point, not legal advice.** Seeded market-default position — review and edit it to match your practice before you rely on it.
+
 ## Our Position
 **Our standard:** Restrictions limited to clearly illegal activity, IP infringement, malware, and unauthorized access. Graduated enforcement with written notice, 15-day cure period, and suspension of offending activity only. AUP changes require 30+ days advance notice.
 **We'll accept:** Broader restrictions including vague "harmful" content standards, or vendor suspending entire account for violations, provided there is at least a 14-day notice period for AUP changes and some cure mechanism.
