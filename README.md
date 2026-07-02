@@ -1,10 +1,71 @@
 # Counsel OS
 
-A legal operating system for Claude. Review contracts, triage NDAs, negotiate redlines, assess compliance, and more — all grounded in your standards, your methods, and your judgment.
+A free, open-source legal operating system for Claude. Review contracts, triage NDAs, negotiate redlines, assess compliance, and more — all grounded in your standards, your methods, and your judgment, running locally over your own markdown vault.
 
-Built for solo practitioners, law firms, and in-house counsel.
+Built for solo practitioners, law firms, and in-house counsel. MIT-licensed. No telemetry.
 
-> **Want a version tailored to your practice?** [Eigen Legal](https://eigenlegal.com?utm_source=counsel-os&utm_medium=readme&utm_campaign=upgrade-path) builds and customizes Counsel OS for firms and in-house teams — [book a free consultation](https://eigenlegal.com?utm_source=counsel-os&utm_medium=readme&utm_campaign=upgrade-path).
+## Quickstart
+
+Counsel OS runs inside **Claude Code** (terminal) or **Claude Desktop / Cowork** (no terminal) — same skills either way.
+
+**1. Install** (Claude Code marketplace — the recommended path):
+
+```
+/plugin marketplace add eigenlegal/counsel-os
+/plugin install counsel-os@eigenlegal
+```
+
+**2. Set up your practice** — start a new session and run:
+
+```
+/counsel-os:setup
+```
+
+Express setup takes about **3 minutes**: it picks a folder in your vault, asks a few identity basics and one question about the kind of law you practice, and seeds a working practice profile plus a full set of clause positions. (A Custom path with the full interview is one keystroke away.)
+
+**3. See it work:**
+
+```
+/counsel-os:demo
+```
+
+The demo shows you what Counsel OS can do — each capability with the exact command to try it — then offers one live run: it reviews a bundled **synthetic** NDA against *your own* seeded positions and produces a verdict plus a redline. Nothing is written to your vault.
+
+That's the whole loop: install → `/counsel-os:setup` (3 min) → `/counsel-os:demo`. The rest of this README is reference.
+
+> On **Claude Desktop / Cowork** (no terminal), install via the in-app marketplace instead — see [Installation](#installation) — then run the same `/counsel-os:setup` and `/counsel-os:demo` in a new conversation.
+
+---
+
+## What It Does
+
+You describe what you need in plain language; the `/counsel-os:counsel` skill auto-activates and composes five primitives — `read`, `research`, `evaluate`, `draft`, `remember` — based on your intent. There is no pipeline and no slash-command-per-phase.
+
+- **Review a contract** against your positions → clause-by-clause verdicts (green/yellow/red) with rationale and citations.
+- **Redline it** → a marked-up document with your edits and counterparty-facing comments (native Word tracked changes on macOS Claude Code; markdown elsewhere).
+- **Assess compliance** → auto-detects applicable law across 26 areas (GDPR, CCPA, HIPAA, SEC, FCPA, and more) and flags gaps.
+- **Ingest a returned markup** → extracts every tracked change and comment into a change-by-change assessment.
+- **Recall and remember** → "what did we agree with Acme?"; counsel proposes knowledge updates as it works, and you approve every one.
+- **Draft** memos, policies, notices, and correspondence in your voice.
+- **Maintain** your practice with `/counsel-os:retro` (analytics), `/counsel-os:doctor` (health check), and `/counsel-os:update` (content sync).
+
+Everything is grounded in a vault you own — plain markdown files you can read, edit, and version-control.
+
+### Platform Matrix
+
+The full methodology, all 26 law areas, and your vault work everywhere. A few capabilities depend on Claude Code's CLI access, and native Word output additionally needs macOS:
+
+| Capability | Claude Code — macOS | Claude Code — Linux / Windows | Claude Desktop / Cowork |
+|------------|:---:|:---:|:---:|
+| `counsel` + 5 primitives, 26 law areas, your vault | ✅ | ✅ | ✅ |
+| Contract review, compliance assessment, memos, recall | ✅ | ✅ | ✅ |
+| Redline **output** as a native Word `.docx` (tracked changes) | ✅ | markdown redline | markdown redline |
+| **Ingest** a counterparty's `.docx` markup (change-by-change) | ✅ | ✅ | share as text / markdown |
+| `/counsel-os:browse` (headless browser for portals, EDGAR) | ✅ | ✅ | not available |
+
+Native Word redlines use python-docx to apply edits and AppleScript driving Word's Compare — hence macOS + Word for Mac. On every other platform, counsel returns the same edits as a markdown redline. Memos, summaries, and emails come back as formatted markdown everywhere.
+
+---
 
 ## Installation
 
@@ -79,28 +140,38 @@ Then start a new Claude Code session and run `/counsel-os:setup`. Counsel OS is 
 
 ## Setup
 
-After installing, run `/counsel-os:setup` (Cowork or Claude Code) — it walks you through the full configuration in chat:
+After installing, run `/counsel-os:setup` (Cowork or Claude Code). It opens with a fork:
 
-| Step | What It Configures | Time |
+- **Express (~3 minutes, default)** — near-zero decisions. Root selection (leads with a detected Obsidian vault if it finds one), a few identity basics (name, entity/firm, jurisdiction), and **one** question: what kind of law you practice / what industry. From that it seeds a tailored `profile.md` and a full set of clause positions. In-house SaaS GC gets a deeply tuned profile; every other answer gets honest, clearly-labeled base defaults you refine over time. Optional-tool offers (QMD, Obsidian, git) are one plain-language question each and never block.
+- **Custom** — the full interview, unchanged: legal root, optional tools, `profile.md`, and a walk through the standard clause positions.
+
+Every seeded position carries a **"Starting point, not legal advice — edit to your practice"** banner. Nothing seeded is a substitute for your judgment; it's a scaffold you own and edit.
+
+| Step (Express) | What It Configures | Time |
 |------|--------------------|------|
 | Legal root | Where Counsel OS stores law areas, practice content, and memory in your vault | ~1 min |
-| Optional tools | Whether you want to use a plain folder, Obsidian, QMD, or filesystem fallback | ~1 min |
-| `profile.md` | Your organization, legal philosophy, risk appetite, writing style, escalation criteria | ~5 min |
-| Standards customization | Review and adjust the 24 standard clause positions for your practice | ~10 min |
+| Identity basics | Name, entity/firm, jurisdiction | ~1 min |
+| Practice question | One question → seeded profile + clause positions tailored to your practice | ~1 min |
 
-Claude Code users get the same flow plus optional environment checks (Bun, pandoc).
+After setup, run `/counsel-os:demo` to see it work on a synthetic NDA. You can edit anything under `{legal_root}/practice/` later — or just tell counsel *"our deletion window is 30 days"* and it updates the file for you.
 
-You can edit any of these files directly in `{legal_root}/practice/` later.
-
-**Optional:** Provide 3-5 past contracts during setup and the system will analyze them to infer your actual positions — often more accurate than describing them in the abstract.
+**Optional:** In the Custom flow, provide 3-5 past contracts during setup and the system will analyze them to infer your actual positions — often more accurate than describing them in the abstract.
 
 ---
 
 ## Usage
 
+### The Demo
+
+```
+/counsel-os:demo
+```
+
+A first look at Counsel OS: a capability guide (each thing it does, with the exact command to try it) plus one offered live run — reviewing a **bundled synthetic mutual NDA** against your own seeded confidentiality position, ending in a verdict and a redline. It writes **nothing** to your vault (artifacts go to a disposable scratch folder), uses a synthetic document only, and — if you haven't set up a legal root yet — points you at `/counsel-os:setup` first.
+
 ### Legal Work
 
-There is no pipeline and no slash-command-per-phase. You describe what you need in plain language and the `/counsel-os:counsel` skill auto-activates. It composes five primitives — `read`, `research`, `evaluate`, `draft`, `remember` — based on your intent.
+You describe what you need in plain language and the `/counsel-os:counsel` skill auto-activates. It composes five primitives — `read`, `research`, `evaluate`, `draft`, `remember` — based on your intent.
 
 ```
 > Review this NDA: path/to/nda.pdf
@@ -117,7 +188,7 @@ There is no pipeline and no slash-command-per-phase. You describe what you need 
 
 The counsel skill handles intake, analysis, negotiation language, delivery, and closeout as one continuous conversation. It auto-detects applicable law areas, loads your effective positions (merging law → entity → practice → memory), and proposes knowledge updates as it works.
 
-**Word tracked-changes redlines (Claude Code only).** When you ask counsel to redline a contract, it produces a native Microsoft Word `.docx` with tracked changes attributed to you, plus counterparty-facing comments explaining the rationale for each edit. Opens straight into Word's Review pane — Accept, Reject, and reply work like any other tracked-changes file from a colleague. The pipeline uses python-docx to apply edits and AppleScript driving Word's Compare to produce the final tracked-changes document. Memos, summaries, and emails come back as formatted markdown. Cowork users get markdown redlines instead.
+**Word tracked-changes redlines (Claude Code + macOS).** When you ask counsel to redline a contract, it produces a native Microsoft Word `.docx` with tracked changes attributed to you, plus counterparty-facing comments explaining the rationale for each edit. Opens straight into Word's Review pane — Accept, Reject, and reply work like any other tracked-changes file from a colleague. The pipeline uses python-docx to apply edits and AppleScript driving Word's Compare to produce the final tracked-changes document. Memos, summaries, and emails come back as formatted markdown. On Linux, Windows, and Cowork you get markdown redlines instead — same edits, different format.
 
 ### Utility Skills
 
@@ -268,7 +339,7 @@ Counsel OS handles client material. Know where data goes before pointing it at p
 Counsel OS separates **methodology** (how to do legal work) from **knowledge** (what you know).
 
 **The plugin provides methodology + tooling:**
-- 7 skills: `counsel` (the orchestrator), `browse`, `retro`, `setup`, `update`, `law-refresh`, `doctor`
+- 8 skills: `counsel` (the orchestrator), `demo`, `browse`, `retro`, `setup`, `update`, `law-refresh`, `doctor`
 - 5 primitives (read, research, evaluate, draft, remember) that `counsel` composes dynamically based on intent
 - Headless browser for document extraction
 - Narrow deterministic helpers for backup/restore, Word redlines, formatting, and browser automation
@@ -399,6 +470,32 @@ Once seeded, you own all of this content. Customize law areas, rewrite methods, 
 - Your practice profile (organization, philosophy, risk appetite, voice, escalation criteria)
 - Customizations to the seeded standards for your practice
 - Your counterparty context (built over time through use)
+
+---
+
+## FAQ
+
+**Is it really free?** Yes. Counsel OS is MIT-licensed and open source — the whole plugin is in this repository. You run it on your own Claude installation; there's no Counsel OS subscription, account, or server.
+
+**Do I need to be a programmer?** No. The Claude Desktop / Cowork path needs no terminal — install from the in-app marketplace and drive everything through chat. Claude Code (terminal) unlocks a few extra capabilities (see the [platform matrix](#platform-matrix)), but the core practice works either way.
+
+**Where does my data go? Is it private?** Your vault — all law, practice, matter, and memory content — stays on your machine as plain markdown. But this is a Claude plugin, so the documents and conversations you bring to it are sent to the Anthropic API for processing, and web research sends your queries and visited URLs to the search engines and sites involved. In short: the things that leave are the ones you ask it to work on, and your vault stays local. It is local-*first*, not a local model — read [Confidentiality & Data Flow](#confidentiality--data-flow) in full before pointing it at privileged material, and check your Anthropic plan's data-retention settings.
+
+**Is this legal advice?** No. Counsel OS is software, and the content it seeds is a starting point, not legal advice — every seeded position says so and is yours to edit. It doesn't replace a lawyer's professional judgment or the duty to verify current law before relying on it. Using it does not create an attorney-client relationship with Eigen Legal.
+
+**Do I need an API key or extra accounts?** Not for the plugin itself. It uses whatever model your Claude installation is already configured with. Optional tools are self-contained too: QMD indexes locally with BM25 (no API key), and the browse skill downloads its prebuilt browser on first use.
+
+**Can I use my existing Obsidian vault?** Yes. Setup can place the legal root inside a vault you already have, and with a content-index connector like QMD, Counsel OS finds counterparty notes anywhere in that vault — not just inside the legal root.
+
+**How do I keep the law content current?** `/counsel-os:update` syncs refreshed, source-cited law content into your vault (you approve what applies), and `/counsel-os:doctor` flags what's stale. You can also take ownership of any area and maintain it yourself with `/counsel-os:law-refresh`.
+
+**The marketplace install seems stuck.** On older Claude Code builds the plugin cache can be fragile — refresh the marketplace clone and fully quit Claude Code (Cmd-Q). See [the troubleshooting steps](#claude-code-marketplace--recommended) above.
+
+---
+
+## Documentation
+
+Full documentation — per-platform install, core concepts, workflow guides, the law-library reference, and troubleshooting — lives at **[eigenlegal.com/docs](https://eigenlegal.com/docs?utm_source=counsel-os&utm_medium=readme&utm_campaign=docs)**.
 
 ---
 
