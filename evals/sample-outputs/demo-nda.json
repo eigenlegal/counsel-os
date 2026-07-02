@@ -1,0 +1,42 @@
+{
+  "findings": [
+    {
+      "title": "Residuals carve-out is too broad",
+      "severity": "red",
+      "clause": "each Party may use for any purpose the ideas, concepts, know-how, and techniques retained in the unaided memory of its personnel",
+      "rationale": "The unaided-memory residuals right permits product development from confidential information and hollows out the NDA. Narrow to general skills and experience, or reject.",
+      "citations": ["knowledge/practice-seed/standards/confidentiality.md"]
+    },
+    {
+      "title": "One-year term with no trade-secret carve-out",
+      "severity": "red",
+      "clause": "shall remain in effect for one (1) year from the Effective Date",
+      "rationale": "A flat one year duration falls below the two-year floor and leaves trade secrets unprotected after year one. Extend to 3-5 years with a perpetual trade secret carve-out.",
+      "citations": ["knowledge/practice-seed/standards/confidentiality.md"]
+    },
+    {
+      "title": "Marking-only definition creates an oral-disclosure gap",
+      "severity": "yellow",
+      "clause": "Information disclosed orally or visually is protected only if reduced to a writing marked Confidential within five business days.",
+      "rationale": "A marking requirement leaves oral and visual disclosures in demos and meetings unprotected unless re-papered in a narrow window.",
+      "citations": ["knowledge/practice-seed/standards/confidentiality.md"]
+    },
+    {
+      "title": "Return and destruction obligation is weak",
+      "severity": "yellow",
+      "clause": "Upon written request, the receiving Party will use commercially reasonable efforts to return or destroy Confidential Information.",
+      "rationale": "Return/destruction should trigger on termination, be mandatory within 30 days, and require officer certification rather than commercially reasonable efforts on request.",
+      "citations": ["knowledge/practice-seed/standards/confidentiality.md"]
+    },
+    {
+      "title": "Compelled disclosure has no notice requirement",
+      "severity": "red",
+      "clause": "If required by law to disclose Confidential Information, it may do so without liability under this Agreement.",
+      "rationale": "Compelled disclosure with no prompt notice denies the disclosing Party any opportunity to seek a protective order.",
+      "citations": ["knowledge/practice-seed/standards/confidentiality.md"]
+    }
+  ],
+  "citations": [
+    "knowledge/practice-seed/standards/confidentiality.md"
+  ]
+}
