@@ -3,6 +3,15 @@ set -euo pipefail
 
 COUNSEL_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+# Fail fast if $HOME is unset or empty. The backup paths below are rooted at
+# $HOME; an empty value would silently degrade them to root-relative paths
+# (/.counsel-os/...) and write outside the user's home. set -u catches a fully
+# unset HOME but not a set-but-empty one, so guard both.
+if [ -z "${HOME:-}" ]; then
+  echo "\$HOME is not set — refusing to run to avoid writing to root-relative paths." >&2
+  exit 1
+fi
+
 # Backups live OUTSIDE the plugin directory. Marketplace installs run from a
 # versioned cache (~/.claude/plugins/cache/...) that is replaced wholesale on
 # every plugin update — anything stored inside it dies with the old version.

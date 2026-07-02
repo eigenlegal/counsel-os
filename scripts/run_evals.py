@@ -455,6 +455,12 @@ def main() -> int:
         if skipped_legacy:
             print(f"[baseline] scope is vault fixtures only; excluding non-generable: {', '.join(skipped_legacy)}", file=sys.stderr)
         reports = [r for r in reports if r["fixture"] in generable]
+        if not reports:
+            # Everything scored was a non-generable (legacy, no-vault) fixture,
+            # so nothing survives the generable-only filter. Refuse rather than
+            # divide by zero in save_baseline's mean.
+            print(f"[baseline] refusing to save {args.save_baseline}: no generable fixtures scored — a partial baseline lies.", file=sys.stderr)
+            return 2
         baseline_path = baseline_path_for(repo_root, args.save_baseline)
         save_baseline(baseline_path, args.save_baseline, args.date or date.today().isoformat(), reports)
         print(f"[baseline] saved {baseline_path}", file=sys.stderr)
