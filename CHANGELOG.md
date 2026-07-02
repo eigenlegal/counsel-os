@@ -6,6 +6,15 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.9.28] — 2026-07-02
+
+Adoption push: /counsel-os:demo, Express setup, README overhaul, robustness fixes
+
+- demo: new /counsel-os:demo skill — capability guide + live NDA showpiece run against your own positions; guarded by a matched eval fixture (cou-19)
+- setup: Express near-zero-decision onboarding (Express default vs Custom fork) + 'Starting point, not legal advice' banners on all 24 seeded position files (cou-18)
+- README: install → setup → demo above the fold, honest data-flow, platform matrix, FAQ, eigenlegal.com/docs link (cou-20)
+- robustness: browse CLI/server hardening + eval scorer + backup/restore guards (4 findings from founder code review) (cou-17)
+
 ## [0.9.27] — 2026-06-14
 
 Setup: proactive Obsidian detection (read-only, offer-not-install); README consultation link
