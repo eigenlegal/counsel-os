@@ -10,7 +10,7 @@
         "source": "url",
         "url": "https://github.com/eigenlegal/counsel-os.git"
       },
-      "version": "0.9.28",
+      "version": "0.9.29",
       "description": "Legal operating system — primitives-based legal practice tool with 4-layer knowledge system, auto-detection of applicable law, and institutional memory. For solo practitioners, law firms, and in-house counsel."
     }
   ]
