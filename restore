@@ -3,6 +3,15 @@ set -euo pipefail
 
 COUNSEL_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+# Fail fast if $HOME is unset or empty. The backup and pointer paths below are
+# rooted at $HOME; an empty value would silently degrade them to root-relative
+# paths (/.counsel-os/...) and read/write outside the user's home. set -u
+# catches a fully unset HOME but not a set-but-empty one, so guard both.
+if [ -z "${HOME:-}" ]; then
+  echo "\$HOME is not set — refusing to run to avoid touching root-relative paths." >&2
+  exit 1
+fi
+
 # Backups live OUTSIDE the plugin directory (see ./backup). The legacy
 # location inside the plugin tree is still checked so pre-migration backups
 # remain restorable.
