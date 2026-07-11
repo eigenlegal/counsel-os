@@ -375,6 +375,22 @@ The plugin discovers content through two mechanisms:
 
    - **Filesystem fallback (when no index tool is connected):** entity files live at a fixed location, `{legal_root}/entities/`, discovered via grep on the same `counsel-os-type` frontmatter. Same metadata, less structural flexibility, since you have to put files in the entities folder for them to be found.
 
+### Built on five primitives
+
+The methodology isn't one monolithic prompt or a fixed sequence of slash commands. It's decomposed into five verbs, and everything counsel does is some combination of them:
+
+| Primitive | What it does |
+|-----------|-------------|
+| `read` | Understand a document: parties, defined terms, clause inventory, key dates, whether it carries tracked changes |
+| `research` | Pull the relevant context from your vault and law areas: positions, methods, clause language, entity history, applicable law |
+| `evaluate` | Assess a clause or document against your standards and the law, with a classification and a cited source for each finding |
+| `draft` | Produce output in your voice: counter-language, a memo, an email, a summary, or a tracked-changes redline |
+| `remember` | Persist matter state and propose updates to your standards, library, and entity files (you approve each one) |
+
+Each primitive is a plain markdown file in `primitives/` that you can read and edit. `counsel` reads your request, decides which primitives it needs and in what order, and runs them. A full contract review usually flows `read → research → evaluate → draft → remember`, but nothing enforces that order: a quick "what's our position on indemnity?" is just `research`, and "close this matter" is just `remember`. There is no pipeline to step through and no command to memorize per phase; the composition is chosen at runtime from the intent.
+
+This is also how the system stays small and extensible. New capability is a new mode on an existing primitive rather than a new top-level workflow, and because the primitives read from your vault rather than hard-coding legal knowledge, the same five verbs cover every practice area.
+
 ### 4-Layer Knowledge System
 
 ```
