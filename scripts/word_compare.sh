@@ -48,6 +48,19 @@ if [ ! -f "$MODIFIED" ]; then
     exit 1
 fi
 
+ORIG_BASE="$(basename "$ORIGINAL")"
+ORIG_DIR="$(dirname "$ORIGINAL")"
+MOD_BASE="$(basename "$MODIFIED")"
+OUT_NAME="$(basename "$OUTPUT")"
+
+# Word cannot keep two same-named documents open at once, and the AppleScript
+# below addresses documents by name — an output named like either input would
+# collide with a document that is open during the compare.
+if [ "$OUT_NAME" = "$ORIG_BASE" ] || [ "$OUT_NAME" = "$MOD_BASE" ]; then
+    echo "Error: output filename ($OUT_NAME) must differ from both input filenames"
+    exit 1
+fi
+
 echo "Comparing documents..."
 echo "  Original: $ORIGINAL"
 echo "  Modified: $MODIFIED"
@@ -57,12 +70,15 @@ echo "  Output:   $OUTPUT"
 # NOTE: All paths must be in user-accessible directories (e.g. ~/Desktop, ~/Documents).
 # macOS sandboxing prevents Word from accessing /tmp or /private/tmp.
 
-if osascript - "$ORIGINAL" "$MODIFIED" "$AUTHOR" "$OUTPUT" << 'ENDSCRIPT'
+if osascript - "$ORIGINAL" "$MODIFIED" "$AUTHOR" "$OUTPUT" "$ORIG_BASE" "$ORIG_DIR" "$MOD_BASE" << 'ENDSCRIPT'
 on run argv
     set originalPath to item 1 of argv
     set modifiedPath to item 2 of argv
     set authorName to item 3 of argv
     set outputPath to item 4 of argv
+    set origBase to item 5 of argv
+    set origDir to item 6 of argv
+    set modBase to item 7 of argv
 
     -- Word renames the comparison document to the output file's name when
     -- it is saved as outputPath; derive the candidate post-save names up
@@ -80,14 +96,57 @@ on run argv
         tell application "Microsoft Word"
             activate
 
-            -- Open the original document. A variable like this holds an
-            -- AppleScript SPECIFIER that re-resolves every time it is used
-            -- (in particular, 'active document' resolves to whatever window
-            -- is frontmost AT THAT MOMENT) — so every long-lived reference
-            -- below is pinned to a name string captured immediately, and
-            -- save/close address documents by that name, never by whatever
-            -- happens to be active later.
-            set origDoc to open file name POSIX file originalPath
+            -- ── Pre-flight: this run must never touch a document it did ──
+            -- ── not open. Word refuses to keep two same-named documents ──
+            -- ── open at once, so a name match below identifies THE only ──
+            -- ── possible document with that name — the risk is that it  ──
+            -- ── belongs to the user, not to this run.                   ──
+
+            -- A document already named like the output would collide with
+            -- the comparison document's save/close below (e.g. the user is
+            -- still reading a previous redline with this name).
+            repeat with candidateName in {outName, outBase}
+                if (exists document (contents of candidateName)) then ¬
+                    error "A document named '" & (contents of candidateName) & "' is already open in Word; the redline output would collide with it. Close it and re-run."
+            end repeat
+
+            -- The modified input open with unsaved edits: the compare reads
+            -- the file from DISK, so those edits would be silently ignored.
+            if (exists document modBase) then
+                if not (saved of document modBase) then ¬
+                    error "'" & modBase & "' is open in Word with unsaved changes; the compare reads the saved file, so those edits would be silently ignored. Save or close it, then re-run."
+            end if
+
+            -- The original: if the same FILE is already open, 'open' would
+            -- hand back the user's in-memory document — including unsaved
+            -- edits — which the cleanup below would then discard with
+            -- 'saving no'. Reuse it only if it is clean, and remember not
+            -- to close it. A same-named document from a DIFFERENT folder
+            -- cannot be opened alongside ours at all, so fail with a clear
+            -- message instead of Word's cryptic one.
+            set origWasOpen to false
+            if (exists document origBase) then
+                set docDir to path of document origBase
+                -- Word reports 'path' in HFS style (Colon:Separated:Dirs);
+                -- normalize to POSIX before comparing with origDir.
+                if docDir does not start with "/" then set docDir to POSIX path of docDir
+                if docDir ends with "/" and (length of docDir) > 1 then set docDir to text 1 thru -2 of docDir
+                if docDir is not equal to origDir then ¬
+                    error "A different document also named '" & origBase & "' (in " & docDir & ") is open in Word; Word cannot open two documents with the same name. Close it and re-run."
+                if not (saved of document origBase) then ¬
+                    error "'" & origBase & "' is open in Word with unsaved changes. Save it (to include those edits in the compare) or close it, then re-run."
+                set origWasOpen to true
+                set origDoc to document origBase
+            else
+                -- Open the original document. A variable like this holds an
+                -- AppleScript SPECIFIER that re-resolves every time it is
+                -- used (in particular, 'active document' resolves to
+                -- whatever window is frontmost AT THAT MOMENT) — so every
+                -- long-lived reference below is pinned to a name string
+                -- captured immediately, and save/close address documents by
+                -- that name, never by whatever happens to be active later.
+                set origDoc to open file name POSIX file originalPath
+            end if
             set origName to name of origDoc
 
             -- Compare with the modified document, author name set to specified author
@@ -116,20 +175,24 @@ on run argv
             -- ("format document default" / OOXML document format).
             save as (document compName) file name POSIX file outputPath file format format document embed truetype fonts false
 
-            -- Close exactly the documents this run created, by name. The
-            -- comparison document may keep its pre-save name or take the
-            -- output file's name (with or without extension) depending on
-            -- the Word build, so try all candidates; closing a name that
-            -- no longer matches anything is a no-op.
-            repeat with candidateName in {compName, outName, outBase}
+            -- Close exactly the documents this run opened or created, by
+            -- name — the pre-flight above guarantees none of these names
+            -- can belong to a user document. The comparison document may
+            -- keep its pre-save name or take the output file's name (with
+            -- or without extension) depending on the Word build, so try
+            -- all candidates; closing a name that no longer matches
+            -- anything is a no-op. An original that was already open when
+            -- this run started belongs to the user and stays open.
+            set closeNames to {compName, outName, outBase}
+            if not origWasOpen then set end of closeNames to origName
+            repeat with candidateName in closeNames
                 if (exists document (contents of candidateName)) then ¬
                     close document (contents of candidateName) saving no
             end repeat
-            if (exists document origName) then close document origName saving no
 
             -- A silent close failure is what leaves the comparison document
             -- open in Word (holding the output file); fail loudly instead.
-            repeat with candidateName in {compName, outName, outBase, origName}
+            repeat with candidateName in closeNames
                 if (exists document (contents of candidateName)) then ¬
                     error "document '" & (contents of candidateName) & "' is still open after close"
             end repeat
