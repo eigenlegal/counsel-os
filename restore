@@ -106,6 +106,12 @@ is_backup_dir() {
   [ -f "$1/root/config.md" ] || [ -f "$1/config.md" ]
 }
 
+# Pick the newest COMPLETE backup. ./backup writes the manifest last (and
+# stages under *.partial before the final rename), so a full-root directory
+# without manifest.json is an interrupted copy — auto-picking it would
+# silently restore a truncated vault over live content. Legacy-layout
+# backups (config.md at top level) predate manifests and stay eligible as
+# a fallback when no manifest-bearing backup exists.
 newest_backup_in() {
   local base="$1"
   local candidate
@@ -114,7 +120,17 @@ newest_backup_in() {
 
   while IFS= read -r candidate; do
     candidate="${candidate%/}"
-    if is_backup_dir "$candidate"; then
+    case "$candidate" in *.partial) continue ;; esac
+    if [ -f "$candidate/manifest.json" ] && is_backup_dir "$candidate"; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done < <(ls -dt "$base"/*/ 2>/dev/null)
+
+  while IFS= read -r candidate; do
+    candidate="${candidate%/}"
+    case "$candidate" in *.partial) continue ;; esac
+    if [ ! -d "$candidate/root" ] && [ -f "$candidate/config.md" ]; then
       printf '%s\n' "$candidate"
       return 0
     fi
@@ -185,6 +201,31 @@ echo "Restoring to:   $LEGAL_ROOT"
 if [ -f "$BACKUP_PATH/manifest.json" ]; then
   echo "  backed up at version: $(grep -o '"version": "[^"]*"' "$BACKUP_PATH/manifest.json" | cut -d'"' -f4)"
   echo "  current version:      $(cat "$COUNSEL_DIR/VERSION" 2>/dev/null || echo "unknown")"
+fi
+
+# Sanity-check completeness BEFORE touching the legal root: an interrupted
+# copy can hold a valid config.md but a truncated payload. Explicitly-named
+# backups may still be restored after a confirmation (salvage), but never
+# silently.
+confirm_incomplete_backup() {
+  echo ""
+  echo "WARNING: $1"
+  echo "Restoring it would replace live content with an incomplete copy."
+  read -r -p "Restore it anyway? (y/N) " confirm
+  if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
+    echo "Restore cancelled."
+    exit 0
+  fi
+}
+
+if [ -f "$BACKUP_PATH/manifest.json" ]; then
+  manifest_files="$(grep -o '"files":[[:space:]]*[0-9]*' "$BACKUP_PATH/manifest.json" | grep -o '[0-9]*$' || true)"
+  actual_files="$(find "$PAYLOAD_PATH" -type f ! -name '.gitkeep' ! -path "$BACKUP_PATH/manifest.json" | wc -l | tr -d ' ')"
+  if [ -n "$manifest_files" ] && [ "$manifest_files" != "$actual_files" ]; then
+    confirm_incomplete_backup "This backup looks INCOMPLETE: its manifest records $manifest_files files but $actual_files are present."
+  fi
+elif [ "$BACKUP_FORMAT" = "full-root" ]; then
+  confirm_incomplete_backup "This backup has no manifest.json — it is likely an interrupted (incomplete) backup."
 fi
 
 # Build the list of top-level items to restore. Never restore .git or
