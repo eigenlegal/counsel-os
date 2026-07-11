@@ -6,6 +6,14 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.9.30] — 2026-07-11
+
+Redline and backup safety: original-document target resolution, Word close safety, atomic backups
+
+- apply_redlines: all occurrence targets now resolve against the original document before any edit is applied, so occurrence numbers can no longer silently land on the wrong match after earlier edits mutate the text (cou-26, #2)
+- word_compare: never touches Word documents this run didn't open — a user's own open document with the same name is no longer closed with 'saving no', which could discard unsaved edits (cou-27, #3)
+- backup/restore: backups are staged atomically so a partially written backup can never become the newest restore candidate, and symlinked vault subdirectories are dereferenced so their contents are actually saved (cou-29, #1)
+
 ## [0.9.29] — 2026-07-02
 
 Word redline robustness: deterministic output size + stable document handles
