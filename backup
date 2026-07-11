@@ -19,12 +19,25 @@ BACKUP_DIR="$HOME/.counsel-os/backups"
 LEGACY_BACKUP_DIR="$COUNSEL_DIR/backups"
 TIMESTAMP="$(date +%Y-%m-%d-%H%M%S)"
 BACKUP_PATH="$BACKUP_DIR/$TIMESTAMP"
-if [ -e "$BACKUP_PATH" ]; then
+if [ -e "$BACKUP_PATH" ] || [ -e "$BACKUP_PATH.partial" ]; then
   n=2
-  while [ -e "$BACKUP_PATH-$n" ]; do n=$((n + 1)); done
+  while [ -e "$BACKUP_PATH-$n" ] || [ -e "$BACKUP_PATH-$n.partial" ]; do n=$((n + 1)); done
   BACKUP_PATH="$BACKUP_PATH-$n"
 fi
-PAYLOAD_PATH="$BACKUP_PATH/root"
+
+# The backup is staged under a .partial name and renamed to its final name
+# only after every file AND the manifest are written. An interrupted run
+# (disk full, iCloud placeholder that can't be materialized, ctrl-C) must
+# never leave a directory that ./restore could pick as the newest backup.
+STAGE_BACKUP_PATH="$BACKUP_PATH.partial"
+PAYLOAD_PATH="$STAGE_BACKUP_PATH/root"
+
+cleanup_stage() {
+  if [ -d "$STAGE_BACKUP_PATH" ]; then
+    rm -rf "$STAGE_BACKUP_PATH"
+  fi
+}
+trap cleanup_stage EXIT
 
 LEGAL_ROOT="$(bash "$COUNSEL_DIR/scripts/resolve_legal_root.sh" || true)"
 
@@ -62,8 +75,9 @@ if [ -d "$LEGACY_BACKUP_DIR" ]; then
 fi
 
 # Anything beyond config.md worth backing up? (Skip .git and leftover
-# restore work directories.)
-content_probe="$(cd "$LEGAL_ROOT" && find . -name .git -prune -o -name '.counsel-os-restore.*' -prune -o -type f ! -name '.gitkeep' -print 2>/dev/null | grep -v '^\./config\.md$' | head -1 || true)"
+# restore work directories.) -L so content that lives behind a symlinked
+# subdirectory counts — it gets dereferenced into the backup below.
+content_probe="$(cd "$LEGAL_ROOT" && find -L . -name .git -prune -o -name '.counsel-os-restore.*' -prune -o -type f ! -name '.gitkeep' -print 2>/dev/null | grep -v '^\./config\.md$' | head -1 || true)"
 
 if [ -z "$content_probe" ]; then
   echo "Nothing to back up. Run /counsel-os:setup first."
@@ -76,6 +90,9 @@ mkdir -p "$PAYLOAD_PATH"
 # path overrides (matters_path, entities_path) and any other vault content
 # are captured, not just a hardcoded list of default subdirectories.
 # Excluded: .git (use git's own tooling for that) and restore work dirs.
+# Symlinks are dereferenced (cp -RL): a vault entry like
+# matters -> /Volumes/Shared/matters must back up the CONTENT, not a link
+# that dangles when restored on another machine.
 shopt -s dotglob
 for entry in "$LEGAL_ROOT"/*; do
   [ -e "$entry" ] || [ -L "$entry" ] || continue
@@ -83,20 +100,26 @@ for entry in "$LEGAL_ROOT"/*; do
   case "$name" in
     .git|.counsel-os-restore.*) continue ;;
   esac
-  cp -R "$entry" "$PAYLOAD_PATH/$name"
+  if [ -L "$entry" ]; then
+    if [ ! -e "$entry" ]; then
+      echo "Warning: skipping dangling symlink: $name -> $(readlink "$entry")" >&2
+      continue
+    fi
+    echo "  note: $name is a symlink to $(readlink "$entry"); backing up its contents"
+  fi
+  cp -RL "$entry" "$PAYLOAD_PATH/$name"
 done
 shopt -u dotglob
 
 if [ ! -f "$PAYLOAD_PATH/config.md" ]; then
   echo "Backup payload is missing config.md; aborting." >&2
-  rm -rf "$BACKUP_PATH"
   exit 1
 fi
 
 VERSION="$(cat "$COUNSEL_DIR/VERSION" 2>/dev/null || echo "unknown")"
 FILE_COUNT="$(find "$PAYLOAD_PATH" -type f ! -name '.gitkeep' | wc -l | tr -d ' ')"
 
-python3 - "$BACKUP_PATH/manifest.json" "$TIMESTAMP" "$VERSION" "$LEGAL_ROOT" "$FILE_COUNT" <<'PY'
+python3 - "$STAGE_BACKUP_PATH/manifest.json" "$TIMESTAMP" "$VERSION" "$LEGAL_ROOT" "$FILE_COUNT" <<'PY'
 import json
 import sys
 
@@ -113,6 +136,11 @@ with open(manifest_path, "w", encoding="utf-8") as f:
     json.dump(manifest, f, indent=2)
     f.write("\n")
 PY
+
+# Commit point: everything (payload + manifest) is on disk — take the final
+# name. Until this rename the directory is *.partial, which restore ignores.
+mv "$STAGE_BACKUP_PATH" "$BACKUP_PATH"
+PAYLOAD_PATH="$BACKUP_PATH/root"
 
 echo "Backup created: $BACKUP_PATH"
 echo "  source: $LEGAL_ROOT"
