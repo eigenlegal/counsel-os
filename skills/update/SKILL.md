@@ -272,10 +272,13 @@ Action needed: updated data-privacy law guidance affects practice/standards/data
 If a content index is connected (e.g. QMD) and law or practice files were written, refresh it so the new content is retrievable immediately:
 
 ```bash
-qmd update && qmd embed
+qmd update
+[ -d ~/.cache/qmd/models ] && qmd embed
 ```
 
 The index does not watch the vault — without this step, knowledge-base searches keep returning pre-update content. Skip silently when no index tool is available.
+
+Run `qmd embed` **only** behind the model-cache check shown above: the cache exists only if the user has already opted into semantic embeddings, and a bare `qmd embed` on a BM25-only install triggers a surprise ~940MB one-time model download — a consent violation (setup promises embeddings stay opt-in). BM25 (`qmd update`) keeps search working either way.
 
 ## Step 9: Version Control
 
