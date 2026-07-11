@@ -22,6 +22,13 @@ The redlines.json file should contain an array of objects:
 If `current` appears more than once, the script refuses to apply that item
 unless `match` selects exactly one occurrence. Supported match selectors:
 `location`, `paragraph_index`, `occurrence`, `before`, `after`, and `context`.
+
+Every item is resolved against the ORIGINAL document, not the partially
+edited one: all targets are located before any replacement is made, so
+`occurrence` numbers and other selectors always mean what they meant in the
+document the redlines were drafted from. Consequently an item cannot target
+text introduced by an earlier item, and two items whose targets overlap
+result in the later item being skipped, never a silently misplaced edit.
 """
 
 import json
@@ -406,11 +413,12 @@ def main():
 
     results = {"applied": [], "skipped": [], "warnings": []}
 
+    # Phase 1: resolve every item against the pristine document, before any
+    # replacement mutates it. Occurrence numbers and offsets therefore always
+    # refer to the original text the redlines were drafted from.
+    resolved = []
     for i, item in enumerate(redlines):
         current = item["current"]
-        proposed = item["proposed"]
-        comment_text = item.get("comment")
-        author = item.get("author", "Unknown")
         match_spec = item.get("match")
 
         if not current:
@@ -468,6 +476,21 @@ def main():
             )
             continue
 
+        resolved.append((i, item, selected_match))
+
+    # Phase 2: apply back-to-front (descending start offset) so an applied
+    # edit can never shift the offset of one still to come. Edits in
+    # different paragraphs don't interact, so one global sort suffices;
+    # the sort is stable, so of two items with the same target the earlier
+    # one wins and the later is skipped by the pre-replace text check.
+    for i, item, selected_match in sorted(
+        resolved, key=lambda entry: -entry[2].start
+    ):
+        current = item["current"]
+        proposed = item["proposed"]
+        comment_text = item.get("comment")
+        author = item.get("author", "Unknown")
+
         replaced = replace_in_paragraph(
             selected_match.paragraph, current, proposed, selected_match.start
         )
@@ -500,9 +523,15 @@ def main():
             {
                 "index": i,
                 "current": truncate(current),
-                "reason": "Replacement failed despite text being found",
+                "reason": (
+                    "Text at the resolved location changed before this edit "
+                    "was applied (an earlier item's replacement overlaps it)"
+                ),
             }
         )
+
+    for entries in results.values():
+        entries.sort(key=lambda entry: entry["index"])
 
     doc.save(str(output_path))
 
