@@ -15,6 +15,7 @@ import { handleMetaCommand } from './meta-commands';
 import { handleCookiePickerRoute } from './cookie-picker-routes';
 import { READ_COMMANDS, WRITE_COMMANDS, META_COMMANDS } from './commands';
 import { redactUrl } from './url-redaction';
+import { browsePort, ensureRuntimeDir, logFilePath, stateFilePath, writeFileExclusive } from './runtime-paths';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
@@ -22,12 +23,8 @@ import * as crypto from 'crypto';
 // ─── Auth (inline) ─────────────────────────────────────────────
 const AUTH_TOKEN = crypto.randomUUID();
 const COOKIE_PICKER_TOKEN = crypto.randomUUID();
-const PORT_OFFSET = 45600;
-const BROWSE_PORT = process.env.CONDUCTOR_PORT
-  ? parseInt(process.env.CONDUCTOR_PORT, 10) - PORT_OFFSET
-  : parseInt(process.env.BROWSE_PORT || '0', 10); // 0 = auto-scan
-const INSTANCE_SUFFIX = BROWSE_PORT ? `-${BROWSE_PORT}` : '';
-const STATE_FILE = process.env.BROWSE_STATE_FILE || `/tmp/browse-server${INSTANCE_SUFFIX}.json`;
+const BROWSE_PORT = browsePort();
+const STATE_FILE = stateFilePath();
 const IDLE_TIMEOUT_MS = parseInt(process.env.BROWSE_IDLE_TIMEOUT || '1800000', 10); // 30 min
 
 export function validateBearerAuth(req: Request, token: string): boolean {
@@ -35,17 +32,13 @@ export function validateBearerAuth(req: Request, token: string): boolean {
   return header === `Bearer ${token}`;
 }
 
-function validateAuth(req: Request): boolean {
-  return validateBearerAuth(req, AUTH_TOKEN);
-}
-
 // ─── Buffer (from buffers.ts) ────────────────────────────────────
 import { consoleBuffer, networkBuffer, dialogBuffer, addConsoleEntry, addNetworkEntry, addDialogEntry, type LogEntry, type NetworkEntry, type DialogEntry } from './buffers';
 export { consoleBuffer, networkBuffer, dialogBuffer, addConsoleEntry, addNetworkEntry, addDialogEntry, type LogEntry, type NetworkEntry, type DialogEntry };
 
-const CONSOLE_LOG_PATH = `/tmp/browse-console${INSTANCE_SUFFIX}.log`;
-const NETWORK_LOG_PATH = `/tmp/browse-network${INSTANCE_SUFFIX}.log`;
-const DIALOG_LOG_PATH = `/tmp/browse-dialog${INSTANCE_SUFFIX}.log`;
+const CONSOLE_LOG_PATH = logFilePath('console');
+const NETWORK_LOG_PATH = logFilePath('network');
+const DIALOG_LOG_PATH = logFilePath('dialog');
 let lastConsoleFlushed = 0;
 let lastNetworkFlushed = 0;
 let lastDialogFlushed = 0;
@@ -249,6 +242,60 @@ async function handleCommand(body: any): Promise<Response> {
   return dispatchCommand(body, browserManager, shutdown);
 }
 
+export interface RequestHandlerDeps {
+  bm: BrowserManager;
+  authToken: string;
+  cookiePickerToken: string;
+  startTime: number;
+  runCommand: (body: any) => Promise<Response>;
+}
+
+// The idle timer is deliberately NOT reset here: only /command activity counts
+// (runExclusive resets it on completion). If unauthenticated requests counted,
+// any local poller — or a DNS-rebound page — hitting /health could keep the
+// daemon alive indefinitely, defeating the idle shutdown that purges imported
+// session cookies.
+export function createRequestHandler(deps: RequestHandlerDeps): (req: Request) => Promise<Response> {
+  return async (req: Request) => {
+    const url = new URL(req.url);
+
+    // Cookie picker routes use a separate URL token so they can be opened
+    // in the user's browser without exposing the command bearer token.
+    if (url.pathname.startsWith('/cookie-picker')) {
+      return handleCookiePickerRoute(url, req, deps.bm, deps.cookiePickerToken);
+    }
+
+    // Health check — no auth required (now async)
+    if (url.pathname === '/health') {
+      const healthy = await deps.bm.isHealthy();
+      return new Response(JSON.stringify({
+        status: healthy ? 'healthy' : 'unhealthy',
+        uptime: Math.floor((Date.now() - deps.startTime) / 1000),
+        tabs: deps.bm.getTabCount(),
+        currentUrl: redactUrl(deps.bm.getCurrentUrl()),
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // All other endpoints require auth
+    if (!validateBearerAuth(req, deps.authToken)) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (url.pathname === '/command' && req.method === 'POST') {
+      const body = await req.json();
+      return deps.runCommand(body);
+    }
+
+    return new Response('Not found', { status: 404 });
+  };
+}
+
 async function shutdown() {
   if (isShuttingDown) return;
   isShuttingDown = true;
@@ -268,6 +315,9 @@ async function shutdown() {
 
 // ─── Start ─────────────────────────────────────────────────────
 export async function start() {
+  // State file + logs live in a per-user 0700 dir, never world-writable /tmp
+  ensureRuntimeDir();
+
   // Clear old log files
   try { fs.unlinkSync(CONSOLE_LOG_PATH); } catch {}
   try { fs.unlinkSync(NETWORK_LOG_PATH); } catch {}
@@ -292,46 +342,13 @@ export async function start() {
   await browserManager.launch();
 
   const startTime = Date.now();
-  const server = serveOnAvailablePort(async (req) => {
-      resetIdleTimer();
-
-      const url = new URL(req.url);
-
-      // Cookie picker routes use a separate URL token so they can be opened
-      // in the user's browser without exposing the command bearer token.
-      if (url.pathname.startsWith('/cookie-picker')) {
-        return handleCookiePickerRoute(url, req, browserManager, COOKIE_PICKER_TOKEN);
-      }
-
-      // Health check — no auth required (now async)
-      if (url.pathname === '/health') {
-        const healthy = await browserManager.isHealthy();
-        return new Response(JSON.stringify({
-          status: healthy ? 'healthy' : 'unhealthy',
-          uptime: Math.floor((Date.now() - startTime) / 1000),
-          tabs: browserManager.getTabCount(),
-          currentUrl: redactUrl(browserManager.getCurrentUrl()),
-        }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-
-      // All other endpoints require auth
-      if (!validateAuth(req)) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-          status: 401,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-
-      if (url.pathname === '/command' && req.method === 'POST') {
-        const body = await req.json();
-        return runExclusive(() => handleCommand(body));
-      }
-
-      return new Response('Not found', { status: 404 });
-  });
+  const server = serveOnAvailablePort(createRequestHandler({
+    bm: browserManager,
+    authToken: AUTH_TOKEN,
+    cookiePickerToken: COOKIE_PICKER_TOKEN,
+    startTime,
+    runCommand: (body) => runExclusive(() => handleCommand(body)),
+  }));
   const port = server.port;
   if (port == null) {
     throw new Error('[browse] Server bound without a TCP port');
@@ -345,7 +362,9 @@ export async function start() {
     startedAt: new Date().toISOString(),
     serverPath: path.resolve(import.meta.dir, 'server.ts'),
   };
-  fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2), { mode: 0o600 });
+  // The state file carries the bearer token — exclusive-create it 0600 so the
+  // token never lands in a file (or through a symlink) something else made.
+  writeFileExclusive(STATE_FILE, JSON.stringify(state, null, 2));
 
   browserManager.serverPort = port;
   browserManager.cookiePickerToken = COOKIE_PICKER_TOKEN;

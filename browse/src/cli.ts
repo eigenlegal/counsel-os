@@ -2,7 +2,7 @@
  * Counsel OS browse CLI — thin wrapper that talks to the persistent server
  *
  * Flow:
- *   1. Read /tmp/browse-server.json for port + token
+ *   1. Read the state file (~/.counsel-os/browse/browse-server*.json) for port + token
  *   2. If missing or stale PID → start server in background
  *   3. Health check
  *   4. Send command via HTTP POST
@@ -11,13 +11,9 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { stateFilePath } from './runtime-paths';
 
-const PORT_OFFSET = 45600;
-const BROWSE_PORT = process.env.CONDUCTOR_PORT
-  ? parseInt(process.env.CONDUCTOR_PORT, 10) - PORT_OFFSET
-  : parseInt(process.env.BROWSE_PORT || '0', 10);
-const INSTANCE_SUFFIX = BROWSE_PORT ? `-${BROWSE_PORT}` : '';
-const STATE_FILE = process.env.BROWSE_STATE_FILE || `/tmp/browse-server${INSTANCE_SUFFIX}.json`;
+const STATE_FILE = stateFilePath();
 const MAX_START_WAIT = 8000; // 8 seconds to start
 
 interface ServerCommandOptions {

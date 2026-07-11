@@ -37,6 +37,7 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import { ensureRuntimeDir } from './runtime-paths';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -241,7 +242,9 @@ function openDb(dbPath: string, browserName: string): Database {
 }
 
 function openDbFromCopy(dbPath: string, browserName: string): Database {
-  const tmpPath = `/tmp/browse-cookies-${browserName.toLowerCase()}-${crypto.randomUUID()}.db`;
+  // Cookie-store copies hold session credentials — keep them in the 0700
+  // runtime dir, not /tmp, for the short window before they're unlinked.
+  const tmpPath = path.join(ensureRuntimeDir(), `browse-cookies-${browserName.toLowerCase()}-${crypto.randomUUID()}.db`);
   try {
     fs.copyFileSync(dbPath, tmpPath);
     // Also copy WAL and SHM if they exist (for consistent reads)
