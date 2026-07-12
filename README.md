@@ -101,7 +101,7 @@ If that still doesn't work, fall back to the local clone below. Same content, sa
 **Optional dependencies** (Claude Code; the setup skill auto-detects what you have):
 - **pandoc**, for extracting tracked changes from Word documents
 - **[QMD](https://github.com/tobi/qmd)**, a content-index MCP server for entity discovery across your whole vault. Install separately as its own Claude plugin (works in Claude Code and Cowork). Without it, entity files live under `{legal_root}/entities/` and are found via filesystem search.
-- **[Bun](https://bun.sh/)** plus Playwright Chromium (`bunx playwright install chromium`), only if you want to build the `/counsel-os:browse` skill from source. Without them, browse downloads a prebuilt binary and matching browser builds from the GitHub release automatically on first use (set `COUNSEL_OS_NO_DOWNLOAD=1` to disable).
+- **[Bun](https://bun.sh/)** plus Playwright Chromium (`bunx playwright install chromium`), only if you want to build the `/counsel-os:browse` skill from source. Without them, browse downloads a prebuilt binary and matching browser builds from the GitHub release automatically on first use (set `COUNSEL_OS_NO_DOWNLOAD=1` to disable). Prebuilt browse binaries are published for **Apple-Silicon macOS** and **Linux-x64**; on **Intel Macs** browse builds from source, so those users need Bun installed. (Everything else in Counsel OS — the full methodology, all 26 law areas, your vault — runs on Intel Macs with no extra tooling.)
 
 ### Claude Desktop / Cowork (no terminal required)
 
