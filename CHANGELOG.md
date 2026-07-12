@@ -6,6 +6,13 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.9.32] — 2026-07-11
+
+Batch review and deadline docketing
+
+- evaluate --batch: run one position set across a folder of documents and get a single consolidated report (cou-47)
+- deadline docketing: deadlines: frontmatter convention plus a read-only /counsel-os:docket sweep across matters (cou-48)
+
 ## [0.9.31] — 2026-07-11
 
 Security hardening, redline fidelity, and release/doctor fixes
