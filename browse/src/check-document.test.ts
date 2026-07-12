@@ -128,6 +128,39 @@ describe('check_document.py — markdown path (no python-docx needed)', () => {
     expect(report.notes.join(' ')).toContain('auto-generated');
   });
 
+  mdTest('resolves a "Section N.N" ref to a no-period subsection heading (no false error)', () => {
+    // Regression (cou-51): the common legal subsection style "3.2 Late Fees"
+    // (dotted decimal, whitespace, capitalized word, NO trailing period) must
+    // register as a section so a valid "Section 3.2" ref resolves instead of
+    // false-flagging at error severity. Period-suffixed top-level headings sit
+    // alongside it, so the auto-numbering guard does not fire.
+    const mixed = writeTmp(
+      'mixed.md',
+      [
+        '# 1. Definitions',
+        '"Services" means the professional services.',
+        '# 2. Scope',
+        'Provider performs the Services.',
+        '# 3. Payment',
+        'Fees are due per the schedule below.',
+        '## 3.2 Late Fees',
+        'Overdue amounts accrue interest, and remedies are set forth in Section 3.2.',
+      ].join('\n'),
+    );
+    const report = runJson(mixed);
+    expect(types(report).has('undefined_reference')).toBe(false);
+    expect(report.summary.error).toBe(0);
+
+    // ...and --strict stays green (exit 0) on this clean mixed-heading doc.
+    let code = 0;
+    try {
+      execFileSync('python3', [script, mixed, '--strict'], { stdio: 'ignore' });
+    } catch (e: any) {
+      code = e.status;
+    }
+    expect(code).toBe(0);
+  });
+
   mdTest('--strict exits non-zero only when an error-severity finding exists', () => {
     const bad = writeTmp(
       'bad.md',

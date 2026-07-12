@@ -141,12 +141,22 @@ def _loc_label(fmt, numbers):
 
 
 # --- Section numbering ----------------------------------------------------
-# A heading's number when it is written in the text (manual numbering):
-#   "1. Definitions"  "8.3  Termination"  "Section 8.3"  "ARTICLE IV"
-# Bare numbers must carry trailing "." or ")" so dates/amounts/addresses do
-# not register as headings (mirrors extract_redlines.HEADING_NUM_RE).
+# A heading's number when it is written in the text (manual numbering). Two
+# accepted forms:
+#   - any number with a trailing "." or ")":     "1. Definitions"  "1) Scope"
+#   - a *dotted* decimal (N.N, N.N.N ...) followed by a Capitalized word, with
+#     no trailing punctuation:                   "3.2 Late Fees"  "8.3  Termination"
+# A bare integer must carry the trailing "." or ")" so dates/amounts/addresses
+# ("8 million", "5 Termination Road") do not register as headings; a dotted
+# decimal at block start is unambiguous enough to stand on its own, and the
+# required Capital after it keeps amount-sentences ("3.5 percent per annum")
+# from registering. (Mirrors extract_redlines.HEADING_NUM_RE, widened for the
+# common "N.N Heading" subsection style that omits the trailing period.)
 _HEADING_NUM = re.compile(
-    r"^\s*(?:Section\s+)?(\d+(?:\.\d+)*)[.)]\s+\S", re.IGNORECASE)
+    r"^\s*(?:Section\s+)?(?:"
+    r"(\d+(?:\.\d+)*)[.)]\s+\S"            # trailing "." or ")": permissive
+    r"|(\d+(?:\.\d+)+)\s+(?-i:[A-Z])"      # dotted, no punctuation: needs a Capital
+    r")", re.IGNORECASE)
 _HEADING_ART = re.compile(r"^\s*ARTICLE\s+([IVXLC]+|\d+)\b", re.IGNORECASE)
 
 
@@ -160,7 +170,7 @@ def collect_sections(blocks):
     for b in blocks:
         m = _HEADING_NUM.match(b)
         if m:
-            parts = m.group(1).split(".")
+            parts = (m.group(1) or m.group(2)).split(".")
             for k in range(1, len(parts) + 1):
                 sections.add(".".join(parts[:k]))
         a = _HEADING_ART.match(b)
