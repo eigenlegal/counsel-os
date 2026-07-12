@@ -131,7 +131,7 @@ One table row per dependency. What each one unlocks, and its install one-liner a
 |------------|---------|------------------|
 | pandoc | Tracked-change extraction from .docx | `brew install pandoc` (macOS) / `apt-get install pandoc` (Linux) |
 | python3 + python-docx | Redline pipeline (apply_redlines, clean_format, extract_redlines) | `python3 -m pip install python-docx` |
-| bun | Building/running the browse binary | `curl -fsSL https://bun.sh/install \| bash` |
+| bun | Building browse from source (optional — the prebuilt binary auto-downloads on first use) | `curl -fsSL https://bun.sh/install \| bash` |
 | Playwright Chromium | The browse skill's headless browser | `cd "${CLAUDE_PLUGIN_ROOT}" && bunx playwright install chromium` |
 | qmd CLI | Vault index maintenance (`qmd update`; `qmd embed` is opt-in) | see https://github.com/tobi/qmd (optional — filesystem search is the fallback) |
 
@@ -160,7 +160,7 @@ done
 
 - Binary present, no state file → ✅, detail "built; daemon not running (starts on demand)".
 - Binary present, daemon responds `"status": "healthy"` → ✅, include uptime/tabs in the detail.
-- Binary missing → ⚠️, fix: `cd "${CLAUDE_PLUGIN_ROOT}" && bun install && bun run build` (requires bun — cross-reference check 5).
+- Binary missing → ⚠️, fix: run any `/counsel-os:browse` command — `find-browse` auto-downloads the prebuilt binary, runtime, and Chromium on first use (no bun needed). To build from source instead: `cd "${CLAUDE_PLUGIN_ROOT}" && bun install && bun run build` (requires bun — cross-reference check 5).
 - State file present but the port doesn't respond, or `/health` reports unhealthy → ⚠️, fix: `kill {pid} 2>/dev/null; rm <state file>` — the next browse command starts a fresh daemon.
 - State file found under `/tmp` → ⚠️, a daemon from an earlier release is still running; fix: `kill {pid} 2>/dev/null; rm /tmp/browse-server*.json` — the next browse command starts a fresh daemon that keeps its state under `~/.counsel-os/browse/`.
 
@@ -231,7 +231,8 @@ The eval suite tests that the *plugin* respects precedence; this check tests tha
 Open matters carry a `Law areas:` field; law files carry `last-reviewed`. When law moved *after* the lawyer last touched a matter, the matter may be running on a stale understanding.
 
 ```bash
-grep -l -E '^stage: (intake|working)' "$LEGAL_ROOT"/{matters_path:-matters}/*.md
+MATTERS_PATH=$(grep -m1 '^matters_path:' "$LEGAL_ROOT/config.md" | sed 's/^matters_path:[[:space:]]*//')
+grep -l -E '^stage: (intake|working)' "$LEGAL_ROOT/${MATTERS_PATH:-matters}"/*.md
 ```
 
 For each open matter: read its `Law areas` and `updated:` frontmatter. For each named area, find the newest `last-reviewed` across `law/{area}/*.md`. If the area was reviewed **after** the matter's `updated:` date, the matter predates the law refresh.
