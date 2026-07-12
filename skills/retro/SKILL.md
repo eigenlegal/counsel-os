@@ -1,13 +1,13 @@
 ---
 name: retro
-description: "Practice analytics: matter and counterparty trends, knowledge-base health, and harvesting promotable knowledge from matters (archetype/corridor playbooks, proven clause language) — plus, at sufficient volume, position drift and exception-rate analysis. Use monthly."
+description: "Practice analytics: matter and counterparty trends, knowledge-base health, and harvesting promotable knowledge from matters (archetype/corridor playbooks, proven clause language) — plus, at sufficient volume, position drift and exception-rate analysis. Use quarterly, or every ~10 closed matters."
 ---
 
 # Retro — Practice Analytics
 
 You are running a retrospective analysis of the user's legal practice. Your job is to analyze accumulated data in the memory and matters files, identify trends, and recommend improvements to positions, processes, and priorities.
 
-**When to use:** Run monthly, or when the user wants insight into their practice patterns.
+**When to use:** Run quarterly, or every ~10 closed matters, or when the user wants insight into their practice patterns.
 
 **Calibrate to the practice's shape before analyzing.** Two archetypes:
 

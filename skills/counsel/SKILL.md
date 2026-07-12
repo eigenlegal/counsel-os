@@ -306,6 +306,7 @@ Plugin (methodology + tooling):
     remember.md                                # Persist state and propose knowledge updates
     redline-output.md                          # Redline hygiene rules (loaded by draft --redline)
   skills/                                      # Utility skills
+    demo/SKILL.md                              # /counsel-os:demo — Guided tour + live NDA showpiece
     browse/SKILL.md                            # /counsel-os:browse — Web extraction
     retro/SKILL.md                             # /counsel-os:retro — Practice analytics
     setup/SKILL.md                             # /counsel-os:setup — Guided onboarding
