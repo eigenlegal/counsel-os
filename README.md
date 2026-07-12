@@ -100,6 +100,7 @@ If that still doesn't work, fall back to the local clone below. Same content, sa
 
 **Optional dependencies** (Claude Code; the setup skill auto-detects what you have):
 - **pandoc**, for extracting tracked changes from Word documents
+- **python-docx**, for the native Word redline pipeline — applies tracked-change edits and ingests counterparty `.docx` markup (`apply_redlines`, `extract_redlines`, `diff_rounds`). Without it, redlines come back as markdown.
 - **[QMD](https://github.com/tobi/qmd)**, a content-index MCP server for entity discovery across your whole vault. Install separately as its own Claude plugin (works in Claude Code and Cowork). Without it, entity files live under `{legal_root}/entities/` and are found via filesystem search.
 - **[Bun](https://bun.sh/)** plus Playwright Chromium (`bunx playwright install chromium`), only if you want to build the `/counsel-os:browse` skill from source. Without them, browse downloads a prebuilt binary and matching browser builds from the GitHub release automatically on first use (set `COUNSEL_OS_NO_DOWNLOAD=1` to disable). Prebuilt browse binaries are published for **Apple-Silicon macOS** and **Linux-x64**; on **Intel Macs** browse builds from source, so those users need Bun installed. (Everything else in Counsel OS — the full methodology, all 26 law areas, your vault — runs on Intel Macs with no extra tooling.)
 
@@ -225,7 +226,7 @@ Analyzes your matter history and produces insights, calibrated to the shape of y
 - **High-volume practices** (many similar contracts against the same positions) get the full statistical pass: most-negotiated clauses, acceptance and exception rates, counterparties that push back hardest, standards that keep getting overridden (maybe the standard is wrong?), and trends compared to previous retros. Per-clause statistics only run where there are roughly 10+ comparable matters; below that, deviations are reported as case notes, not percentages.
 - **Low-volume, heterogeneous practices** (most solo and in-house work) skip the statistics and center on **harvesting promotable knowledge**: sweeping matter and entity files for deal-archetype playbooks, regulatory-posture notes, and proven clause language that has outgrown its matter and belongs in `practice/`.
 
-Run monthly to calibrate your practice.
+Run quarterly, or every ~10 closed matters, to calibrate your practice.
 
 #### Update: pull latest content
 
@@ -303,7 +304,7 @@ Only relevant if you're developing Counsel OS itself:
 | `scripts/bump_content_versions.py [--date YYYY-MM-DD]` | Hashes each content group and bumps `content-version` frontmatter for groups that changed — this is what lets `/counsel-os:update` detect upstream law/practice changes. | After editing anything under `knowledge/law/` or `knowledge/practice-seed/`. |
 | `scripts/validate_law_frontmatter.py` | Validates law-area frontmatter against `knowledge/law/frontmatter-policy.json`; reports attestations coming due. Runs in CI. | After editing law frontmatter; periodically to see attestation debt. |
 | `scripts/run_evals.py [--generate] [--model <id>] [--only <fixture>] [--self-test] [--save-baseline <id>] [--compare-baseline <id>]` | Scores eval outputs in `evals/`; `--generate` runs the counsel agent headlessly against each fixture's mini-vault first (costs API tokens); `--self-test` validates the scorer (free, runs in CI); baselines snapshot per-model scores and gate on regressions. | Full generate+score before releases and when qualifying a new model; see `evals/README.md`. |
-| `scripts/gen_browse_reference.py [--check]` | Regenerates the browse skill's command reference from the source command registry; `--check` fails on drift (runs in CI). | After adding or changing a browse CLI command. |
+| `scripts/gen_browse_reference.py [--check]` | Regenerates the browse skill's command reference from the source command registry; `--check` fails on drift instead of rewriting. CI regenerates and fails on any resulting `git diff`. | After adding or changing a browse CLI command. |
 
 ---
 
@@ -412,7 +413,7 @@ This is also how the system stays small and extensible. New capability is a new 
 | Highest | `law/` | Never — hard legal constraints | Seeded by plugin, customizable by you |
 | 2 | Entity files | Per-deal only | You (via `remember`, proposed by counsel at close) |
 | 3 | `practice/` | Your standards | You (through `/counsel-os:setup` or direct edits) |
-| Lowest | `memory/` | Context only — informs, doesn't override | Automatic (via `remember` when counsel proposes) |
+| Lowest | `memory/` | Context only — informs, doesn't override | Proposed by `remember`, you approve |
 
 **Example:** Your standard liability cap is 12 months (`practice/standards/`). But for Acme Corp you've pre-approved 24 months (in your Acme Corp entity file). When reviewing an Acme contract, the system uses 24 months. If GDPR requires a specific data-processing provision (`law/`), though, that's non-negotiable regardless.
 
@@ -430,7 +431,7 @@ What gets proposed, when:
 - **When language works:** *"This counter-language landed cleanly. Want me to add it to `practice/library/` as a vendor-favorable variant?"*
 - **At matter close:** it proposes a counterparty file with deal history, position overrides, and negotiation notes you can refer to next time.
 
-You approve every change. Nothing gets written to your knowledge without consent. Over time, your `practice/` reflects your actual practice, your entity files capture relationship-specific context, and your `memory/patterns.md` accumulates cross-cutting observations that inform future work.
+You approve every change. Nothing gets written to your knowledge without consent (matter state — the working record of the engagement itself — saves automatically). Over time, your `practice/` reflects your actual practice, your entity files capture relationship-specific context, and your `memory/patterns.md` accumulates cross-cutting observations that inform future work.
 
 That's what makes Counsel OS more than a one-shot review: the positions it checks against are the ones you've actually taken.
 

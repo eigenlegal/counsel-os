@@ -46,6 +46,7 @@ Fixtures may additionally carry:
 | `msa-liability-indemnity` | — | Legacy: liability/indemnity catches in an MSA (manual outputs). |
 | `nda-residuals` | — | Legacy: residuals-clause catch in an NDA (manual outputs). |
 | `saas-dpa-breach` | — | Legacy: DPA breach-notification catches (manual outputs). |
+| `demo-nda` | — | Guards the `/counsel-os:demo` showpiece: the bundled synthetic mutual NDA catches the RED/YELLOW calls the demo promises against the seeded confidentiality standard (manual outputs). |
 | `law-beats-practice` | yes | Safety rule: a law/ floor (GDPR Art. 33) overrides a permissive practice standard, and the conflicting standard itself gets flagged. |
 | `reference-never-governs` | yes | Safety rule: a matching sample form in practice/reference/ never blesses a clause — positions come from practice/standards/. |
 | `entity-override-scoping` | yes | Safety rule: a counterparty-specific concession in an entity file is not precedent for a different counterparty. |
@@ -65,14 +66,14 @@ python3 scripts/run_evals.py --generate [--model claude-opus-4-8] [--only fixtur
 
 Per fixture, the runner copies the mini-vault to a temp dir, rewrites `config.md`'s `__VAULT_PATH__`, and runs `claude -p` with `--plugin-dir <repo>` (evaluating the WORKING TREE) and `COUNSEL_OS_LEGAL_ROOT` pointed at the temp vault — the resolver's env override makes the whole knowledge system read the fixture. The task prompt instructs the agent to write findings JSON to `evals/outputs/{id}.json`; the temp vault is destroyed afterward. Legacy fixtures without a `vault` field still require manually produced outputs.
 
-**Score only** (free, used by CI):
+**Score only** (free):
 
 ```bash
-python3 scripts/run_evals.py --fixtures evals/fixtures --outputs evals/outputs --fail-under 0.80
-python3 scripts/run_evals.py --self-test
+python3 scripts/run_evals.py --fixtures evals/fixtures --outputs evals/outputs --fail-under 0.80   # full scored gate — run pre-release
+python3 scripts/run_evals.py --self-test                                                            # scorer self-test — this is what CI runs
 ```
 
-The self-test scores bundled sample outputs to verify the scorer itself. It does not call an LLM. When adding a fixture, also add a passing output to `evals/sample-outputs/` or CI's self-test will report it missing.
+CI runs `--self-test` only; the full scored gate is a pre-release step (it needs generated outputs, which CI does not produce). The self-test scores bundled sample outputs to verify the scorer itself. It does not call an LLM. When adding a fixture, also add a passing output to `evals/sample-outputs/` or CI's self-test will report it missing.
 
 **Cadence:** full generate+score before each release and when qualifying a new model (compare per-fixture scores across `--model` runs). Anchors must stay decisive — a fixture that flakes gets its anchors tightened or runs N=3/require-2; never leave a known-flaky fixture in the suite.
 
