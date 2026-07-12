@@ -9,9 +9,13 @@ every change against the effective position (see primitives/read.md --redline).
 Usage:
   scripts/extract_redlines.py <input.docx> [--format json|markdown] [--full-text]
 
-Output (json): {file, summary, changes: [...], comments: [...]}
+Output (json): {file, summary, warnings: [...], changes: [...], comments: [...]}
+`warnings` flags tracked changes found in headers, footers, or footnotes/endnotes
+— parts the body walk never reaches and apply_redlines cannot edit.
 Each change record covers one paragraph that contains tracked changes:
   paragraph_index   stable index over body paragraphs in document order
+                    (null for changes outside the body — see `location`)
+  location          "body", or the part name (header1, footnotes, …)
   section_context   nearest preceding heading (style- or numbering-based)
   kind              insertion | deletion | replacement
   original          reject-all view of the paragraph
@@ -28,13 +32,19 @@ import argparse
 import json
 import re
 import sys
+import zipfile
 from pathlib import Path
+from xml.etree import ElementTree as ET
 
 from docx import Document
 from docx.oxml.ns import qn
 
 INS_TAGS = {qn("w:ins"), qn("w:moveTo")}
 DEL_TAGS = {qn("w:del"), qn("w:moveFrom")}
+# Tracked changes can also live in these parts, which apply_redlines cannot edit
+# and the body iterator never reaches. Header/footer parts are numbered
+# (header1.xml, footer2.xml, …); footnotes/endnotes are singular.
+NONBODY_PART_RE = re.compile(r"^word/(header\d*|footer\d*|footnotes|endnotes)\.xml$")
 # Bare numbers require trailing punctuation ("7." / "7.2)") so address lines
 # and quantities don't register as headings; style-based detection is primary.
 HEADING_NUM_RE = re.compile(r"^\s*(ARTICLE\s+[IVXLC\d]+|Section\s+\d|\d+(\.\d+)*[.)]\s+\S)", re.IGNORECASE)
@@ -71,6 +81,82 @@ def para_style(p):
         if st is not None:
             return st.get(qn("w:val")) or ""
     return ""
+
+
+def _wrapper_text(wrapper):
+    """Visible text under one tracked-change wrapper (w:ins/w:del)."""
+    parts = []
+    for node in wrapper.iter():
+        if node.tag in (qn("w:t"), qn("w:delText")):
+            parts.append(node.text or "")
+        elif node.tag in (qn("w:tab"), qn("w:br"), qn("w:cr")):
+            parts.append(" ")
+    return "".join(parts)
+
+
+def scan_nonbody_changes(path):
+    """Surface tracked changes in headers, footers, footnotes, and endnotes.
+
+    extract() walks only doc.element.body, so a returned markup that edits an
+    effective date in the HEADER or a defined term in a FOOTNOTE produces no
+    change record. apply_redlines cannot edit these parts either — the least it
+    can do is report them loudly instead of dropping them silently.
+
+    Returns (records, warnings, ins_count, del_count). Records mirror the body
+    change schema but carry paragraph_index=None and a `location` naming the part.
+    """
+    records, warnings = [], []
+    ins_count = del_count = 0
+    try:
+        with zipfile.ZipFile(path) as package:
+            names = sorted(n for n in package.namelist() if NONBODY_PART_RE.match(n))
+            for name in names:
+                label = Path(name).stem  # header1, footer2, footnotes, endnotes
+                try:
+                    root = ET.fromstring(package.read(name))
+                except ET.ParseError:
+                    continue
+                part_ins = part_del = 0
+                for wrapper in root.iter():
+                    if wrapper.tag in INS_TAGS:
+                        kind = "insertion"
+                    elif wrapper.tag in DEL_TAGS:
+                        kind = "deletion"
+                    else:
+                        continue
+                    txt = _wrapper_text(wrapper).strip()
+                    if not txt:
+                        continue
+                    author = wrapper.get(qn("w:author"))
+                    date = wrapper.get(qn("w:date"))
+                    if kind == "insertion":
+                        part_ins += 1
+                    else:
+                        part_del += 1
+                    records.append({
+                        "paragraph_index": None,
+                        "location": label,
+                        "section_context": label,
+                        "kind": kind,
+                        "original": txt if kind == "deletion" else "",
+                        "revised": txt if kind == "insertion" else "",
+                        "inserted": [txt] if kind == "insertion" else [],
+                        "deleted": [txt] if kind == "deletion" else [],
+                        "authors": [author] if author else [],
+                        "dates": [date[:10]] if date else [],
+                        "comment_ids": [],
+                    })
+                if part_ins or part_del:
+                    warnings.append(
+                        f"{label}: {part_ins} tracked insertion(s) and {part_del} "
+                        f"deletion(s) outside the document body — reported here, but "
+                        f"apply_redlines cannot edit this part. Review it directly."
+                    )
+                    ins_count += part_ins
+                    del_count += part_del
+    except (zipfile.BadZipFile, FileNotFoundError):
+        pass
+    return records, warnings, ins_count, del_count
 
 
 def extract(path, full_text=False):
@@ -138,6 +224,7 @@ def extract(path, full_text=False):
 
         changes.append({
             "paragraph_index": idx,
+            "location": "body",
             "section_context": section_context,
             "kind": kind,
             "original": original,
@@ -186,15 +273,27 @@ def extract(path, full_text=False):
     except Exception as exc:  # comments are supplementary — never fail the extraction
         comments.append({"error": f"comment extraction failed: {exc}"})
 
+    body_changed_paragraphs = len(changes)
+
+    # Headers, footers, footnotes, endnotes — the body walk never reaches these,
+    # so tracked changes there would be lost without a record or a warning.
+    nonbody_records, warnings, nonbody_ins, nonbody_del = scan_nonbody_changes(path)
+    changes.extend(nonbody_records)
+    for rec in nonbody_records:
+        authors_all.update(rec["authors"])
+
     return {
         "file": str(path),
         "summary": {
-            "changed_paragraphs": len(changes),
+            "changed_paragraphs": body_changed_paragraphs,
             "inserted_fragments": total_ins,
             "deleted_fragments": total_del,
+            "non_body_insertions": nonbody_ins,
+            "non_body_deletions": nonbody_del,
             "comments": len([c for c in comments if "error" not in c]),
             "authors": sorted(authors_all),
         },
+        "warnings": warnings,
         "changes": changes,
         "comments": comments,
     }
@@ -208,11 +307,19 @@ def to_markdown(data, full_text=False):
 
     out = [f"# Redline extraction — {Path(data['file']).name}", ""]
     s = data["summary"]
+    nonbody = s.get("non_body_insertions", 0) + s.get("non_body_deletions", 0)
     out.append(f"**{s['changed_paragraphs']} changed paragraphs** ({s['inserted_fragments']} insertions, "
                f"{s['deleted_fragments']} deletions), {s['comments']} comments. Authors: {', '.join(s['authors']) or '—'}.")
-    out += ["", "| # | Section | Kind | Original | Revised | Author | Comments |", "|---|---------|------|----------|---------|--------|----------|"]
+    warnings = data.get("warnings") or []
+    if warnings or nonbody:
+        out += ["", "## ⚠ Warnings", ""]
+        for w in warnings:
+            out.append(f"- {trunc(w)}")
+    out += ["", "| # | Location | Section | Kind | Original | Revised | Author | Comments |",
+            "|---|----------|---------|------|----------|---------|--------|----------|"]
     for c in data["changes"]:
-        out.append(f"| {c['paragraph_index']} | {trunc(c['section_context'])} | {c['kind']} | "
+        idx = c["paragraph_index"] if c["paragraph_index"] is not None else "—"
+        out.append(f"| {idx} | {c.get('location', 'body')} | {trunc(c['section_context'])} | {c['kind']} | "
                    f"{trunc(c['original'])} | {trunc(c['revised'])} | {', '.join(c['authors'])} | "
                    f"{', '.join(c['comment_ids']) or ''} |")
     real_comments = [c for c in data["comments"] if "error" not in c]

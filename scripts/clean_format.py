@@ -26,6 +26,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
+from docx.text.run import Run
 
 DEFAULT_FONT = "Times New Roman"
 DEFAULT_SIZE = Pt(11)
@@ -402,10 +403,24 @@ def _set_style_defaults(doc):
         pass
 
 
+def source_runs(source_paragraph):
+    """Runs in document order, including runs inside hyperlinks.
+
+    paragraph.runs yields only direct w:r children, so hyperlink text
+    (w:hyperlink/w:r) is invisible to it. Copying only .runs silently drops a
+    linked citation or URL from the output while paragraph.text — used for
+    classification and counts — still reports it as present.
+    """
+    return [
+        Run(r, source_paragraph)
+        for r in source_paragraph._p.xpath("./w:r | ./w:hyperlink/w:r")
+    ]
+
+
 def copy_runs(source_paragraph, dest_paragraph):
     """Copy runs preserving bold/italic/underline only."""
     prev_char = ""
-    for src_run in source_paragraph.runs:
+    for src_run in source_runs(source_paragraph):
         text = src_run.text
         if not text:
             continue
@@ -428,7 +443,7 @@ def copy_runs_strip_prefix(source_paragraph, dest_paragraph, strip_fn):
     """Copy runs, stripping a prefix from the first non-empty run."""
     first = True
     prev_char = ""
-    for src_run in source_paragraph.runs:
+    for src_run in source_runs(source_paragraph):
         run_text = src_run.text
         if first and run_text.strip():
             run_text = strip_fn(run_text.lstrip())
@@ -459,6 +474,7 @@ def copy_table(source_table, dest_doc, warnings):
     # track seen tc elements so merged content is copied only once.
     seen_tcs = set()
     merged_warned = False
+    nested_tables_dropped = 0
 
     for i, src_row in enumerate(source_table.rows):
         for j, src_cell in enumerate(src_row.cells):
@@ -489,6 +505,17 @@ def copy_table(source_table, dest_doc, warnings):
                     pass
 
                 copy_runs(src_para, dest_para)
+
+            # A table nested inside a cell (signature blocks, fee schedules)
+            # is not reachable via cell.paragraphs and would vanish silently.
+            if src_cell.tables:
+                nested_tables_dropped += len(src_cell.tables)
+
+    if nested_tables_dropped:
+        warnings.append(
+            f"{nested_tables_dropped} table(s) nested inside table cells were "
+            "dropped; clean_format does not preserve tables within cells"
+        )
 
     return dest_table
 
