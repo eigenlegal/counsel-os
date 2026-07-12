@@ -35,6 +35,7 @@ Match the user's request to primitives. This is guidance, not rigid rules — us
 | "What did we agree with [counterparty]?" | research --entity |
 | "Draft a response to [specific issue]" | research --entity --library → draft --counter-language |
 | "Summarize this for [person/team]" | read (if needed) → draft --summary --for [audience] |
+| "QA this / check the references, definitions, exhibits" | read --qa (deterministic mechanical checker) |
 | "Create a redline" | read → research → evaluate → draft --redline → remember --matter |
 | "They sent back a redline / what did they change?" | read --redline → research → evaluate → draft --counter-language → remember --matter |
 | "Is this [document] compliant with [regulation]?" | read → research --law → evaluate --compliance |
@@ -328,6 +329,7 @@ Plugin (methodology + tooling):
     import_reference.sh                        # Import third-party material into practice/reference/ (see remember --reference)
     extract_redlines.py                        # Structured tracked-changes + comments extraction (see read --redline)
     diff_rounds.py                             # Round-over-round redline comparison: ACCEPTED/REVERTED/MODIFIED/NEW (see read --redline)
+    check_document.py                          # Deterministic mechanical QA: dangling cross-refs, unattached exhibits, unused/undefined terms, party-name drift (see read --qa)
 
 User's vault (all knowledge — discovered via config + Knowledge Base Search):
   {legal_root}/
