@@ -147,10 +147,10 @@ Two sub-checks, one row.
 test -x "${CLAUDE_PLUGIN_ROOT}/browse/dist/browse" && echo "binary: present" || echo "binary: missing"
 ```
 
-**Daemon responsiveness.** The CLI writes a state file per instance at `/tmp/browse-server*.json` containing `pid` and `port`; the server exposes an unauthenticated `GET /health`:
+**Daemon responsiveness.** The CLI writes a state file per instance at `~/.counsel-os/browse/browse-server*.json` containing `pid` and `port` (earlier releases wrote `/tmp/browse-server*.json` — scan both to catch a pre-upgrade daemon); the server exposes an unauthenticated `GET /health`:
 
 ```bash
-for f in /tmp/browse-server*.json; do
+for f in ~/.counsel-os/browse/browse-server*.json /tmp/browse-server*.json; do
   [ -f "$f" ] || continue
   port=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['port'])" "$f")
   echo "state file: $f (port $port)"
@@ -161,7 +161,8 @@ done
 - Binary present, no state file → ✅, detail "built; daemon not running (starts on demand)".
 - Binary present, daemon responds `"status": "healthy"` → ✅, include uptime/tabs in the detail.
 - Binary missing → ⚠️, fix: `cd "${CLAUDE_PLUGIN_ROOT}" && bun install && bun run build` (requires bun — cross-reference check 5).
-- State file present but the port doesn't respond, or `/health` reports unhealthy → ⚠️, fix: `kill {pid} 2>/dev/null; rm /tmp/browse-server*.json` — the next browse command starts a fresh daemon.
+- State file present but the port doesn't respond, or `/health` reports unhealthy → ⚠️, fix: `kill {pid} 2>/dev/null; rm <state file>` — the next browse command starts a fresh daemon.
+- State file found under `/tmp` → ⚠️, a daemon from an earlier release is still running; fix: `kill {pid} 2>/dev/null; rm /tmp/browse-server*.json` — the next browse command starts a fresh daemon that keeps its state under `~/.counsel-os/browse/`.
 
 ## Step 7: Backups
 

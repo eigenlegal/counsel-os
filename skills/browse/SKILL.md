@@ -45,7 +45,7 @@ Downloaded installs also self-provision two companion assets when missing: `coun
 The `browse` CLI is a thin client for a persistent background server. You normally never manage the server directly:
 
 - The first command auto-starts the server; later commands reuse it, so cookies, tabs, headers, and snapshot refs persist between CLI invocations.
-- Server state (port, token, PID) lives in `/tmp/browse-server.json` (suffixed `-<port>` when `BROWSE_PORT` or `CONDUCTOR_PORT` is set, so parallel worktrees get isolated instances).
+- Server state (port, token, PID) lives in `~/.counsel-os/browse/browse-server.json`, an owner-only (0700) directory — the file carries the daemon's auth token, so it never goes in world-writable `/tmp`. It is suffixed `-<port>` when `BROWSE_PORT` or `CONDUCTOR_PORT` is set, so parallel worktrees get isolated instances.
 - The CLI health-checks before each command and restarts the server automatically if it crashed.
 - `status` shows the server's health, current URL, tab count, and PID. `stop` shuts it down; `restart` brings up a fresh server (browser state, tabs, and refs are cleared).
 - Single commands time out after 30s; `chain` gets 120s.

@@ -183,7 +183,7 @@ If bun is unavailable, no action needed — tell the user the first browse comma
 Notes:
 
 - The Playwright Chromium browser is installed per-user and survives plugin updates; run `bunx playwright install chromium` only if it is missing.
-- If a browse server from the old version is still running (`/tmp/browse-server.json` exists), run `browse/dist/browse restart` from the new root so the next browse use runs the new build.
+- If a browse server from the old version is still running (`~/.counsel-os/browse/browse-server.json` exists — or `/tmp/browse-server.json` for daemons from earlier releases), run `browse/dist/browse restart` from the new root so the next browse use runs the new build. For a `/tmp`-era daemon, `kill` the PID from its state file and delete the `/tmp` file instead — the new CLI doesn't read the old location.
 - Without shell access, tell the user to run `bun install && bun run build` from the new plugin root before their next browse use.
 
 Skip silently if the user does not use browse.
