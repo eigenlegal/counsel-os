@@ -60,11 +60,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # No darwin-x64 (Intel Mac) entry: the only x64 macOS runner GitHub
+        # offered here was macos-13, which it has retired — that job queued
+        # forever and never produced an asset. Cross-compiling on macos-14
+        # (arm64) is not an option either: the binary itself could be built
+        # with `--target=bun-darwin-x64`, but the matching browsers tarball
+        # can't — Playwright downloads Chromium per host arch, so an arm64
+        # runner yields an arm64 Chromium, and there is no reliable cross-arch
+        # download. Intel Macs build from source instead (`bun run build`);
+        # see the README platform matrix and browse/bin/find-browse.
         include:
           - os: macos-14
             artifact: counsel-browse-darwin-arm64
-          - os: macos-13
-            artifact: counsel-browse-darwin-x64
           - os: ubuntu-latest
             artifact: counsel-browse-linux-x64
     runs-on: ${{ matrix.os }}

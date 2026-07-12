@@ -27,9 +27,13 @@ ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
 REPO_URL="https://github.com/eigenlegal/counsel-os"
 VERSION="$(cat "$PLUGIN_ROOT/VERSION" 2>/dev/null | tr -d '[:space:]' || true)"
 
+# Prebuilt binaries ship for Apple-Silicon macOS and Linux-x64 only. Intel
+# Macs (Darwin-x86_64) have no prebuilt: the release workflow can't produce a
+# working darwin-x64 asset (see release-binaries.yml). Leaving ASSET empty
+# routes them to the honest "build from source" message rather than a doomed
+# download of a nonexistent asset.
 case "$(uname -s)-$(uname -m)" in
   Darwin-arm64)             ASSET="counsel-browse-darwin-arm64" ;;
-  Darwin-x86_64)            ASSET="counsel-browse-darwin-x64" ;;
   Linux-x86_64|Linux-amd64) ASSET="counsel-browse-linux-x64" ;;
   *)                        ASSET="" ;;
 esac
