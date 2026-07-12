@@ -95,6 +95,8 @@ After extracting the text, identify:
    - Whether comments were found, with count and authors
    - If neither was found, note that explicitly so the user knows it was checked
 
+7. **Mechanical QA (run last, on a full review).** Before concluding a full document review, run the deterministic checker (see `## --qa`) and fold any `error`-severity findings into your report. These are the tedious mechanical defects — dangling cross-references, exhibits named but not attached, defined-but-unused terms, party-name drift — that survive careful reading and are cheap to catch deterministically.
+
 ---
 
 ## --redline
@@ -132,6 +134,35 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/diff_rounds.py" --ours "<the version we s
 ```
 
 The report classifies the fate of every counter from our last round: **ACCEPTED** (our language survived), **REVERTED** (back to their text), **MODIFIED** (replaced with something new), **NEW** (fresh asks in paragraphs we never touched). Pass `--base` whenever the round N-1 baseline exists — without it, silent acceptances are invisible and unattributable edits surface as UNMATCHED_CHANGE. Fold the classifications into the delta report (step 4) — a REVERTED counter is a live dispute, not a new change — and log the round outcome per classification to the matter (step 5).
+
+---
+
+## --qa
+
+Mechanical document QA — a deterministic linter over a draft that catches the tedious defects a careful read still misses: a cross-reference to a section that was renumbered away, an exhibit named in the body but never attached, a term defined once and never used, a party named three different ways. Live evidence: a counterparty audit contract named three entities that don't exist, caught only because a human happened to look. This is pure mechanical tedium — do it with a script, spend judgment on judgment.
+
+### When to run
+
+- **Automatically as the last step of a full document review** (`### Understand the document`, step 7).
+- **On request** — "QA this", "check the references/definitions/exhibits", "did I break any cross-references?"
+- **After applying redlines**, before generating the send-out version (the numbering/cross-reference part of redline-output.md's pre-send verification is this check).
+
+### Instructions
+
+1. **Run the checker** over the draft (`.docx`, `.md`, or `.txt`):
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/check_document.py" "<file>" --json
+   ```
+   It emits `{summary, notes, findings}`. Each finding has a `type`, a `severity`, a `message`, and the paragraph/line `locations` where it occurs. Drop `--json` for a human-readable grouped report. On a `.docx` it checks the **accept-all** view (tracked insertions kept, deletions dropped) — the document as it will read once changes are accepted.
+
+2. **Severity tiers — surface accordingly:**
+   - `error` — high-confidence mechanical defect (**undefined_reference** — a cross-ref with no matching section/article; **missing_exhibit** — an exhibit/schedule referenced but not attached). Report these plainly; they are almost always real.
+   - `warning` — likely worth a look (**unused_definition**, **capitalization_drift** on a multi-word defined term, **party_name_drift**). Surface with light judgment.
+   - `info` — heuristic (**undefined_term** — a phrase capitalized like a defined term with no definition). Mention only if it looks substantive; these need your judgment.
+
+3. **Read the `notes`.** If the checker reports that section numbers are auto-generated (Word numbering rather than typed into the text), the cross-reference check was skipped to avoid false positives — say so, and offer to re-check after numbering is converted to text or changes are accepted.
+
+4. **This is a linter, not a lawyer.** It reports mechanical inconsistencies; you decide what matters and fold the real ones into the review. It does not read for legal substance — that is the rest of read + evaluate.
 
 ---
 

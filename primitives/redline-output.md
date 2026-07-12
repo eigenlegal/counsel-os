@@ -126,13 +126,17 @@ The first-matched-run inheritance applies to all run-level formatting properties
 
 Before generating the final redline output via Word Compare:
 
-1. **Visually scan the modified `.docx`** for:
+1. **Run the mechanical QA checker first** — it does the tedious, deterministic part of the scan (cross-references to sections that no longer exist after renumbering, exhibits referenced but not attached, defined-term/party-name drift):
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/check_document.py" "<modified.docx>"
+   ```
+   Fix any `error`-severity findings (dangling cross-references especially — renumbering is exactly when these appear) before proceeding. See `read --qa`.
+2. **Visually scan the modified `.docx`** for what the checker can't judge:
    - Numbering duplicates and gaps
    - Orphan punctuation
-   - Cross-reference correctness
    - Section header bold/structure consistency
    - Counterparty placeholder fills (e.g., Partner name correctly inserted)
-2. **Open the post-Word-Compare redline in Word** and confirm:
+3. **Open the post-Word-Compare redline in Word** and confirm:
    - Strike and insert markings render where expected
    - No insertions are merged into adjacent text incorrectly
    - The flow reads naturally with tracked changes accepted
