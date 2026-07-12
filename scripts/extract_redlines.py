@@ -163,8 +163,8 @@ def extract(path, full_text=False):
             if part.partname.endswith("/word/comments.xml"):
                 root = part.element if hasattr(part, "element") else None
                 if root is None:
-                    import lxml.etree as etree
-                    root = etree.fromstring(part.blob)
+                    from xml_safety import safe_lxml_fromstring
+                    root = safe_lxml_fromstring(part.blob)
                 for c in root.iter(qn("w:comment")):
                     cid = c.get(qn("w:id"))
                     text = " ".join(

@@ -42,6 +42,8 @@ from xml.etree import ElementTree as ET
 from docx import Document
 from docx.text.run import Run
 
+from xml_safety import UnsafeXmlError, safe_fromstring
+
 W_NS = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 UNSUPPORTED_PARTS = (
     ("word/footnotes.xml", "footnote", "footnote"),
@@ -263,7 +265,11 @@ def collect_unsupported_matches(docx_path, current, occurrence):
                 if part_name not in names:
                     continue
 
-                root = ET.fromstring(package.read(part_name))
+                try:
+                    root = safe_fromstring(package.read(part_name))
+                except UnsafeXmlError as exc:
+                    print(f"warning: skipping {part_name}: {exc}", file=sys.stderr)
+                    continue
                 paragraph_index = 0
                 for paragraph in root.iter(f"{W_NS}p"):
                     full_text = paragraph_text_from_xml(paragraph)
