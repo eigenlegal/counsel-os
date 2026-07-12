@@ -86,7 +86,7 @@ After extracting the text, identify:
 
 3. **Clause inventory.** What provisions are in the document? Map each section to a clause type (limitation of liability, indemnification, confidentiality, IP ownership, termination, governing law, etc.). This inventory is what evaluate uses to work through the document.
 
-4. **Key dates.** Effective date, term/expiration, renewal dates, notice deadlines, milestone dates.
+4. **Key dates.** Effective date, term/expiration, renewal dates, notice deadlines, sub-processor objection periods, filing and milestone dates. For any date that carries a *future obligation or window* (an auto-renewal cutoff, a termination-notice deadline, an objection period, a filing date — not a bare effective date), propose a `deadlines:` frontmatter entry for the matter file so the `/counsel-os:docket` sweep can track it. Compute the actual calendar date where the clause states a relative window (e.g. "90 days before the anniversary of the Effective Date" → the concrete `YYYY-MM-DD`), and cite the source clause. `remember --matter` persists these (format in `primitives/remember.md`); surface them to the user as you capture them. Missing a date is the practice's #1 malpractice vector — err toward capturing.
 
 5. **Commercial terms.** Fees, payment terms, pricing structure, SLAs, deliverables, acceptance criteria.
 

@@ -40,6 +40,7 @@ Match the user's request to primitives. This is guidance, not rigid rules — us
 | "Is this [document] compliant with [regulation]?" | read → research --law → evaluate --compliance |
 | "Update the [counterparty] file" | remember --entity |
 | "Close this matter" | remember --matter (stage → closed) → remember --entity → remember --knowledge |
+| "What's due / any deadlines coming up / anything expiring?" | `/counsel-os:docket` (read-only sweep of `deadlines:` frontmatter across matters) |
 
 **Full document reviews require coverage checking.** When the user asks to review an entire document (not just a single clause), load the relevant method file from `practice/methods/` (e.g., `contract-review.md` for contracts, `nda-triage.md` for NDAs). The method file is a coverage checklist — use it to verify you've evaluated all relevant clause types, run compliance checks, and checked for missing provisions. Don't present findings until you've verified coverage.
 
@@ -316,8 +317,10 @@ Plugin (methodology + tooling):
     update/SKILL.md                            # /counsel-os:update — Pull latest content
     law-refresh/SKILL.md                       # /counsel-os:law-refresh — Refresh USER-OWNED law content (custom areas, managed-by: user files)
     doctor/SKILL.md                            # /counsel-os:doctor — Read-only health check (config, deps, currency, backups)
+    docket/SKILL.md                            # /counsel-os:docket — Read-only deadline sweep across matters (overdue / due-soon / upcoming)
   scripts/                                     # Automation
     apply_redlines.py                          # Apply text replacements + comments to .docx
+    docket_sweep.py                            # Deterministic deadline classifier over matter frontmatter (see /counsel-os:docket)
     clean_format.py                            # Reformat .docx to professional standards
     legal-template.docx                        # Style template for clean_format.py
     word_compare.sh                            # Drive Word Compare via AppleScript

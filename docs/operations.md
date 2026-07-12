@@ -7,6 +7,7 @@
 | What | Command | When |
 |------|---------|------|
 | Pull plugin + content updates | `/counsel-os:update` | Weekly, or when notified of a release |
+| Deadline sweep | `/counsel-os:docket` | Weekly, and before you go heads-down on other work |
 | Health check | `/counsel-os:doctor` | Monthly, and after every update |
 | Consistency spot-check | `/counsel-os:doctor --consistency` | Before significant negotiations, and after law refreshes or manual standards edits |
 | Practice analytics + knowledge harvest | `/counsel-os:retro` | Quarterly, or every ~10 closed matters |
@@ -17,6 +18,7 @@ Notes on the loop:
 
 - `update` is the only channel for plugin-managed law content and methodology; it never overwrites your practice files without approval.
 - `doctor` is read-only — it reports one ✅/⚠️/❌ table with a fix command per finding, so it is safe to run on a schedule.
+- `docket` is read-only too, and populated as you work: `read` proposes `deadlines:` entries when it extracts dates from a contract and `remember` records them, so the sweep is only as complete as the dates you've captured. It classifies overdue / due-soon / upcoming and surfaces malformed dates loudly rather than dropping them.
 - `retro` needs volume to be useful; below ~10 matters its statistics are noise, but its knowledge harvest (Step 6) is valuable at any volume.
 - Run `doctor` right after `update`: a failed or half-applied update is exactly what it catches.
 

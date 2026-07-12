@@ -47,6 +47,7 @@ You describe what you need in plain language; the `/counsel-os:counsel` skill au
 - **Ingest a returned markup** → extracts every tracked change and comment into a change-by-change assessment.
 - **Recall and remember** → "what did we agree with Acme?"; counsel proposes knowledge updates as it works, and you approve every one.
 - **Draft** memos, policies, notices, and correspondence in your voice.
+- **Stay ahead of dates** → "what's due in the next 60 days?"; `/counsel-os:docket` sweeps every matter for renewal windows, notice deadlines, and objection periods.
 - **Maintain** your practice with `/counsel-os:retro` (analytics), `/counsel-os:doctor` (health check), and `/counsel-os:update` (content sync).
 
 Everything is grounded in a vault you own: plain markdown files you can read, edit, and version-control.
@@ -227,6 +228,19 @@ Analyzes your matter history and produces insights, calibrated to the shape of y
 - **Low-volume, heterogeneous practices** (most solo and in-house work) skip the statistics and center on **harvesting promotable knowledge**: sweeping matter and entity files for deal-archetype playbooks, regulatory-posture notes, and proven clause language that has outgrown its matter and belongs in `practice/`.
 
 Run quarterly, or every ~10 closed matters, to calibrate your practice.
+
+#### Docket: deadline sweep
+
+```
+/counsel-os:docket
+```
+
+Read-only sweep of every matter for time-based obligations — auto-renewal windows, termination-notice deadlines, sub-processor objection periods, filing and milestone dates. It reads the `deadlines:` frontmatter that `read` proposes and `remember` records as it works through your contracts, then reports one table: **overdue**, **due within a window** (60 days by default; ask for any horizon), and **upcoming**. Malformed dates are surfaced loudly rather than dropped — a silently missed date is the exact failure this exists to prevent. Closed matters still surface (a renewal window often outlives the deal). It's a reporter: it never writes to your vault. Not a calendar sync — a reliable local sweep that runs over your own markdown, offline.
+
+```
+> /counsel-os:docket
+> What's due in the next 90 days?
+```
 
 #### Update: pull latest content
 

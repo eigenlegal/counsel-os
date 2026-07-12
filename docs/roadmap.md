@@ -4,13 +4,13 @@ Forward-looking ideas, not commitments. Each entry records the observed gap that
 
 Counsel OS is single-lawyer by decision (2026-06-11): a multi-lawyer design was drafted, reviewed, and declined — do not reintroduce per-person assignment fields or shared-vault assumptions here.
 
-## 1. Deadline docket — ON HOLD (2026-06-12)
+## 1. Deadline docket — SHIPPED (v1, 2026-07-12)
 
-**Gap:** Matter files track `Next Action` but nothing time-based. Legal practice runs on dates — auto-renewal windows, termination notice deadlines, sub-processor objection periods, discovery response dates. Nothing in the system warns when a window opens or closes.
+**Gap:** Matter files tracked `Next Action` but nothing time-based. Legal practice runs on dates — auto-renewal windows, termination notice deadlines, sub-processor objection periods, discovery response dates. Nothing warned when a window opened or closed.
 
-**Shape:** `remember` extracts obligations-with-dates into matter/entity frontmatter (e.g. `deadlines: [{date: 2026-07-15, action: "renewal notice due", source: "MSA §9.2"}]`) at the moments deadlines become known — contract execution, matter close, returned redlines. A `/counsel-os:docket` skill sweeps the vault and reports what's due, overdue, and upcoming. Read-only sweep like doctor.
+**Shipped (cou-48):** a `deadlines:` frontmatter convention on matter files (`{date, action, type, source}`), `read` proposing entries when it extracts key dates from a contract and `remember` recording them, and a read-only `/counsel-os:docket` sweep (`scripts/docket_sweep.py`) that classifies every deadline as overdue / due-soon (default 60-day window) / upcoming and surfaces malformed dates loudly. Like doctor, it changes nothing.
 
-**Hold reason:** users already run their own task systems (Obsidian Tasks, other Claude skills); any design must coexist with that stack rather than emit into it unilaterally. An emit-as-Obsidian-Tasks-syntax design was proposed and parked. Needs more thought before building; revisit only when the user raises it.
+**How the hold was resolved:** the hold reason was task-stack *coexistence* — users already run their own task systems (Obsidian Tasks, other Claude skills), and an emit-as-Obsidian-Tasks-syntax design was parked as too unilateral. The shipped v1 coexists by *not touching* any external task system: it is a self-contained read-only sweep over the vault's own markdown, emitting into nothing. Deliberately **not** a calendar sync — a reliable local sweep beats a flaky integration. A future iteration could optionally emit into a user-chosen task system, but only opt-in.
 
 ## 2. Reference distillation
 
