@@ -29,6 +29,7 @@ Match the user's request to primitives. This is guidance, not rigid rules — us
 | User says | Primitives |
 |---|---|
 | "Review this [document]" | read → research → evaluate → draft --summary → remember --matter |
+| "Review these [N documents / this folder]" | evaluate --batch (loops read + evaluate per doc → one consolidated report) → remember --matter |
 | "Is this [clause] ok?" | research --position → evaluate |
 | "What's our position on [topic]?" | research --position |
 | "What did we agree with [counterparty]?" | research --entity |
@@ -41,6 +42,8 @@ Match the user's request to primitives. This is guidance, not rigid rules — us
 | "Close this matter" | remember --matter (stage → closed) → remember --entity → remember --knowledge |
 
 **Full document reviews require coverage checking.** When the user asks to review an entire document (not just a single clause), load the relevant method file from `practice/methods/` (e.g., `contract-review.md` for contracts, `nda-triage.md` for NDAs). The method file is a coverage checklist — use it to verify you've evaluated all relevant clause types, run compliance checks, and checked for missing provisions. Don't present findings until you've verified coverage.
+
+**Batch reviews (a folder / many documents, one position set).** When the user points at multiple documents to review against the same standard ("review these 12 vendor NDAs"), use `evaluate --batch` — it loops the per-document review once each and emits one consolidated report (per-document verdicts + cross-document patterns), with token-budget capping and checkpoint-based resume. Read `primitives/evaluate.md` → `--batch` for the orchestration and report format.
 
 **Continuous learning.** As you work, proactively propose knowledge updates when you notice something worth capturing — a deviation from standard, effective counter-language, a counterparty pattern, a position gap. Don't wait for the user to ask or for the matter to close. Just mention it: "I noticed [observation]. Want me to update [file]?"
 
