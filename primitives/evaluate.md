@@ -169,3 +169,81 @@ When evaluating an entire document (not a single clause), run both position and 
 5. **GREEN items get one line each.** Don't over-explain what's acceptable. The lawyer's attention should go to the items that need it.
 
 6. **No holistic risk score.** Present the individual findings. The lawyer synthesizes. If they ask for a summary, that's a draft --summary request.
+
+---
+
+## --batch
+
+Review a **set of documents against one position set** in a single pass, and emit **one consolidated report** — a per-document verdict row for each and the cross-document patterns across the whole set. This is the high-volume workflow: "review these 12 vendor NDAs against our standard," "triage this quarter's inbound MSAs." It orchestrates the existing primitives (read → evaluate → draft) once per document; it introduces no new evaluation logic — the precedence rules, effective-position assembly, and classification guide above apply unchanged to each document.
+
+### When to use
+
+- The user points at a **folder** or **list of documents** and asks to review, triage, or compare them against the same standard.
+- The documents are the **same type** (all NDAs, all MSAs) or close enough that one position set governs. If the set is mixed, group by type and run one batch per group.
+
+Not for a single document (that's Full review), and not for round-over-round versions of the *same* document (that's read --redline / diff_rounds).
+
+### Instructions
+
+1. **Resolve the set.** Enumerate the documents. If the user gave a folder, list its reviewable files (.docx, .pdf, .md, .txt); ignore non-documents. Confirm the count and the position set before starting: "Reviewing 12 documents against your confidentiality standard. Proceed?" A batch is a substantive task — create **one batch matter** (`counsel-os-type: matter`, stage `working`) to hold the running results and the final report. See `primitives/remember.md` for the matter file format.
+
+2. **Fix the position set once.** Load the governing `practice/standards/` file(s), the method file (e.g. `nda-triage.md`), and applicable `law/` areas **once** at the top — they are constant across the batch. Do **not** reload them per document. The one per-document variable is the **entity layer**: if the documents come from different counterparties, look up each counterparty's entity file so entity overrides still apply to its document (a cap you granted Acme governs Acme's contract, not the others).
+
+3. **Budget before you start — cap + resume.** Batches are the one place token cost compounds. Before reviewing:
+   - **Estimate the load.** Roughly: documents × their size. A handful of short NDAs is cheap; 40 long MSAs is not.
+   - **Cap large batches.** If the set is large (rule of thumb: more than ~15 documents, or any single document over ~30 pages × several documents), don't silently grind through all of it. Offer a bounded plan: (a) a **triage-only pass** — classify each document signable / needs-edits / full-review from the method file's fast checks, no clause-by-clause, much cheaper — with full review reserved for the ones that fail triage; or (b) review the **first N now** and resume the rest later. Let the user choose.
+   - **Checkpoint as you go — this is resume.** Write each document's result row into the batch matter **immediately after** reviewing it, before starting the next. If the batch is interrupted (context runs out, the user stops, a document fails to parse), the matter holds everything done so far. To resume, read the matter, skip documents already rowed, and continue. Never restart a batch from zero because it was interrupted midway.
+
+4. **Review each document.** For each one, run the **Full review** path above (position + compliance + missing-provisions), applying that document's entity overrides. Reduce each document to a single **verdict**:
+   - Reuse the method file's own classification when it has one — e.g. `nda-triage.md` yields **Fast track / Minor edits / Full review**. Otherwise roll the findings up: **Signable as-is** (no RED, no Tier-1 YELLOW), **Minor edits** (no RED, addressable YELLOWs), **Full review / do not sign** (any RED or escalation trigger).
+   - Capture, per document: the verdict, the single most blocking issue (highest-tier finding), its priority tier, and the counterparty. Keep the full per-issue findings in the matter for any document the user later drills into — the report shows the verdict; the matter holds the work.
+
+5. **Find the cross-document patterns.** This is what a batch gives that N separate reviews do not — read *across* the rows:
+   - **Which clause fails most** — the clause type that is RED/YELLOW across the most documents (e.g. "9 of 12 have an uncapped-liability problem"). That is a signal to the practice, not just to one deal.
+   - **What's clean vs. what's blocked** — how many are signable as-is, how many need edits, how many need full review.
+   - **Outliers** — the one document that is far worse than the rest, or a non-standard provision that appears in only one.
+   - **Systemic gaps** — a required provision missing across the whole set points at the intake template or the counterparty's form, worth a `remember` proposal to the practice (memory/patterns) rather than a per-deal fix.
+
+6. **Emit one consolidated report** (format below). Do not dump twelve separate full reviews — the point of a batch is the roll-up plus a drill-down path, not a wall of individual reports.
+
+### Consolidated report format
+
+Apply `draft`'s ## Voice and audience adaptation (`--for`) — this report is a `draft` output. Default audience is internal legal; mark it privileged.
+
+```
+# Batch Review — [set name] ([N] documents)
+
+**Date:** [date]  ·  **Reviewed against:** [position set / standard used]
+**Prepared by:** [user's name] with Counsel OS
+**Classification:** PRIVILEGED AND CONFIDENTIAL — ATTORNEY-CLIENT COMMUNICATION
+
+**Bottom line:** [one sentence — e.g. "5 signable as-is, 4 need minor edits, 3 need full review; the recurring blocker is uncapped liability."]
+
+## Verdicts
+
+| # | Document | Counterparty | Verdict | Top blocking issue | Tier |
+|---|---|---|---|---|---|
+| 1 | [file] | [party] | Signable as-is | — | — |
+| 2 | [file] | [party] | Minor edits | Confidentiality term 7 yrs | 2 |
+| 3 | [file] | [party] | Full review | Uncapped liability | 1 |
+| … | | | | | |
+
+## Cross-document patterns
+
+- **Most common issue:** [clause type] — [X of N] documents ([which verdict it drove])
+- **Clean / signable now:** [count + which]
+- **Outliers:** [the notably worse document(s) and why]
+- **Systemic gap:** [any required provision missing across the set → practice/template signal]
+
+## Recommended action queue
+
+- **Sign now:** [documents]
+- **Edit and return:** [documents] — [the standard counter-language that clears most of them]
+- **Escalate / full negotiation:** [documents] — [why]
+
+## Knowledge proposal (if any)
+
+[If a pattern is worth capturing — e.g. "this counterparty form consistently omits a trade-secret carve-out" — propose a memory/patterns or standards update via remember. Ask first.]
+```
+
+Sort the verdict rows worst-first (Full review, then Minor edits, then Signable) so the documents that need attention are at the top. Keep Signable rows to one line each.
