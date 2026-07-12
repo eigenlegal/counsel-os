@@ -8,13 +8,22 @@
 # knowledge lint, commits the working tree, and pushes.
 #
 # Usage:
-#   scripts/release.sh <new-version> -m "subject" [-b "body"] [--no-tag] [--no-push]
+#   scripts/release.sh <new-version> -m "subject" [-b "body"] [--no-tag] [--no-push] [--offline] [--yes]
 #
 # Notes:
+#   - Refuses to run unless HEAD is the `main` branch — a release commit must
+#     never be built on a topic branch, since release-binaries.yml fires on any
+#     v* tag and would ship binaries for a commit that is not on main. Set
+#     ALLOW_RELEASE_BRANCH=1 to override (you almost never want this).
 #   - Commits ALL working-tree changes (the feature + the bump), matching the
-#     repo's convention of one commit per version.
+#     repo's convention of one commit per version. Untracked files would be
+#     swept in by `git add -A`; the script lists them and refuses to include
+#     them non-interactively unless --yes is passed.
+#   - Requires a successful `git fetch origin` to confirm the release builds on
+#     current origin/main. Pass --offline to release from the local base anyway.
 #   - Tags vX.Y.Z by default and pushes the tag — release-binaries.yml triggers
-#     on it. --no-tag skips tagging.
+#     on it. --no-tag skips tagging. A failed tag push is fatal (not swallowed):
+#     without the tag the binaries never build.
 #   - bash-3.2 compatible (stock macOS).
 set -euo pipefail
 
@@ -23,7 +32,7 @@ cd "$REPO"
 
 VERSION_NEW="${1:-}"
 if [ -z "$VERSION_NEW" ]; then
-  echo "Usage: scripts/release.sh <new-version> -m \"subject\" [-b \"body\"] [--tag] [--no-push]" >&2
+  echo "Usage: scripts/release.sh <new-version> -m \"subject\" [-b \"body\"] [--no-tag] [--no-push] [--offline] [--yes]" >&2
   exit 1
 fi
 shift
@@ -32,6 +41,8 @@ SUBJECT=""
 BODY=""
 DO_TAG=1
 DO_PUSH=1
+DO_OFFLINE=0
+ASSUME_YES=0
 while [ $# -gt 0 ]; do
   case "$1" in
     -m) SUBJECT="${2:-}"; shift 2 ;;
@@ -39,11 +50,25 @@ while [ $# -gt 0 ]; do
     --tag) DO_TAG=1; shift ;;
     --no-tag) DO_TAG=0; shift ;;
     --no-push) DO_PUSH=0; shift ;;
+    --offline) DO_OFFLINE=1; shift ;;
+    -y|--yes) ASSUME_YES=1; shift ;;
     *) echo "Unknown argument: $1" >&2; exit 1 ;;
   esac
 done
 if [ -z "$SUBJECT" ]; then
   echo "A commit subject is required (-m \"subject\")." >&2
+  exit 1
+fi
+
+# Branch guard: a release commit must be built on main. release-binaries.yml
+# fires on any v* tag, so tagging from a topic branch would ship binaries for a
+# commit that never landed on main. Check before any manifest mutation so an
+# accidental run on the wrong branch exits clean. Detached HEAD fails
+# symbolic-ref (no branch name) and is likewise refused.
+BRANCH="$(git symbolic-ref --short -q HEAD || echo '(detached HEAD)')"
+if [ "$BRANCH" != "main" ] && [ "${ALLOW_RELEASE_BRANCH:-0}" != "1" ]; then
+  echo "Refusing to release from '$BRANCH' — releases must be cut from the 'main' branch." >&2
+  echo "Merge to main and run from there. (ALLOW_RELEASE_BRANCH=1 overrides — you almost never want this.)" >&2
   exit 1
 fi
 
@@ -55,7 +80,7 @@ if [ "$VERSION_NEW" = "$CUR" ]; then
   # the manifest bump) leaves VERSION already at the target with the release
   # commit not yet made. If the bump is uncommitted, continue; only refuse
   # when this version was actually committed already.
-  if git diff --quiet -- VERSION; then
+  if git diff --quiet HEAD -- VERSION; then
     echo "Version $VERSION_NEW is already current and committed." >&2
     exit 1
   fi
@@ -126,7 +151,18 @@ PY
 # Verify sync + content conventions before committing
 python3 scripts/lint_knowledge.py --check-versions
 
-git fetch origin >/dev/null 2>&1 || true
+# Confirm the release builds on current origin/main. A silently-swallowed fetch
+# would let a release be cut on a stale base; require it to succeed unless the
+# maintainer explicitly opts out with --offline.
+if git fetch origin >/dev/null 2>&1; then
+  :
+elif [ "$DO_OFFLINE" -eq 1 ]; then
+  echo "git fetch origin failed but --offline was passed — skipping the base-freshness check." >&2
+else
+  echo "git fetch origin failed — cannot verify this release builds on current origin/main." >&2
+  echo "Fix connectivity, or pass --offline to release from the local base anyway." >&2
+  exit 1
+fi
 BEHIND="$(git rev-list --count HEAD..origin/main 2>/dev/null || echo 0)"
 if [ "$BEHIND" != "0" ]; then
   echo "Local branch is behind origin/main by $BEHIND commit(s) — integrate first (git pull --rebase)." >&2
@@ -158,6 +194,29 @@ if state:
 PY
 fi
 
+# `git add -A` sweeps EVERYTHING, including stray untracked files (e.g. a local
+# drafts/ dir), into the public release commit. Show what will be committed and
+# refuse to include untracked files non-interactively unless --yes is given.
+echo "Changes to be committed in the release:"
+git status --short
+UNTRACKED="$(git ls-files --others --exclude-standard)"
+if [ -n "$UNTRACKED" ] && [ "$ASSUME_YES" -eq 0 ]; then
+  echo "" >&2
+  echo "WARNING: 'git add -A' will sweep these UNTRACKED files into the public release commit:" >&2
+  echo "$UNTRACKED" | sed 's/^/    /' >&2
+  if [ -t 0 ]; then
+    printf "Include them in the release commit? [y/N] " >&2
+    read -r reply
+    case "$reply" in
+      [Yy]*) ;;
+      *) echo "Aborted — remove or stash the untracked files, then re-run." >&2; exit 1 ;;
+    esac
+  else
+    echo "Refusing to sweep untracked files non-interactively. Remove/stash them, or pass --yes." >&2
+    exit 1
+  fi
+fi
+
 git add -A
 if [ -n "$BODY" ]; then
   git commit -m "v$VERSION_NEW — $SUBJECT" -m "$BODY"
@@ -178,7 +237,17 @@ fi
 if [ "$DO_PUSH" -eq 1 ]; then
   git push origin HEAD
   if [ "$DO_TAG" -eq 1 ]; then
-    git push origin "v$VERSION_NEW" || true
+    # A failed tag push is fatal: the commit is pushed but without the vX.Y.Z
+    # tag release-binaries.yml never fires, so the binaries silently never
+    # build. Do not swallow it — surface it loudly with the retry command.
+    if ! git push origin "v$VERSION_NEW"; then
+      echo "" >&2
+      echo "!!! TAG PUSH FAILED — 'v$VERSION_NEW' did not reach origin." >&2
+      echo "    The release commit IS pushed, but release-binaries.yml will NOT build the binaries." >&2
+      echo "    Retry the tag push manually:" >&2
+      echo "        git push origin v$VERSION_NEW" >&2
+      exit 1
+    fi
   fi
 fi
 
