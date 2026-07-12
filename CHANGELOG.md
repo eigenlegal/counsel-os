@@ -6,6 +6,19 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.9.31] — 2026-07-11
+
+Security hardening, redline fidelity, and release/doctor fixes
+
+- browse daemon: token state file moved out of world-readable /tmp; idle timer only resets on authenticated commands (cou-28)
+- docx XML parsing hardened against XXE and entity-expansion attacks (cou-43)
+- docx pipeline surfaces tracked changes outside the document body and no longer drops hyperlink text or nested tables (cou-32)
+- doctor: Step 11 matter-aware law-impact check no longer silently no-ops (matters_path now expands); browse-binary guidance reflects the auto-download path (cou-30)
+- qmd embed: the ~940MB model download is gated behind prior opt-in at every reindex call site (cou-31)
+- release.sh: guards for main-branch, fetch freshness, tag-push failure, and untracked-file sweep (cou-33)
+- release binaries: dropped the un-runnable darwin-x64 job; Intel-Mac guidance is now honest (cou-42)
+- docs consistency sweep and eval CI honesty (cou-34)
+
 ## [0.9.30] — 2026-07-11
 
 Redline and backup safety: original-document target resolution, Word close safety, atomic backups
