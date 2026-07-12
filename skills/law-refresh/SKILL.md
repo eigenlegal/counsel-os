@@ -54,7 +54,7 @@ Attestation requires review (`FRONTMATTER.md`: "a human or explicitly supervised
 
 ## Step 5: Finish
 
-1. Reindex if a content index is connected (`qmd update && qmd embed`).
+1. Reindex if a content index is connected: `qmd update`, then `[ -d ~/.cache/qmd/models ] && qmd embed` — embed only behind that check (the cache exists only after the user opted into semantic embeddings; a bare `qmd embed` on a BM25-only install triggers a surprise ~940MB model download).
 2. If `{legal_root}` is a git repo, offer to commit (note: some vaults gitignore `law/` because plugin-managed content is regenerable — a user-owned area is NOT regenerable, so suggest un-ignoring it: `git add -f` or a `.gitignore` exception).
 3. Report: files refreshed, changes made, files attested, uncertain items, and dated watch items (upcoming effective dates, pending rulemakings) worth a calendar entry.
 

@@ -195,7 +195,7 @@ Phase 2 runs only with explicit per-step consent.
 | QA4 | Consent to Phase 2 | **Only after your explicit yes**, setup runs `qmd collection add <vault_root> --name counsel-os` then `qmd update`. `<vault_root>` is the **Obsidian vault root** containing the legal root (or the legal root's parent if there's no vault) — so frontmatter entity discovery spans the whole vault. |
 | QA5 | Confirm BM25-only, no model download | `qmd update` builds the **BM25** index only — **key-free, no model download**. During setup, **no** ~940MB grab into `~/.cache/qmd/models/`. A trial `query` returns vault hits; setup confirms qmd is **wired**. |
 | QA6 | Confirm `qmd embed` is only *mentioned* | Setup mentions `qmd embed` as an **optional** later step (one-time ~940MB local model download) but **does not run it**. `~/.cache/qmd/models/` stays absent. |
-| QA7 | doctor reflects it | Check **5e** (qmd CLI) **✅ found**; Check **9** **✅** *or* **⚠️ "documents pending embedding"** — the ⚠️ is **expected** because `qmd update` ran but `qmd embed` did not (embeddings are opt-in). Neither is ❌. |
+| QA7 | doctor reflects it | Check **5e** (qmd CLI) **✅ found**; Check **9** **✅** — on a BM25-only install (no `~/.cache/qmd/models/`), pending-embedding is reported ✅ with an "embeddings not enabled — opt-in" detail, **not** ⚠️, and doctor must **not** prescribe a bare `qmd embed`. Never ❌. |
 
 ### Q-wired — re-run when already present + indexed (idempotency)
 

@@ -133,7 +133,7 @@ One table row per dependency. What each one unlocks, and its install one-liner a
 | python3 + python-docx | Redline pipeline (apply_redlines, clean_format, extract_redlines) | `python3 -m pip install python-docx` |
 | bun | Building/running the browse binary | `curl -fsSL https://bun.sh/install \| bash` |
 | Playwright Chromium | The browse skill's headless browser | `cd "${CLAUDE_PLUGIN_ROOT}" && bunx playwright install chromium` |
-| qmd CLI | Vault index maintenance (`qmd update && qmd embed`) | see https://github.com/tobi/qmd (optional — filesystem search is the fallback) |
+| qmd CLI | Vault index maintenance (`qmd update`; `qmd embed` is opt-in) | see https://github.com/tobi/qmd (optional — filesystem search is the fallback) |
 
 All of these are ⚠️ when missing, never ❌ — core legal work runs without them.
 
@@ -207,7 +207,10 @@ qmd status
 If the CLI is absent but a QMD MCP server is connected (a `status` tool is exposed), call that instead.
 
 - Index present and no pending/unembedded documents → ✅ with collection and doc count in the detail.
-- Index reports documents pending update or embedding → ⚠️, fix: `qmd update && qmd embed`.
+- Index reports documents pending **update** → ⚠️, fix: `qmd update`.
+- Index reports documents pending **embedding** → depends on whether the user opted into semantic embeddings, marked by the model cache (`[ -d ~/.cache/qmd/models ]`):
+  - Cache present (embeddings enabled) → ⚠️, fix: `qmd embed`.
+  - Cache absent (BM25-only install) → ✅, detail "embeddings not enabled — BM25 search in use (semantic search is opt-in: `qmd embed`, a one-time ~940MB local model download)". Never prescribe a bare `qmd embed` here — that download without consent is the exact thing setup promises not to do.
 - qmd not installed and no MCP index → ✅, detail "no index configured — filesystem search in use (optional)". Absence of QMD is not a defect.
 
 ## Step 10: Vault Consistency (standards ↔ library ↔ law)
