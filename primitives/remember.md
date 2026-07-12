@@ -86,6 +86,11 @@ stage: intake
 counterparty: {name}
 created: {YYYY-MM-DD}
 updated: {YYYY-MM-DD}
+deadlines:                                     # optional — omit if none known yet
+  - date: {YYYY-MM-DD}
+    action: {what is due}
+    type: {renewal|notice|objection|milestone|filing}   # optional
+    source: {clause the date comes from, e.g. "MSA §9.2"}  # optional
 ---
 
 # {Counterparty} — {Description}
@@ -143,6 +148,31 @@ When updating, preserve existing content and append:
 - Update ## Next Action
 - Add new outputs to ## Generated Outputs
 - ALWAYS set `updated:` to today in frontmatter on every write — staleness detection and retro turnaround analytics depend on it. Update `stage` when it advanced.
+
+### Deadlines
+
+Legal practice runs on dates — auto-renewal windows, termination-notice deadlines, sub-processor objection periods, filing and milestone dates. Missing one is the practice's #1 malpractice vector. Capture time-based obligations as structured `deadlines:` frontmatter on the matter file so the `/counsel-os:docket` sweep can report what's due across all matters.
+
+**When to record.** Whenever a date-bearing obligation becomes known — contract execution, a returned redline, matter intake, or when `read` extracts key dates from a document (see `primitives/read.md`). `read` proposes the entries; you persist them here as part of the normal `--matter` write. Don't ask separately — fold them into the matter update, but do tell the user which deadlines you captured.
+
+**Format.** Each entry is a list item under `deadlines:`:
+
+```yaml
+deadlines:
+  - date: 2026-07-15          # required, YYYY-MM-DD
+    action: "renewal notice due"
+    type: renewal              # optional: renewal | notice | objection | milestone | filing
+    source: "MSA §9.2"         # optional: the clause the date comes from
+    done: false                # optional: true drops it from the sweep, kept for the audit trail
+```
+
+Rules:
+- `date` must be `YYYY-MM-DD`. A missing or malformed date is surfaced by the sweep as `MALFORMED`, never silently dropped — so get it right.
+- **Don't delete a satisfied deadline** — set `done: true`. The record stays for the audit trail and drops out of the default sweep.
+- **A deadline can outlive its matter.** Renewal windows and confidentiality-survival dates often fall after a matter closes, so keep them on the (closed) matter file; the sweep still surfaces them, tagged `[closed]`.
+- Deadlines belong on the **matter** file (single-lawyer, matter-scoped by design). Do not add per-person assignment or shared-vault fields.
+
+Docket is a read-only *reporter*; recording and updating deadlines is always this primitive's job, and always at the user's confirmation for anything beyond the automatic matter write.
 
 ### Version control on close
 
