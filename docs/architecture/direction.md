@@ -256,4 +256,4 @@ counsel-os/
 The architecture supports any matter type — advisory, compliance, governance, regulatory. Method files exist for 29 types, and retro now calibrates to practice shape rather than assuming contract volume. But real-world testing still centers on contract review. Needs validation on other types.
 
 ### 2. Multi-document operations
-"Review all 12 contracts in this data room." Is this a loop over single reviews, or a different execution model? Not yet designed.
+Two distinct cases. **(a) Independent** — "Review all 12 contracts in this data room" — a loop over single reviews (proposed as batch review, cou-47). **(b) Dependent** — "What do the current operative Acme terms say, as amended three times?" — a merge of a deal family (base + amendments + SOWs) into one effective-terms view; designed in `operative-agreement-stack.md` (cou-49, design accepted pending). Case (a)'s execution model (cap + resume over a folder) is still open.
