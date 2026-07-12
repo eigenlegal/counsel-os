@@ -6,6 +6,13 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.9.33] — 2026-07-11
+
+Mechanical document QA and operative-agreement stack design
+
+- mechanical document QA: check_document.py flags dangling cross-references, unattached exhibits, defined-but-unused terms, and party-name drift, wired into read (cou-50)
+- operative-agreement stack: design doc for an effective-terms view per deal family (cou-49)
+
 ## [0.9.32] — 2026-07-11
 
 Batch review and deadline docketing
