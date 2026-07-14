@@ -8,9 +8,7 @@ Built for solo practitioners, law firms, and in-house counsel. MIT-licensed. No 
 
 Most legal AI is a thin prompt dressed up as a skill. It answers in the abstract, then you spend your time feeding it the context it should already have: your positions, your prior deals, the clause language you actually use. Doing that from scratch every time is the tedious part.
 
-A lot of routine legal work, contracts especially but not only, is pattern-matching a document or a question against positions you already hold. That work still gets billed like it was bespoke, which always felt off to me. So I built the tool I wanted for it: something that reasons over my own standards and reference materials instead of a generic notion of "market," and that I could give away.
-
-It runs locally, over a folder of plain markdown you own and edit: your standards, your matter files, your clause language. You ask in plain language and it works from what you have actually decided, not from what a model guesses a reasonable lawyer would want.
+Counsel OS runs locally, over a folder of plain markdown you own and edit: your standards, your matter files, your clause language. You ask in plain language, and it reasons over the positions you have actually taken rather than a generic notion of "market."
 
 ## What it does
 
