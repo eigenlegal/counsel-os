@@ -4,12 +4,6 @@ A free, open-source legal operating system for Claude. Review contracts, triage 
 
 Built for solo practitioners, law firms, and in-house counsel. MIT-licensed. No telemetry.
 
-## Why it exists
-
-Most legal AI is a thin prompt dressed up as a skill. It answers in the abstract, then you spend your time feeding it the context it should already have: your positions, your prior deals, the clause language you actually use. Doing that from scratch every time is the tedious part.
-
-Counsel OS runs locally, over a folder of plain markdown you own and edit: your standards, your matter files, your clause language. You ask in plain language, and it reasons over the positions you have actually taken rather than a generic notion of "market."
-
 ## What it does
 
 You describe what you need in plain language. The `/counsel-os:counsel` skill activates on its own and composes five primitives (`read`, `research`, `evaluate`, `draft`, `remember`) around your intent. There is no pipeline and no slash command per phase.
