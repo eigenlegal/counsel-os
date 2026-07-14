@@ -6,7 +6,7 @@ Built for solo practitioners, law firms, and in-house counsel. MIT-licensed. No 
 
 ## What it does
 
-You describe what you need in plain language. The `/counsel-os:counsel` skill activates on its own and composes five primitives (`read`, `research`, `evaluate`, `draft`, `remember`) around your intent. There is no pipeline and no slash command per phase.
+You describe what you need in plain language. The `/counsel-os:counsel` skill activates on its own and composes five primitives (`read`, `research`, `evaluate`, `draft`, `remember`) around your intent.
 
 - **Review a contract** against your positions, and get clause-by-clause verdicts (green, yellow, red) with rationale and citations.
 - **Redline it** into a marked-up document with your edits and counterparty-facing comments (native Word tracked changes on Claude Code plus macOS, markdown elsewhere).
@@ -16,8 +16,6 @@ You describe what you need in plain language. The `/counsel-os:counsel` skill ac
 - **Draft** memos, policies, notices, and correspondence in your voice.
 - **Stay ahead of dates**: ask "what's due in the next 60 days?" and `/counsel-os:docket` sweeps every matter for renewal windows, notice deadlines, and objection periods.
 - **Maintain** your practice with `/counsel-os:retro` (analytics), `/counsel-os:doctor` (health check), and `/counsel-os:update` (content sync).
-
-Everything is grounded in a vault you own: plain markdown files you can read, edit, and version-control.
 
 ### Platform matrix
 
@@ -121,7 +119,7 @@ Then start a new Claude Code session and run `/counsel-os:setup`. Counsel OS is 
 
 `/counsel-os:setup` runs in Cowork or Claude Code. It opens with a fork:
 
-- **Express (about 3 minutes, default):** near-zero decisions. Root selection (it leads with a detected Obsidian vault if it finds one), a few identity basics (name, entity or firm, jurisdiction), and one question: what kind of law you practice, or what industry. From that it seeds a tailored `profile.md` and a full set of clause positions. An in-house SaaS GC gets a deeply tuned profile; every other answer gets honest, clearly labeled base defaults you refine over time. Optional-tool offers (QMD, Obsidian, git) are one plain-language question each and never block.
+- **Express (about 3 minutes, default):** near-zero decisions. Root selection (it leads with a detected Obsidian vault if it finds one), a few identity basics (name, entity or firm, jurisdiction), and one question: what kind of law you practice, or what industry. From that it seeds a tailored `profile.md` and a full set of clause positions. An in-house SaaS GC gets a tailored profile; every other answer gets clearly labeled base defaults you refine over time. Optional-tool offers (QMD, Obsidian, git) are one plain-language question each and never block.
 - **Custom:** the full interview: legal root, optional tools, `profile.md`, and a walk through the standard clause positions.
 
 Every seeded position carries a **"Starting point, not legal advice; edit to your practice"** banner. Nothing seeded is a substitute for your judgment; it is a scaffold you own and edit.
@@ -185,14 +183,14 @@ For authenticated portals, import your browser cookies first:
 
 `/counsel-os:retro` analyzes your matter history and produces insights, calibrated to the shape of your practice:
 
-- **High-volume practices** (many similar contracts against the same positions) get the full statistical pass: most-negotiated clauses, acceptance and exception rates, counterparties that push back hardest, standards that keep getting overridden (maybe the standard is wrong?), and trends compared to previous retros. Per-clause statistics only run where there are roughly 10 or more comparable matters; below that, deviations are reported as case notes, not percentages.
+- **High-volume practices** (many similar contracts against the same positions) get the full statistical pass: most-negotiated clauses, acceptance and exception rates, counterparties that push back hardest, standards that keep getting overridden, and trends compared to previous retros. Per-clause statistics only run where there are roughly 10 or more comparable matters; below that, deviations are reported as case notes, not percentages.
 - **Low-volume, heterogeneous practices** (most solo and in-house work) skip the statistics and center on harvesting promotable knowledge: sweeping matter and entity files for deal-archetype playbooks, regulatory-posture notes, and proven clause language that has outgrown its matter and belongs in `practice/`.
 
 Run it quarterly, or every 10 or so closed matters.
 
 ### Docket: deadline sweep
 
-`/counsel-os:docket` is a read-only sweep of every matter for time-based obligations: auto-renewal windows, termination-notice deadlines, sub-processor objection periods, filing and milestone dates. It reads the `deadlines:` frontmatter that `read` proposes and `remember` records as it works through your contracts, then reports one table: overdue, due within a window (60 days by default; ask for any horizon), and upcoming. Malformed dates are surfaced loudly rather than dropped, because a silently missed date is the exact failure this exists to prevent. Closed matters still surface, since a renewal window often outlives the deal. It never writes to your vault. It is not a calendar sync, just a reliable local sweep over your own markdown, offline.
+`/counsel-os:docket` is a read-only sweep of every matter for time-based obligations: auto-renewal windows, termination-notice deadlines, sub-processor objection periods, filing and milestone dates. It reads the `deadlines:` frontmatter that `read` proposes and `remember` records as it works through your contracts, then reports one table: overdue, due within a window (60 days by default; ask for any horizon), and upcoming. Malformed dates are surfaced rather than dropped, since a silently missed date is the failure this guards against. Closed matters still surface, since a renewal window often outlives the deal. It never writes to your vault. It is not a calendar sync, just a local sweep over your own markdown, offline.
 
 ```
 > /counsel-os:docket
@@ -328,7 +326,7 @@ The methodology is not one monolithic prompt or a fixed sequence of slash comman
 
 Each primitive is a plain markdown file in `primitives/` you can read and edit. `counsel` reads your request, decides which primitives it needs and in what order, and runs them. A full contract review usually flows read, research, evaluate, draft, remember, but nothing enforces that order: a quick "what's our position on indemnity?" is just `research`, and "close this matter" is just `remember`. The composition is chosen at runtime from your intent.
 
-This is also how the system stays small and extensible. New capability is a new mode on an existing primitive rather than a new top-level workflow, and because the primitives read from your vault instead of hard-coding legal knowledge, the same five verbs cover every practice area.
+New capability is a new mode on an existing primitive rather than a new top-level workflow, and because the primitives read from your vault instead of hard-coding legal knowledge, the same five verbs cover every practice area.
 
 ### Four-layer knowledge system
 
@@ -369,7 +367,7 @@ What gets proposed, and when:
 - **When language works:** "This counter-language landed cleanly. Want me to add it to `practice/library/` as a vendor-favorable variant?"
 - **At matter close:** it proposes a counterparty file with deal history, position overrides, and negotiation notes for next time.
 
-You approve every change. Nothing gets written to your knowledge without consent (matter state, the working record of the engagement itself, saves automatically). Over time your `practice/` reflects your actual practice, your entity files capture relationship-specific context, and your `memory/patterns.md` accumulates cross-cutting observations that inform future work. The positions it checks against are the ones you have actually taken.
+You approve every change. Nothing gets written to your knowledge without consent (matter state, the working record of the engagement itself, saves automatically). Over time your `practice/` reflects your actual practice, your entity files capture relationship-specific context, and your `memory/patterns.md` accumulates cross-cutting observations that inform future work.
 
 ### Auto-detection of applicable law
 
