@@ -6,6 +6,15 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.9.34] — 2026-07-21
+
+clean_format mirrors existing legal numbering
+
+- clean_format no longer renumbers a contract that already numbers itself: section level now comes from the number's own depth, counters normalise duplicate/backwards/skipped numbers and report each correction, and exhibits restart at 1 via startOverride (cou-18)
+- number glyphs render in Times New Roman instead of the template's theme font
+- draft legends, privilege banners, centered text and recital prose are styled but never numbered
+- documents numbered ARTICLE I / Section 1.1 are left alone rather than double-numbered
+
 ## [0.9.33] — 2026-07-11
 
 Mechanical document QA and operative-agreement stack design
