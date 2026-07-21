@@ -5,27 +5,51 @@ Usage:
     python3 clean_format.py <input.docx> <output.docx> [--template <template.docx>]
 
 This script rebuilds the output document from body paragraphs and tables. It is
-appropriate for simple letters, memos, and rough drafts, not negotiated
-contracts or files that must preserve comments, tracked changes, hyperlinks,
-fields, images, footnotes/endnotes, complex numbering, or section-specific
-formatting.
+appropriate for simple letters, memos, and freshly drafted contracts, not
+negotiated documents or files that must preserve comments, tracked changes,
+hyperlinks, fields, images, footnotes/endnotes, or section-specific formatting.
 
 Applies uniform 11pt Times New Roman, justified body text, bold headings with
-proper spacing, native Word multilevel numbering (1, 1.1, 1.1.1), and 1-inch
-margins. Straight quotes are converted to curly (smart) quotes.
+proper spacing, native Word multilevel numbering, and 1-inch margins. Straight
+quotes are converted to curly (smart) quotes.
 The default template is legal-template.docx in the same directory as this script.
+
+Numbering always ends up native (Word w:numPr), never literal text, and works
+in one of two modes:
+
+  mirror  Two or more headings carry literal section numbers, so the document
+          is presumed to number itself deliberately. Levels are taken from
+          each number's own depth ("1.1" is a level-2 section regardless of
+          its heading style), and the literal number is stripped in favour of
+          the native one. Numbering normalises to a sequential run, so
+          duplicate, backwards and skipped numbers are corrected and reported
+          in results["corrections"]; an exhibit or schedule heading opens a
+          fresh region that restarts at 1.
+
+  auto    No literal numbering, so numbering is invented from heading styles
+          (memos, letters).
+
+In both modes a paragraph is only numbered if it is genuinely a section.
+Draft legends, privilege banners, centred text and recital prose are styled
+but never join the section counter.
+
+Correcting numbers does not rewrite prose: if a heading is renumbered and the
+body cites section numbers, a warning says so and the citations need checking
+by hand.
 """
 
 import json
 import re
 import sys
 from pathlib import Path
+from typing import NamedTuple
 
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
+from docx.text.paragraph import Paragraph
 from docx.text.run import Run
 
 DEFAULT_FONT = "Times New Roman"
@@ -45,6 +69,12 @@ def _make_level(ilvl: int, num_fmt: str, lvl_text: str,
     num_pos:   where the number appears (twips from left margin)
     tab_pos:   tab stop after the number (where text begins on first line)
     wrap_pos:  where continuation lines wrap to (0 = left margin)
+
+    The level carries its own <w:rPr>. Word renders the auto-number glyph
+    using the numbering level's run properties, not the paragraph's, so
+    without this the number falls back to docDefaults — the source template's
+    theme font — and renders in Cambria or Calibri beside Times New Roman
+    text.
     """
     lvl = OxmlElement("w:lvl")
     lvl.set(qn("w:ilvl"), str(ilvl))
@@ -80,14 +110,30 @@ def _make_level(ilvl: int, num_fmt: str, lvl_text: str,
     # Use firstLine to push the number right on the first line
     if num_pos > wrap_pos:
         ind.set(qn("w:firstLine"), str(num_pos - wrap_pos))
-    lvl.append(pPr)
     pPr.append(ind)
+    lvl.append(pPr)
+
+    # w:rPr follows w:pPr in the w:lvl content model.
+    lvl.append(_number_run_properties())
 
     return lvl
 
 
-def _add_numbering_definition(numbering_elm, abstract_num_id: int, num_id: int, levels):
-    """Append one abstractNum + num pair to the numbering element."""
+def _number_run_properties():
+    """<w:rPr> pinning the auto-number glyph to the document font."""
+    rPr = OxmlElement("w:rPr")
+    fonts = OxmlElement("w:rFonts")
+    for attr in ("w:ascii", "w:hAnsi", "w:eastAsia", "w:cs"):
+        fonts.set(qn(attr), DEFAULT_FONT)
+    rPr.append(fonts)
+    sz = OxmlElement("w:sz")
+    sz.set(qn("w:val"), str(int(DEFAULT_SIZE.pt * 2)))
+    rPr.append(sz)
+    return rPr
+
+
+def _add_abstract_numbering(numbering_elm, abstract_num_id: int, levels):
+    """Append one abstractNum definition to the numbering element."""
     abstract_num = OxmlElement("w:abstractNum")
     abstract_num.set(qn("w:abstractNumId"), str(abstract_num_id))
 
@@ -100,15 +146,59 @@ def _add_numbering_definition(numbering_elm, abstract_num_id: int, num_id: int, 
 
     numbering_elm.append(abstract_num)
 
+
+def _add_num_instance(numbering_elm, num_id: int, abstract_num_id: int,
+                      restart: bool = False, level_count: int = 4):
+    """Append one w:num instance pointing at an abstract definition.
+
+    Two w:num instances that share an abstractNum also share its counters
+    unless the second carries explicit startOverride values, so `restart`
+    is the only reliable way to make an exhibit begin again at 1.
+    """
     num = OxmlElement("w:num")
     num.set(qn("w:numId"), str(num_id))
     abstract_ref = OxmlElement("w:abstractNumId")
     abstract_ref.set(qn("w:val"), str(abstract_num_id))
     num.append(abstract_ref)
+
+    if restart:
+        for ilvl in range(level_count):
+            override = OxmlElement("w:lvlOverride")
+            override.set(qn("w:ilvl"), str(ilvl))
+            start_override = OxmlElement("w:startOverride")
+            start_override.set(qn("w:val"), "1")
+            override.append(start_override)
+            num.append(override)
+
     numbering_elm.append(num)
 
 
-def create_numbering(doc):
+def _add_numbering_definition(numbering_elm, abstract_num_id: int, num_id: int, levels):
+    """Append one abstractNum + num pair to the numbering element."""
+    _add_abstract_numbering(numbering_elm, abstract_num_id, levels)
+    _add_num_instance(numbering_elm, num_id, abstract_num_id)
+
+
+# Heading geometry, one (num_pos, tab_pos) pair per level, in twips.
+# Numbers sit flush left with a modest gap to the text, which is the standard
+# contract look; 1440 twips = 1 inch.
+HEADING_GEOMETRY = [
+    (0, 360),   # 1.        text at 0.25"
+    (0, 720),   # 1.1       text at 0.50"
+    (0, 1080),  # 1.1.1     text at 0.75"
+    (0, 1440),  # 1.1.1.1   text at 1.00"
+]
+
+HEADING_LEVELS = len(HEADING_GEOMETRY)
+
+# numId 1 is the body numbering region, numId 2 is lists, and each additional
+# numbering region (one per exhibit/schedule) takes the next free id.
+BODY_NUM_ID = 1
+LIST_NUM_ID = 2
+_FIRST_REGION_NUM_ID = 3
+
+
+def create_numbering(doc, extra_regions: int = 0):
     """Create multilevel numbering definitions for headings and lists.
 
     Purges all pre-existing numbering definitions to avoid conflicts with
@@ -117,7 +207,11 @@ def create_numbering(doc):
     them separate means list items never advance the heading counters (a
     3-item list under section 2 no longer pushes the next subsection to 2.4).
 
-    Returns (heading_num_id, list_num_id).
+    `extra_regions` additional heading instances are created, each restarting
+    at 1, for documents whose numbering restarts at an exhibit or schedule.
+
+    Returns (heading_num_ids, list_num_id) where heading_num_ids[i] is the
+    numId for numbering region i.
     """
     numbering_part = doc.part.numbering_part
     numbering_elm = numbering_part._element
@@ -128,25 +222,37 @@ def create_numbering(doc):
         if tag in ("abstractNum", "num"):
             numbering_elm.remove(child)
 
-    # --- Headings: 1. / 1.1. / 1.1.1. ---
-    # Level 0 (section headings): number at 0, text at 0.5", wrap to 0
-    # Level 1 (sub-sections): number at 0.5", text at 1.0", wrap to 0
-    # Level 2 (nested): number at 1.0", text at 1.5", wrap to 0
-    _add_numbering_definition(numbering_elm, 1, 1, [
-        _make_level(0, "decimal", "%1.", num_pos=0, tab_pos=720, wrap_pos=0),
-        _make_level(1, "decimal", "%1.%2.", num_pos=720, tab_pos=1440, wrap_pos=0),
-        _make_level(2, "decimal", "%1.%2.%3.", num_pos=1440, tab_pos=2160, wrap_pos=0),
-    ])
+    # --- Headings: 1. / 1.1. / 1.1.1. / 1.1.1.1 ---
+    heading_levels = [
+        _make_level(
+            ilvl,
+            "decimal",
+            ".".join(f"%{n + 1}" for n in range(ilvl + 1)) + ".",
+            num_pos=num_pos,
+            tab_pos=tab_pos,
+            wrap_pos=0,
+        )
+        for ilvl, (num_pos, tab_pos) in enumerate(HEADING_GEOMETRY)
+    ]
+    _add_abstract_numbering(numbering_elm, 1, heading_levels)
+    _add_num_instance(numbering_elm, BODY_NUM_ID, 1)
 
     # --- Lists: own definition so counters never interleave with headings.
     # Each level shows only its own counter, indented one step per level.
-    _add_numbering_definition(numbering_elm, 2, 2, [
+    _add_numbering_definition(numbering_elm, 2, LIST_NUM_ID, [
         _make_level(0, "decimal", "%1.", num_pos=720, tab_pos=1440, wrap_pos=0),
         _make_level(1, "decimal", "%2.", num_pos=1440, tab_pos=2160, wrap_pos=0),
         _make_level(2, "decimal", "%3.", num_pos=2160, tab_pos=2880, wrap_pos=0),
     ])
 
-    return 1, 2
+    heading_num_ids = [BODY_NUM_ID]
+    for i in range(extra_regions):
+        num_id = _FIRST_REGION_NUM_ID + i
+        _add_num_instance(numbering_elm, num_id, 1, restart=True,
+                          level_count=HEADING_LEVELS)
+        heading_num_ids.append(num_id)
+
+    return heading_num_ids, LIST_NUM_ID
 
 
 def apply_numbering(paragraph, num_id: int, ilvl: int):
@@ -177,9 +283,62 @@ def apply_numbering(paragraph, num_id: int, ilvl: int):
 
 HEADING_PATTERNS = re.compile(
     r"^("
-    r"article\s|section\s|recitals?|definitions?|whereas|exhibit\s|schedule\s|"
+    r"article\s|section\s|recitals?|definitions?|exhibit\s|schedule\s|"
     r"appendix\s|annex\s|preamble|background|introduction|terms and conditions"
     r")",
+    re.IGNORECASE,
+)
+
+# A section number: "1.", "1.1", "2.3.4", "1.1.1.1". At least one dot is
+# always required, so prose opening with a bare figure ("30 days from notice")
+# never reads as a section. The unpunctuated form additionally needs a capital
+# after it, which keeps "2.5 percent per annum" out when it appears as a short
+# bold line. (Same convention as check_document._HEADING_NUM and
+# extract_redlines.HEADING_NUM_RE.)
+SECTION_NUMBER = re.compile(
+    r"^(?:"
+    r"(\d{1,3}(?:\.\d{1,3})*)[.)]\s+"        # "1. " / "1.1. " / "1) "
+    r"|(\d{1,3}(?:\.\d{1,3})+)\s+(?=[A-Z])"  # "1.1 Foo" — needs the capital
+    r")"
+)
+
+# Boilerplate that is short, bold, and often ALL CAPS but is never a section:
+# cover legends, privilege banners, execution markers.
+NEVER_NUMBER = re.compile(
+    r"^("
+    r"draft|confidential|privileged|subject to contract|for discussion|"
+    r"attorney[- ]client|work product|not for distribution|execution (copy|version)"
+    r")",
+    re.IGNORECASE,
+)
+
+# Numbering this script cannot express natively but must not double up on:
+# "ARTICLE I", "Section 1.1", "IV.", "C.". Broader than SECTION_NUMBER, and
+# used only to detect that a document already numbers itself.
+# The letter and roman branches require a trailing "." or ")" so that an
+# ordinary heading ("RECITALS", "A MASTER SERVICES AGREEMENT") is not read as
+# numbered on the strength of its first letter.
+EXISTING_NUMBERING = re.compile(
+    r"^(?:"
+    r"(?:article|section|clause|part)\s+\S"   # ARTICLE I, Section 1.1
+    r"|\d{1,3}(?:\.\d{1,3})*[.)\s]"           # 1.  1.1  1)
+    r"|[ivxlc]+[.)]"                          # IV.  iv)
+    r"|[a-z][.)]"                             # A.  a)
+    r")",
+    re.IGNORECASE,
+)
+
+# Headings that open a fresh numbering region — an exhibit's "1. Scope" is a
+# deliberate restart, not a numbering mistake.
+EXHIBIT_BOUNDARY = re.compile(
+    r"^(exhibit|schedule|annex|appendix)\b",
+    re.IGNORECASE,
+)
+
+# Body-text cross-references, used only to warn when renumbering may have
+# invalidated them.
+CROSS_REFERENCE = re.compile(
+    r"\b(?:section|article|clause)\s+\d{1,3}(?:\.\d{1,3})*",
     re.IGNORECASE,
 )
 
@@ -215,6 +374,28 @@ def match_number_prefix(text: str):
         if letter.group(1).lower() in ("v", "vs") and rest[:1].isupper():
             return None
     return m
+
+
+def parse_section_number(text: str):
+    """Split a leading section number off a heading.
+
+    Returns (number, remainder) where number is a tuple of ints — "1.1" gives
+    (1, 1) — or (None, text) when the heading carries no section number.
+
+    Unlike match_number_prefix this accepts a final segment with no trailing
+    dot, so "1.1 Defined Terms" is recognised. Without that, such headings
+    were neither stripped nor skipped and came out double-numbered.
+    """
+    m = SECTION_NUMBER.match(text)
+    if not m:
+        return None, text
+    digits = m.group(1) or m.group(2)
+    return tuple(int(p) for p in digits.split(".")), text[m.end():].lstrip()
+
+
+def format_section_number(number) -> str:
+    """Render a number tuple the way Word will: (2, 1) -> '2.1.'"""
+    return ".".join(str(n) for n in number) + "."
 
 
 def _is_heading_style(style_name: str) -> bool:
@@ -270,15 +451,39 @@ def _is_all_caps_text(text: str) -> bool:
     return len(alpha) > 2 and all(c.isupper() for c in alpha)
 
 
-def classify_paragraph(paragraph) -> tuple[str, int]:
-    """Classify a paragraph as (type, level).
+class Classified(NamedTuple):
+    """How a paragraph should be styled, and whether it is a numbered section.
 
-    Types: 'title', 'heading', 'bullet', 'number', 'body'
-    Level: 0 for title/body, 1-3 for headings/lists.
+    `kind` and `number` are deliberately independent. Being a heading (style
+    it bold, give it heading spacing) and being a section (feed it to the
+    numbering counter) are separate questions, and most numbering defects come
+    from paragraphs where the first is true and the second is not — draft
+    legends, privilege banners, signature labels.
     """
+
+    kind: str            # 'title' | 'heading' | 'legend' | 'bullet' | 'number' | 'body'
+    level: int           # 0 for title/body/legend, 1+ for headings and lists
+    number: tuple | None # literal section number, e.g. (1, 1) for "1.1"
+    source: str          # how a heading was detected: 'style' | 'heuristic' | 'keyword'
+    centered: bool
+
+
+def _is_centered(paragraph) -> bool:
+    return paragraph.alignment == WD_ALIGN_PARAGRAPH.CENTER
+
+
+def classify_paragraph(paragraph) -> Classified:
+    """Classify a paragraph for styling and numbering."""
     text = paragraph.text.strip()
+    centered = _is_centered(paragraph)
+
     if not text:
-        return ("body", 0)
+        return Classified("body", 0, None, "", centered)
+
+    # Cover legends and privilege banners are short, bold and often ALL CAPS,
+    # which is exactly the heading heuristic's profile. Catch them first.
+    if len(text) < 200 and NEVER_NUMBER.match(text):
+        return Classified("legend", 0, None, "", centered)
 
     style_name = paragraph.style.name if paragraph.style else ""
 
@@ -286,36 +491,38 @@ def classify_paragraph(paragraph) -> tuple[str, int]:
     if _is_heading_style(style_name):
         level = _heading_level(style_name)
         if level == 0:
-            return ("title", 0)
-        return ("heading", level)
+            return Classified("title", 0, None, "style", centered)
+        number, _ = parse_section_number(text)
+        return Classified("heading", level, number, "style", centered)
 
     # Short + bold or ALL CAPS → heading (even with number prefix)
     if len(text) < 120 and (_all_runs_bold(paragraph) or _is_all_caps_text(text)):
         if text[0] not in BULLET_CHARS:
-            return ("heading", 1)
+            number, _ = parse_section_number(text)
+            return Classified("heading", 1, number, "heuristic", centered)
 
     # Heading keyword patterns
     if len(text) < 120 and HEADING_PATTERNS.match(text):
-        return ("heading", 1)
+        return Classified("heading", 1, None, "keyword", centered)
 
     # Existing list styles
     sn = style_name.lower()
     if "bullet" in sn or "list bullet" in sn:
         level = 2 if "2" in sn else 3 if "3" in sn else 1
-        return ("bullet", level)
+        return Classified("bullet", level, None, "", centered)
     if "list number" in sn or "list continue" in sn:
         level = 2 if "2" in sn else 3 if "3" in sn else 1
-        return ("number", level)
+        return Classified("number", level, None, "", centered)
 
     # Detect bullet by leading character
     if text and text[0] in BULLET_CHARS:
-        return ("bullet", 1)
+        return Classified("bullet", 1, None, "", centered)
 
     # Detect numbered list by prefix
     if match_number_prefix(text):
-        return ("number", 1)
+        return Classified("number", 1, None, "", centered)
 
-    return ("body", 0)
+    return Classified("body", 0, None, "", centered)
 
 
 def strip_bullet_prefix(text: str) -> str:
@@ -383,8 +590,52 @@ def _remove_paragraph_border(paragraph):
     pPr.append(pBdr)
 
 
+def _set_docdefaults_font(doc):
+    """Pin docDefaults to the document font.
+
+    Anything that does not resolve a font through a style falls back here —
+    most visibly Word's auto-number glyphs. Theme attributes (asciiTheme and
+    friends) take precedence over explicit ones, so they are removed rather
+    than merely overwritten; leaving them is what renders numbers in the
+    template's Cambria or Calibri beside Times New Roman text.
+    """
+    styles = doc.styles.element
+
+    defaults = styles.find(qn("w:docDefaults"))
+    if defaults is None:
+        defaults = OxmlElement("w:docDefaults")
+        styles.insert(0, defaults)
+
+    rpr_default = defaults.find(qn("w:rPrDefault"))
+    if rpr_default is None:
+        rpr_default = OxmlElement("w:rPrDefault")
+        defaults.insert(0, rpr_default)
+
+    rPr = rpr_default.find(qn("w:rPr"))
+    if rPr is None:
+        rPr = OxmlElement("w:rPr")
+        rpr_default.append(rPr)
+
+    fonts = rPr.find(qn("w:rFonts"))
+    if fonts is None:
+        fonts = OxmlElement("w:rFonts")
+        rPr.insert(0, fonts)
+    for attr in ("w:ascii", "w:hAnsi", "w:eastAsia", "w:cs"):
+        fonts.set(qn(attr), DEFAULT_FONT)
+    for attr in ("w:asciiTheme", "w:hAnsiTheme", "w:eastAsiaTheme", "w:cstheme"):
+        if fonts.get(qn(attr)) is not None:
+            del fonts.attrib[qn(attr)]
+
+    sz = rPr.find(qn("w:sz"))
+    if sz is None:
+        sz = OxmlElement("w:sz")
+        rPr.append(sz)
+    sz.set(qn("w:val"), str(int(DEFAULT_SIZE.pt * 2)))
+
+
 def _set_style_defaults(doc):
     """Set default font and remove title border on document styles."""
+    _set_docdefaults_font(doc)
     for style_name in ("Normal", "Title", "Heading 1", "Heading 2", "Heading 3"):
         try:
             style = doc.styles[style_name]
@@ -541,6 +792,166 @@ def iter_block_elements(container, warnings):
                 yield from iter_block_elements(content, warnings)
 
 
+def _local_tag(element) -> str:
+    return element.tag.split("}")[-1] if "}" in element.tag else element.tag
+
+
+def _strip_section_number(text: str) -> str:
+    number, remainder = parse_section_number(text)
+    return remainder if number is not None else text
+
+
+class Item(NamedTuple):
+    """One body block, classified during the survey pass."""
+
+    element: object
+    tag: str
+    paragraph: object | None
+    text: str
+    cls: Classified | None
+
+
+def survey_blocks(blocks, source) -> tuple[list, str]:
+    """Pass 1: classify every paragraph and pick the document's numbering mode.
+
+    A document with two or more headings carrying literal decimal section
+    numbers is presumed to number itself deliberately, and is mirrored.
+
+    A document that numbers itself in a form this script cannot express
+    natively — "ARTICLE I", "Section 1.1" — is left alone entirely
+    ('preserve'). Inventing numbers for it would stack a second scheme on top
+    of the author's and render "1. ARTICLE I".
+
+    Anything else (a memo, a letter) gets numbering invented for it as before.
+    """
+    items = []
+    numbered_headings = 0
+    prenumbered_headings = 0
+
+    for element in blocks:
+        tag = _local_tag(element)
+        if tag != "p":
+            items.append(Item(element, tag, None, "", None))
+            continue
+        paragraph = Paragraph(element, source)
+        cls = classify_paragraph(paragraph)
+        text = paragraph.text.strip()
+        if cls.kind == "heading":
+            if cls.number is not None:
+                numbered_headings += 1
+            elif EXISTING_NUMBERING.match(text):
+                prenumbered_headings += 1
+        items.append(Item(element, tag, paragraph, text, cls))
+
+    if numbered_headings >= 2:
+        mode = "mirror"
+    elif prenumbered_headings >= 2:
+        mode = "preserve"
+    else:
+        mode = "auto"
+
+    return items, mode
+
+
+def _should_number(cls: Classified, mode: str) -> bool:
+    """Whether a paragraph feeds the section counter.
+
+    Centred paragraphs are never sections. In mirror mode the literal number
+    is the signal; in auto mode only a real Heading N style counts, so the
+    bold/ALL-CAPS heuristic can style a banner without numbering it.
+    """
+    if cls.kind != "heading" or cls.centered:
+        return False
+    if mode == "preserve":
+        return False
+    if mode == "mirror":
+        return cls.number is not None
+    return cls.source == "style"
+
+
+def plan_numbering(items, mode: str):
+    """Pass 2: assign (region, ilvl) to each numbered section.
+
+    Counters are authoritative — the emitted number is always the counter, so
+    duplicates, backwards jumps and gaps normalise to a sequential run. The
+    literal number is compared only to report what changed. An exhibit or
+    schedule heading opens a fresh region whose counters restart at 1.
+    """
+    counters = [0] * HEADING_LEVELS
+    plans: dict[int, tuple[int, int]] = {}
+    corrections = []
+    region = 0
+    region_count = 1
+    pending_restart = False
+
+    for idx, item in enumerate(items):
+        cls = item.cls
+        if cls is None:
+            continue
+
+        if cls.kind == "heading" and EXHIBIT_BOUNDARY.match(item.text):
+            pending_restart = True
+            continue
+
+        if not _should_number(cls, mode):
+            continue
+
+        if pending_restart:
+            pending_restart = False
+            region = region_count
+            region_count += 1
+            counters = [0] * HEADING_LEVELS
+
+        if mode == "mirror":
+            ilvl = min(len(cls.number) - 1, HEADING_LEVELS - 1)
+        else:
+            ilvl = min(max(cls.level, 1) - 1, HEADING_LEVELS - 1)
+
+        # A document opening at "1.1.1" would otherwise emit 0.0.1.
+        for ancestor in range(ilvl):
+            if counters[ancestor] == 0:
+                counters[ancestor] = 1
+
+        counters[ilvl] += 1
+        for deeper in range(ilvl + 1, HEADING_LEVELS):
+            counters[deeper] = 0
+
+        emitted = tuple(counters[:ilvl + 1])
+        if mode == "mirror" and cls.number is not None and cls.number != emitted:
+            corrections.append({
+                "heading": item.text,
+                "source": format_section_number(cls.number),
+                "emitted": format_section_number(emitted),
+            })
+
+        plans[idx] = (region, ilvl)
+
+    return plans, region_count, corrections
+
+
+def _cross_reference_warning(items, corrections):
+    """Warn when renumbering may have invalidated body-text cross-references.
+
+    Renumbering section 9.4 to 3.1 leaves "as set out in Section 9.4" in the
+    prose pointing at nothing. The script does not rewrite prose, so this is
+    the only signal the operator gets.
+    """
+    if not corrections:
+        return None
+    body = " ".join(
+        item.text for item in items
+        if item.cls is not None and item.cls.kind in ("body", "legend")
+    )
+    refs = CROSS_REFERENCE.findall(body)
+    if not refs:
+        return None
+    return (
+        f"{len(corrections)} heading(s) were renumbered and the document "
+        f"contains {len(refs)} body-text cross-reference(s); verify each "
+        "cross-reference still points at the intended section"
+    )
+
+
 def build_clean_document(source_path, template_path):
     """Build a clean-formatted document from source using template styles."""
     source = Document(str(source_path))
@@ -564,83 +975,122 @@ def build_clean_document(source_path, template_path):
     # Set default font on styles and remove title border
     _set_style_defaults(dest)
 
-    # Create numbering definitions (headings and lists are independent)
-    heading_num_id, list_num_id = create_numbering(dest)
-
     results = {
         "paragraphs_processed": 0,
         "headings_detected": 0,
         "lists_converted": 0,
         "tables_processed": 0,
+        "numbering_mode": "auto",
+        "corrections": [],
         "warnings": [],
     }
 
+    # Pass 1: classify everything, then decide how the document is numbered.
+    # iter_block_elements is consumed once so its warnings are not duplicated.
+    blocks = list(iter_block_elements(source.element.body, results["warnings"]))
+    items, mode = survey_blocks(blocks, source)
+    plans, region_count, corrections = plan_numbering(items, mode)
+
+    results["numbering_mode"] = mode
+    results["corrections"] = corrections
+
+    stale = _cross_reference_warning(items, corrections)
+    if stale:
+        results["warnings"].append(stale)
+
+    # Create numbering definitions (headings and lists are independent)
+    heading_num_ids, list_num_id = create_numbering(dest, extra_regions=region_count - 1)
+
     title_seen = False
 
-    for element in iter_block_elements(source.element.body, results["warnings"]):
-        tag = element.tag.split("}")[-1] if "}" in element.tag else element.tag
-
-        if tag == "p":
-            from docx.text.paragraph import Paragraph
-
-            src_para = Paragraph(element, source)
-            text = src_para.text.strip()
+    # Pass 2: emit.
+    for idx, item in enumerate(items):
+        if item.tag == "p":
+            src_para = item.paragraph
+            text = item.text
+            cls = item.cls
             results["paragraphs_processed"] += 1
 
             if not text:
                 dest.add_paragraph("", style="Normal")
                 continue
 
-            cls, level = classify_paragraph(src_para)
+            plan = plans.get(idx)
+            kind = cls.kind
 
-            # Promote first ALL CAPS heading to title
-            if not title_seen and cls == "heading" and _is_all_caps_text(text):
-                cls = "title"
+            # Promote the first unnumbered ALL CAPS heading to title. A
+            # heading that carries any numbering of its own is a section, not
+            # a title, and neither is an exhibit divider.
+            if (
+                not title_seen
+                and kind == "heading"
+                and plan is None
+                and _is_all_caps_text(text)
+                and not EXHIBIT_BOUNDARY.match(text)
+                and not EXISTING_NUMBERING.match(text)
+            ):
+                kind = "title"
 
-            if cls == "title":
+            if kind == "title":
                 title_seen = True
                 results["headings_detected"] += 1
                 dest_para = dest.add_paragraph(style="Title")
                 copy_runs(src_para, dest_para)
                 _remove_paragraph_border(dest_para)
 
-            elif cls == "heading":
+            elif kind == "legend":
+                # Cover legends and privilege banners keep their emphasis and
+                # centring but never join the section numbering.
+                dest_para = dest.add_paragraph(style="Normal")
+                copy_runs(src_para, dest_para)
+                if cls.centered:
+                    dest_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+            elif kind == "heading":
                 results["headings_detected"] += 1
-                style_name = {1: "Heading 1", 2: "Heading 2", 3: "Heading 3"}.get(level, "Heading 1")
+                # A numbered section's depth comes from its number, so
+                # "1. DEFINITIONS" is Heading 1 even if it was Heading 2 in
+                # the source.
+                style_level = (plan[1] + 1) if plan is not None else max(cls.level, 1)
+                style_name = f"Heading {min(style_level, 3)}"
                 try:
                     dest_para = dest.add_paragraph(style=style_name)
                 except KeyError:
                     dest_para = dest.add_paragraph(style="Normal")
-                # Strip manual numbering prefix and use native numbering
-                copy_runs_strip_prefix(src_para, dest_para, strip_number_prefix)
-                # Heading level maps to numbering ilvl: H1=0, H2=1, H3=2
-                ilvl = min(level - 1, 2)
-                apply_numbering(dest_para, heading_num_id, ilvl)
+                if plan is not None:
+                    region, ilvl = plan
+                    # Strip the literal number and let Word render it.
+                    copy_runs_strip_prefix(src_para, dest_para, _strip_section_number)
+                    apply_numbering(dest_para, heading_num_ids[region], ilvl)
+                else:
+                    copy_runs(src_para, dest_para)
+                if cls.centered:
+                    dest_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-            elif cls == "bullet":
+            elif kind == "bullet":
                 results["lists_converted"] += 1
                 dest_para = dest.add_paragraph(style="Normal")
                 copy_runs_strip_prefix(src_para, dest_para, strip_bullet_prefix)
                 # List items use their own numbering definition: L1=0, L2=1, L3=2
-                ilvl = min(level - 1, 2)
+                ilvl = min(cls.level - 1, 2)
                 apply_numbering(dest_para, list_num_id, ilvl)
 
-            elif cls == "number":
+            elif kind == "number":
                 results["lists_converted"] += 1
                 dest_para = dest.add_paragraph(style="Normal")
                 copy_runs_strip_prefix(src_para, dest_para, strip_number_prefix)
                 # List items use their own numbering definition: L1=0, L2=1, L3=2
-                ilvl = min(level - 1, 2)
+                ilvl = min(cls.level - 1, 2)
                 apply_numbering(dest_para, list_num_id, ilvl)
 
             else:
                 dest_para = dest.add_paragraph(style="Normal")
                 copy_runs(src_para, dest_para)
 
-        elif tag == "tbl":
+        elif item.tag == "tbl":
             from docx.table import Table as DocxTable
 
-            src_table = DocxTable(element, source)
+            src_table = DocxTable(item.element, source)
             copy_table(src_table, dest, results["warnings"])
             results["tables_processed"] += 1
 
