@@ -6,6 +6,14 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.9.35] — 2026-07-27
+
+word_compare cleans up after failed runs
+
+- word_compare.sh closes the documents a failed run opened instead of leaving them open in a background Word, each holding a ~$ owner-lock file beside the user's document (cou-19)
+- orphaned lock files beside the original, modified and output paths are cleared before the compare, breaking the stale-lock -> modal dialog -> timeout -> more leaks cycle; a lock owned by another user, or one that will not parse, aborts with the path to fix by hand
+- runs refuse to start when Word's scripting model cannot address open documents by name, a state in which every safety check here would be working blind
+
 ## [0.9.34] — 2026-07-21
 
 clean_format mirrors existing legal numbering
