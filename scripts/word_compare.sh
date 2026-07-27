@@ -61,6 +61,175 @@ if [ "$OUT_NAME" = "$ORIG_BASE" ] || [ "$OUT_NAME" = "$MOD_BASE" ]; then
     exit 1
 fi
 
+# ── Word scripting-model health check ──────────────────────────────────────
+# Word can reach a state where `count of documents` reports a document that
+# cannot be addressed: `document 1` and `name of every document` both answer
+# `missing value`, and — the dangerous part — `exists document "<open doc>"`
+# answers FALSE for a document that is plainly open on screen. Observed on
+# Word 16.111 after closing a windowless comparison document, which is exactly
+# what a crashed redline run leaves behind.
+#
+# Every guard in this script reasons about documents by name, so in that state
+# every answer is untrustworthy: the pre-flight would clear a document it
+# should refuse, the lock sweep below would read a live lock as orphaned, and
+# the cleanup would treat the user's open documents as this run's to close.
+# There is no safe way to proceed, so refuse early and say what to do.
+
+word_is_running() {
+    pgrep -x "Microsoft Word" >/dev/null 2>&1
+}
+
+word_model_state() {
+    osascript 2>/dev/null <<'ENDSTATE'
+tell application "Microsoft Word"
+    if (count of documents) is 0 then return "ok"
+    if (name of every document) is missing value then return "wedged"
+    return "ok"
+end tell
+ENDSTATE
+}
+
+# Newline-separated names of every open document ("" when none).
+word_open_doc_names() {
+    osascript 2>/dev/null <<'ENDNAMES'
+tell application "Microsoft Word"
+    if (count of documents) is 0 then return ""
+    set nameList to name of every document
+    if nameList is missing value then return ""
+    if class of nameList is not list then set nameList to {nameList}
+    set AppleScript's text item delimiters to linefeed
+    set out to nameList as text
+    set AppleScript's text item delimiters to ""
+    return out
+end tell
+ENDNAMES
+}
+
+WORD_RUNNING=0
+if word_is_running; then
+    WORD_RUNNING=1
+    MODEL_STATE="$(word_model_state)"
+    if [ "$MODEL_STATE" != "ok" ]; then
+        echo "Error: Word is running but its scripting model is not answering."
+        echo "It reports an open document that cannot be addressed by name, which"
+        echo "is usually a leftover windowless document from a crashed run. Every"
+        echo "safety check here relies on addressing documents by name, so this run"
+        echo "would be working blind."
+        echo
+        echo "Quit Microsoft Word (save anything you care about first) and reopen it,"
+        echo "then re-run. If Word will not quit cleanly, force quit it; the redline"
+        echo "inputs on disk are untouched."
+        exit 1
+    fi
+fi
+
+# ── Stale owner-lock pre-flight ────────────────────────────────────────────
+# Word writes an advisory owner file beside every open document. The name is
+# "~$" plus the basename, with the first two characters dropped once the name
+# is long enough that keeping them would lengthen it (verified Word 16.111:
+# "orig.docx" -> "~$orig.docx", but "Sinai AI Platform Agreement 7-27-26
+# REV.docx" -> "~$nai AI Platform Agreement 7-27-26 REV.docx"). Rather than
+# infer where that threshold sits, both candidate names are checked.
+#
+# A crashed or error-aborted run abandons one of these. Word then answers
+# `open` on that document with a modal "locked for editing" dialog that
+# AppleScript cannot dismiss, so the run below would hang until the 600s
+# timeout and exit without cleanup, leaking yet more locks. Clearing our own
+# orphans is what breaks that cycle.
+#
+# A lock is removed only when it is provably safe: no open document claims it,
+# and the lock names us as its owner. A lock held by someone else (the vault
+# is on a shared volume) or one that will not parse is left alone, and the run
+# aborts with the path to fix by hand.
+
+# Both possible lock basenames for a document basename.
+lock_candidates_for() {
+    local base="$1"
+    printf '~$%s\n' "$base"
+    if [ "${#base}" -gt 2 ]; then
+        printf '~$%s\n' "${base:2}"
+    fi
+}
+
+# Owner name stored in a lock file: a leading length byte, then the name.
+# od/dd keep this dependency-free; a non-ASCII name simply fails to match and
+# takes the safe abort path.
+lock_owner() {
+    local lock="$1" len
+    len="$(od -An -N1 -tu1 "$lock" 2>/dev/null | tr -d ' [:space:]')"
+    case "$len" in
+        ''|*[!0-9]*) return 0 ;;
+        0) return 0 ;;
+    esac
+    dd if="$lock" bs=1 skip=1 count="$len" 2>/dev/null | tr -d '\0'
+}
+
+OS_OWNER="$(id -F 2>/dev/null || true)"
+WORD_OWNER=""
+OPEN_DOCS=""
+if [ "$WORD_RUNNING" -eq 1 ]; then
+    WORD_OWNER="$(osascript -e 'tell application "Microsoft Word" to get user name' 2>/dev/null || true)"
+    OPEN_DOCS="$(word_open_doc_names)"
+fi
+
+# Lock basenames claimed by a document that is genuinely open. Derived from
+# the open documents themselves rather than from our targets: two different
+# filenames can map to one lock name ("export.docx" and "report.docx" both
+# yield "~$port.docx"), and a live lock must never be mistaken for an orphan.
+LIVE_LOCKS=""
+if [ -n "$OPEN_DOCS" ]; then
+    while IFS= read -r open_doc; do
+        [ -n "$open_doc" ] || continue
+        LIVE_LOCKS="$LIVE_LOCKS$(lock_candidates_for "$open_doc")
+"
+    done <<EOF
+$OPEN_DOCS
+EOF
+fi
+
+for lock_target in "$ORIGINAL" "$MODIFIED" "$OUTPUT"; do
+    LOCK_DIR="$(dirname "$lock_target")"
+    LOCK_BASE="$(basename "$lock_target")"
+
+    while IFS= read -r lock_name; do
+        [ -n "$lock_name" ] || continue
+        LOCK="$LOCK_DIR/$lock_name"
+        [ -f "$LOCK" ] || continue
+
+        # Claimed by an open document: legitimate. The AppleScript pre-flight
+        # below decides whether that document actually blocks this run.
+        if printf '%s\n' "$LIVE_LOCKS" | grep -qxF "$lock_name"; then
+            continue
+        fi
+
+        LOCK_OWNER="$(lock_owner "$LOCK")"
+        if [ -z "$LOCK_OWNER" ]; then
+            echo "Error: could not read the owner of this Word lock file:"
+            echo "  $LOCK"
+            echo "No open document claims it, so it is probably stale, but it is not in"
+            echo "the expected format. Remove it by hand and re-run."
+            exit 1
+        fi
+        if [ "$LOCK_OWNER" != "$OS_OWNER" ] && [ "$LOCK_OWNER" != "$WORD_OWNER" ]; then
+            echo "Error: '$LOCK_BASE' has a Word lock file held by '$LOCK_OWNER':"
+            echo "  $LOCK"
+            echo "Another user may have the document open on a shared volume. Word would"
+            echo "show a 'locked for editing' dialog that this script cannot answer."
+            echo "Confirm nobody is editing it, remove that file, then re-run."
+            exit 1
+        fi
+
+        if rm -f "$LOCK"; then
+            echo "Cleared orphaned Word lock file (owner '$LOCK_OWNER', no open document): $LOCK"
+        else
+            echo "Error: could not remove orphaned Word lock file: $LOCK"
+            exit 1
+        fi
+    done <<EOF
+$(lock_candidates_for "$LOCK_BASE")
+EOF
+done
+
 echo "Comparing documents..."
 echo "  Original: $ORIGINAL"
 echo "  Modified: $MODIFIED"
@@ -96,6 +265,22 @@ on run argv
         tell application "Microsoft Word"
             activate
 
+            -- Documents already open belong to the user and are never closed
+            -- by this run. Everything open later that is absent from this
+            -- list was created by this run, which is what makes cleanup
+            -- possible without knowing the names in advance — including a
+            -- comparison document left WINDOWLESS by a background Word,
+            -- which holds a ~$ lock with no window the user could close.
+            --
+            -- Word sometimes answers `name of every document` with `missing
+            -- value` while still reporting open documents. Treating that as
+            -- "nothing was open" would make every open document look like this
+            -- run's to close, so the snapshot is explicitly marked unusable
+            -- instead and cleanup falls back to the names it knows are ours.
+            set preNames to my documentNames()
+            set haveSnapshot to (preNames is not missing value)
+            if not haveSnapshot then set preNames to {}
+
             -- ── Pre-flight: this run must never touch a document it did ──
             -- ── not open. Word refuses to keep two same-named documents ──
             -- ── open at once, so a name match below identifies THE only ──
@@ -124,7 +309,15 @@ on run argv
             -- to close it. A same-named document from a DIFFERENT folder
             -- cannot be opened alongside ours at all, so fail with a clear
             -- message instead of Word's cryptic one.
+            -- Everything from here on can leave documents open in Word, so it
+            -- runs under a handler that closes them before re-raising. These
+            -- are initialised first so the handler can read them no matter how
+            -- early the failure lands.
             set origWasOpen to false
+            set origName to missing value
+            set compName to missing value
+
+            try
             if (exists document origBase) then
                 set docDir to path of document origBase
                 -- Word reports 'path' in HFS style (Colon:Separated:Dirs);
@@ -185,6 +378,24 @@ on run argv
             -- this run started belongs to the user and stays open.
             set closeNames to {compName, outName, outBase}
             if not origWasOpen then set end of closeNames to origName
+
+            -- Anything this run created under a name none of the candidates
+            -- predicted (the windowless-zombie case) still has to be closed,
+            -- or it keeps holding its lock file. Only safe while the snapshot
+            -- of pre-existing documents is trustworthy.
+            if haveSnapshot then
+                set nowNames to my documentNames()
+                if nowNames is not missing value then
+                    repeat with n in nowNames
+                        set thisName to contents of n
+                        if not (my listHas(preNames, thisName)) then
+                            if not (my listHas(closeNames, thisName)) then ¬
+                                set end of closeNames to thisName
+                        end if
+                    end repeat
+                end if
+            end if
+
             repeat with candidateName in closeNames
                 if (exists document (contents of candidateName)) then ¬
                     close document (contents of candidateName) saving no
@@ -196,9 +407,87 @@ on run argv
                 if (exists document (contents of candidateName)) then ¬
                     error "document '" & (contents of candidateName) & "' is still open after close"
             end repeat
+
+            on error errMsg number errNum
+                -- Close what this run opened, then re-raise unchanged. Without
+                -- this, a failed compare or save leaves the original AND the
+                -- comparison document open, each holding a ~$ owner lock beside
+                -- the user's file. Word keeps running in the background, so the
+                -- leak is invisible until the next time the document is opened
+                -- and Word calls it "locked for editing".
+                --
+                -- The cleanup gets its own shorter budget: if the failure was
+                -- the outer 600s timeout expiring on a wedged Word, these
+                -- events would otherwise be free to hang for another 600s.
+                try
+                    with timeout of 60 seconds
+                        if haveSnapshot then
+                            -- Close every document this run brought into being.
+                            set leftovers to my documentNames()
+                            if leftovers is not missing value then
+                                repeat with n in leftovers
+                                    set thisName to contents of n
+                                    if not (my listHas(preNames, thisName)) then
+                                        try
+                                            close document thisName saving no
+                                        end try
+                                    end if
+                                end repeat
+                            end if
+                        else
+                            -- No trustworthy snapshot: close only the names
+                            -- this run is known to own. The output-name
+                            -- collision check above proves none of them can
+                            -- belong to the user.
+                            set fallbackNames to {outName, outBase}
+                            try
+                                if compName is not missing value then ¬
+                                    set end of fallbackNames to compName
+                            end try
+                            try
+                                if not origWasOpen then set end of fallbackNames to origName
+                            end try
+                            repeat with n in fallbackNames
+                                try
+                                    if (exists document (contents of n)) then ¬
+                                        close document (contents of n) saving no
+                                end try
+                            end repeat
+                        end if
+                    end timeout
+                end try
+                error errMsg number errNum
+            end try
         end tell
     end timeout
 end run
+
+-- Names of every open document as a list, or `missing value` when Word will
+-- not answer. A one-element result is normalised to a list so callers never
+-- have to care, and `missing value` is passed through rather than flattened to
+-- an empty list: the difference decides whether documents get closed.
+on documentNames()
+    tell application "Microsoft Word"
+        try
+            if (count of documents) is 0 then return {}
+            set nameList to name of every document
+        on error
+            return missing value
+        end try
+    end tell
+    if nameList is missing value then return missing value
+    if class of nameList is not list then return {nameList}
+    return nameList
+end documentNames
+
+-- Exact list membership. AppleScript's `contains` is loose enough on strings
+-- to be worth avoiding when the answer decides whether a document gets closed.
+on listHas(theList, theItem)
+    repeat with x in theList
+        if (contents of x) is equal to theItem then return true
+    end repeat
+    return false
+end listHas
 ENDSCRIPT
 then
     if [ ! -f "$OUTPUT" ]; then
