@@ -149,6 +149,41 @@ assert len(ids) == len(set(ids)), "revision ids must be unique: %r" % ids
     expect(output).toBe('');
   });
 
+  trackTest('scattered changes in one pair yield multiple minimal regions', () => {
+    const output = runPython(String.raw`
+original = work / "original.docx"
+doc = Document()
+doc.add_paragraph("Payment is due within 30 days and the cure period is 10 days from notice.")
+doc.save(original)
+
+out = work / "out.docx"
+results = run_track(original, [
+    {"current": "Payment is due within 30 days and the cure period is 10 days from notice.",
+     "proposed": "Payment is due within 45 days and the cure period is 20 days from notice.",
+     "comment": None, "author": "Counsel OS"},
+], out)
+assert len(results["applied"]) == 1, results
+
+assert accept_text(out)[0] == "Payment is due within 45 days and the cure period is 20 days from notice."
+assert reject_text(out)[0] == "Payment is due within 30 days and the cure period is 10 days from notice."
+
+# One coarse pair with two separated changes must NOT strike the span
+# between them — this is the whole-paragraph-strike failure mode that made
+# Word Compare attractive. Two minimal del/ins regions, unchanged middle
+# text outside any revision markup.
+revs = revisions(out)
+dels = sorted(r["text"] for r in revs if r["tag"] == "del")
+inss = sorted(r["text"] for r in revs if r["tag"] == "ins")
+assert dels == ["10", "30"], revs
+assert inss == ["20", "45"], revs
+
+# The unchanged middle really is untouched (present in both views, marked in neither).
+all_rev_text = " ".join(r["text"] for r in revs)
+assert "cure period" not in all_rev_text, revs
+`);
+    expect(output).toBe('');
+  });
+
   trackTest('preserves per-run formatting on deleted segments', () => {
     const output = runPython(String.raw`
 original = work / "original.docx"

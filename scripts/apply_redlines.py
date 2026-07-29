@@ -41,6 +41,7 @@ result in the later item being skipped, never a silently misplaced edit.
 import copy
 import itertools
 import json
+import re
 import sys
 import zipfile
 from dataclasses import dataclass
@@ -192,46 +193,78 @@ def replace_in_paragraph(paragraph, current, proposed, start_idx=None):
 # ---------------------------------------------------------------------------
 
 
-def split_replacement(current: str, proposed: str):
-    """Trim the common prefix/suffix of a replacement at word boundaries.
+_TOKEN_RE = re.compile(r"\w+|\s+|[^\w\s]+")
 
-    Returns (prefix_len, deleted_core, inserted_core). Marking only the
-    changed core is what makes the redline readable: "30 days" -> "45 days"
-    should strike "30" and insert "45", not the whole sentence.
 
-    A boundary is widened only when it would split a word — a word character
-    on the kept side AND on a core side ("30" -> "35" must never render as a
-    struck "0"). Punctuation boundaries stand, so appending before a period
-    is a pure insertion that keeps the period.
+def compute_replacement_regions(current: str, proposed: str):
+    """Diff a replacement into minimal change regions at word granularity.
+
+    Returns a list of (cur_start, cur_end, inserted_text) tuples in ascending
+    order: strike current[cur_start:cur_end], insert inserted_text. Unchanged
+    text between regions is never marked. This is what keeps redlines
+    readable: a pair that changes "30 days" and "10 days" in one sentence
+    yields two small strikes, not one strike across everything in between —
+    the whole-paragraph-strike failure mode of naive replacement.
+
+    Two refinements over raw token opcodes:
+    - Adjacent change regions whose equal gap contains no whitespace merge,
+      so "$1,500,000" -> "$2,000,000" reads as one strike, not digit confetti.
+    - Region edges widen through word characters ("30" -> "35" strikes "30",
+      never a bare "0"), while punctuation boundaries stand, so appending
+      before a period stays a pure insertion that keeps the period.
     """
+    from difflib import SequenceMatcher
 
-    def word(s: str, i: int) -> bool:
-        return 0 <= i < len(s) and s[i].isalnum()
+    cur_tokens = _TOKEN_RE.findall(current)
+    prop_tokens = _TOKEN_RE.findall(proposed)
 
-    limit = min(len(current), len(proposed))
+    # Token index -> char offset maps.
+    cur_offsets = [0]
+    for t in cur_tokens:
+        cur_offsets.append(cur_offsets[-1] + len(t))
+    prop_offsets = [0]
+    for t in prop_tokens:
+        prop_offsets.append(prop_offsets[-1] + len(t))
 
-    prefix = 0
-    while prefix < limit and current[prefix] == proposed[prefix]:
-        prefix += 1
-    while prefix > 0 and word(current, prefix - 1) and (
-        word(current, prefix) or word(proposed, prefix)
-    ):
-        prefix -= 1
+    matcher = SequenceMatcher(None, cur_tokens, prop_tokens, autojunk=False)
+    regions = []
+    for op, a1, a2, b1, b2 in matcher.get_opcodes():
+        if op == "equal":
+            continue
+        regions.append([
+            cur_offsets[a1],
+            cur_offsets[a2],
+            proposed[prop_offsets[b1] : prop_offsets[b2]],
+        ])
 
-    suffix = 0
-    max_suffix = limit - prefix
-    while (
-        suffix < max_suffix
-        and current[len(current) - 1 - suffix] == proposed[len(proposed) - 1 - suffix]
-    ):
-        suffix += 1
-    while suffix > 0 and word(current, len(current) - suffix) and (
-        word(current, len(current) - suffix - 1)
-        or word(proposed, len(proposed) - suffix - 1)
-    ):
-        suffix -= 1
+    # Merge regions separated by whitespace-free equal text.
+    merged = []
+    for region in regions:
+        if merged:
+            gap = current[merged[-1][1] : region[0]]
+            if gap and not any(c.isspace() for c in gap):
+                merged[-1][1] = region[1]
+                merged[-1][2] += gap + region[2]
+                continue
+        merged.append(region)
 
-    return prefix, current[prefix : len(current) - suffix], proposed[prefix : len(proposed) - suffix]
+    # Widen edges that would split a word, absorbing the equal character
+    # into both the strike and the insertion (views stay exact).
+    for region in merged:
+        cs, ce, ins = region
+        while cs > 0 and current[cs - 1].isalnum() and (
+            (ce > cs and current[cs].isalnum()) or (ins and ins[0].isalnum())
+        ):
+            cs -= 1
+            ins = current[cs] + ins
+        while ce < len(current) and current[ce].isalnum() and (
+            (ce > cs and current[ce - 1].isalnum()) or (ins and ins[-1].isalnum())
+        ):
+            ins = ins + current[ce]
+            ce += 1
+        region[0], region[1], region[2] = cs, ce, ins
+
+    return [tuple(r) for r in merged if r[1] > r[0] or r[2]]
 
 
 def make_revision_id_allocator(document):
@@ -277,27 +310,13 @@ def _new_ins_run(paragraph, text: str, template_rpr):
     return r
 
 
-def tracked_replace_in_paragraph(paragraph, current, proposed, start_idx,
-                                 author, when, id_alloc):
-    """Apply one replacement as native tracked changes (w:del + w:ins).
+def _apply_tracked_region(paragraph, core_start, core_end, ins_core,
+                          author, when, id_alloc):
+    """Mark one change region: strike [core_start, core_end), insert ins_core.
 
-    Returns 'ok', 'not_found', or 'nested'. 'nested' means the changed core
-    touches runs inside a hyperlink or an existing tracked insertion — OOXML
-    forbids w:ins inside w:ins, and revision markup inside hyperlinks is not
-    supported here, so the item is refused rather than emitted invalid.
+    Returns 'ok', 'not_found', or 'nested'.
     """
-    full_text = get_paragraph_text(paragraph)
-    if start_idx is None:
-        start_idx = full_text.find(current)
-    if start_idx == -1 or full_text[start_idx : start_idx + len(current)] != current:
-        return "not_found"
-
-    prefix_len, del_core, ins_core = split_replacement(current, proposed)
-    if not del_core and not ins_core:
-        return "ok"  # the edit is a no-op
-
-    core_start = start_idx + prefix_len
-    core_end = core_start + len(del_core)
+    del_len = core_end - core_start
 
     runs = get_runs(paragraph)
     char_pos = 0
@@ -306,7 +325,7 @@ def tracked_replace_in_paragraph(paragraph, current, proposed, start_idx,
         run_ranges.append((char_pos, char_pos + len(run.text), run))
         char_pos += len(run.text)
 
-    if del_core:
+    if del_len:
         affected = [
             (s, e, r) for s, e, r in run_ranges if e > core_start and s < core_end
         ]
@@ -316,7 +335,7 @@ def tracked_replace_in_paragraph(paragraph, current, proposed, start_idx,
         affected = [(s, e, r) for s, e, r in run_ranges if s <= core_start <= e]
         affected = affected[-1:]
 
-    if not affected and not del_core and not run_ranges:
+    if not affected and not del_len and not run_ranges:
         # Insertion into an empty paragraph.
         ins_el = _revision_element("w:ins", author, when, id_alloc)
         ins_el.append(_new_ins_run(paragraph, ins_core, None))
@@ -333,7 +352,7 @@ def tracked_replace_in_paragraph(paragraph, current, proposed, start_idx,
 
     template_rpr = affected[0][2]._r.find(qn("w:rPr"))
 
-    if not del_core:
+    if not del_len:
         # Split the anchor run at the point and slot the w:ins between.
         run_start, _, run = affected[0]
         left, _right = _split_run(paragraph, run, core_start - run_start)
@@ -376,6 +395,56 @@ def tracked_replace_in_paragraph(paragraph, current, proposed, start_idx,
         ins_el = _revision_element("w:ins", author, when, id_alloc)
         ins_el.append(_new_ins_run(paragraph, ins_core, template_rpr))
         del_el.addnext(ins_el)
+
+    return "ok"
+
+
+def tracked_replace_in_paragraph(paragraph, current, proposed, start_idx,
+                                 author, when, id_alloc):
+    """Apply one replacement as native tracked changes (w:del + w:ins).
+
+    The replacement is diffed into minimal word-level change regions
+    (compute_replacement_regions), each marked independently — unchanged text
+    between regions carries no revision markup. Regions apply back-to-front
+    so earlier offsets stay valid.
+
+    Returns 'ok', 'not_found', or 'nested'. 'nested' means a changed region
+    touches runs inside a hyperlink or an existing tracked insertion — OOXML
+    forbids w:ins inside w:ins, and revision markup inside hyperlinks is not
+    supported here, so the item is refused rather than emitted invalid.
+    """
+    full_text = get_paragraph_text(paragraph)
+    if start_idx is None:
+        start_idx = full_text.find(current)
+    if start_idx == -1 or full_text[start_idx : start_idx + len(current)] != current:
+        return "not_found"
+
+    regions = compute_replacement_regions(current, proposed)
+    if not regions:
+        return "ok"  # the edit is a no-op
+
+    # Refuse the whole item before mutating anything if ANY region lands in
+    # nested content — a partially applied item would be worse than a skip.
+    runs = get_runs(paragraph)
+    char_pos = 0
+    run_ranges = []
+    for run in runs:
+        run_ranges.append((char_pos, char_pos + len(run.text), run))
+        char_pos += len(run.text)
+    for cur_start, cur_end, ins_core in regions:
+        lo, hi = start_idx + cur_start, start_idx + cur_end
+        for s, e, run in run_ranges:
+            touches = (e > lo and s < hi) if hi > lo else (s <= lo <= e)
+            if touches and run._r.getparent() is not paragraph._p:
+                return "nested"
+
+    for cur_start, cur_end, ins_core in reversed(regions):
+        status = _apply_tracked_region(
+            paragraph, start_idx + cur_start, start_idx + cur_end, ins_core,
+            author, when, id_alloc,
+        )
+        if status != "ok":
+            return status
 
     return "ok"
 
