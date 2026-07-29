@@ -320,7 +320,7 @@ Plugin (methodology + tooling):
     doctor/SKILL.md                            # /counsel-os:doctor — Read-only health check (config, deps, currency, backups)
     docket/SKILL.md                            # /counsel-os:docket — Read-only deadline sweep across matters (overdue / due-soon / upcoming)
   scripts/                                     # Automation
-    apply_redlines.py                          # Apply text replacements + comments to .docx
+    apply_redlines.py                          # Apply edits to .docx — native tracked changes (--track) + comments
     docket_sweep.py                            # Deterministic deadline classifier over matter frontmatter (see /counsel-os:docket)
     clean_format.py                            # Reformat .docx to professional standards
     legal-template.docx                        # Style template for clean_format.py

@@ -2,7 +2,14 @@
 """Apply redline changes to a .docx file and add comments.
 
 Usage:
-    python3 apply_redlines.py <original.docx> <redlines.json> <output.docx>
+    python3 apply_redlines.py [--track] <original.docx> <redlines.json> <output.docx>
+
+With --track, every replacement is written as native Word tracked changes
+(w:del + w:ins with author and timestamp) instead of a plain edit, so the
+output IS the redline — no Word Compare pass needed. Only the changed core of
+each replacement is marked: the common prefix and suffix of current/proposed
+are trimmed at word boundaries, and deleted segments keep their original run
+formatting. Without --track, behavior is unchanged (plain replacement).
 
 The redlines.json file should contain an array of objects:
     [
@@ -31,15 +38,20 @@ text introduced by an earlier item, and two items whose targets overlap
 result in the later item being skipped, never a silently misplaced edit.
 """
 
+import copy
+import itertools
 import json
 import sys
 import zipfile
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 from xml.etree import ElementTree as ET
 
 from docx import Document
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
 from docx.text.run import Run
 
 from xml_safety import UnsafeXmlError, safe_fromstring
@@ -173,6 +185,199 @@ def replace_in_paragraph(paragraph, current, proposed, start_idx=None):
         last_run.text = suffix
 
     return True
+
+
+# ---------------------------------------------------------------------------
+# Native tracked changes (--track)
+# ---------------------------------------------------------------------------
+
+
+def split_replacement(current: str, proposed: str):
+    """Trim the common prefix/suffix of a replacement at word boundaries.
+
+    Returns (prefix_len, deleted_core, inserted_core). Marking only the
+    changed core is what makes the redline readable: "30 days" -> "45 days"
+    should strike "30" and insert "45", not the whole sentence.
+
+    A boundary is widened only when it would split a word — a word character
+    on the kept side AND on a core side ("30" -> "35" must never render as a
+    struck "0"). Punctuation boundaries stand, so appending before a period
+    is a pure insertion that keeps the period.
+    """
+
+    def word(s: str, i: int) -> bool:
+        return 0 <= i < len(s) and s[i].isalnum()
+
+    limit = min(len(current), len(proposed))
+
+    prefix = 0
+    while prefix < limit and current[prefix] == proposed[prefix]:
+        prefix += 1
+    while prefix > 0 and word(current, prefix - 1) and (
+        word(current, prefix) or word(proposed, prefix)
+    ):
+        prefix -= 1
+
+    suffix = 0
+    max_suffix = limit - prefix
+    while (
+        suffix < max_suffix
+        and current[len(current) - 1 - suffix] == proposed[len(proposed) - 1 - suffix]
+    ):
+        suffix += 1
+    while suffix > 0 and word(current, len(current) - suffix) and (
+        word(current, len(current) - suffix - 1)
+        or word(proposed, len(proposed) - suffix - 1)
+    ):
+        suffix -= 1
+
+    return prefix, current[prefix : len(current) - suffix], proposed[prefix : len(proposed) - suffix]
+
+
+def make_revision_id_allocator(document):
+    """Unique w:id values for new revision elements, above any existing."""
+    max_id = 0
+    for el in document.element.body.iter(qn("w:ins"), qn("w:del")):
+        try:
+            max_id = max(max_id, int(el.get(qn("w:id"), "0")))
+        except ValueError:
+            pass
+    return itertools.count(max_id + 1)
+
+
+def _revision_element(tag: str, author: str, when: str, id_alloc):
+    el = OxmlElement(tag)
+    el.set(qn("w:id"), str(next(id_alloc)))
+    el.set(qn("w:author"), author)
+    el.set(qn("w:date"), when)
+    return el
+
+
+def _split_run(paragraph, run, offset: int):
+    """Split a run at a text offset into (left, right), preserving rPr.
+
+    The Run.text setter rebuilds content as w:t/w:tab/w:br, so tabs and
+    breaks in either half round-trip correctly.
+    """
+    left_el = copy.deepcopy(run._r)
+    run._r.addprevious(left_el)
+    left = Run(left_el, paragraph)
+    full = run.text
+    left.text = full[:offset]
+    run.text = full[offset:]
+    return left, run
+
+
+def _new_ins_run(paragraph, text: str, template_rpr):
+    """A fresh w:r carrying `text`, formatted like the run it replaces."""
+    r = OxmlElement("w:r")
+    if template_rpr is not None:
+        r.append(copy.deepcopy(template_rpr))
+    Run(r, paragraph).text = text
+    return r
+
+
+def tracked_replace_in_paragraph(paragraph, current, proposed, start_idx,
+                                 author, when, id_alloc):
+    """Apply one replacement as native tracked changes (w:del + w:ins).
+
+    Returns 'ok', 'not_found', or 'nested'. 'nested' means the changed core
+    touches runs inside a hyperlink or an existing tracked insertion — OOXML
+    forbids w:ins inside w:ins, and revision markup inside hyperlinks is not
+    supported here, so the item is refused rather than emitted invalid.
+    """
+    full_text = get_paragraph_text(paragraph)
+    if start_idx is None:
+        start_idx = full_text.find(current)
+    if start_idx == -1 or full_text[start_idx : start_idx + len(current)] != current:
+        return "not_found"
+
+    prefix_len, del_core, ins_core = split_replacement(current, proposed)
+    if not del_core and not ins_core:
+        return "ok"  # the edit is a no-op
+
+    core_start = start_idx + prefix_len
+    core_end = core_start + len(del_core)
+
+    runs = get_runs(paragraph)
+    char_pos = 0
+    run_ranges = []
+    for run in runs:
+        run_ranges.append((char_pos, char_pos + len(run.text), run))
+        char_pos += len(run.text)
+
+    if del_core:
+        affected = [
+            (s, e, r) for s, e, r in run_ranges if e > core_start and s < core_end
+        ]
+    else:
+        # Pure insertion: anchor on the run containing the insertion point,
+        # preferring the run the point ends in over the one it starts.
+        affected = [(s, e, r) for s, e, r in run_ranges if s <= core_start <= e]
+        affected = affected[-1:]
+
+    if not affected and not del_core and not run_ranges:
+        # Insertion into an empty paragraph.
+        ins_el = _revision_element("w:ins", author, when, id_alloc)
+        ins_el.append(_new_ins_run(paragraph, ins_core, None))
+        paragraph._p.append(ins_el)
+        return "ok"
+    if not affected:
+        return "not_found"
+
+    # Revision markup rearranges elements under the paragraph, which is only
+    # coherent for runs that are direct children of it.
+    for _, _, run in affected:
+        if run._r.getparent() is not paragraph._p:
+            return "nested"
+
+    template_rpr = affected[0][2]._r.find(qn("w:rPr"))
+
+    if not del_core:
+        # Split the anchor run at the point and slot the w:ins between.
+        run_start, _, run = affected[0]
+        left, _right = _split_run(paragraph, run, core_start - run_start)
+        ins_el = _revision_element("w:ins", author, when, id_alloc)
+        ins_el.append(_new_ins_run(paragraph, ins_core, template_rpr))
+        left._r.addnext(ins_el)
+        return "ok"
+
+    # Carve the deleted core out to whole runs.
+    first_start, _, first_run = affected[0]
+    if core_start > first_start:
+        _split_run(paragraph, first_run, core_start - first_start)
+    last_start, last_end, last_run = affected[-1]
+    if core_end < last_end:
+        # If first and last are the same run, its text now begins at
+        # core_start after the split above.
+        begins_at = core_start if last_run is first_run and core_start > first_start else last_start
+        _split_run(paragraph, last_run, core_end - begins_at)
+
+    # Re-derive the core's run elements after the splits.
+    runs = get_runs(paragraph)
+    char_pos = 0
+    core_elements = []
+    for run in runs:
+        run_start, run_end = char_pos, char_pos + len(run.text)
+        char_pos = run_end
+        if run_start >= core_start and run_end <= core_end and run_end > run_start:
+            core_elements.append(run._r)
+    if not core_elements:
+        return "not_found"
+
+    del_el = _revision_element("w:del", author, when, id_alloc)
+    core_elements[0].addprevious(del_el)
+    for r in core_elements:
+        del_el.append(r)  # moves the element
+        for t in r.findall(qn("w:t")):
+            t.tag = qn("w:delText")
+
+    if ins_core:
+        ins_el = _revision_element("w:ins", author, when, id_alloc)
+        ins_el.append(_new_ins_run(paragraph, ins_core, template_rpr))
+        del_el.addnext(ins_el)
+
+    return "ok"
 
 
 def collect_matches_from_paragraph(paragraph, current, location, occurrence, paragraph_index=None):
@@ -396,13 +601,15 @@ def add_comment_to_paragraph(document, paragraph, comment_text, author):
 
 
 def main():
-    if len(sys.argv) != 4:
-        print(f"Usage: {sys.argv[0]} <original.docx> <redlines.json> <output.docx>")
+    args = [a for a in sys.argv[1:] if a != "--track"]
+    track = "--track" in sys.argv[1:]
+    if len(args) != 3:
+        print(f"Usage: {sys.argv[0]} [--track] <original.docx> <redlines.json> <output.docx>")
         sys.exit(1)
 
-    original_path = Path(sys.argv[1])
-    redlines_path = Path(sys.argv[2])
-    output_path = Path(sys.argv[3])
+    original_path = Path(args[0])
+    redlines_path = Path(args[1])
+    output_path = Path(args[2])
 
     if not original_path.exists():
         print(f"Error: Original document not found: {original_path}")
@@ -417,7 +624,10 @@ def main():
 
     doc = Document(str(original_path))
 
-    results = {"applied": [], "skipped": [], "warnings": []}
+    results = {"applied": [], "skipped": [], "warnings": [], "tracked": track}
+
+    revision_when = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    id_alloc = make_revision_id_allocator(doc) if track else None
 
     # Phase 1: resolve every item against the pristine document, before any
     # replacement mutates it. Occurrence numbers and offsets therefore always
@@ -497,9 +707,30 @@ def main():
         comment_text = item.get("comment")
         author = item.get("author", "Unknown")
 
-        replaced = replace_in_paragraph(
-            selected_match.paragraph, current, proposed, selected_match.start
-        )
+        if track:
+            status = tracked_replace_in_paragraph(
+                selected_match.paragraph, current, proposed, selected_match.start,
+                author, revision_when, id_alloc,
+            )
+            if status == "nested":
+                results["skipped"].append(
+                    {
+                        "index": i,
+                        "current": truncate(current),
+                        "reason": (
+                            "Changed text lies inside a hyperlink or an existing "
+                            "tracked insertion; nested revision markup is not "
+                            "supported — resolve the earlier revision first or "
+                            "apply without --track"
+                        ),
+                    }
+                )
+                continue
+            replaced = status == "ok"
+        else:
+            replaced = replace_in_paragraph(
+                selected_match.paragraph, current, proposed, selected_match.start
+            )
         if replaced:
             if comment_text:
                 anchored = add_comment_to_paragraph(
@@ -537,7 +768,8 @@ def main():
         )
 
     for entries in results.values():
-        entries.sort(key=lambda entry: entry["index"])
+        if isinstance(entries, list):
+            entries.sort(key=lambda entry: entry["index"])
 
     doc.save(str(output_path))
 
