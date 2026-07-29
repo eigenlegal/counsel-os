@@ -6,6 +6,13 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.9.37] — 2026-07-29
+
+minimal multi-region redlines in --track
+
+- apply_redlines.py --track now diffs each edit pair at word granularity into independent minimal change regions: a pair changing two numbers in one sentence produces two small strikes, never one strike across the unchanged text between them (the whole-paragraph-strike failure mode that originally motivated Word Compare)
+- merged no-whitespace gaps keep money amounts readable ($1,500,000 -> $2,000,000 is one strike); word-boundary widening and punctuation-preserving insertions carry over from 0.9.36
+
 ## [0.9.36] — 2026-07-29
 
 native tracked changes — redlines without Word
