@@ -230,13 +230,16 @@ Generate tracked changes against the original document. This is the full documen
 Check what's available:
 
 1. **python-docx available:** `python3 -c "import docx"` — exits 0
-2. **Word installed:** `/Applications/Microsoft Word.app` exists
-3. **User name available:** profile.md contains a real name (not a bracket placeholder)
+2. **User name available:** profile.md contains a real name (not a bracket placeholder)
+
+Tracked changes are generated natively (`apply_redlines.py --track` writes
+`w:ins`/`w:del` revision markup directly), so Microsoft Word is NOT required
+to produce a redline.
 
 | Tier | Requirements | Action |
 |---|---|---|
-| Full | All three | Generate tracked changes .docx with comments, attributed to user |
-| Partial | python-docx only | Generate modified .docx. Tell user to run Word's Review > Compare manually. |
+| Full | Both | Generate tracked changes .docx with comments, attributed to user |
+| Partial | python-docx only | Same tracked changes, attributed to "Counsel OS"; tell the user attribution becomes personal once profile.md has their name |
 | Markdown | Neither | Output markdown redline package only |
 
 ### Pipeline execution (Full or Partial tier)
@@ -270,18 +273,33 @@ Supported selectors:
 
 **Important:** Write the JSON file alongside the original document (`{original_dir}/counsel-os-redlines-{timestamp}.json`), NOT in `/tmp`. macOS sandboxing prevents Word from accessing `/tmp`.
 
-**2. Apply changes:**
+**2. Apply changes as tracked changes:**
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply_redlines.py" "{original.docx}" "{redlines.json}" "{modified.docx}"
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply_redlines.py" --track "{original.docx}" "{redlines.json}" "{output_path}"
 ```
-Parse the JSON output. Report skipped items.
+Default output: `{original_dir}/{original_name}-redline-{YYYY-MM-DD}.docx`
+Parse the JSON output. Report skipped items — including any refused because the
+changed text lies inside an existing tracked insertion or hyperlink (nested
+revision markup is not supported; resolve the earlier revision first).
 
-**3. Word Compare (Full tier only):**
+The output IS the redline: native `w:ins`/`w:del` revisions plus comments, in
+one step. Only the changed core of each edit is marked (common prefix/suffix
+trimmed at word boundaries), and deleted text keeps its original formatting.
+There is no intermediate modified.docx — accepting all changes in Word yields
+the clean version. Drop `--track` only when the user explicitly wants a
+silently-edited copy with no revision marks.
+
+**3. Word Compare (alternative engine, optional):**
 ```bash
 "${CLAUDE_PLUGIN_ROOT}/scripts/word_compare.sh" "{original.docx}" "{modified.docx}" "{author_name}" "{output_path}"
 ```
-Default output: `{original_dir}/{original_name}-redline-{YYYY-MM-DD}.docx`
-The script retains `{modified.docx}`. Delete it only if it is a generated intermediate file and the user no longer needs it.
+Use only when comparing two documents that already exist independently (e.g.
+a counterparty returned a clean revised draft and the user wants a redline
+against the original), or when the user explicitly asks for Word's own compare
+engine. Requires Microsoft Word on macOS with an unlocked GUI session, and
+recent Word builds have rejected the AppleScript `compare` verb on some
+installations — if it fails, fall back to `--track` when the edit list is
+known, or tell the user to run Word's Review > Compare manually.
 
 **4. Clean format option.** Default to preserving formatting for contract redlines.
 - **(A) Preserve formatting** — tracked changes show content edits only (standard for redlines)
