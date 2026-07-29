@@ -6,6 +6,14 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.9.36] — 2026-07-29
+
+native tracked changes — redlines without Word
+
+- apply_redlines.py --track writes edits as native Word revision markup (w:ins/w:del with author, timestamp, per-run formatting preserved, word-boundary minimal cores) — the Full redline tier no longer needs Microsoft Word, a GUI session, or AppleScript (cou-20)
+- word_compare.sh becomes the alternative engine for comparing two independently existing documents, with guidance for the AppleScript compare verb failing (-1708) on some Word installations
+- redline methodology: accept-all baseline for documents carrying pending tracked changes; XML-audit gotchas (w:t regex, lxml proxy-id dedupe)
+
 ## [0.9.35] — 2026-07-27
 
 word_compare cleans up after failed runs
