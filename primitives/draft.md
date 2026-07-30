@@ -214,6 +214,30 @@ Draft new clause language from scratch (not revising existing language).
 
 ---
 
+## --document (net-new .docx)
+
+Generate a brand-new Word document from scratch — a drafted agreement, letter, or memo the user will edit and circulate. This is the only supported pipeline for net-new .docx output; `--redline` and `clean_format.py` operate on documents that already exist.
+
+### Instructions
+
+1. Write the document as markdown in a temp file alongside the intended output location. Write for the pipeline's flattened output model: citations and footnote content go inline in the body text, URLs appear as visible text (not `[label](url)` links), and everything lives in one section with simple tables.
+2. Convert with pandoc, then normalize with `clean_format.py`:
+```bash
+pandoc "{draft.md}" -o "{draft-raw.docx}"
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/clean_format.py" "{draft-raw.docx}" "{output.docx}"
+```
+The clean-format pass sets uniform Times New Roman, justified body text, bold headings, and pins `docDefaults` fonts so theme fonts cannot leak through. Delete the temp markdown and `{draft-raw.docx}` intermediate after the pipeline succeeds — a stray raw file beside a client deliverable is a mix-up waiting to happen.
+
+**Know what the normalize pass flattens.** `clean_format.py` rebuilds the document from plain paragraphs and tables: hyperlinks collapse to their anchor text (URL lost), footnotes/endnotes are dropped entirely, images and fields are not carried over, merged/nested table structure flattens, later sections disappear, and headings in a heading-styled document get auto-numbered — all without warnings. That is why step 1 says inline citations and visible URLs. For a document that genuinely needs live hyperlinks, footnotes, multi-section layout, or an unnumbered heading structure (e.g. a memo with `# Background` / `# Analysis` headings that must stay unnumbered), skip the normalize pass and build the document directly with python-docx instead.
+
+### Do not
+
+- **Do not use macOS `textutil` for .docx output.** It ignores CSS point sizes when converting HTML and produces oversized text.
+- **Do not pass `scripts/legal-template.docx` as a pandoc `--reference-doc`.** It is `clean_format.py`'s style donor, not a general-purpose reference template; use the pipeline above instead.
+- Do not hand-set fonts run-by-run with python-docx as the primary path — that is the fallback when pandoc or `clean_format.py` is unavailable, or when the document needs features the normalize pass flattens (build paragraphs programmatically; set Normal style + all runs to Times New Roman 11pt, matching `clean_format.py`'s `DEFAULT_SIZE`, and pin `w:rFonts` on the style's `rPr`).
+
+---
+
 ## --redline
 
 Generate tracked changes against the original document. This is the full document output pipeline.

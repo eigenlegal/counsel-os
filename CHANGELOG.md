@@ -6,6 +6,15 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.9.38] — 2026-07-30
+
+net-new .docx generation pipeline + fully pinned legal template
+
+- draft.md gains a --document mode: pandoc + clean_format.py is the prescribed pipeline for generating net-new .docx drafts — never macOS textutil (ignores CSS point sizes, ships oversized text), never legal-template.docx as a pandoc --reference-doc
+- the new mode documents what the normalize pass flattens (hyperlinks collapse to anchor text, footnotes drop, images/fields lost, heading auto-numbering) and routes documents needing those features to a direct python-docx build instead
+- legal-template.docx: every rFonts in BOTH style parts (styles.xml and the Word-2010 compat stylesWithEffects.xml) now pins Times New Roman with all theme font attributes stripped — OOXML theme aliases supersede explicit fonts, so leftover asciiTheme attributes rendered headings in Cambria/Calibri
+- new guard test (browse/src/legal-template-fonts.test.ts) asserts both style parts stay pinned and Normal stays 11pt
+
 ## [0.9.37] — 2026-07-29
 
 minimal multi-region redlines in --track
