@@ -230,6 +230,15 @@ The clean-format pass sets uniform Times New Roman, justified body text, bold he
 
 **Know what the normalize pass flattens.** `clean_format.py` rebuilds the document from plain paragraphs and tables: hyperlinks collapse to their anchor text (URL lost), footnotes/endnotes are dropped entirely, images and fields are not carried over, merged/nested table structure flattens, later sections disappear, and headings in a heading-styled document get auto-numbered — all without warnings. That is why step 1 says inline citations and visible URLs. For a document that genuinely needs live hyperlinks, footnotes, multi-section layout, or an unnumbered heading structure (e.g. a memo with `# Background` / `# Analysis` headings that must stay unnumbered), skip the normalize pass and build the document directly with python-docx instead.
 
+### Output naming
+
+Default: `{Client} - {Document Title} - {Person or Counterparty} ({STATUS} {YYYY-MM-DD}).docx`
+
+- `STATUS` is one of `DRAFT | REDLINE | Final | signed`, always paired with the ISO date. Generated documents are always `(DRAFT {date})` — never deliver an unmarked draft.
+- The stem stays identical across the document's life, so the draft and the executed copy sort together: `... (DRAFT 2026-07-30).docx` → `... (signed 2026-08-04).docx`.
+- Omit the person segment when there is no counterparty; use the matter subject instead (e.g. `{Client} - Board Consent - {Subject} (DRAFT {date}).docx`).
+- **Existing folders win.** When filing into a client or matter folder whose files already follow a different convention, mirror that folder's convention instead — the default is for new folders and loose deliverables.
+
 **Mixed numbering schemes break the mirror-numbering pass.** `clean_format.py` converts literal paragraph numbers into one continuous native Word list — it cannot tell recital lettering (`A.`, `B.`) apart from section numbering (`1.` … `9.`), so a recital-style agreement comes out with the recitals numbered 1-2 and "Section 1" rendering as 3. It also promotes standalone bold lines (signature-block labels like "THE COMPANY:") to Heading style. For agreements with recitals, lettered exhibits, or any numbering scheme that is not one flat sequence, skip `clean_format.py`: run pandoc, then apply fonts directly with python-docx (the fallback in Do-not below) and keep the literal numbers in the text.
 
 ### Do not

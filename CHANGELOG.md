@@ -6,6 +6,12 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.9.40] — 2026-08-04
+
+--document mode: default output naming convention
+
+- generated documents default to '{Client} - {Document Title} - {Person} ({STATUS} {YYYY-MM-DD}).docx' with STATUS in DRAFT/REDLINE/Final/signed — stable stem across the document's life so draft and signed copies sort together; existing client-folder conventions take precedence
+
 ## [0.9.39] — 2026-08-04
 
 --document mode: mixed-numbering and signature-block caveats
