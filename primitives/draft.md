@@ -232,11 +232,12 @@ The clean-format pass sets uniform Times New Roman, justified body text, bold he
 
 ### Output naming
 
-Default: `{Client} - {Document Title} - {Person or Counterparty} ({STATUS} {YYYY-MM-DD}).docx`
+Default: `{Client} - {Document Title} - {Person or Counterparty} ({INITIALS} {STATUS} {YYYY-MM-DD}).docx`
 
-- `STATUS` is one of `DRAFT | REDLINE | Final | signed`, always paired with the ISO date. Generated documents are always `(DRAFT {date})` — never deliver an unmarked draft.
-- The stem stays identical across the document's life, so the draft and the executed copy sort together: `... (DRAFT 2026-07-30).docx` → `... (signed 2026-08-04).docx`.
-- Omit the person segment when there is no counterparty; use the matter subject instead (e.g. `{Client} - Board Consent - {Subject} (DRAFT {date}).docx`).
+- `STATUS` is one of `DRAFT | REDLINE | comments | Final | signed`, always paired with the ISO date. Generated documents are always `({INITIALS} DRAFT {date})` — never deliver an unmarked draft.
+- `INITIALS` is the drafter's initials, derived from the name in `practice/profile.md` ## Identity (e.g. "Jack Wang" → `JW`). Include them on authored statuses (`DRAFT`, `REDLINE`, `comments`) so your markup is instantly distinguishable from the counterparty's when files cross in an exchange. Omit them on `Final` and `signed` — execution status belongs to the document, not a drafter. If the profile has no name, drop the initials segment; never guess.
+- The stem stays identical across the document's life, so drafts and the executed copy sort together: `... (JW DRAFT 2026-07-30).docx` → `... (JW REDLINE 2026-08-02).docx` → `... (signed 2026-08-04).docx`.
+- Omit the person segment when there is no counterparty; use the matter subject instead (e.g. `{Client} - Board Consent - {Subject} (JW DRAFT {date}).docx`).
 - **Existing folders win.** When filing into a client or matter folder whose files already follow a different convention, mirror that folder's convention instead — the default is for new folders and loose deliverables.
 
 **Mixed numbering schemes break the mirror-numbering pass.** `clean_format.py` converts literal paragraph numbers into one continuous native Word list — it cannot tell recital lettering (`A.`, `B.`) apart from section numbering (`1.` … `9.`), so a recital-style agreement comes out with the recitals numbered 1-2 and "Section 1" rendering as 3. It also promotes standalone bold lines (signature-block labels like "THE COMPANY:") to Heading style. For agreements with recitals, lettered exhibits, or any numbering scheme that is not one flat sequence, skip `clean_format.py`: run pandoc, then apply fonts directly with python-docx (the fallback in Do-not below) and keep the literal numbers in the text.

@@ -6,6 +6,12 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.9.41] — 2026-08-04
+
+--document naming: drafter initials from practice profile
+
+- output naming now carries the drafter's initials (from practice/profile.md ## Identity) on authored statuses — DRAFT, REDLINE, comments — so your markup is distinguishable from the counterparty's in an exchange; initials are omitted on Final/signed, and dropped entirely when the profile has no name
+
 ## [0.9.40] — 2026-08-04
 
 --document mode: default output naming convention
