@@ -6,6 +6,13 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.9.39] — 2026-08-04
+
+--document mode: mixed-numbering and signature-block caveats
+
+- draft.md --document: clean_format.py's mirror-numbering pass folds recital lettering (A., B.) into the section number sequence and promotes bold signature-block labels to Heading style — recital-style agreements now route around the normalize pass (pandoc + direct python-docx fonts, literal numbers kept in text)
+- draft.md --document: address and signature blocks must be blank-line-separated paragraphs in the markdown source; pandoc merges single-newline lines into one flowing paragraph
+
 ## [0.9.38] — 2026-07-30
 
 net-new .docx generation pipeline + fully pinned legal template

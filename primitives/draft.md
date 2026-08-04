@@ -220,7 +220,7 @@ Generate a brand-new Word document from scratch — a drafted agreement, letter,
 
 ### Instructions
 
-1. Write the document as markdown in a temp file alongside the intended output location. Write for the pipeline's flattened output model: citations and footnote content go inline in the body text, URLs appear as visible text (not `[label](url)` links), and everything lives in one section with simple tables.
+1. Write the document as markdown in a temp file alongside the intended output location. Write for the pipeline's flattened output model: citations and footnote content go inline in the body text, URLs appear as visible text (not `[label](url)` links), and everything lives in one section with simple tables. Separate every line of an address block or signature block into its own paragraph (blank line between lines) — pandoc treats single newlines as soft breaks and merges them into one flowing paragraph ("By: ___ Thang Tran President").
 2. Convert with pandoc, then normalize with `clean_format.py`:
 ```bash
 pandoc "{draft.md}" -o "{draft-raw.docx}"
@@ -229,6 +229,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/clean_format.py" "{draft-raw.docx}" "{out
 The clean-format pass sets uniform Times New Roman, justified body text, bold headings, and pins `docDefaults` fonts so theme fonts cannot leak through. Delete the temp markdown and `{draft-raw.docx}` intermediate after the pipeline succeeds — a stray raw file beside a client deliverable is a mix-up waiting to happen.
 
 **Know what the normalize pass flattens.** `clean_format.py` rebuilds the document from plain paragraphs and tables: hyperlinks collapse to their anchor text (URL lost), footnotes/endnotes are dropped entirely, images and fields are not carried over, merged/nested table structure flattens, later sections disappear, and headings in a heading-styled document get auto-numbered — all without warnings. That is why step 1 says inline citations and visible URLs. For a document that genuinely needs live hyperlinks, footnotes, multi-section layout, or an unnumbered heading structure (e.g. a memo with `# Background` / `# Analysis` headings that must stay unnumbered), skip the normalize pass and build the document directly with python-docx instead.
+
+**Mixed numbering schemes break the mirror-numbering pass.** `clean_format.py` converts literal paragraph numbers into one continuous native Word list — it cannot tell recital lettering (`A.`, `B.`) apart from section numbering (`1.` … `9.`), so a recital-style agreement comes out with the recitals numbered 1-2 and "Section 1" rendering as 3. It also promotes standalone bold lines (signature-block labels like "THE COMPANY:") to Heading style. For agreements with recitals, lettered exhibits, or any numbering scheme that is not one flat sequence, skip `clean_format.py`: run pandoc, then apply fonts directly with python-docx (the fallback in Do-not below) and keep the literal numbers in the text.
 
 ### Do not
 

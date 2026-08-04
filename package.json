@@ -1,6 +1,6 @@
 {
   "name": "counsel-os",
-  "version": "0.9.38",
+  "version": "0.9.39",
   "description": "Legal operating system for Claude — contract review, negotiation, and practice management",
   "license": "MIT",
   "scripts": {
