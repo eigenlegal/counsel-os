@@ -6,6 +6,14 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.9.42] — 2026-08-04
+
+browse: fix daemon leak on restart
+
+- server shutdown now has a 3s force-exit deadline: a wedged Chromium hanging browserManager.close() no longer keeps the old daemon alive holding its port (this also makes plain SIGTERM effective again); the state file is unlinked before the deadline so a force-exit never leaves a stale record
+- the CLI reaps the tracked server (SIGTERM, then SIGKILL after 4s) before spawning a replacement, with a PID-reuse guard that only ever kills processes whose command line is a browse server — never a port-range sweep, so sibling Conductor-worktree instances are untouched
+- restart/stop with no live tracked server no longer spawn a server just to tell it to exit (the double-spawn that leaked a daemon pair per plugin version and eventually exhausted ports 9400-9409)
+
 ## [0.9.41] — 2026-08-04
 
 --document naming: drafter initials from practice profile

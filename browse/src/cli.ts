@@ -106,9 +106,57 @@ function isProcessAlive(pid: number): boolean {
   }
 }
 
+/**
+ * PID-reuse guard: only ever kill a process whose command line looks like a
+ * browse server (compiled `.../browse __server` or dev `bun run .../server.ts`).
+ * A recycled PID belonging to something else is left alone.
+ */
+export function isBrowseServerCmdline(cmdline: string | null | undefined): boolean {
+  if (!cmdline) return false;
+  return cmdline.includes('__server') || cmdline.includes('browse/src/server.ts');
+}
+
+function processCmdline(pid: number): string | null {
+  try {
+    const r = Bun.spawnSync(['ps', '-o', 'command=', '-p', String(pid)]);
+    const out = r.stdout ? new TextDecoder().decode(r.stdout).trim() : '';
+    return out || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Reap the tracked server before spawning a replacement. Without this, every
+ * path that starts a new server while the old one is alive-but-unhealthy (or
+ * hung in shutdown) leaks a daemon holding a port — repeated across plugin
+ * versions this exhausted the whole 9400-9409 range. SIGTERM first (the server
+ * shuts down cleanly under its force-exit deadline), SIGKILL if it lingers.
+ * Only the PID recorded in the state file is touched — never a port-range
+ * sweep, which could kill sibling Conductor-worktree instances that own
+ * different state files.
+ */
+async function reapTrackedServer(state: ServerState): Promise<void> {
+  if (!isProcessAlive(state.pid)) return;
+  if (!isBrowseServerCmdline(processCmdline(state.pid))) return;
+  try { process.kill(state.pid, 'SIGTERM'); } catch {}
+  const deadline = Date.now() + 4000;
+  while (Date.now() < deadline && isProcessAlive(state.pid)) {
+    await Bun.sleep(100);
+  }
+  if (isProcessAlive(state.pid)) {
+    console.error(`[browse] Old server (PID ${state.pid}) did not exit — force killing`);
+    try { process.kill(state.pid, 'SIGKILL'); } catch {}
+    await Bun.sleep(200);
+  }
+}
+
 // ─── Server Lifecycle ──────────────────────────────────────────
 async function startServer(): Promise<ServerState> {
-  // Clean up stale state file
+  // Reap the tracked server (if any) so the replacement never races it for a
+  // port, then clean up the stale state file.
+  const prior = readState();
+  if (prior) await reapTrackedServer(prior);
   try { fs.unlinkSync(STATE_FILE); } catch {}
   ensurePluginNodePath();
 
@@ -307,11 +355,28 @@ Refs:           After 'snapshot', use @e1, @e2... as selectors:
     commandArgs.push(stdin.trim());
   }
 
+  // restart/stop with no live tracked server: don't spawn a server just to
+  // tell it to exit (the old flow started one in ensureServer, restarted it,
+  // and left the first behind — the double-spawn half of the daemon leak).
+  if (command === 'restart' || command === 'stop') {
+    const tracked = readState();
+    if (!tracked || !isProcessAlive(tracked.pid)) {
+      if (command === 'stop') {
+        console.error('[browse] No server running');
+        return;
+      }
+      const fresh = await startServer();
+      console.error(`[browse] No server was running — started fresh (PID: ${fresh.pid})`);
+      return;
+    }
+  }
+
   const state = await ensureServer();
   await sendCommand(state, command, commandArgs);
 
   // restart: the server responds, then exits ~250ms later. Wait for the old
-  // process to die, then bring up a fresh server so "restart" means restart.
+  // process to die; if it hangs in shutdown, reap it (startServer force-kills
+  // the tracked PID) so "restart" never leaks the old daemon on its port.
   if (command === 'restart') {
     const deadline = Date.now() + 5000;
     while (Date.now() < deadline && isProcessAlive(state.pid)) {

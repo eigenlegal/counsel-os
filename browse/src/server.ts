@@ -300,15 +300,25 @@ async function shutdown() {
   if (isShuttingDown) return;
   isShuttingDown = true;
 
+  // Hard deadline: browserManager.close() hangs when Chromium is wedged, and
+  // an awaited hang here means the process never exits and never releases its
+  // port — the daemon-leak bug that exhausted the whole port range. The state
+  // file is unlinked before the deadline can fire so a force-exit never leaves
+  // a stale record behind. unref'd so the timer itself can't hold the process
+  // open after a clean close.
+  try { fs.unlinkSync(STATE_FILE); } catch {}
+  const forceExit = setTimeout(() => {
+    console.log('[browse] Shutdown deadline hit — force exiting');
+    process.exit(0);
+  }, 3000);
+  forceExit.unref?.();
+
   console.log('[browse] Shutting down...');
   if (flushInterval) clearInterval(flushInterval);
   if (idleCheckInterval) clearInterval(idleCheckInterval);
   await flushBuffers(); // Final flush (async now)
 
   await browserManager.close();
-
-  // Clean up state file
-  try { fs.unlinkSync(STATE_FILE); } catch {}
 
   process.exit(0);
 }

@@ -50,3 +50,23 @@ describe('browse server resolver', () => {
     expect(env.NODE_PATH).toBe(`${pluginNodeModules}${path.delimiter}/existing`);
   });
 });
+
+describe('daemon reap PID-reuse guard', () => {
+  const { isBrowseServerCmdline } = require('./cli');
+
+  test('recognizes compiled server processes', () => {
+    expect(isBrowseServerCmdline('/Users/x/.claude/plugins/cache/m/counsel-os/0.9.42/browse/dist/browse __server')).toBe(true);
+  });
+
+  test('recognizes dev-mode server processes', () => {
+    expect(isBrowseServerCmdline('bun run /Users/x/counsel-os/browse/src/server.ts')).toBe(true);
+  });
+
+  test('refuses recycled PIDs belonging to other processes', () => {
+    expect(isBrowseServerCmdline('/Applications/Safari.app/Contents/MacOS/Safari')).toBe(false);
+    expect(isBrowseServerCmdline('node /some/other/server.ts')).toBe(false);
+    expect(isBrowseServerCmdline('')).toBe(false);
+    expect(isBrowseServerCmdline(null)).toBe(false);
+    expect(isBrowseServerCmdline(undefined)).toBe(false);
+  });
+});
