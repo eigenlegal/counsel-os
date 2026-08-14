@@ -250,6 +250,36 @@ Default: `{Client} - {Document Title} - {Person or Counterparty} ({INITIALS} {ST
 
 ---
 
+## --edit (revising an existing .docx in place)
+
+Applies whenever you change text inside a .docx that already exists — revised drafts after counterparty comments, adapting an executed agreement into a new party's version, filling names or numbers into a form. This is NOT the redline path (no tracked changes wanted) and NOT net-new generation.
+
+### Instructions
+
+1. **Default to `apply_redlines.py` WITHOUT `--track` for text replacements.** Silent mode applies the same word-level minimal-region matching as the redline path — including its handling of run-level formatting — so replacements inherit the correct formatting from the text they replace:
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply_redlines.py" "{original.docx}" "{edits.json}" "{output.docx}"
+```
+2. **Direct python-docx surgery is for structure only** (deleting paragraphs, inserting new ones, reordering) — and before doing any of it, read `primitives/redline-output.md` → "How to detect bold-leading paragraphs". Its run-formatting rules apply to every in-place edit, not just redlines.
+
+### Run-formatting rules for python-docx edits
+
+- **Never reuse a paragraph's first run to carry full replacement text.** Legal-form paragraphs routinely open with a formatted lead-in run (bold `WHEREAS, `, bold `1.\tSale of Stock.`, bold defined-term). Stuffing the whole paragraph into `runs[0]` makes the entire paragraph inherit that formatting — the fully-bolded-paragraph defect.
+- **Mirror the source run structure:** write the lead-in into the formatted run, delete the rest, and append the body as a NEW run with `bold = False` set explicitly (not left as `None` — `None` inherits from the style, `False` overrides it). Same for italic.
+- **New runs always get explicit `font.name` and `font.size`** matching the document (theme-font fallback otherwise).
+
+### Post-edit lint (run after EVERY in-place edit, before delivering)
+
+Check programmatically, not by eyeballing:
+1. No fully-bolded paragraph longer than ~60 chars that wasn't fully bold in the source document.
+2. Zero em/en dashes (practice style), zero non-breaking spaces (pandoc smart-typography inserts `\xa0` after abbreviations like "Inc."), zero straight double-quotes in curly-quote documents.
+3. No stale party names, share counts, dates, or dollar amounts from the source document (grep for the old values explicitly).
+4. Fonts: single font family across all runs.
+
+If any check fails, fix and re-lint. Never deliver on the first pass without the lint.
+
+---
+
 ## --redline
 
 Generate tracked changes against the original document. This is the full document output pipeline.

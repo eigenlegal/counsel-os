@@ -6,6 +6,14 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.9.43] — 2026-08-14
+
+draft.md: --edit mode for in-place .docx revisions
+
+- new --edit section: revising an existing .docx defaults to apply_redlines.py silent mode (formatting-aware word-level replacement); direct python-docx surgery is for structure only and requires reading redline-output.md's bold-leading-paragraph rules first
+- run-formatting rules: never stuff replacement text into a paragraph's first run (bold lead-in inherits onto the whole paragraph); mirror source run structure; new runs get explicit bold=False and font name/size
+- mandatory post-edit lint: fully-bolded-paragraph check, em/en-dash + NBSP + straight-quote scan, stale party/number/date grep, single-font check
+
 ## [0.9.42] — 2026-08-04
 
 browse: fix daemon leak on restart
