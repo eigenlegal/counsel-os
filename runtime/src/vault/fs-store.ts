@@ -79,6 +79,7 @@ export class FsVaultStore implements VaultStore {
   }
 
   async history(tenant: Tenant, path: string): Promise<Version[]> {
+    this.abs(tenant, path); // Validate path against vault root
     try {
       const text = await readFile(this.historyFile(tenant, path), 'utf8');
       return text.trim().split('\n').filter(Boolean).map(l => (JSON.parse(l) as { version: Version }).version).reverse();

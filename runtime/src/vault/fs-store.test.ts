@@ -52,4 +52,8 @@ describe('FsVaultStore', () => {
   test('version of a missing file is null', async () => {
     expect(await store.version('default', 'missing.md')).toBeNull();
   });
+
+  test('history rejects paths that escape the root', async () => {
+    await expect(store.history('default', '../../etc/passwd')).rejects.toThrow(/outside vault/);
+  });
 });
