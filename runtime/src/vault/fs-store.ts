@@ -6,6 +6,10 @@ import { VaultConflictError } from '../core/types';
 
 export type SearchFn = (query: string, root: string) => Promise<Hit[]>;
 
+/** The store's own directory inside the vault root: version history, and
+ * anything the runtime adds later. Not reachable through the public API. */
+const RESERVED_DIR = '.counsel';
+
 export function hashContent(content: string): Version {
   return createHash('sha256').update(content, 'utf8').digest('hex');
 }
@@ -23,12 +27,24 @@ export class FsVaultStore implements VaultStore {
   private abs(_tenant: Tenant, path: string): string {
     const full = resolve(this.root, path);
     const rel = relative(this.root, full);
-    if (rel.startsWith('..') || rel.split(sep)[0] === '..') throw new Error(`path outside vault: ${path}`);
+    const head = rel.split(sep)[0];
+    // Comparing the first *segment* is the whole escape check. The former
+    // `rel.startsWith('..')` clause added nothing to it and was wrong on its
+    // own terms: it rejected legitimate root files whose name merely begins
+    // with two dots, e.g. `..foo.md`.
+    if (head === '..') throw new Error(`path outside vault: ${path}`);
+    // `.counsel/` is the store's own bookkeeping (version history). It is
+    // inside the vault root, so the escape check above does not cover it, and
+    // a model that can write there can rewrite or erase the audit trail its
+    // own writes are recorded in. `list` already hides it; this closes read
+    // and write too. `historyFile` builds its paths directly and so is
+    // unaffected.
+    if (head === RESERVED_DIR) throw new Error(`reserved path: ${path}`);
     return full;
   }
 
   private historyFile(tenant: Tenant, path: string): string {
-    return join(this.root, '.counsel', 'history', tenant, `${path}.jsonl`);
+    return join(this.root, RESERVED_DIR, 'history', tenant, `${path}.jsonl`);
   }
 
   async read(tenant: Tenant, path: string): Promise<string> {
@@ -66,7 +82,7 @@ export class FsVaultStore implements VaultStore {
     const names = await readdir(full);
     const out: Entry[] = [];
     for (const name of names) {
-      if (name === '.counsel') continue;
+      if (name === RESERVED_DIR) continue;
       const s = await stat(join(full, name));
       out.push({ path: join(dir, name), kind: s.isDirectory() ? 'dir' : 'file' });
     }

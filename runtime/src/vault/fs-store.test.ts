@@ -56,4 +56,26 @@ describe('FsVaultStore', () => {
   test('history rejects paths that escape the root', async () => {
     await expect(store.history('default', '../../etc/passwd')).rejects.toThrow(/outside vault/);
   });
+
+  test('write into .counsel/ is rejected — the version history is not model-writable', async () => {
+    await expect(store.write('default', '.counsel/history/default/x.jsonl', 'tampered')).rejects.toThrow(/reserved/);
+  });
+
+  test('read from .counsel/ is rejected', async () => {
+    await expect(store.read('default', '.counsel/anything')).rejects.toThrow(/reserved/);
+  });
+
+  test('the reserved check is on the whole first segment, not a prefix', async () => {
+    // `.counselor.md` is an ordinary vault file; only `.counsel` itself is reserved.
+    const v = await store.write('default', '.counselor.md', 'fine');
+    expect(await store.read('default', '.counselor.md')).toBe('fine');
+    expect(v).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  test('a root file whose name starts with two dots is a normal file, not an escape', async () => {
+    // The old `rel.startsWith('..')` clause rejected this; `rel.split(sep)[0] === '..'`
+    // is the correct escape check and the only one left.
+    await store.write('default', '..foo.md', 'not an escape');
+    expect(await store.read('default', '..foo.md')).toBe('not an escape');
+  });
 });
