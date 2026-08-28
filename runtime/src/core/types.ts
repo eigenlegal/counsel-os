@@ -114,9 +114,3 @@ export class RouterError extends Error {
   readonly code = 'router';
 }
 
-export class ProviderError extends Error {
-  readonly code = 'provider';
-  constructor(readonly providerId: string, message: string) {
-    super(`${providerId}: ${message}`);
-  }
-}
