@@ -1,4 +1,4 @@
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { z, type ZodType } from 'zod';
@@ -117,10 +117,25 @@ export class ClaudeHarnessProvider implements ModelProvider {
     const prompt = req.messages.map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n\n');
     const cwd = mkdtempSync(join(tmpdir(), 'counsel-cwd-'));
 
-    const stream = query({ prompt, options: buildQueryOptions(req, this.opts.model, server, cwd) });
+    // `query()` throws on a non-zero CLI exit — e.g. the CLI rejecting the
+    // output schema before the turn starts (spike 9.3-B), or not being logged
+    // in. Without this the exception propagates out of the async generator:
+    // the caller gets a stack trace and ZERO StepEvents, which breaks the
+    // "providers report failure as an `error` event, never by throwing"
+    // contract every consumer is written against. `CodexHarnessProvider.run`
+    // does the same.
+    try {
+      const stream = query({ prompt, options: buildQueryOptions(req, this.opts.model, server, cwd) });
 
-    for await (const msg of stream) {
-      for (const ev of mapClaudeMessage(msg, req.outputSchema)) yield ev;
+      for await (const msg of stream) {
+        for (const ev of mapClaudeMessage(msg, req.outputSchema)) yield ev;
+      }
+    } catch (err) {
+      yield { type: 'error', message: `claude harness: ${err instanceof Error ? err.message : String(err)}` };
+    } finally {
+      // One temp cwd per step; without this they accumulate for the life of
+      // the process. Also runs when the consumer abandons the generator early.
+      rmSync(cwd, { recursive: true, force: true });
     }
   }
 }
