@@ -1,0 +1,82 @@
+import { Output, stepCountIs, streamText, tool, type LanguageModel } from 'ai';
+import { anthropic } from '@ai-sdk/anthropic';
+import { openai } from '@ai-sdk/openai';
+import { ollama } from 'ai-sdk-ollama';
+import type { Capabilities, ModelProvider, StepEvent, StepRequest } from '../core/types';
+import { runToolDef } from '../core/fake-provider';
+
+export class DirectProvider implements ModelProvider {
+  readonly id: string;
+  readonly kind = 'direct' as const;
+  readonly capabilities: Capabilities;
+  private readonly model: LanguageModel;
+
+  constructor(opts: { id: string; model: LanguageModel; capabilities: Capabilities }) {
+    this.id = opts.id;
+    this.model = opts.model;
+    this.capabilities = opts.capabilities;
+  }
+
+  async *run(req: StepRequest): AsyncIterable<StepEvent> {
+    const tools = Object.fromEntries(req.tools.map(t => [
+      t.name,
+      tool({
+        description: t.description,
+        inputSchema: t.inputSchema,
+        execute: async (input: unknown) => runToolDef(req.tools, t.name, input, req.tenant),
+      }),
+    ]));
+
+    const result = streamText({
+      model: this.model,
+      system: req.system,
+      messages: req.messages,
+      tools,
+      stopWhen: stepCountIs(req.maxToolCalls ?? 20),
+      ...(req.maxTokens ? { maxOutputTokens: req.maxTokens } : {}),
+      ...(req.outputSchema ? { output: Output.object({ schema: req.outputSchema }) } : {}),
+    });
+
+    for await (const part of result.fullStream) {
+      switch (part.type) {
+        case 'text-delta':
+          yield { type: 'text', text: part.text };
+          break;
+        case 'tool-call':
+          yield { type: 'tool_call', id: part.toolCallId, name: part.toolName, input: part.input };
+          break;
+        case 'tool-result': {
+          const r = part.output as { output: unknown; isError: boolean };
+          yield { type: 'tool_result', id: part.toolCallId, name: part.toolName, output: r.output, isError: r.isError };
+          break;
+        }
+        case 'error':
+          yield { type: 'error', message: String(part.error) };
+          return;
+        case 'finish': {
+          const usage = part.totalUsage;
+          const output = req.outputSchema ? await result.output : await result.text;
+          yield { type: 'done', output, usage: { inputTokens: usage.inputTokens ?? 0, outputTokens: usage.outputTokens ?? 0 } };
+          break;
+        }
+        default:
+          break;
+      }
+    }
+  }
+}
+
+const CAPS: Record<string, Capabilities> = {
+  anthropic: { tools: true, caching: true, thinking: true, contextTokens: 200_000, auth: 'apikey' },
+  openai:    { tools: true, caching: true, thinking: true, contextTokens: 200_000, auth: 'apikey' },
+  ollama:    { tools: true, caching: false, thinking: false, contextTokens: 32_000, auth: 'local' },
+};
+
+export function directProviderFromId(id: string): DirectProvider {
+  const [vendor, ...rest] = id.split('/');
+  const name = rest.join('/');
+  const caps = CAPS[vendor ?? ''];
+  if (!caps || !name) throw new Error(`unknown direct provider id: ${id}`);
+  const model = vendor === 'anthropic' ? anthropic(name) : vendor === 'openai' ? openai(name) : ollama(name);
+  return new DirectProvider({ id, model, capabilities: caps });
+}
