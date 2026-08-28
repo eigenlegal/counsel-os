@@ -117,4 +117,14 @@ describe('buildQueryOptions', () => {
     const schema = (opts.outputFormat as { schema: Record<string, unknown> }).schema;
     expect(schema.$schema).toBeUndefined();
   });
+
+  test('transport vars (proxy / CA) pass through the env pin only when set', () => {
+    const req = { tenant: 'default', system: 's', messages: [], tools: [] };
+    const bare = buildQueryOptions(req, 'm', {}, '/tmp/x', { PATH: '/p', HOME: '/h', USER: 'u' });
+    expect(Object.keys(bare.env ?? {}).sort()).toEqual(['HOME', 'PATH', 'USER']);
+    const proxied = buildQueryOptions(req, 'm', {}, '/tmp/x', { PATH: '/p', HOME: '/h', USER: 'u', HTTPS_PROXY: 'http://px:3128', NODE_EXTRA_CA_CERTS: '/ca.pem', ANTHROPIC_API_KEY: 'sk' });
+    expect(proxied.env?.HTTPS_PROXY).toBe('http://px:3128');
+    expect(proxied.env?.NODE_EXTRA_CA_CERTS).toBe('/ca.pem');
+    expect(proxied.env?.ANTHROPIC_API_KEY).toBeUndefined();
+  });
 });

@@ -5,6 +5,7 @@ import type { ZodType } from 'zod';
 import { Codex, type CodexOptions, type ThreadOptions } from '@openai/codex-sdk';
 import type { Capabilities, ModelProvider, StepEvent, StepRequest, Tenant } from '../core/types';
 import { toHarnessJsonSchema } from './schema';
+import { transportEnv } from './env';
 
 const STDIO_SERVER = resolve(import.meta.dir, '../mcp/stdio.ts');
 
@@ -267,6 +268,8 @@ export function buildCodexEnv(isolatedHome: string, realHome: string, base: Node
     PATH: base.PATH ?? '',
     HOME: base.HOME ?? '',
     CODEX_HOME: isolatedHome,
+    // Proxy / CA transport vars when set (see `transportEnv`); never keys.
+    ...transportEnv(base),
   };
 }
 
@@ -281,8 +284,11 @@ export class CodexHarnessProvider implements ModelProvider {
 
   async *run(req: StepRequest): AsyncIterable<StepEvent> {
     const realHome = process.env.CODEX_HOME ?? join(homedir(), '.codex');
-    const isolatedHome = prepareIsolatedHome(realHome);
-    const cwd = mkdtempSync(join(tmpdir(), 'counsel-cwd-'));
+    // Acquired inside the try: if either temp dir cannot be created the
+    // failure becomes an `error` event, and the finally removes whatever
+    // did get created (the isolated home holds a credential copy).
+    let isolatedHome: string | undefined;
+    let cwd: string | undefined;
 
     // `CodexExec.run` (the SDK's process runner) throws on a non-zero CLI
     // exit — e.g. not logged in, or the CLI binary missing — rather than
@@ -293,6 +299,8 @@ export class CodexHarnessProvider implements ModelProvider {
     // try for the same reason — `buildCodexEnv` throws on a defeated
     // isolation, and that must reach the caller as an `error` event too.
     try {
+      isolatedHome = prepareIsolatedHome(realHome);
+      cwd = mkdtempSync(join(tmpdir(), 'counsel-cwd-'));
       const codex = new Codex({
         ...buildCodexConfig({ vaultRoot: this.opts.vaultRoot, tenant: req.tenant }),
         env: buildCodexEnv(isolatedHome, realHome, process.env),
@@ -319,8 +327,8 @@ export class CodexHarnessProvider implements ModelProvider {
       // `auth.json`; leaving one behind per run would scatter live
       // credentials through the temp directory. This also runs when the
       // consumer abandons the generator early.
-      cleanupIsolatedHome(isolatedHome);
-      rmSync(cwd, { recursive: true, force: true });
+      if (isolatedHome) cleanupIsolatedHome(isolatedHome);
+      if (cwd) rmSync(cwd, { recursive: true, force: true });
     }
   }
 }

@@ -187,4 +187,12 @@ describe('cleanupIsolatedHome', () => {
     cleanupIsolatedHome(isolatedHome);
     expect(() => cleanupIsolatedHome(isolatedHome)).not.toThrow();
   });
+
+  test('transport vars (proxy / CA) pass through buildCodexEnv only when set', () => {
+    const bare = buildCodexEnv('/iso', '/real', { PATH: '/p', HOME: '/h' });
+    expect(Object.keys(bare).sort()).toEqual(['CODEX_HOME', 'HOME', 'PATH']);
+    const proxied = buildCodexEnv('/iso', '/real', { PATH: '/p', HOME: '/h', HTTP_PROXY: 'http://px', OPENAI_API_KEY: 'sk' });
+    expect(proxied.HTTP_PROXY).toBe('http://px');
+    expect(proxied.OPENAI_API_KEY).toBeUndefined();
+  });
 });

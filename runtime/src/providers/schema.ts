@@ -22,20 +22,31 @@ export function toHarnessJsonSchema(schema: ZodType): Record<string, unknown> {
   return sanitize(z.toJSONSchema(schema)) as Record<string, unknown>;
 }
 
-function sanitize(node: unknown): unknown {
-  if (Array.isArray(node)) return node.map(sanitize);
+// Keys whose values are maps of *names* → schemas, not schemas themselves.
+// Inside them, a key like `additionalProperties` is a property name, not a keyword.
+const NAME_MAPS = new Set(['properties', '$defs', 'definitions', 'patternProperties']);
+
+function sanitize(node: unknown, inNameMap = false): unknown {
+  if (Array.isArray(node)) return node.map(n => sanitize(n, false));
   if (node === null || typeof node !== 'object') return node;
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+    if (inNameMap) {
+      // This level is a name → schema map; every key is a name, every value a schema.
+      out[key] = sanitize(value, false);
+      continue;
+    }
     if (key === '$schema') continue;
-    // An object here means "any extra property allowed" in JSON Schema terms;
-    // both harnesses want the boolean form, and `false` (closed object) is the
-    // only one OpenAI strict mode accepts.
-    if (key === 'additionalProperties' && typeof value === 'object' && value !== null) {
+    // An EMPTY object here means "any extra property allowed"; both harnesses
+    // want the boolean form, and `false` is the only one OpenAI strict mode
+    // accepts. A POPULATED object is a value schema (e.g. `z.record`) and
+    // must be kept — collapsing it would make the object unsatisfiable.
+    if (key === 'additionalProperties' && typeof value === 'object' && value !== null && !Array.isArray(value)
+        && Object.keys(value).length === 0) {
       out[key] = false;
       continue;
     }
-    out[key] = sanitize(value);
+    out[key] = sanitize(value, NAME_MAPS.has(key));
   }
   return out;
 }

@@ -70,4 +70,18 @@ describe('toHarnessJsonSchema', () => {
     expect(out).not.toBe(z.toJSONSchema(nested));
     expect((z.toJSONSchema(nested) as Record<string, unknown>).$schema).toBeDefined();
   });
+
+  test('a populated additionalProperties (z.record value schema) is preserved, not collapsed', () => {
+    const out = toHarnessJsonSchema(z.object({ meta: z.record(z.string(), z.string()) }));
+    const meta = (out.properties as Record<string, Record<string, unknown>>).meta!;
+    expect(meta.additionalProperties).toEqual({ type: 'string' });
+  });
+
+  test('properties literally named $schema / additionalProperties are ordinary properties', () => {
+    const out = toHarnessJsonSchema(z.object({ $schema: z.string(), additionalProperties: z.string(), ok: z.string() }));
+    const props = out.properties as Record<string, unknown>;
+    expect(Object.keys(props).sort()).toEqual(['$schema', 'additionalProperties', 'ok']);
+    expect(props.additionalProperties).toEqual({ type: 'string' });
+    expect(out.$schema).toBeUndefined();
+  });
 });

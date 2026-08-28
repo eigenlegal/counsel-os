@@ -6,6 +6,7 @@ import { createSdkMcpServer, query, tool, type McpServerConfig, type Options } f
 import type { Capabilities, ModelProvider, StepEvent, StepRequest } from '../core/types';
 import { toMcpTools } from '../mcp/bridge';
 import { toHarnessJsonSchema } from './schema';
+import { transportEnv } from './env';
 
 const MCP_PREFIX = 'mcp__counsel__';
 const BUILTIN_TOOLS = ['Bash', 'Read', 'Write', 'Edit', 'MultiEdit', 'Glob', 'Grep', 'WebFetch', 'WebSearch', 'Task', 'NotebookEdit', 'TodoWrite'];
@@ -114,7 +115,8 @@ export function buildQueryOptions(req: StepRequest, model: string, server: unkno
     //   env -i PATH=$PATH HOME=$HOME claude -p "say ok"            → not logged in
     //   env -i PATH=$PATH HOME=$HOME USER=$USER claude -p "say ok" → ok
     // Adding LOGNAME / SHELL / TMPDIR / LANG instead does not help.
-    env: { PATH: base.PATH ?? '', HOME: base.HOME ?? '', USER: base.USER ?? '' },
+    // Plus proxy / CA transport vars when set (see `transportEnv`); never keys.
+    env: { PATH: base.PATH ?? '', HOME: base.HOME ?? '', USER: base.USER ?? '', ...transportEnv(base) },
     // Never raw `z.toJSONSchema()` — the CLI rejects its `$schema` key
     // outright (spike 9.3-B). See `toHarnessJsonSchema`.
     ...(req.outputSchema ? { outputFormat: { type: 'json_schema' as const, schema: toHarnessJsonSchema(req.outputSchema) } } : {}),
@@ -138,7 +140,10 @@ export class ClaudeHarnessProvider implements ModelProvider {
     });
     const server = createSdkMcpServer({ name: 'counsel', version: '0.1.0', tools: sdkTools });
     const prompt = req.messages.map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n\n');
-    const cwd = mkdtempSync(join(tmpdir(), 'counsel-cwd-'));
+    // Acquired inside the try so a failure here (e.g. tmpdir unwritable)
+    // reaches the caller as an `error` event and the finally can clean up
+    // whatever was created.
+    let cwd: string | undefined;
 
     // `query()` throws on a non-zero CLI exit — e.g. the CLI rejecting the
     // output schema before the turn starts (spike 9.3-B), or not being logged
@@ -148,6 +153,7 @@ export class ClaudeHarnessProvider implements ModelProvider {
     // contract every consumer is written against. `CodexHarnessProvider.run`
     // does the same.
     try {
+      cwd = mkdtempSync(join(tmpdir(), 'counsel-cwd-'));
       const stream = query({ prompt, options: buildQueryOptions(req, this.opts.model, server, cwd) });
 
       for await (const msg of stream) {
@@ -158,7 +164,7 @@ export class ClaudeHarnessProvider implements ModelProvider {
     } finally {
       // One temp cwd per step; without this they accumulate for the life of
       // the process. Also runs when the consumer abandons the generator early.
-      rmSync(cwd, { recursive: true, force: true });
+      if (cwd) rmSync(cwd, { recursive: true, force: true });
     }
   }
 }
