@@ -29,6 +29,8 @@ independence (OpenAI, Google, open-weight via Ollama) and a hosted option later.
 | Model library | Vercel AI SDK **core only** (`ai` + `@ai-sdk/*` + `ai-sdk-ollama`) behind `ModelProvider` | Widest provider coverage; Apache-2.0; no hosting tie. Never import Gateway, Workflows, Sandbox, AI Elements. |
 | Fallback library | pi-ai or raw SDKs, if the AI SDK blocks a native feature | The `ModelProvider` seam must be small enough to swap in about a week. |
 | Default model | Claude; others supported, not co-equal | Evals and the founder's own practice tune against it. |
+| Auth tiers | Subscription first (Claude Agent SDK on a Pro/Max login; Codex SDK on a ChatGPT login). API keys and Ollama are Settings options. | Lawyers should not need an API key. Verified 2026-08-28: Anthropic permits third-party Agent SDK apps on subscriptions since 2026-06-15 (monthly Agent SDK credit); OpenAI permits ChatGPT-login Codex SDK for personal, single-user use. |
+| Hosted auth | API keys only | Both vendors' terms restrict subscription auth to personal/local use. |
 | Router | Config table: one default + a few per-task rows | No clever routing. Add rows only when a task proves it needs one. |
 | Language | TypeScript on Bun | Same toolchain as `browse/`. Python scripts stay as subprocess tools. |
 | Web stack | Vite + React + TypeScript, static files served by the Bun server | No Next.js; no server rendering needed; avoids Vercel gravity. |
@@ -63,21 +65,36 @@ Out of scope for the first build: hosted deployment, auth, billing, multi-user.
 
 ```ts
 interface ModelProvider {
-  id: string;                       // "anthropic/claude-opus-5", "ollama/qwen3"
-  generate(req: ModelRequest): Promise<ModelResponse>;
-  stream(req: ModelRequest): AsyncIterable<ModelEvent>;
+  id: string;                       // "claude-sub/opus-5", "codex-sub/gpt-5", "anthropic/claude-opus-5", "ollama/qwen3"
+  kind: "direct" | "harness";
+  run(req: StepRequest): AsyncIterable<StepEvent>;
   capabilities: {
     tools: boolean;
     caching: boolean;
     thinking: boolean;
     contextTokens: number;
+    auth: "subscription" | "apikey" | "local";
   };
 }
 ```
 
-`ModelRequest` = system prompt, messages, tool definitions, max tokens. One
-implementation wraps the AI SDK core and covers every provider it supports.
-`capabilities` is read by the router and shown by the UI.
+`StepRequest` = system prompt, messages, tool definitions, optional output
+schema, max tokens. `run` executes one step *to completion*: the model may call
+tools any number of times; the caller receives events (text, tool call, tool
+result, final typed output) and one terminal event. The counsel loop and every
+flow step are the same call.
+
+Two kinds:
+
+- **direct** — wraps the AI SDK core. The runtime runs the tool loop itself
+  (`ToolLoopAgent`). API keys, Ollama, any AI SDK provider.
+- **harness** — wraps the Claude Agent SDK or the Codex SDK. The vendor's own
+  agent loop runs the step. The runtime exposes `VaultStore` and `Tools` to it
+  as an in-process MCP server. Subscription auth; no keys. Prompt caching and
+  thinking are the harness's concern.
+
+`capabilities` is read by the router and shown by the UI. The default install
+uses a harness provider ("sign in with Claude or ChatGPT").
 
 ### 4.2 `VaultStore`
 
@@ -214,14 +231,20 @@ Constraints:
 ## 9. Open items to resolve in the first spike
 
 1. Does the AI SDK Anthropic provider expose prompt caching and extended
-   thinking cleanly? (Cost of long-document review.)
+   thinking cleanly? (Direct tier only; cost of long-document review.)
 2. How reliable is tool calling on local Ollama models through `ai-sdk-ollama`?
    (Viability of the privacy tier.)
+3. Can the Claude Agent SDK and the Codex SDK each (a) attach an in-process MCP
+   server for `VaultStore`/`Tools`, (b) return a typed output for a step, and
+   (c) be restricted to those tools only (no shell, no file access outside the
+   vault)? (Viability of the harness tier as the default.)
 
 ## 10. Build order
 
-1. `runtime/` skeleton: the three interfaces, fs `VaultStore`, AI SDK
-   `ModelProvider`, subprocess `Tools`, router. Spike items 9.1 and 9.2 here.
+1. `runtime/` skeleton: the three interfaces, fs `VaultStore`, harness
+   `ModelProvider` (Claude Agent SDK first, Codex SDK second), direct
+   `ModelProvider` (AI SDK), subprocess `Tools`, in-process MCP server, router.
+   Spike items 9.1–9.3 here.
 2. Counsel loop + HTTP/SSE API. Plugin adapter calls it.
 3. Flow engine + Review flow. Evals through it.
 4. Web UI: matter workspace → review run → chat → settings.
