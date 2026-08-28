@@ -1,5 +1,5 @@
-import { mkdtempSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { copyFileSync, existsSync, mkdtempSync } from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { z, type ZodType } from 'zod';
 import { Codex, type CodexOptions, type ThreadOptions } from '@openai/codex-sdk';
@@ -106,6 +106,11 @@ export function mapCodexEvent(raw: unknown, outputSchema?: ZodType<unknown>, fin
  * matching the SDK README's own documented use of `skipGitRepoCheck`
  * ("To avoid unrecoverable errors, Codex requires the working directory to
  * be a Git repository. You can skip the Git repository check...").
+ *
+ * `webSearchEnabled: false` (index.d.ts:255-256, dist/index.js:225-232)
+ * maps to `--config web_search="disabled"`. Left unset it defaults to on
+ * (round-1 review, "Important 3") — an open network side channel outside
+ * the MCP tool surface this harness is meant to be confined to.
  */
 export function buildThreadOptions(model: string, cwd: string): ThreadOptions {
   return {
@@ -113,6 +118,7 @@ export function buildThreadOptions(model: string, cwd: string): ThreadOptions {
     sandboxMode: 'read-only',
     workingDirectory: cwd,
     skipGitRepoCheck: true,
+    webSearchEnabled: false,
   };
 }
 
@@ -143,6 +149,30 @@ export function buildThreadOptions(model: string, cwd: string): ThreadOptions {
  * comment. `apply_patch`-style file edits run through the same shell
  * mechanism in Codex, so this also covers file writes attempted through it;
  * writes reach the vault only through our own `vault_write` MCP tool.
+ *
+ * The other six flags (round-1 review, "Important 2") cover default-on
+ * capabilities that are also arbitrary-code/exec/side-channel surfaces
+ * distinct from `shell_tool`, all confirmed present via the same `codex
+ * features list`: `unified_exec` (a second, separate exec path — the
+ * feature list groups `shell_snapshot`/`shell_zsh_fork`/`unified_exec_*`
+ * next to `shell_tool` but they are independent flags), `view_image`,
+ * `multi_agent`, `hooks`, `image_generation`, `request_permissions_tool`
+ * (already default-off, disabled explicitly so a future SDK bump flipping
+ * its default doesn't silently reopen it).
+ *
+ * `mcp_servers` and `features` alone are not enough: by default the CLI
+ * also reads the *operator's* `~/.codex/config.toml`, and `config`
+ * overrides here are additive on top of it, not a replacement. Verified on
+ * this machine (round-1 review, "Critical 1"): with only the above
+ * `config`, `codex mcp list` still shows `computer-use`, `counsel`,
+ * `node_repl` (arbitrary code exec, unsandboxed) plus whatever plugins are
+ * configured locally. `CODEX_HOME` isolation (`buildCodexEnv` /
+ * `prepareIsolatedHome`, used by `CodexHarnessProvider.run`) is what
+ * actually prevents that inheritance — confirmed:
+ * `CODEX_HOME=/tmp/emptydir codex -c 'mcp_servers.counsel.command="bun"' mcp list`
+ * → only `counsel`. As a side effect, session transcripts (normally
+ * persisted under `~/.codex/sessions`) land in the isolated temp home
+ * instead of the operator's real one (round-1 review, "Important 4").
  */
 export function buildCodexConfig(opts: { vaultRoot: string; tenant: Tenant }): CodexOptions {
   return {
@@ -156,8 +186,64 @@ export function buildCodexConfig(opts: { vaultRoot: string; tenant: Tenant }): C
       },
       features: {
         shell_tool: false,
+        unified_exec: false,
+        view_image: false,
+        multi_agent: false,
+        hooks: false,
+        image_generation: false,
+        request_permissions_tool: false,
       },
     },
+  };
+}
+
+/**
+ * Creates a fresh, empty `CODEX_HOME` for one harness run and seeds it with
+ * just the credential file so the child CLI process is logged in but has no
+ * other operator state (config.toml, extra MCP servers, plugins, session
+ * history) to inherit — see `buildCodexConfig`'s doc comment for why this
+ * is necessary (`config` overrides are additive, not a replacement for the
+ * operator's `~/.codex/config.toml`).
+ *
+ * Copies (never symlinks) `auth.json` so the child process cannot write
+ * back into the real Codex home through it. If the real home has no
+ * `auth.json` (not logged in), this silently returns an empty isolated
+ * home — the CLI itself will surface its own "not logged in" error when it
+ * runs, which is the desired failure mode rather than duplicating that
+ * check here.
+ */
+export function prepareIsolatedHome(realHome: string): string {
+  const isolatedHome = mkdtempSync(join(tmpdir(), 'counsel-codex-home-'));
+  const authSrc = join(realHome, 'auth.json');
+  if (existsSync(authSrc)) {
+    copyFileSync(authSrc, join(isolatedHome, 'auth.json'));
+  }
+  return isolatedHome;
+}
+
+/**
+ * Pure builder for the child CLI process's environment. `CodexOptions.env`
+ * *replaces* the child's environment rather than extending `process.env`
+ * (index.d.ts:236-239: "When provided, the SDK will not inherit variables
+ * from `process.env`"), so this must supply everything the CLI needs to
+ * run at all (`PATH`, so `bun` — our own MCP server's interpreter, and the
+ * `codex` binary's own subprocess needs — resolves; `HOME`, for anything
+ * downstream that expects it) while deliberately dropping every other
+ * variable in `base` (API keys, unrelated tokens, etc.) so none of it leaks
+ * into the harness's child process. `CODEX_HOME` is pinned to
+ * `isolatedHome` — never `realHome` — which is the actual isolation
+ * mechanism this whole fix is about; the two are asserted distinct so a
+ * caller bug can't accidentally hand the real credentials directory to the
+ * "isolated" slot and silently defeat it.
+ */
+export function buildCodexEnv(isolatedHome: string, realHome: string, base: NodeJS.ProcessEnv): Record<string, string> {
+  if (isolatedHome === realHome) {
+    throw new Error('buildCodexEnv: isolatedHome must not equal the real CODEX_HOME — that would defeat the isolation');
+  }
+  return {
+    PATH: base.PATH ?? '',
+    HOME: base.HOME ?? '',
+    CODEX_HOME: isolatedHome,
   };
 }
 
@@ -171,21 +257,37 @@ export class CodexHarnessProvider implements ModelProvider {
   }
 
   async *run(req: StepRequest): AsyncIterable<StepEvent> {
-    const codex = new Codex(buildCodexConfig({ vaultRoot: this.opts.vaultRoot, tenant: req.tenant }));
+    const realHome = process.env.CODEX_HOME ?? join(homedir(), '.codex');
+    const isolatedHome = prepareIsolatedHome(realHome);
+    const codex = new Codex({
+      ...buildCodexConfig({ vaultRoot: this.opts.vaultRoot, tenant: req.tenant }),
+      env: buildCodexEnv(isolatedHome, realHome, process.env),
+    });
     const cwd = mkdtempSync(join(tmpdir(), 'counsel-cwd-'));
     const thread = codex.startThread(buildThreadOptions(this.opts.model, cwd));
 
     const transcript = req.messages.map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n\n');
     const prompt = `${req.system}\n\n${transcript}`;
-    const { events } = await thread.runStreamed(prompt, req.outputSchema ? { outputSchema: z.toJSONSchema(req.outputSchema) } : {});
 
-    let lastText = '';
-    for await (const ev of events) {
-      const e = ev as AnyEv;
-      if (e.type === 'item.completed' && (e.item as { type?: string })?.type === 'agent_message') {
-        lastText = String((e.item as { text?: string }).text ?? '');
+    // `CodexExec.run` (the SDK's process runner) throws on a non-zero CLI
+    // exit — e.g. not logged in, or the CLI binary missing — rather than
+    // surfacing it as a `ThreadEvent`. Without this, that throw would
+    // propagate out of the async generator instead of yielding a StepEvent,
+    // breaking every caller that only expects `run()` to fail via `error`
+    // events (round-1 review, "Important 5").
+    try {
+      const { events } = await thread.runStreamed(prompt, req.outputSchema ? { outputSchema: z.toJSONSchema(req.outputSchema) } : {});
+
+      let lastText = '';
+      for await (const ev of events) {
+        const e = ev as AnyEv;
+        if (e.type === 'item.completed' && (e.item as { type?: string })?.type === 'agent_message') {
+          lastText = String((e.item as { text?: string }).text ?? '');
+        }
+        for (const out of mapCodexEvent(ev, req.outputSchema, lastText)) yield out;
       }
-      for (const out of mapCodexEvent(ev, req.outputSchema, lastText)) yield out;
+    } catch (err) {
+      yield { type: 'error', message: `codex harness: ${err instanceof Error ? err.message : String(err)}` };
     }
   }
 }

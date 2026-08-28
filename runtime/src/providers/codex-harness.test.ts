@@ -1,6 +1,9 @@
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, test } from 'bun:test';
 import { z } from 'zod';
-import { buildCodexConfig, buildThreadOptions, mapCodexEvent } from './codex-harness';
+import { buildCodexConfig, buildCodexEnv, buildThreadOptions, mapCodexEvent, prepareIsolatedHome } from './codex-harness';
 
 describe('mapCodexEvent', () => {
   test('agent_message → text', () => {
@@ -73,6 +76,11 @@ describe('buildThreadOptions', () => {
     expect(opts.skipGitRepoCheck).toBe(true);
     expect(opts.model).toBe('gpt-5-codex');
   });
+
+  test('web search disabled (index.d.ts:255-256 → --config web_search="disabled"; round-1 review, Important 3)', () => {
+    const opts = buildThreadOptions('gpt-5-codex', '/tmp/counsel-cwd-abc123');
+    expect(opts.webSearchEnabled).toBe(false);
+  });
 });
 
 describe('buildCodexConfig', () => {
@@ -92,5 +100,58 @@ describe('buildCodexConfig', () => {
     const cfg = buildCodexConfig({ vaultRoot: '/vaults/acme', tenant: 'acme' });
     const features = cfg.config!.features as Record<string, unknown>;
     expect(features.shell_tool).toBe(false);
+  });
+
+  test('disables all seven exec/side-channel feature flags (round-1 review, Important 2 — each confirmed present via `codex features list`)', () => {
+    const cfg = buildCodexConfig({ vaultRoot: '/vaults/acme', tenant: 'acme' });
+    const features = cfg.config!.features as Record<string, unknown>;
+    expect(features).toEqual({
+      shell_tool: false,
+      unified_exec: false,
+      view_image: false,
+      multi_agent: false,
+      hooks: false,
+      image_generation: false,
+      request_permissions_tool: false,
+    });
+  });
+});
+
+describe('buildCodexEnv', () => {
+  test('contains exactly PATH/HOME/CODEX_HOME — no other keys from `base` leak through (index.d.ts:236-239: env "replaces", it does not extend, process.env)', () => {
+    const base = { PATH: '/usr/bin:/bin', HOME: '/Users/jack', OPENAI_API_KEY: 'sk-secret', SOME_OTHER_TOKEN: 'x' } as unknown as NodeJS.ProcessEnv;
+    const env = buildCodexEnv('/tmp/isolated-home', '/Users/jack/.codex', base);
+    expect(env).toEqual({ PATH: '/usr/bin:/bin', HOME: '/Users/jack', CODEX_HOME: '/tmp/isolated-home' });
+  });
+
+  test('throws if isolatedHome === realHome — refuses to hand the real credentials dir to the "isolated" slot', () => {
+    expect(() => buildCodexEnv('/Users/jack/.codex', '/Users/jack/.codex', { PATH: '/bin', HOME: '/Users/jack' } as unknown as NodeJS.ProcessEnv)).toThrow();
+  });
+});
+
+describe('prepareIsolatedHome', () => {
+  test('copies auth.json into the isolated home when present in the real one', () => {
+    const realHome = mkdtempSync(join(tmpdir(), 'counsel-real-codex-home-'));
+    writeFileSync(join(realHome, 'auth.json'), '{"token":"real-secret"}');
+
+    const isolatedHome = prepareIsolatedHome(realHome);
+
+    expect(isolatedHome).not.toBe(realHome);
+    expect(existsSync(join(isolatedHome, 'auth.json'))).toBe(true);
+    expect(readFileSync(join(isolatedHome, 'auth.json'), 'utf8')).toBe('{"token":"real-secret"}');
+  });
+
+  test('still returns a usable dir when the real home has no auth.json (not logged in)', () => {
+    const realHome = mkdtempSync(join(tmpdir(), 'counsel-real-codex-home-empty-'));
+
+    const isolatedHome = prepareIsolatedHome(realHome);
+
+    expect(existsSync(isolatedHome)).toBe(true);
+    expect(existsSync(join(isolatedHome, 'auth.json'))).toBe(false);
+  });
+
+  test('returns a dir even when the real home does not exist at all', () => {
+    const isolatedHome = prepareIsolatedHome('/nonexistent/does-not-exist-codex-home');
+    expect(existsSync(isolatedHome)).toBe(true);
   });
 });
