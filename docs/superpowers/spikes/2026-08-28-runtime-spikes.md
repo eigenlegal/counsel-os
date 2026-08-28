@@ -454,3 +454,132 @@ disambiguate the failures above. They re-import the real
 `buildQueryOptions` / `mapClaudeMessage` / `buildCodexConfig` /
 `buildThreadOptions` / `buildCodexEnv` / `mapCodexEvent` and change exactly one
 thing each. Nothing under `runtime/src` was modified for any spike.
+
+---
+
+## Step 2 — resume
+
+Task 1 (`runtime: provider session hook`). Question: does a session captured
+from one `step` actually let a second, independent `step` invocation resume
+it — Claude via `Options.resume`, Codex via `codex.resumeThread(id, ...)` with
+a persistent `CODEX_HOME` — and recall something only the first turn was told?
+
+Budget: 2 Claude calls + 2 Codex calls, both used, none retried. Driver: the
+Task 1 CLI additions — `--session <id>` (both harnesses; parsed into
+`session: { id }` on the `StepRequest`), `--codex-home <dir>` (threaded to
+`CodexHarnessProvider`'s new persistent `homeDir` option), `--cwd <dir>`
+(debug-only pin for the Claude harness's temp cwd — added per the brief in
+case resume needed a stable cwd; turned out not to be needed, see below).
+
+Same temp vault as spikes 9.x: `acme.md` (root) + `matters/beta.md`.
+
+### Claude — `claude-sub/claude-opus-5`
+
+Call 1 — no `--session`, fresh temp cwd (as always):
+
+```bash
+bun runtime/src/cli.ts step --vault <vault> --provider claude-sub/claude-opus-5 \
+  "Remember the word pineapple."
+```
+
+```json
+{"type":"session","id":"4e0914a9-9d0c-465b-9e7c-569029f9405b"}
+{"type":"text","text":"Got it — pineapple. I'll keep it in mind for this conversation."}
+{"type":"done","output":"Got it — pineapple. I'll keep it in mind for this conversation.","usage":{"inputTokens":1335,"outputTokens":26,"costUsd":0.014967},"sessionId":"4e0914a9-9d0c-465b-9e7c-569029f9405b"}
+```
+
+Call 2 — `--session <id from call 1>`, deliberately **no** `--cwd` (a brand
+new `mkdtempSync` cwd, different from call 1's):
+
+```bash
+bun runtime/src/cli.ts step --vault <vault> --provider claude-sub/claude-opus-5 \
+  --session 4e0914a9-9d0c-465b-9e7c-569029f9405b \
+  "What word did I ask you to remember?"
+```
+
+```json
+{"type":"session","id":"4e0914a9-9d0c-465b-9e7c-569029f9405b"}
+{"type":"text","text":"Pineapple."}
+{"type":"done","output":"Pineapple.","usage":{"inputTokens":1400,"outputTokens":8,"costUsd":0.0015265},"sessionId":"4e0914a9-9d0c-465b-9e7c-569029f9405b"}
+```
+
+**PASS.** `resume` worked on the first try, with a *different* cwd on the
+second call — the `--cwd` debug option the brief anticipated needing was not
+needed here; the CLI resolves and reuses the same `session_id` and the model
+answers "Pineapple." with no re-derivation available (nothing else in the
+prompt mentions the word). `--cwd` is kept in `cli.ts` regardless, since the
+brief calls it a useful debug option and this is one data point, not a proof
+it's never needed on another machine or CLI version.
+
+### Codex — `codex-sub/gpt-5.6-terra`
+
+Call 1 — fresh `--codex-home $(mktemp -d)`:
+
+```bash
+CHOME=$(mktemp -d)
+bun runtime/src/cli.ts step --vault <vault> --provider codex-sub/gpt-5.6-terra \
+  --codex-home "$CHOME" "Remember the word pineapple."
+```
+
+```json
+{"type":"session","id":"01a04ac7-79d1-71d2-b101-5b85650e4cda"}
+{"type":"text","text":"I'll save that in your vault."}
+{"type":"tool_call","id":"item_1","name":"vault_list","input":{"dir":"."}}
+{"type":"tool_call","id":"item_2","name":"vault_read","input":{"path":"acme.md"}}
+{"type":"tool_call","id":"item_3","name":"vault_write","input":{"path":"acme.md","content":"# Acme Corp\n\n- Remember: pineapple.\n", ...}}
+{"type":"text","text":"Remembered: pineapple."}
+{"type":"done","output":"Remembered: pineapple.","usage":{"inputTokens":62601,"outputTokens":323},"sessionId":"01a04ac7-79d1-71d2-b101-5b85650e4cda"}
+```
+
+(The model chose to persist the word into the vault via `vault_write` on its
+own initiative — not requested — which matters for reading call 2 below.)
+
+Confirmed `$CHOME` was not removed after call 1 (`resolveCodexHome`'s
+`ephemeral: false` path): `ls "$CHOME"` afterward showed `auth.json`,
+`sessions`, `thread_history_1.sqlite`, and other live Codex state, seeded from
+the real `~/.codex/auth.json`.
+
+Call 2 — same `--codex-home "$CHOME"`, `--session <thread_id from call 1>`:
+
+```bash
+bun runtime/src/cli.ts step --vault <vault> --provider codex-sub/gpt-5.6-terra \
+  --codex-home "$CHOME" --session 01a04ac7-79d1-71d2-b101-5b85650e4cda \
+  "What word did I ask you to remember?"
+```
+
+```json
+{"type":"session","id":"01a04ac7-79d1-71d2-b101-5b85650e4cda"}
+{"type":"text","text":"I'll check the vault."}
+{"type":"tool_call","id":"item_1","name":"vault_search","input":{"query":"Remember"}}
+{"type":"tool_call","id":"item_2","name":"vault_search","input":{"query":"pineapple"}}
+{"type":"tool_call","id":"item_3","name":"vault_list","input":{"dir":"."}}
+{"type":"tool_call","id":"item_4","name":"vault_read","input":{"path":"acme.md"}}
+{"type":"text","text":"Pineapple."}
+{"type":"done","output":"Pineapple.","usage":{"inputTokens":66743,"outputTokens":299},"sessionId":"01a04ac7-79d1-71d2-b101-5b85650e4cda"}
+```
+
+**PASS, with a caveat.** The thread resumed (same `sessionId` echoed back,
+`inputTokens` rose from 62,601 → 66,743 — consistent with the prior turn's
+history being carried forward rather than a fresh thread) and the model
+answered "Pineapple." correctly. But unlike Claude's call 2, the model didn't
+answer straight from conversational memory — it re-verified by searching and
+re-reading the vault file it had itself written in call 1. That file is the
+only place "pineapple" appears outside the resumed thread's own history, so
+this run does not by itself distinguish "the resumed thread remembers the
+word" from "the model is cautious and always checks the vault before
+answering." The `sessionId` continuity and the input-token growth are still
+real, positive evidence that `resumeThread` is wiring up the same thread
+rather than starting a new one; a cleaner follow-up (ask something the
+resumed turn could only answer from conversational memory, with nothing
+written to the vault) is one call outside this task's two-call Codex budget
+and is left for a future spike if the loop's fast-follow needs stronger proof.
+
+### Verdict
+
+| Side | Result |
+|---|---|
+| Claude `resume` | **PASS** — clean recall, no `--cwd` needed |
+| Codex `resumeThread` + persistent `CODEX_HOME` | **PASS** (with the vault-read caveat above) — same `sessionId`, thread state carried forward, correct answer |
+
+No retries were needed on either side; the 2+2 call budget was used exactly
+once per side.
