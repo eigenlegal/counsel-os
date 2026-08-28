@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { z } from 'zod';
 import { buildQueryOptions, mapClaudeMessage } from './claude-harness';
+import { toHarnessJsonSchema } from './schema';
 import type { StepRequest } from '../core/types';
 
 describe('mapClaudeMessage', () => {
@@ -78,6 +79,12 @@ describe('buildQueryOptions', () => {
     expect(without.outputFormat).toBeUndefined();
 
     const withSchema = buildQueryOptions({ ...baseReq, outputSchema: z.object({ a: z.number() }) }, 'claude-opus-5', {}, '/tmp/counsel-cwd');
-    expect(withSchema.outputFormat).toEqual({ type: 'json_schema', schema: z.toJSONSchema(z.object({ a: z.number() })) });
+    expect(withSchema.outputFormat).toEqual({ type: 'json_schema', schema: toHarnessJsonSchema(z.object({ a: z.number() })) });
+  });
+
+  test('the schema is sanitized — a raw $schema key makes the CLI reject the turn (spike 9.3-B)', () => {
+    const opts = buildQueryOptions({ ...baseReq, outputSchema: z.object({ a: z.number() }) }, 'claude-opus-5', {}, '/tmp/counsel-cwd');
+    const schema = (opts.outputFormat as { schema: Record<string, unknown> }).schema;
+    expect(schema.$schema).toBeUndefined();
   });
 });

@@ -1,9 +1,10 @@
 import { copyFileSync, existsSync, mkdtempSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { z, type ZodType } from 'zod';
+import type { ZodType } from 'zod';
 import { Codex, type CodexOptions, type ThreadOptions } from '@openai/codex-sdk';
 import type { Capabilities, ModelProvider, StepEvent, StepRequest, Tenant } from '../core/types';
+import { toHarnessJsonSchema } from './schema';
 
 const STDIO_SERVER = resolve(import.meta.dir, '../mcp/stdio.ts');
 
@@ -276,7 +277,7 @@ export class CodexHarnessProvider implements ModelProvider {
     // breaking every caller that only expects `run()` to fail via `error`
     // events (round-1 review, "Important 5").
     try {
-      const { events } = await thread.runStreamed(prompt, req.outputSchema ? { outputSchema: z.toJSONSchema(req.outputSchema) } : {});
+      const { events } = await thread.runStreamed(prompt, req.outputSchema ? { outputSchema: toHarnessJsonSchema(req.outputSchema) } : {});
 
       let lastText = '';
       for await (const ev of events) {

@@ -5,6 +5,7 @@ import { z, type ZodType } from 'zod';
 import { createSdkMcpServer, query, tool, type McpServerConfig, type Options } from '@anthropic-ai/claude-agent-sdk';
 import type { Capabilities, ModelProvider, StepEvent, StepRequest } from '../core/types';
 import { toMcpTools } from '../mcp/bridge';
+import { toHarnessJsonSchema } from './schema';
 
 const MCP_PREFIX = 'mcp__counsel__';
 const BUILTIN_TOOLS = ['Bash', 'Read', 'Write', 'Edit', 'MultiEdit', 'Glob', 'Grep', 'WebFetch', 'WebSearch', 'Task', 'NotebookEdit', 'TodoWrite'];
@@ -91,7 +92,9 @@ export function buildQueryOptions(req: StepRequest, model: string, server: unkno
     allowDangerouslySkipPermissions: true,
     maxTurns: req.maxToolCalls ?? 20,
     cwd,
-    ...(req.outputSchema ? { outputFormat: { type: 'json_schema' as const, schema: z.toJSONSchema(req.outputSchema) as Record<string, unknown> } } : {}),
+    // Never raw `z.toJSONSchema()` — the CLI rejects its `$schema` key
+    // outright (spike 9.3-B). See `toHarnessJsonSchema`.
+    ...(req.outputSchema ? { outputFormat: { type: 'json_schema' as const, schema: toHarnessJsonSchema(req.outputSchema) } } : {}),
   };
 }
 
