@@ -61,7 +61,7 @@ export function mapClaudeMessage(raw: unknown, outputSchema?: ZodType<unknown>):
  * `createSdkMcpServer`'s call site); it's cast to `McpServerConfig` because
  * that's the shape `Options.mcpServers` actually wants.
  */
-export function buildQueryOptions(req: StepRequest, model: string, server: unknown, cwd: string): Options {
+export function buildQueryOptions(req: StepRequest, model: string, server: unknown, cwd: string, base: NodeJS.ProcessEnv = process.env): Options {
   return {
     model,
     systemPrompt: req.system,
@@ -92,6 +92,23 @@ export function buildQueryOptions(req: StepRequest, model: string, server: unkno
     allowDangerouslySkipPermissions: true,
     maxTurns: req.maxToolCalls ?? 20,
     cwd,
+    // `env` REPLACES the child CLI process's environment. Pinned to the three
+    // variables the CLI needs to run at all: `PATH` (so `bun` and the CLI's
+    // own subprocesses resolve), `HOME`, and `USER`. Everything else in
+    // `base` is deliberately dropped; in particular an ambient
+    // `ANTHROPIC_API_KEY` would silently switch this harness off the
+    // subscription login and onto metered API billing. The codex harness pins
+    // its child env the same way (`buildCodexEnv`).
+    //
+    // `USER` is not optional, and the failure mode is not obvious: with only
+    // PATH+HOME the CLI reports "Not logged in · Please run /login" even on a
+    // live subscription login, because on macOS the credentials live in the
+    // Keychain and the lookup is keyed on `USER`, not on `HOME`. Verified by
+    // bisection against the CLI directly:
+    //   env -i PATH=$PATH HOME=$HOME claude -p "say ok"            → not logged in
+    //   env -i PATH=$PATH HOME=$HOME USER=$USER claude -p "say ok" → ok
+    // Adding LOGNAME / SHELL / TMPDIR / LANG instead does not help.
+    env: { PATH: base.PATH ?? '', HOME: base.HOME ?? '', USER: base.USER ?? '' },
     // Never raw `z.toJSONSchema()` — the CLI rejects its `$schema` key
     // outright (spike 9.3-B). See `toHarnessJsonSchema`.
     ...(req.outputSchema ? { outputFormat: { type: 'json_schema' as const, schema: toHarnessJsonSchema(req.outputSchema) } } : {}),

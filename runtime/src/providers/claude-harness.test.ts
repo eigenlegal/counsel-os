@@ -82,6 +82,20 @@ describe('buildQueryOptions', () => {
     expect(withSchema.outputFormat).toEqual({ type: 'json_schema', schema: toHarnessJsonSchema(z.object({ a: z.number() })) });
   });
 
+  test('pins the child env to PATH/HOME/USER so an ambient ANTHROPIC_API_KEY cannot switch the '
+    + 'subscription login to metered API billing', () => {
+    const base = { PATH: '/x', HOME: '/h', USER: 'u', ANTHROPIC_API_KEY: 'sk' } as unknown as NodeJS.ProcessEnv;
+    const opts = buildQueryOptions(baseReq, 'claude-opus-5', {}, '/tmp/counsel-cwd', base);
+    expect(opts.env).toEqual({ PATH: '/x', HOME: '/h', USER: 'u' });
+  });
+
+  test('USER is part of the pin — without it the CLI reports "Not logged in" on a live '
+    + 'subscription (macOS Keychain lookup is keyed on USER, verified live 2026-08-28)', () => {
+    const base = { PATH: '/x', HOME: '/h', USER: 'u' } as unknown as NodeJS.ProcessEnv;
+    const env = buildQueryOptions(baseReq, 'claude-opus-5', {}, '/tmp/counsel-cwd', base).env!;
+    expect(Object.keys(env).sort()).toEqual(['HOME', 'PATH', 'USER']);
+  });
+
   test('the schema is sanitized — a raw $schema key makes the CLI reject the turn (spike 9.3-B)', () => {
     const opts = buildQueryOptions({ ...baseReq, outputSchema: z.object({ a: z.number() }) }, 'claude-opus-5', {}, '/tmp/counsel-cwd');
     const schema = (opts.outputFormat as { schema: Record<string, unknown> }).schema;
