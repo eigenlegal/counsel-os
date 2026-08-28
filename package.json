@@ -9,11 +9,21 @@
     "evals:self-test": "python3 scripts/run_evals.py --self-test",
     "law:frontmatter": "python3 scripts/validate_law_frontmatter.py",
     "test": "bun test",
+    "test:runtime": "bun test runtime/src",
     "test:server": "bun test browse/src",
-    "typecheck": "tsc --noEmit -p browse/tsconfig.json"
+    "typecheck": "tsc --noEmit -p browse/tsconfig.json",
+    "typecheck:runtime": "tsc --noEmit -p runtime/tsconfig.json"
   },
   "dependencies": {
-    "playwright": "^1.50.0"
+    "@ai-sdk/anthropic": "^4.0.44",
+    "@ai-sdk/openai": "^4.0.50",
+    "@anthropic-ai/claude-agent-sdk": "^0.3.250",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@openai/codex-sdk": "^0.150.1",
+    "ai": "^7.0.83",
+    "ai-sdk-ollama": "^4.2.0",
+    "playwright": "^1.50.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/bun": "^1.3.13",
