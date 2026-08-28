@@ -40,6 +40,22 @@ describe('mapClaudeMessage', () => {
     expect(ev[0]!.type).toBe('error');
   });
 
+  test('inputTokens sums input + cache_read + cache_creation — `input_tokens` alone counts only '
+    + 'the uncached remainder and under-reports by ~600x (spike 9.3-B)', () => {
+    const ev = mapClaudeMessage({
+      type: 'result',
+      subtype: 'success',
+      result: 'ok',
+      usage: { input_tokens: 4, cache_read_input_tokens: 1195, cache_creation_input_tokens: 1316, output_tokens: 5 },
+    });
+    expect(ev).toEqual([{ type: 'done', output: 'ok', usage: { inputTokens: 2515, outputTokens: 5 } }]);
+  });
+
+  test('a usage object with no cache fields still reports plain input_tokens', () => {
+    const ev = mapClaudeMessage({ type: 'result', subtype: 'success', result: 'ok', usage: { input_tokens: 10, output_tokens: 5 } });
+    expect(ev).toEqual([{ type: 'done', output: 'ok', usage: { inputTokens: 10, outputTokens: 5 } }]);
+  });
+
   test('result with the real SDK field name structured_output → done', () => {
     const ev = mapClaudeMessage({ type: 'result', subtype: 'success', structured_output: { a: 1 }, usage: {} }, z.object({ a: z.number() }));
     expect(ev).toEqual([{ type: 'done', output: { a: 1 }, usage: { inputTokens: 0, outputTokens: 0 } }]);

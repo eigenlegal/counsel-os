@@ -31,8 +31,14 @@ export function mapClaudeMessage(raw: unknown, outputSchema?: ZodType<unknown>):
     return out;
   }
   if (msg.type === 'result') {
-    const usage = (msg.usage ?? {}) as { input_tokens?: number; output_tokens?: number };
-    const u = { inputTokens: usage.input_tokens ?? 0, outputTokens: usage.output_tokens ?? 0, ...(typeof msg.total_cost_usd === 'number' ? { costUsd: msg.total_cost_usd } : {}) };
+    const usage = (msg.usage ?? {}) as { input_tokens?: number; output_tokens?: number; cache_read_input_tokens?: number; cache_creation_input_tokens?: number };
+    // The harness caches the prompt, so `input_tokens` alone counts only the
+    // uncached remainder and under-reports by orders of magnitude: spike 9.3-B
+    // saw input_tokens 4 against cache_read 1195 + cache_creation 1316. Every
+    // budget, quota, and context-pressure check reads this number, so it has
+    // to be the whole input.
+    const inputTokens = (usage.input_tokens ?? 0) + (usage.cache_read_input_tokens ?? 0) + (usage.cache_creation_input_tokens ?? 0);
+    const u = { inputTokens, outputTokens: usage.output_tokens ?? 0, ...(typeof msg.total_cost_usd === 'number' ? { costUsd: msg.total_cost_usd } : {}) };
     if (msg.subtype !== 'success') return [{ type: 'error', message: `claude harness: ${String(msg.subtype)}` }];
     // A "success" subtype result can still carry is_error:true (e.g. the turn
     // ended on an API error whose text landed in `result`) — treat that as an
