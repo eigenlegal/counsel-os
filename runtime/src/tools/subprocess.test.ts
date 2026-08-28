@@ -19,4 +19,25 @@ describe('pythonScriptTool', () => {
     expect(r.stdout.trim()).toBe('hello world');
     expect(r.exitCode).toBe(3);
   });
+
+  test('captures stderr', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'py-'));
+    const script = join(dir, 'err.py');
+    writeFileSync(script, 'import sys; sys.stderr.write("bad\\n"); sys.exit(1)\n');
+    const tool = pythonScriptTool({ name: 'err', description: 'err', script, platforms: ['macos', 'linux'], inputSchema: z.object({}), args: () => [] });
+    const r = await tool.execute({}, { tenant: 'default' });
+    expect(r.stderr.trim()).toBe('bad');
+    expect(r.exitCode).toBe(1);
+  });
+
+  test('kills the process on timeout', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'py-'));
+    const script = join(dir, 'sleep.py');
+    writeFileSync(script, 'import time; time.sleep(10)\n');
+    const tool = pythonScriptTool({ name: 'sleep', description: 'sleep', script, platforms: ['macos', 'linux'], inputSchema: z.object({}), args: () => [], timeoutMs: 200 });
+    const t0 = Date.now();
+    const r = await tool.execute({}, { tenant: 'default' });
+    expect(Date.now() - t0).toBeLessThan(5000);
+    expect(r.exitCode).not.toBe(0);
+  });
 });

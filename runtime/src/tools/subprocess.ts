@@ -25,13 +25,16 @@ export function pythonScriptTool<I>(opts: {
         stderr: 'pipe',
       });
       const timer = setTimeout(() => proc.kill(), opts.timeoutMs ?? 120_000);
-      const [stdout, stderr, exitCode] = await Promise.all([
-        new Response(proc.stdout).text(),
-        new Response(proc.stderr).text(),
-        proc.exited,
-      ]);
-      clearTimeout(timer);
-      return { stdout, stderr, exitCode };
+      try {
+        const [stdout, stderr, exitCode] = await Promise.all([
+          new Response(proc.stdout).text(),
+          new Response(proc.stderr).text(),
+          proc.exited,
+        ]);
+        return { stdout, stderr, exitCode };
+      } finally {
+        clearTimeout(timer);
+      }
     },
   };
 }
