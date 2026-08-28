@@ -30,4 +30,11 @@ describe('FakeModelProvider', () => {
     const events = await collect(p.run({ tenant: 'default', system: '', messages: [], tools: [] }));
     expect((events[1] as any).isError).toBe(true);
   });
+
+  test('invalid input yields an error tool_result, not a throw', async () => {
+    const p = new FakeModelProvider([{ toolCalls: [{ name: 'echo', input: { s: 123 } }] }]);
+    const events = await collect(p.run({ tenant: 'default', system: '', messages: [], tools: [echo] }));
+    expect((events[1] as any).isError).toBe(true);
+    expect(String((events[1] as any).output)).toMatch(/invalid input/);
+  });
 });
