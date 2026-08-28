@@ -22,4 +22,14 @@ describe('vault tools', () => {
     expect(stale.isError).toBe(true);
     expect(String(stale.output)).toMatch(/conflict/);
   });
+
+  test('every path/dir tool states that paths are vault-relative — models otherwise open with '
+    + '`{"dir": "/"}` and burn a call recovering from `path outside vault: /` (spike 9.3-D)', () => {
+    const tools = vaultTools(new FsVaultStore(mkdtempSync(join(tmpdir(), 'vt-'))));
+    for (const name of ['vault_read', 'vault_write', 'vault_list']) {
+      const t = tools.find(x => x.name === name)!;
+      expect(t.description).toContain('relative to the vault root');
+      expect(t.description).toContain('use `.` for the root');
+    }
+  });
 });

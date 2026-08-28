@@ -72,6 +72,23 @@ describe('FsVaultStore', () => {
     expect(v).toMatch(/^[0-9a-f]{64}$/);
   });
 
+  test("list accepts both '' and '.' for the root — local models send either", async () => {
+    // Across the ten Ollama spike runs `vault_list` was called with `{"dir":"."}`
+    // seven times and `{"dir":""}` three times (spike 9.2). Tolerating both is
+    // load-bearing for the local tier, so it is pinned here.
+    await store.write('default', 'acme.md', '# Acme');
+    await store.write('default', 'matters/beta.md', '# Beta');
+
+    const empty = await store.list('default', '');
+    const dot = await store.list('default', '.');
+    const shape = (entries: Awaited<ReturnType<typeof store.list>>) => entries.map(e => `${e.kind}:${e.path}`).sort();
+
+    expect(shape(empty)).toEqual(['dir:matters', 'file:acme.md']);
+    // Identical, not merely equivalent: `join('.', name)` normalizes away the
+    // leading `./`, so neither caller sees a different path shape.
+    expect(shape(dot)).toEqual(shape(empty));
+  });
+
   test('a root file whose name starts with two dots is a normal file, not an escape', async () => {
     // The old `rel.startsWith('..')` clause rejected this; `rel.split(sep)[0] === '..'`
     // is the correct escape check and the only one left.
