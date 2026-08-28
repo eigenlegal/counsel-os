@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdtempSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import type { ZodType } from 'zod';
@@ -183,6 +183,17 @@ export function buildCodexConfig(opts: { vaultRoot: string; tenant: Tenant }): C
           command: 'bun',
           args: [STDIO_SERVER],
           env: { COUNSEL_VAULT: opts.vaultRoot, COUNSEL_TENANT: opts.tenant },
+          // Without this, EVERY MCP tool call is denied with "MCP tool call
+          // requires approval, but approval policy is never" — the thread's
+          // `approvalPolicy` default of `never` means *deny*, not *allow*
+          // (spike 9.3-D). The step still exits 0 with a confident wrong
+          // answer, so it is a silent failure. The valid values come from the
+          // CLI's own config error (`unknown variant, expected one of `auto`,
+          // `prompt`, `writes`, `approve``); `auto` was tried first and is
+          // still denied — `approve` is the one that pre-approves this
+          // server's tools. Safe here because the server is ours and exposes
+          // only the runtime's own vault tools.
+          default_tools_approval_mode: 'approve',
         },
       },
       features: {
@@ -223,6 +234,17 @@ export function prepareIsolatedHome(realHome: string): string {
 }
 
 /**
+ * Removes an isolated `CODEX_HOME` created by `prepareIsolatedHome`. That
+ * directory holds a plaintext copy of the operator's `auth.json`, so it must
+ * not outlive the run that needed it. `force: true` makes this safe to call
+ * unconditionally from a `finally`, including when the directory was never
+ * created.
+ */
+export function cleanupIsolatedHome(isolatedHome: string): void {
+  rmSync(isolatedHome, { recursive: true, force: true });
+}
+
+/**
  * Pure builder for the child CLI process's environment. `CodexOptions.env`
  * *replaces* the child's environment rather than extending `process.env`
  * (index.d.ts:236-239: "When provided, the SDK will not inherit variables
@@ -260,23 +282,26 @@ export class CodexHarnessProvider implements ModelProvider {
   async *run(req: StepRequest): AsyncIterable<StepEvent> {
     const realHome = process.env.CODEX_HOME ?? join(homedir(), '.codex');
     const isolatedHome = prepareIsolatedHome(realHome);
-    const codex = new Codex({
-      ...buildCodexConfig({ vaultRoot: this.opts.vaultRoot, tenant: req.tenant }),
-      env: buildCodexEnv(isolatedHome, realHome, process.env),
-    });
     const cwd = mkdtempSync(join(tmpdir(), 'counsel-cwd-'));
-    const thread = codex.startThread(buildThreadOptions(this.opts.model, cwd));
-
-    const transcript = req.messages.map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n\n');
-    const prompt = `${req.system}\n\n${transcript}`;
 
     // `CodexExec.run` (the SDK's process runner) throws on a non-zero CLI
     // exit — e.g. not logged in, or the CLI binary missing — rather than
     // surfacing it as a `ThreadEvent`. Without this, that throw would
     // propagate out of the async generator instead of yielding a StepEvent,
     // breaking every caller that only expects `run()` to fail via `error`
-    // events (round-1 review, "Important 5").
+    // events (round-1 review, "Important 5"). The setup calls are inside the
+    // try for the same reason — `buildCodexEnv` throws on a defeated
+    // isolation, and that must reach the caller as an `error` event too.
     try {
+      const codex = new Codex({
+        ...buildCodexConfig({ vaultRoot: this.opts.vaultRoot, tenant: req.tenant }),
+        env: buildCodexEnv(isolatedHome, realHome, process.env),
+      });
+      const thread = codex.startThread(buildThreadOptions(this.opts.model, cwd));
+
+      const transcript = req.messages.map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n\n');
+      const prompt = `${req.system}\n\n${transcript}`;
+
       const { events } = await thread.runStreamed(prompt, req.outputSchema ? { outputSchema: toHarnessJsonSchema(req.outputSchema) } : {});
 
       let lastText = '';
@@ -289,6 +314,13 @@ export class CodexHarnessProvider implements ModelProvider {
       }
     } catch (err) {
       yield { type: 'error', message: `codex harness: ${err instanceof Error ? err.message : String(err)}` };
+    } finally {
+      // The isolated home holds a plaintext copy of the operator's
+      // `auth.json`; leaving one behind per run would scatter live
+      // credentials through the temp directory. This also runs when the
+      // consumer abandons the generator early.
+      cleanupIsolatedHome(isolatedHome);
+      rmSync(cwd, { recursive: true, force: true });
     }
   }
 }

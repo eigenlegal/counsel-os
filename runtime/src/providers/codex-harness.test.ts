@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, test } from 'bun:test';
 import { z } from 'zod';
-import { buildCodexConfig, buildCodexEnv, buildThreadOptions, mapCodexEvent, prepareIsolatedHome } from './codex-harness';
+import { buildCodexConfig, buildCodexEnv, buildThreadOptions, cleanupIsolatedHome, mapCodexEvent, prepareIsolatedHome } from './codex-harness';
 
 describe('mapCodexEvent', () => {
   test('agent_message → text', () => {
@@ -93,6 +93,16 @@ describe('buildCodexConfig', () => {
     expect(counsel.env).toEqual({ COUNSEL_VAULT: '/vaults/acme', COUNSEL_TENANT: 'acme' });
   });
 
+  test('pre-approves the counsel server\'s tools with default_tools_approval_mode "approve" — '
+    + 'the thread\'s `approvalPolicy` default of `never` means DENY, so without this every MCP '
+    + 'tool call fails with "MCP tool call requires approval, but approval policy is never" and '
+    + 'the step still exits 0 with a wrong answer (spike 9.3-D). "auto" does NOT work; "approve" does', () => {
+    const cfg = buildCodexConfig({ vaultRoot: '/vaults/acme', tenant: 'acme' });
+    const mcp = cfg.config!.mcp_servers as Record<string, unknown>;
+    const counsel = mcp.counsel as Record<string, unknown>;
+    expect(counsel.default_tools_approval_mode).toBe('approve');
+  });
+
   test('disables the shell tool entirely — sandboxMode alone only restricts shell writes, it does not remove the tool ' +
     '(codex exec --help: "-s/--sandbox ... policy to use when executing model-generated shell commands"); ' +
     '`codex features list` shows shell_tool: stable, default true, toggled via `-c features.shell_tool=false` ' +
@@ -153,5 +163,28 @@ describe('prepareIsolatedHome', () => {
   test('returns a dir even when the real home does not exist at all', () => {
     const isolatedHome = prepareIsolatedHome('/nonexistent/does-not-exist-codex-home');
     expect(existsSync(isolatedHome)).toBe(true);
+  });
+});
+
+describe('cleanupIsolatedHome', () => {
+  test('removes the isolated home and the plaintext auth.json copy inside it', () => {
+    const realHome = mkdtempSync(join(tmpdir(), 'counsel-real-codex-home-'));
+    writeFileSync(join(realHome, 'auth.json'), '{"token":"real-secret"}');
+
+    const isolatedHome = prepareIsolatedHome(realHome);
+    expect(existsSync(join(isolatedHome, 'auth.json'))).toBe(true);
+
+    cleanupIsolatedHome(isolatedHome);
+
+    expect(existsSync(join(isolatedHome, 'auth.json'))).toBe(false);
+    expect(existsSync(isolatedHome)).toBe(false);
+    // The credentials it was copied FROM must be untouched.
+    expect(existsSync(join(realHome, 'auth.json'))).toBe(true);
+  });
+
+  test('is safe to call from a finally on a directory that is already gone', () => {
+    const isolatedHome = prepareIsolatedHome(mkdtempSync(join(tmpdir(), 'counsel-real-codex-home-')));
+    cleanupIsolatedHome(isolatedHome);
+    expect(() => cleanupIsolatedHome(isolatedHome)).not.toThrow();
   });
 });
