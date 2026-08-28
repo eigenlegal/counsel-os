@@ -50,13 +50,29 @@ export class DirectProvider implements ModelProvider {
           yield { type: 'tool_result', id: part.toolCallId, name: part.toolName, output: r.output, isError: r.isError };
           break;
         }
+        case 'tool-error':
+          // Invalid tool arguments or an unknown tool name: the SDK enqueues
+          // `tool-call` then `tool-error` without ever calling `execute`
+          // (node_modules/ai/dist/index.js ~8874-8894), so without this case
+          // consumers would see an orphaned `tool_call` with no matching
+          // result. Surface it as a failed tool_result instead, same shape
+          // `runToolDef` uses for its own failures, so the model sees it as
+          // data it can react to.
+          yield { type: 'tool_result', id: part.toolCallId, name: part.toolName, output: part.error instanceof Error ? part.error.message : String(part.error), isError: true };
+          break;
         case 'error':
           yield { type: 'error', message: String(part.error) };
           return;
         case 'finish': {
           const usage = part.totalUsage;
-          const output = req.outputSchema ? await result.output : await result.text;
-          yield { type: 'done', output, usage: { inputTokens: usage.inputTokens ?? 0, outputTokens: usage.outputTokens ?? 0 } };
+          try {
+            const output = req.outputSchema ? await result.output : await result.text;
+            yield { type: 'done', output, usage: { inputTokens: usage.inputTokens ?? 0, outputTokens: usage.outputTokens ?? 0 } };
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            yield { type: 'error', message: `structured output failed validation: ${msg}` };
+            return;
+          }
           break;
         }
         default:
