@@ -1,0 +1,96 @@
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { z, type ZodType } from 'zod';
+import { createSdkMcpServer, query, tool } from '@anthropic-ai/claude-agent-sdk';
+import type { Capabilities, ModelProvider, StepEvent, StepRequest } from '../core/types';
+import { toMcpTools } from '../mcp/bridge';
+
+const MCP_PREFIX = 'mcp__counsel__';
+const BUILTIN_TOOLS = ['Bash', 'Read', 'Write', 'Edit', 'MultiEdit', 'Glob', 'Grep', 'WebFetch', 'WebSearch', 'Task', 'NotebookEdit', 'TodoWrite'];
+
+type AnyMsg = { type: string; [k: string]: unknown };
+
+export function mapClaudeMessage(raw: unknown, outputSchema?: ZodType<unknown>): StepEvent[] {
+  const msg = raw as AnyMsg;
+  const out: StepEvent[] = [];
+  if (msg.type === 'assistant' || msg.type === 'user') {
+    const content = ((msg.message as { content?: unknown[] })?.content ?? []) as Array<Record<string, unknown>>;
+    for (const block of content) {
+      if (block.type === 'text' && typeof block.text === 'string') out.push({ type: 'text', text: block.text });
+      else if (block.type === 'tool_use') {
+        const name = String(block.name);
+        out.push({ type: 'tool_call', id: String(block.id), name: name.startsWith(MCP_PREFIX) ? name.slice(MCP_PREFIX.length) : name, input: block.input });
+      } else if (block.type === 'tool_result') {
+        const parts = Array.isArray(block.content) ? block.content as Array<{ type: string; text?: string }> : [];
+        const text = parts.filter(p => p.type === 'text').map(p => p.text ?? '').join('');
+        out.push({ type: 'tool_result', id: String(block.tool_use_id), name: '', output: text || block.content, isError: Boolean(block.is_error) });
+      }
+    }
+    return out;
+  }
+  if (msg.type === 'result') {
+    const usage = (msg.usage ?? {}) as { input_tokens?: number; output_tokens?: number };
+    const u = { inputTokens: usage.input_tokens ?? 0, outputTokens: usage.output_tokens ?? 0, ...(typeof msg.total_cost_usd === 'number' ? { costUsd: msg.total_cost_usd } : {}) };
+    if (msg.subtype !== 'success') return [{ type: 'error', message: `claude harness: ${String(msg.subtype)}` }];
+    if (outputSchema) {
+      // Installed SDK (0.3.250) names this field `structured_output` on
+      // SDKResultSuccess (sdk.d.ts:4751), not `output`. Accept either key so
+      // the mapper reads real SDK payloads as well as the brief's `output`
+      // fixture shape.
+      const structuredOutput = 'structured_output' in msg ? msg.structured_output : msg.output;
+      const parsed = outputSchema.safeParse(structuredOutput);
+      if (!parsed.success) return [{ type: 'error', message: `structured output failed validation: ${parsed.error.message}` }];
+      return [{ type: 'done', output: parsed.data, usage: u }];
+    }
+    return [{ type: 'done', output: typeof msg.result === 'string' ? msg.result : null, usage: u }];
+  }
+  return out;
+}
+
+export class ClaudeHarnessProvider implements ModelProvider {
+  readonly id: string;
+  readonly kind = 'harness' as const;
+  readonly capabilities: Capabilities = { tools: true, caching: true, thinking: true, contextTokens: 200_000, auth: 'subscription' };
+
+  constructor(private readonly opts: { model: string; id?: string }) {
+    this.id = opts.id ?? `claude-sub/${opts.model}`;
+  }
+
+  async *run(req: StepRequest): AsyncIterable<StepEvent> {
+    const specs = toMcpTools(req.tools, req.tenant);
+    const sdkTools = specs.map(s => {
+      const shape = (s.zodSchema as z.ZodObject<z.ZodRawShape>).shape;
+      return tool(s.name, s.description, shape, async (input: unknown) => s.handler(input));
+    });
+    const server = createSdkMcpServer({ name: 'counsel', version: '0.1.0', tools: sdkTools });
+    const prompt = req.messages.map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n\n');
+
+    const stream = query({
+      prompt,
+      options: {
+        model: this.opts.model,
+        systemPrompt: req.system,
+        mcpServers: { counsel: server },
+        strictMcpConfig: true,
+        allowedTools: [`${MCP_PREFIX}*`],
+        disallowedTools: BUILTIN_TOOLS,
+        permissionMode: 'bypassPermissions',
+        // Required alongside permissionMode: 'bypassPermissions' — sdk.d.ts:1833-1836
+        // ("Must be set to `true` when using `permissionMode: 'bypassPermissions'`.
+        // This is a safety measure to ensure intentional bypassing of permissions.")
+        // Not in the brief's snippet; added because the type's own doc comment
+        // says bypassPermissions requires it. Safety still comes from the tool
+        // restriction (allowedTools/disallowedTools), not from this flag.
+        allowDangerouslySkipPermissions: true,
+        maxTurns: req.maxToolCalls ?? 20,
+        cwd: mkdtempSync(join(tmpdir(), 'counsel-cwd-')),
+        ...(req.outputSchema ? { outputFormat: { type: 'json_schema' as const, schema: z.toJSONSchema(req.outputSchema) as Record<string, unknown> } } : {}),
+      },
+    });
+
+    for await (const msg of stream) {
+      for (const ev of mapClaudeMessage(msg, req.outputSchema)) yield ev;
+    }
+  }
+}
