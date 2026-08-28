@@ -1,15 +1,15 @@
 #!/usr/bin/env bun
 import { parseArgs } from 'node:util';
 import { readFileSync } from 'node:fs';
-import { resolve, join } from 'node:path';
+import { resolve } from 'node:path';
 import { z } from 'zod';
 import { FsVaultStore } from './vault/fs-store';
 import { vaultTools } from './vault/vault-tools';
 import { ToolRegistry } from './tools/registry';
-import { pythonScriptTool } from './tools/subprocess';
+import { builtinTools } from './tools/builtin';
 import { Router, parseRouterConfig } from './router/router';
 import { buildProviders } from './providers/index';
-import { DEFAULT_TENANT, isTerminal } from './core/types';
+import { DEFAULT_TENANT, isTerminal, type ModelProvider } from './core/types';
 
 const { values, positionals } = parseArgs({
   args: Bun.argv.slice(2),
@@ -30,25 +30,26 @@ if (cmd !== 'step' || !values.vault || !values.provider || rest.length === 0) {
 }
 
 const vaultRoot = resolve(values.vault);
+const repoRoot = resolve(import.meta.dir, '../..');
 const store = new FsVaultStore(vaultRoot);
 const registry = new ToolRegistry();
-registry.register(pythonScriptTool({
-  name: 'docket_sweep',
-  description: 'Sweep the vault for upcoming deadlines (read-only). Reads matter markdown files under <vault>/matters.',
-  script: resolve(import.meta.dir, '../../scripts/docket_sweep.py'),
-  platforms: ['macos', 'linux', 'windows', 'hosted'],
-  inputSchema: z.object({ days: z.number().int().positive().default(60) }),
-  args: ({ days }) => [join(vaultRoot, 'matters'), '--window', String(days), '--format', 'json'],
-  cwd: resolve(import.meta.dir, '../..'),
-}));
+for (const t of builtinTools({ vaultRoot, repoRoot })) registry.register(t);
 
-const providers = buildProviders({ ids: [values.provider], vaultRoot });
-const router = new Router(parseRouterConfig(`default: ${values.provider}\n`), providers);
-const provider = router.resolve(values.task);
-
-const outputSchema = values.schema
-  ? z.fromJSONSchema(JSON.parse(readFileSync(values.schema, 'utf8')) as Record<string, unknown>)
-  : undefined;
+let provider: ModelProvider;
+let outputSchema: z.ZodType | undefined;
+try {
+  const providers = buildProviders({ ids: [values.provider], vaultRoot });
+  const router = new Router(parseRouterConfig(`default: ${values.provider}\n`), providers);
+  // --task only has effect once a `tasks:` block exists in the router config;
+  // this CLI always builds a bare `default: <provider>` config, so today it's a no-op.
+  provider = router.resolve(values.task);
+  outputSchema = values.schema
+    ? z.fromJSONSchema(JSON.parse(readFileSync(values.schema, 'utf8')) as Record<string, unknown>)
+    : undefined;
+} catch (err) {
+  console.log(JSON.stringify({ type: 'error', message: err instanceof Error ? err.message : String(err) }));
+  process.exit(1);
+}
 
 const tools = [...vaultTools(store), ...registry.available()];
 let exit = 1;
