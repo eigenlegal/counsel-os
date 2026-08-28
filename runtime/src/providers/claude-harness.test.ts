@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { z } from 'zod';
-import { mapClaudeMessage } from './claude-harness';
+import { buildQueryOptions, mapClaudeMessage } from './claude-harness';
+import type { StepRequest } from '../core/types';
 
 describe('mapClaudeMessage', () => {
   test('assistant text → text event', () => {
@@ -31,5 +32,52 @@ describe('mapClaudeMessage', () => {
   test('result error subtype → error', () => {
     const ev = mapClaudeMessage({ type: 'result', subtype: 'error_max_turns', usage: {} });
     expect(ev[0]!.type).toBe('error');
+  });
+
+  test('result success with is_error:true → error (not done)', () => {
+    const ev = mapClaudeMessage({ type: 'result', subtype: 'success', is_error: true, result: 'boom', usage: {} });
+    expect(ev[0]!.type).toBe('error');
+  });
+
+  test('result with the real SDK field name structured_output → done', () => {
+    const ev = mapClaudeMessage({ type: 'result', subtype: 'success', structured_output: { a: 1 }, usage: {} }, z.object({ a: z.number() }));
+    expect(ev).toEqual([{ type: 'done', output: { a: 1 }, usage: { inputTokens: 0, outputTokens: 0 } }]);
+  });
+});
+
+describe('buildQueryOptions', () => {
+  const baseReq: StepRequest = { tenant: 'default', system: 'You are a helpful assistant.', messages: [], tools: [] };
+
+  test('disables built-in tools with tools:[], auto-approves ours, keeps disallowedTools belt-and-braces', () => {
+    const opts = buildQueryOptions(baseReq, 'claude-opus-5', {}, '/tmp/counsel-cwd');
+    expect(opts.tools).toEqual([]);
+    expect(opts.allowedTools).toEqual(['mcp__counsel__*']);
+    expect(opts.disallowedTools).toContain('Bash');
+  });
+
+  test('isolates from the operator\'s filesystem settings with settingSources:[]', () => {
+    const opts = buildQueryOptions(baseReq, 'claude-opus-5', {}, '/tmp/counsel-cwd');
+    expect(opts.settingSources).toEqual([]);
+  });
+
+  test('plain-string system prompt, not the claude_code preset', () => {
+    const opts = buildQueryOptions(baseReq, 'claude-opus-5', {}, '/tmp/counsel-cwd');
+    expect(typeof opts.systemPrompt).toBe('string');
+    expect(opts.systemPrompt).toBe(baseReq.system);
+  });
+
+  test('bypasses permission prompts with the required safety ack, and locks mcp config to what we pass', () => {
+    const opts = buildQueryOptions(baseReq, 'claude-opus-5', {}, '/tmp/counsel-cwd');
+    expect(opts.permissionMode).toBe('bypassPermissions');
+    expect(opts.allowDangerouslySkipPermissions).toBe(true);
+    expect(opts.strictMcpConfig).toBe(true);
+  });
+
+  test('outputFormat is present only when req.outputSchema is set', () => {
+    const without = buildQueryOptions(baseReq, 'claude-opus-5', {}, '/tmp/counsel-cwd');
+    expect(without.outputFormat).toBeUndefined();
+
+    const withSchema = buildQueryOptions({ ...baseReq, outputSchema: z.object({ a: z.number() }) }, 'claude-opus-5', {}, '/tmp/counsel-cwd');
+    expect(withSchema.outputFormat).toEqual({ type: 'json_schema', schema: z.toJSONSchema(z.object({ a: z.number() })) });
   });
 });

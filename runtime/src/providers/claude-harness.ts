@@ -2,7 +2,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { z, type ZodType } from 'zod';
-import { createSdkMcpServer, query, tool } from '@anthropic-ai/claude-agent-sdk';
+import { createSdkMcpServer, query, tool, type McpServerConfig, type Options } from '@anthropic-ai/claude-agent-sdk';
 import type { Capabilities, ModelProvider, StepEvent, StepRequest } from '../core/types';
 import { toMcpTools } from '../mcp/bridge';
 
@@ -33,6 +33,10 @@ export function mapClaudeMessage(raw: unknown, outputSchema?: ZodType<unknown>):
     const usage = (msg.usage ?? {}) as { input_tokens?: number; output_tokens?: number };
     const u = { inputTokens: usage.input_tokens ?? 0, outputTokens: usage.output_tokens ?? 0, ...(typeof msg.total_cost_usd === 'number' ? { costUsd: msg.total_cost_usd } : {}) };
     if (msg.subtype !== 'success') return [{ type: 'error', message: `claude harness: ${String(msg.subtype)}` }];
+    // A "success" subtype result can still carry is_error:true (e.g. the turn
+    // ended on an API error whose text landed in `result`) — treat that as an
+    // error, not a done, per SDKResultSuccess's own `is_error`/`result` fields.
+    if (msg.is_error === true) return [{ type: 'error', message: `claude harness: ${String(msg.result ?? msg.subtype)}` }];
     if (outputSchema) {
       // Installed SDK (0.3.250) names this field `structured_output` on
       // SDKResultSuccess (sdk.d.ts:4751), not `output`. Accept either key so
@@ -46,6 +50,49 @@ export function mapClaudeMessage(raw: unknown, outputSchema?: ZodType<unknown>):
     return [{ type: 'done', output: typeof msg.result === 'string' ? msg.result : null, usage: u }];
   }
   return out;
+}
+
+/**
+ * Pure builder for the `query()` options object, extracted so the tool
+ * restriction and other safety-relevant settings have direct test coverage
+ * without a live model call. `server` is the in-process MCP server instance
+ * (typed `unknown` here to avoid this pure function depending on
+ * `createSdkMcpServer`'s call site); it's cast to `McpServerConfig` because
+ * that's the shape `Options.mcpServers` actually wants.
+ */
+export function buildQueryOptions(req: StepRequest, model: string, server: unknown, cwd: string): Options {
+  return {
+    model,
+    systemPrompt: req.system,
+    mcpServers: { counsel: server as McpServerConfig },
+    strictMcpConfig: true,
+    // `allowedTools` is an auto-approve list, NOT a restriction — sdk.d.ts:1436-1440
+    // ("To restrict which tools are available, use the `tools` option instead").
+    // `tools: []` is what actually disables every built-in tool (sdk.d.ts:1487-1499:
+    // "`[]` (empty array) - Disable all built-in tools"). `allowedTools` still
+    // auto-approves our MCP tools (no interactive prompt) and `disallowedTools`
+    // stays as belt-and-braces defense in depth.
+    tools: [],
+    allowedTools: [`${MCP_PREFIX}*`],
+    disallowedTools: BUILTIN_TOOLS,
+    // Omitting this loads the operator's `~/.claude/settings.json`, including
+    // their hooks, into this session (sdk.d.ts:2047-2052: "When omitted, all
+    // sources are loaded"). `[]` disables filesystem settings entirely so the
+    // harness's behavior doesn't depend on whatever is on the operator's
+    // machine.
+    settingSources: [],
+    permissionMode: 'bypassPermissions',
+    // Required alongside permissionMode: 'bypassPermissions' — sdk.d.ts:1833-1836
+    // ("Must be set to `true` when using `permissionMode: 'bypassPermissions'`.
+    // This is a safety measure to ensure intentional bypassing of permissions.")
+    // Not in the brief's snippet; added because the type's own doc comment
+    // says bypassPermissions requires it. Safety still comes from `tools: []`
+    // plus the allow/disallow lists above, not from this flag.
+    allowDangerouslySkipPermissions: true,
+    maxTurns: req.maxToolCalls ?? 20,
+    cwd,
+    ...(req.outputSchema ? { outputFormat: { type: 'json_schema' as const, schema: z.toJSONSchema(req.outputSchema) as Record<string, unknown> } } : {}),
+  };
 }
 
 export class ClaudeHarnessProvider implements ModelProvider {
@@ -65,29 +112,9 @@ export class ClaudeHarnessProvider implements ModelProvider {
     });
     const server = createSdkMcpServer({ name: 'counsel', version: '0.1.0', tools: sdkTools });
     const prompt = req.messages.map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n\n');
+    const cwd = mkdtempSync(join(tmpdir(), 'counsel-cwd-'));
 
-    const stream = query({
-      prompt,
-      options: {
-        model: this.opts.model,
-        systemPrompt: req.system,
-        mcpServers: { counsel: server },
-        strictMcpConfig: true,
-        allowedTools: [`${MCP_PREFIX}*`],
-        disallowedTools: BUILTIN_TOOLS,
-        permissionMode: 'bypassPermissions',
-        // Required alongside permissionMode: 'bypassPermissions' — sdk.d.ts:1833-1836
-        // ("Must be set to `true` when using `permissionMode: 'bypassPermissions'`.
-        // This is a safety measure to ensure intentional bypassing of permissions.")
-        // Not in the brief's snippet; added because the type's own doc comment
-        // says bypassPermissions requires it. Safety still comes from the tool
-        // restriction (allowedTools/disallowedTools), not from this flag.
-        allowDangerouslySkipPermissions: true,
-        maxTurns: req.maxToolCalls ?? 20,
-        cwd: mkdtempSync(join(tmpdir(), 'counsel-cwd-')),
-        ...(req.outputSchema ? { outputFormat: { type: 'json_schema' as const, schema: z.toJSONSchema(req.outputSchema) as Record<string, unknown> } } : {}),
-      },
-    });
+    const stream = query({ prompt, options: buildQueryOptions(req, this.opts.model, server, cwd) });
 
     for await (const msg of stream) {
       for (const ev of mapClaudeMessage(msg, req.outputSchema)) yield ev;
