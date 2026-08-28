@@ -29,6 +29,7 @@ export interface StepRequest {
   outputSchema?: ZodType<unknown>;   // when set, `done.output` is the parsed object
   maxTokens?: number;
   maxToolCalls?: number;             // default 20
+  session?: { id?: string };
 }
 
 export interface Usage {
@@ -41,7 +42,8 @@ export type StepEvent =
   | { type: 'text'; text: string }
   | { type: 'tool_call'; id: string; name: string; input: unknown }
   | { type: 'tool_result'; id: string; name: string; output: unknown; isError?: boolean }
-  | { type: 'done'; output: unknown; usage: Usage }
+  | { type: 'session'; id: string }
+  | { type: 'done'; output: unknown; usage: Usage; sessionId?: string }
   | { type: 'error'; message: string };
 
 export function isTerminal(e: StepEvent): boolean {

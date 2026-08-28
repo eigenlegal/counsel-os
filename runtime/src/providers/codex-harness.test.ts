@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, test } from 'bun:test';
 import { z } from 'zod';
-import { buildCodexConfig, buildCodexEnv, buildThreadOptions, cleanupIsolatedHome, mapCodexEvent, prepareIsolatedHome } from './codex-harness';
+import { buildCodexConfig, buildCodexEnv, buildThreadOptions, CodexHarnessProvider, cleanupIsolatedHome, mapCodexEvent, prepareIsolatedHome, resolveCodexHome } from './codex-harness';
 
 describe('mapCodexEvent', () => {
   test('agent_message → text', () => {
@@ -63,7 +63,6 @@ describe('mapCodexEvent', () => {
 
   test('unhandled item types (reasoning, command_execution, file_change, ...) are ignored, not thrown', () => {
     expect(mapCodexEvent({ type: 'item.completed', item: { type: 'reasoning', text: 'thinking...' } })).toEqual([]);
-    expect(mapCodexEvent({ type: 'thread.started', thread_id: 't1' })).toEqual([]);
     expect(mapCodexEvent({ type: 'turn.started' })).toEqual([]);
   });
 });
@@ -194,5 +193,19 @@ describe('cleanupIsolatedHome', () => {
     const proxied = buildCodexEnv('/iso', '/real', { PATH: '/p', HOME: '/h', HTTP_PROXY: 'http://px', OPENAI_API_KEY: 'sk' });
     expect(proxied.HTTP_PROXY).toBe('http://px');
     expect(proxied.OPENAI_API_KEY).toBeUndefined();
+  });
+});
+
+describe('sessions', () => {
+  test('thread.started → session event with the thread id', () => {
+    expect(mapCodexEvent({ type: 'thread.started', thread_id: 'th-1' })).toEqual([{ type: 'session', id: 'th-1' }]);
+  });
+  test('a persistent homeDir is used as CODEX_HOME and is not removed by run()', async () => {
+    const home = mkdtempSync(join(tmpdir(), 'persist-home-'));
+    const p = new CodexHarnessProvider({ model: 'm', vaultRoot: '/v', homeDir: home });
+    expect(p.homeDir).toBe(home);
+    // run() is not executed here (live); the contract is asserted via the exported helper:
+    expect(resolveCodexHome({ homeDir: home, realHome: '/real' })).toEqual({ isolatedHome: home, ephemeral: false });
+    expect(resolveCodexHome({ realHome: '/real' }).ephemeral).toBe(true);
   });
 });

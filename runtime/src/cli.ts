@@ -20,6 +20,9 @@ const { values, positionals } = parseArgs({
     task: { type: 'string' },
     schema: { type: 'string' },
     system: { type: 'string', default: 'You are counsel. Use the vault tools to answer. Be brief.' },
+    session: { type: 'string' },      // resume a prior session/thread by id (Claude `resume` / Codex `resumeThread`)
+    'codex-home': { type: 'string' }, // persistent CODEX_HOME so a resumed thread's isolated home survives across steps
+    cwd: { type: 'string' },          // debug: pin the Claude harness's cwd (see docs/superpowers/spikes/2026-08-28-runtime-spikes.md, Step 2 — resume)
   },
 });
 
@@ -38,7 +41,12 @@ for (const t of builtinTools({ vaultRoot, repoRoot })) registry.register(t);
 let provider: ModelProvider;
 let outputSchema: z.ZodType | undefined;
 try {
-  const providers = buildProviders({ ids: [values.provider], vaultRoot });
+  const providers = buildProviders({
+    ids: [values.provider],
+    vaultRoot,
+    ...(values.cwd ? { claudeCwd: resolve(values.cwd) } : {}),
+    ...(values['codex-home'] ? { codexHomeDir: resolve(values['codex-home']) } : {}),
+  });
   const router = new Router(parseRouterConfig(`default: ${values.provider}\n`), providers);
   // --task only has effect once a `tasks:` block exists in the router config;
   // this CLI always builds a bare `default: <provider>` config, so today it's a no-op.
@@ -59,6 +67,7 @@ for await (const ev of provider.run({
   messages: [{ role: 'user', content: rest.join(' ') }],
   tools,
   ...(outputSchema ? { outputSchema } : {}),
+  ...(values.session ? { session: { id: values.session } } : {}),
 })) {
   console.log(JSON.stringify(ev));
   if (isTerminal(ev)) exit = ev.type === 'done' ? 0 : 1;

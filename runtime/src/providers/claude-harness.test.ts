@@ -128,3 +128,14 @@ describe('buildQueryOptions', () => {
     expect(proxied.env?.ANTHROPIC_API_KEY).toBeUndefined();
   });
 });
+
+describe('sessions', () => {
+  test('system/init → session event with the session id', () => {
+    expect(mapClaudeMessage({ type: 'system', subtype: 'init', session_id: 'sess-1', cwd: '/x' })).toEqual([{ type: 'session', id: 'sess-1' }]);
+  });
+  test('buildQueryOptions passes resume when a session id is given, omits it otherwise', () => {
+    const base = { tenant: 'default', system: 's', messages: [], tools: [] };
+    expect(buildQueryOptions({ ...base, session: { id: 'sess-1' } }, 'm', {}, '/tmp/x', { PATH: '/p', HOME: '/h', USER: 'u' }).resume).toBe('sess-1');
+    expect(buildQueryOptions(base, 'm', {}, '/tmp/x', { PATH: '/p', HOME: '/h', USER: 'u' }).resume).toBeUndefined();
+  });
+});

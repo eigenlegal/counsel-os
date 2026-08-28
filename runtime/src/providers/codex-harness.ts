@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import type { ZodType } from 'zod';
@@ -32,6 +32,10 @@ type AnyEv = { type: string; [k: string]: unknown };
  */
 export function mapCodexEvent(raw: unknown, outputSchema?: ZodType<unknown>, finalResponse?: string): StepEvent[] {
   const ev = raw as AnyEv;
+
+  if (ev.type === 'thread.started' && typeof ev.thread_id === 'string') {
+    return [{ type: 'session', id: ev.thread_id }];
+  }
 
   if (ev.type === 'item.completed') {
     const item = ev.item as Record<string, unknown>;
@@ -246,6 +250,27 @@ export function cleanupIsolatedHome(isolatedHome: string): void {
 }
 
 /**
+ * Resolves which `CODEX_HOME` a run should use. When the caller supplies a
+ * persistent `homeDir` (e.g. so a session can be resumed across steps via
+ * `resumeThread`), that directory is reused as-is and seeded with the
+ * operator's `auth.json` the same way `prepareIsolatedHome` does, but it is
+ * never removed by the caller (`ephemeral: false`) — the same directory has
+ * to still be there on the next step. Without a `homeDir`, behavior is
+ * unchanged from before: a fresh isolated home is created per run and must
+ * be torn down after (`ephemeral: true`).
+ */
+export function resolveCodexHome(opts: { homeDir?: string; realHome: string }): { isolatedHome: string; ephemeral: boolean } {
+  if (opts.homeDir) {
+    if (opts.homeDir === opts.realHome) throw new Error('homeDir must not be the real CODEX_HOME');
+    mkdirSync(opts.homeDir, { recursive: true, mode: 0o700 });
+    const authSrc = join(opts.realHome, 'auth.json');
+    if (existsSync(authSrc) && !existsSync(join(opts.homeDir, 'auth.json'))) copyFileSync(authSrc, join(opts.homeDir, 'auth.json'));
+    return { isolatedHome: opts.homeDir, ephemeral: false };
+  }
+  return { isolatedHome: prepareIsolatedHome(opts.realHome), ephemeral: true };
+}
+
+/**
  * Pure builder for the child CLI process's environment. `CodexOptions.env`
  * *replaces* the child's environment rather than extending `process.env`
  * (index.d.ts:236-239: "When provided, the SDK will not inherit variables
@@ -278,8 +303,11 @@ export class CodexHarnessProvider implements ModelProvider {
   readonly kind = 'harness' as const;
   readonly capabilities: Capabilities = { tools: true, caching: true, thinking: true, contextTokens: 200_000, auth: 'subscription' };
 
-  constructor(private readonly opts: { model: string; vaultRoot: string; id?: string }) {
+  readonly homeDir: string | undefined;
+
+  constructor(private readonly opts: { model: string; vaultRoot: string; id?: string; homeDir?: string }) {
     this.id = opts.id ?? `codex-sub/${opts.model}`;
+    this.homeDir = opts.homeDir;
   }
 
   async *run(req: StepRequest): AsyncIterable<StepEvent> {
@@ -288,6 +316,7 @@ export class CodexHarnessProvider implements ModelProvider {
     // failure becomes an `error` event, and the finally removes whatever
     // did get created (the isolated home holds a credential copy).
     let isolatedHome: string | undefined;
+    let ephemeralHome = true;
     let cwd: string | undefined;
 
     // `CodexExec.run` (the SDK's process runner) throws on a non-zero CLI
@@ -299,13 +328,17 @@ export class CodexHarnessProvider implements ModelProvider {
     // try for the same reason — `buildCodexEnv` throws on a defeated
     // isolation, and that must reach the caller as an `error` event too.
     try {
-      isolatedHome = prepareIsolatedHome(realHome);
+      const resolved = resolveCodexHome({ homeDir: this.opts.homeDir, realHome });
+      isolatedHome = resolved.isolatedHome;
+      ephemeralHome = resolved.ephemeral;
       cwd = mkdtempSync(join(tmpdir(), 'counsel-cwd-'));
       const codex = new Codex({
         ...buildCodexConfig({ vaultRoot: this.opts.vaultRoot, tenant: req.tenant }),
         env: buildCodexEnv(isolatedHome, realHome, process.env),
       });
-      const thread = codex.startThread(buildThreadOptions(this.opts.model, cwd));
+      const thread = req.session?.id
+        ? codex.resumeThread(req.session.id, buildThreadOptions(this.opts.model, cwd))
+        : codex.startThread(buildThreadOptions(this.opts.model, cwd));
 
       const transcript = req.messages.map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n\n');
       const prompt = `${req.system}\n\n${transcript}`;
@@ -313,12 +346,16 @@ export class CodexHarnessProvider implements ModelProvider {
       const { events } = await thread.runStreamed(prompt, req.outputSchema ? { outputSchema: toHarnessJsonSchema(req.outputSchema) } : {});
 
       let lastText = '';
+      let sessionId: string | undefined;
       for await (const ev of events) {
         const e = ev as AnyEv;
         if (e.type === 'item.completed' && (e.item as { type?: string })?.type === 'agent_message') {
           lastText = String((e.item as { text?: string }).text ?? '');
         }
-        for (const out of mapCodexEvent(ev, req.outputSchema, lastText)) yield out;
+        for (const out of mapCodexEvent(ev, req.outputSchema, lastText)) {
+          if (out.type === 'session') { sessionId = out.id; yield out; continue; }
+          yield out.type === 'done' && sessionId ? { ...out, sessionId } : out;
+        }
       }
     } catch (err) {
       yield { type: 'error', message: `codex harness: ${err instanceof Error ? err.message : String(err)}` };
@@ -326,8 +363,10 @@ export class CodexHarnessProvider implements ModelProvider {
       // The isolated home holds a plaintext copy of the operator's
       // `auth.json`; leaving one behind per run would scatter live
       // credentials through the temp directory. This also runs when the
-      // consumer abandons the generator early.
-      if (isolatedHome) cleanupIsolatedHome(isolatedHome);
+      // consumer abandons the generator early. A persistent `homeDir` is
+      // never removed here — it must survive to be reused by a later
+      // `resumeThread` step (see `resolveCodexHome`).
+      if (isolatedHome && ephemeralHome) cleanupIsolatedHome(isolatedHome);
       if (cwd) rmSync(cwd, { recursive: true, force: true });
     }
   }
