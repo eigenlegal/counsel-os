@@ -75,6 +75,35 @@ python3 scripts/run_evals.py --self-test                                        
 
 CI runs `--self-test` only; the full scored gate is a pre-release step (it needs generated outputs, which CI does not produce). The self-test scores bundled sample outputs to verify the scorer itself. It does not call an LLM. When adding a fixture, also add a passing output to `evals/sample-outputs/` or CI's self-test will report it missing.
 
+### Running against the runtime
+
+`--generate` normally drives a full `claude -p` plugin run. Pass `--runner runtime`
+to drive the standalone runtime CLI (`bun runtime/src/cli.ts step`) instead — a
+single step, one prompt, one typed-schema answer — which makes the harness
+model-agnostic: point `--provider` at any provider id the runtime knows (Claude,
+Codex, or a local Ollama model), not just Claude.
+
+```bash
+bun run evals:runtime [--only fixture-id] [--provider ollama/gemma4:e4b] [--step-timeout 540]
+# equivalent: python3 scripts/run_evals.py --generate --runner runtime
+```
+
+- `--provider` (runtime only) selects the model: `ollama/gemma4:e4b` is the
+  default — it runs against a local Ollama install and costs nothing.
+  `claude-sub/<model>` or `codex-sub/<model>` run against the subscription
+  harnesses instead and draw down subscription credit, same as the `claude`
+  runner.
+- `--step-timeout` is the per-step deadline in seconds (default 540), passed to
+  the runtime CLI's `--step-timeout` in milliseconds.
+- `--dry-run` prints the `bun runtime/src/cli.ts step …` command for each
+  fixture and exits without running anything — use it to sanity-check the
+  invocation before spending real time or tokens.
+
+Not added to CI — like the `claude` runner, it needs a model to talk to.
+`bun run evals:runner-test` (`scripts/eval_runtime_runner_test.py`) is CI-safe: it
+covers the runner's JSON-line parsing and command-building with canned
+transcripts and never invokes a provider.
+
 **Cadence:** full generate+score before each release and when qualifying a new model (compare per-fixture scores across `--model` runs). Anchors must stay decisive — a fixture that flakes gets its anchors tightened or runs N=3/require-2; never leave a known-flaky fixture in the suite.
 
 ## Fixture-Authoring Lessons (from the 2026-06 calibration pass)

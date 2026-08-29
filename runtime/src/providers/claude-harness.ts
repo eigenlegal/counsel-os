@@ -64,6 +64,23 @@ export function mapClaudeMessage(raw: unknown, outputSchema?: ZodType<unknown>):
 }
 
 /**
+ * Bridges the step's `AbortSignal` to the `AbortController` the SDK's
+ * `query()` takes (sdk.d.ts:1389-1392 — "Controller for cancelling the
+ * query. When aborted, the query will stop and clean up resources"). A
+ * `StepRequest` carries a signal because that is what every other tier
+ * accepts; only this SDK asks for the controller itself, so one is made here
+ * and wired to fire from the signal. A signal that has ALREADY fired aborts
+ * the controller immediately — the query must not start.
+ */
+export function abortControllerFor(signal: AbortSignal | undefined): AbortController | undefined {
+  if (!signal) return undefined;
+  const controller = new AbortController();
+  if (signal.aborted) controller.abort(signal.reason);
+  else signal.addEventListener('abort', () => controller.abort(signal.reason), { once: true });
+  return controller;
+}
+
+/**
  * Pure builder for the `query()` options object, extracted so the tool
  * restriction and other safety-relevant settings have direct test coverage
  * without a live model call. `server` is the in-process MCP server instance
@@ -72,8 +89,12 @@ export function mapClaudeMessage(raw: unknown, outputSchema?: ZodType<unknown>):
  * that's the shape `Options.mcpServers` actually wants.
  */
 export function buildQueryOptions(req: StepRequest, model: string, server: unknown, cwd: string, base: NodeJS.ProcessEnv = process.env): Options {
+  const abortController = abortControllerFor(req.signal);
   return {
     model,
+    // The step's cancellation: an aborted query stops the CLI child process
+    // rather than leaving it running with nobody reading it.
+    ...(abortController ? { abortController } : {}),
     systemPrompt: req.system,
     mcpServers: { counsel: server as McpServerConfig },
     strictMcpConfig: true,

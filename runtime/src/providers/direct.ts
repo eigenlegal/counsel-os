@@ -34,6 +34,9 @@ export class DirectProvider implements ModelProvider {
       messages: req.messages,
       tools,
       stopWhen: stepCountIs(req.maxToolCalls ?? 20),
+      // The step's cancellation. Without it an aborted step leaves the HTTP
+      // response open and this loop parked on `fullStream` forever.
+      ...(req.signal ? { abortSignal: req.signal } : {}),
       ...(req.maxTokens ? { maxOutputTokens: req.maxTokens } : {}),
       ...(req.outputSchema ? { output: Output.object({ schema: req.outputSchema }) } : {}),
     });

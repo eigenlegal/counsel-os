@@ -34,6 +34,11 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import eval_runtime_runner  # noqa: E402
+
+DEFAULT_RUNTIME_PROVIDER = "ollama/gemma4:e4b"
+
 
 def load_json(path: Path) -> dict[str, Any]:
     with path.open("r", encoding="utf-8") as f:
@@ -323,67 +328,102 @@ any matter notes inside your legal root, do not create or modify files."""
 EVAL_ALLOWED_TOOLS = "Skill Task Bash Read Write Edit MultiEdit Glob Grep LS WebFetch WebSearch TodoWrite"
 
 
+def prepare_fixture_vault(fixture: dict[str, Any], repo_root: Path) -> tuple[Path, Path]:
+    """Copy the fixture's mini-vault to a fresh temp dir and rewrite
+    config.md's `__VAULT_PATH__` placeholder to the copy's real path.
+
+    Returns `(tmp_dir, vault_path)`; the caller owns `tmp_dir` and must
+    `shutil.rmtree` it when done. Shared by both the `claude` and `runtime`
+    generate runners — the vault-prep step is identical either way.
+    """
+    vault_name = fixture["vault"]
+    vault_src = repo_root / "evals" / "vaults" / vault_name
+    if not vault_src.is_dir():
+        raise FileNotFoundError(f"vault not found: {vault_src}")
+
+    tmp = Path(tempfile.mkdtemp(prefix="counsel-eval-"))
+    vault = tmp / "vault"
+    shutil.copytree(vault_src, vault)
+    cfg = vault / "config.md"
+    cfg.write_text(cfg.read_text(encoding="utf-8").replace("__VAULT_PATH__", str(vault)), encoding="utf-8")
+    return tmp, vault
+
+
+def generate_output_claude(
+    fixture: dict[str, Any],
+    repo_root: Path,
+    vault: Path,
+    out_path: Path,
+    model: str | None,
+) -> tuple[bool, str]:
+    """Run the counsel agent headlessly (`claude -p`, full plugin, many turns)
+    against the fixture's mini-vault."""
+    prompt = fixture["task"] + OUTPUT_CONTRACT.format(out_path=out_path)
+    cmd = [
+        "claude", "-p", prompt,
+        "--plugin-dir", str(repo_root),
+        "--allowedTools", EVAL_ALLOWED_TOOLS,
+        "--max-turns", "40",
+        # Isolate from the user's MCP servers: a connected content index
+        # (e.g. QMD over the user's real vault) would hijack Knowledge Base
+        # Search away from the fixture vault and leak real entities in.
+        "--strict-mcp-config",
+    ]
+    if model:
+        cmd += ["--model", model]
+
+    env = dict(os.environ)
+    env["COUNSEL_OS_LEGAL_ROOT"] = str(vault)
+
+    try:
+        proc = subprocess.run(
+            cmd, cwd=vault.parent, env=env, capture_output=True, text=True, timeout=540,
+        )
+    except subprocess.TimeoutExpired:
+        return False, "agent run timed out (540s)"
+
+    if not out_path.exists():
+        tail = (proc.stdout or "")[-500:] + (proc.stderr or "")[-300:]
+        return False, f"agent exited {proc.returncode} without writing output. Tail: {tail}"
+
+    try:
+        load_json(out_path)
+    except json.JSONDecodeError as exc:
+        return False, f"output is not valid JSON: {exc}"
+
+    return True, f"output written ({out_path.stat().st_size} bytes)"
+
+
 def generate_output(
     fixture: dict[str, Any],
     repo_root: Path,
     outputs_dir: Path,
-    model: str | None,
+    runner: str = "claude",
+    model: str | None = None,
+    provider: str = DEFAULT_RUNTIME_PROVIDER,
+    step_timeout: int = 540,
 ) -> tuple[bool, str]:
-    """Run the counsel agent headlessly against the fixture's mini-vault."""
+    """Run the fixture's task headlessly against its mini-vault, via either
+    the `claude` runner (full plugin run) or the `runtime` runner (`bun
+    runtime/src/cli.ts step`), and write `evals/outputs/<id>.json`."""
     vault_name = fixture.get("vault")
     task = fixture.get("task")
     if not vault_name or not task:
         return False, "fixture has no vault/task — legacy fixture, generate its output manually"
 
-    vault_src = repo_root / "evals" / "vaults" / vault_name
-    if not vault_src.is_dir():
-        return False, f"vault not found: {vault_src}"
-
     outputs_dir.mkdir(parents=True, exist_ok=True)
     out_path = (outputs_dir / f"{fixture['id']}.json").resolve()
     out_path.unlink(missing_ok=True)
 
-    tmp = Path(tempfile.mkdtemp(prefix="counsel-eval-"))
     try:
-        vault = tmp / "vault"
-        shutil.copytree(vault_src, vault)
-        cfg = vault / "config.md"
-        cfg.write_text(cfg.read_text(encoding="utf-8").replace("__VAULT_PATH__", str(vault)), encoding="utf-8")
+        tmp, vault = prepare_fixture_vault(fixture, repo_root)
+    except FileNotFoundError as exc:
+        return False, str(exc)
 
-        prompt = task + OUTPUT_CONTRACT.format(out_path=out_path)
-        cmd = [
-            "claude", "-p", prompt,
-            "--plugin-dir", str(repo_root),
-            "--allowedTools", EVAL_ALLOWED_TOOLS,
-            "--max-turns", "40",
-            # Isolate from the user's MCP servers: a connected content index
-            # (e.g. QMD over the user's real vault) would hijack Knowledge Base
-            # Search away from the fixture vault and leak real entities in.
-            "--strict-mcp-config",
-        ]
-        if model:
-            cmd += ["--model", model]
-
-        env = dict(os.environ)
-        env["COUNSEL_OS_LEGAL_ROOT"] = str(vault)
-
-        try:
-            proc = subprocess.run(
-                cmd, cwd=tmp, env=env, capture_output=True, text=True, timeout=540,
-            )
-        except subprocess.TimeoutExpired:
-            return False, "agent run timed out (540s)"
-
-        if not out_path.exists():
-            tail = (proc.stdout or "")[-500:] + (proc.stderr or "")[-300:]
-            return False, f"agent exited {proc.returncode} without writing output. Tail: {tail}"
-
-        try:
-            load_json(out_path)
-        except json.JSONDecodeError as exc:
-            return False, f"output is not valid JSON: {exc}"
-
-        return True, f"output written ({out_path.stat().st_size} bytes)"
+    try:
+        if runner == "runtime":
+            return eval_runtime_runner.run_fixture(fixture, repo_root, vault, out_path, provider, step_timeout)
+        return generate_output_claude(fixture, repo_root, vault, out_path, model)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
@@ -396,7 +436,15 @@ def main() -> int:
     parser.add_argument("--self-test", action="store_true")
     parser.add_argument("--generate", action="store_true",
                         help="run the agent headlessly against each fixture's mini-vault to produce outputs before scoring")
-    parser.add_argument("--model", type=str, default=None, help="model for --generate runs (default: user's default)")
+    parser.add_argument("--model", type=str, default=None, help="model for --generate runs (default: user's default; --runner claude only)")
+    parser.add_argument("--runner", type=str, choices=["claude", "runtime"], default="claude",
+                        help="--generate runner: 'claude' (full claude -p plugin run) or 'runtime' (bun runtime/src/cli.ts step, model-agnostic)")
+    parser.add_argument("--provider", type=str, default=DEFAULT_RUNTIME_PROVIDER,
+                        help=f"--runner runtime only: provider id for the runtime CLI (default: {DEFAULT_RUNTIME_PROVIDER}, free/local)")
+    parser.add_argument("--step-timeout", type=int, default=540,
+                        help="--runner runtime only: per-step timeout in seconds (default: 540)")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="--runner runtime only: print the command per fixture and exit 0 without running it")
     parser.add_argument("--only", type=str, default=None, help="restrict to a single fixture id")
     parser.add_argument("--save-baseline", type=str, default=None, metavar="MODEL_ID",
                         help="after scoring, snapshot per-fixture scores to evals/baselines/<model-id>.json (refuses if any fixture lacks an output)")
@@ -414,13 +462,41 @@ def main() -> int:
     fixtures = args.fixtures if args.fixtures is not None else repo_root / "evals" / "fixtures"
     outputs = args.outputs if args.outputs is not None else repo_root / "evals" / "outputs"
 
+    if args.dry_run and args.runner != "runtime":
+        print("--dry-run is only supported with --runner runtime", file=sys.stderr)
+        return 2
+
+    # The runtime runner is model-agnostic: the model is whatever the provider
+    # id names. Say so rather than let a --model the run never reads look like
+    # it took effect.
+    if args.model and args.runner == "runtime":
+        print("--model is ignored with --runner runtime; the model comes from --provider", file=sys.stderr)
+
     if args.generate:
         for fixture_path in fixture_paths(fixtures):
             fixture = load_json(fixture_path)
             if args.only and fixture["id"] != args.only:
                 continue
-            ok, msg = generate_output(fixture, repo_root, outputs, args.model)
+
+            if args.dry_run:
+                vault_name = fixture.get("vault")
+                if not vault_name:
+                    print(f"[dry-run] {fixture['id']}: skipped (no vault)", file=sys.stderr)
+                    continue
+                vault_src = repo_root / "evals" / "vaults" / vault_name
+                cmd = eval_runtime_runner.build_command(fixture, repo_root, vault_src, args.provider, args.step_timeout)
+                print(" ".join(cmd))
+                continue
+
+            ok, msg = generate_output(
+                fixture, repo_root, outputs,
+                runner=args.runner, model=args.model,
+                provider=args.provider, step_timeout=args.step_timeout,
+            )
             print(f"[generate] {fixture['id']}: {'OK' if ok else 'FAILED'} — {msg}", file=sys.stderr)
+
+        if args.dry_run:
+            return 0
 
     reports, missing = run_scores(fixtures, outputs)
     if args.only:

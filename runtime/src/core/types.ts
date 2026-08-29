@@ -30,6 +30,12 @@ export interface StepRequest {
   maxTokens?: number;
   maxToolCalls?: number;             // default 20
   session?: { id?: string };
+  /** Cancels the step. Every provider forwards it to the SDK underneath it —
+   * `abortController` for the Claude harness, the turn's `signal` for Codex,
+   * `abortSignal` for the direct tier — so a step that times out actually
+   * stops the work: the SDK settles, the generator's `finally` runs, and a
+   * harness child process dies instead of streaming into nothing. */
+  signal?: AbortSignal;
 }
 
 export interface Usage {
@@ -43,6 +49,11 @@ export type StepEvent =
   | { type: 'tool_call'; id: string; name: string; input: unknown }
   | { type: 'tool_result'; id: string; name: string; output: unknown; isError?: boolean }
   | { type: 'session'; id: string }
+  // Synthesized by the loop right after a successful `propose_update`
+  // tool_result (see `counsel-loop.ts`'s `stream`); never appended to the
+  // thread log — the `proposal` ThreadEvent the tool itself writes is the
+  // durable record.
+  | { type: 'proposal'; id: string; path: string; rationale: string }
   | { type: 'done'; output: unknown; usage: Usage; sessionId?: string }
   | { type: 'error'; message: string };
 

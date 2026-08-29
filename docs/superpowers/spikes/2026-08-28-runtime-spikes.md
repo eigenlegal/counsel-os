@@ -942,3 +942,360 @@ Recorded, not fixed.
   still open).
 - **A UI needs the proposal as a first-class frame** (defect 5), or it will
   reverse-engineer the gate out of tool-call arguments.
+
+---
+
+## Step 3 — timeout, proposal frame, runs, typed answers, evals
+
+Date: 2026-08-29
+Branch: `loop-trust` (Tasks 1–5 landed)
+Spec: `docs/superpowers/specs/2026-08-29-loop-trust-and-evals-design.md` §6
+
+Question: do the four trust features work against real providers — the
+per-step timeout with its SDK abort, the `proposal` SSE frame, the run
+record behind `GET /runs`, and `outputSchema` on the steps API — and what
+does the runtime eval runner score?
+
+### Setup
+
+A fresh temp vault, marked and fictional, plus a temp `COUNSEL_OS_HOME`:
+
+```
+<vault>/config.md                    # counsel-os-config: true, legal_root: <vault>
+<vault>/practice/profile.md          # Wren Halloway, Halloway Law PLLC (fictional)
+<vault>/practice/standards/nda.md    # 4 NDA positions (term 5y, residuals RED, …)
+<vault>/matters/acme.md              # Acme Robotics mutual NDA excerpt, deadline 2026-09-15
+```
+
+`ollama/gemma4:26b` is not a builtin id, so it was registered in
+`<home>/providers.yaml`:
+
+```yaml
+default: ollama/gemma4:26b
+providers:
+  - id: ollama/gemma4:26b
+    capabilities: { tools: true, caching: false, thinking: false, contextTokens: 32000, auth: local }
+```
+
+```bash
+COUNSEL_OS_HOME=<home> bun runtime/src/cli.ts serve --vault <vault> --step-timeout 15000   # (a)
+COUNSEL_OS_HOME=<home> bun runtime/src/cli.ts serve --vault <vault> --step-timeout 540000  # (b)–(e)
+```
+
+`GET /health` reported the registered id and the effective deadline
+(`"stepTimeoutMs": 15000`, then `540000`) — the CLI flag reaches `/health`,
+so an operator can read the number a step actually gets.
+
+`gemma4:26b` was warmed (`ollama run … --keepalive 30m`) before (a).
+
+### (a) Step timeout · PASS
+
+```bash
+curl -sN … --data-binary '{"message":"Read every file in the vault, then write a 1500-word
+  memo on each file. Do not stop early.","provider":"ollama/gemma4:26b"}' \
+  http://127.0.0.1:7431/threads/30454c29-…/steps
+```
+
+Wall-clock **15.03 s**. The whole stream, in full — one frame:
+
+```
+event: error
+data: {"type":"error","message":"step timed out after 15s","runId":"f0b0e94e-…"}
+```
+
+No `text` frame ever went out: a cold 8.2 k-token prefill on the 26 b model
+does not reach a first token inside 15 s.
+
+`GET /runs/f0b0e94e-…`:
+
+```json
+{ "runId": "f0b0e94e-…", "status": "timeout", "provider": "ollama/gemma4:26b",
+  "primitivesRead": [], "toolCalls": [], "proposals": [],
+  "durationMs": 15008, "error": "step timed out after 15s" }
+```
+
+The second, short step on the **same** thread, issued immediately after:
+
+```bash
+--data-binary '{"message":"Reply with exactly one word: ok","provider":"ollama/gemma4:26b"}'
+```
+
+Wall-clock **0.28 s**, `event: done`, `output "ok"`, usage
+`{"inputTokens":8220,"outputTokens":6}`, `durationMs` 270.
+
+**PASS** on all three counts. The lock released — the second step did not
+wait. And the 0.28 s is itself the evidence that the abort reached Ollama:
+had the aborted generation still been running, the model would not have been
+free to answer in under a third of a second.
+
+### (b) `proposal` frame · PASS
+
+```bash
+--data-binary '{"message":"Update practice/standards/nda.md to add: confidentiality term
+  is 3 years","provider":"ollama/gemma4:26b"}'
+```
+
+Wall-clock **20.12 s**, usage `{"inputTokens":25210,"outputTokens":1355}`.
+Frames: 2 `tool_call`, 2 `tool_result`, 8 `text`, **1 `proposal`**, 1 `done`.
+The proposal frame, live on the stream, right after the `propose_update`
+result:
+
+```
+event: proposal
+data: {"type":"proposal","id":"0bc29331-…","path":"practice/standards/nda.md",
+       "rationale":"Updating the standard confidentiality term from 5 years to 3 years
+       as requested.","runId":"ffab3de4-…"}
+```
+
+The file did not change — `md5 practice/standards/nda.md` was
+`a86ade21207a9ea41f6df411973cced6` before and after, and again after every
+later smoke.
+
+`GET /runs?thread=3fa5270a-…`:
+
+```json
+{ "status": "done", "primitivesRead": [], "durationMs": 20103,
+  "toolCalls": [ {"name":"vault_read","ms":17,"isError":false},
+                 {"name":"propose_update","ms":18,"isError":false} ],
+  "proposals": ["0bc29331-…"] }
+```
+
+**PASS.** `proposals` carries the id. **`primitivesRead` is empty** — the
+model called `vault_read` directly and never called `read_primitive`. See
+defect 4.
+
+### (c) Typed answer · PASS
+
+`outputSchema` = the literal contents of `evals/findings.schema.json`.
+
+```bash
+--data-binary @body.json   # {"message":"Review matters/acme.md against
+                           #  practice/standards/nda.md and report findings",
+                           #  "provider":"ollama/gemma4:26b","outputSchema":{…}}
+```
+
+Wall-clock **17.37 s**, usage `{"inputTokens":25788,"outputTokens":761}`.
+Frames: 2 `tool_call` (`vault_read` ×2), 2 `tool_result`, **67 `text`**,
+1 `done`. The `done` frame, abridged:
+
+```json
+{"type":"done","output":{"findings":[
+  {"title":"Confidentiality Term","severity":"red","clause":"Clause 2 (Term)",
+   "rationale":"The agreement specifies a 10-year term, which exceeds our standard of 5
+    years from disclosure.","citations":["practice/standards/nda.md"],
+   "proposed_action":{"action":"reduce_term","target":"10 years","new_value":"5 years"}},
+  {"title":"Residuals Clause","severity":"red", …},
+  {"title":"Governing Law","severity":"red", …}],
+ "citations":["practice/standards/nda.md"],
+ "summary":{"total_issues":3,"critical_issues":3,"status":"non-compliant"}},
+ "usage":{"inputTokens":25788,"outputTokens":761},"runId":"54cad38a-…"}
+```
+
+`done.output.findings` is an array of three objects, each carrying every
+required key. `GET /runs/54cad38a-…` holds the same `output` as an object
+(keys `findings`, `citations`, `summary`), `status: "done"`.
+
+**PASS.** Two observations, both defects below: the 67 `text` frames are the
+same JSON streamed a second time (defect 2), and the model added
+`proposed_action` and `summary`, which the schema does not declare and the
+runtime does not strip (defect 3).
+
+The thread log for this step holds **8 lines** — `user`, `step`, 2
+`tool_call`, 2 `tool_result`, **one** coalesced `text`, `done`. Step 2's
+defect 4 (one `text` event per Ollama token — 177 events for one answer) is
+**fixed**.
+
+### (d) Evals — `green-yellow-red-calibration` · MIXED
+
+```bash
+COUNSEL_OS_HOME=<home> python3 scripts/run_evals.py --generate --runner runtime \
+  --only green-yellow-red-calibration --provider <id> --step-timeout 540
+```
+
+| Provider | Runs | Wall | Score | Recall | Citation cov. |
+|---|---|---|---|---|---|
+| `ollama/gemma4:26b` | 6 | 12–19 s each | **0.0** (no scorable output, 6/6) | — | — |
+| `ollama/gemma4:e4b` (contrast) | 1 | 30.9 s | **0.35** | 0.0 | 0.0 |
+| `claude-sub/claude-opus-5` | 1 | 28.2 s | **1.00** | 1.0 | 1.0 |
+
+There is no baseline file for either model — `evals/baselines/` holds only
+`claude-fable-5.json`, whose score for this fixture is **1.0**. Raw scores
+are reported; `claude-opus-5`'s 1.00 matches what Fable 5 scored, on all
+three catches and all three citations:
+
+```json
+{"fixture":"green-yellow-red-calibration","score":1.0,"recall":1.0,
+ "precision_guard":1.0,"citation_coverage":1.0,"hallucination_score":1.0,
+ "matched_catches":["liability-cap-yellow-per-vault","payment-terms-red-per-vault",
+                    "termination-green-per-vault"],
+ "missed_catches":[],"false_positives":[],"missed_citations":[]}
+```
+
+Its first finding cites the vault's non-market boundary rather than market
+intuition, which is what the fixture tests:
+
+> "Our standard requires a cap of no less than 24 months of fees. A 12-month
+> cap falls in the YELLOW band … and requires head-of-legal sign-off."
+> — citations `practice/standards/limitation-of-liability.md`, `practice/profile.md`
+
+`gemma4:26b` failed **6 times out of 6**, always the same way:
+
+```
+[generate] green-yellow-red-calibration: FAILED — structured output failed validation:
+  No object generated: could not parse the response.
+```
+
+The discarded answers were not wrong. Attempt 3's tail:
+
+> "… our standard is Net 45 (GREEN) or 21–44 days with an early-payment
+> discount (YELLOW). Anything 20 days or shorter is a RED classification …"
+
+That is the vault's boundary, in prose. `payment-terms-red-per-vault` would
+have matched on `net 45`, `20 days or shorter`, and `net 21`. The model
+answered correctly in Markdown instead of JSON, and the runtime threw the
+whole answer away. `gemma4:e4b`, on the identical schema and prompt, returned
+valid JSON — so this is model-specific, not a broken schema path. See defect 1.
+
+**Verdict: PASS on `claude-sub/claude-opus-5` (1.00), FAIL on
+`ollama/gemma4:26b` (0.0, unscorable).** The eval runner is sound; the 26 b
+local tier cannot currently produce an answer it can score.
+
+### (e) Plugin adapter · PASS
+
+```bash
+COUNSEL_OS_HOME=<home> scripts/runtime_step.sh "What matters do I have?"
+```
+
+Exit **0**, wall-clock 7.71 s (`ollama/gemma4:26b` default), usage
+`{"inputTokens":24976,"outputTokens":470}`. Stdout carried the answer;
+stderr carried the tool trace:
+
+```
+→ tool vault_list
+→ tool vault_read
+```
+
+A second adapter call, on a prompt that proposes:
+
+```bash
+scripts/runtime_step.sh "Update practice/standards/nda.md to add a new position 5:
+  no assignment without consent."
+```
+
+Exit **0**, 5.05 s. Stderr:
+
+```
+→ tool vault_read
+→ tool propose_update
+→ proposal practice/standards/nda.md (5cb69b3f-fdca-47aa-8d38-092151920e26)
+```
+
+**PASS**, and the `proposal` line matches spec §4.2 exactly —
+`→ proposal <path> (<id>)`. The file stayed unchanged.
+
+### Subscription budget — one call over
+
+Budget: 1 `claude-sub` call, for (d). **2 were used.**
+
+The first (e) run was issued before `default:` was set in `providers.yaml`.
+`runtime_step.sh` sends no `provider` field, so the step took the router
+default, which was still the builtin `claude-sub/claude-opus-5`: run
+`41e498bf-…`, 11.4 s, `{"inputTokens":39438,"outputTokens":435,
+"costUsd":0.1597}`. The authorized (d) call was then made as planned, and
+(e) was re-run on Ollama for the recorded verdict.
+
+The lesson is a real one for anyone smoking this runtime: **the adapter
+inherits the registry default**, so a smoke that means to stay free has to
+set `default:` before the first adapter call, not after.
+
+That run is not wasted evidence. Its `durationMs` was **10,956** against
+11.43 s of wall-clock — Step 2's defect 3 (`durationMs` off by ~300× on the
+harness tiers) is **fixed**.
+
+### Step 2 defects, re-checked
+
+| Step 2 defect | State |
+|---|---|
+| 1. Codex thread home ignores `COUNSEL_OS_HOME` | **Fixed** — `~/.counsel-os/` gained no `codex/` or `runtime.json` across the whole session |
+| 2. Provider registry ignores `COUNSEL_OS_HOME` | **Fixed** — `defaultRegistryFile(env)` resolves per call; the temp `providers.yaml` was picked up |
+| 3. `durationMs` measures almost nothing | **Fixed** — 10,956 ms vs 11.43 s wall on the Claude tier |
+| 4. One `text` event per Ollama token in the log | **Fixed** — one coalesced `text` event per step |
+| 5. No `proposal` frame on the SSE stream | **Fixed** — smoke (b) |
+
+### Defects found in the runtime by Step 3
+
+Recorded, not fixed.
+
+1. **A structured answer that does not parse destroys the whole step.**
+   `direct.ts`'s `finish` case awaits `result.output`; when the parse fails
+   it yields `{type:'error', message:'structured output failed validation: …'}`
+   and returns. The text the model actually produced — which the SSE stream
+   already delivered, and which in all six `gemma4:26b` runs was a correct,
+   vault-grounded answer — is not attached to the error, not written to the
+   run record, and not offered as a fallback. The eval runner then records
+   "missing output" and the fixture scores **0.0**, a number that reads as
+   "the model has no legal judgment" when what happened is "the model wrote
+   Markdown." At minimum the error should carry the raw text, so a caller can
+   choose between failing and salvaging. (`runtime/src/providers/direct.ts`
+   ~line 73; `scripts/eval_runtime_runner.py`.)
+2. **With `outputSchema`, the answer goes out twice.** Smoke (c) put the
+   JSON on the wire as 67 raw `text` frames (`{`, `\n  "findings": [\n    {`,
+   …) and then again, parsed, in `done.output`. `runtime_step.sh` relays
+   every `text` frame to stdout byte-exact, so a typed step through the
+   adapter prints raw JSON at the user before the structured answer arrives.
+   A typed step should either suppress the `text` frames or the adapter
+   should learn to hold them. (`runtime/src/providers/direct.ts`,
+   `scripts/runtime_step.sh`.)
+3. **Nothing strips keys the schema does not declare.** `findings.schema.json`
+   sets no `additionalProperties: false`, so `z.fromJSONSchema` builds a
+   permissive object and the model's invented `proposed_action` and `summary`
+   keys reached `done.output` untouched. Legal per JSON Schema, but it means
+   "typed answer" does not mean "known shape": every consumer has to tolerate
+   fields it has never seen. Decide whether the runtime tightens the schema
+   or the callers are told to expect extras.
+   (`evals/findings.schema.json`, `runtime/src/server/routes.ts`.)
+4. **`primitivesRead` was empty on 8 of 9 live runs.** Every run whose prompt
+   did not literally name the tool — a review, a proposal, a matter listing,
+   on both `gemma4:26b` and `claude-opus-5` — recorded `primitivesRead: []`.
+   The derivation is correct: a step told `Call read_primitive with name
+   "evaluate"` recorded `primitivesRead: ["evaluate"]`. The signal is empty
+   because models go straight to `vault_read` instead of loading the mode
+   first, whatever §"Modes" of the preamble says. As a trust signal on the
+   run record, `primitivesRead` currently reports nothing about a normal
+   step. Either the preamble has to make the primitive read mandatory, or
+   the field should not be presented to a user as evidence of method.
+   (`runtime/src/loop/prompt.ts`, `runtime/src/loop/counsel-loop.ts`.)
+5. **The eval runner throws away `usage`.** The runtime CLI prints
+   `inputTokens` / `outputTokens` / `costUsd` on its `done` line;
+   `eval_runtime_runner.py` parses out the output and keeps nothing else.
+   There is no token or cost figure for an eval sweep, so "what did this
+   baseline cost" cannot be answered from the tooling.
+   (`scripts/eval_runtime_runner.py`.)
+6. **A timed-out run records no `usage`.** `f0b0e94e-…` has
+   `"usage": null` after burning its full 15 s. Correct in that the provider
+   never reported a total, but it means run-record cost accounting
+   systematically under-reports exactly the runs that were cut off — on a
+   paid tier, the expensive ones. (`runtime/src/loop/counsel-loop.ts`.)
+
+### What the next plan should assume — Step 3
+
+- **The four trust features work.** Timeout, lock release, `proposal` frame,
+  run records, and `outputSchema` all behaved as specified against live
+  providers. Nothing here blocks the UI.
+- **`ollama/gemma4:26b` is not a typed-answer tier.** 6/6 schema failures.
+  Use `gemma4:e4b` for free typed smokes, or run the local tier untyped.
+- **Baselines exist for one model only.** `--compare-baseline` cannot gate
+  anything on the local tier until a local baseline is saved, and saving one
+  requires every fixture to produce an output — which defect 1 currently
+  prevents on 26 b.
+- **Do not put `primitivesRead` in front of a user yet** (defect 4). It is
+  an empty field on a normal step.
+
+### Throwaway artifacts — Step 3
+
+`/tmp/cos-vault-*` (the temp vault), `/tmp/cos-home-*` (the temp
+`COUNSEL_OS_HOME`, holding `runtime.json` and `providers.yaml`),
+`/tmp/cos-serve-*.log`, and `${TMPDIR}/counsel-os-thread-*` (the adapter's
+thread cache). All removed; the server was killed and `runtime.json` is
+gone. `evals/outputs/green-yellow-red-calibration.json` holds the
+`claude-opus-5` answer and is gitignored.

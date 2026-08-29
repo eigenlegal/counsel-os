@@ -24,6 +24,29 @@ describe('window', () => {
     ]);
   });
 
+  test('ignores a proposal event (it carries `type`, not `text`, so it is neither a message nor a merge target)', () => {
+    // The loop never appends a `proposal` StepEvent to the log — it only
+    // yields one to the caller (spec §4.2) — but the type is a legal
+    // ThreadEvent shape, so `window()` must not mistake it for text or blow
+    // up on it.
+    const events: ThreadEvent[] = [
+      { t: 'user', at: 't0', content: 'first' },
+      { type: 'text', text: 'a', at: 't1' },
+      { type: 'proposal', id: 'p1', path: 'practice/standards/x.md', rationale: 'because', at: 't2' },
+      { type: 'text', text: 'b', at: 't3' },
+      { t: 'user', at: 't4', content: 'second' },
+    ];
+
+    const messages = window(events, 100_000);
+
+    expect(messages).toEqual([
+      { role: 'user', content: 'first' },
+      { role: 'assistant', content: 'a' },
+      { role: 'assistant', content: 'b' },
+      { role: 'user', content: 'second' },
+    ]);
+  });
+
   test('drops oldest messages first when over budget', () => {
     const events: ThreadEvent[] = [
       { t: 'user', at: 't0', content: 'one' },

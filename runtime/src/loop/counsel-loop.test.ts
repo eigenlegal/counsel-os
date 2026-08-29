@@ -3,13 +3,15 @@ import { randomUUID } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { z } from 'zod';
 import { FakeModelProvider } from '../core/fake-provider';
 import type { ModelProvider, StepEvent } from '../core/types';
 import { Router } from '../router/router';
 import { ThreadStore, type ThreadEvent } from '../threads/store';
 import { FsVaultStore } from '../vault/fs-store';
-import { runStep, RESUME_WARNING, type CounselLoopDeps } from './counsel-loop';
+import { runStep, withStepTimeout, RESUME_WARNING, type CounselLoopDeps } from './counsel-loop';
 import type { RunLogEntry } from './run-log';
+import { listRuns, readRun } from './run-record';
 
 let vaultRoot: string;
 let pluginRoot: string;
@@ -86,6 +88,48 @@ describe('runStep', () => {
     expect(closed).toBe(true);
   });
 
+  test('(z2) abandoning the step ABORTS the provider, so one parked on an await settles and unwinds', async () => {
+    // Closing the iterator is not enough on its own. A real harness answers
+    // `return()` only once the await it is parked on settles — here the
+    // teardown every tier does on the way out — and the only thing that
+    // settles that await is the request's signal. Without the abort the
+    // bounded close waits out its whole budget and the provider is still
+    // running when the step is reported over.
+    let unwound = false;
+    const abortable: ModelProvider = {
+      id: 'abortable/abortable',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+      async *run(req): AsyncIterable<StepEvent> {
+        try {
+          yield { type: 'text', text: 'a' };
+        } finally {
+          await new Promise<void>((_, reject) => {
+            if (req.signal?.aborted) return reject(new Error('aborted'));
+            req.signal?.addEventListener('abort', () => reject(new Error('aborted')), { once: true });
+          }).catch(() => {
+            /* the abort IS how this settles */
+          });
+          unwound = true;
+        }
+      },
+    };
+    const { id } = await store.create('default', {});
+
+    // The default 600 s deadline: nothing here may depend on it expiring.
+    const it = runStep(deps([abortable]), { threadId: id, message: 'hello' })[Symbol.asyncIterator]();
+    const first = await it.next();
+    expect(first.value!.type).toBe('text');
+    const startedAt = Date.now();
+    await it.return?.(undefined);
+
+    expect(unwound).toBe(true);
+    // Not "eventually": the close budget alone is 2 s, so a pass here is the
+    // abort and nothing else.
+    expect(Date.now() - startedAt).toBeLessThan(100);
+    expect(readRun(vaultRoot, 'default', first.value!.runId)!.status).toBe('abandoned');
+  });
+
   test('(a) first step appends user, step, the model events, and done; the request replays the window with no session', async () => {
     const fake = new FakeModelProvider([{ text: 'hi there' }]);
     const { id } = await store.create('default', {});
@@ -130,6 +174,126 @@ describe('runStep', () => {
     const result = events.find(e => e.type === 'tool_result') as Extract<StepEvent, { type: 'tool_result' }>;
     expect(result.isError).toBe(true);
     expect(String(result.output)).toContain('propose_update');
+  });
+
+  test('(a3) a successful propose_update synthesizes a proposal StepEvent right after its tool_result, not logged twice', async () => {
+    const fake = new FakeModelProvider([
+      {
+        toolCalls: [
+          {
+            name: 'propose_update',
+            input: { path: 'practice/standards/x.md', content: 'NEW TEXT\n', rationale: 'because' },
+          },
+        ],
+        text: 'proposed',
+      },
+    ]);
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([fake]), { threadId: id, message: 'propose it' }));
+
+    expect(events.map(e => e.type)).toEqual(['tool_call', 'tool_result', 'proposal', 'text', 'done']);
+    const proposalEvent = events.find(e => e.type === 'proposal') as Extract<StepEvent, { type: 'proposal' }> & {
+      runId: string;
+    };
+    expect(proposalEvent.path).toBe('practice/standards/x.md');
+    expect(proposalEvent.rationale).toBe('because');
+    expect(proposalEvent.runId).toBe(events[0]!.runId);
+
+    // The `id` matches the thread log's `proposal` ThreadEvent — the durable
+    // record the tool itself wrote — and that ThreadEvent appears exactly
+    // once: the synthesized StepEvent is yielded to the caller, not appended.
+    expect(await logKinds(id)).toEqual(['user', 'step', 'tool_call', 'proposal', 'tool_result', 'text', 'done']);
+    const { events: log } = await store.get('default', id);
+    const loggedProposal = log.find(
+      (ev): ev is Extract<ThreadEvent, { t: 'proposal' }> => 't' in ev && ev.t === 'proposal',
+    )!;
+    expect(proposalEvent.id).toBe(loggedProposal.id);
+  });
+
+  test('(a4) an unsuccessful propose_update yields no proposal StepEvent', async () => {
+    const fake = new FakeModelProvider([
+      { toolCalls: [{ name: 'propose_update', input: { path: 'not/a/knowledge/path.md' } }], text: 'nope' },
+    ]);
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([fake]), { threadId: id, message: 'propose it' }));
+
+    expect(events.map(e => e.type)).not.toContain('proposal');
+    const result = events.find(e => e.type === 'tool_result') as Extract<StepEvent, { type: 'tool_result' }>;
+    expect(result.isError).toBe(true);
+  });
+
+  test('(a5) propose_update output as a JSON string (the Codex/MCP round-trip) still synthesizes the proposal event', async () => {
+    // Hand-rolled, like the timeout fakes above: yields the raw tool_call /
+    // tool_result / done sequence directly, so `output` can be shaped
+    // exactly as a stdio harness would round-trip it — a JSON string, not
+    // the object `runToolDef` hands back in-process.
+    const provider: ModelProvider = {
+      id: 'stringout/stringout',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 1_000_000, auth: 'local' },
+      async *run() {
+        yield {
+          type: 'tool_call',
+          id: 'c1',
+          name: 'propose_update',
+          input: { path: 'practice/standards/x.md', content: 'NEW\n', rationale: 'because' },
+        };
+        yield {
+          type: 'tool_result',
+          id: 'c1',
+          name: 'propose_update',
+          output: JSON.stringify({ proposalId: 'p-1' }),
+          isError: false,
+        };
+        yield { type: 'done', output: null, usage: { inputTokens: 0, outputTokens: 0 } };
+      },
+    };
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([provider]), { threadId: id, message: 'propose it' }));
+
+    expect(events.map(e => e.type)).toEqual(['tool_call', 'tool_result', 'proposal', 'done']);
+    const proposalEvent = events.find(e => e.type === 'proposal') as Extract<StepEvent, { type: 'proposal' }>;
+    expect(proposalEvent.id).toBe('p-1');
+    expect(proposalEvent.path).toBe('practice/standards/x.md');
+    expect(proposalEvent.rationale).toBe('because');
+
+    // This hand-rolled provider never ran `proposeUpdateTool.execute` — it
+    // emitted the tool_call/tool_result shape directly — so there is no
+    // `proposal` ThreadEvent to begin with; the log holds only what
+    // `stream()` itself appends, and the synthesized StepEvent is not among
+    // them.
+    expect(await logKinds(id)).toEqual(['user', 'step', 'tool_call', 'tool_result', 'done']);
+  });
+
+  test('(a6) propose_update output that fails to parse yields no proposal event, and the step still completes with done', async () => {
+    const badOutputs: unknown[] = ['not json', { nope: 1 }];
+    let call = 0;
+    const provider: ModelProvider = {
+      id: 'badout/badout',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 1_000_000, auth: 'local' },
+      async *run() {
+        const output = badOutputs[call++];
+        yield {
+          type: 'tool_call',
+          id: 'c1',
+          name: 'propose_update',
+          input: { path: 'practice/standards/x.md', content: 'NEW\n', rationale: 'because' },
+        };
+        yield { type: 'tool_result', id: 'c1', name: 'propose_update', output, isError: false };
+        yield { type: 'done', output: null, usage: { inputTokens: 0, outputTokens: 0 } };
+      },
+    };
+    const { id } = await store.create('default', {});
+
+    for (let i = 0; i < badOutputs.length; i++) {
+      const events = await collect(runStep(deps([provider]), { threadId: id, message: 'propose it' }));
+      expect(events.map(e => e.type)).toEqual(['tool_call', 'tool_result', 'done']);
+      expect(events.some(e => e.type === 'proposal')).toBe(false);
+    }
   });
 
   test('(b) a session event is stored on the header and never yielded to the caller', async () => {
@@ -655,5 +819,652 @@ describe('runStep — logged text coalescing', () => {
     expect(events.map(e => e.type)).toEqual(['text', 'text', 'error']);
     expect(await loggedText(id)).toEqual(['ab']);
     expect(await logKinds(id)).toEqual(['user', 'step', 'text', 'error']);
+  });
+});
+
+describe('runStep — step timeout', () => {
+  /**
+   * A provider that emits `script` and then hangs forever: the shape of a
+   * wedged harness, where the process is alive and the stream is open but
+   * nothing more ever arrives.
+   *
+   * Hand-rolled rather than an `async function*` on purpose. `return()` on an
+   * async generator that is parked on a never-resolving `await` is queued
+   * behind that await, so it never runs and never settles — a generator fake
+   * could not report being closed at all. That is also why the loop fires the
+   * close without waiting for it (see `closeWithoutWaiting`).
+   */
+  function hangingProvider(script: StepEvent[]): ModelProvider & { closed: boolean } {
+    const provider = {
+      id: 'hang/hang',
+      kind: 'direct' as const,
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' as const },
+      closed: false,
+      run(): AsyncIterable<StepEvent> {
+        let i = 0;
+        return {
+          [Symbol.asyncIterator]: () => ({
+            next: (): Promise<IteratorResult<StepEvent>> => {
+              const ev = script[i++];
+              if (ev) return Promise.resolve({ value: ev, done: false });
+              return new Promise<IteratorResult<StepEvent>>(() => {});
+            },
+            return: async (): Promise<IteratorResult<StepEvent>> => {
+              provider.closed = true;
+              return { value: undefined, done: true };
+            },
+          }),
+        };
+      },
+    };
+    return provider;
+  }
+
+  function terminal(events: Array<StepEvent & { runId: string }>): StepEvent {
+    return events[events.length - 1]!;
+  }
+
+  test('a provider that hangs mid-step ends the step with one terminal error', async () => {
+    const provider = hangingProvider([{ type: 'text', text: 'a' }]);
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([provider]), { threadId: id, message: 'hello', timeoutMs: 50 }));
+
+    expect(events.map(e => e.type)).toEqual(['text', 'error']);
+    expect((terminal(events) as Extract<StepEvent, { type: 'error' }>).message).toMatch(/^step timed out after \d+s$/);
+    // The partial answer the user already saw is in the transcript, and the
+    // step is closed out with the error — not left dangling.
+    expect(await logKinds(id)).toEqual(['user', 'step', 'text', 'error']);
+    // The provider is released, not left streaming into nothing.
+    expect(provider.closed).toBe(true);
+  });
+
+  test('the deadline covers the wait for the first event — a provider that never yields at all', async () => {
+    const provider = hangingProvider([]);
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([provider]), { threadId: id, message: 'hello', timeoutMs: 50 }));
+
+    expect(events.map(e => e.type)).toEqual(['error']);
+    expect((terminal(events) as Extract<StepEvent, { type: 'error' }>).message).toMatch(/timed out after/);
+    expect(await logKinds(id)).toEqual(['user', 'step', 'error']);
+    expect(provider.closed).toBe(true);
+  });
+
+  test('deps.stepTimeoutMs applies when the caller names no timeout, and the caller overrides it', async () => {
+    const byDeps = hangingProvider([]);
+    const a = await store.create('default', {});
+    const events = await collect(
+      runStep({ ...deps([byDeps]), stepTimeoutMs: 50 }, { threadId: a.id, message: 'hello' }),
+    );
+    expect(events.map(e => e.type)).toEqual(['error']);
+
+    // A per-step timeout wins over the dep — here a short one over a long one,
+    // so the assertion cannot pass by waiting.
+    const byOpts = hangingProvider([]);
+    const b = await store.create('default', {});
+    const overridden = await collect(
+      runStep({ ...deps([byOpts]), stepTimeoutMs: 600_000 }, { threadId: b.id, message: 'hello', timeoutMs: 50 }),
+    );
+    expect(overridden.map(e => e.type)).toEqual(['error']);
+  });
+
+  /** Long enough for an abort's unwind (a microtask) to have happened. */
+  const settle = (): Promise<void> => new Promise(r => setTimeout(r, 20));
+
+  test('the timeout ABORTS the provider, so an SDK-shaped generator unwinds and its finally runs', async () => {
+    let unwound = false;
+    const abortable: ModelProvider = {
+      id: 'abortable/abortable',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+      async *run(req): AsyncIterable<StepEvent> {
+        try {
+          yield { type: 'text', text: 'a' };
+          // The shape of every real tier: one long await on the SDK, which
+          // settles when the request's signal fires.
+          await new Promise((_, reject) => {
+            req.signal?.addEventListener('abort', () => reject(new Error('aborted')), { once: true });
+          });
+        } finally {
+          unwound = true;
+        }
+      },
+    };
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([abortable]), { threadId: id, message: 'hello', timeoutMs: 50 }));
+
+    expect(events.map(e => e.type)).toEqual(['text', 'error']);
+    await settle();
+    // The provider actually stopped: on a real tier this is the harness child
+    // process dying and the HTTP response closing, not just us looking away.
+    expect(unwound).toBe(true);
+  });
+
+  test('a provider that ignores the signal cannot be unwound — and the step still ends on time', async () => {
+    // The limitation the close is fired-not-awaited for: `return()` on an
+    // async generator parked on an await that nothing settles is queued
+    // behind that await forever, so this `finally` never runs. The step must
+    // not wait for it.
+    let unwound = false;
+    const deaf: ModelProvider = {
+      id: 'deaf/deaf',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+      async *run(): AsyncIterable<StepEvent> {
+        try {
+          yield { type: 'text', text: 'a' };
+          await new Promise(() => {});
+        } finally {
+          unwound = true;
+        }
+      },
+    };
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([deaf]), { threadId: id, message: 'hello', timeoutMs: 50 }));
+
+    expect(events.map(e => e.type)).toEqual(['text', 'error']);
+    await settle();
+    expect(unwound).toBe(false);
+  });
+
+  test('a provider whose close never settles cannot wedge the step', async () => {
+    // `return()` that never resolves — a harness waiting on a child process
+    // that will not exit. An unbounded `await closeQuietly` here would hold
+    // the caller (and the server's thread lock) forever.
+    const stuck: ModelProvider = {
+      id: 'stuck/stuck',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+      run: (): AsyncIterable<StepEvent> => {
+        let sent = false;
+        return {
+          [Symbol.asyncIterator]: () => ({
+            next: (): Promise<IteratorResult<StepEvent>> => {
+              if (sent) return new Promise<IteratorResult<StepEvent>>(() => {});
+              sent = true;
+              return Promise.resolve({ value: { type: 'text', text: 'a' }, done: false });
+            },
+            return: (): Promise<IteratorResult<StepEvent>> => new Promise(() => {}),
+          }),
+        };
+      },
+    };
+    const { id } = await store.create('default', {});
+
+    // The close budget is `min(2000, what is left of the step)`, so a short
+    // step timeout bounds it tightly.
+    const it = runStep(deps([stuck]), { threadId: id, message: 'hello', timeoutMs: 300 })[Symbol.asyncIterator]();
+    expect((await it.next()).value!.type).toBe('text');
+    const startedAt = Date.now();
+    await it.return?.(undefined);
+
+    expect(Date.now() - startedAt).toBeLessThan(2_000);
+  });
+
+  test('a provider that fails after the deadline does not take the process down', async () => {
+    // The abandoned read rejects 80 ms in, long after the 20 ms deadline —
+    // by then nothing is waiting on it, and an unhandled rejection would be
+    // fatal rather than a failed step.
+    const dying: ModelProvider = {
+      id: 'dying/dying',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+      run: (): AsyncIterable<StepEvent> => ({
+        [Symbol.asyncIterator]: () => ({
+          next: (): Promise<IteratorResult<StepEvent>> =>
+            new Promise((_, reject) => setTimeout(() => reject(new Error('provider died')), 80)),
+        }),
+      }),
+    };
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([dying]), { threadId: id, message: 'hello', timeoutMs: 20 }));
+
+    expect(events.map(e => e.type)).toEqual(['error']);
+    // Outlive the rejection: an unhandled one surfaces after this test ends.
+    await new Promise(r => setTimeout(r, 120));
+  });
+
+  test('withStepTimeout puts the same deadline on a raw provider stream (the CLI path)', async () => {
+    const provider = hangingProvider([{ type: 'text', text: 'a' }]);
+
+    const seen: StepEvent[] = [];
+    const req = { tenant: 'default', system: '', messages: [], tools: [] };
+    for await (const ev of withStepTimeout(provider.run(req), 50)) seen.push(ev);
+
+    expect(seen.map(e => e.type)).toEqual(['text', 'error']);
+    expect((seen[1] as Extract<StepEvent, { type: 'error' }>).message).toMatch(/timed out after/);
+    expect(provider.closed).toBe(true);
+  });
+
+  test('withStepTimeout passes a stream that finishes in time straight through', async () => {
+    const fake = new FakeModelProvider([{ text: 'hi' }]);
+    const req = { tenant: 'default', system: '', messages: [], tools: [] };
+    const seen: StepEvent[] = [];
+    for await (const ev of withStepTimeout(fake.run(req), 600_000)) seen.push(ev);
+    expect(seen.map(e => e.type)).toEqual(['text', 'done']);
+  });
+
+  test('a step that finishes normally is unaffected (and leaves no live timer behind)', async () => {
+    // Every other test in this suite runs on the 600 s default; if the
+    // deadline timer were not cancelled when the step ends, `bun test` would
+    // hang for ten minutes after the last assertion.
+    const fake = new FakeModelProvider([{ text: 'hi' }]);
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([fake]), { threadId: id, message: 'hello', timeoutMs: 600_000 }));
+
+    expect(events.map(e => e.type)).toEqual(['text', 'done']);
+  });
+
+  test('a done with a slow tail behind it ends the step — one terminal event, not a timeout on top of it', async () => {
+    // The provider answered. What is left is teardown the caller must not be
+    // billed for: reading on would race the deadline against a tail that owes
+    // the caller nothing, and append a `timeout` error behind a finished step.
+    // Both doors are tested: a `done` that arrives as the step's first event,
+    // and one that arrives mid-stream, where the deadline race lives.
+    function trailingDone(lead: StepEvent[]): ModelProvider {
+      return {
+        id: 'trailing/trailing',
+        kind: 'direct',
+        capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+        async *run(): AsyncIterable<StepEvent> {
+          for (const ev of lead) yield ev;
+          yield { type: 'done', output: null, usage: { inputTokens: 1, outputTokens: 2 } };
+          // Ends 150 ms later — well past the 50 ms deadline below.
+          await new Promise(r => setTimeout(r, 150));
+        },
+      };
+    }
+
+    const first = await store.create('default', {});
+    const firstEvents = await collect(
+      runStep(deps([trailingDone([])]), { threadId: first.id, message: 'hello', timeoutMs: 50 }),
+    );
+    expect(firstEvents.map(e => e.type)).toEqual(['done']);
+    expect(await logKinds(first.id)).toEqual(['user', 'step', 'done']);
+    expect(readRun(vaultRoot, 'default', firstEvents[0]!.runId)!.status).toBe('done');
+
+    const mid = await store.create('default', {});
+    const midEvents = await collect(
+      runStep(deps([trailingDone([{ type: 'text', text: 'a' }])]), {
+        threadId: mid.id,
+        message: 'hello',
+        timeoutMs: 50,
+      }),
+    );
+    expect(midEvents.map(e => e.type)).toEqual(['text', 'done']);
+    expect(await logKinds(mid.id)).toEqual(['user', 'step', 'text', 'done']);
+    expect(readRun(vaultRoot, 'default', midEvents[0]!.runId)!.status).toBe('done');
+  });
+
+  test('a deadline that passes during the resume fallback does not start a second attempt', async () => {
+    // Clearing the dead session is a disk write, and it can outlast what is
+    // left of the step. Calling the provider again then would hand it an
+    // already-aborted signal: a run that can only produce the timeout the
+    // caller is owed anyway.
+    let runs = 0;
+    const provider: ModelProvider = {
+      id: 'resume/resume',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+      async *run(): AsyncIterable<StepEvent> {
+        runs++;
+        yield { type: 'error', message: 'session not found' };
+      },
+    };
+    class SlowClearStore extends ThreadStore {
+      override async clearSession(tenant: string, id: string, providerId: string): Promise<void> {
+        await new Promise(r => setTimeout(r, 60));
+        return super.clearSession(tenant, id, providerId);
+      }
+    }
+    const slow = new SlowClearStore(vaultRoot, { codexHomeRoot: mkdtempSync(join(tmpdir(), 'loop-codex-')) });
+    const { id } = await slow.create('default', {});
+    await slow.setSession('default', id, provider.id, 'dead-session');
+
+    const events = await collect(
+      runStep({ ...deps([provider]), store: slow }, { threadId: id, message: 'hello', timeoutMs: 30 }),
+    );
+
+    expect(events.map(e => e.type)).toEqual(['error']);
+    expect((events[0] as Extract<StepEvent, { type: 'error' }>).message).toMatch(/^step timed out after \d+s$/);
+    expect(runs).toBe(1);
+    // The fallback still did its half: the dead session is gone and the
+    // warning is in the transcript.
+    expect(await logKinds(id)).toEqual(['user', 'step', 'warning', 'error']);
+    const { header } = await slow.get('default', id);
+    expect(header.sessions[provider.id]).toBeUndefined();
+    expect(readRun(vaultRoot, 'default', events[0]!.runId)!.status).toBe('timeout');
+  });
+});
+
+describe('runStep — the run record', () => {
+  /** A provider that emits `script`, then parks until `release()` is called. */
+  function pausing(script: StepEvent[]): { provider: ModelProvider; release: () => void } {
+    let release!: () => void;
+    const parked = new Promise<void>(resolve => {
+      release = resolve;
+    });
+    return {
+      release,
+      provider: {
+        id: 'paused/paused',
+        kind: 'direct',
+        capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+        async *run(): AsyncIterable<StepEvent> {
+          for (const ev of script) yield ev;
+          await parked;
+          yield { type: 'done', output: null, usage: { inputTokens: 1, outputTokens: 2 } };
+        },
+      },
+    };
+  }
+
+  /** A provider that yields `script` and then never says anything again. */
+  function hanging(script: StepEvent[]): ModelProvider {
+    return {
+      id: 'hang/hang',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+      async *run(): AsyncIterable<StepEvent> {
+        for (const ev of script) yield ev;
+        await new Promise(() => {});
+      },
+    };
+  }
+
+  test('a step that finishes writes a done record: what it read, ran, proposed, produced, and cost', async () => {
+    const fake = new FakeModelProvider([
+      {
+        toolCalls: [
+          { name: 'read_primitive', input: { name: 'draft' } },
+          { name: 'read_primitive', input: { name: 'draft' } },
+          { name: 'read_primitive', input: { name: 'evaluate' } },
+          { name: 'propose_update', input: { path: 'practice/standards/nda.md', content: 'x', rationale: 'because' } },
+        ],
+        text: 'drafted',
+        usage: { inputTokens: 12, outputTokens: 34, costUsd: 0.5 },
+      },
+    ]);
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([fake]), { threadId: id, message: 'draft it', task: 'draft' }));
+    const runId = events[0]!.runId;
+    const rec = readRun(vaultRoot, 'default', runId)!;
+
+    expect(rec.runId).toBe(runId);
+    expect(rec.threadId).toBe(id);
+    expect(rec.tenant).toBe('default');
+    expect(rec.status).toBe('done');
+    expect(rec.message).toBe('draft it');
+    expect(rec.task).toBe('draft');
+    expect(rec.provider).toBe('fake/fake');
+    expect(typeof rec.startedAt).toBe('string');
+    expect(typeof rec.finishedAt).toBe('string');
+    expect(rec.durationMs).toBeGreaterThanOrEqual(0);
+    expect(rec.usage).toEqual({ inputTokens: 12, outputTokens: 34, costUsd: 0.5 });
+    expect(rec.costUsd).toBe(0.5);
+    expect(rec.error).toBeUndefined();
+
+    // Unique, in first-read order — the same primitive read twice is one entry.
+    expect(rec.primitivesRead).toEqual(['draft', 'evaluate']);
+    // Every tool call, the same list the run log gets.
+    expect(rec.toolCalls.map(c => c.name)).toEqual([
+      'read_primitive',
+      'read_primitive',
+      'read_primitive',
+      'propose_update',
+    ]);
+    // The proposal the step raised, by the id the `proposal` event carried.
+    const proposal = events.find(e => e.type === 'proposal') as Extract<StepEvent, { type: 'proposal' }>;
+    expect(rec.proposals).toEqual([proposal.id]);
+  });
+
+  test('the record is open and `running` while the step is still going, with the provider filled in', async () => {
+    const { provider, release } = pausing([{ type: 'text', text: 'thinking' }]);
+    const { id } = await store.create('default', {});
+
+    const it = runStep(deps([provider]), { threadId: id, message: 'hello' })[Symbol.asyncIterator]();
+    const first = await it.next();
+    const runId = first.value!.runId;
+
+    const mid = readRun(vaultRoot, 'default', runId)!;
+    expect(mid.status).toBe('running');
+    expect(mid.provider).toBe('paused/paused');
+    expect(mid.message).toBe('hello');
+    expect(mid.finishedAt).toBeUndefined();
+    expect(listRuns(vaultRoot, 'default', id).map(r => r.runId)).toEqual([runId]);
+
+    release();
+    while (!(await it.next()).done) { /* drain */ }
+    expect(readRun(vaultRoot, 'default', runId)!.status).toBe('done');
+  });
+
+  test('output is recorded only when the step asked for a structured answer', async () => {
+    const script = [{ output: { findings: [] }, usage: { inputTokens: 1, outputTokens: 2 } }];
+
+    const untyped = await collect(
+      runStep(deps([new FakeModelProvider(script)]), { threadId: (await store.create('default', {})).id, message: 'hi' }),
+    );
+    expect(readRun(vaultRoot, 'default', untyped[0]!.runId)!.output).toBeUndefined();
+
+    const typed = await collect(
+      runStep(deps([new FakeModelProvider(script)]), {
+        threadId: (await store.create('default', {})).id,
+        message: 'hi',
+        outputSchema: z.object({ findings: z.array(z.string()) }),
+      }),
+    );
+    expect(readRun(vaultRoot, 'default', typed[0]!.runId)!.output).toEqual({ findings: [] });
+  });
+
+  test('a provider error finalizes the record as error, with the message', async () => {
+    const fake = new FakeModelProvider([{ text: 'partial', error: 'the model gave up' }]);
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([fake]), { threadId: id, message: 'hello' }));
+    const rec = readRun(vaultRoot, 'default', events[0]!.runId)!;
+
+    expect(rec.status).toBe('error');
+    expect(rec.error).toBe('the model gave up');
+    expect(typeof rec.finishedAt).toBe('string');
+  });
+
+  test('a timed-out step is `timeout`, not `error` — the two read differently to an operator', async () => {
+    const { id } = await store.create('default', {});
+
+    const events = await collect(
+      runStep(deps([hanging([{ type: 'text', text: 'a' }])]), { threadId: id, message: 'hello', timeoutMs: 50 }),
+    );
+    const rec = readRun(vaultRoot, 'default', events[0]!.runId)!;
+
+    expect(rec.status).toBe('timeout');
+    expect(rec.error).toMatch(/^step timed out after \d+s$/);
+    expect(typeof rec.finishedAt).toBe('string');
+  });
+
+  test('a tool call that never came back is in the record, with its duration and outcome unknown', async () => {
+    const { id } = await store.create('default', {});
+    const orphan = hanging([{ type: 'tool_call', id: 'c1', name: 'vault_read', input: {} }]);
+
+    const events = await collect(runStep(deps([orphan]), { threadId: id, message: 'hello', timeoutMs: 50 }));
+    const rec = readRun(vaultRoot, 'default', events[0]!.runId)!;
+
+    expect(rec.toolCalls).toEqual([{ name: 'vault_read', ms: null, isError: null }]);
+  });
+
+  test('a step that dies before a provider is chosen still leaves a record', async () => {
+    const { id } = await store.create('default', {});
+
+    const events = await collect(
+      runStep(deps([new FakeModelProvider([])]), { threadId: id, message: 'hello', providerId: 'nope/nope' }),
+    );
+    const rec = readRun(vaultRoot, 'default', events[0]!.runId)!;
+
+    expect(rec.status).toBe('error');
+    expect(rec.error).toBe('unknown provider: nope/nope');
+    // Nothing resolved, so nothing to name.
+    expect(rec.provider).toBe('');
+  });
+
+  test('an unknown thread leaves no record — there was no run to record', async () => {
+    const missing = randomUUID();
+    const events = await collect(runStep(deps([new FakeModelProvider([])]), { threadId: missing, message: 'hello' }));
+
+    expect(events.map(e => e.type)).toEqual(['error']);
+    expect(readRun(vaultRoot, 'default', events[0]!.runId)).toBeNull();
+  });
+
+  test('the run record does not replace the run log — both are written', async () => {
+    const fake = new FakeModelProvider([{ text: 'hi', usage: { inputTokens: 1, outputTokens: 2 } }]);
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([fake]), { threadId: id, message: 'hello' }));
+    const runId = events[0]!.runId;
+
+    expect(readRun(vaultRoot, 'default', runId)).not.toBeNull();
+    const log = JSON.parse(
+      readFileSync(join(vaultRoot, '.counsel', 'runs', 'default', `${runId}.log.jsonl`), 'utf8').trim(),
+    ) as RunLogEntry;
+    expect(log.provider).toBe('fake/fake');
+  });
+
+  test('a caller that hangs up mid-step leaves an abandoned record, not one stuck at running', async () => {
+    // The routine case: an SSE client closes its tab. Nothing failed, but the
+    // record must not read as `running` — that now means the process died.
+    const { provider } = pausing([
+      { type: 'text', text: 'thinking' },
+      { type: 'tool_call', id: 'c1', name: 'read_primitive', input: { name: 'draft' } },
+    ]);
+    const { id } = await store.create('default', {});
+
+    const it = runStep(deps([provider]), { threadId: id, message: 'hello' })[Symbol.asyncIterator]();
+    const first = await it.next();
+    await it.next();
+    await it.return?.(undefined);
+
+    const rec = readRun(vaultRoot, 'default', first.value!.runId)!;
+    expect(rec.status).toBe('abandoned');
+    expect(rec.error).toBe('the caller abandoned the step');
+    expect(typeof rec.finishedAt).toBe('string');
+    expect(rec.durationMs).toBeGreaterThanOrEqual(0);
+    // What the step had done by then is still recorded.
+    expect(rec.primitivesRead).toEqual(['draft']);
+  });
+
+  test('a caller that hangs up during the step SETUP still ends abandoned', async () => {
+    // Nothing yields during the setup — the user append, the router, the
+    // prompt assembly — so the guard has to be in scope for all of it, not
+    // just from the provider onward.
+    class SlowStore extends ThreadStore {
+      override async append(tenant: string, id: string, ev: ThreadEvent): Promise<void> {
+        await new Promise(r => setTimeout(r, 50));
+        return super.append(tenant, id, ev);
+      }
+    }
+    const slow = new SlowStore(vaultRoot, { codexHomeRoot: mkdtempSync(join(tmpdir(), 'loop-codex-')) });
+    const { id } = await slow.create('default', {});
+
+    const it = runStep({ ...deps([new FakeModelProvider([{ text: 'hi' }])]), store: slow }, {
+      threadId: id,
+      message: 'hello',
+    })[Symbol.asyncIterator]();
+    // Kick the step off — it parks on the user-turn append — then walk away.
+    const pull = it.next();
+    await new Promise(r => setTimeout(r, 10));
+    await it.return?.(undefined);
+    await pull;
+
+    const [rec] = listRuns(vaultRoot, 'default', id);
+    expect(rec!.status).toBe('abandoned');
+    expect(typeof rec!.finishedAt).toBe('string');
+  });
+
+  test('a thread-store read that throws during setup is an error record, not `running`', async () => {
+    // `replay()` reads the log outside any of the setup's own try/catches; a
+    // failure there escapes as an exception. The record must not be left
+    // saying the step is still going.
+    class BrokenStore extends ThreadStore {
+      reads = 0;
+      override async get(tenant: string, id: string): ReturnType<ThreadStore['get']> {
+        // 1: the existence check. 2: the header read. 3: the window replay.
+        if (++this.reads === 3) throw new Error('log read failed');
+        return super.get(tenant, id);
+      }
+    }
+    const broken = new BrokenStore(vaultRoot, { codexHomeRoot: mkdtempSync(join(tmpdir(), 'loop-codex-')) });
+    const { id } = await broken.create('default', {});
+
+    const d = { ...deps([new FakeModelProvider([{ text: 'hi' }])]), store: broken };
+    await expect(collect(runStep(d, { threadId: id, message: 'hello' }))).rejects.toThrow('log read failed');
+
+    const [rec] = listRuns(vaultRoot, 'default', id);
+    expect(rec!.status).toBe('error');
+    expect(rec!.error).toBe('log read failed');
+  });
+
+  test('a provider that THROWS is an error record, not an abandoned one', async () => {
+    // The `finally` that marks abandonment also runs when an exception
+    // unwinds the step. A provider that threw instead of yielding an `error`
+    // failed; nobody walked away.
+    const exploding: ModelProvider = {
+      id: 'boom/boom',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+      async *run(): AsyncIterable<StepEvent> {
+        yield { type: 'text', text: 'a' };
+        throw new Error('provider exploded');
+      },
+    };
+    const { id } = await store.create('default', {});
+
+    const it = runStep(deps([exploding]), { threadId: id, message: 'hello' })[Symbol.asyncIterator]();
+    const runId = (await it.next()).value!.runId;
+    await expect(it.next()).rejects.toThrow('provider exploded');
+
+    const rec = readRun(vaultRoot, 'default', runId)!;
+    expect(rec.status).toBe('error');
+    expect(rec.error).toBe('provider exploded');
+  });
+
+  test('a step that ran to completion is NOT re-marked abandoned on the way out', async () => {
+    // The `finally` that marks abandonment runs on every exit, the normal one
+    // included; a finalized record must survive it untouched.
+    const fake = new FakeModelProvider([{ text: 'hi', usage: { inputTokens: 1, outputTokens: 2 } }]);
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([fake]), { threadId: id, message: 'hello' }));
+    const rec = readRun(vaultRoot, 'default', events[0]!.runId)!;
+
+    expect(rec.status).toBe('done');
+    expect(rec.error).toBeUndefined();
+  });
+
+  test('a step that ended in an error is not re-marked abandoned either', async () => {
+    const fake = new FakeModelProvider([{ error: 'the model gave up' }]);
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([fake]), { threadId: id, message: 'hello' }));
+    const rec = readRun(vaultRoot, 'default', events[0]!.runId)!;
+
+    expect(rec.status).toBe('error');
+    expect(rec.error).toBe('the model gave up');
+  });
+
+  test('every run of a thread is listed, newest first', async () => {
+    const fake = new FakeModelProvider([{ text: 'one' }, { text: 'two' }]);
+    const { id } = await store.create('default', {});
+
+    const first = await collect(runStep(deps([fake]), { threadId: id, message: 'first' }));
+    // The records are ordered by `startedAt`, an ISO timestamp: two steps
+    // inside the same millisecond would tie.
+    await new Promise(r => setTimeout(r, 2));
+    const second = await collect(runStep(deps([fake]), { threadId: id, message: 'second' }));
+
+    expect(listRuns(vaultRoot, 'default', id).map(r => r.runId)).toEqual([second[0]!.runId, first[0]!.runId]);
   });
 });

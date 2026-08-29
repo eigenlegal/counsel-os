@@ -11,6 +11,7 @@ import { builtinTools } from './tools/builtin';
 import { Router, parseRouterConfig } from './router/router';
 import { buildProviders } from './providers/index';
 import { DEFAULT_TENANT, isTerminal, type ModelProvider } from './core/types';
+import { DEFAULT_STEP_TIMEOUT_MS, withStepTimeout } from './loop/counsel-loop';
 import { startServer } from './server/serve';
 
 const { values, positionals } = parseArgs({
@@ -20,6 +21,7 @@ const { values, positionals } = parseArgs({
     vault: { type: 'string' },
     provider: { type: 'string' },
     port: { type: 'string' },       // `serve`: bind port (default 7431, then an OS-assigned one)
+    'step-timeout': { type: 'string' }, // per-step deadline in ms (default 600000)
     task: { type: 'string' },
     schema: { type: 'string' },
     system: { type: 'string', default: 'You are counsel. Use the vault tools to answer. Be brief.' },
@@ -32,10 +34,25 @@ const { values, positionals } = parseArgs({
 const [cmd, ...rest] = positionals;
 
 function usage(): never {
-  console.error('usage: bun runtime/src/cli.ts step --vault <dir> --provider <id> [--task <name>] [--schema <json>] [--session <id>] [--codex-home <dir>] [--cwd <dir>] "<prompt>"');
-  console.error('       bun runtime/src/cli.ts serve [--port <n>] [--vault <dir>]');
+  console.error('usage: bun runtime/src/cli.ts step --vault <dir> --provider <id> [--task <name>] [--schema <json>] [--session <id>] [--codex-home <dir>] [--cwd <dir>] [--step-timeout <ms>] "<prompt>"');
+  console.error('       bun runtime/src/cli.ts serve [--port <n>] [--vault <dir>] [--step-timeout <ms>]');
   process.exit(2);
 }
+
+/** A millisecond option: a bad one is the caller's mistake, and exits the
+ * way a bad `--port` does rather than being rounded into something plausible. */
+function millis(flag: string, raw: string | undefined): number | undefined {
+  if (raw === undefined) return undefined;
+  const ms = Number(raw);
+  if (!Number.isInteger(ms) || ms <= 0) {
+    console.error(`--${flag} must be a positive whole number of milliseconds, got: ${raw}`);
+    process.exit(2);
+  }
+  return ms;
+}
+
+// Both commands take it, so it is checked once, before either runs.
+const stepTimeoutMs = millis('step-timeout', values['step-timeout']);
 
 // `serve` runs the local HTTP/SSE runtime and then just stays up — Bun.serve
 // keeps the process alive, and the signal handlers startServer installs are
@@ -52,6 +69,7 @@ if (cmd === 'serve') {
   await startServer({
     ...(values.vault ? { vault: values.vault } : {}),
     ...(port === undefined ? {} : { port }),
+    ...(stepTimeoutMs === undefined ? {} : { stepTimeoutMs }),
   });
 } else {
   await step();
@@ -89,14 +107,20 @@ async function step(): Promise<void> {
 
   const tools = [...guardedVaultTools(store, readVaultConfig(vaultRoot)), ...registry.available()];
   let exit = 1;
-  for await (const ev of provider.run({
+  const cancel = new AbortController();
+  const events = provider.run({
     tenant: DEFAULT_TENANT,
     system: values.system!,
     messages: [{ role: 'user', content: rest.join(' ') }],
     tools,
+    signal: cancel.signal,
     ...(outputSchema ? { outputSchema } : {}),
     ...(values.session ? { session: { id: values.session } } : {}),
-  })) {
+  });
+  // A hung provider ends the same way here as it does in the loop: the SDK is
+  // aborted, the provider is closed, and the step ends with one terminal
+  // `error` and a non-zero exit.
+  for await (const ev of withStepTimeout(events, stepTimeoutMs ?? DEFAULT_STEP_TIMEOUT_MS, () => cancel.abort())) {
     console.log(JSON.stringify(ev));
     if (isTerminal(ev)) exit = ev.type === 'done' ? 0 : 1;
   }

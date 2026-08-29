@@ -28,7 +28,7 @@ beforeEach(() => {
   store = new ThreadStore(vaultRoot, { codexHomeRoot: mkdtempSync(join(tmpdir(), 'routes-codex-')) });
 });
 
-function appWith(providers: ModelProvider[]): App {
+function appWith(providers: ModelProvider[], extra: Partial<ServerDeps> = {}): App {
   const deps: ServerDeps = {
     token: TOKEN,
     tenant: 'default',
@@ -39,6 +39,7 @@ function appWith(providers: ModelProvider[]): App {
     providers,
     router: new Router({ default: providers[0]!.id }, providers),
     platform: 'macos',
+    ...extra,
   };
   return createApp(deps);
 }
@@ -102,7 +103,7 @@ function kindOf(ev: ThreadEvent): string {
 describe('auth', () => {
   test('every route needs a bearer token', async () => {
     const app = appWithFake();
-    for (const path of ['/health', '/threads', '/vault/list']) {
+    for (const path of ['/health', '/threads', '/vault/list', '/runs']) {
       expect((await call(app, 'GET', path, { token: null })).status).toBe(401);
       expect((await call(app, 'GET', path, { token: 'wrong-token' })).status).toBe(401);
       // A prefix of the real token must not pass either.
@@ -238,6 +239,157 @@ describe('POST /threads/:id/steps', () => {
     expect(events.map(kindOf)).toEqual(['user', 'step', 'text', 'done', 'user', 'step', 'text', 'done']);
     const users = events.filter((e): e is Extract<ThreadEvent, { t: 'user' }> => 't' in e && e.t === 'user');
     expect(users.map(u => u.content)).toEqual(['first', 'second']);
+  });
+
+  test('a hung provider times out, and the thread is free again immediately', async () => {
+    // The hang is hand-rolled: `return()` on an async generator parked on a
+    // never-resolving `await` never runs, so a generator could not report
+    // being closed (see the loop's `closeWithoutWaiting`).
+    let closed = false;
+    const hanging: ModelProvider = {
+      id: 'hang/hang',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+      run(): AsyncIterable<StepEvent> {
+        let sent = false;
+        return {
+          [Symbol.asyncIterator]: () => ({
+            next: (): Promise<IteratorResult<StepEvent>> => {
+              if (sent) return new Promise<IteratorResult<StepEvent>>(() => {});
+              sent = true;
+              return Promise.resolve({ value: { type: 'text', text: 'thinking' }, done: false });
+            },
+            return: async (): Promise<IteratorResult<StepEvent>> => {
+              closed = true;
+              return { value: undefined, done: true };
+            },
+          }),
+        };
+      },
+    };
+    const app = appWith([hanging, new FakeModelProvider([{ text: 'second answer' }])], { stepTimeoutMs: 50 });
+    const id = await newThread(app);
+
+    const first = await step(app, id, { message: 'hi' });
+    expect(first.res.status).toBe(200);
+    expect(first.frames.map(f => f.event)).toEqual(['text', 'error']);
+    expect(String(first.frames[1]!.data['message'])).toMatch(/timed out after/);
+    expect(closed).toBe(true);
+
+    // The lock came back with the stream: a second step on the SAME thread
+    // runs to completion instead of queueing behind a provider nobody is
+    // waiting on any more.
+    const second = await step(app, id, { message: 'again', provider: 'fake/fake' });
+    expect(second.res.status).toBe(200);
+    expect(second.frames.map(f => f.event)).toEqual(['text', 'done']);
+
+    const { events } = await store.get('default', id);
+    expect(events.map(kindOf)).toEqual(['user', 'step', 'text', 'error', 'user', 'step', 'text', 'done']);
+  });
+
+  test('a provider whose close never settles does not hold the thread lock', async () => {
+    // The step itself finishes cleanly — it is the CLOSE that hangs, a
+    // harness waiting on a child process that will not exit. An unbounded
+    // wait there would leave the SSE stream open, so the lock would never be
+    // released and every later step on this thread would queue behind it.
+    const stuckClose: ModelProvider = {
+      id: 'stuck/stuck',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+      run: (): AsyncIterable<StepEvent> => {
+        const script: StepEvent[] = [
+          { type: 'text', text: 'answer' },
+          { type: 'done', output: null, usage: { inputTokens: 0, outputTokens: 0 } },
+        ];
+        let i = 0;
+        return {
+          [Symbol.asyncIterator]: () => ({
+            next: (): Promise<IteratorResult<StepEvent>> => {
+              const ev = script[i++];
+              return Promise.resolve(ev ? { value: ev, done: false } : { value: undefined, done: true });
+            },
+            return: (): Promise<IteratorResult<StepEvent>> => new Promise(() => {}),
+          }),
+        };
+      },
+    };
+    // A short step timeout also shortens the close budget (`min(2000, what is
+    // left of the step)`), so the fall-through is quick.
+    const app = appWith([stuckClose, new FakeModelProvider([{ text: 'second answer' }])], { stepTimeoutMs: 300 });
+    const id = await newThread(app);
+
+    const first = await step(app, id, { message: 'hi' });
+    expect(first.frames.map(f => f.event)).toEqual(['text', 'done']);
+
+    const second = await step(app, id, { message: 'again', provider: 'fake/fake' });
+    expect(second.res.status).toBe(200);
+    expect(second.frames.map(f => f.event)).toEqual(['text', 'done']);
+  });
+});
+
+describe('typed answers', () => {
+  test('an outputSchema on the request reaches the provider, and done carries the parsed output', async () => {
+    const app = appWithFake([{ text: 'ok', output: { files: ['a'] } }]);
+    const id = await newThread(app);
+
+    const { res, frames } = await step(app, id, {
+      message: 'list the files',
+      outputSchema: {
+        type: 'object',
+        properties: { files: { type: 'array', items: { type: 'string' } } },
+        required: ['files'],
+      },
+    });
+
+    expect(res.status).toBe(200);
+    const done = frames.find(f => f.event === 'done')!;
+    expect(done.data['output']).toEqual({ files: ['a'] });
+  });
+
+  test('an invalid outputSchema is 400 and never reaches the provider', async () => {
+    const app = appWithFake();
+    const id = await newThread(app);
+
+    const res = await call(app, 'POST', `/threads/${id}/steps`, {
+      body: { message: 'hi', outputSchema: { type: 'nope' } },
+    });
+
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error: string }).error).toContain('invalid outputSchema');
+  });
+});
+
+describe('proposal event', () => {
+  test('the step stream carries a proposal frame after propose_update, with the id the log recorded', async () => {
+    const app = appWithFake([
+      {
+        toolCalls: [
+          {
+            name: 'propose_update',
+            input: { path: 'practice/standards/x.md', content: 'NEW TEXT\n', rationale: 'because' },
+          },
+        ],
+        text: 'proposed',
+      },
+    ]);
+    const id = await newThread(app);
+
+    const { res, frames } = await step(app, id, { message: 'remember this' });
+
+    expect(res.status).toBe(200);
+    expect(frames.map(f => f.event)).toEqual(['tool_call', 'tool_result', 'proposal', 'text', 'done']);
+    const proposalFrame = frames.find(f => f.event === 'proposal')!;
+    expect(proposalFrame.data['path']).toBe('practice/standards/x.md');
+    expect(proposalFrame.data['rationale']).toBe('because');
+
+    const { events } = await store.get('default', id);
+    const logged = events.find(
+      (ev): ev is Extract<ThreadEvent, { t: 'proposal' }> => 't' in ev && ev.t === 'proposal',
+    )!;
+    expect(proposalFrame.data['id']).toBe(logged.id);
+
+    // Not double-logged: the log has the one ThreadEvent the tool wrote.
+    expect(events.map(kindOf)).toEqual(['user', 'step', 'tool_call', 'proposal', 'tool_result', 'text', 'done']);
   });
 });
 
@@ -531,3 +683,99 @@ class EndlessProvider implements ModelProvider {
     }
   }
 }
+
+describe('runs', () => {
+  /** Runs one step and hands back the run it produced. */
+  async function stepped(app: App, id: string, message: string): Promise<string> {
+    const { res } = await step(app, id, { message });
+    expect(res.status).toBe(200);
+    return res.headers.get('x-run-id')!;
+  }
+
+  test('GET /runs lists a thread run by run, newest first', async () => {
+    const app = appWithFake([{ text: 'one' }, { text: 'two' }]);
+    const id = await newThread(app);
+
+    const first = await stepped(app, id, 'first');
+    // `startedAt` is an ISO millisecond stamp; two steps inside one
+    // millisecond would tie.
+    await new Promise(r => setTimeout(r, 2));
+    const second = await stepped(app, id, 'second');
+
+    const res = await call(app, 'GET', `/runs?thread=${id}`);
+    expect(res.status).toBe(200);
+    const runs = (await res.json()) as Array<Record<string, unknown>>;
+    expect(runs.map(r => r.runId)).toEqual([second, first]);
+    expect(runs[0]!.message).toBe('second');
+    expect(runs[0]!.status).toBe('done');
+    expect(runs[0]!.threadId).toBe(id);
+  });
+
+  test('a thread with no runs yet is an empty list, not a 404', async () => {
+    const app = appWithFake();
+    const res = await call(app, 'GET', `/runs?thread=${await newThread(app)}`);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual([]);
+  });
+
+  test('another thread\'s runs are not listed', async () => {
+    const app = appWithFake([{ text: 'one' }, { text: 'two' }]);
+    const mine = await newThread(app);
+    const theirs = await newThread(app);
+    const runId = await stepped(app, mine, 'mine');
+    await stepped(app, theirs, 'theirs');
+
+    const runs = (await (await call(app, 'GET', `/runs?thread=${mine}`)).json()) as Array<{ runId: string }>;
+    expect(runs.map(r => r.runId)).toEqual([runId]);
+  });
+
+  test('the thread parameter is required, well-formed, and must name a real thread', async () => {
+    const app = appWithFake();
+    expect((await call(app, 'GET', '/runs')).status).toBe(400);
+    expect((await call(app, 'GET', '/runs?thread=')).status).toBe(400);
+    expect((await call(app, 'GET', '/runs?thread=not-a-uuid')).status).toBe(400);
+    expect((await call(app, 'GET', '/runs?thread=../../etc/passwd')).status).toBe(400);
+    expect((await call(app, 'GET', `/runs?thread=${randomUUID()}`)).status).toBe(404);
+  });
+
+  test('GET /runs/:runId returns the one record', async () => {
+    const app = appWithFake([{ text: 'hi', usage: { inputTokens: 3, outputTokens: 4, costUsd: 0.25 } }]);
+    const id = await newThread(app);
+    const runId = await stepped(app, id, 'hello');
+
+    const res = await call(app, 'GET', `/runs/${runId}`);
+    expect(res.status).toBe(200);
+    const run = (await res.json()) as Record<string, unknown>;
+    expect(run.runId).toBe(runId);
+    expect(run.threadId).toBe(id);
+    expect(run.status).toBe('done');
+    expect(run.provider).toBe('fake/fake');
+    expect(run.costUsd).toBe(0.25);
+  });
+
+  test('an unknown run is 404 and a malformed run id is 400', async () => {
+    const app = appWithFake();
+    expect((await call(app, 'GET', `/runs/${randomUUID()}`)).status).toBe(404);
+    expect((await call(app, 'GET', '/runs/not-a-uuid')).status).toBe(400);
+  });
+
+  test('a corrupt record is 404, not a 500', async () => {
+    const app = appWithFake();
+    const id = await newThread(app);
+    const runId = await stepped(app, id, 'hello');
+    writeFileSync(join(vaultRoot, '.counsel', 'runs', 'default', `${runId}.json`), '{ not json', 'utf8');
+
+    expect((await call(app, 'GET', `/runs/${runId}`)).status).toBe(404);
+    // And it is skipped rather than failing the thread's whole listing.
+    const res = await call(app, 'GET', `/runs?thread=${id}`);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual([]);
+  });
+
+  test('the runs API is read-only', async () => {
+    const app = appWithFake();
+    const id = await newThread(app);
+    expect((await call(app, 'POST', `/runs?thread=${id}`, { body: {} })).status).toBe(404);
+    expect((await call(app, 'DELETE', `/runs/${randomUUID()}`)).status).toBe(404);
+  });
+});

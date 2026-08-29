@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { z } from 'zod';
-import { buildQueryOptions, mapClaudeMessage, shouldCleanupCwd } from './claude-harness';
+import { abortControllerFor, buildQueryOptions, mapClaudeMessage, shouldCleanupCwd } from './claude-harness';
 import { toHarnessJsonSchema } from './schema';
 import type { StepRequest } from '../core/types';
 
@@ -64,6 +64,18 @@ describe('mapClaudeMessage', () => {
 
 describe('buildQueryOptions', () => {
   const baseReq: StepRequest = { tenant: 'default', system: 'You are a helpful assistant.', messages: [], tools: [] };
+
+  test('forwards the step signal as the SDK abortController — and omits it when there is none', () => {
+    expect(buildQueryOptions(baseReq, 'claude-opus-5', {}, '/tmp/counsel-cwd').abortController).toBeUndefined();
+
+    const cancel = new AbortController();
+    const opts = buildQueryOptions({ ...baseReq, signal: cancel.signal }, 'claude-opus-5', {}, '/tmp/counsel-cwd');
+    expect(opts.abortController).toBeInstanceOf(AbortController);
+    expect(opts.abortController!.signal.aborted).toBe(false);
+    // The step's abort has to reach the query, or the CLI child keeps running.
+    cancel.abort();
+    expect(opts.abortController!.signal.aborted).toBe(true);
+  });
 
   test('disables built-in tools with tools:[], auto-approves ours, keeps disallowedTools belt-and-braces', () => {
     const opts = buildQueryOptions(baseReq, 'claude-opus-5', {}, '/tmp/counsel-cwd');
@@ -146,5 +158,17 @@ describe('shouldCleanupCwd', () => {
   });
   test('false when a cwd was supplied by the caller — run() must not remove it', () => {
     expect(shouldCleanupCwd('/some/persistent/cwd')).toBe(false);
+  });
+});
+
+describe('abortControllerFor', () => {
+  test('a signal that already fired aborts the controller immediately — the query must not start', () => {
+    const cancel = new AbortController();
+    cancel.abort();
+    expect(abortControllerFor(cancel.signal)!.signal.aborted).toBe(true);
+  });
+
+  test('no signal, no controller', () => {
+    expect(abortControllerFor(undefined)).toBeUndefined();
   });
 });

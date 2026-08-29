@@ -2,7 +2,7 @@ import { chmodSync, constants, copyFileSync, existsSync, lstatSync, mkdirSync, m
 import { homedir, tmpdir } from 'node:os';
 import { join, resolve, sep } from 'node:path';
 import type { ZodType } from 'zod';
-import { Codex, type CodexOptions, type ThreadOptions } from '@openai/codex-sdk';
+import { Codex, type CodexOptions, type ThreadOptions, type TurnOptions } from '@openai/codex-sdk';
 import type { Capabilities, ModelProvider, StepEvent, StepRequest, Tenant } from '../core/types';
 import { toHarnessJsonSchema } from './schema';
 import { transportEnv } from './env';
@@ -125,6 +125,19 @@ export function buildThreadOptions(model: string, cwd: string): ThreadOptions {
     workingDirectory: cwd,
     skipGitRepoCheck: true,
     webSearchEnabled: false,
+  };
+}
+
+/**
+ * Pure builder for one turn's options (index.d.ts:168-174: `TurnOptions` =
+ * `{ outputSchema?, signal? }`). The signal is the step's cancellation —
+ * aborting the turn is what stops the `codex exec` child process, so a
+ * timed-out step does not leave one running.
+ */
+export function buildTurnOptions(req: StepRequest): TurnOptions {
+  return {
+    ...(req.outputSchema ? { outputSchema: toHarnessJsonSchema(req.outputSchema) } : {}),
+    ...(req.signal ? { signal: req.signal } : {}),
   };
 }
 
@@ -530,7 +543,7 @@ export class CodexHarnessProvider implements ModelProvider {
       const transcript = req.messages.map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n\n');
       const prompt = `${req.system}\n\n${transcript}`;
 
-      const { events } = await thread.runStreamed(prompt, req.outputSchema ? { outputSchema: toHarnessJsonSchema(req.outputSchema) } : {});
+      const { events } = await thread.runStreamed(prompt, buildTurnOptions(req));
 
       let lastText = '';
       let sessionId: string | undefined;

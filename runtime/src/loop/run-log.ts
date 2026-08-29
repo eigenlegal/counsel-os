@@ -37,16 +37,33 @@ export interface RunLogEntry {
   toolCalls: ToolCallLog[];
 }
 
-export function runLogPath(vaultRoot: string, tenant: Tenant, runId: string): string {
+/** `<vaultRoot>/.counsel/runs/<tenant>/`, with the one path segment the
+ * caller supplies validated. */
+export function runsDir(vaultRoot: string, tenant: Tenant): string {
   if (!TENANT_RE.test(tenant)) throw new Error('invalid tenant');
-  if (!RUN_ID_RE.test(runId)) throw new Error('invalid run id');
-  return join(vaultRoot, RUNS_DIR, tenant, `${runId}.log.jsonl`);
+  return join(vaultRoot, RUNS_DIR, tenant);
 }
 
 /**
- * Appends one JSON line per entry. Append rather than overwrite: a run id
- * names a whole run, and a run that grows into several steps (the flow
- * engine, later) must accumulate rather than lose everything but the last.
+ * One file of a run: `<runId><suffix>` in that run's tenant directory. The
+ * run log (`.log.jsonl`) and the run record (`.json`, see `run-record.ts`)
+ * both go through here so there is exactly one place that decides what a
+ * tenant and a run id are allowed to be.
+ */
+export function runFilePath(vaultRoot: string, tenant: Tenant, runId: string, suffix: string): string {
+  const dir = runsDir(vaultRoot, tenant);
+  if (!RUN_ID_RE.test(runId)) throw new Error('invalid run id');
+  return join(dir, `${runId}${suffix}`);
+}
+
+export function runLogPath(vaultRoot: string, tenant: Tenant, runId: string): string {
+  return runFilePath(vaultRoot, tenant, runId, '.log.jsonl');
+}
+
+/**
+ * Appends one JSON line per entry. Append rather than overwrite: a run id may
+ * accumulate more than one entry, and each of them must survive rather than
+ * lose everything but the last.
  */
 export function writeRunLog(vaultRoot: string, tenant: Tenant, runId: string, entries: RunLogEntry[]): void {
   if (entries.length === 0) return;

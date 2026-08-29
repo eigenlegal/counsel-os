@@ -216,6 +216,27 @@ describe('runtime_step.sh', () => {
     expect(result.exitCode).toBe(0);
   });
 
+  test('a proposal frame prints "→ proposal <path> (<id>)" to stderr and does not affect stdout/exit', async () => {
+    const threadId = 'aaaaaaaa-0000-0000-0000-000000000005';
+    const body =
+      sseFrame('tool_call', { type: 'tool_call', id: 't1', name: 'propose_update', input: {} }) +
+      sseFrame('tool_result', { type: 'tool_result', id: 't1', name: 'propose_update', output: { proposalId: 'prop-1' } }) +
+      sseFrame('proposal', { type: 'proposal', id: 'prop-1', path: 'practice/standards/x.md', rationale: 'because' }) +
+      sseFrame('text', { type: 'text', text: 'proposed it' }) +
+      sseFrame('done', { type: 'done', output: null, usage: { inputTokens: 0, outputTokens: 0 } });
+    const { url } = serveThreadShaped(
+      threadId,
+      () => new Response(body, { status: 200, headers: { 'content-type': 'text/event-stream' } }),
+    );
+    const home = homeFor({ url });
+
+    const result = await run({ COUNSEL_OS_HOME: home, TMPDIR: home });
+
+    expect(result.stderr).toContain('→ proposal practice/standards/x.md (prop-1)');
+    expect(result.stdout).toBe('proposed it');
+    expect(result.exitCode).toBe(0);
+  });
+
   test('text arrives incrementally, not buffered until the stream ends', async () => {
     const threadId = 'aaaaaaaa-0000-0000-0000-000000000002';
     const { url } = serveThreadShaped(threadId, () => {
