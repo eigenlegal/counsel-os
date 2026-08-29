@@ -1,6 +1,7 @@
 import { Output, stepCountIs, streamText, tool, type LanguageModel } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { openai } from '@ai-sdk/openai';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { ollama } from 'ai-sdk-ollama';
 import type { Capabilities, ModelProvider, StepEvent, StepRequest } from '../core/types';
 import { runToolDef } from '../core/fake-provider';
@@ -86,13 +87,28 @@ const CAPS: Record<string, Capabilities> = {
   anthropic: { tools: true, caching: true, thinking: true, contextTokens: 200_000, auth: 'apikey' },
   openai:    { tools: true, caching: true, thinking: true, contextTokens: 200_000, auth: 'apikey' },
   ollama:    { tools: true, caching: false, thinking: false, contextTokens: 32_000, auth: 'local' },
+  'openai-compatible': { tools: true, caching: false, thinking: false, contextTokens: 32_000, auth: 'apikey' },
 };
 
-export function directProviderFromId(id: string): DirectProvider {
+export function directProviderFromId(
+  id: string,
+  reg: { baseURL?: string; apiKey?: string; capabilities?: Partial<Capabilities> } = {},
+): DirectProvider {
   const [vendor, ...rest] = id.split('/');
   const name = rest.join('/');
   const caps = CAPS[vendor ?? ''];
-  if (!caps || !name) throw new Error(`unknown direct provider id: ${id}`);
-  const model = vendor === 'anthropic' ? anthropic(name) : vendor === 'openai' ? openai(name) : ollama(name);
-  return new DirectProvider({ id, model, capabilities: caps });
+  if (!caps || !name) throw new Error(`unknown provider: ${id}`);
+  let model: LanguageModel;
+  if (vendor === 'anthropic') {
+    model = anthropic(name);
+  } else if (vendor === 'openai') {
+    model = openai(name);
+  } else if (vendor === 'openai-compatible') {
+    if (!reg.baseURL) throw new Error(`unknown provider: openai-compatible requires baseURL for ${id}`);
+    model = createOpenAICompatible({ name, baseURL: reg.baseURL, apiKey: reg.apiKey })(name);
+  } else {
+    model = ollama(name);
+  }
+  const capabilities = { ...caps, ...reg.capabilities };
+  return new DirectProvider({ id, model, capabilities });
 }
