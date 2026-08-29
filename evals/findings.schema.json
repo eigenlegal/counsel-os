@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "properties": {
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "severity": { "enum": ["red", "yellow", "green"] },
+          "clause": { "type": "string" },
+          "rationale": { "type": "string" },
+          "citations": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["title", "severity", "clause", "rationale", "citations"]
+      }
+    },
+    "citations": { "type": "array", "items": { "type": "string" } }
+  },
+  "required": ["findings", "citations"]
+}

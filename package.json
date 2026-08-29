@@ -7,6 +7,8 @@
     "build": "bun build --target=bun --compile -e electron -e 'chromium-bidi/*' -e playwright -e 'playwright/*' -e playwright-core -e 'playwright-core/*' browse/src/cli.ts --outfile browse/dist/browse",
     "content-version": "python3 scripts/bump_content_versions.py",
     "evals:self-test": "python3 scripts/run_evals.py --self-test",
+    "evals:runtime": "python3 scripts/run_evals.py --generate --runner runtime",
+    "evals:runner-test": "python3 scripts/eval_runtime_runner_test.py",
     "law:frontmatter": "python3 scripts/validate_law_frontmatter.py",
     "test": "bun test",
     "test:runtime": "bun test runtime/src",
