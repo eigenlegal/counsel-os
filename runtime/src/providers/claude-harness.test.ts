@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { z } from 'zod';
-import { buildQueryOptions, mapClaudeMessage } from './claude-harness';
+import { buildQueryOptions, mapClaudeMessage, shouldCleanupCwd } from './claude-harness';
 import { toHarnessJsonSchema } from './schema';
 import type { StepRequest } from '../core/types';
 
@@ -137,5 +137,14 @@ describe('sessions', () => {
     const base = { tenant: 'default', system: 's', messages: [], tools: [] };
     expect(buildQueryOptions({ ...base, session: { id: 'sess-1' } }, 'm', {}, '/tmp/x', { PATH: '/p', HOME: '/h', USER: 'u' }).resume).toBe('sess-1');
     expect(buildQueryOptions(base, 'm', {}, '/tmp/x', { PATH: '/p', HOME: '/h', USER: 'u' }).resume).toBeUndefined();
+  });
+});
+
+describe('shouldCleanupCwd', () => {
+  test('true when no cwd was supplied — run() created its own temp cwd and must remove it', () => {
+    expect(shouldCleanupCwd(undefined)).toBe(true);
+  });
+  test('false when a cwd was supplied by the caller — run() must not remove it', () => {
+    expect(shouldCleanupCwd('/some/persistent/cwd')).toBe(false);
   });
 });

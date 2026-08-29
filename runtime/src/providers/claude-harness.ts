@@ -127,13 +127,25 @@ export function buildQueryOptions(req: StepRequest, model: string, server: unkno
   };
 }
 
+/**
+ * Pure decision for `run()`'s `finally`: a caller-supplied `cwd` (the CLI's
+ * debug-only `--cwd`) is reused as-is and must survive the run, so cleanup
+ * only ever removes a directory `run()` created itself (`mkdtempSync`, when
+ * no `cwd` was supplied).
+ */
+export function shouldCleanupCwd(suppliedCwd?: string): boolean {
+  return !suppliedCwd;
+}
+
 export class ClaudeHarnessProvider implements ModelProvider {
   readonly id: string;
   readonly kind = 'harness' as const;
   readonly capabilities: Capabilities = { tools: true, caching: true, thinking: true, contextTokens: 200_000, auth: 'subscription' };
+  readonly cwd: string | undefined;
 
   constructor(private readonly opts: { model: string; id?: string; cwd?: string }) {
     this.id = opts.id ?? `claude-sub/${opts.model}`;
+    this.cwd = opts.cwd;
   }
 
   async *run(req: StepRequest): AsyncIterable<StepEvent> {
@@ -151,7 +163,6 @@ export class ClaudeHarnessProvider implements ModelProvider {
     // is reused as-is and never removed here — the cleanup below only ever
     // touches a directory this run created itself.
     let cwd: string | undefined;
-    let ownsCwd = false;
 
     // `query()` throws on a non-zero CLI exit — e.g. the CLI rejecting the
     // output schema before the turn starts (spike 9.3-B), or not being logged
@@ -161,12 +172,7 @@ export class ClaudeHarnessProvider implements ModelProvider {
     // contract every consumer is written against. `CodexHarnessProvider.run`
     // does the same.
     try {
-      if (this.opts.cwd) {
-        cwd = this.opts.cwd;
-      } else {
-        cwd = mkdtempSync(join(tmpdir(), 'counsel-cwd-'));
-        ownsCwd = true;
-      }
+      cwd = this.opts.cwd ?? mkdtempSync(join(tmpdir(), 'counsel-cwd-'));
       const stream = query({ prompt, options: buildQueryOptions(req, this.opts.model, server, cwd) });
 
       let sessionId: string | undefined;
@@ -182,8 +188,8 @@ export class ClaudeHarnessProvider implements ModelProvider {
       // One temp cwd per step; without this they accumulate for the life of
       // the process. Also runs when the consumer abandons the generator
       // early. Never removes a caller-supplied `opts.cwd` — this run didn't
-      // create it.
-      if (cwd && ownsCwd) rmSync(cwd, { recursive: true, force: true });
+      // create it (see `shouldCleanupCwd`).
+      if (cwd && shouldCleanupCwd(this.opts.cwd)) rmSync(cwd, { recursive: true, force: true });
     }
   }
 }

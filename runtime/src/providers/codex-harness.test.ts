@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, test } from 'bun:test';
@@ -200,12 +200,75 @@ describe('sessions', () => {
   test('thread.started → session event with the thread id', () => {
     expect(mapCodexEvent({ type: 'thread.started', thread_id: 'th-1' })).toEqual([{ type: 'session', id: 'th-1' }]);
   });
-  test('a persistent homeDir is used as CODEX_HOME and is not removed by run()', async () => {
+  test('resolveCodexHome reports ephemeral:false for a persistent homeDir', () => {
     const home = mkdtempSync(join(tmpdir(), 'persist-home-'));
     const p = new CodexHarnessProvider({ model: 'm', vaultRoot: '/v', homeDir: home });
     expect(p.homeDir).toBe(home);
     // run() is not executed here (live); the contract is asserted via the exported helper:
     expect(resolveCodexHome({ homeDir: home, realHome: '/real' })).toEqual({ isolatedHome: home, ephemeral: false });
     expect(resolveCodexHome({ realHome: '/real' }).ephemeral).toBe(true);
+  });
+});
+
+describe('resolveCodexHome — real-home guard (normalized)', () => {
+  test('throws when homeDir equals the real CODEX_HOME', () => {
+    expect(() => resolveCodexHome({ homeDir: '/real/home', realHome: '/real/home' })).toThrow();
+  });
+
+  test('throws on a trailing-slash variant of the real CODEX_HOME', () => {
+    expect(() => resolveCodexHome({ homeDir: '/real/home/', realHome: '/real/home' })).toThrow();
+  });
+
+  test('throws when homeDir is nested inside the real CODEX_HOME', () => {
+    expect(() => resolveCodexHome({ homeDir: '/real/home/nested', realHome: '/real/home' })).toThrow();
+  });
+
+  test('passes for an unrelated homeDir', () => {
+    const home = mkdtempSync(join(tmpdir(), 'unrelated-home-'));
+    expect(resolveCodexHome({ homeDir: home, realHome: '/real/home' })).toEqual({ isolatedHome: home, ephemeral: false });
+  });
+});
+
+describe('resolveCodexHome — credential re-seed', () => {
+  test('re-copies auth.json when the real file is newer than the existing copy', () => {
+    const realHome = mkdtempSync(join(tmpdir(), 'real-home-'));
+    const homeDir = mkdtempSync(join(tmpdir(), 'persist-home-'));
+    writeFileSync(join(realHome, 'auth.json'), '{"token":"first"}');
+
+    resolveCodexHome({ homeDir, realHome }); // initial copy
+    expect(readFileSync(join(homeDir, 'auth.json'), 'utf8')).toBe('{"token":"first"}');
+
+    const future = new Date(Date.now() + 60_000);
+    writeFileSync(join(realHome, 'auth.json'), '{"token":"second"}');
+    utimesSync(join(realHome, 'auth.json'), future, future);
+
+    resolveCodexHome({ homeDir, realHome });
+    expect(readFileSync(join(homeDir, 'auth.json'), 'utf8')).toBe('{"token":"second"}');
+  });
+
+  test('leaves the copy untouched when the real file is not newer', () => {
+    const realHome = mkdtempSync(join(tmpdir(), 'real-home-'));
+    const homeDir = mkdtempSync(join(tmpdir(), 'persist-home-'));
+    writeFileSync(join(realHome, 'auth.json'), '{"token":"first"}');
+
+    resolveCodexHome({ homeDir, realHome }); // initial copy
+
+    const past = new Date(Date.now() - 60_000);
+    writeFileSync(join(realHome, 'auth.json'), '{"token":"stale-but-untouched"}');
+    utimesSync(join(realHome, 'auth.json'), past, past);
+
+    resolveCodexHome({ homeDir, realHome });
+    expect(readFileSync(join(homeDir, 'auth.json'), 'utf8')).toBe('{"token":"first"}');
+  });
+});
+
+describe('CodexHarnessProvider.run — resume precondition', () => {
+  test('resuming without a persistent homeDir yields a single error event, before any SDK call', async () => {
+    const provider = new CodexHarnessProvider({ model: 'm', vaultRoot: '/v' });
+    const events: unknown[] = [];
+    for await (const ev of provider.run({ tenant: 'default', system: 's', messages: [], tools: [], session: { id: 'x' } })) {
+      events.push(ev);
+    }
+    expect(events).toEqual([{ type: 'error', message: 'codex harness: resuming a thread requires a persistent homeDir' }]);
   });
 });

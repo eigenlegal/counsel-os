@@ -28,7 +28,7 @@ const { values, positionals } = parseArgs({
 
 const [cmd, ...rest] = positionals;
 if (cmd !== 'step' || !values.vault || !values.provider || rest.length === 0) {
-  console.error('usage: bun runtime/src/cli.ts step --vault <dir> --provider <id> [--task <name>] [--schema <json>] "<prompt>"');
+  console.error('usage: bun runtime/src/cli.ts step --vault <dir> --provider <id> [--task <name>] [--schema <json>] [--session <id>] [--codex-home <dir>] [--cwd <dir>] "<prompt>"');
   process.exit(2);
 }
 
