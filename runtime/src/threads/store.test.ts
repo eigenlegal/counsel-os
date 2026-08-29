@@ -55,6 +55,27 @@ describe('ThreadStore', () => {
     expect(got.header.updatedAt >= header.updatedAt).toBe(true);
   });
 
+  test('clearSession forgets one provider\'s session and leaves the others alone', async () => {
+    const header = await store.create('default', {});
+    await store.setSession('default', header.id, 'claude-sub/opus-5', 'sess-123');
+    await store.setSession('default', header.id, 'codex-sub/gpt', 'thread-456');
+
+    await store.clearSession('default', header.id, 'claude-sub/opus-5');
+
+    const got = await store.get('default', header.id);
+    expect(got.header.sessions).toEqual({ 'codex-sub/gpt': 'thread-456' });
+  });
+
+  test('clearSession on a provider with no session is a no-op', async () => {
+    const header = await store.create('default', {});
+    await store.setSession('default', header.id, 'codex-sub/gpt', 'thread-456');
+
+    await store.clearSession('default', header.id, 'claude-sub/opus-5');
+
+    const got = await store.get('default', header.id);
+    expect(got.header.sessions).toEqual({ 'codex-sub/gpt': 'thread-456' });
+  });
+
   test('updateProposal flips the status of the matching proposal event', async () => {
     const header = await store.create('default', {});
     await store.append('default', header.id, {

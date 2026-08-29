@@ -4,7 +4,8 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { z } from 'zod';
 import { FsVaultStore } from './vault/fs-store';
-import { vaultTools } from './vault/vault-tools';
+import { guardedVaultTools } from './vault/vault-tools';
+import { readVaultConfig } from './vault/resolve-root';
 import { ToolRegistry } from './tools/registry';
 import { builtinTools } from './tools/builtin';
 import { Router, parseRouterConfig } from './router/router';
@@ -59,7 +60,7 @@ try {
   process.exit(1);
 }
 
-const tools = [...vaultTools(store), ...registry.available()];
+const tools = [...guardedVaultTools(store, readVaultConfig(vaultRoot)), ...registry.available()];
 let exit = 1;
 for await (const ev of provider.run({
   tenant: DEFAULT_TENANT,

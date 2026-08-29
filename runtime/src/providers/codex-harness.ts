@@ -379,6 +379,19 @@ export class CodexHarnessProvider implements ModelProvider {
     this.homeDir = opts.homeDir;
   }
 
+  /**
+   * A copy of this provider — same model, id, and vault — pinned to a
+   * persistent `CODEX_HOME`. The counsel loop calls this with the thread's
+   * own home (`ThreadStore.codexHomeFor`) so `resumeThread` can find the
+   * session state a previous step left behind: a registry-built provider is
+   * shared across threads, so the home has to be bound per thread, not per
+   * provider. Returns a new instance rather than mutating, so two threads
+   * can use the same registry entry concurrently.
+   */
+  withHome(dir: string): CodexHarnessProvider {
+    return new CodexHarnessProvider({ ...this.opts, homeDir: dir });
+  }
+
   async *run(req: StepRequest): AsyncIterable<StepEvent> {
     // Checked first, before anything is created: `resumeThread` needs the
     // same `CODEX_HOME` the original thread ran under (session/thread state

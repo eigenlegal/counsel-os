@@ -154,6 +154,22 @@ export class ThreadStore {
     this.writeHeader(tenant, header);
   }
 
+  /**
+   * Forgets this thread's vendor session for `providerId` — the resume-failure
+   * fallback (spec §5): when a vendor reports the session/thread is gone, the
+   * loop drops the dead id and replays the log for that step instead. A
+   * provider with no stored session is left untouched.
+   */
+  async clearSession(tenant: Tenant, id: string, providerId: string): Promise<void> {
+    this.validateTenant(tenant);
+    this.validateId(id);
+    const header = this.readHeader(tenant, id);
+    if (!(providerId in header.sessions)) return;
+    delete header.sessions[providerId];
+    header.updatedAt = new Date().toISOString();
+    this.writeHeader(tenant, header);
+  }
+
   async updateProposal(
     tenant: Tenant,
     id: string,

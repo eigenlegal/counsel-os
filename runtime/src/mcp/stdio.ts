@@ -5,7 +5,8 @@ import { resolve } from 'node:path';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { FsVaultStore } from '../vault/fs-store';
-import { vaultTools } from '../vault/vault-tools';
+import { guardedVaultTools } from '../vault/vault-tools';
+import { readVaultConfig } from '../vault/resolve-root';
 import { registerOnServer, toMcpTools } from './bridge';
 import { ToolRegistry } from '../tools/registry';
 import { builtinTools } from '../tools/builtin';
@@ -23,7 +24,7 @@ const repoRoot = resolve(import.meta.dir, '../../..');
 const registry = new ToolRegistry();
 for (const t of builtinTools({ vaultRoot: vault, repoRoot })) registry.register(t);
 
-const specs = toMcpTools([...vaultTools(store), ...registry.available()], process.env.COUNSEL_TENANT ?? DEFAULT_TENANT);
+const specs = toMcpTools([...guardedVaultTools(store, readVaultConfig(vault)), ...registry.available()], process.env.COUNSEL_TENANT ?? DEFAULT_TENANT);
 const server = new McpServer({ name: 'counsel', version: '0.1.0' });
 registerOnServer(server, specs);
 await server.connect(new StdioServerTransport());

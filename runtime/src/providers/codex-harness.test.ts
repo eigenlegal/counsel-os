@@ -262,6 +262,25 @@ describe('resolveCodexHome — credential re-seed', () => {
   });
 });
 
+describe('CodexHarnessProvider.withHome', () => {
+  test('returns a new instance with the same id, pinned to the given home', () => {
+    const provider = new CodexHarnessProvider({ model: 'gpt-5.6-terra', vaultRoot: '/v', id: 'codex-sub/gpt-5.6-terra' });
+    const bound = provider.withHome('/homes/thread-1');
+
+    expect(bound).not.toBe(provider);
+    expect(bound.id).toBe('codex-sub/gpt-5.6-terra');
+    expect(bound.homeDir).toBe('/homes/thread-1');
+    // The original is untouched, so one registry entry can serve many threads.
+    expect(provider.homeDir).toBeUndefined();
+  });
+
+  test('two threads get independent homes off one provider', () => {
+    const provider = new CodexHarnessProvider({ model: 'm', vaultRoot: '/v' });
+    expect(provider.withHome('/a').homeDir).toBe('/a');
+    expect(provider.withHome('/b').homeDir).toBe('/b');
+  });
+});
+
 describe('CodexHarnessProvider.run — resume precondition', () => {
   test('resuming without a persistent homeDir yields a single error event, before any SDK call', async () => {
     const provider = new CodexHarnessProvider({ model: 'm', vaultRoot: '/v' });
