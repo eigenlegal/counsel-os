@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { RouterError } from '../core/types';
 import { DEFAULT_STEP_TIMEOUT_MS, runStep, type CounselLoopDeps } from '../loop/counsel-loop';
 import { applyProposal } from '../loop/proposals';
+import { listRuns, readRun } from '../loop/run-record';
 import type { ThreadEvent, ThreadHeader } from '../threads/store';
 import { normalizeVaultPath } from '../vault/knowledge-paths';
 import { isAuthorized } from './auth';
@@ -306,6 +307,35 @@ export function createApp(deps: ServerDeps): App {
     });
   };
 
+  /**
+   * Every run of one thread (spec §4.4). The thread is loaded first so an id
+   * that names nothing is a 404 rather than an empty list — "no runs yet" and
+   * "no such thread" are different answers.
+   */
+  const runs = async (url: URL): Promise<Response> => {
+    const thread = url.searchParams.get('thread');
+    if (thread === null || thread === '') throw new HttpError(400, 'thread is required');
+    await loadThread(deps, thread);
+    return json(listRuns(deps.vaultRoot, deps.tenant, thread));
+  };
+
+  const getRun = (runId: string): Response => {
+    let record;
+    try {
+      record = readRun(deps.vaultRoot, deps.tenant, runId);
+    } catch (err) {
+      const message = text(err);
+      // A run id that is not a uuid never named a run — the caller's mistake,
+      // the same way `loadThread` treats a malformed thread id.
+      if (message.includes('invalid run id') || message.includes('invalid tenant')) {
+        throw new HttpError(400, message);
+      }
+      throw err;
+    }
+    if (record === null) throw new HttpError(404, `unknown run: ${runId}`);
+    return json(record);
+  };
+
   const vaultRead = async (url: URL): Promise<Response> => {
     const raw = url.searchParams.get('path');
     if (raw === null || raw === '') throw new HttpError(400, 'path is required');
@@ -350,6 +380,12 @@ export function createApp(deps: ServerDeps): App {
       if (segments.length === 3 && first === 'threads' && second !== undefined && method === 'POST') {
         if (third === 'steps') return await steps(req, second);
         if (third === 'approve') return await approve(req, second);
+      }
+
+      if (segments.length === 1 && first === 'runs' && method === 'GET') return await runs(url);
+
+      if (segments.length === 2 && first === 'runs' && second !== undefined && method === 'GET') {
+        return getRun(second);
       }
 
       if (segments.length === 2 && first === 'vault' && method === 'GET') {

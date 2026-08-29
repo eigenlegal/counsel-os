@@ -103,7 +103,7 @@ function kindOf(ev: ThreadEvent): string {
 describe('auth', () => {
   test('every route needs a bearer token', async () => {
     const app = appWithFake();
-    for (const path of ['/health', '/threads', '/vault/list']) {
+    for (const path of ['/health', '/threads', '/vault/list', '/runs']) {
       expect((await call(app, 'GET', path, { token: null })).status).toBe(401);
       expect((await call(app, 'GET', path, { token: 'wrong-token' })).status).toBe(401);
       // A prefix of the real token must not pass either.
@@ -651,3 +651,86 @@ class EndlessProvider implements ModelProvider {
     }
   }
 }
+
+describe('runs', () => {
+  /** Runs one step and hands back the run it produced. */
+  async function stepped(app: App, id: string, message: string): Promise<string> {
+    const { res } = await step(app, id, { message });
+    expect(res.status).toBe(200);
+    return res.headers.get('x-run-id')!;
+  }
+
+  test('GET /runs lists a thread run by run, newest first', async () => {
+    const app = appWithFake([{ text: 'one' }, { text: 'two' }]);
+    const id = await newThread(app);
+
+    const first = await stepped(app, id, 'first');
+    // `startedAt` is an ISO millisecond stamp; two steps inside one
+    // millisecond would tie.
+    await new Promise(r => setTimeout(r, 2));
+    const second = await stepped(app, id, 'second');
+
+    const res = await call(app, 'GET', `/runs?thread=${id}`);
+    expect(res.status).toBe(200);
+    const runs = (await res.json()) as Array<Record<string, unknown>>;
+    expect(runs.map(r => r.runId)).toEqual([second, first]);
+    expect(runs[0]!.message).toBe('second');
+    expect(runs[0]!.status).toBe('done');
+    expect(runs[0]!.threadId).toBe(id);
+  });
+
+  test('a thread with no runs yet is an empty list, not a 404', async () => {
+    const app = appWithFake();
+    const res = await call(app, 'GET', `/runs?thread=${await newThread(app)}`);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual([]);
+  });
+
+  test('another thread\'s runs are not listed', async () => {
+    const app = appWithFake([{ text: 'one' }, { text: 'two' }]);
+    const mine = await newThread(app);
+    const theirs = await newThread(app);
+    const runId = await stepped(app, mine, 'mine');
+    await stepped(app, theirs, 'theirs');
+
+    const runs = (await (await call(app, 'GET', `/runs?thread=${mine}`)).json()) as Array<{ runId: string }>;
+    expect(runs.map(r => r.runId)).toEqual([runId]);
+  });
+
+  test('the thread parameter is required, well-formed, and must name a real thread', async () => {
+    const app = appWithFake();
+    expect((await call(app, 'GET', '/runs')).status).toBe(400);
+    expect((await call(app, 'GET', '/runs?thread=')).status).toBe(400);
+    expect((await call(app, 'GET', '/runs?thread=not-a-uuid')).status).toBe(400);
+    expect((await call(app, 'GET', '/runs?thread=../../etc/passwd')).status).toBe(400);
+    expect((await call(app, 'GET', `/runs?thread=${randomUUID()}`)).status).toBe(404);
+  });
+
+  test('GET /runs/:runId returns the one record', async () => {
+    const app = appWithFake([{ text: 'hi', usage: { inputTokens: 3, outputTokens: 4, costUsd: 0.25 } }]);
+    const id = await newThread(app);
+    const runId = await stepped(app, id, 'hello');
+
+    const res = await call(app, 'GET', `/runs/${runId}`);
+    expect(res.status).toBe(200);
+    const run = (await res.json()) as Record<string, unknown>;
+    expect(run.runId).toBe(runId);
+    expect(run.threadId).toBe(id);
+    expect(run.status).toBe('done');
+    expect(run.provider).toBe('fake/fake');
+    expect(run.costUsd).toBe(0.25);
+  });
+
+  test('an unknown run is 404 and a malformed run id is 400', async () => {
+    const app = appWithFake();
+    expect((await call(app, 'GET', `/runs/${randomUUID()}`)).status).toBe(404);
+    expect((await call(app, 'GET', '/runs/not-a-uuid')).status).toBe(400);
+  });
+
+  test('the runs API is read-only', async () => {
+    const app = appWithFake();
+    const id = await newThread(app);
+    expect((await call(app, 'POST', `/runs?thread=${id}`, { body: {} })).status).toBe(404);
+    expect((await call(app, 'DELETE', `/runs/${randomUUID()}`)).status).toBe(404);
+  });
+});

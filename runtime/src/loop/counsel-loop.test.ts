@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { z } from 'zod';
 import { FakeModelProvider } from '../core/fake-provider';
 import type { ModelProvider, StepEvent } from '../core/types';
 import { Router } from '../router/router';
@@ -10,6 +11,7 @@ import { ThreadStore, type ThreadEvent } from '../threads/store';
 import { FsVaultStore } from '../vault/fs-store';
 import { runStep, withStepTimeout, RESUME_WARNING, type CounselLoopDeps } from './counsel-loop';
 import type { RunLogEntry } from './run-log';
+import { listRuns, readRun } from './run-record';
 
 let vaultRoot: string;
 let pluginRoot: string;
@@ -1014,5 +1016,210 @@ describe('runStep — step timeout', () => {
     const events = await collect(runStep(deps([fake]), { threadId: id, message: 'hello', timeoutMs: 600_000 }));
 
     expect(events.map(e => e.type)).toEqual(['text', 'done']);
+  });
+});
+
+describe('runStep — the run record', () => {
+  /** A provider that emits `script`, then parks until `release()` is called. */
+  function pausing(script: StepEvent[]): { provider: ModelProvider; release: () => void } {
+    let release!: () => void;
+    const parked = new Promise<void>(resolve => {
+      release = resolve;
+    });
+    return {
+      release,
+      provider: {
+        id: 'paused/paused',
+        kind: 'direct',
+        capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+        async *run(): AsyncIterable<StepEvent> {
+          for (const ev of script) yield ev;
+          await parked;
+          yield { type: 'done', output: null, usage: { inputTokens: 1, outputTokens: 2 } };
+        },
+      },
+    };
+  }
+
+  /** A provider that yields `script` and then never says anything again. */
+  function hanging(script: StepEvent[]): ModelProvider {
+    return {
+      id: 'hang/hang',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+      async *run(): AsyncIterable<StepEvent> {
+        for (const ev of script) yield ev;
+        await new Promise(() => {});
+      },
+    };
+  }
+
+  test('a step that finishes writes a done record: what it read, ran, proposed, produced, and cost', async () => {
+    const fake = new FakeModelProvider([
+      {
+        toolCalls: [
+          { name: 'read_primitive', input: { name: 'draft' } },
+          { name: 'read_primitive', input: { name: 'draft' } },
+          { name: 'read_primitive', input: { name: 'evaluate' } },
+          { name: 'propose_update', input: { path: 'practice/standards/nda.md', content: 'x', rationale: 'because' } },
+        ],
+        text: 'drafted',
+        usage: { inputTokens: 12, outputTokens: 34, costUsd: 0.5 },
+      },
+    ]);
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([fake]), { threadId: id, message: 'draft it', task: 'draft' }));
+    const runId = events[0]!.runId;
+    const rec = readRun(vaultRoot, 'default', runId)!;
+
+    expect(rec.runId).toBe(runId);
+    expect(rec.threadId).toBe(id);
+    expect(rec.tenant).toBe('default');
+    expect(rec.status).toBe('done');
+    expect(rec.message).toBe('draft it');
+    expect(rec.task).toBe('draft');
+    expect(rec.provider).toBe('fake/fake');
+    expect(typeof rec.startedAt).toBe('string');
+    expect(typeof rec.finishedAt).toBe('string');
+    expect(rec.durationMs).toBeGreaterThanOrEqual(0);
+    expect(rec.usage).toEqual({ inputTokens: 12, outputTokens: 34, costUsd: 0.5 });
+    expect(rec.costUsd).toBe(0.5);
+    expect(rec.error).toBeUndefined();
+
+    // Unique, in first-read order — the same primitive read twice is one entry.
+    expect(rec.primitivesRead).toEqual(['draft', 'evaluate']);
+    // Every tool call, the same list the run log gets.
+    expect(rec.toolCalls.map(c => c.name)).toEqual([
+      'read_primitive',
+      'read_primitive',
+      'read_primitive',
+      'propose_update',
+    ]);
+    // The proposal the step raised, by the id the `proposal` event carried.
+    const proposal = events.find(e => e.type === 'proposal') as Extract<StepEvent, { type: 'proposal' }>;
+    expect(rec.proposals).toEqual([proposal.id]);
+  });
+
+  test('the record is open and `running` while the step is still going, with the provider filled in', async () => {
+    const { provider, release } = pausing([{ type: 'text', text: 'thinking' }]);
+    const { id } = await store.create('default', {});
+
+    const it = runStep(deps([provider]), { threadId: id, message: 'hello' })[Symbol.asyncIterator]();
+    const first = await it.next();
+    const runId = first.value!.runId;
+
+    const mid = readRun(vaultRoot, 'default', runId)!;
+    expect(mid.status).toBe('running');
+    expect(mid.provider).toBe('paused/paused');
+    expect(mid.message).toBe('hello');
+    expect(mid.finishedAt).toBeUndefined();
+    expect(listRuns(vaultRoot, 'default', id).map(r => r.runId)).toEqual([runId]);
+
+    release();
+    while (!(await it.next()).done) { /* drain */ }
+    expect(readRun(vaultRoot, 'default', runId)!.status).toBe('done');
+  });
+
+  test('output is recorded only when the step asked for a structured answer', async () => {
+    const script = [{ output: { findings: [] }, usage: { inputTokens: 1, outputTokens: 2 } }];
+
+    const untyped = await collect(
+      runStep(deps([new FakeModelProvider(script)]), { threadId: (await store.create('default', {})).id, message: 'hi' }),
+    );
+    expect(readRun(vaultRoot, 'default', untyped[0]!.runId)!.output).toBeUndefined();
+
+    const typed = await collect(
+      runStep(deps([new FakeModelProvider(script)]), {
+        threadId: (await store.create('default', {})).id,
+        message: 'hi',
+        outputSchema: z.object({ findings: z.array(z.string()) }),
+      }),
+    );
+    expect(readRun(vaultRoot, 'default', typed[0]!.runId)!.output).toEqual({ findings: [] });
+  });
+
+  test('a provider error finalizes the record as error, with the message', async () => {
+    const fake = new FakeModelProvider([{ text: 'partial', error: 'the model gave up' }]);
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([fake]), { threadId: id, message: 'hello' }));
+    const rec = readRun(vaultRoot, 'default', events[0]!.runId)!;
+
+    expect(rec.status).toBe('error');
+    expect(rec.error).toBe('the model gave up');
+    expect(typeof rec.finishedAt).toBe('string');
+  });
+
+  test('a timed-out step is `timeout`, not `error` — the two read differently to an operator', async () => {
+    const { id } = await store.create('default', {});
+
+    const events = await collect(
+      runStep(deps([hanging([{ type: 'text', text: 'a' }])]), { threadId: id, message: 'hello', timeoutMs: 50 }),
+    );
+    const rec = readRun(vaultRoot, 'default', events[0]!.runId)!;
+
+    expect(rec.status).toBe('timeout');
+    expect(rec.error).toMatch(/^step timed out after \d+s$/);
+    expect(typeof rec.finishedAt).toBe('string');
+  });
+
+  test('a tool call that never came back is in the record, with its duration and outcome unknown', async () => {
+    const { id } = await store.create('default', {});
+    const orphan = hanging([{ type: 'tool_call', id: 'c1', name: 'vault_read', input: {} }]);
+
+    const events = await collect(runStep(deps([orphan]), { threadId: id, message: 'hello', timeoutMs: 50 }));
+    const rec = readRun(vaultRoot, 'default', events[0]!.runId)!;
+
+    expect(rec.toolCalls).toEqual([{ name: 'vault_read', ms: null, isError: null }]);
+  });
+
+  test('a step that dies before a provider is chosen still leaves a record', async () => {
+    const { id } = await store.create('default', {});
+
+    const events = await collect(
+      runStep(deps([new FakeModelProvider([])]), { threadId: id, message: 'hello', providerId: 'nope/nope' }),
+    );
+    const rec = readRun(vaultRoot, 'default', events[0]!.runId)!;
+
+    expect(rec.status).toBe('error');
+    expect(rec.error).toBe('unknown provider: nope/nope');
+    // Nothing resolved, so nothing to name.
+    expect(rec.provider).toBe('');
+  });
+
+  test('an unknown thread leaves no record — there was no run to record', async () => {
+    const missing = randomUUID();
+    const events = await collect(runStep(deps([new FakeModelProvider([])]), { threadId: missing, message: 'hello' }));
+
+    expect(events.map(e => e.type)).toEqual(['error']);
+    expect(readRun(vaultRoot, 'default', events[0]!.runId)).toBeNull();
+  });
+
+  test('the run record does not replace the run log — both are written', async () => {
+    const fake = new FakeModelProvider([{ text: 'hi', usage: { inputTokens: 1, outputTokens: 2 } }]);
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([fake]), { threadId: id, message: 'hello' }));
+    const runId = events[0]!.runId;
+
+    expect(readRun(vaultRoot, 'default', runId)).not.toBeNull();
+    const log = JSON.parse(
+      readFileSync(join(vaultRoot, '.counsel', 'runs', 'default', `${runId}.log.jsonl`), 'utf8').trim(),
+    ) as RunLogEntry;
+    expect(log.provider).toBe('fake/fake');
+  });
+
+  test('every run of a thread is listed, newest first', async () => {
+    const fake = new FakeModelProvider([{ text: 'one' }, { text: 'two' }]);
+    const { id } = await store.create('default', {});
+
+    const first = await collect(runStep(deps([fake]), { threadId: id, message: 'first' }));
+    // The records are ordered by `startedAt`, an ISO timestamp: two steps
+    // inside the same millisecond would tie.
+    await new Promise(r => setTimeout(r, 2));
+    const second = await collect(runStep(deps([fake]), { threadId: id, message: 'second' }));
+
+    expect(listRuns(vaultRoot, 'default', id).map(r => r.runId)).toEqual([second[0]!.runId, first[0]!.runId]);
   });
 });

@@ -13,6 +13,7 @@ import { assembleSystemPrompt } from './prompt';
 import { readPrimitiveTool } from './primitives';
 import { proposeUpdateTool } from './proposals';
 import { writeRunLog, type RunLogEntry, type ToolCallLog } from './run-log';
+import { finishRun, startRun, type RunPatch, type RunRecord } from './run-record';
 
 /**
  * Headroom left in the context window for the model's own reply and for the
@@ -175,10 +176,23 @@ export async function* runStep(
     return;
   }
 
+  // The run record opens here — before the provider is even chosen — so
+  // everything that follows is visible to `/runs` while it is happening and
+  // after it dies (spec §4.3). The unknown-thread return above is the one
+  // exception: there was no run to record.
+  beginRun(deps, opts, runId, new Date(startedAt).toISOString());
+  /** Finalizes the record for a step ending in a yielded `error`, before the
+   * yield: these paths `return` straight after it, so a consumer that stops
+   * reading would leave anything written afterwards unrun. */
+  const failRun = (error: string): void => {
+    patchRun(deps, runId, { status: 'error', finishedAt: nowIso(), durationMs: Date.now() - startedAt, error });
+  };
+
   const userFailed = await tryPersist(() =>
     store.append(tenant, threadId, { t: 'user', at: nowIso(), content: opts.message }),
   );
   if (userFailed) {
+    failRun(userFailed);
     yield { type: 'error', message: userFailed, runId };
     return;
   }
@@ -187,9 +201,11 @@ export async function* runStep(
   try {
     provider = bindToThread(deps, resolveProvider(deps, opts), threadId);
   } catch (err) {
+    failRun(message(err));
     yield { type: 'error', message: message(err), runId };
     return;
   }
+  patchRun(deps, runId, { provider: provider.id });
 
   const stepFailed = await tryPersist(() =>
     store.append(tenant, threadId, {
@@ -201,6 +217,7 @@ export async function* runStep(
     }),
   );
   if (stepFailed) {
+    failRun(stepFailed);
     yield { type: 'error', message: stepFailed, runId };
     return;
   }
@@ -252,6 +269,7 @@ export async function* runStep(
     const ev: StepEvent = { type: 'error', message: message(err) };
     // Best-effort: the caller gets the error either way (spec §5).
     await tryPersist(() => store.append(tenant, threadId, { ...ev, at: nowIso() }));
+    failRun(ev.message);
     yield { ...ev, runId };
     return;
   }
@@ -298,6 +316,7 @@ export async function* runStep(
       const warning: ThreadEvent = { t: 'warning', at: nowIso(), message: RESUME_WARNING };
       const appendFailed = await tryPersist(() => store.append(tenant, threadId, warning));
       if (appendFailed) {
+        failRun(appendFailed);
         yield { type: 'error', message: appendFailed, runId };
         return;
       }
@@ -531,9 +550,27 @@ function timeoutMessage(ms: number): string {
   return `step timed out after ${Math.round(ms / 1000)}s`;
 }
 
+/**
+ * The terminal errors this module minted for an expired deadline. The run
+ * record has to tell a timed-out step (`status: 'timeout'`) from any other
+ * terminal error (`status: 'error'`), and it reads that off the event
+ * itself. Identity, not text: a provider that happens to report "timed out"
+ * is a provider error, and nothing here has to re-derive a message format
+ * that lives in `timeoutMessage`.
+ */
+const TIMEOUT_ERRORS = new WeakSet<object>();
+
 /** The one terminal event a timed-out step produces (spec §3). */
 function timeoutError(ms: number): StepEvent {
-  return { type: 'error', message: timeoutMessage(ms) };
+  const ev: StepEvent = { type: 'error', message: timeoutMessage(ms) };
+  TIMEOUT_ERRORS.add(ev);
+  return ev;
+}
+
+/** True only for the terminal `error` a timed-out step produced — the exact
+ * object `timeoutError` made, before anything copied it. */
+export function isTimeoutError(ev: StepEvent): boolean {
+  return TIMEOUT_ERRORS.has(ev);
 }
 
 /**
@@ -618,7 +655,21 @@ async function* stream(
   const { tenant, store } = deps;
   const pending = new Map<string, { name: string; at: number; input: unknown }>();
   const toolCalls: ToolCallLog[] = [];
+  // The run record's derived fields (spec §4.3): which primitives the step
+  // read, and which proposals it raised. Both are read off events the loop
+  // already handles below — no second pass, and no new model call.
+  const primitivesRead: string[] = [];
+  const proposals: string[] = [];
   let sawTerminal = false;
+
+  /** What every finalization of the run record carries, whatever the outcome. */
+  const outcome = (): RunPatch => ({
+    finishedAt: nowIso(),
+    durationMs: Date.now() - startedAt,
+    toolCalls: finishToolCalls(toolCalls, pending),
+    primitivesRead: [...primitivesRead],
+    proposals: [...proposals],
+  });
 
   // `text` deltas are yielded the instant they arrive — a caller streaming to
   // a user must not wait on the next non-text event — but they are held back
@@ -640,6 +691,7 @@ async function* stream(
       if (ev.type === 'session') {
         const failed = await tryPersist(() => store.setSession(tenant, opts.threadId, provider.id, ev.id));
         if (failed) {
+          patchRun(deps, runId, { ...outcome(), status: 'error', error: failed });
           yield { type: 'error', message: failed, runId };
           return;
         }
@@ -654,6 +706,7 @@ async function* stream(
 
       const flushFailed = await flushText();
       if (flushFailed) {
+        patchRun(deps, runId, { ...outcome(), status: 'error', error: flushFailed });
         yield { type: 'error', message: flushFailed, runId };
         return;
       }
@@ -662,6 +715,7 @@ async function* stream(
       if (failed) {
         // The store is broken, so the error event cannot be logged either —
         // it only reaches the caller.
+        patchRun(deps, runId, { ...outcome(), status: 'error', error: failed });
         yield { type: 'error', message: failed, runId };
         return;
       }
@@ -669,6 +723,7 @@ async function* stream(
       let proposalToYield: Extract<StepEvent, { type: 'proposal' }> | null = null;
       if (ev.type === 'tool_call') {
         pending.set(ev.id, { name: ev.name, at: Date.now(), input: ev.input });
+        rememberPrimitive(primitivesRead, ev);
       } else if (ev.type === 'tool_result') {
         const call = pending.get(ev.id);
         pending.delete(ev.id);
@@ -678,6 +733,7 @@ async function* stream(
         toolCalls.push({ name: ev.name, ms: call ? Date.now() - call.at : null, isError: ev.isError === true });
         if (ev.name === 'propose_update' && ev.isError !== true && call) {
           proposalToYield = proposalEvent(ev.output, call.input);
+          if (proposalToYield) proposals.push(proposalToYield.id);
         }
       } else if (ev.type === 'done') {
         sawTerminal = true;
@@ -686,6 +742,7 @@ async function* stream(
             store.setSession(tenant, opts.threadId, provider.id, ev.sessionId as string),
           );
           if (sessionFailed) {
+            patchRun(deps, runId, { ...outcome(), status: 'error', error: sessionFailed });
             yield { type: 'error', message: sessionFailed, runId };
             return;
           }
@@ -702,8 +759,27 @@ async function* stream(
       // signal — SSE clients, the adapter — that a proposal now exists.
       if (proposalToYield) yield { ...proposalToYield, runId };
 
+      // Telemetry — the run log and the run record's final state — is written
+      // AFTER the terminal event reached the caller, and its failures go to
+      // stderr: neither may cost a caller its `done`.
       if (ev.type === 'done') {
         recordRun(deps, opts, provider, runId, ev.usage, Date.now() - startedAt, finishToolCalls(toolCalls, pending));
+        patchRun(deps, runId, {
+          ...outcome(),
+          status: 'done',
+          usage: ev.usage,
+          ...(ev.usage.costUsd === undefined ? {} : { costUsd: ev.usage.costUsd }),
+          // Only a step that ASKED for a structured answer records one: a
+          // provider's `output` is `null` otherwise, and a null in the record
+          // would read as "it produced nothing".
+          ...(opts.outputSchema ? { output: ev.output } : {}),
+        });
+      } else if (ev.type === 'error') {
+        patchRun(deps, runId, {
+          ...outcome(),
+          status: isTimeoutError(ev) ? 'timeout' : 'error',
+          error: ev.message,
+        });
       }
     }
 
@@ -711,6 +787,7 @@ async function* stream(
     // text in the log.
     const tailFailed = await flushText();
     if (tailFailed) {
+      patchRun(deps, runId, { ...outcome(), status: 'error', error: tailFailed });
       yield { type: 'error', message: tailFailed, runId };
       return;
     }
@@ -718,6 +795,7 @@ async function* stream(
     if (!sawTerminal) {
       const ev: StepEvent = { type: 'error', message: `${provider.id} ended the step without a done or error event` };
       await tryPersist(() => store.append(tenant, opts.threadId, { ...ev, at: nowIso() }));
+      patchRun(deps, runId, { ...outcome(), status: 'error', error: ev.message });
       yield { ...ev, runId };
     }
   } finally {
@@ -763,6 +841,59 @@ function proposalEvent(output: unknown, input: unknown): Extract<StepEvent, { ty
   if (typeof path !== 'string' || typeof rationale !== 'string') return null;
 
   return { type: 'proposal', id, path, rationale };
+}
+
+/**
+ * Records a `read_primitive` call in the run record's `primitivesRead` —
+ * unique, in the order the step first read each one. The name comes from the
+ * call's input, which `readPrimitiveTool`'s schema requires to be a string;
+ * a call the model malformed is simply not a primitive that was read.
+ */
+function rememberPrimitive(into: string[], ev: Extract<StepEvent, { type: 'tool_call' }>): void {
+  if (ev.name !== 'read_primitive') return;
+  const input = ev.input;
+  if (typeof input !== 'object' || input === null) return;
+  const name = (input as Record<string, unknown>).name;
+  if (typeof name !== 'string' || into.includes(name)) return;
+  into.push(name);
+}
+
+/**
+ * Opens this step's run record — before the provider is resolved, so a step
+ * that dies choosing one still leaves the request behind (spec §4.3).
+ * Failures go to stderr, never out of the loop: the record is telemetry.
+ */
+function beginRun(deps: CounselLoopDeps, opts: RunStepOptions, runId: string, startedAt: string): void {
+  const rec: RunRecord = {
+    runId,
+    threadId: opts.threadId,
+    tenant: deps.tenant,
+    startedAt,
+    status: 'running',
+    message: opts.message,
+    // Nothing has been resolved yet; `patchRun` fills this in the moment the
+    // router (or the caller's `providerId`) names one.
+    provider: '',
+    ...(opts.task ? { task: opts.task } : {}),
+    primitivesRead: [],
+    toolCalls: [],
+    proposals: [],
+  };
+  try {
+    startRun(deps.vaultRoot, rec);
+  } catch (err) {
+    console.error(`counsel-loop: run record write failed for ${runId}: ${message(err)}`);
+  }
+}
+
+/** Updates an open run record, swallowing failures to stderr — same rule as
+ * `beginRun` and the run log. */
+function patchRun(deps: CounselLoopDeps, runId: string, patch: RunPatch): void {
+  try {
+    finishRun(deps.vaultRoot, deps.tenant, runId, patch);
+  } catch (err) {
+    console.error(`counsel-loop: run record write failed for ${runId}: ${message(err)}`);
+  }
 }
 
 /**
