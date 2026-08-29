@@ -55,6 +55,43 @@ describe('window', () => {
     expect(messages[0]).toEqual({ role: 'user', content: 'a'.repeat(400) });
   });
 
+  test('never returns an assistant-first window (Anthropic rejects a non-user first message)', () => {
+    const events: ThreadEvent[] = [
+      { t: 'user', at: 't0', content: 'A' },
+      { type: 'text', text: 'B', at: 't1' },
+      { t: 'user', at: 't2', content: 'C' },
+      { type: 'text', text: 'D', at: 't3' },
+      { t: 'user', at: 't4', content: 'E' },
+    ];
+
+    // Before the fix, this budget stopped the drop loop right after
+    // {role:'user',content:'A'} was shifted off, leaving the assistant 'B'
+    // message as the head: [assistant B, user C, assistant D, user E].
+    const messages = window(events, 4);
+
+    expect(messages[0]!.role).toBe('user');
+    expect(messages[messages.length - 1]).toEqual({ role: 'user', content: 'E' });
+  });
+
+  test('the head is never assistant across a range of budgets', () => {
+    const events: ThreadEvent[] = [
+      { t: 'user', at: 't0', content: 'A' },
+      { type: 'text', text: 'B', at: 't1' },
+      { t: 'user', at: 't2', content: 'C' },
+      { type: 'text', text: 'D', at: 't3' },
+      { t: 'user', at: 't4', content: 'E' },
+    ];
+
+    for (const budget of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 100]) {
+      const messages = window(events, budget);
+      if (messages.length > 0) {
+        expect(messages[0]!.role).toBe('user');
+      }
+      // The last user message ('E') must always survive.
+      expect(messages[messages.length - 1]).toEqual({ role: 'user', content: 'E' });
+    }
+  });
+
   test('the token estimate is injectable', () => {
     const events: ThreadEvent[] = [
       { t: 'user', at: 't0', content: 'one' },

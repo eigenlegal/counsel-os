@@ -12,6 +12,13 @@ import type { StepEvent, Tenant } from '../core/types';
  */
 const THREADS_DIR = join('.counsel', 'threads');
 
+// `tenant` and `id` both land directly in filesystem paths (`dir`/`headerPath`/
+// `logPath`/`codexHomeFor`). Without validation a value like `../../etc` would
+// escape the threads dir the same way `FsVaultStore` guards against for vault
+// paths. Every public method validates both before touching disk.
+const ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const TENANT_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
+
 export interface ThreadHeader {
   id: string;
   title?: string;
@@ -50,6 +57,14 @@ export class ThreadStore {
     this.codexHomeRoot = opts.codexHomeRoot ?? join(homedir(), '.counsel-os', 'codex');
   }
 
+  private validateTenant(tenant: Tenant): void {
+    if (!TENANT_RE.test(tenant)) throw new Error('invalid tenant');
+  }
+
+  private validateId(id: string): void {
+    if (!ID_RE.test(id)) throw new Error('invalid thread id');
+  }
+
   private dir(tenant: Tenant): string {
     return join(this.root, THREADS_DIR, tenant);
   }
@@ -62,6 +77,11 @@ export class ThreadStore {
     return join(this.dir(tenant), `${id}.jsonl`);
   }
 
+  // `readHeader`/`writeHeader` are paired for read-modify-write updates in
+  // `append`/`setSession`/`updateProposal`. That safety depends on those call
+  // sites staying fully synchronous between the read and the write — no
+  // `await` in between — since there is no per-thread lock and an interleaved
+  // async update could otherwise clobber a concurrent one.
   private readHeader(tenant: Tenant, id: string): ThreadHeader {
     return JSON.parse(readFileSync(this.headerPath(tenant, id), 'utf8')) as ThreadHeader;
   }
@@ -79,6 +99,7 @@ export class ThreadStore {
   }
 
   async create(tenant: Tenant, init: { title?: string; matter?: string } = {}): Promise<ThreadHeader> {
+    this.validateTenant(tenant);
     const id = randomUUID();
     const now = new Date().toISOString();
     const header: ThreadHeader = {
@@ -96,10 +117,13 @@ export class ThreadStore {
   }
 
   async get(tenant: Tenant, id: string): Promise<{ header: ThreadHeader; events: ThreadEvent[] }> {
+    this.validateTenant(tenant);
+    this.validateId(id);
     return { header: this.readHeader(tenant, id), events: this.readEvents(tenant, id) };
   }
 
   async list(tenant: Tenant): Promise<ThreadHeader[]> {
+    this.validateTenant(tenant);
     const dir = this.dir(tenant);
     if (!existsSync(dir)) return [];
     const headers = readdirSync(dir)
@@ -110,13 +134,20 @@ export class ThreadStore {
   }
 
   async append(tenant: Tenant, id: string, ev: ThreadEvent): Promise<void> {
-    writeFileSync(this.logPath(tenant, id), JSON.stringify(ev) + '\n', { flag: 'a' });
+    this.validateTenant(tenant);
+    this.validateId(id);
+    // Read the header first — it doubles as the existence check for the
+    // thread, so a missing/unknown thread throws before the log write below,
+    // and never leaves behind an orphan `.jsonl`.
     const header = this.readHeader(tenant, id);
+    writeFileSync(this.logPath(tenant, id), JSON.stringify(ev) + '\n', { flag: 'a' });
     header.updatedAt = new Date().toISOString();
     this.writeHeader(tenant, header);
   }
 
   async setSession(tenant: Tenant, id: string, providerId: string, sessionId: string): Promise<void> {
+    this.validateTenant(tenant);
+    this.validateId(id);
     const header = this.readHeader(tenant, id);
     header.sessions[providerId] = sessionId;
     header.updatedAt = new Date().toISOString();
@@ -129,6 +160,8 @@ export class ThreadStore {
     proposalId: string,
     status: 'pending' | 'approved' | 'rejected'
   ): Promise<void> {
+    this.validateTenant(tenant);
+    this.validateId(id);
     const events = this.readEvents(tenant, id).map(ev =>
       't' in ev && ev.t === 'proposal' && ev.id === proposalId ? { ...ev, status } : ev
     );
@@ -143,12 +176,15 @@ export class ThreadStore {
   }
 
   async remove(tenant: Tenant, id: string): Promise<void> {
+    this.validateTenant(tenant);
+    this.validateId(id);
     rmSync(this.headerPath(tenant, id), { force: true });
     rmSync(this.logPath(tenant, id), { force: true });
     rmSync(this.codexHomeFor(id), { recursive: true, force: true });
   }
 
   codexHomeFor(id: string): string {
+    this.validateId(id);
     return join(this.codexHomeRoot, id);
   }
 }

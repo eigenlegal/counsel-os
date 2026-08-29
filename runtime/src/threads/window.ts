@@ -37,7 +37,10 @@ function toMessages(events: ThreadEvent[]): Message[] {
  * this thread: converts the event log to Messages, then drops the oldest
  * ones until the estimated token total fits `budgetTokens` — but never drops
  * the last user message (or anything after it), even if that alone puts the
- * window over budget.
+ * window over budget. The head of the returned array is always a user
+ * message (when there is one to keep) — Anthropic's API rejects a first
+ * message that isn't `user`, so a budget cut that stops mid-turn on an
+ * assistant message keeps shifting down to the same floor.
  */
 export function window(
   events: ThreadEvent[],
@@ -58,6 +61,13 @@ export function window(
   const tokensOf = (msgs: Message[]): number => msgs.reduce((sum, m) => sum + estimate(m.content), 0);
 
   while (messages.length > minKeep && tokensOf(messages) > budgetTokens) {
+    messages.shift();
+  }
+  // The budget cut above can stop as soon as it's under budget, which may
+  // leave a leading assistant message from a turn whose user message was
+  // just dropped. Keep shifting down to the same last-user-message floor
+  // until the head is a user turn.
+  while (messages.length > minKeep && messages[0]!.role !== 'user') {
     messages.shift();
   }
 

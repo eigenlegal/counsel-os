@@ -1,4 +1,5 @@
 import { describe, expect, test, beforeEach } from 'bun:test';
+import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -123,7 +124,30 @@ describe('ThreadStore', () => {
 
   test('codexHomeFor defaults to ~/.counsel-os/codex/<id> when codexHomeRoot is not injected', () => {
     const defaultStore = new ThreadStore(root);
-    const path = defaultStore.codexHomeFor('some-id');
-    expect(path.endsWith(join('.counsel-os', 'codex', 'some-id'))).toBe(true);
+    const id = randomUUID();
+    const path = defaultStore.codexHomeFor(id);
+    expect(path.endsWith(join('.counsel-os', 'codex', id))).toBe(true);
+  });
+
+  test('rejects a path-traversal thread id', async () => {
+    await expect(store.get('default', '../../x')).rejects.toThrow('invalid thread id');
+  });
+
+  test('rejects a path-traversal tenant', async () => {
+    await expect(store.get('../t', randomUUID())).rejects.toThrow('invalid tenant');
+  });
+
+  test('a real uuid passes id validation', async () => {
+    const header = await store.create('default', {});
+    await expect(store.get('default', header.id)).resolves.toBeDefined();
+  });
+
+  test('append on an unknown thread throws and creates no orphan .jsonl', async () => {
+    const unknownId = randomUUID();
+    await expect(
+      store.append('default', unknownId, { t: 'user', at: '2026-01-01T00:00:00.000Z', content: 'hi' })
+    ).rejects.toThrow();
+
+    expect(existsSync(join(root, '.counsel', 'threads', 'default', `${unknownId}.jsonl`))).toBe(false);
   });
 });
