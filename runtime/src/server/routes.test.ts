@@ -8,7 +8,8 @@ import type { Capabilities, ModelProvider, StepEvent, StepRequest } from '../cor
 import { Router } from '../router/router';
 import { ThreadStore, type ThreadEvent } from '../threads/store';
 import { FsVaultStore } from '../vault/fs-store';
-import { createApp, type App, type ServerDeps } from './routes';
+import { API_PREFIXES, createApp, type App, type ServerDeps } from './routes';
+import type { RuntimeState } from './settings';
 
 const TOKEN = 'test-token-0123456789';
 
@@ -28,7 +29,24 @@ beforeEach(() => {
   store = new ThreadStore(vaultRoot, { codexHomeRoot: mkdtempSync(join(tmpdir(), 'routes-codex-')) });
 });
 
-function appWith(providers: ModelProvider[], extra: Partial<ServerDeps> = {}): App {
+/**
+ * A server whose live state is exactly `providers`, with the first as the
+ * default. `state` is a getter over one fixed object here — a reload is
+ * `settings.test.ts`'s subject, not this file's — and `reload` re-installs
+ * that same state, so nothing a route test does can quietly swap the
+ * provider it asserts against.
+ */
+function appWith(
+  providers: ModelProvider[],
+  extra: Partial<ServerDeps> & { stepTimeoutMs?: number } = {},
+): App {
+  const { stepTimeoutMs, ...rest } = extra;
+  const state: RuntimeState = {
+    providers,
+    router: new Router({ default: providers[0]!.id }, providers),
+    defaultId: providers[0]!.id,
+    ...(stepTimeoutMs === undefined ? {} : { stepTimeoutMs }),
+  };
   const deps: ServerDeps = {
     token: TOKEN,
     tenant: 'default',
@@ -36,10 +54,10 @@ function appWith(providers: ModelProvider[], extra: Partial<ServerDeps> = {}): A
     pluginRoot,
     vault,
     store,
-    providers,
-    router: new Router({ default: providers[0]!.id }, providers),
     platform: 'macos',
-    ...extra,
+    state: () => state,
+    settings: { file: join(mkdtempSync(join(tmpdir(), 'routes-home-')), 'providers.yaml'), reload: () => {} },
+    ...rest,
   };
   return createApp(deps);
 }
@@ -76,6 +94,9 @@ function parseSse(text: string): Frame[] {
   return text
     .split('\n\n')
     .filter(block => block.trim() !== '')
+    // SSE comment lines (`: typed`) are not frames — the typed-answer
+    // preamble is one, and a client ignores it the same way this does.
+    .filter(block => !block.startsWith(':'))
     .map(block => {
       const lines = block.split('\n');
       const eventLine = lines.find(l => l.startsWith('event: '))!;
@@ -90,10 +111,11 @@ async function newThread(app: App): Promise<string> {
   return ((await res.json()) as { id: string }).id;
 }
 
-async function step(app: App, id: string, body: Record<string, unknown>): Promise<{ res: Response; frames: Frame[] }> {
+async function step(app: App, id: string, body: Record<string, unknown>): Promise<{ res: Response; frames: Frame[]; body: string }> {
   const res = await call(app, 'POST', `/threads/${id}/steps`, { body });
-  const frames = res.headers.get('content-type') === 'text/event-stream' ? parseSse(await res.text()) : [];
-  return { res, frames };
+  const sse = res.headers.get('content-type') === 'text/event-stream';
+  const raw = sse ? await res.text() : '';
+  return { res, frames: sse ? parseSse(raw) : [], body: raw };
 }
 
 function kindOf(ev: ThreadEvent): string {
@@ -204,19 +226,14 @@ describe('POST /threads/:id/steps', () => {
 
   test('an unsatisfiable task route is 422', async () => {
     const fake = new FakeModelProvider([{ text: 'x' }]);
-    const app = createApp({
-      token: TOKEN,
-      tenant: 'default',
-      vaultRoot,
-      pluginRoot,
-      vault,
-      store,
-      providers: [fake],
-      router: new Router(
-        { default: 'fake/fake', tasks: { heavy: { prefer: 'missing/model', require: { contextTokens: 99_000_000 } } } },
-        [fake],
-      ),
-      platform: 'macos',
+    const app = appWith([fake], {
+      state: () => ({
+        providers: [fake],
+        router: new Router(
+          { default: 'fake/fake', tasks: { heavy: { prefer: 'missing/model', require: { contextTokens: 99_000_000 } } } },
+          [fake],
+        ),
+      }),
     });
     const id = await newThread(app);
     const res = await call(app, 'POST', `/threads/${id}/steps`, { body: { message: 'hi', task: 'heavy' } });
@@ -327,6 +344,20 @@ describe('POST /threads/:id/steps', () => {
   });
 });
 
+/** A provider that answers a typed request in prose — the shape the fallback
+ * exists for. */
+function failingTyped(text: string): ModelProvider {
+  return {
+    id: 'typed/fail',
+    kind: 'direct',
+    capabilities: { tools: true, caching: false, thinking: false, contextTokens: 1_000_000, auth: 'local' },
+    async *run(): AsyncIterable<StepEvent> {
+      yield { type: 'text', text };
+      yield { type: 'error', message: 'structured output failed validation: not an object', text };
+    },
+  };
+}
+
 describe('typed answers', () => {
   test('an outputSchema on the request reaches the provider, and done carries the parsed output', async () => {
     const app = appWithFake([{ text: 'ok', output: { files: ['a'] } }]);
@@ -344,6 +375,48 @@ describe('typed answers', () => {
     expect(res.status).toBe(200);
     const done = frames.find(f => f.event === 'done')!;
     expect(done.data['output']).toEqual({ files: ['a'] });
+  });
+
+  test('a typed step does not stream raw text deltas, and says so with a `: typed` comment', async () => {
+    // Under a schema the deltas are the model working toward the JSON, not an
+    // answer to show; the thread log still keeps them (web-ui spec §4.3).
+    const app = appWithFake([{ text: 'thinking out loud', output: { files: ['a'] } }]);
+    const id = await newThread(app);
+
+    const { res, frames, body } = await step(app, id, {
+      message: 'list the files',
+      outputSchema: { type: 'object', properties: { files: { type: 'array', items: { type: 'string' } } }, required: ['files'] },
+    });
+
+    expect(res.status).toBe(200);
+    expect(body.startsWith(': typed\n\n')).toBe(true);
+    expect(frames.map(f => f.event)).toEqual(['done']);
+    // Dropped from the wire, kept in the log.
+    const log = (await (await call(app, 'GET', `/threads/${id}`)).json()) as { events: ThreadEvent[] };
+    expect(log.events.map(kindOf)).toContain('text');
+  });
+
+  test('an untyped step still streams its text and carries no preamble', async () => {
+    const app = appWithFake([{ text: 'thinking out loud' }]);
+    const id = await newThread(app);
+
+    const { frames, body } = await step(app, id, { message: 'hi' });
+
+    expect(body.startsWith(':')).toBe(false);
+    expect(frames.map(f => f.event)).toEqual(['text', 'done']);
+  });
+
+  test('a typed step whose answer fails validation still delivers the raw text on the error', async () => {
+    const app = appWith([failingTyped('I cannot answer in JSON.')]);
+    const id = await newThread(app);
+
+    const { frames } = await step(app, id, {
+      message: 'list the files',
+      outputSchema: { type: 'object', properties: { files: { type: 'array' } }, required: ['files'] },
+    });
+
+    expect(frames.map(f => f.event)).toEqual(['error']);
+    expect(frames[0]!.data['text']).toBe('I cannot answer in JSON.');
   });
 
   test('an invalid outputSchema is 400 and never reaches the provider', async () => {
@@ -777,5 +850,77 @@ describe('runs', () => {
     const id = await newThread(app);
     expect((await call(app, 'POST', `/runs?thread=${id}`, { body: {} })).status).toBe(404);
     expect((await call(app, 'DELETE', `/runs/${randomUUID()}`)).status).toBe(404);
+  });
+});
+
+describe('static UI', () => {
+  /** A built `dist/` next to the fixtures, plus an app that serves it. */
+  function appWithDist(): { app: App; dist: string } {
+    const dist = mkdtempSync(join(tmpdir(), 'routes-dist-'));
+    mkdirSync(join(dist, 'assets'), { recursive: true });
+    writeFileSync(join(dist, 'index.html'), '<!doctype html><title>counsel-os</title>\n', 'utf8');
+    writeFileSync(join(dist, 'assets', 'app.js'), 'console.log(1)\n', 'utf8');
+    return { app: appWith([new FakeModelProvider([{ text: 'hi' }])], { distDir: dist }), dist };
+  }
+
+  test('the page and its assets need no token; the API still does', async () => {
+    const { app } = appWithDist();
+
+    const page = await call(app, 'GET', '/', { token: null });
+    expect(page.status).toBe(200);
+    expect(page.headers.get('content-type')).toContain('text/html');
+    expect(await page.text()).toContain('counsel-os');
+
+    const asset = await call(app, 'GET', '/assets/app.js', { token: null });
+    expect(asset.status).toBe(200);
+    expect(asset.headers.get('cache-control')).toBe('public, max-age=31536000, immutable');
+
+    // The token lives in the URL fragment, which the browser never sends. So
+    // the shell has to load unauthenticated — and every API route must not.
+    expect((await call(app, 'GET', '/health', { token: null })).status).toBe(401);
+    expect((await call(app, 'GET', '/threads', { token: null })).status).toBe(401);
+    expect((await call(app, 'GET', '/runs', { token: null })).status).toBe(401);
+    expect((await call(app, 'GET', '/vault/list', { token: null })).status).toBe(401);
+    expect((await call(app, 'GET', '/settings', { token: null })).status).toBe(401);
+  });
+
+  test('a client-side route falls back to the shell', async () => {
+    const { app } = appWithDist();
+    const res = await call(app, 'GET', '/threads-ui/abc', { token: null });
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain('counsel-os');
+  });
+
+  test('a write to a static path is a 404, not a 401 and not the shell', async () => {
+    const { app } = appWithDist();
+    const res = await call(app, 'POST', '/', { token: null });
+    expect(res.status).toBe(404);
+    expect(((await res.json()) as { error: string }).error).toContain('no route for POST /');
+  });
+
+  test('without a dist directory an unknown path is still a 404', async () => {
+    // Every route test above builds its app with no `distDir`; that must keep
+    // behaving exactly as it did before static serving existed.
+    expect((await call(appWithFake(), 'GET', '/nope')).status).toBe(404);
+    expect((await call(appWithFake(), 'GET', '/', { token: null })).status).toBe(404);
+  });
+});
+
+describe('API_PREFIXES', () => {
+  test('covers every first path segment the router matches', () => {
+    // Static serving runs BEFORE the bearer check for anything not on this
+    // list, so a route added under a prefix that is missing from it would be
+    // reachable with no token at all. This reads the router's own source so
+    // the list cannot drift away from the routes it guards.
+    const source = readFileSync(join(import.meta.dir, 'routes.ts'), 'utf8');
+    const matched = [...source.matchAll(/\bfirst === '([^']+)'/g)].map(m => m[1]!);
+    expect(matched.length).toBeGreaterThan(0);
+    for (const segment of new Set(matched)) {
+      expect(API_PREFIXES).toContain(segment);
+    }
+  });
+
+  test('reserves settings, which Task 3 mounts into', () => {
+    expect(API_PREFIXES).toContain('settings');
   });
 });

@@ -41,9 +41,16 @@ export class DirectProvider implements ModelProvider {
       ...(req.outputSchema ? { output: Output.object({ schema: req.outputSchema }) } : {}),
     });
 
+    // The raw answer, kept only so a structured-output failure can hand it
+    // back (web-ui spec §4.3). `result.text` is not usable there: awaiting it
+    // after `result.output` already rejected gives the same rejection, so the
+    // deltas are collected as they stream instead.
+    let raw = '';
+
     for await (const part of result.fullStream) {
       switch (part.type) {
         case 'text-delta':
+          raw += part.text;
           yield { type: 'text', text: part.text };
           break;
         case 'tool-call':
@@ -74,7 +81,7 @@ export class DirectProvider implements ModelProvider {
             yield { type: 'done', output, usage: { inputTokens: usage.inputTokens ?? 0, outputTokens: usage.outputTokens ?? 0 } };
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
-            yield { type: 'error', message: `structured output failed validation: ${msg}` };
+            yield { type: 'error', message: `structured output failed validation: ${msg}`, ...(raw === '' ? {} : { text: raw }) };
             return;
           }
           break;

@@ -3,20 +3,59 @@ import { RouterError } from '../core/types';
 import { DEFAULT_STEP_TIMEOUT_MS, runStep, type CounselLoopDeps } from '../loop/counsel-loop';
 import { applyProposal } from '../loop/proposals';
 import { listRuns, readRun, type RunRecord } from '../loop/run-record';
+import { RegistryFile } from '../providers/registry';
 import type { ThreadEvent, ThreadHeader } from '../threads/store';
 import { normalizeVaultPath } from '../vault/knowledge-paths';
 import { isAuthorized } from './auth';
+import {
+  applySettings,
+  effectiveDefault,
+  settingsView,
+  testProvider,
+  TestBody,
+  type RuntimeState,
+  type SettingsDeps,
+} from './settings';
 import { sseFromEvents, type StreamEvent } from './sse';
+import { serveStatic } from './static';
 
-export interface ServerDeps extends CounselLoopDeps {
+/**
+ * Everything the HTTP surface needs, minus the parts a `PUT /settings` can
+ * replace. `providers`, `router` and `stepTimeoutMs` are deliberately NOT
+ * here: they live in `RuntimeState` behind `state()`, so a handler cannot
+ * accidentally capture the set that was live when the server started. The
+ * compiler enforces it — there is no `deps.providers` to reach for.
+ */
+export interface ServerDeps extends Omit<CounselLoopDeps, 'providers' | 'router' | 'stepTimeoutMs'> {
   /** The bearer token every request must present (spec §4.5). */
   token: string;
-  /** The provider `GET /health` reports as the default. Defaults to whatever
-   * the router resolves with no task. */
-  defaultProviderId?: string;
+  /** The live providers, router, default and step timeout, read fresh on
+   * every request so a reload takes effect without a restart. */
+  state(): RuntimeState;
+  /** The registry file `/settings` reads and writes, and the reload that
+   * installs a new one. */
+  settings: SettingsDeps;
+  /** The built UI's `dist/` (spec §4.2). Omitted → no static serving at all,
+   * and a non-API path is the 404 it has always been. */
+  distDir?: string;
 }
 
 export type App = (req: Request) => Promise<Response>;
+
+/**
+ * The first path segment of every route that needs the bearer token. It is
+ * the WHOLE definition of the API surface: anything not on this list is
+ * static, served with no credential, so a new route whose prefix is missing
+ * here would be reachable by anyone who can reach the port.
+ */
+export const API_PREFIXES: readonly string[] = ['health', 'threads', 'runs', 'vault', 'settings'];
+
+/** True when `pathname` belongs to the API (and so needs a token). `/` and
+ * every client-side route are false. */
+export function isApiPath(pathname: string): boolean {
+  const first = pathname.split('/').find(s => s !== '');
+  return first !== undefined && API_PREFIXES.includes(first);
+}
 
 const CreateThreadBody = z.object({ title: z.string().optional(), matter: z.string().optional() });
 
@@ -102,15 +141,15 @@ async function loadThread(deps: ServerDeps, id: string): Promise<{ header: Threa
  * id or an unsatisfiable task route, and a status code can only be chosen
  * before the response begins.
  */
-function checkProvider(deps: ServerDeps, opts: { provider?: string; task?: string }): void {
+function checkProvider(state: RuntimeState, opts: { provider?: string; task?: string }): void {
   if (opts.provider !== undefined) {
-    if (!deps.providers.some(p => p.id === opts.provider)) {
+    if (!state.providers.some(p => p.id === opts.provider)) {
       throw new HttpError(422, `unknown provider: ${opts.provider}`);
     }
     return;
   }
   try {
-    deps.router.resolve(opts.task);
+    state.router.resolve(opts.task);
   } catch (err) {
     if (err instanceof RouterError) throw new HttpError(422, err.message);
     throw err;
@@ -184,6 +223,29 @@ async function* withRelease(source: AsyncIterable<StreamEvent>, release: () => v
   }
 }
 
+/** The key `PUT /settings` serializes on. `ThreadLocks` is a keyed mutex,
+ * not something that knows about threads; this key is not a thread id and
+ * cannot collide with one, since thread ids are uuids. */
+const SETTINGS_LOCK = 'settings';
+
+/** The comment line a typed stream opens with. A client that sees it knows the
+ * missing `text` frames are suppression, not silence. */
+export const TYPED_PREAMBLE = ': typed\n\n';
+
+/**
+ * Drops `text` events (web-ui spec §4.3). Under an `outputSchema` the deltas
+ * are the model working its way toward JSON, not an answer to show, and a UI
+ * that streamed them would render half a JSON object and then replace it.
+ * The thread log still keeps them — the loop writes them upstream of this —
+ * and a structured-output failure hands the raw answer back on the terminal
+ * `error`'s own `text`, which is NOT dropped.
+ */
+async function* withoutText(source: AsyncIterable<StreamEvent>): AsyncIterable<StreamEvent> {
+  for await (const ev of source) {
+    if (ev.type !== 'text') yield ev;
+  }
+}
+
 /**
  * The whole HTTP surface (spec §4.5) as a plain fetch handler: no socket, no
  * Bun.serve, so the route tests drive it directly with `Request` objects.
@@ -191,6 +253,28 @@ async function* withRelease(source: AsyncIterable<StreamEvent>, release: () => v
  */
 export function createApp(deps: ServerDeps): App {
   const locks = new ThreadLocks();
+  const staticHandler = deps.distDir === undefined ? null : serveStatic(deps.distDir);
+
+  /**
+   * The loop's dependencies as of RIGHT NOW: the fixed half of `deps` plus
+   * whatever `PUT /settings` has installed. Built per request, never hoisted
+   * — a value captured once is exactly the staleness `RuntimeState` exists
+   * to prevent.
+   */
+  const loopDeps = (): CounselLoopDeps => {
+    const state = deps.state();
+    return {
+      tenant: deps.tenant,
+      vaultRoot: deps.vaultRoot,
+      pluginRoot: deps.pluginRoot,
+      vault: deps.vault,
+      store: deps.store,
+      providers: state.providers,
+      router: state.router,
+      ...(deps.platform === undefined ? {} : { platform: deps.platform }),
+      ...(state.stepTimeoutMs === undefined ? {} : { stepTimeoutMs: state.stepTimeoutMs }),
+    };
+  };
 
   /** Runs `fn` with this thread's lock held for its whole duration — for the
    * handlers that finish inside one function. `steps` cannot use it: its work
@@ -204,30 +288,46 @@ export function createApp(deps: ServerDeps): App {
     }
   };
 
-  const defaultProviderId = (): string | null => {
-    if (deps.defaultProviderId !== undefined) return deps.defaultProviderId;
-    try {
-      return deps.router.resolve().id;
-    } catch {
-      return null;
-    }
-  };
-
-  const health = (): Response =>
-    json({
+  const health = (): Response => {
+    const state = deps.state();
+    return json({
       vault: deps.vaultRoot,
       tenant: deps.tenant,
-      providers: deps.providers.map(p => ({
+      providers: state.providers.map(p => ({
         id: p.id,
         kind: p.kind,
         auth: p.capabilities.auth,
         capabilities: p.capabilities,
       })),
-      default: defaultProviderId(),
+      default: effectiveDefault(state),
       // What a step on this runtime actually gets, not what was configured:
       // an operator reading /health wants the effective number.
-      stepTimeoutMs: deps.stepTimeoutMs ?? DEFAULT_STEP_TIMEOUT_MS,
+      stepTimeoutMs: state.stepTimeoutMs ?? DEFAULT_STEP_TIMEOUT_MS,
     });
+  };
+
+  /**
+   * `PUT /settings` (spec §4.1). The body is the whole registry file, so a
+   * schema failure is the shared 400-with-issues every other route gives.
+   *
+   * Serialized on `SETTINGS_LOCK`, because `applySettings` is a
+   * read-modify-write of one file: two overlapping PUTs could otherwise
+   * restore each other's contents, and the loser's registry would win. The
+   * lock is taken AFTER the body is read — a slow client must not be able to
+   * hold the settings surface shut by trickling out a request.
+   */
+  const putSettings = async (req: Request): Promise<Response> => {
+    const next = await body(req, RegistryFile);
+    const release = await locks.acquire(SETTINGS_LOCK);
+    try {
+      return applySettings(deps, next);
+    } finally {
+      release();
+    }
+  };
+
+  const runProviderTest = async (req: Request): Promise<Response> =>
+    testProvider(loopDeps(), (await body(req, TestBody)).provider);
 
   const createThread = async (req: Request): Promise<Response> => {
     const init = await body(req, CreateThreadBody);
@@ -246,7 +346,8 @@ export function createApp(deps: ServerDeps): App {
   const steps = async (req: Request, id: string): Promise<Response> => {
     const input = await body(req, StepBody);
     await loadThread(deps, id);
-    checkProvider(deps, input);
+    const loop = loopDeps();
+    checkProvider(loop, input);
 
     let outputSchema: z.ZodType<unknown> | undefined;
     if (input.outputSchema) {
@@ -259,14 +360,17 @@ export function createApp(deps: ServerDeps): App {
 
     const release = await locks.acquire(`${deps.tenant}/${id}`);
     try {
-      const events = runStep(deps, {
+      const events = runStep(loop, {
         threadId: id,
         message: input.message,
         ...(input.task === undefined ? {} : { task: input.task }),
         ...(input.provider === undefined ? {} : { providerId: input.provider }),
         ...(outputSchema === undefined ? {} : { outputSchema }),
       });
-      return await sseFromEvents(withRelease(events, release));
+      const stream = withRelease(events, release);
+      return outputSchema === undefined
+        ? await sseFromEvents(stream)
+        : await sseFromEvents(withoutText(stream), { preamble: TYPED_PREAMBLE });
     } catch (err) {
       release();
       throw err;
@@ -358,9 +462,20 @@ export function createApp(deps: ServerDeps): App {
 
   return async function app(req: Request): Promise<Response> {
     try {
+      const url = new URL(req.url);
+
+      // Static first, and only for non-API paths. The page gets its token
+      // from the URL fragment, which never reaches the server, so the shell
+      // and its assets have to load unauthenticated. The API list above is
+      // what keeps that from becoming a hole: a path that is not on it can
+      // only ever reach `serveStatic`, which reads nothing outside `dist/`.
+      if (!isApiPath(url.pathname)) {
+        const res = staticHandler === null ? null : await staticHandler(req);
+        return res ?? fail(404, `no route for ${req.method} ${url.pathname}`);
+      }
+
       if (!isAuthorized(req, deps.token)) return fail(401, 'unauthorized');
 
-      const url = new URL(req.url);
       const segments = url.pathname.split('/').filter(s => s !== '');
       const [first, second, third] = segments;
       const { method } = req;
@@ -386,6 +501,15 @@ export function createApp(deps: ServerDeps): App {
 
       if (segments.length === 2 && first === 'runs' && second !== undefined && method === 'GET') {
         return getRun(second);
+      }
+
+      if (segments.length === 1 && first === 'settings') {
+        if (method === 'GET') return json(settingsView(deps));
+        if (method === 'PUT') return await putSettings(req);
+      }
+
+      if (segments.length === 2 && first === 'settings' && second === 'test' && method === 'POST') {
+        return await runProviderTest(req);
       }
 
       if (segments.length === 2 && first === 'vault' && method === 'GET') {

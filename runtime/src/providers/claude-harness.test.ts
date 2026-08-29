@@ -30,6 +30,22 @@ describe('mapClaudeMessage', () => {
     expect(ev[0]!.type).toBe('error');
   });
 
+  test('an invalid structured output keeps the raw answer on error.text (web-ui spec §4.3)', () => {
+    // `msg.result` is the turn's raw text. A typed request that the model
+    // answered in prose is still an error — but the prose is what the reader
+    // wants to see, so it rides along instead of being dropped.
+    const ev = mapClaudeMessage(
+      { type: 'result', subtype: 'success', structured_output: { a: 'no' }, result: 'raw', usage: {} },
+      z.object({ a: z.number() }),
+    );
+    expect(ev).toEqual([{ type: 'error', message: expect.stringContaining('structured output failed validation'), text: 'raw' }]);
+  });
+
+  test('an invalid structured output with no raw result omits text rather than inventing one', () => {
+    const ev = mapClaudeMessage({ type: 'result', subtype: 'success', output: { a: 'no' }, usage: {} }, z.object({ a: z.number() }));
+    expect(ev[0]).not.toHaveProperty('text');
+  });
+
   test('result error subtype → error', () => {
     const ev = mapClaudeMessage({ type: 'result', subtype: 'error_max_turns', usage: {} });
     expect(ev[0]!.type).toBe('error');

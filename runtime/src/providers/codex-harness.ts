@@ -68,14 +68,18 @@ export function mapCodexEvent(raw: unknown, outputSchema?: ZodType<unknown>, fin
     const usage = (ev.usage ?? {}) as { input_tokens?: number; output_tokens?: number };
     const u = { inputTokens: usage.input_tokens ?? 0, outputTokens: usage.output_tokens ?? 0 };
     if (!outputSchema) return [{ type: 'done', output: finalResponse ?? null, usage: u }];
+    // The last agent message, kept on the error so a typed request the model
+    // answered in prose still shows the prose (web-ui spec §4.3). An empty
+    // response is no answer at all, so it is omitted rather than reported.
+    const raw = finalResponse !== undefined && finalResponse !== '' ? { text: finalResponse } : {};
     let json: unknown;
     try {
       json = JSON.parse(finalResponse ?? '');
     } catch {
-      return [{ type: 'error', message: 'structured output was not JSON' }];
+      return [{ type: 'error', message: 'structured output was not JSON', ...raw }];
     }
     const parsed = outputSchema.safeParse(json);
-    if (!parsed.success) return [{ type: 'error', message: `structured output failed validation: ${parsed.error.message}` }];
+    if (!parsed.success) return [{ type: 'error', message: `structured output failed validation: ${parsed.error.message}`, ...raw }];
     return [{ type: 'done', output: parsed.data, usage: u }];
   }
 

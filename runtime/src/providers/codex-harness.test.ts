@@ -49,6 +49,22 @@ describe('mapCodexEvent', () => {
     expect(ev[0]!.type).toBe('error');
   });
 
+  test('a non-JSON finalResponse rides along on error.text (web-ui spec §4.3)', () => {
+    const ev = mapCodexEvent({ type: 'turn.completed', usage: {} }, z.object({ a: z.number() }), 'not json');
+    expect(ev).toEqual([{ type: 'error', message: 'structured output was not JSON', text: 'not json' }]);
+  });
+
+  test('a validation failure keeps the raw JSON on error.text', () => {
+    const ev = mapCodexEvent({ type: 'turn.completed', usage: {} }, z.object({ a: z.number() }), '{"a":"no"}');
+    expect((ev[0] as { text?: string }).text).toBe('{"a":"no"}');
+  });
+
+  test('an empty finalResponse omits text rather than reporting an empty answer', () => {
+    const ev = mapCodexEvent({ type: 'turn.completed', usage: {} }, z.object({ a: z.number() }), '');
+    expect(ev[0]!.type).toBe('error');
+    expect(ev[0]).not.toHaveProperty('text');
+  });
+
   test('turn.failed → error, reading ThreadError.message (index.d.ts:138-141,158-160)', () => {
     const ev = mapCodexEvent({ type: 'turn.failed', error: { message: 'boom' } });
     expect(ev[0]!.type).toBe('error');

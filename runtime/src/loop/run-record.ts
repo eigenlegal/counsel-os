@@ -44,6 +44,10 @@ export interface RunRecord {
   costUsd?: number;
   durationMs?: number;
   error?: string;
+  /** The model's RAW answer when a typed step could not honor its schema
+   * (web-ui spec §4.3): `error` says what went wrong, this says what the
+   * model actually wrote. Unset for every other kind of failure. */
+  errorText?: string;
 }
 
 /**

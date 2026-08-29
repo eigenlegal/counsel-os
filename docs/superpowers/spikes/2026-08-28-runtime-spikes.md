@@ -1299,3 +1299,165 @@ Recorded, not fixed.
 thread cache). All removed; the server was killed and `runtime.json` is
 gone. `evals/outputs/green-yellow-red-calibration.json` holds the
 `claude-opus-5` answer and is gitignored.
+
+---
+
+## Step 4 — web UI
+
+Date: 2026-08-29
+Branch: `web-ui` (Tasks 1–5 landed)
+Spec: `docs/superpowers/specs/2026-08-28-runtime-and-web-ui-design.md` §6
+
+Question: does the page work end to end against a real `counsel-os serve` —
+token bootstrap, a step that runs tools and raises a proposal, approval that
+writes the vault, the run record, the vault browser, settings — and does it
+hold up when a real (local) model drives it instead of the fake provider?
+
+### Setup
+
+Two runs, each with its own throwaway `COUNSEL_OS_HOME` and its own marked
+vault. Neither touched `~/.counsel-os`; after both, that directory still holds
+only `backups/`, `browse/` and `legal-root` — no `runtime.json`, no
+`providers.yaml`.
+
+```
+<vault>/config.md              # counsel-os-config: true, legal_root: <vault>
+<vault>/matters/acme.md        # Acme Corp mutual NDA — term 2 years, Delaware
+```
+
+Playwright had to be repaired before anything could run (see defect 1): the
+repo carried `playwright` but not `@playwright/test`, and the cached Chromium
+was revision 1234 while `playwright@1.58.2` wants 1208.
+
+### (a) `bun run e2e` — the fake-provider flow · PASS
+
+```bash
+bun run e2e     # bunx playwright test -c e2e/playwright.config.ts
+```
+
+**1 passed, 2.6 s** (the test itself 1.0 s; the rest is the UI build and the
+server start). One test, six `test.step`s, no model called:
+
+| Step | What it proves |
+| --- | --- |
+| `/#token=…` opens the page | `serve` prints a token the page can bootstrap, and `replaceState` strips it — the URL no longer contains `token=` |
+| New thread | `POST /threads`, and the empty-transcript state |
+| Send | SSE streams `Done.`, plus a `vault_read` card and a `propose_update` card, both `ok` |
+| Approve | the proposal card goes `pending` → `approved` and stops offering buttons |
+| Vault | the lazy tree walks `practice/` → `standards/`, and `nda.md` renders as markdown containing `Term: 3 years` — the approval really wrote the file |
+| Run panel + Settings | the run reads `done` against `fake/fake`, lists both tool calls and one proposal; settings show `fake/fake` as the effective default |
+
+`e2e/serve.ts` owns the server and the fixture together — a throwaway home, a
+marked vault, `ui:build`, then the real CLI with `--fake --fake-script`. It
+cannot be a `globalSetup`: Playwright runs `webServer` first, because the web
+server is a runner plugin and plugin setup precedes global setup
+(`createGlobalSetupTasks`). The suite is deliberately outside `bun test` —
+the root `test` script stays scoped to `runtime/src browse/src scripts`.
+
+### (b) One live step on Ollama · PASS
+
+```bash
+# <home>/providers.yaml
+default: ollama/gemma4:e4b
+stepTimeoutMs: 300000
+
+COUNSEL_OS_HOME=<home> bun runtime/src/cli.ts serve --port 7501 --vault <vault> --step-timeout 300000
+```
+
+`ollama/gemma4:e4b` is a builtin id, so no `providers:` entry was needed — one
+would only have registered a second provider under the same id. `GET /health`
+answered `"default": "ollama/gemma4:e4b"`, `"stepTimeoutMs": 300000`, and the
+composer's model picker showed it as the default, so nothing metered could be
+reached by accident.
+
+Prompt, typed into the page:
+
+> Read matters/acme.md with the vault_read tool, then tell me the NDA term and
+> the governing law in one sentence.
+
+| | |
+| --- | --- |
+| Model | `ollama/gemma4:e4b` |
+| Wall clock | 16.9 s (browser click → run panel visible) |
+| Run record `durationMs` | 16 423 ms, `status: done` |
+| Tools | `vault_read` — 18 ms, no error |
+| Usage | 16 465 in / 286 out |
+| Answer | "The NDA term is 2 years, and the governing law is Delaware." |
+| Errors on screen | none |
+
+What the page showed: the user turn, then a `vault_read` card whose Input is
+`{"path":"matters/acme.md"}` and whose Result carries the file's content and
+its version hash, then the answer, then the run panel — `DONE`,
+`ollama/gemma4:e4b`, `16.4 s`, `Primitives read: none`, `Tokens 16465 in / 286
+out`, `Tools: vault_read 18 ms`, `No proposals`. The vault surface opened
+`matters/acme.md` as rendered markdown with its version in the header.
+
+![Chat with the tool card and run panel open](img/web-ui-chat-run.png)
+
+![The vault browser reading matters/acme.md](img/web-ui-vault.png)
+
+### Defects found in Step 4 (recorded, not fixed)
+
+1. **Playwright could not run as checked in.** `playwright@^1.50.0` was a
+   dependency, but the test runner (`@playwright/test`) was not installed at
+   all, and the only cached Chromium was revision 1234 while the resolved
+   `playwright@1.58.2` looks for 1208. Both had to be fixed to run anything:
+   `@playwright/test` pinned to `1.58.2` (so the runner and `playwright`
+   cannot resolve to two versions with two browser revisions), plus a
+   `bunx playwright install chromium`. The browser install is a machine
+   prerequisite, not something `bun run e2e` can do for the reader — it is
+   noted in `e2e/playwright.config.ts`. (`package.json`.)
+
+2. **The window budget is optimistic by roughly 2.4× on the local tier.**
+   `counsel-loop.ts` sets `budgetTokens = contextTokens − (estimateTokens(system)
+   + 2000)`, where `estimateTokens` is `length / 4` and the tool schemas are not
+   counted at all. On this run the estimate for the system prompt is ~6 850
+   tokens, giving a history budget of ~23 150 against a 32 000-token window —
+   but the FIRST request, with one 110-character message, already consumed
+   16 465 input tokens. The gap is the tool JSON schemas plus tokenizer drift.
+   Nothing failed here, because one turn is nowhere near the limit; a long
+   thread on a 32 k local model can overshoot the window while the budget
+   still says it fits. (`runtime/src/loop/counsel-loop.ts`.)
+
+3. **Threads are never named.** The thread list renders `untitled 88f75622`
+   forever: `ThreadHeader.title` exists and the page re-fetches the list after
+   every step (`onThreadTouched`), but nothing on the server ever sets a
+   title. With more than two or three threads the list stops being navigable.
+   (`runtime/src/threads/store.ts`, `runtime/ui/src/chat/ThreadList.tsx`.)
+
+4. **`e2e/` is typechecked by nothing.** The root `typecheck` script is
+   `browse/tsconfig.json`, `typecheck:runtime` is `runtime/`, `typecheck:ui` is
+   `runtime/ui` — and all three use `include: ["src/**/*.ts"]`. The four new
+   files were verified with a one-off `tsc` invocation and are clean, but
+   nothing keeps them that way. Not fixed here: adding a fourth tsconfig and a
+   fourth script is a change to the repo's check surface, not a Task 6 finding.
+
+5. **Minor, cosmetic:** the vault tree lists the vault's own `config.md`
+   marker file alongside content, and the header's vault path is truncated
+   with no full value except the `title` tooltip. Neither is wrong; both are
+   worth a look when the vault surface is next touched.
+
+### What the next plan should assume — Step 4
+
+- **The page works, on the fake provider and on a real one.** Every surface in
+  spec §2 was exercised against a live server: auth, chat with streaming,
+  tool cards, the proposal approve path (which really wrote the file), the run
+  record, the lazy vault tree, the markdown reader, and settings.
+- **`bun run e2e` is the regression gate for the page**, and it is cheap —
+  ~3 s including the build. It needs Chromium installed once
+  (`bunx playwright install chromium`).
+- **`ollama/gemma4:e4b` is a usable free tier for UI work.** It called the
+  right tool with the right argument on the first try and answered correctly
+  in 16 s. It is not a substitute for the harness tiers on hard work, but
+  it is enough to drive the page.
+- **Do not add `e2e/` to `bun test`.** It needs a server, a build and a
+  browser; the unit run must stay a unit run.
+
+### Throwaway artifacts — Step 4
+
+`e2e/.tmp/` (the e2e run's `COUNSEL_OS_HOME`, its vault, and Playwright's
+traces) is gitignored and rebuilt on every run. The live run used a scratch
+directory outside the repo for its home, vault and server log; the server was
+killed and `pgrep -fl 'cli.ts serve'` reports nothing. `~/.counsel-os` was
+never written. The two screenshots are kept, in
+`docs/superpowers/spikes/img/`.

@@ -6,15 +6,20 @@
   "scripts": {
     "build": "bun build --target=bun --compile -e electron -e 'chromium-bidi/*' -e playwright -e 'playwright/*' -e playwright-core -e 'playwright-core/*' browse/src/cli.ts --outfile browse/dist/browse",
     "content-version": "python3 scripts/bump_content_versions.py",
+    "e2e": "bunx playwright test -c e2e/playwright.config.ts",
     "evals:self-test": "python3 scripts/run_evals.py --self-test",
     "evals:runtime": "python3 scripts/run_evals.py --generate --runner runtime",
     "evals:runner-test": "python3 scripts/eval_runtime_runner_test.py",
     "law:frontmatter": "python3 scripts/validate_law_frontmatter.py",
-    "test": "bun test",
+    "test": "bun test runtime/src browse/src scripts",
     "test:runtime": "bun test runtime/src",
     "test:server": "bun test browse/src",
     "typecheck": "tsc --noEmit -p browse/tsconfig.json",
-    "typecheck:runtime": "tsc --noEmit -p runtime/tsconfig.json"
+    "typecheck:runtime": "tsc --noEmit -p runtime/tsconfig.json",
+    "typecheck:ui": "tsc --noEmit -p runtime/ui",
+    "ui:build": "cd runtime/ui && bun install --frozen-lockfile && bunx vite build",
+    "ui:dev": "cd runtime/ui && bunx vite",
+    "ui:test": "cd runtime/ui && bun test"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.44",
@@ -29,6 +34,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "1.58.2",
     "@types/bun": "^1.3.13",
     "typescript": "^6.0.3"
   }

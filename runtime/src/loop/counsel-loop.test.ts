@@ -1274,6 +1274,39 @@ describe('runStep — the run record', () => {
     expect(typeof rec.finishedAt).toBe('string');
   });
 
+  test('a provider error that carries the raw answer records it under errorText', async () => {
+    // The typed-answer fallback (web-ui spec §4.3): the message says WHAT
+    // went wrong, `errorText` keeps what the model actually said.
+    const raw: ModelProvider = {
+      id: 'raw/raw',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+      async *run(): AsyncIterable<StepEvent> {
+        yield { type: 'error', message: 'structured output failed validation: bad', text: 'I think the answer is 42.' };
+      },
+    };
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([raw]), { threadId: id, message: 'hello' }));
+    const rec = readRun(vaultRoot, 'default', events[0]!.runId)!;
+
+    expect(rec.status).toBe('error');
+    expect(rec.error).toBe('structured output failed validation: bad');
+    expect(rec.errorText).toBe('I think the answer is 42.');
+    // The caller sees the text too — the SSE layer forwards it verbatim.
+    expect((events.at(-1) as { text?: string }).text).toBe('I think the answer is 42.');
+  });
+
+  test('a provider error with no raw answer leaves errorText unset', async () => {
+    const fake = new FakeModelProvider([{ error: 'the model gave up' }]);
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([fake]), { threadId: id, message: 'hello' }));
+    const rec = readRun(vaultRoot, 'default', events[0]!.runId)!;
+
+    expect(rec.errorText).toBeUndefined();
+  });
+
   test('a timed-out step is `timeout`, not `error` — the two read differently to an operator', async () => {
     const { id } = await store.create('default', {});
 

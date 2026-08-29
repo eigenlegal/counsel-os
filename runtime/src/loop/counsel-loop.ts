@@ -913,6 +913,10 @@ async function* stream(
         finalizeRun(deps, runId, run, {
           status: isTimeoutError(ev) ? 'timeout' : 'error',
           error: ev.message,
+          // A typed step that could not honor its schema carries the raw
+          // answer; the record keeps it beside the message rather than
+          // folding the two into one string (web-ui spec §4.3).
+          ...(ev.text === undefined ? {} : { errorText: ev.text }),
         });
       }
     }

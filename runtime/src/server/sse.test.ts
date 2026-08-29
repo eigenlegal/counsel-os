@@ -139,4 +139,30 @@ describe('sseFromEvents', () => {
     const got = await frames(await sseFromEvents(from([]), { coalesceMs: 0 }));
     expect(got.map(f => f.event)).toEqual(['error']);
   });
+
+  test('a preamble goes out once, before the first frame', async () => {
+    const res = await sseFromEvents(
+      from([
+        { type: 'text', text: 'a' },
+        { type: 'done', output: null, usage: { inputTokens: 0, outputTokens: 0 } },
+      ]),
+      { coalesceMs: 0, preamble: ': typed\n\n' },
+    );
+
+    const body = await res.text();
+    expect(body.startsWith(': typed\n\n')).toBe(true);
+    // An SSE comment is not a frame: the events after it are untouched.
+    expect(parseSse(body.slice(': typed\n\n'.length)).map(f => f.event)).toEqual(['text', 'done']);
+  });
+
+  test('a preamble is written even when the source starts by throwing', async () => {
+    async function* boom(): AsyncIterable<Ev> {
+      throw new Error('could not start');
+      yield { type: 'done', output: null, usage: { inputTokens: 0, outputTokens: 0 } };
+    }
+
+    const body = await (await sseFromEvents(boom(), { coalesceMs: 0, preamble: ': typed\n\n' })).text();
+    expect(body.startsWith(': typed\n\n')).toBe(true);
+    expect(parseSse(body.slice(': typed\n\n'.length)).map(f => f.event)).toEqual(['error']);
+  });
 });
