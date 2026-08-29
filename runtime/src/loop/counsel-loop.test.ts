@@ -745,6 +745,101 @@ describe('runStep — step timeout', () => {
     expect(overridden.map(e => e.type)).toEqual(['error']);
   });
 
+  /** Long enough for an abort's unwind (a microtask) to have happened. */
+  const settle = (): Promise<void> => new Promise(r => setTimeout(r, 20));
+
+  test('the timeout ABORTS the provider, so an SDK-shaped generator unwinds and its finally runs', async () => {
+    let unwound = false;
+    const abortable: ModelProvider = {
+      id: 'abortable/abortable',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+      async *run(req): AsyncIterable<StepEvent> {
+        try {
+          yield { type: 'text', text: 'a' };
+          // The shape of every real tier: one long await on the SDK, which
+          // settles when the request's signal fires.
+          await new Promise((_, reject) => {
+            req.signal?.addEventListener('abort', () => reject(new Error('aborted')), { once: true });
+          });
+        } finally {
+          unwound = true;
+        }
+      },
+    };
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([abortable]), { threadId: id, message: 'hello', timeoutMs: 50 }));
+
+    expect(events.map(e => e.type)).toEqual(['text', 'error']);
+    await settle();
+    // The provider actually stopped: on a real tier this is the harness child
+    // process dying and the HTTP response closing, not just us looking away.
+    expect(unwound).toBe(true);
+  });
+
+  test('a provider that ignores the signal cannot be unwound — and the step still ends on time', async () => {
+    // The limitation the close is fired-not-awaited for: `return()` on an
+    // async generator parked on an await that nothing settles is queued
+    // behind that await forever, so this `finally` never runs. The step must
+    // not wait for it.
+    let unwound = false;
+    const deaf: ModelProvider = {
+      id: 'deaf/deaf',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+      async *run(): AsyncIterable<StepEvent> {
+        try {
+          yield { type: 'text', text: 'a' };
+          await new Promise(() => {});
+        } finally {
+          unwound = true;
+        }
+      },
+    };
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([deaf]), { threadId: id, message: 'hello', timeoutMs: 50 }));
+
+    expect(events.map(e => e.type)).toEqual(['text', 'error']);
+    await settle();
+    expect(unwound).toBe(false);
+  });
+
+  test('a provider whose close never settles cannot wedge the step', async () => {
+    // `return()` that never resolves — a harness waiting on a child process
+    // that will not exit. An unbounded `await closeQuietly` here would hold
+    // the caller (and the server's thread lock) forever.
+    const stuck: ModelProvider = {
+      id: 'stuck/stuck',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+      run: (): AsyncIterable<StepEvent> => {
+        let sent = false;
+        return {
+          [Symbol.asyncIterator]: () => ({
+            next: (): Promise<IteratorResult<StepEvent>> => {
+              if (sent) return new Promise<IteratorResult<StepEvent>>(() => {});
+              sent = true;
+              return Promise.resolve({ value: { type: 'text', text: 'a' }, done: false });
+            },
+            return: (): Promise<IteratorResult<StepEvent>> => new Promise(() => {}),
+          }),
+        };
+      },
+    };
+    const { id } = await store.create('default', {});
+
+    // The close budget is `min(2000, what is left of the step)`, so a short
+    // step timeout bounds it tightly.
+    const it = runStep(deps([stuck]), { threadId: id, message: 'hello', timeoutMs: 300 })[Symbol.asyncIterator]();
+    expect((await it.next()).value!.type).toBe('text');
+    const startedAt = Date.now();
+    await it.return?.(undefined);
+
+    expect(Date.now() - startedAt).toBeLessThan(2_000);
+  });
+
   test('a provider that fails after the deadline does not take the process down', async () => {
     // The abandoned read rejects 80 ms in, long after the 20 ms deadline —
     // by then nothing is waiting on it, and an unhandled rejection would be

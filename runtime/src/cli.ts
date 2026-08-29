@@ -107,17 +107,20 @@ async function step(): Promise<void> {
 
   const tools = [...guardedVaultTools(store, readVaultConfig(vaultRoot)), ...registry.available()];
   let exit = 1;
+  const cancel = new AbortController();
   const events = provider.run({
     tenant: DEFAULT_TENANT,
     system: values.system!,
     messages: [{ role: 'user', content: rest.join(' ') }],
     tools,
+    signal: cancel.signal,
     ...(outputSchema ? { outputSchema } : {}),
     ...(values.session ? { session: { id: values.session } } : {}),
   });
-  // A hung provider ends the same way here as it does in the loop: one
-  // terminal `error`, a closed provider, and a non-zero exit.
-  for await (const ev of withStepTimeout(events, stepTimeoutMs ?? DEFAULT_STEP_TIMEOUT_MS)) {
+  // A hung provider ends the same way here as it does in the loop: the SDK is
+  // aborted, the provider is closed, and the step ends with one terminal
+  // `error` and a non-zero exit.
+  for await (const ev of withStepTimeout(events, stepTimeoutMs ?? DEFAULT_STEP_TIMEOUT_MS, () => cancel.abort())) {
     console.log(JSON.stringify(ev));
     if (isTerminal(ev)) exit = ev.type === 'done' ? 0 : 1;
   }

@@ -30,6 +30,12 @@ export interface StepRequest {
   maxTokens?: number;
   maxToolCalls?: number;             // default 20
   session?: { id?: string };
+  /** Cancels the step. Every provider forwards it to the SDK underneath it —
+   * `abortController` for the Claude harness, the turn's `signal` for Codex,
+   * `abortSignal` for the direct tier — so a step that times out actually
+   * stops the work: the SDK settles, the generator's `finally` runs, and a
+   * harness child process dies instead of streaming into nothing. */
+  signal?: AbortSignal;
 }
 
 export interface Usage {

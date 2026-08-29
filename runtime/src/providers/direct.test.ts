@@ -35,6 +35,49 @@ function usage(inputTotal: number, outputTotal: number) {
 }
 
 describe('DirectProvider', () => {
+  test('the step signal reaches the model and aborting settles the stream loop', async () => {
+    // A real provider aborts its own HTTP request when the signal fires; the
+    // mock stands in for that by erroring its stream. What is under test is
+    // the wiring: without `abortSignal` on `streamText`, `doStream` gets no
+    // signal, nothing ever errors the stream, and this loop parks forever.
+    let sawSignal = false;
+    const model = new MockLanguageModelV3({
+      doStream: async ({ abortSignal }) => {
+        sawSignal = abortSignal !== undefined;
+        return {
+          stream: new ReadableStream({
+            start(controller) {
+              controller.enqueue({ type: 'text-start', id: '1' });
+              controller.enqueue({ type: 'text-delta', id: '1', delta: 'thinking' });
+              // No `finish` chunk, ever: the wedged-provider case.
+              abortSignal?.addEventListener('abort', () => controller.error(new Error('aborted by signal')));
+            },
+          }) as any,
+        };
+      },
+    });
+    const p = new DirectProvider({ id: 'mock/m', model, capabilities: { tools: true, caching: false, thinking: false, contextTokens: 1000, auth: 'apikey' } });
+    const cancel = new AbortController();
+    setTimeout(() => cancel.abort(new Error('step timed out after 0s')), 50);
+
+    const events: StepEvent[] = [];
+    let threw: unknown;
+    try {
+      for await (const ev of p.run({ tenant: 'default', system: 's', messages: [{ role: 'user', content: 'hi' }], tools: [], signal: cancel.signal })) {
+        events.push(ev);
+      }
+    } catch (err) {
+      threw = err;
+    }
+
+    expect(sawSignal).toBe(true);
+    // The deltas that did arrive still reached the caller, and the loop ended
+    // rather than hanging — the abort surfaces as a throw, which the step
+    // loop's abandoned read absorbs.
+    expect(events.map(e => e.type)).toEqual(['text']);
+    expect(threw).toBeDefined();
+  });
+
   test('streams text and finishes with done + usage', async () => {
     const model = new MockLanguageModelV3({
       doStream: async () => ({

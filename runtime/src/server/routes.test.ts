@@ -286,6 +286,45 @@ describe('POST /threads/:id/steps', () => {
     const { events } = await store.get('default', id);
     expect(events.map(kindOf)).toEqual(['user', 'step', 'text', 'error', 'user', 'step', 'text', 'done']);
   });
+
+  test('a provider whose close never settles does not hold the thread lock', async () => {
+    // The step itself finishes cleanly — it is the CLOSE that hangs, a
+    // harness waiting on a child process that will not exit. An unbounded
+    // wait there would leave the SSE stream open, so the lock would never be
+    // released and every later step on this thread would queue behind it.
+    const stuckClose: ModelProvider = {
+      id: 'stuck/stuck',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+      run: (): AsyncIterable<StepEvent> => {
+        const script: StepEvent[] = [
+          { type: 'text', text: 'answer' },
+          { type: 'done', output: null, usage: { inputTokens: 0, outputTokens: 0 } },
+        ];
+        let i = 0;
+        return {
+          [Symbol.asyncIterator]: () => ({
+            next: (): Promise<IteratorResult<StepEvent>> => {
+              const ev = script[i++];
+              return Promise.resolve(ev ? { value: ev, done: false } : { value: undefined, done: true });
+            },
+            return: (): Promise<IteratorResult<StepEvent>> => new Promise(() => {}),
+          }),
+        };
+      },
+    };
+    // A short step timeout also shortens the close budget (`min(2000, what is
+    // left of the step)`), so the fall-through is quick.
+    const app = appWith([stuckClose, new FakeModelProvider([{ text: 'second answer' }])], { stepTimeoutMs: 300 });
+    const id = await newThread(app);
+
+    const first = await step(app, id, { message: 'hi' });
+    expect(first.frames.map(f => f.event)).toEqual(['text', 'done']);
+
+    const second = await step(app, id, { message: 'again', provider: 'fake/fake' });
+    expect(second.res.status).toBe(200);
+    expect(second.frames.map(f => f.event)).toEqual(['text', 'done']);
+  });
 });
 
 describe('POST /threads/:id/approve', () => {

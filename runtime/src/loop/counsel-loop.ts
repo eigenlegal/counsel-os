@@ -161,6 +161,10 @@ export async function* runStep(
   // single-digit milliseconds for three-second steps.
   const startedAt = Date.now();
   const runId = randomUUID();
+  // Handed to the provider as `req.signal` and fired when the deadline
+  // passes. Created up here because it has to be in the request the provider
+  // is built from, which is assembled well before the clock starts.
+  const cancel = new AbortController();
   const { tenant, store } = deps;
   const { threadId } = opts;
 
@@ -241,6 +245,7 @@ export async function* runStep(
       system,
       messages: [],
       tools: stepTools(deps, threadId, cfg, scriptTools),
+      signal: cancel.signal,
       ...(opts.outputSchema ? { outputSchema: opts.outputSchema } : {}),
     };
   } catch (err) {
@@ -268,7 +273,10 @@ export async function* runStep(
   // by the resume fallback's second attempt, cancelled in the `finally` below
   // however the step ends.
   const timeoutMs = opts.timeoutMs ?? deps.stepTimeoutMs ?? DEFAULT_STEP_TIMEOUT_MS;
-  const deadline = deadlineIn(timeoutMs);
+  // Aborting is what makes a hung provider actually stop; closing its
+  // iterator only stops US reading it. Every tier forwards `req.signal` to
+  // its SDK, so this reaches the CLI child process too.
+  const deadline = deadlineIn(timeoutMs, () => cancel.abort(new Error(timeoutMessage(timeoutMs))));
   try {
     let attempt = await beginAttempt(provider, req, deadline);
 
@@ -284,7 +292,8 @@ export async function* runStep(
     // would immediately re-poison the next step with a session the vendor was
     // in the middle of rejecting.
     if (sessionId && !attempt.first.done && isResumeFailure(attempt.first.value)) {
-      await closeQuietly(attempt.it);
+      // Bounded: a vendor that will not close must not strand the replay.
+      await closeWithin(attempt.it, deadline);
       await store.clearSession(tenant, threadId, provider.id);
       const warning: ThreadEvent = { t: 'warning', at: nowIso(), message: RESUME_WARNING };
       const appendFailed = await tryPersist(() => store.append(tenant, threadId, warning));
@@ -363,11 +372,13 @@ async function beginAttempt(provider: ModelProvider, req: StepRequest, deadline:
  */
 async function* chain(attempt: Attempt, deadline: Deadline, timeoutMs: number): AsyncIterable<StepEvent> {
   // Cleared once a timeout has already fired the close it must not wait for.
-  let closeOnExit = true;
+  // Set BEFORE the head events go out: a consumer that hangs up while they
+  // are streaming would otherwise unwind into a close this provider cannot
+  // answer.
+  let closeOnExit = !attempt.timedOut;
   try {
     for (const ev of attempt.head) yield ev;
     if (attempt.timedOut) {
-      closeOnExit = false;
       yield timeoutError(timeoutMs);
       return;
     }
@@ -388,7 +399,7 @@ async function* chain(attempt: Attempt, deadline: Deadline, timeoutMs: number): 
       yield n.value;
     }
   } finally {
-    if (closeOnExit) await closeQuietly(attempt.it);
+    if (closeOnExit) await closeWithin(attempt.it, deadline);
   }
 }
 
@@ -434,15 +445,28 @@ const TIMED_OUT = Symbol('step timed out');
  */
 interface Deadline {
   race<T>(p: Promise<T>): Promise<T | typeof TIMED_OUT>;
+  /** Milliseconds left, never below zero. */
+  remaining(): number;
   cancel(): void;
 }
 
-function deadlineIn(ms: number): Deadline {
+/**
+ * `onExpire` fires from the timer itself, not from whoever notices the
+ * expiry — so the step's `AbortController` fires the instant the deadline
+ * passes, even while the loop is parked on a read that will never return.
+ * Aborting is what actually STOPS a wedged provider: it settles the SDK's
+ * own promise, which runs the provider generator's `finally` and kills the
+ * harness child process. Closing the iterator alone cannot do that (see
+ * `closeWithoutWaiting`).
+ */
+function deadlineIn(ms: number, onExpire?: () => void): Deadline {
+  const at = Date.now() + ms;
   let expired = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
   const expiry = new Promise<typeof TIMED_OUT>(resolve => {
     timer = setTimeout(() => {
       expired = true;
+      onExpire?.();
       resolve(TIMED_OUT);
     }, ms);
   });
@@ -466,15 +490,50 @@ function deadlineIn(ms: number): Deadline {
       if (result === TIMED_OUT) abandon(p);
       return result;
     },
+    remaining(): number {
+      return Math.max(0, at - Date.now());
+    },
     cancel(): void {
       clearTimeout(timer);
     },
   };
 }
 
+/** How long the loop waits for a provider to close before giving up on it. */
+const CLOSE_BUDGET_MS = 2_000;
+
+/**
+ * Closes a provider and waits for it — but not forever, and never past the
+ * step's own deadline.
+ *
+ * The wait matters (a closed provider should be gone before the step is
+ * reported finished) but it is not worth a wedged thread: `return()` on an
+ * iterator that is parked on an `await` does not settle until that `await`
+ * does, so an unbounded wait here would hold the server's thread lock for as
+ * long as the provider stays stuck — the same wedge the timeout exists to
+ * prevent, moved one step later. The budget is the smaller of
+ * `CLOSE_BUDGET_MS` and whatever is left of the step, so a close can never
+ * push a step past its deadline. On expiry the close is left running and
+ * the loop moves on.
+ */
+async function closeWithin(it: AsyncIterator<StepEvent>, deadline: Deadline): Promise<void> {
+  const budget = deadlineIn(Math.min(CLOSE_BUDGET_MS, deadline.remaining()));
+  try {
+    await budget.race(closeQuietly(it));
+  } finally {
+    budget.cancel();
+  }
+}
+
+/** The message a timed-out step reports — as its terminal event, and as the
+ * reason the provider's abort carries. */
+function timeoutMessage(ms: number): string {
+  return `step timed out after ${Math.round(ms / 1000)}s`;
+}
+
 /** The one terminal event a timed-out step produces (spec §3). */
 function timeoutError(ms: number): StepEvent {
-  return { type: 'error', message: `step timed out after ${Math.round(ms / 1000)}s` };
+  return { type: 'error', message: timeoutMessage(ms) };
 }
 
 /**
@@ -484,8 +543,12 @@ function timeoutError(ms: number): StepEvent {
  * terminal `error` the loop produces, so the CLI's existing terminal-event
  * handling reports it and exits non-zero with no special case.
  */
-export async function* withStepTimeout(source: AsyncIterable<StepEvent>, timeoutMs: number): AsyncIterable<StepEvent> {
-  const deadline = deadlineIn(timeoutMs);
+export async function* withStepTimeout(
+  source: AsyncIterable<StepEvent>,
+  timeoutMs: number,
+  onExpire?: () => void,
+): AsyncIterable<StepEvent> {
+  const deadline = deadlineIn(timeoutMs, onExpire);
   const it = source[Symbol.asyncIterator]();
   let closeOnExit = true;
   try {
@@ -501,8 +564,8 @@ export async function* withStepTimeout(source: AsyncIterable<StepEvent>, timeout
       yield n.value;
     }
   } finally {
+    if (closeOnExit) await closeWithin(it, deadline);
     deadline.cancel();
-    if (closeOnExit) await closeQuietly(it);
   }
 }
 

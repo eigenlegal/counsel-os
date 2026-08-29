@@ -59,6 +59,15 @@ Implementation: a deadline promise raced against each `next()` of the provider i
 closeQuietly(it)`, flush buffered text, append `{ type:'error', message }`, finalize the
 run record with `status:'timeout'`, yield the error, return.
 
+Amended after build: the close is FIRED, not awaited — `return()` on an iterator parked on a
+never-resolving `await` is queued behind that `await` and would hang the timeout itself — and
+the step's `AbortSignal` (`StepRequest.signal`, forwarded by every tier: `abortController` for
+the Claude harness, the turn's `signal` for Codex, `abortSignal` for direct) is aborted first,
+which is what actually settles the SDK so the provider unwinds and its child process dies.
+Every close the loop DOES await (`chain`'s `finally`, the resume fallback) is bounded by
+`min(2000ms, what is left of the step)`, so a provider that will not close cannot wedge the
+thread one step later.
+
 ### 4.2 `proposal` StepEvent
 
 ```ts

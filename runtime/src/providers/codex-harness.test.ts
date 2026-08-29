@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, test } from 'bun:test';
 import { z } from 'zod';
-import { buildCodexConfig, buildCodexEnv, buildThreadOptions, CodexHarnessProvider, cleanupIsolatedHome, mapCodexEvent, prepareIsolatedHome, resolveCodexHome } from './codex-harness';
+import { buildCodexConfig, buildCodexEnv, buildThreadOptions, buildTurnOptions, CodexHarnessProvider, cleanupIsolatedHome, mapCodexEvent, prepareIsolatedHome, resolveCodexHome } from './codex-harness';
 
 describe('mapCodexEvent', () => {
   test('agent_message → text', () => {
@@ -79,6 +79,23 @@ describe('buildThreadOptions', () => {
   test('web search disabled (index.d.ts:255-256 → --config web_search="disabled"; round-1 review, Important 3)', () => {
     const opts = buildThreadOptions('gpt-5-codex', '/tmp/counsel-cwd-abc123');
     expect(opts.webSearchEnabled).toBe(false);
+  });
+});
+
+describe('buildTurnOptions', () => {
+  const req = { tenant: 'default', system: 's', messages: [], tools: [] };
+
+  test('forwards the step signal so aborting the turn kills the codex exec child (index.d.ts:168-174)', () => {
+    expect(buildTurnOptions(req).signal).toBeUndefined();
+    const cancel = new AbortController();
+    expect(buildTurnOptions({ ...req, signal: cancel.signal }).signal).toBe(cancel.signal);
+  });
+
+  test('carries the output schema alongside it', () => {
+    const opts = buildTurnOptions({ ...req, outputSchema: z.object({ ok: z.boolean() }) });
+    expect(opts.outputSchema).toBeDefined();
+    // Never the raw zod schema, and never a `$schema` key — see toHarnessJsonSchema.
+    expect(JSON.stringify(opts.outputSchema)).not.toContain('$schema');
   });
 });
 
