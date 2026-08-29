@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { DEFAULT_STEP_TIMEOUT_MS } from '../loop/counsel-loop';
 import { counselHome, runtimeFilePath, startServer, type RunningServer, type RuntimeFile } from './serve';
 
 let running: RunningServer | undefined;
@@ -76,6 +77,29 @@ describe('startServer', () => {
     });
     expect(health.status).toBe(200);
     expect(((await health.json()) as { default: string }).default).toBe('ollama/gemma4:e4b');
+  });
+
+  test('/health reports the step timeout: option beats providers.yaml beats the default', async () => {
+    const stepTimeout = async (server: RunningServer): Promise<number> => {
+      const res = await fetch(`${server.url}/health`, { headers: { authorization: `Bearer ${server.token}` } });
+      expect(res.status).toBe(200);
+      return ((await res.json()) as { stepTimeoutMs: number }).stepTimeoutMs;
+    };
+
+    const base = fixture();
+    running = await startServer({ ...base, port: 0, registryFile: join(base.vault, 'none.yaml') });
+    expect(await stepTimeout(running)).toBe(DEFAULT_STEP_TIMEOUT_MS);
+    await running.stop();
+
+    const configured = fixture();
+    writeFileSync(join(configured.env.COUNSEL_OS_HOME!, 'providers.yaml'), 'stepTimeoutMs: 120000\n', 'utf8');
+    running = await startServer({ ...configured, port: 0 });
+    expect(await stepTimeout(running)).toBe(120_000);
+    await running.stop();
+
+    // The same file, plus an explicit option: the option wins.
+    running = await startServer({ ...configured, port: 0, stepTimeoutMs: 30_000 });
+    expect(await stepTimeout(running)).toBe(30_000);
   });
 
   test('a busy default port falls through to an OS-assigned one', async () => {

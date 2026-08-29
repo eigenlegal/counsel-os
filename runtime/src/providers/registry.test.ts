@@ -18,6 +18,18 @@ describe('loadRegistry', () => {
     expect(groq.capabilities.auth).toBe('apikey');
     expect(r.router.resolve('classify').id).toBe('openai-compatible/groq');
   });
+  test('stepTimeoutMs is read from the file, and absent without it', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'reg-'));
+    const with_ = join(dir, 'providers.yaml');
+    writeFileSync(with_, `stepTimeoutMs: 120000\n`);
+    expect(loadRegistry({ file: with_, vaultRoot: '/v' }).stepTimeoutMs).toBe(120000);
+    expect(loadRegistry({ file: '/nonexistent/providers.yaml', vaultRoot: '/v' }).stepTimeoutMs).toBeUndefined();
+  });
+  test('a non-positive stepTimeoutMs is rejected at load time', () => {
+    const f = join(mkdtempSync(join(tmpdir(), 'reg-')), 'providers.yaml');
+    writeFileSync(f, `stepTimeoutMs: 0\n`);
+    expect(() => loadRegistry({ file: f, vaultRoot: '/v' })).toThrow();
+  });
   test('unknown id prefix fails at load time', () => {
     const f = join(mkdtempSync(join(tmpdir(), 'reg-')), 'providers.yaml');
     writeFileSync(f, `providers:\n  - id: nope/x\n`);

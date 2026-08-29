@@ -39,6 +39,12 @@ const RESUME_FAILURE_RE = /session|thread|resume|not found/i;
 /** The `warning` event the fallback leaves in the transcript (spec §5). */
 export const RESUME_WARNING = 'session expired; replaying history';
 
+/** How long one step may take before the loop gives up on the provider.
+ * Ten minutes is past the slowest real step measured on either harness tier
+ * and well short of "a wedged provider holds this thread until the process
+ * restarts", which is the failure this exists to end. */
+export const DEFAULT_STEP_TIMEOUT_MS = 600_000;
+
 export interface CounselLoopDeps {
   tenant: Tenant;
   vaultRoot: string;
@@ -49,6 +55,8 @@ export interface CounselLoopDeps {
   providers: ModelProvider[];
   router: Router;
   platform?: Platform;
+  /** The per-step deadline, in milliseconds. Default `DEFAULT_STEP_TIMEOUT_MS`. */
+  stepTimeoutMs?: number;
 }
 
 export interface RunStepOptions {
@@ -57,6 +65,8 @@ export interface RunStepOptions {
   task?: string;
   providerId?: string;
   outputSchema?: ZodType<unknown>;
+  /** Overrides `CounselLoopDeps.stepTimeoutMs` for this step only. */
+  timeoutMs?: number;
 }
 
 /** A provider that can be re-bound to one thread — today only
@@ -254,33 +264,42 @@ export async function* runStep(
     ? { ...base, messages: [{ role: 'user', content: opts.message } satisfies Message], session: { id: sessionId } }
     : await replay();
 
-  let attempt = await beginAttempt(provider, req);
+  // The step's deadline starts here — one clock for the whole step, shared
+  // by the resume fallback's second attempt, cancelled in the `finally` below
+  // however the step ends.
+  const timeoutMs = opts.timeoutMs ?? deps.stepTimeoutMs ?? DEFAULT_STEP_TIMEOUT_MS;
+  const deadline = deadlineIn(timeoutMs);
+  try {
+    let attempt = await beginAttempt(provider, req, deadline);
 
-  // Resume failure (spec §5): the vendor's session is gone. Drop the dead id
-  // and replay the log once for this same step. The caller never sees the
-  // failed attempt, and the only trace it leaves is the `warning` event —
-  // in particular the user turn is NOT appended twice.
-  //
-  // The event tested is the first NON-session one: the Claude harness opens
-  // every stream with a `session` event (from `system/init`), so testing the
-  // literal first event would never see the error behind it. Session ids
-  // buffered during a failed attempt are discarded unread — persisting one
-  // would immediately re-poison the next step with a session the vendor was
-  // in the middle of rejecting.
-  if (sessionId && !attempt.first.done && isResumeFailure(attempt.first.value)) {
-    await closeQuietly(attempt.it);
-    await store.clearSession(tenant, threadId, provider.id);
-    const warning: ThreadEvent = { t: 'warning', at: nowIso(), message: RESUME_WARNING };
-    const appendFailed = await tryPersist(() => store.append(tenant, threadId, warning));
-    if (appendFailed) {
-      yield { type: 'error', message: appendFailed, runId };
-      return;
+    // Resume failure (spec §5): the vendor's session is gone. Drop the dead id
+    // and replay the log once for this same step. The caller never sees the
+    // failed attempt, and the only trace it leaves is the `warning` event —
+    // in particular the user turn is NOT appended twice.
+    //
+    // The event tested is the first NON-session one: the Claude harness opens
+    // every stream with a `session` event (from `system/init`), so testing the
+    // literal first event would never see the error behind it. Session ids
+    // buffered during a failed attempt are discarded unread — persisting one
+    // would immediately re-poison the next step with a session the vendor was
+    // in the middle of rejecting.
+    if (sessionId && !attempt.first.done && isResumeFailure(attempt.first.value)) {
+      await closeQuietly(attempt.it);
+      await store.clearSession(tenant, threadId, provider.id);
+      const warning: ThreadEvent = { t: 'warning', at: nowIso(), message: RESUME_WARNING };
+      const appendFailed = await tryPersist(() => store.append(tenant, threadId, warning));
+      if (appendFailed) {
+        yield { type: 'error', message: appendFailed, runId };
+        return;
+      }
+      req = await replay();
+      attempt = await beginAttempt(provider, req, deadline);
     }
-    req = await replay();
-    attempt = await beginAttempt(provider, req);
-  }
 
-  yield* stream(deps, opts, provider, runId, chain(attempt), startedAt);
+    yield* stream(deps, opts, provider, runId, chain(attempt, deadline, timeoutMs), startedAt);
+  } finally {
+    deadline.cancel();
+  }
 }
 
 function isResumeFailure(ev: StepEvent): boolean {
@@ -293,20 +312,36 @@ interface Attempt {
   head: StepEvent[];
   /** The first event that is not a `session` — what resume detection tests. */
   first: IteratorResult<StepEvent>;
+  /** The deadline passed before the attempt produced that event. The
+   * provider has already been told to close; `chain` turns this into the
+   * step's terminal error. */
+  timedOut?: boolean;
 }
 
 /**
  * Starts one provider run and reads far enough to answer "did this attempt
  * fail to resume?" — buffering the leading `session` events (the same shape
  * `withRetry` buffers) so the first *meaningful* event is the one examined.
+ *
+ * The deadline covers these reads too, so a provider that never yields
+ * anything at all — the worst hang, and the one a race placed further down
+ * the stream would miss — still ends the step on time.
  */
-async function beginAttempt(provider: ModelProvider, req: StepRequest): Promise<Attempt> {
+async function beginAttempt(provider: ModelProvider, req: StepRequest, deadline: Deadline): Promise<Attempt> {
   const it = provider.run(req)[Symbol.asyncIterator]();
   const head: StepEvent[] = [];
-  let first = await it.next();
+  const expired = (): Attempt => {
+    closeWithoutWaiting(it);
+    return { it, head, first: { done: true, value: undefined }, timedOut: true };
+  };
+
+  let first = await deadline.race(it.next());
+  if (first === TIMED_OUT) return expired();
   while (!first.done && first.value.type === 'session') {
     head.push(first.value);
-    first = await it.next();
+    const next = await deadline.race(it.next());
+    if (next === TIMED_OUT) return expired();
+    first = next;
   }
   return { it, head, first };
 }
@@ -321,15 +356,39 @@ async function beginAttempt(provider: ModelProvider, req: StepRequest): Promise<
  * that stops early (an HTTP client hanging up mid-step) would leave the
  * provider running: a harness subprocess with nobody reading it, or a direct
  * provider holding an open HTTP response.
+ *
+ * This is also where the step's deadline is enforced: each read is raced
+ * against it, so an expiry closes the provider and ends the stream with one
+ * terminal `error` instead of waiting on an event that is never coming.
  */
-async function* chain(attempt: Attempt): AsyncIterable<StepEvent> {
+async function* chain(attempt: Attempt, deadline: Deadline, timeoutMs: number): AsyncIterable<StepEvent> {
+  // Cleared once a timeout has already fired the close it must not wait for.
+  let closeOnExit = true;
   try {
     for (const ev of attempt.head) yield ev;
+    if (attempt.timedOut) {
+      closeOnExit = false;
+      yield timeoutError(timeoutMs);
+      return;
+    }
     if (attempt.first.done) return;
     yield attempt.first.value;
-    for (let n = await attempt.it.next(); !n.done; n = await attempt.it.next()) yield n.value;
+    for (;;) {
+      const n = await deadline.race(attempt.it.next());
+      if (n === TIMED_OUT) {
+        closeOnExit = false;
+        closeWithoutWaiting(attempt.it);
+        // The timeout leaves the stream through the same door as any other
+        // provider error, so `stream` flushes the buffered text, logs it, and
+        // hands the caller its one terminal event with no special case.
+        yield timeoutError(timeoutMs);
+        return;
+      }
+      if (n.done) return;
+      yield n.value;
+    }
   } finally {
-    await closeQuietly(attempt.it);
+    if (closeOnExit) await closeQuietly(attempt.it);
   }
 }
 
@@ -340,6 +399,110 @@ async function closeQuietly(it: AsyncIterator<StepEvent>): Promise<void> {
     await it.return?.(undefined);
   } catch {
     /* ignore */
+  }
+}
+
+/**
+ * Closes a provider that has stopped responding, WITHOUT waiting for the
+ * close to complete.
+ *
+ * The wait is the whole point. `return()` on an async generator that is
+ * parked on an `await` — exactly where a wedged provider is — is queued
+ * behind that `await` and settles only when it does, which for a hung
+ * provider is never. Awaiting it here would hang the timeout itself, so the
+ * step would never emit its terminal error and the server would never
+ * release the thread lock: the bug this whole path exists to fix. Firing it
+ * and moving on still frees a provider that is merely slow (the queued
+ * `return()` runs the moment its `await` resolves) and still frees one that
+ * closes promptly, which is every provider whose iterator is hand-written.
+ */
+function closeWithoutWaiting(it: AsyncIterator<StepEvent>): void {
+  void closeQuietly(it);
+}
+
+/** What `Deadline.race` resolves to when the step's clock ran out first. */
+const TIMED_OUT = Symbol('step timed out');
+
+/**
+ * One step's deadline: a single timer, raced against each read of the
+ * provider's stream. It is one timer for the whole step — not one per event
+ * — so the deadline is absolute (a step that streams for the full budget
+ * still expires on time, and the resume fallback's second attempt shares the
+ * first one's clock) and so a finished step leaves nothing pending: an
+ * uncancelled ten-minute timer would keep the process alive long past the
+ * work it was watching.
+ */
+interface Deadline {
+  race<T>(p: Promise<T>): Promise<T | typeof TIMED_OUT>;
+  cancel(): void;
+}
+
+function deadlineIn(ms: number): Deadline {
+  let expired = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const expiry = new Promise<typeof TIMED_OUT>(resolve => {
+    timer = setTimeout(() => {
+      expired = true;
+      resolve(TIMED_OUT);
+    }, ms);
+  });
+  // A read the deadline outran is abandoned mid-flight, and a provider that
+  // fails a moment later would then reject a promise nobody is watching — an
+  // unhandled rejection, which takes the process down. `Promise.race` leaves
+  // a handler on the loser, but the early-out below never races at all: a
+  // deadline that passed while the last event was being persisted still has
+  // the next `next()` in hand. Both paths attach one explicitly.
+  const abandon = (p: Promise<unknown>): void => {
+    void p.catch(() => {});
+  };
+  return {
+    async race<T>(p: Promise<T>): Promise<T | typeof TIMED_OUT> {
+      // Already past it: do not even wait on the read.
+      if (expired) {
+        abandon(p);
+        return TIMED_OUT;
+      }
+      const result = await Promise.race([p, expiry]);
+      if (result === TIMED_OUT) abandon(p);
+      return result;
+    },
+    cancel(): void {
+      clearTimeout(timer);
+    },
+  };
+}
+
+/** The one terminal event a timed-out step produces (spec §3). */
+function timeoutError(ms: number): StepEvent {
+  return { type: 'error', message: `step timed out after ${Math.round(ms / 1000)}s` };
+}
+
+/**
+ * Puts a step deadline on a raw provider stream, for a caller that drives a
+ * provider directly instead of through `runStep` — today the CLI's `step`.
+ * On expiry the provider is closed and the stream ends with the same
+ * terminal `error` the loop produces, so the CLI's existing terminal-event
+ * handling reports it and exits non-zero with no special case.
+ */
+export async function* withStepTimeout(source: AsyncIterable<StepEvent>, timeoutMs: number): AsyncIterable<StepEvent> {
+  const deadline = deadlineIn(timeoutMs);
+  const it = source[Symbol.asyncIterator]();
+  let closeOnExit = true;
+  try {
+    for (;;) {
+      const n = await deadline.race(it.next());
+      if (n === TIMED_OUT) {
+        closeOnExit = false;
+        closeWithoutWaiting(it);
+        yield timeoutError(timeoutMs);
+        return;
+      }
+      if (n.done) return;
+      yield n.value;
+    }
+  } finally {
+    deadline.cancel();
+    if (closeOnExit) await closeQuietly(it);
   }
 }
 

@@ -20,7 +20,11 @@ export function defaultRegistryFile(env: NodeJS.ProcessEnv = process.env): strin
 
 const Entry = z.object({ id: z.string(), baseURL: z.string().optional(), apiKeyEnv: z.string().optional(),
   capabilities: z.object({ tools: z.boolean(), caching: z.boolean(), thinking: z.boolean(), contextTokens: z.number(), auth: z.enum(['subscription','apikey','local']) }).partial().optional() });
-export const RegistryFile = z.object({ default: z.string().optional(), providers: z.array(Entry).optional(), tasks: z.record(z.string(), z.any()).optional() });
+export const RegistryFile = z.object({ default: z.string().optional(), providers: z.array(Entry).optional(), tasks: z.record(z.string(), z.any()).optional(),
+  /** The per-step deadline every step on this runtime gets, in milliseconds
+   * (spec §3). Positive: a zero or negative deadline would fail every step
+   * before it started, which is a config mistake, not a policy. */
+  stepTimeoutMs: z.number().int().positive().optional() });
 
 export function loadRegistry(opts: { file?: string; vaultRoot: string; env?: NodeJS.ProcessEnv }) {
   const env = opts.env ?? process.env; const file = opts.file ?? defaultRegistryFile(env);
@@ -35,5 +39,6 @@ export function loadRegistry(opts: { file?: string; vaultRoot: string; env?: Nod
   const wrapped = providers.map(p => (p.kind === 'direct' ? withRetry(p) : p));
   const defaultId = raw.default ?? BUILTIN_DEFAULT;
   const cfg: RouterConfig = { default: defaultId, tasks: raw.tasks };
-  return { providers: wrapped, router: new Router(cfg, wrapped), defaultId };
+  return { providers: wrapped, router: new Router(cfg, wrapped), defaultId,
+    ...(raw.stepTimeoutMs === undefined ? {} : { stepTimeoutMs: raw.stepTimeoutMs }) };
 }

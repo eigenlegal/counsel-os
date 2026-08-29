@@ -8,7 +8,7 @@ import type { ModelProvider, StepEvent } from '../core/types';
 import { Router } from '../router/router';
 import { ThreadStore, type ThreadEvent } from '../threads/store';
 import { FsVaultStore } from '../vault/fs-store';
-import { runStep, RESUME_WARNING, type CounselLoopDeps } from './counsel-loop';
+import { runStep, withStepTimeout, RESUME_WARNING, type CounselLoopDeps } from './counsel-loop';
 import type { RunLogEntry } from './run-log';
 
 let vaultRoot: string;
@@ -655,5 +655,149 @@ describe('runStep — logged text coalescing', () => {
     expect(events.map(e => e.type)).toEqual(['text', 'text', 'error']);
     expect(await loggedText(id)).toEqual(['ab']);
     expect(await logKinds(id)).toEqual(['user', 'step', 'text', 'error']);
+  });
+});
+
+describe('runStep — step timeout', () => {
+  /**
+   * A provider that emits `script` and then hangs forever: the shape of a
+   * wedged harness, where the process is alive and the stream is open but
+   * nothing more ever arrives.
+   *
+   * Hand-rolled rather than an `async function*` on purpose. `return()` on an
+   * async generator that is parked on a never-resolving `await` is queued
+   * behind that await, so it never runs and never settles — a generator fake
+   * could not report being closed at all. That is also why the loop fires the
+   * close without waiting for it (see `closeWithoutWaiting`).
+   */
+  function hangingProvider(script: StepEvent[]): ModelProvider & { closed: boolean } {
+    const provider = {
+      id: 'hang/hang',
+      kind: 'direct' as const,
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' as const },
+      closed: false,
+      run(): AsyncIterable<StepEvent> {
+        let i = 0;
+        return {
+          [Symbol.asyncIterator]: () => ({
+            next: (): Promise<IteratorResult<StepEvent>> => {
+              const ev = script[i++];
+              if (ev) return Promise.resolve({ value: ev, done: false });
+              return new Promise<IteratorResult<StepEvent>>(() => {});
+            },
+            return: async (): Promise<IteratorResult<StepEvent>> => {
+              provider.closed = true;
+              return { value: undefined, done: true };
+            },
+          }),
+        };
+      },
+    };
+    return provider;
+  }
+
+  function terminal(events: Array<StepEvent & { runId: string }>): StepEvent {
+    return events[events.length - 1]!;
+  }
+
+  test('a provider that hangs mid-step ends the step with one terminal error', async () => {
+    const provider = hangingProvider([{ type: 'text', text: 'a' }]);
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([provider]), { threadId: id, message: 'hello', timeoutMs: 50 }));
+
+    expect(events.map(e => e.type)).toEqual(['text', 'error']);
+    expect((terminal(events) as Extract<StepEvent, { type: 'error' }>).message).toMatch(/^step timed out after \d+s$/);
+    // The partial answer the user already saw is in the transcript, and the
+    // step is closed out with the error — not left dangling.
+    expect(await logKinds(id)).toEqual(['user', 'step', 'text', 'error']);
+    // The provider is released, not left streaming into nothing.
+    expect(provider.closed).toBe(true);
+  });
+
+  test('the deadline covers the wait for the first event — a provider that never yields at all', async () => {
+    const provider = hangingProvider([]);
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([provider]), { threadId: id, message: 'hello', timeoutMs: 50 }));
+
+    expect(events.map(e => e.type)).toEqual(['error']);
+    expect((terminal(events) as Extract<StepEvent, { type: 'error' }>).message).toMatch(/timed out after/);
+    expect(await logKinds(id)).toEqual(['user', 'step', 'error']);
+    expect(provider.closed).toBe(true);
+  });
+
+  test('deps.stepTimeoutMs applies when the caller names no timeout, and the caller overrides it', async () => {
+    const byDeps = hangingProvider([]);
+    const a = await store.create('default', {});
+    const events = await collect(
+      runStep({ ...deps([byDeps]), stepTimeoutMs: 50 }, { threadId: a.id, message: 'hello' }),
+    );
+    expect(events.map(e => e.type)).toEqual(['error']);
+
+    // A per-step timeout wins over the dep — here a short one over a long one,
+    // so the assertion cannot pass by waiting.
+    const byOpts = hangingProvider([]);
+    const b = await store.create('default', {});
+    const overridden = await collect(
+      runStep({ ...deps([byOpts]), stepTimeoutMs: 600_000 }, { threadId: b.id, message: 'hello', timeoutMs: 50 }),
+    );
+    expect(overridden.map(e => e.type)).toEqual(['error']);
+  });
+
+  test('a provider that fails after the deadline does not take the process down', async () => {
+    // The abandoned read rejects 80 ms in, long after the 20 ms deadline —
+    // by then nothing is waiting on it, and an unhandled rejection would be
+    // fatal rather than a failed step.
+    const dying: ModelProvider = {
+      id: 'dying/dying',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+      run: (): AsyncIterable<StepEvent> => ({
+        [Symbol.asyncIterator]: () => ({
+          next: (): Promise<IteratorResult<StepEvent>> =>
+            new Promise((_, reject) => setTimeout(() => reject(new Error('provider died')), 80)),
+        }),
+      }),
+    };
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([dying]), { threadId: id, message: 'hello', timeoutMs: 20 }));
+
+    expect(events.map(e => e.type)).toEqual(['error']);
+    // Outlive the rejection: an unhandled one surfaces after this test ends.
+    await new Promise(r => setTimeout(r, 120));
+  });
+
+  test('withStepTimeout puts the same deadline on a raw provider stream (the CLI path)', async () => {
+    const provider = hangingProvider([{ type: 'text', text: 'a' }]);
+
+    const seen: StepEvent[] = [];
+    const req = { tenant: 'default', system: '', messages: [], tools: [] };
+    for await (const ev of withStepTimeout(provider.run(req), 50)) seen.push(ev);
+
+    expect(seen.map(e => e.type)).toEqual(['text', 'error']);
+    expect((seen[1] as Extract<StepEvent, { type: 'error' }>).message).toMatch(/timed out after/);
+    expect(provider.closed).toBe(true);
+  });
+
+  test('withStepTimeout passes a stream that finishes in time straight through', async () => {
+    const fake = new FakeModelProvider([{ text: 'hi' }]);
+    const req = { tenant: 'default', system: '', messages: [], tools: [] };
+    const seen: StepEvent[] = [];
+    for await (const ev of withStepTimeout(fake.run(req), 600_000)) seen.push(ev);
+    expect(seen.map(e => e.type)).toEqual(['text', 'done']);
+  });
+
+  test('a step that finishes normally is unaffected (and leaves no live timer behind)', async () => {
+    // Every other test in this suite runs on the 600 s default; if the
+    // deadline timer were not cancelled when the step ends, `bun test` would
+    // hang for ten minutes after the last assertion.
+    const fake = new FakeModelProvider([{ text: 'hi' }]);
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([fake]), { threadId: id, message: 'hello', timeoutMs: 600_000 }));
+
+    expect(events.map(e => e.type)).toEqual(['text', 'done']);
   });
 });

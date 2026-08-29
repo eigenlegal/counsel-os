@@ -3,6 +3,7 @@ import { chmodSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync }
 import { join, resolve } from 'node:path';
 import { counselHome } from '../core/home';
 import { DEFAULT_TENANT } from '../core/types';
+import { DEFAULT_STEP_TIMEOUT_MS } from '../loop/counsel-loop';
 import { loadRegistry } from '../providers/registry';
 import { ThreadStore } from '../threads/store';
 import { FsVaultStore } from '../vault/fs-store';
@@ -29,6 +30,9 @@ export interface StartServerOptions {
   pluginRoot?: string;
   /** Overrides `<counselHome>/providers.yaml`. */
   registryFile?: string;
+  /** The per-step deadline in milliseconds. Beats `stepTimeoutMs` in
+   * `providers.yaml`; both beat `DEFAULT_STEP_TIMEOUT_MS`. */
+  stepTimeoutMs?: number;
   env?: NodeJS.ProcessEnv;
 }
 
@@ -165,7 +169,7 @@ export async function startServer(opts: StartServerOptions = {}): Promise<Runnin
   const env = opts.env ?? process.env;
   const vaultRoot = resolveVaultOrExit(opts);
   const pluginRoot = opts.pluginRoot ?? defaultPluginRoot(env);
-  const { providers, router, defaultId } = loadRegistry({
+  const { providers, router, defaultId, stepTimeoutMs } = loadRegistry({
     vaultRoot,
     env,
     ...(opts.registryFile === undefined ? {} : { file: opts.registryFile }),
@@ -186,6 +190,8 @@ export async function startServer(opts: StartServerOptions = {}): Promise<Runnin
     providers,
     router,
     defaultProviderId: defaultId,
+    // Explicit option first, then the registry file, then the default.
+    stepTimeoutMs: opts.stepTimeoutMs ?? stepTimeoutMs ?? DEFAULT_STEP_TIMEOUT_MS,
   });
 
   const server = listen(opts.port, app);

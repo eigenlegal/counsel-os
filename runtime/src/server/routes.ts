@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { RouterError } from '../core/types';
-import { runStep, type CounselLoopDeps } from '../loop/counsel-loop';
+import { DEFAULT_STEP_TIMEOUT_MS, runStep, type CounselLoopDeps } from '../loop/counsel-loop';
 import { applyProposal } from '../loop/proposals';
 import type { ThreadEvent, ThreadHeader } from '../threads/store';
 import { normalizeVaultPath } from '../vault/knowledge-paths';
@@ -223,6 +223,9 @@ export function createApp(deps: ServerDeps): App {
         capabilities: p.capabilities,
       })),
       default: defaultProviderId(),
+      // What a step on this runtime actually gets, not what was configured:
+      // an operator reading /health wants the effective number.
+      stepTimeoutMs: deps.stepTimeoutMs ?? DEFAULT_STEP_TIMEOUT_MS,
     });
 
   const createThread = async (req: Request): Promise<Response> => {

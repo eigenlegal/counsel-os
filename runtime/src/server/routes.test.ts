@@ -28,7 +28,7 @@ beforeEach(() => {
   store = new ThreadStore(vaultRoot, { codexHomeRoot: mkdtempSync(join(tmpdir(), 'routes-codex-')) });
 });
 
-function appWith(providers: ModelProvider[]): App {
+function appWith(providers: ModelProvider[], extra: Partial<ServerDeps> = {}): App {
   const deps: ServerDeps = {
     token: TOKEN,
     tenant: 'default',
@@ -39,6 +39,7 @@ function appWith(providers: ModelProvider[]): App {
     providers,
     router: new Router({ default: providers[0]!.id }, providers),
     platform: 'macos',
+    ...extra,
   };
   return createApp(deps);
 }
@@ -238,6 +239,52 @@ describe('POST /threads/:id/steps', () => {
     expect(events.map(kindOf)).toEqual(['user', 'step', 'text', 'done', 'user', 'step', 'text', 'done']);
     const users = events.filter((e): e is Extract<ThreadEvent, { t: 'user' }> => 't' in e && e.t === 'user');
     expect(users.map(u => u.content)).toEqual(['first', 'second']);
+  });
+
+  test('a hung provider times out, and the thread is free again immediately', async () => {
+    // The hang is hand-rolled: `return()` on an async generator parked on a
+    // never-resolving `await` never runs, so a generator could not report
+    // being closed (see the loop's `closeWithoutWaiting`).
+    let closed = false;
+    const hanging: ModelProvider = {
+      id: 'hang/hang',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+      run(): AsyncIterable<StepEvent> {
+        let sent = false;
+        return {
+          [Symbol.asyncIterator]: () => ({
+            next: (): Promise<IteratorResult<StepEvent>> => {
+              if (sent) return new Promise<IteratorResult<StepEvent>>(() => {});
+              sent = true;
+              return Promise.resolve({ value: { type: 'text', text: 'thinking' }, done: false });
+            },
+            return: async (): Promise<IteratorResult<StepEvent>> => {
+              closed = true;
+              return { value: undefined, done: true };
+            },
+          }),
+        };
+      },
+    };
+    const app = appWith([hanging, new FakeModelProvider([{ text: 'second answer' }])], { stepTimeoutMs: 50 });
+    const id = await newThread(app);
+
+    const first = await step(app, id, { message: 'hi' });
+    expect(first.res.status).toBe(200);
+    expect(first.frames.map(f => f.event)).toEqual(['text', 'error']);
+    expect(String(first.frames[1]!.data['message'])).toMatch(/timed out after/);
+    expect(closed).toBe(true);
+
+    // The lock came back with the stream: a second step on the SAME thread
+    // runs to completion instead of queueing behind a provider nobody is
+    // waiting on any more.
+    const second = await step(app, id, { message: 'again', provider: 'fake/fake' });
+    expect(second.res.status).toBe(200);
+    expect(second.frames.map(f => f.event)).toEqual(['text', 'done']);
+
+    const { events } = await store.get('default', id);
+    expect(events.map(kindOf)).toEqual(['user', 'step', 'text', 'error', 'user', 'step', 'text', 'done']);
   });
 });
 
