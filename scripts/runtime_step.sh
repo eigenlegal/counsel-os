@@ -19,6 +19,14 @@
 #
 # A malformed `data:` line (bad JSON) is skipped, not fatal: the loop keeps
 # reading for the terminal event that follows it.
+#
+# The step POST carries NO `--max-time`. A counsel step is a whole model turn
+# and can legitimately run for many minutes (a long document review, a slow
+# local model); a wall-clock deadline on it would cut a healthy stream off
+# mid-answer and report it as a broken one. Liveness is covered where it is
+# cheap instead: `--connect-timeout` bounds reaching a dead server on every
+# request, and the `/health` probe above still has a 1 s deadline, so an
+# unreachable or wedged runtime is caught before any step is sent.
 
 set -euo pipefail
 
@@ -124,7 +132,7 @@ while IFS= read -r line; do
       esac
       ;;
   esac
-done < <(curl_auth -sN --max-time 120 -X POST \
+done < <(curl_auth -sN --connect-timeout 2 -X POST \
   -H "Content-Type: application/json" \
   --data-binary "$step_body" \
   "${base}/threads/${thread_id}/steps")
