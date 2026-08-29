@@ -67,6 +67,16 @@ describe('startRun / readRun', () => {
     expect(() => readRun(vaultRoot, 'default', 'nope')).toThrow('invalid run id');
   });
 
+  test('a DIRECTORY where a record should be reads as missing too — a 404, not a 500', () => {
+    // The same shape `listRuns` skips: `readFileSync` throws EISDIR, not
+    // ENOENT. `GET /runs/:runId` must answer the way it answers for any other
+    // unreadable record, so both readers go through one reader.
+    const runId = randomUUID();
+    mkdirSync(runRecordPath(vaultRoot, 'default', runId), { recursive: true });
+
+    expect(readRun(vaultRoot, 'default', runId)).toBeNull();
+  });
+
   test('a record that will not parse reads as missing — the same answer listRuns gives', () => {
     const rec = record();
     startRun(vaultRoot, rec);

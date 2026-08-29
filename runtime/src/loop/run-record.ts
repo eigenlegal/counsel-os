@@ -111,35 +111,35 @@ function parseRecord(path: string, raw: string): RunRecord | null {
 }
 
 /**
- * One record file for `listRuns`, or `null` if anything about it is
- * unreadable. The READ is inside the guard, not just the parse: a record can
- * vanish between the `readdir` and the read, or be something that is not a
- * readable file at all, and neither may cost the caller the rest of the
- * thread's runs.
+ * One record file, or `null` if anything about it is unreadable. The READ is
+ * inside the guard, not just the parse: a record can vanish between a
+ * `readdir` and the read, or be something that is not a readable file at all
+ * — a directory sitting where a record should be — and neither may cost the
+ * caller the rest of the thread's runs, or turn one run's `GET` into a 500.
+ *
+ * A record that is simply absent is not an unreadable one, so ENOENT says
+ * nothing to the operator: `readRun` answers `null` for every run id that was
+ * never opened.
  */
 function readRecordAt(path: string): RunRecord | null {
   let raw: string;
   try {
     raw = readFileSync(path, 'utf8');
   } catch (err) {
-    console.error(`run-record: unreadable record ${path}: ${detail(err)}`);
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+      console.error(`run-record: unreadable record ${path}: ${detail(err)}`);
+    }
     return null;
   }
   return parseRecord(path, raw);
 }
 
 /** The record, or `null` when no run by that id was ever opened — or when
- * what is there cannot be read (see `parseRecord`). */
+ * what is there cannot be read. Deliberately the same reader `listRuns` uses,
+ * so the two never disagree about what a record is: an unreadable one is a
+ * missing one, and a caller gets a 404 rather than a 500. */
 export function readRun(vaultRoot: string, tenant: Tenant, runId: string): RunRecord | null {
-  const path = runRecordPath(vaultRoot, tenant, runId);
-  let raw: string;
-  try {
-    raw = readFileSync(path, 'utf8');
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
-  return parseRecord(path, raw);
+  return readRecordAt(runRecordPath(vaultRoot, tenant, runId));
 }
 
 /**

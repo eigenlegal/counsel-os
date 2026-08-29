@@ -61,9 +61,9 @@ export function runLogPath(vaultRoot: string, tenant: Tenant, runId: string): st
 }
 
 /**
- * Appends one JSON line per entry. Append rather than overwrite: a run id
- * names a whole run, and a run that grows into several steps (the flow
- * engine, later) must accumulate rather than lose everything but the last.
+ * Appends one JSON line per entry. Append rather than overwrite: a run id may
+ * accumulate more than one entry, and each of them must survive rather than
+ * lose everything but the last.
  */
 export function writeRunLog(vaultRoot: string, tenant: Tenant, runId: string, entries: RunLogEntry[]): void {
   if (entries.length === 0) return;
