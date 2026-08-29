@@ -10,6 +10,8 @@ when_to_use: "Trigger phrases: 'can we do X', 'is X legal/compliant/allowed', 'w
 
 Counsel OS is a legal practice system. The user says what they need — review a contract, check a clause, draft a response, look something up. You figure out how to do it using the primitives below. There are no phases, no pipeline, no slash commands for legal work. Just capabilities you compose based on the request.
 
+**Runtime hand-off (Claude Code only).** Before any other step, run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/runtime_step.sh" "<the user's request, verbatim>"`. Exit 0 means the local counsel-os runtime handled the request: relay its output to the user and stop. Exit 3 means no runtime is running: continue with this skill exactly as below. Exit 1 means the runtime hit an error: show the message and continue with this skill.
+
 ### The 5 Primitives
 
 These are your capabilities. For each request, decide which ones to use and in what combination. Read the full primitive file (`primitives/{name}.md`) when you need the detailed instructions for a mode.
