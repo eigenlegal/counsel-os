@@ -180,14 +180,30 @@ export function buildThreadOptions(model: string, cwd: string): ThreadOptions {
  * persisted under `~/.codex/sessions`) land in the isolated temp home
  * instead of the operator's real one (round-1 review, "Important 4").
  */
-export function buildCodexConfig(opts: { vaultRoot: string; tenant: Tenant }): CodexOptions {
+export function buildCodexConfig(opts: {
+  vaultRoot: string;
+  tenant: Tenant;
+  /** The thread whose transcript `propose_update` appends to. The stdio
+   * server registers that tool only when this is set — without a thread
+   * there is nowhere for a proposal to live. */
+  threadId?: string;
+  /** Where `read_primitive` reads `primitives/*.md` from. Omitted, the
+   * stdio server falls back to its own repo root, which is correct in a
+   * normal install and wrong only for a relocated plugin. */
+  pluginRoot?: string;
+}): CodexOptions {
   return {
     config: {
       mcp_servers: {
         counsel: {
           command: 'bun',
           args: [STDIO_SERVER],
-          env: { COUNSEL_VAULT: opts.vaultRoot, COUNSEL_TENANT: opts.tenant },
+          env: {
+            COUNSEL_VAULT: opts.vaultRoot,
+            COUNSEL_TENANT: opts.tenant,
+            ...(opts.threadId ? { COUNSEL_THREAD_ID: opts.threadId } : {}),
+            ...(opts.pluginRoot ? { COUNSEL_PLUGIN_ROOT: opts.pluginRoot } : {}),
+          },
           // Without this, EVERY MCP tool call is denied with "MCP tool call
           // requires approval, but approval policy is never" — the thread's
           // `approvalPolicy` default of `never` means *deny*, not *allow*
@@ -374,22 +390,43 @@ export class CodexHarnessProvider implements ModelProvider {
 
   readonly homeDir: string | undefined;
 
-  constructor(private readonly opts: { model: string; vaultRoot: string; id?: string; homeDir?: string }) {
+  constructor(
+    private readonly opts: {
+      model: string;
+      vaultRoot: string;
+      id?: string;
+      homeDir?: string;
+      threadId?: string;
+      pluginRoot?: string;
+    },
+  ) {
     this.id = opts.id ?? `codex-sub/${opts.model}`;
     this.homeDir = opts.homeDir;
   }
 
   /**
-   * A copy of this provider — same model, id, and vault — pinned to a
-   * persistent `CODEX_HOME`. The counsel loop calls this with the thread's
-   * own home (`ThreadStore.codexHomeFor`) so `resumeThread` can find the
-   * session state a previous step left behind: a registry-built provider is
-   * shared across threads, so the home has to be bound per thread, not per
-   * provider. Returns a new instance rather than mutating, so two threads
-   * can use the same registry entry concurrently.
+   * A copy of this provider — same model, id, and vault — bound to one
+   * thread: its persistent `CODEX_HOME` (so `resumeThread` finds the session
+   * state a previous step left behind) and its id, which reaches the stdio
+   * MCP server as `COUNSEL_THREAD_ID` and is what lets that server offer
+   * `propose_update`. A registry-built provider is shared across threads, so
+   * both have to be bound per thread, not per provider. Returns a new
+   * instance rather than mutating, so two threads can use the same registry
+   * entry concurrently.
    */
+  withThread(opts: { homeDir: string; threadId?: string; pluginRoot?: string }): CodexHarnessProvider {
+    return new CodexHarnessProvider({
+      ...this.opts,
+      homeDir: opts.homeDir,
+      ...(opts.threadId ? { threadId: opts.threadId } : {}),
+      ...(opts.pluginRoot ? { pluginRoot: opts.pluginRoot } : {}),
+    });
+  }
+
+  /** `withThread` with only the home bound — the original two-step spelling,
+   * kept for callers that have no thread id to give. */
   withHome(dir: string): CodexHarnessProvider {
-    return new CodexHarnessProvider({ ...this.opts, homeDir: dir });
+    return this.withThread({ homeDir: dir });
   }
 
   async *run(req: StepRequest): AsyncIterable<StepEvent> {
@@ -426,7 +463,12 @@ export class CodexHarnessProvider implements ModelProvider {
       ephemeralHome = resolved.ephemeral;
       cwd = mkdtempSync(join(tmpdir(), 'counsel-cwd-'));
       const codex = new Codex({
-        ...buildCodexConfig({ vaultRoot: this.opts.vaultRoot, tenant: req.tenant }),
+        ...buildCodexConfig({
+          vaultRoot: this.opts.vaultRoot,
+          tenant: req.tenant,
+          ...(this.opts.threadId ? { threadId: this.opts.threadId } : {}),
+          ...(this.opts.pluginRoot ? { pluginRoot: this.opts.pluginRoot } : {}),
+        }),
         env: buildCodexEnv(isolatedHome, realHome, process.env),
       });
       const thread = req.session?.id

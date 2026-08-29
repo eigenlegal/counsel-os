@@ -262,7 +262,7 @@ describe('resolveCodexHome — credential re-seed', () => {
   });
 });
 
-describe('CodexHarnessProvider.withHome', () => {
+describe('CodexHarnessProvider.withThread / withHome', () => {
   test('returns a new instance with the same id, pinned to the given home', () => {
     const provider = new CodexHarnessProvider({ model: 'gpt-5.6-terra', vaultRoot: '/v', id: 'codex-sub/gpt-5.6-terra' });
     const bound = provider.withHome('/homes/thread-1');
@@ -278,6 +278,49 @@ describe('CodexHarnessProvider.withHome', () => {
     const provider = new CodexHarnessProvider({ model: 'm', vaultRoot: '/v' });
     expect(provider.withHome('/a').homeDir).toBe('/a');
     expect(provider.withHome('/b').homeDir).toBe('/b');
+  });
+
+  test('withThread carries the thread id and plugin root into the stdio server env', () => {
+    const provider = new CodexHarnessProvider({ model: 'm', vaultRoot: '/v' });
+    const bound = provider.withThread({ homeDir: '/homes/t1', threadId: 'thread-1', pluginRoot: '/plugin' });
+
+    expect(bound.homeDir).toBe('/homes/t1');
+    // The binding is what reaches the out-of-process MCP server.
+    const env = mcpEnv(buildCodexConfig({ vaultRoot: '/v', tenant: 'default', threadId: 'thread-1', pluginRoot: '/plugin' }));
+    expect(env.COUNSEL_THREAD_ID).toBe('thread-1');
+    expect(env.COUNSEL_PLUGIN_ROOT).toBe('/plugin');
+  });
+});
+
+/** The `mcp_servers.counsel.env` block `buildCodexConfig` flattens into
+ * `--config` overrides for the child CLI. */
+function mcpEnv(cfg: ReturnType<typeof buildCodexConfig>): Record<string, string> {
+  const servers = (cfg.config as { mcp_servers: { counsel: { env: Record<string, string> } } }).mcp_servers;
+  return servers.counsel.env;
+}
+
+describe('buildCodexConfig — stdio server environment', () => {
+  test('always passes the vault and tenant', () => {
+    const env = mcpEnv(buildCodexConfig({ vaultRoot: '/vault', tenant: 'acme' }));
+    expect(env.COUNSEL_VAULT).toBe('/vault');
+    expect(env.COUNSEL_TENANT).toBe('acme');
+  });
+
+  test('omits COUNSEL_THREAD_ID and COUNSEL_PLUGIN_ROOT when not given', () => {
+    const env = mcpEnv(buildCodexConfig({ vaultRoot: '/vault', tenant: 'default' }));
+    expect('COUNSEL_THREAD_ID' in env).toBe(false);
+    expect('COUNSEL_PLUGIN_ROOT' in env).toBe(false);
+  });
+
+  test('includes both when given — this is what unlocks propose_update and read_primitive', () => {
+    const env = mcpEnv(buildCodexConfig({
+      vaultRoot: '/vault',
+      tenant: 'default',
+      threadId: 'e4d0d0b2-0000-4000-8000-000000000000',
+      pluginRoot: '/repo',
+    }));
+    expect(env.COUNSEL_THREAD_ID).toBe('e4d0d0b2-0000-4000-8000-000000000000');
+    expect(env.COUNSEL_PLUGIN_ROOT).toBe('/repo');
   });
 });
 

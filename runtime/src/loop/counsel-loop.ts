@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { ZodType } from 'zod';
-import type { Message, ModelProvider, Platform, StepEvent, StepRequest, Tenant, ToolDef, VaultStore } from '../core/types';
+import type { Message, ModelProvider, Platform, StepEvent, StepRequest, Tenant, ToolDef, Usage, VaultStore } from '../core/types';
 import { currentPlatform } from '../core/types';
 import type { Router } from '../router/router';
 import { ThreadStore, type ThreadEvent, type ThreadHeader } from '../threads/store';
@@ -36,6 +36,9 @@ const estimateTokens = (s: string): number => Math.ceil(s.length / 4);
  */
 const RESUME_FAILURE_RE = /session|thread|resume|not found/i;
 
+/** The `warning` event the fallback leaves in the transcript (spec §5). */
+export const RESUME_WARNING = 'session expired; replaying history';
+
 export interface CounselLoopDeps {
   tenant: Tenant;
   vaultRoot: string;
@@ -56,16 +59,16 @@ export interface RunStepOptions {
   outputSchema?: ZodType<unknown>;
 }
 
-/** A provider that can be re-bound to a per-thread home directory — today
- * only `CodexHarnessProvider`, whose sessions live inside `CODEX_HOME` and
- * so cannot be resumed from a different one. Duck-typed rather than an
+/** A provider that can be re-bound to one thread — today only
+ * `CodexHarnessProvider`, which runs out of process and so learns about the
+ * thread only through what this binding passes it. Duck-typed rather than an
  * `instanceof` check so this module does not pull in the Codex SDK. */
-interface HomeBindable {
-  withHome(dir: string): ModelProvider;
+interface ThreadBindable {
+  withThread(opts: { homeDir: string; threadId: string; pluginRoot: string }): ModelProvider;
 }
 
-function isHomeBindable(p: ModelProvider): p is ModelProvider & HomeBindable {
-  return typeof (p as Partial<HomeBindable>).withHome === 'function';
+function isThreadBindable(p: ModelProvider): p is ModelProvider & ThreadBindable {
+  return typeof (p as Partial<ThreadBindable>).withThread === 'function';
 }
 
 function message(err: unknown): string {
@@ -77,14 +80,23 @@ function nowIso(): string {
 }
 
 /**
- * Codex keeps a thread's state under its `CODEX_HOME`, so a registry-built
- * `codex-sub/*` provider — shared by every thread — has to be re-bound to
- * this thread's own persistent home before it can resume anything. Every
- * other provider is returned unchanged.
+ * Binds a `codex-sub/*` provider to this thread. Two things ride along, and
+ * both are needed because that harness runs the model in a separate process
+ * against an out-of-process MCP server: the thread's persistent
+ * `CODEX_HOME`, without which `resumeThread` can never find the session
+ * state a previous step left; and the thread id plus plugin root, which
+ * reach that MCP server as `COUNSEL_THREAD_ID` / `COUNSEL_PLUGIN_ROOT` and
+ * are what let it offer `propose_update` and `read_primitive` — the tools
+ * the in-process tiers get directly from `stepTools`. Every other provider
+ * is returned unchanged.
  */
-function bindToThread(provider: ModelProvider, store: ThreadStore, threadId: string): ModelProvider {
-  if (!provider.id.startsWith('codex-sub/') || !isHomeBindable(provider)) return provider;
-  return provider.withHome(store.codexHomeFor(threadId));
+function bindToThread(deps: CounselLoopDeps, provider: ModelProvider, threadId: string): ModelProvider {
+  if (!provider.id.startsWith('codex-sub/') || !isThreadBindable(provider)) return provider;
+  return provider.withThread({
+    homeDir: deps.store.codexHomeFor(threadId),
+    threadId,
+    pluginRoot: deps.pluginRoot,
+  });
 }
 
 function resolveProvider(deps: CounselLoopDeps, opts: RunStepOptions): ModelProvider {
@@ -142,23 +154,35 @@ export async function* runStep(
     return;
   }
 
-  await store.append(tenant, threadId, { t: 'user', at: nowIso(), content: opts.message });
+  const userFailed = await tryPersist(() =>
+    store.append(tenant, threadId, { t: 'user', at: nowIso(), content: opts.message }),
+  );
+  if (userFailed) {
+    yield { type: 'error', message: userFailed, runId };
+    return;
+  }
 
   let provider: ModelProvider;
   try {
-    provider = bindToThread(resolveProvider(deps, opts), store, threadId);
+    provider = bindToThread(deps, resolveProvider(deps, opts), threadId);
   } catch (err) {
     yield { type: 'error', message: message(err), runId };
     return;
   }
 
-  await store.append(tenant, threadId, {
-    t: 'step',
-    at: nowIso(),
-    runId,
-    provider: provider.id,
-    ...(opts.task ? { task: opts.task } : {}),
-  });
+  const stepFailed = await tryPersist(() =>
+    store.append(tenant, threadId, {
+      t: 'step',
+      at: nowIso(),
+      runId,
+      provider: provider.id,
+      ...(opts.task ? { task: opts.task } : {}),
+    }),
+  );
+  if (stepFailed) {
+    yield { type: 'error', message: stepFailed, runId };
+    return;
+  }
 
   // One header read serves both the system prompt (the thread's matter) and
   // the session lookup below — nothing between them can change either.
@@ -185,7 +209,16 @@ export async function* runStep(
       },
     });
 
-    budgetTokens = provider.capabilities.contextTokens - estimateTokens(system) - REPLY_RESERVE_TOKENS;
+    // An oversize system prompt is not a windowing problem — no amount of
+    // dropped history makes the request fit — so it fails the step outright
+    // rather than silently sending a request the provider will reject.
+    const systemTokens = estimateTokens(system);
+    const contextTokens = provider.capabilities.contextTokens;
+    const floor = systemTokens + REPLY_RESERVE_TOKENS;
+    if (floor > contextTokens) {
+      throw new Error(`system prompt exceeds the provider's context window (${floor} > ${contextTokens})`);
+    }
+    budgetTokens = Math.max(0, contextTokens - floor);
     base = {
       tenant,
       system,
@@ -195,7 +228,8 @@ export async function* runStep(
     };
   } catch (err) {
     const ev: StepEvent = { type: 'error', message: message(err) };
-    await store.append(tenant, threadId, { ...ev, at: nowIso() });
+    // Best-effort: the caller gets the error either way (spec §5).
+    await tryPersist(() => store.append(tenant, threadId, { ...ev, at: nowIso() }));
     yield { ...ev, runId };
     return;
   }
@@ -213,27 +247,96 @@ export async function* runStep(
     ? { ...base, messages: [{ role: 'user', content: opts.message } satisfies Message], session: { id: sessionId } }
     : await replay();
 
-  let it = provider.run(req)[Symbol.asyncIterator]();
-  let first = await it.next();
+  let attempt = await beginAttempt(provider, req);
 
   // Resume failure (spec §5): the vendor's session is gone. Drop the dead id
-  // and replay the log once for this same step — the caller never sees the
-  // failed attempt, and nothing from it reaches the thread log. Only the
-  // very first event counts: once real output has streamed, a later error
-  // is a real error, not a bad session id.
-  if (!first.done && sessionId && isResumeFailure(first.value)) {
-    await it.return?.(undefined);
+  // and replay the log once for this same step. The caller never sees the
+  // failed attempt, and the only trace it leaves is the `warning` event —
+  // in particular the user turn is NOT appended twice.
+  //
+  // The event tested is the first NON-session one: the Claude harness opens
+  // every stream with a `session` event (from `system/init`), so testing the
+  // literal first event would never see the error behind it. Session ids
+  // buffered during a failed attempt are discarded unread — persisting one
+  // would immediately re-poison the next step with a session the vendor was
+  // in the middle of rejecting.
+  if (sessionId && !attempt.first.done && isResumeFailure(attempt.first.value)) {
+    await closeQuietly(attempt.it);
     await store.clearSession(tenant, threadId, provider.id);
+    const warning: ThreadEvent = { t: 'warning', at: nowIso(), message: RESUME_WARNING };
+    const appendFailed = await tryPersist(() => store.append(tenant, threadId, warning));
+    if (appendFailed) {
+      yield { type: 'error', message: appendFailed, runId };
+      return;
+    }
     req = await replay();
-    it = provider.run(req)[Symbol.asyncIterator]();
-    first = await it.next();
+    attempt = await beginAttempt(provider, req);
   }
 
-  yield* stream(deps, opts, provider, runId, it, first);
+  yield* stream(deps, opts, provider, runId, chain(attempt));
 }
 
 function isResumeFailure(ev: StepEvent): boolean {
   return ev.type === 'error' && RESUME_FAILURE_RE.test(ev.message);
+}
+
+interface Attempt {
+  it: AsyncIterator<StepEvent>;
+  /** Leading `session` events, held back until the attempt proves real. */
+  head: StepEvent[];
+  /** The first event that is not a `session` — what resume detection tests. */
+  first: IteratorResult<StepEvent>;
+}
+
+/**
+ * Starts one provider run and reads far enough to answer "did this attempt
+ * fail to resume?" — buffering the leading `session` events (the same shape
+ * `withRetry` buffers) so the first *meaningful* event is the one examined.
+ */
+async function beginAttempt(provider: ModelProvider, req: StepRequest): Promise<Attempt> {
+  const it = provider.run(req)[Symbol.asyncIterator]();
+  const head: StepEvent[] = [];
+  let first = await it.next();
+  while (!first.done && first.value.type === 'session') {
+    head.push(first.value);
+    first = await it.next();
+  }
+  return { it, head, first };
+}
+
+/** Replays a started attempt as one flat stream: buffered head, the event
+ * that broke the buffering, then whatever the provider has left. */
+async function* chain(attempt: Attempt): AsyncIterable<StepEvent> {
+  for (const ev of attempt.head) yield ev;
+  if (attempt.first.done) return;
+  yield attempt.first.value;
+  for (let n = await attempt.it.next(); !n.done; n = await attempt.it.next()) yield n.value;
+}
+
+/** Closes an abandoned provider iterator. A throwing `return()` must not
+ * mask the fallback that is already underway. */
+async function closeQuietly(it: AsyncIterator<StepEvent>): Promise<void> {
+  try {
+    await it.return?.(undefined);
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Runs one thread-store write, returning a caller-facing message instead of
+ * throwing. A failed write means the transcript is now incomplete, so the
+ * step has to stop — but it must stop with a terminal `error` the caller
+ * actually receives (spec §5), not with an exception thrown out of the
+ * async generator mid-stream.
+ */
+async function tryPersist(write: () => Promise<void>): Promise<string | null> {
+  try {
+    await write();
+    return null;
+  } catch (err) {
+    return `thread log write failed: ${message(err)}`;
+  }
 }
 
 /**
@@ -241,7 +344,13 @@ function isResumeFailure(ev: StepEvent): boolean {
  * thread log and yielded with the run id; `session` (and `done.sessionId`)
  * updates the thread header instead. Tool-call durations are measured
  * between a `tool_call` and the `tool_result` carrying the same id, and the
- * whole tally is written to the run log when the step completes.
+ * whole tally is written to the run log once the step completes.
+ *
+ * Two things are deliberately ordered around the yield. The run log is
+ * written AFTER the `done` reaches the caller, and a failure to write it is
+ * swallowed to stderr: telemetry must never cost the caller its terminal
+ * event. A failed thread-log write, by contrast, stops the step — but as a
+ * yielded `error`, never as a thrown exception.
  *
  * A provider that ends its stream without a `done` or `error` gets one
  * synthesized here: spec §5 promises the caller never sees a stream close
@@ -253,58 +362,105 @@ async function* stream(
   opts: RunStepOptions,
   provider: ModelProvider,
   runId: string,
-  it: AsyncIterator<StepEvent>,
-  first: IteratorResult<StepEvent>,
+  events: AsyncIterable<StepEvent>,
 ): AsyncIterable<StepEvent & { runId: string }> {
   const { tenant, store } = deps;
   const startedAt = Date.now();
-  const pending = new Map<string, number>();
+  const pending = new Map<string, { name: string; at: number }>();
   const toolCalls: ToolCallLog[] = [];
   let sawTerminal = false;
 
-  let res = first;
-  while (!res.done) {
-    const ev = res.value;
-
+  for await (const ev of events) {
     if (ev.type === 'session') {
-      await store.setSession(tenant, opts.threadId, provider.id, ev.id);
-      res = await it.next();
+      const failed = await tryPersist(() => store.setSession(tenant, opts.threadId, provider.id, ev.id));
+      if (failed) {
+        yield { type: 'error', message: failed, runId };
+        return;
+      }
       continue;
     }
 
-    await store.append(tenant, opts.threadId, { ...ev, at: nowIso() } as ThreadEvent);
+    const failed = await tryPersist(() => store.append(tenant, opts.threadId, { ...ev, at: nowIso() } as ThreadEvent));
+    if (failed) {
+      // The store is broken, so the error event cannot be logged either —
+      // it only reaches the caller.
+      yield { type: 'error', message: failed, runId };
+      return;
+    }
 
     if (ev.type === 'tool_call') {
-      pending.set(ev.id, Date.now());
+      pending.set(ev.id, { name: ev.name, at: Date.now() });
     } else if (ev.type === 'tool_result') {
-      const at = pending.get(ev.id);
+      const call = pending.get(ev.id);
       pending.delete(ev.id);
-      toolCalls.push({ name: ev.name, ms: at === undefined ? 0 : Date.now() - at, isError: ev.isError === true });
+      // A result with no matching call (a harness that reports only the
+      // result, or an id that did not round-trip) still happened — it is
+      // logged with an unknown duration rather than a fabricated 0.
+      toolCalls.push({ name: ev.name, ms: call ? Date.now() - call.at : null, isError: ev.isError === true });
     } else if (ev.type === 'done') {
       sawTerminal = true;
-      if (ev.sessionId) await store.setSession(tenant, opts.threadId, provider.id, ev.sessionId);
-      const entry: RunLogEntry = {
-        at: nowIso(),
-        provider: provider.id,
-        ...(opts.task ? { task: opts.task } : {}),
-        inputTokens: ev.usage.inputTokens,
-        outputTokens: ev.usage.outputTokens,
-        ...(ev.usage.costUsd === undefined ? {} : { costUsd: ev.usage.costUsd }),
-        durationMs: Date.now() - startedAt,
-        toolCalls,
-      };
-      writeRunLog(deps.vaultRoot, tenant, runId, [entry]);
+      if (ev.sessionId) {
+        const sessionFailed = await tryPersist(() =>
+          store.setSession(tenant, opts.threadId, provider.id, ev.sessionId as string),
+        );
+        if (sessionFailed) {
+          yield { type: 'error', message: sessionFailed, runId };
+          return;
+        }
+      }
     } else if (ev.type === 'error') {
       sawTerminal = true;
     }
 
     yield { ...ev, runId };
-    res = await it.next();
+
+    if (ev.type === 'done') {
+      recordRun(deps, opts, provider, runId, ev.usage, Date.now() - startedAt, finishToolCalls(toolCalls, pending));
+    }
   }
 
   if (!sawTerminal) {
     const ev: StepEvent = { type: 'error', message: `${provider.id} ended the step without a done or error event` };
-    await store.append(tenant, opts.threadId, { ...ev, at: nowIso() });
+    await tryPersist(() => store.append(tenant, opts.threadId, { ...ev, at: nowIso() }));
     yield { ...ev, runId };
+  }
+}
+
+/**
+ * Closes out the run's tool tally. A `tool_call` still pending when the step
+ * ended never got a result — the step was cut short, or the harness dropped
+ * it — so it is logged with both its duration and its outcome unknown
+ * rather than omitted: a call the model made and never heard back from is
+ * exactly what a run log should show.
+ */
+function finishToolCalls(done: ToolCallLog[], pending: Map<string, { name: string; at: number }>): ToolCallLog[] {
+  const unmatched = [...pending.values()].map(c => ({ name: c.name, ms: null, isError: null }));
+  return [...done, ...unmatched];
+}
+
+/** Writes the run log, swallowing failures to stderr — see `stream`. */
+function recordRun(
+  deps: CounselLoopDeps,
+  opts: RunStepOptions,
+  provider: ModelProvider,
+  runId: string,
+  usage: Usage,
+  durationMs: number,
+  toolCalls: ToolCallLog[],
+): void {
+  const entry: RunLogEntry = {
+    at: nowIso(),
+    provider: provider.id,
+    ...(opts.task ? { task: opts.task } : {}),
+    inputTokens: usage.inputTokens,
+    outputTokens: usage.outputTokens,
+    ...(usage.costUsd === undefined ? {} : { costUsd: usage.costUsd }),
+    durationMs,
+    toolCalls,
+  };
+  try {
+    writeRunLog(deps.vaultRoot, deps.tenant, runId, [entry]);
+  } catch (err) {
+    console.error(`counsel-loop: run log write failed for ${runId}: ${message(err)}`);
   }
 }

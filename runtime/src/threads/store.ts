@@ -31,6 +31,11 @@ export interface ThreadHeader {
 export type ThreadEvent =
   | { t: 'user'; at: string; content: string }
   | { t: 'step'; at: string; runId: string; provider: string; task?: string }
+  // Spec §5's warning event: something the run recovered from, worth
+  // showing in the transcript but not an `error` and not model output. The
+  // resume-failure fallback is the first user — it records that the vendor
+  // session was gone and the step replayed the history instead.
+  | { t: 'warning'; at: string; message: string }
   | (StepEvent & { at: string })
   | {
       t: 'proposal';

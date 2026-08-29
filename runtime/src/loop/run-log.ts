@@ -18,9 +18,12 @@ const TENANT_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 
 export interface ToolCallLog {
   name: string;
-  /** Wall-clock ms between the `tool_call` and its matching `tool_result`. */
-  ms: number;
-  isError: boolean;
+  /** Wall-clock ms between the `tool_call` and its matching `tool_result`;
+   * `null` when the two never paired up, so an unknown duration is never
+   * reported as a real measurement of 0. */
+  ms: number | null;
+  /** `null` for a call that never produced a result — outcome unknown. */
+  isError: boolean | null;
 }
 
 export interface RunLogEntry {
