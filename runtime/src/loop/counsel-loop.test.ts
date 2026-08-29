@@ -61,6 +61,31 @@ async function logKinds(threadId: string): Promise<string[]> {
 }
 
 describe('runStep', () => {
+  test('(z) abandoning the step closes the provider — a hand-rolled next() loop does not forward it', async () => {
+    let closed = false;
+    const provider: ModelProvider = {
+      id: 'endless/endless',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 1_000_000, auth: 'local' },
+      async *run() {
+        try {
+          yield { type: 'text', text: 'first' };
+          yield { type: 'text', text: 'second' };
+          yield { type: 'done', output: null, usage: { inputTokens: 0, outputTokens: 0 } };
+        } finally {
+          closed = true;
+        }
+      },
+    };
+    const { id } = await store.create('default', {});
+
+    const it = runStep(deps([provider]), { threadId: id, message: 'hello' })[Symbol.asyncIterator]();
+    expect((await it.next()).value!.type).toBe('text');
+    await it.return?.(undefined);
+
+    expect(closed).toBe(true);
+  });
+
   test('(a) first step appends user, step, the model events, and done; the request replays the window with no session', async () => {
     const fake = new FakeModelProvider([{ text: 'hi there' }]);
     const { id } = await store.create('default', {});

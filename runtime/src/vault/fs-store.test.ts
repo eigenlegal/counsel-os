@@ -1,5 +1,5 @@
 import { describe, expect, test, beforeEach } from 'bun:test';
-import { mkdtempSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { FsVaultStore } from './fs-store';
@@ -93,6 +93,40 @@ describe('FsVaultStore', () => {
 
   test('read from .counsel/ is rejected', async () => {
     await expect(store.read('default', '.counsel/anything')).rejects.toThrow(/reserved/);
+  });
+
+  test('the reserved check is case-insensitive — APFS and NTFS are', async () => {
+    // On a case-insensitive filesystem `.Counsel/` IS `.counsel/`, so a
+    // case-sensitive compare would hand a model the audit trail.
+    await expect(store.write('default', '.Counsel/history/default/x.jsonl', 'tampered')).rejects.toThrow(/reserved/);
+    await expect(store.read('default', '.COUNSEL/anything')).rejects.toThrow(/reserved/);
+  });
+
+  test('a symlink pointing out of the vault is rejected', async () => {
+    const outside = mkdtempSync(join(tmpdir(), 'outside-'));
+    writeFileSync(join(outside, 'secret.txt'), 'SECRET\n', 'utf8');
+    // Spells clean, resolves outside: the lexical check alone cannot see it.
+    symlinkSync(join(outside, 'secret.txt'), join(root, 'innocent.md'));
+
+    await expect(store.read('default', 'innocent.md')).rejects.toThrow(/symlink/);
+    await expect(store.write('default', 'innocent.md', 'overwritten')).rejects.toThrow(/symlink/);
+  });
+
+  test('a symlinked directory pointing out of the vault is rejected, even for a file that does not exist yet', async () => {
+    const outside = mkdtempSync(join(tmpdir(), 'outside-'));
+    symlinkSync(outside, join(root, 'escape'));
+    await expect(store.write('default', 'escape/new.md', 'planted')).rejects.toThrow(/symlink/);
+    await expect(store.list('default', 'escape')).rejects.toThrow(/symlink/);
+  });
+
+  test('a symlink that stays inside the vault still works', async () => {
+    mkdirSync(join(root, 'real'), { recursive: true });
+    writeFileSync(join(root, 'real', 'notes.md'), 'INSIDE\n', 'utf8');
+    symlinkSync(join(root, 'real'), join(root, 'alias'));
+
+    expect(await store.read('default', 'alias/notes.md')).toBe('INSIDE\n');
+    await store.write('default', 'alias/added.md', 'also inside');
+    expect(await store.read('default', 'real/added.md')).toBe('also inside');
   });
 
   test('the reserved check is on the whole first segment, not a prefix', async () => {

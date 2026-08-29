@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { counselHome, runtimeFilePath, startServer, type RunningServer, type RuntimeFile } from './serve';
@@ -73,6 +73,38 @@ describe('startServer', () => {
       await first.stop();
       await second.stop();
     }
+  });
+
+  test('a runtime.json another process now owns survives stop()', async () => {
+    const { vault, pluginRoot, env } = fixture();
+    running = await startServer({ vault, pluginRoot, port: 0, env, registryFile: join(vault, 'none.yaml') });
+    const file = runtimeFilePath(env);
+
+    // A second `serve` took over the handshake: the file now points at that
+    // server. This one shutting down must not delete the live server's file
+    // and leave the adapter with nothing to read.
+    const theirs = { port: 9999, token: 'theirs', vault, pid: process.pid + 1, startedAt: new Date().toISOString() };
+    writeFileSync(file, JSON.stringify(theirs), 'utf8');
+
+    await running.stop();
+    running = undefined;
+    expect(existsSync(file)).toBe(true);
+    expect((JSON.parse(readFileSync(file, 'utf8')) as RuntimeFile).token).toBe('theirs');
+  });
+
+  test('a leftover world-readable runtime.json ends up 0600', async () => {
+    const { vault, pluginRoot, env } = fixture();
+    const file = runtimeFilePath(env);
+    mkdirSync(join(file, '..'), { recursive: true });
+    writeFileSync(file, '{"stale":true}', 'utf8');
+    chmodSync(file, 0o644);
+
+    running = await startServer({ vault, pluginRoot, port: 0, env, registryFile: join(vault, 'none.yaml') });
+
+    // writeFileSync's mode applies only on create, so an overwrite in place
+    // would have kept 0644 and published the token to every local account.
+    expect(statSync(file).mode & 0o777).toBe(0o600);
+    expect((JSON.parse(readFileSync(file, 'utf8')) as RuntimeFile).token).toBe(running.token);
   });
 
   test('a fresh token per process', async () => {

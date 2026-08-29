@@ -89,7 +89,7 @@ describe('sseFromEvents', () => {
     expect(got[1]!.data['text']).toBe('c');
   });
 
-  test('flushes on the timer when the source goes quiet', async () => {
+  test('flushes on the max-latency timer, without waiting for the source to finish', async () => {
     async function* slow(): AsyncIterable<Ev> {
       yield { type: 'text', text: 'a' };
       await sleep(60);

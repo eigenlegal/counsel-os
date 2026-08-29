@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { FakeModelProvider } from '../core/fake-provider';
+import { FakeModelProvider, runToolDef } from '../core/fake-provider';
 import type { Capabilities, ModelProvider, StepEvent, StepRequest } from '../core/types';
 import { Router } from '../router/router';
 import { ThreadStore, type ThreadEvent } from '../threads/store';
@@ -321,6 +321,75 @@ describe('POST /threads/:id/approve', () => {
   });
 });
 
+describe('one thread at a time', () => {
+  test('an approve during a step leaves both the step and the decision intact', async () => {
+    // `updateProposal` rewrites the whole log (read → temp → rename). That
+    // rewrite is safe only because every ThreadStore mutator happens to be
+    // wholly synchronous — no `await` between the read and the rename — so
+    // nothing can append into the window. This asserts the end state both
+    // ways round; the lock is what keeps it true if that changes (every
+    // other store here already uses fs/promises).
+    const app = appWith([new SeedThenSlowProvider()]);
+    const id = await newThread(app);
+    await step(app, id, { message: 'seed' });
+
+    const seeded = (await store.get('default', id)).events;
+    expect(seeded.map(kindOf)).toEqual(['user', 'step', 'tool_call', 'proposal', 'tool_result', 'done']);
+    const proposalId = (seeded.find(e => 't' in e && e.t === 'proposal') as Extract<ThreadEvent, { t: 'proposal' }>).id;
+
+    const [stepRes, approveRes] = await Promise.all([
+      call(app, 'POST', `/threads/${id}/steps`, { body: { message: 'second' } }),
+      call(app, 'POST', `/threads/${id}/approve`, { body: { proposalId, decision: 'approve' } }),
+    ]);
+    await stepRes.text();
+    expect(approveRes.status).toBe(200);
+
+    const { events } = await store.get('default', id);
+    expect(events.map(kindOf)).toEqual([
+      ...['user', 'step', 'tool_call', 'proposal', 'tool_result', 'done'],
+      ...['user', 'step', 'text', 'text', 'text', 'done'],
+    ]);
+    const proposal = events.find(e => 't' in e && e.t === 'proposal') as Extract<ThreadEvent, { t: 'proposal' }>;
+    expect(proposal.status).toBe('approved');
+    expect(readFileSync(join(vaultRoot, 'practice', 'standards', 'x.md'), 'utf8')).toBe('NEW TEXT\n');
+  });
+
+  test('a delete waits for the step in flight instead of pulling the log out from under it', async () => {
+    const app = appWith([new SlowProvider()]);
+    const id = await newThread(app);
+
+    // The response resolves once the stream is open and the first event has
+    // been read — the step is in flight and holds the lock. The delete
+    // arrives in that window on purpose; racing the two with Promise.all
+    // would only assert which handler reached the lock first.
+    const stepRes = await call(app, 'POST', `/threads/${id}/steps`, { body: { message: 'first' } });
+    const deleting = call(app, 'DELETE', `/threads/${id}`);
+    const streamed = parseSse(await stepRes.text());
+
+    // Deleted mid-stream, the step's next append hits a log that is gone and
+    // the run dies with "thread log write failed". Serialized, it finishes.
+    expect(streamed.map(f => f.event)).toEqual(['text', 'done']);
+    expect((await deleting).status).toBe(204);
+    expect((await call(app, 'GET', `/threads/${id}`)).status).toBe(404);
+  });
+
+  test('a client that hangs up closes the provider', async () => {
+    // Nobody is reading any more: the provider must be told, or a harness
+    // subprocess keeps running with no consumer.
+    const provider = new EndlessProvider();
+    const app = appWith([provider]);
+    const id = await newThread(app);
+
+    const res = await call(app, 'POST', `/threads/${id}/steps`, { body: { message: 'hi' } });
+    const reader = res.body!.getReader();
+    await reader.read();
+    await reader.cancel();
+
+    await waitFor(() => provider.closed);
+    expect(provider.closed).toBe(true);
+  });
+});
+
 describe('vault', () => {
   test('read and list are read-only views of the vault', async () => {
     const app = appWithFake();
@@ -347,14 +416,23 @@ describe('vault', () => {
     expect((await call(app, 'GET', '/vault/read?path=../x')).status).toBe(400);
     expect((await call(app, 'GET', '/vault/read?path=/etc/passwd')).status).toBe(400);
     expect((await call(app, 'GET', '/vault/list?dir=..')).status).toBe(400);
-    // The store's own bookkeeping is not readable either.
+    // The store's own bookkeeping is not readable either — in any casing,
+    // since the filesystem underneath is case-insensitive.
     expect((await call(app, 'GET', '/vault/read?path=.counsel/threads')).status).toBe(400);
+    expect((await call(app, 'GET', '/vault/read?path=.Counsel/threads')).status).toBe(400);
+    expect((await call(app, 'GET', '/vault/list?dir=.COUNSEL')).status).toBe(400);
   });
 
   test('a missing file is 404 and a missing path parameter is 400', async () => {
     const app = appWithFake();
     expect((await call(app, 'GET', '/vault/read?path=matters/none.md')).status).toBe(404);
     expect((await call(app, 'GET', '/vault/read')).status).toBe(400);
+  });
+
+  test('reading a directory is 400, not 404 — the path names the wrong kind of thing', async () => {
+    const app = appWithFake();
+    await vault.write('default', 'matters/acme/notes.md', 'NOTES\n');
+    expect((await call(app, 'GET', '/vault/read?path=matters/acme')).status).toBe(400);
   });
 
   test('writes are not exposed', async () => {
@@ -382,5 +460,72 @@ class SlowProvider implements ModelProvider {
     yield { type: 'text', text: 'slow' };
     await new Promise(r => setTimeout(r, 15));
     yield { type: 'done', output: null, usage: { inputTokens: 0, outputTokens: 0 } };
+  }
+}
+
+/** Polls until `pred` holds or the deadline passes — the provider's `finally`
+ * runs a turn or two after the reader is cancelled. */
+async function waitFor(pred: () => boolean, ms = 2000): Promise<void> {
+  const deadline = Date.now() + ms;
+  while (!pred() && Date.now() < deadline) await new Promise(r => setTimeout(r, 5));
+}
+
+/** First run: propose a knowledge write (seeding a pending proposal). Second
+ * run: dawdle, so an overlapping approve has something to collide with. */
+class SeedThenSlowProvider implements ModelProvider {
+  readonly id = 'seed/slow';
+  readonly kind = 'direct' as const;
+  readonly capabilities: Capabilities = {
+    tools: true,
+    caching: false,
+    thinking: false,
+    contextTokens: 1_000_000,
+    auth: 'local',
+  };
+  private calls = 0;
+
+  async *run(req: StepRequest): AsyncIterable<StepEvent> {
+    if (this.calls++ === 0) {
+      const input = { path: 'practice/standards/x.md', content: 'NEW TEXT\n', rationale: 'because' };
+      yield { type: 'tool_call', id: 'seed-0', name: 'propose_update', input };
+      const result = await runToolDef(req.tools, 'propose_update', input, req.tenant);
+      yield { type: 'tool_result', id: 'seed-0', name: 'propose_update', output: result.output, isError: result.isError };
+      yield { type: 'done', output: null, usage: { inputTokens: 0, outputTokens: 0 } };
+      return;
+    }
+    for (const text of ['one', 'two', 'three']) {
+      await new Promise(r => setTimeout(r, 10));
+      yield { type: 'text', text };
+    }
+    yield { type: 'done', output: null, usage: { inputTokens: 0, outputTokens: 0 } };
+  }
+}
+
+/** Streams until someone stops it, and records that it was stopped. Bounded
+ * so a regression fails the assertion instead of spinning forever. */
+class EndlessProvider implements ModelProvider {
+  readonly id = 'endless/endless';
+  readonly kind = 'direct' as const;
+  readonly capabilities: Capabilities = {
+    tools: true,
+    caching: false,
+    thinking: false,
+    contextTokens: 1_000_000,
+    auth: 'local',
+  };
+  closed = false;
+
+  async *run(req: StepRequest): AsyncIterable<StepEvent> {
+    void req;
+    try {
+      yield { type: 'text', text: 'first' };
+      for (let i = 0; i < 100; i++) {
+        await new Promise(r => setTimeout(r, 10));
+        yield { type: 'text', text: `chunk ${i}` };
+      }
+      yield { type: 'done', output: null, usage: { inputTokens: 0, outputTokens: 0 } };
+    } finally {
+      this.closed = true;
+    }
   }
 }

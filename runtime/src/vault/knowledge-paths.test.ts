@@ -91,3 +91,15 @@ describe('isKnowledgePath', () => {
     expect(() => isKnowledgePath('practice\\standards\\x.md', defaults)).toThrow(/backslash/);
   });
 });
+
+describe('isKnowledgePath — case', () => {
+  test('a knowledge path spelled with capitals is still a knowledge path', () => {
+    // On APFS `Practice/standards/x.md` IS `practice/standards/x.md`, so a
+    // case-sensitive prefix test would be a way around the `remember` gate.
+    const cfg = { entitiesPath: 'entities', mattersPath: 'matters' };
+    expect(isKnowledgePath('Practice/standards/x.md', cfg)).toBe(true);
+    expect(isKnowledgePath('MEMORY/notes.md', cfg)).toBe(true);
+    expect(isKnowledgePath('Entities/acme.md', cfg)).toBe(true);
+    expect(isKnowledgePath('Matters/acme/draft.md', cfg)).toBe(false);
+  });
+});

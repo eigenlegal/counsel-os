@@ -4,9 +4,12 @@ import type { StepEvent } from '../core/types';
 export type StreamEvent = StepEvent & { runId?: string };
 
 export interface SseOptions {
-  /** Quiet time after which buffered text deltas are flushed. `0` disables
-   * the timer, so text then flushes only on the size bound or on the next
-   * non-text event — what the tests use to get deterministic frames. */
+  /** How long a text delta may sit in the buffer before it goes out: the
+   * timer starts when the buffer stops being empty and is NOT restarted by
+   * later deltas, so it bounds latency rather than waiting for a quiet gap —
+   * a provider streaming steadily still flushes every `coalesceMs`. `0`
+   * disables it, leaving the size bound and non-text events as the only
+   * flushes, which is what makes the tests deterministic. */
   coalesceMs?: number;
   /** Buffered characters after which text is flushed regardless of the timer. */
   maxChars?: number;
@@ -33,7 +36,7 @@ function frame(ev: StreamEvent): string {
 /**
  * Renders a step's events as `text/event-stream`.
  *
- * Text deltas are coalesced — buffered until the stream goes quiet for
+ * Text deltas are coalesced — buffered until the oldest one has waited
  * `coalesceMs`, until `maxChars` have piled up, or until any non-text event
  * needs to go out (the buffer is flushed first, so a `tool_call` never
  * overtakes the text that preceded it).

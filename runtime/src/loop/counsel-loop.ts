@@ -304,13 +304,26 @@ async function beginAttempt(provider: ModelProvider, req: StepRequest): Promise<
   return { it, head, first };
 }
 
-/** Replays a started attempt as one flat stream: buffered head, the event
- * that broke the buffering, then whatever the provider has left. */
+/**
+ * Replays a started attempt as one flat stream: buffered head, the event
+ * that broke the buffering, then whatever the provider has left.
+ *
+ * The provider's iterator is closed on the way out, however the way out
+ * comes. A hand-rolled `next()` loop — unlike `for await` or `yield*` — does
+ * not forward abandonment to what it is reading, so without this a consumer
+ * that stops early (an HTTP client hanging up mid-step) would leave the
+ * provider running: a harness subprocess with nobody reading it, or a direct
+ * provider holding an open HTTP response.
+ */
 async function* chain(attempt: Attempt): AsyncIterable<StepEvent> {
-  for (const ev of attempt.head) yield ev;
-  if (attempt.first.done) return;
-  yield attempt.first.value;
-  for (let n = await attempt.it.next(); !n.done; n = await attempt.it.next()) yield n.value;
+  try {
+    for (const ev of attempt.head) yield ev;
+    if (attempt.first.done) return;
+    yield attempt.first.value;
+    for (let n = await attempt.it.next(); !n.done; n = await attempt.it.next()) yield n.value;
+  } finally {
+    await closeQuietly(attempt.it);
+  }
 }
 
 /** Closes an abandoned provider iterator. A throwing `return()` must not

@@ -134,6 +134,10 @@ function vaultFailure(err: unknown): never {
     throw new HttpError(400, message);
   }
   const code = (err as NodeJS.ErrnoException).code;
+  // EISDIR: `/vault/read` was pointed at a directory (and ENOTDIR, a file
+  // used as one). The path is well-formed but names the wrong kind of thing
+  // — the caller's mistake, not a missing file.
+  if (code === 'EISDIR') throw new HttpError(400, message);
   if (code === 'ENOENT' || code === 'ENOTDIR') throw new HttpError(404, message);
   throw err;
 }
@@ -187,6 +191,18 @@ async function* withRelease(source: AsyncIterable<StreamEvent>, release: () => v
 export function createApp(deps: ServerDeps): App {
   const locks = new ThreadLocks();
 
+  /** Runs `fn` with this thread's lock held for its whole duration — for the
+   * handlers that finish inside one function. `steps` cannot use it: its work
+   * outlives the handler, so it releases when the stream ends instead. */
+  const withThreadLock = async <T>(id: string, fn: () => Promise<T>): Promise<T> => {
+    const release = await locks.acquire(`${deps.tenant}/${id}`);
+    try {
+      return await fn();
+    } finally {
+      release();
+    }
+  };
+
   const defaultProviderId = (): string | null => {
     if (deps.defaultProviderId !== undefined) return deps.defaultProviderId;
     try {
@@ -216,11 +232,12 @@ export function createApp(deps: ServerDeps): App {
 
   const getThread = async (id: string): Promise<Response> => json(await loadThread(deps, id));
 
-  const deleteThread = async (id: string): Promise<Response> => {
-    await loadThread(deps, id);
-    await deps.store.remove(deps.tenant, id);
-    return new Response(null, { status: 204 });
-  };
+  const deleteThread = async (id: string): Promise<Response> =>
+    withThreadLock(id, async () => {
+      await loadThread(deps, id);
+      await deps.store.remove(deps.tenant, id);
+      return new Response(null, { status: 204 });
+    });
 
   const steps = async (req: Request, id: string): Promise<Response> => {
     const input = await body(req, StepBody);
@@ -254,6 +271,13 @@ export function createApp(deps: ServerDeps): App {
 
   const approve = async (req: Request, id: string): Promise<Response> => {
     const input = await body(req, ApproveBody);
+    // Under the thread lock: `updateProposal` rewrites the whole log
+    // (read → temp file → rename), so an approve landing mid-step would drop
+    // every event the step appended after that read.
+    return withThreadLock(id, () => decide(id, input));
+  };
+
+  const decide = async (id: string, input: z.infer<typeof ApproveBody>): Promise<Response> => {
     await loadThread(deps, id);
 
     let result;
@@ -333,7 +357,11 @@ export function createApp(deps: ServerDeps): App {
       return fail(404, `no route for ${method} ${url.pathname}`);
     } catch (err) {
       if (err instanceof HttpError) return fail(err.status, err.message, err.extra);
-      return fail(500, text(err));
+      // An unexpected failure is a bug, and its message can carry absolute
+      // paths and vault contents. The operator gets the detail on stderr;
+      // the client gets a status code.
+      console.error(`counsel-os server: ${req.method} ${req.url} failed:`, err);
+      return fail(500, 'internal error');
     }
   };
 }

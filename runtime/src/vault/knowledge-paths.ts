@@ -41,6 +41,11 @@ function knowledgePrefixes(cfg: VaultConfig): string[] {
  * spelling is normalized first (see `normalizeVaultPath`) so `./practice/x.md`
  * and `matters/../practice/x.md` are recognized the same as `practice/x.md`. */
 export function isKnowledgePath(path: string, cfg: VaultConfig): boolean {
-  const normalized = normalizeVaultPath(path);
-  return knowledgePrefixes(cfg).some(prefix => normalized.startsWith(prefix));
+  // Case-insensitively, for the same reason `FsVaultStore.abs()` treats
+  // `.Counsel` as reserved: APFS and NTFS are case-insensitive, so
+  // `Practice/standards/x.md` IS `practice/standards/x.md` on the hosts this
+  // runs on. A case-sensitive prefix test would let a model spell its way
+  // around the `remember` gate and write a knowledge file with `vault_write`.
+  const normalized = normalizeVaultPath(path).toLowerCase();
+  return knowledgePrefixes(cfg).some(prefix => normalized.startsWith(prefix.toLowerCase()));
 }

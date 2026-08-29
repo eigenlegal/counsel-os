@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { existsSync, realpathSync } from 'node:fs';
 import { mkdir, readdir, readFile, writeFile, appendFile, stat } from 'node:fs/promises';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import type { Entry, Hit, Tenant, VaultStore, Version } from '../core/types';
@@ -47,8 +48,49 @@ export class FsVaultStore implements VaultStore {
     // own writes are recorded in. `list` already hides it; this closes read
     // and write too. `historyFile` builds its paths directly and so is
     // unaffected.
-    if (head === RESERVED_DIR) throw new Error(`reserved path: ${path}`);
+    // Case-insensitively: APFS and NTFS are case-INsensitive, so `.Counsel/`
+    // and `.counsel/` are the same directory on the hosts this actually runs
+    // on. A case-sensitive compare would let `.Counsel/history/...` through
+    // to rewrite the very audit trail this ban exists to protect. Rejecting
+    // `.Counsel` on a case-sensitive filesystem too is a harmless
+    // over-rejection — nothing legitimate lives there.
+    if (head?.toLowerCase() === RESERVED_DIR) throw new Error(`reserved path: ${path}`);
+    this.assertInsideRealRoot(full, path);
     return full;
+  }
+
+  /**
+   * The lexical check above proves the *spelling* stays inside the vault; it
+   * says nothing about where the filesystem actually points. A symlink at
+   * `matters/acme/notes.md` → `~/.ssh/id_rsa` spells clean and reads
+   * someone's key. So the resolved path is checked again against the real
+   * root, following links.
+   *
+   * A path that does not exist yet (every new write) has no real path of its
+   * own, so the nearest existing ancestor is checked instead — that is the
+   * directory the file would be created in, and a symlinked directory is the
+   * escape that matters for writes.
+   */
+  private assertInsideRealRoot(full: string, path: string): void {
+    let realRoot: string;
+    try {
+      realRoot = realpathSync(this.root);
+    } catch {
+      // No vault root on disk: nothing can be inside it, and every real
+      // operation is about to fail with ENOENT anyway. The lexical check
+      // stands on its own.
+      return;
+    }
+    let existing = full;
+    while (!existsSync(existing)) {
+      const parent = dirname(existing);
+      if (parent === existing) return;
+      existing = parent;
+    }
+    const real = realpathSync(existing);
+    if (real !== realRoot && !real.startsWith(realRoot + sep)) {
+      throw new Error(`path outside vault (symlink): ${path}`);
+    }
   }
 
   private historyFile(tenant: Tenant, path: string): string {

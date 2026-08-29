@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { chmodSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { DEFAULT_TENANT } from '../core/types';
@@ -108,13 +108,38 @@ function listen(port: number | undefined, fetch: (req: Request) => Promise<Respo
   }
 }
 
-/** Writes `runtime.json` 0600: it holds the bearer token. `writeFileSync`'s
- * mode only applies when it creates the file, so an existing one (a previous
- * run's, possibly with looser bits) is chmod'ed too. */
+/**
+ * Publishes `runtime.json`, which holds the bearer token, so two properties
+ * have to hold at once.
+ *
+ * 0600: `writeFileSync`'s mode applies only when it creates the file, so a
+ * leftover world-readable file from an earlier run would keep its mode and
+ * quietly publish the token. Writing a fresh temp file and renaming over the
+ * old one replaces the inode, mode and all.
+ *
+ * Atomic: a reader (the plugin adapter, on every skill invocation) must
+ * never catch a half-written file. `rename` within a directory is atomic, so
+ * a reader sees either the old file or the new one.
+ */
 function writeRuntimeFile(path: string, contents: RuntimeFile): void {
   mkdirSync(join(path, '..'), { recursive: true, mode: 0o700 });
-  writeFileSync(path, JSON.stringify(contents, null, 2) + '\n', { encoding: 'utf8', mode: 0o600 });
-  chmodSync(path, 0o600);
+  // Named for this process: two servers starting at once must not write the
+  // same temp file.
+  const tmp = `${path}.${process.pid}.tmp`;
+  writeFileSync(tmp, JSON.stringify(contents, null, 2) + '\n', { encoding: 'utf8', mode: 0o600 });
+  chmodSync(tmp, 0o600);
+  renameSync(tmp, path);
+}
+
+/** Reads the pid out of a `runtime.json`, or `null` when there is nothing
+ * readable and parseable there. */
+function runtimeFileOwner(path: string): number | null {
+  try {
+    const parsed = JSON.parse(readFileSync(path, 'utf8')) as Partial<RuntimeFile>;
+    return typeof parsed.pid === 'number' ? parsed.pid : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -159,6 +184,12 @@ export async function startServer(opts: StartServerOptions = {}): Promise<Runnin
     if (removed) return;
     removed = true;
     try {
+      // Only if the file is still OURS. A second `serve` overwrites the
+      // handshake and becomes the runtime the adapter talks to; this one
+      // shutting down afterwards must not delete the live server's file and
+      // leave the adapter with nothing. A file we cannot read or parse is
+      // not provably ours either, so it stays.
+      if (runtimeFileOwner(file) !== process.pid) return;
       rmSync(file, { force: true });
     } catch {
       /* best effort — the process is going away either way */
