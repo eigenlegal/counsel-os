@@ -180,6 +180,78 @@ describe('runStep', () => {
     expect(result.isError).toBe(true);
   });
 
+  test('(a5) propose_update output as a JSON string (the Codex/MCP round-trip) still synthesizes the proposal event', async () => {
+    // Hand-rolled, like the timeout fakes above: yields the raw tool_call /
+    // tool_result / done sequence directly, so `output` can be shaped
+    // exactly as a stdio harness would round-trip it — a JSON string, not
+    // the object `runToolDef` hands back in-process.
+    const provider: ModelProvider = {
+      id: 'stringout/stringout',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 1_000_000, auth: 'local' },
+      async *run() {
+        yield {
+          type: 'tool_call',
+          id: 'c1',
+          name: 'propose_update',
+          input: { path: 'practice/standards/x.md', content: 'NEW\n', rationale: 'because' },
+        };
+        yield {
+          type: 'tool_result',
+          id: 'c1',
+          name: 'propose_update',
+          output: JSON.stringify({ proposalId: 'p-1' }),
+          isError: false,
+        };
+        yield { type: 'done', output: null, usage: { inputTokens: 0, outputTokens: 0 } };
+      },
+    };
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([provider]), { threadId: id, message: 'propose it' }));
+
+    expect(events.map(e => e.type)).toEqual(['tool_call', 'tool_result', 'proposal', 'done']);
+    const proposalEvent = events.find(e => e.type === 'proposal') as Extract<StepEvent, { type: 'proposal' }>;
+    expect(proposalEvent.id).toBe('p-1');
+    expect(proposalEvent.path).toBe('practice/standards/x.md');
+    expect(proposalEvent.rationale).toBe('because');
+
+    // This hand-rolled provider never ran `proposeUpdateTool.execute` — it
+    // emitted the tool_call/tool_result shape directly — so there is no
+    // `proposal` ThreadEvent to begin with; the log holds only what
+    // `stream()` itself appends, and the synthesized StepEvent is not among
+    // them.
+    expect(await logKinds(id)).toEqual(['user', 'step', 'tool_call', 'tool_result', 'done']);
+  });
+
+  test('(a6) propose_update output that fails to parse yields no proposal event, and the step still completes with done', async () => {
+    const badOutputs: unknown[] = ['not json', { nope: 1 }];
+    let call = 0;
+    const provider: ModelProvider = {
+      id: 'badout/badout',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 1_000_000, auth: 'local' },
+      async *run() {
+        const output = badOutputs[call++];
+        yield {
+          type: 'tool_call',
+          id: 'c1',
+          name: 'propose_update',
+          input: { path: 'practice/standards/x.md', content: 'NEW\n', rationale: 'because' },
+        };
+        yield { type: 'tool_result', id: 'c1', name: 'propose_update', output, isError: false };
+        yield { type: 'done', output: null, usage: { inputTokens: 0, outputTokens: 0 } };
+      },
+    };
+    const { id } = await store.create('default', {});
+
+    for (let i = 0; i < badOutputs.length; i++) {
+      const events = await collect(runStep(deps([provider]), { threadId: id, message: 'propose it' }));
+      expect(events.map(e => e.type)).toEqual(['tool_call', 'tool_result', 'done']);
+      expect(events.some(e => e.type === 'proposal')).toBe(false);
+    }
+  });
+
   test('(b) a session event is stored on the header and never yielded to the caller', async () => {
     const fake = new FakeModelProvider([{ session: 's1', text: 'ok' }]);
     const { id } = await store.create('default', {});
