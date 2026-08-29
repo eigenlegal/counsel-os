@@ -463,8 +463,13 @@ describe('runStep — the caller always gets a terminal event', () => {
 
     const events = await collect(runStep({ ...deps([fake]), store: flaky }, { threadId: id, message: 'hello' }));
 
-    expect(events.map(e => e.type)).toEqual(['error']);
-    expect((events[0] as Extract<StepEvent, { type: 'error' }>).message).toContain('thread log write failed');
+    // The `text` reaches the caller before it is logged — deliberately, so a
+    // streaming client never waits on a disk write — so the failure shows up
+    // on the flush that follows it rather than in place of it. What matters
+    // is that the stream still ends on a terminal `error`.
+    expect(events.map(e => e.type)).toEqual(['text', 'error']);
+    const last = events[events.length - 1] as Extract<StepEvent, { type: 'error' }>;
+    expect(last.message).toContain('thread log write failed');
   });
 
   test('a run-log write failure does not cost the caller its done event', async () => {
@@ -527,5 +532,98 @@ describe('runStep — run-log tool call tallies', () => {
     expect(entry.toolCalls[0]).toEqual({ name: 'vault_search', ms: null, isError: false });
     // The call that never got a result: both unknown, but still recorded.
     expect(entry.toolCalls[1]).toEqual({ name: 'vault_read', ms: null, isError: null });
+  });
+});
+
+describe('runStep — the step clock', () => {
+  test('durationMs covers the whole turn, including the wait for the first event', async () => {
+    // The harness tiers produce nothing at all until the model turn is over,
+    // so a clock started after the first event measures almost nothing. This
+    // provider reproduces that shape: a 60 ms wait, then the events.
+    const slow: ModelProvider = {
+      id: 'fake/slow',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+      async *run(): AsyncIterable<StepEvent> {
+        await new Promise(r => setTimeout(r, 60));
+        yield { type: 'text', text: 'late' };
+        yield { type: 'done', output: null, usage: { inputTokens: 1, outputTokens: 2 } };
+      },
+    };
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([slow]), { threadId: id, message: 'hello' }));
+    const runId = events[0]!.runId;
+    const entry = JSON.parse(
+      readFileSync(join(vaultRoot, '.counsel', 'runs', 'default', `${runId}.log.jsonl`), 'utf8').trim(),
+    ) as RunLogEntry;
+
+    expect(entry.durationMs).toBeGreaterThanOrEqual(50);
+  });
+});
+
+describe('runStep — logged text coalescing', () => {
+  /** The `text` events in a thread's log, in order. */
+  async function loggedText(threadId: string): Promise<string[]> {
+    const { events } = await store.get('default', threadId);
+    return events.filter(ev => 'type' in ev && ev.type === 'text').map(ev => (ev as { text: string }).text);
+  }
+
+  function streaming(script: StepEvent[]): ModelProvider {
+    return {
+      id: 'fake/streaming',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+      async *run(): AsyncIterable<StepEvent> {
+        for (const ev of script) yield ev;
+      },
+    };
+  }
+
+  test('a run of text deltas becomes one logged text event, but still streams as three', async () => {
+    const provider = streaming([
+      { type: 'text', text: 'a' },
+      { type: 'text', text: 'b' },
+      { type: 'text', text: 'c' },
+      { type: 'done', output: null, usage: { inputTokens: 0, outputTokens: 0 } },
+    ]);
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([provider]), { threadId: id, message: 'hello' }));
+
+    // The caller still sees every delta as it arrives.
+    expect(events.map(e => e.type)).toEqual(['text', 'text', 'text', 'done']);
+    expect(await loggedText(id)).toEqual(['abc']);
+    expect(await logKinds(id)).toEqual(['user', 'step', 'text', 'done']);
+  });
+
+  test('a non-text event between two runs of text keeps them separate', async () => {
+    const provider = streaming([
+      { type: 'text', text: 'a' },
+      { type: 'tool_call', id: 'c1', name: 'vault_read', input: { path: 'x.md' } },
+      { type: 'tool_result', id: 'c1', name: 'vault_read', output: 'x', isError: false },
+      { type: 'text', text: 'b' },
+      { type: 'done', output: null, usage: { inputTokens: 0, outputTokens: 0 } },
+    ]);
+    const { id } = await store.create('default', {});
+
+    await collect(runStep(deps([provider]), { threadId: id, message: 'hello' }));
+
+    expect(await loggedText(id)).toEqual(['a', 'b']);
+    expect(await logKinds(id)).toEqual(['user', 'step', 'text', 'tool_call', 'tool_result', 'text', 'done']);
+  });
+
+  test('text with no terminal event still reaches the log', async () => {
+    const provider = streaming([
+      { type: 'text', text: 'a' },
+      { type: 'text', text: 'b' },
+    ]);
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([provider]), { threadId: id, message: 'hello' }));
+
+    expect(events.map(e => e.type)).toEqual(['text', 'text', 'error']);
+    expect(await loggedText(id)).toEqual(['ab']);
+    expect(await logKinds(id)).toEqual(['user', 'step', 'text', 'error']);
   });
 });

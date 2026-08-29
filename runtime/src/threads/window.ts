@@ -5,7 +5,13 @@ const defaultEstimate = (s: string): number => Math.ceil(s.length / 4);
 
 /** `user` events become user Messages; consecutive `text` step-events merge
  * into one assistant Message. Everything else (tool calls/results, session,
- * done, error, proposal, step) is replay/audit-only and skipped here. */
+ * done, error, proposal, step) is replay/audit-only and skipped here.
+ *
+ * The merge is defensive, not load-bearing: `stream()` now coalesces a run of
+ * `text` deltas into one logged `text` event, so a log written by this
+ * runtime rarely has two in a row. It stays because logs written before that
+ * change still hold per-token events, and because nothing in the format
+ * forbids a future writer from appending two. */
 function toMessages(events: ThreadEvent[]): Message[] {
   const messages: Message[] = [];
   let textBuffer: string[] | null = null;

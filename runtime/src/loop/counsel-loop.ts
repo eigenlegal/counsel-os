@@ -130,8 +130,10 @@ function stepTools(deps: CounselLoopDeps, threadId: string, cfg: VaultConfig, sc
  *
  * Yields every `StepEvent` the provider produced, tagged with this step's
  * `runId` — except `session`, which is consumed (stored on the thread
- * header) rather than surfaced. `text` events pass through exactly as the
- * provider emitted them; coalescing them for a UI is the server's job.
+ * header) rather than surfaced. `text` events pass through to the caller
+ * exactly as the provider emitted them; coalescing them for a UI is the
+ * server's job. The thread LOG stores one `text` event per run of text (see
+ * `stream`), which is a different question from what the caller streams.
  *
  * Failures are events, never exceptions: an unknown thread, an unresolvable
  * provider, or a broken prompt assembly each end the stream with a single
@@ -143,6 +145,11 @@ export async function* runStep(
   deps: CounselLoopDeps,
   opts: RunStepOptions,
 ): AsyncIterable<StepEvent & { runId: string }> {
+  // The step's clock starts HERE, not inside `stream`. `beginAttempt` already
+  // awaits the provider's first non-`session` event, which on both harness
+  // tiers is the entire model turn — a clock started after it measured
+  // single-digit milliseconds for three-second steps.
+  const startedAt = Date.now();
   const runId = randomUUID();
   const { tenant, store } = deps;
   const { threadId } = opts;
@@ -273,7 +280,7 @@ export async function* runStep(
     attempt = await beginAttempt(provider, req);
   }
 
-  yield* stream(deps, opts, provider, runId, chain(attempt));
+  yield* stream(deps, opts, provider, runId, chain(attempt), startedAt);
 }
 
 function isResumeFailure(ev: StepEvent): boolean {
@@ -355,7 +362,9 @@ async function tryPersist(write: () => Promise<void>): Promise<string | null> {
 /**
  * Drains the provider's stream: every event but `session` is appended to the
  * thread log and yielded with the run id; `session` (and `done.sessionId`)
- * updates the thread header instead. Tool-call durations are measured
+ * updates the thread header instead. Consecutive `text` events are the one
+ * exception — they reach the caller immediately but are merged into a single
+ * logged `text` event. Tool-call durations are measured
  * between a `tool_call` and the `tool_result` carrying the same id, and the
  * whole tally is written to the run log once the step completes.
  *
@@ -376,12 +385,27 @@ async function* stream(
   provider: ModelProvider,
   runId: string,
   events: AsyncIterable<StepEvent>,
+  startedAt: number,
 ): AsyncIterable<StepEvent & { runId: string }> {
   const { tenant, store } = deps;
-  const startedAt = Date.now();
   const pending = new Map<string, { name: string; at: number }>();
   const toolCalls: ToolCallLog[] = [];
   let sawTerminal = false;
+
+  // `text` deltas are yielded the instant they arrive — a caller streaming to
+  // a user must not wait on the next non-text event — but they are held back
+  // from the LOG until the run of text ends. The local tier emits one delta
+  // per token, which wrote 177 events / 13 KB of JSONL for a single ~800
+  // character answer, and left every reader of `GET /threads/:id` to redo the
+  // coalescing the SSE layer already does. One run of text is one `text`
+  // event in the log; a `tool_call` between two runs still splits them.
+  let textBuffer: string[] = [];
+  const flushText = async (): Promise<string | null> => {
+    if (textBuffer.length === 0) return null;
+    const merged = textBuffer.join('');
+    textBuffer = [];
+    return tryPersist(() => store.append(tenant, opts.threadId, { type: 'text', text: merged, at: nowIso() }));
+  };
 
   for await (const ev of events) {
     if (ev.type === 'session') {
@@ -391,6 +415,18 @@ async function* stream(
         return;
       }
       continue;
+    }
+
+    if (ev.type === 'text') {
+      textBuffer.push(ev.text);
+      yield { ...ev, runId };
+      continue;
+    }
+
+    const flushFailed = await flushText();
+    if (flushFailed) {
+      yield { type: 'error', message: flushFailed, runId };
+      return;
     }
 
     const failed = await tryPersist(() => store.append(tenant, opts.threadId, { ...ev, at: nowIso() } as ThreadEvent));
@@ -430,6 +466,14 @@ async function* stream(
     if (ev.type === 'done') {
       recordRun(deps, opts, provider, runId, ev.usage, Date.now() - startedAt, finishToolCalls(toolCalls, pending));
     }
+  }
+
+  // A stream that ends on text (no terminal event) still has to leave that
+  // text in the log.
+  const tailFailed = await flushText();
+  if (tailFailed) {
+    yield { type: 'error', message: tailFailed, runId };
+    return;
   }
 
   if (!sawTerminal) {

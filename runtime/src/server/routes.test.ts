@@ -347,7 +347,9 @@ describe('one thread at a time', () => {
     const { events } = await store.get('default', id);
     expect(events.map(kindOf)).toEqual([
       ...['user', 'step', 'tool_call', 'proposal', 'tool_result', 'done'],
-      ...['user', 'step', 'text', 'text', 'text', 'done'],
+      // The provider's three `text` deltas are one logged `text` event —
+      // `stream()` coalesces a run of them (they still stream as three).
+      ...['user', 'step', 'text', 'done'],
     ]);
     const proposal = events.find(e => 't' in e && e.t === 'proposal') as Extract<ThreadEvent, { t: 'proposal' }>;
     expect(proposal.status).toBe('approved');
