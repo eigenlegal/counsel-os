@@ -9,6 +9,7 @@ import { Router } from '../router/router';
 import { ThreadStore, type ThreadEvent } from '../threads/store';
 import { FsVaultStore } from '../vault/fs-store';
 import { API_PREFIXES, createApp, type App, type ServerDeps } from './routes';
+import type { RuntimeState } from './settings';
 
 const TOKEN = 'test-token-0123456789';
 
@@ -28,7 +29,24 @@ beforeEach(() => {
   store = new ThreadStore(vaultRoot, { codexHomeRoot: mkdtempSync(join(tmpdir(), 'routes-codex-')) });
 });
 
-function appWith(providers: ModelProvider[], extra: Partial<ServerDeps> = {}): App {
+/**
+ * A server whose live state is exactly `providers`, with the first as the
+ * default. `state` is a getter over one fixed object here — a reload is
+ * `settings.test.ts`'s subject, not this file's — and `reload` re-installs
+ * that same state, so nothing a route test does can quietly swap the
+ * provider it asserts against.
+ */
+function appWith(
+  providers: ModelProvider[],
+  extra: Partial<ServerDeps> & { stepTimeoutMs?: number } = {},
+): App {
+  const { stepTimeoutMs, ...rest } = extra;
+  const state: RuntimeState = {
+    providers,
+    router: new Router({ default: providers[0]!.id }, providers),
+    defaultId: providers[0]!.id,
+    ...(stepTimeoutMs === undefined ? {} : { stepTimeoutMs }),
+  };
   const deps: ServerDeps = {
     token: TOKEN,
     tenant: 'default',
@@ -36,10 +54,10 @@ function appWith(providers: ModelProvider[], extra: Partial<ServerDeps> = {}): A
     pluginRoot,
     vault,
     store,
-    providers,
-    router: new Router({ default: providers[0]!.id }, providers),
     platform: 'macos',
-    ...extra,
+    state: () => state,
+    settings: { file: join(mkdtempSync(join(tmpdir(), 'routes-home-')), 'providers.yaml'), reload: () => {} },
+    ...rest,
   };
   return createApp(deps);
 }
@@ -208,19 +226,14 @@ describe('POST /threads/:id/steps', () => {
 
   test('an unsatisfiable task route is 422', async () => {
     const fake = new FakeModelProvider([{ text: 'x' }]);
-    const app = createApp({
-      token: TOKEN,
-      tenant: 'default',
-      vaultRoot,
-      pluginRoot,
-      vault,
-      store,
-      providers: [fake],
-      router: new Router(
-        { default: 'fake/fake', tasks: { heavy: { prefer: 'missing/model', require: { contextTokens: 99_000_000 } } } },
-        [fake],
-      ),
-      platform: 'macos',
+    const app = appWith([fake], {
+      state: () => ({
+        providers: [fake],
+        router: new Router(
+          { default: 'fake/fake', tasks: { heavy: { prefer: 'missing/model', require: { contextTokens: 99_000_000 } } } },
+          [fake],
+        ),
+      }),
     });
     const id = await newThread(app);
     const res = await call(app, 'POST', `/threads/${id}/steps`, { body: { message: 'hi', task: 'heavy' } });

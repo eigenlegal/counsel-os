@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { counselHome } from '../core/home';
 import type { Capabilities, ModelProvider } from '../core/types';
 import { Router, parseRouterConfig, type RouterConfig } from '../router/router';
@@ -26,6 +26,39 @@ export const RegistryFile = z.object({ default: z.string().optional(), providers
    * before it started, which is a config mistake, not a policy. */
   stepTimeoutMs: z.number().int().positive().optional() });
 
+/** `providers.yaml` as data: what `GET /settings` hands out and `PUT
+ * /settings` takes back. */
+export type RegistryFileData = z.infer<typeof RegistryFile>;
+
+/**
+ * The registry file's contents, or an empty registry when there is no file.
+ * A missing `providers.yaml` is the normal state of a fresh install — the
+ * built-ins alone are a working runtime — so it is not an error here either.
+ */
+export function readRegistry(file: string): RegistryFileData {
+  return existsSync(file) ? RegistryFile.parse(Bun.YAML.parse(readFileSync(file, 'utf8'))) : {};
+}
+
+/**
+ * Writes the registry file — the only thing this runtime writes outside the
+ * vault. `PUT /settings` supplies the CONTENTS; the path is the one the
+ * operator started the server with, so nothing a client sends can steer the
+ * write somewhere else.
+ *
+ * Temp file plus rename, for the same reason `runtime.json` does it: a
+ * concurrent `loadRegistry` (this process reloading, or a second runtime
+ * starting) must see either the old file or the new one, never half of one.
+ * The parent directory is created 0700 because `<counselHome>` also holds
+ * the bearer token and the per-thread Codex homes.
+ */
+export function writeRegistry(file: string, reg: RegistryFileData): void {
+  mkdirSync(dirname(file), { recursive: true, mode: 0o700 });
+  // Named for this process, so two runtimes writing at once do not share it.
+  const tmp = `${file}.${process.pid}.tmp`;
+  writeFileSync(tmp, Bun.YAML.stringify(reg), 'utf8');
+  renameSync(tmp, file);
+}
+
 /**
  * Builds the provider set and the router the server runs on.
  *
@@ -44,7 +77,7 @@ export function loadRegistry(opts: {
   defaultId?: string;
 }) {
   const env = opts.env ?? process.env; const file = opts.file ?? defaultRegistryFile(env);
-  const raw = existsSync(file) ? RegistryFile.parse(Bun.YAML.parse(readFileSync(file, 'utf8'))) : {};
+  const raw = readRegistry(file);
   const providers: ModelProvider[] = buildProviders({ ids: BUILTIN_IDS, vaultRoot: opts.vaultRoot });
   for (const e of raw.providers ?? []) {
     const [vendor] = e.id.split('/');

@@ -3,18 +3,38 @@ import { RouterError } from '../core/types';
 import { DEFAULT_STEP_TIMEOUT_MS, runStep, type CounselLoopDeps } from '../loop/counsel-loop';
 import { applyProposal } from '../loop/proposals';
 import { listRuns, readRun, type RunRecord } from '../loop/run-record';
+import { RegistryFile } from '../providers/registry';
 import type { ThreadEvent, ThreadHeader } from '../threads/store';
 import { normalizeVaultPath } from '../vault/knowledge-paths';
 import { isAuthorized } from './auth';
+import {
+  applySettings,
+  effectiveDefault,
+  settingsView,
+  testProvider,
+  TestBody,
+  type RuntimeState,
+  type SettingsDeps,
+} from './settings';
 import { sseFromEvents, type StreamEvent } from './sse';
 import { serveStatic } from './static';
 
-export interface ServerDeps extends CounselLoopDeps {
+/**
+ * Everything the HTTP surface needs, minus the parts a `PUT /settings` can
+ * replace. `providers`, `router` and `stepTimeoutMs` are deliberately NOT
+ * here: they live in `RuntimeState` behind `state()`, so a handler cannot
+ * accidentally capture the set that was live when the server started. The
+ * compiler enforces it — there is no `deps.providers` to reach for.
+ */
+export interface ServerDeps extends Omit<CounselLoopDeps, 'providers' | 'router' | 'stepTimeoutMs'> {
   /** The bearer token every request must present (spec §4.5). */
   token: string;
-  /** The provider `GET /health` reports as the default. Defaults to whatever
-   * the router resolves with no task. */
-  defaultProviderId?: string;
+  /** The live providers, router, default and step timeout, read fresh on
+   * every request so a reload takes effect without a restart. */
+  state(): RuntimeState;
+  /** The registry file `/settings` reads and writes, and the reload that
+   * installs a new one. */
+  settings: SettingsDeps;
   /** The built UI's `dist/` (spec §4.2). Omitted → no static serving at all,
    * and a non-API path is the 404 it has always been. */
   distDir?: string;
@@ -121,15 +141,15 @@ async function loadThread(deps: ServerDeps, id: string): Promise<{ header: Threa
  * id or an unsatisfiable task route, and a status code can only be chosen
  * before the response begins.
  */
-function checkProvider(deps: ServerDeps, opts: { provider?: string; task?: string }): void {
+function checkProvider(state: RuntimeState, opts: { provider?: string; task?: string }): void {
   if (opts.provider !== undefined) {
-    if (!deps.providers.some(p => p.id === opts.provider)) {
+    if (!state.providers.some(p => p.id === opts.provider)) {
       throw new HttpError(422, `unknown provider: ${opts.provider}`);
     }
     return;
   }
   try {
-    deps.router.resolve(opts.task);
+    state.router.resolve(opts.task);
   } catch (err) {
     if (err instanceof RouterError) throw new HttpError(422, err.message);
     throw err;
@@ -230,6 +250,27 @@ export function createApp(deps: ServerDeps): App {
   const locks = new ThreadLocks();
   const staticHandler = deps.distDir === undefined ? null : serveStatic(deps.distDir);
 
+  /**
+   * The loop's dependencies as of RIGHT NOW: the fixed half of `deps` plus
+   * whatever `PUT /settings` has installed. Built per request, never hoisted
+   * — a value captured once is exactly the staleness `RuntimeState` exists
+   * to prevent.
+   */
+  const loopDeps = (): CounselLoopDeps => {
+    const state = deps.state();
+    return {
+      tenant: deps.tenant,
+      vaultRoot: deps.vaultRoot,
+      pluginRoot: deps.pluginRoot,
+      vault: deps.vault,
+      store: deps.store,
+      providers: state.providers,
+      router: state.router,
+      ...(deps.platform === undefined ? {} : { platform: deps.platform }),
+      ...(state.stepTimeoutMs === undefined ? {} : { stepTimeoutMs: state.stepTimeoutMs }),
+    };
+  };
+
   /** Runs `fn` with this thread's lock held for its whole duration — for the
    * handlers that finish inside one function. `steps` cannot use it: its work
    * outlives the handler, so it releases when the stream ends instead. */
@@ -242,30 +283,31 @@ export function createApp(deps: ServerDeps): App {
     }
   };
 
-  const defaultProviderId = (): string | null => {
-    if (deps.defaultProviderId !== undefined) return deps.defaultProviderId;
-    try {
-      return deps.router.resolve().id;
-    } catch {
-      return null;
-    }
-  };
-
-  const health = (): Response =>
-    json({
+  const health = (): Response => {
+    const state = deps.state();
+    return json({
       vault: deps.vaultRoot,
       tenant: deps.tenant,
-      providers: deps.providers.map(p => ({
+      providers: state.providers.map(p => ({
         id: p.id,
         kind: p.kind,
         auth: p.capabilities.auth,
         capabilities: p.capabilities,
       })),
-      default: defaultProviderId(),
+      default: effectiveDefault(state),
       // What a step on this runtime actually gets, not what was configured:
       // an operator reading /health wants the effective number.
-      stepTimeoutMs: deps.stepTimeoutMs ?? DEFAULT_STEP_TIMEOUT_MS,
+      stepTimeoutMs: state.stepTimeoutMs ?? DEFAULT_STEP_TIMEOUT_MS,
     });
+  };
+
+  /** `PUT /settings` (spec §4.1). The body is the whole registry file, so a
+   * schema failure is the shared 400-with-issues every other route gives. */
+  const putSettings = async (req: Request): Promise<Response> =>
+    applySettings(deps, await body(req, RegistryFile));
+
+  const runProviderTest = async (req: Request): Promise<Response> =>
+    testProvider(loopDeps(), (await body(req, TestBody)).provider);
 
   const createThread = async (req: Request): Promise<Response> => {
     const init = await body(req, CreateThreadBody);
@@ -284,7 +326,8 @@ export function createApp(deps: ServerDeps): App {
   const steps = async (req: Request, id: string): Promise<Response> => {
     const input = await body(req, StepBody);
     await loadThread(deps, id);
-    checkProvider(deps, input);
+    const loop = loopDeps();
+    checkProvider(loop, input);
 
     let outputSchema: z.ZodType<unknown> | undefined;
     if (input.outputSchema) {
@@ -297,7 +340,7 @@ export function createApp(deps: ServerDeps): App {
 
     const release = await locks.acquire(`${deps.tenant}/${id}`);
     try {
-      const events = runStep(deps, {
+      const events = runStep(loop, {
         threadId: id,
         message: input.message,
         ...(input.task === undefined ? {} : { task: input.task }),
@@ -438,6 +481,15 @@ export function createApp(deps: ServerDeps): App {
 
       if (segments.length === 2 && first === 'runs' && second !== undefined && method === 'GET') {
         return getRun(second);
+      }
+
+      if (segments.length === 1 && first === 'settings') {
+        if (method === 'GET') return json(settingsView(deps));
+        if (method === 'PUT') return await putSettings(req);
+      }
+
+      if (segments.length === 2 && first === 'settings' && second === 'test' && method === 'POST') {
+        return await runProviderTest(req);
       }
 
       if (segments.length === 2 && first === 'vault' && method === 'GET') {

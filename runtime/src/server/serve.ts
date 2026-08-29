@@ -3,13 +3,14 @@ import { chmodSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, w
 import { join, resolve, sep } from 'node:path';
 import { counselHome } from '../core/home';
 import { FakeModelProvider, type FakeScript } from '../core/fake-provider';
-import { DEFAULT_TENANT } from '../core/types';
+import { DEFAULT_TENANT, type ModelProvider } from '../core/types';
 import { DEFAULT_STEP_TIMEOUT_MS } from '../loop/counsel-loop';
-import { loadRegistry } from '../providers/registry';
+import { defaultRegistryFile, loadRegistry } from '../providers/registry';
 import { ThreadStore } from '../threads/store';
 import { FsVaultStore } from '../vault/fs-store';
 import { resolveLegalRoot } from '../vault/resolve-root';
 import { createApp } from './routes';
+import type { RuntimeState } from './settings';
 
 type BunServer = ReturnType<typeof Bun.serve>;
 
@@ -252,6 +253,67 @@ function runtimeFileOwner(path: string): number | null {
   }
 }
 
+export interface RuntimeStateOptions {
+  vaultRoot: string;
+  /** Overrides `<counselHome>/providers.yaml`. */
+  registryFile?: string;
+  env?: NodeJS.ProcessEnv;
+  /** Providers the registry file does not know about (`--fake`). */
+  extraProviders?: ModelProvider[];
+  /** A default that beats the file's (`--fake` again). */
+  defaultId?: string;
+  /** A step deadline that beats the file's. */
+  stepTimeoutMs?: number;
+}
+
+export interface RuntimeHandle {
+  /** The state as of now. A fresh object after every `reload`, so a caller
+   * that held the old one keeps a consistent set rather than half of each. */
+  state(): RuntimeState;
+  /** Re-reads the registry file and installs the result. Throws when the
+   * file does not build, and installs nothing when it does — `PUT /settings`
+   * relies on that to answer 422 with the old runtime still live. */
+  reload(): void;
+}
+
+/**
+ * The live provider set, behind a getter (`PUT /settings` replaces it).
+ *
+ * Every caller-supplied override is re-applied on EVERY load, not merged in
+ * once at startup: `serve --fake` puts a provider in front of the registry
+ * without writing a config file, so a reload that only re-read the file
+ * would silently drop it — and the fake is the default, which means the very
+ * next step would go to a real model. The same holds for an explicit
+ * `--step-timeout`: the flag outranks the file after a reload exactly as it
+ * did before one.
+ */
+export function runtimeState(opts: RuntimeStateOptions): RuntimeHandle {
+  const load = (): RuntimeState => {
+    const loaded = loadRegistry({
+      vaultRoot: opts.vaultRoot,
+      ...(opts.env === undefined ? {} : { env: opts.env }),
+      ...(opts.registryFile === undefined ? {} : { file: opts.registryFile }),
+      ...(opts.extraProviders === undefined ? {} : { extraProviders: opts.extraProviders }),
+      ...(opts.defaultId === undefined ? {} : { defaultId: opts.defaultId }),
+    });
+    return {
+      providers: loaded.providers,
+      router: loaded.router,
+      defaultId: loaded.defaultId,
+      // Explicit option first, then the registry file, then the default.
+      stepTimeoutMs: opts.stepTimeoutMs ?? loaded.stepTimeoutMs ?? DEFAULT_STEP_TIMEOUT_MS,
+    };
+  };
+
+  let current = load();
+  return {
+    state: () => current,
+    reload: () => {
+      current = load();
+    },
+  };
+}
+
 /**
  * Starts the local runtime: resolve the vault, load the provider registry,
  * bind loopback, and publish `runtime.json` for the plugin adapter.
@@ -271,11 +333,13 @@ export async function startServer(opts: StartServerOptions = {}): Promise<Runnin
   // override rather than a config change: nothing is written to
   // `providers.yaml`, so the operator's real setup is untouched.
   const fake = opts.fake === undefined ? undefined : new FakeModelProvider(opts.fake);
-  const { providers, router, defaultId, stepTimeoutMs } = loadRegistry({
+  const registryFile = opts.registryFile ?? defaultRegistryFile(env);
+  const runtime = runtimeState({
     vaultRoot,
     env,
-    ...(opts.registryFile === undefined ? {} : { file: opts.registryFile }),
+    registryFile,
     ...(fake === undefined ? {} : { extraProviders: [fake], defaultId: fake.id }),
+    ...(opts.stepTimeoutMs === undefined ? {} : { stepTimeoutMs: opts.stepTimeoutMs }),
   });
 
   const token = randomBytes(32).toString('hex');
@@ -290,12 +354,9 @@ export async function startServer(opts: StartServerOptions = {}): Promise<Runnin
     pluginRoot,
     vault: new FsVaultStore(vaultRoot),
     store,
-    providers,
-    router,
-    defaultProviderId: defaultId,
+    state: runtime.state,
+    settings: { file: registryFile, reload: runtime.reload },
     distDir,
-    // Explicit option first, then the registry file, then the default.
-    stepTimeoutMs: opts.stepTimeoutMs ?? stepTimeoutMs ?? DEFAULT_STEP_TIMEOUT_MS,
   });
 
   const server = listen(opts.port, app);

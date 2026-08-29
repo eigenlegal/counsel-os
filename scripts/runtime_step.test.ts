@@ -38,9 +38,11 @@ function serveFake(script: ConstructorParameters<typeof FakeModelProvider>[0]): 
     pluginRoot,
     vault: new FsVaultStore(vaultRoot),
     store: new ThreadStore(vaultRoot, { codexHomeRoot: mkdtempSync(join(tmpdir(), 'runtime-step-codex-')) }),
-    providers: [provider],
-    router: new Router({ default: provider.id }, [provider]),
     platform: 'macos',
+    state: () => ({ providers: [provider], router: new Router({ default: provider.id }, [provider]), defaultId: provider.id }),
+    // The script never touches `/settings`; the file only has to be a path
+    // this test owns, so a stray write could not land anywhere real.
+    settings: { file: join(vaultRoot, 'providers.yaml'), reload: () => {} },
   };
   const app: App = createApp(deps);
   const server = Bun.serve({ hostname: '127.0.0.1', port: 0, fetch: app });
