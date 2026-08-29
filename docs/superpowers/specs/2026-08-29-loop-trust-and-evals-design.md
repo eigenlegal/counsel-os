@@ -71,7 +71,7 @@ to `{ proposalId }`; `path`/`rationale` come from the matching `tool_call` input
 ### 4.3 Run record
 
 `RunRecord` (shape in §3). `startRun()` writes `status:'running'` before the provider is
-called; `finishRun()` rewrites with the final status (`done | error | timeout`). Derived
+called; `finishRun()` rewrites with the final status (`done | error | timeout | abandoned`). Derived
 fields: `primitivesRead` from `read_primitive` tool calls; `proposals` from `proposal`
 events; `toolCalls` as today's log entry; `output` from `done.output` when a schema was
 given. Tenant/runId validated as in `run-log.ts`. `.log.jsonl` keeps one line per step.
