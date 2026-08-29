@@ -1,0 +1,94 @@
+import { afterEach, describe, expect, test } from 'bun:test';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { counselHome, runtimeFilePath, startServer, type RunningServer, type RuntimeFile } from './serve';
+
+let running: RunningServer | undefined;
+
+afterEach(async () => {
+  await running?.stop();
+  running = undefined;
+});
+
+function fixture(): { vault: string; pluginRoot: string; env: NodeJS.ProcessEnv } {
+  const vault = mkdtempSync(join(tmpdir(), 'serve-vault-'));
+  const pluginRoot = mkdtempSync(join(tmpdir(), 'serve-plugin-'));
+  mkdirSync(join(pluginRoot, 'skills', 'counsel'), { recursive: true });
+  writeFileSync(join(pluginRoot, 'skills', 'counsel', 'SKILL.md'), '---\nname: counsel\n---\n\nBODY.\n', 'utf8');
+  const home = mkdtempSync(join(tmpdir(), 'serve-home-'));
+  return { vault, pluginRoot, env: { ...process.env, COUNSEL_OS_HOME: home } };
+}
+
+describe('startServer', () => {
+  test('binds loopback, publishes runtime.json 0600, and cleans it up on stop', async () => {
+    const { vault, pluginRoot, env } = fixture();
+    running = await startServer({
+      vault,
+      pluginRoot,
+      port: 0,
+      env,
+      registryFile: join(vault, 'no-such-providers.yaml'),
+    });
+
+    const file = runtimeFilePath(env);
+    expect(counselHome(env)).toBe(env.COUNSEL_OS_HOME!);
+    expect(existsSync(file)).toBe(true);
+    expect(statSync(file).mode & 0o777).toBe(0o600);
+
+    const contents = JSON.parse(readFileSync(file, 'utf8')) as RuntimeFile;
+    expect(contents.port).toBe(running.port);
+    expect(contents.token).toBe(running.token);
+    expect(contents.vault).toBe(vault);
+    expect(contents.pid).toBe(process.pid);
+    expect(Number.isNaN(Date.parse(contents.startedAt))).toBe(false);
+
+    // The published token is the one the server actually accepts, and it is
+    // required.
+    const health = await fetch(`${running.url}/health`, {
+      headers: { authorization: `Bearer ${contents.token}` },
+    });
+    expect(health.status).toBe(200);
+    expect(((await health.json()) as { vault: string }).vault).toBe(vault);
+    expect((await fetch(`${running.url}/health`)).status).toBe(401);
+
+    await running.stop();
+    running = undefined;
+    expect(existsSync(file)).toBe(false);
+  });
+
+  test('a busy default port falls through to an OS-assigned one', async () => {
+    const a = fixture();
+    const b = fixture();
+    // No explicit port: the first takes DEFAULT_PORT (unless something else
+    // already holds it, in which case both fall through), the second must
+    // land somewhere else rather than failing to start.
+    const first = await startServer({ vault: a.vault, pluginRoot: a.pluginRoot, env: a.env, registryFile: join(a.vault, 'none.yaml') });
+    const second = await startServer({ vault: b.vault, pluginRoot: b.pluginRoot, env: b.env, registryFile: join(b.vault, 'none.yaml') });
+    try {
+      expect(second.port).not.toBe(first.port);
+      const health = await fetch(`${second.url}/health`, { headers: { authorization: `Bearer ${second.token}` } });
+      expect(health.status).toBe(200);
+    } finally {
+      await first.stop();
+      await second.stop();
+    }
+  });
+
+  test('a fresh token per process', async () => {
+    const a = fixture();
+    const b = fixture();
+    const first = await startServer({ vault: a.vault, pluginRoot: a.pluginRoot, port: 0, env: a.env, registryFile: join(a.vault, 'none.yaml') });
+    const second = await startServer({ vault: b.vault, pluginRoot: b.pluginRoot, port: 0, env: b.env, registryFile: join(b.vault, 'none.yaml') });
+    try {
+      expect(first.token).not.toBe(second.token);
+      expect(first.port).not.toBe(second.port);
+      // One server's token is no good at the other.
+      const crossed = await fetch(`${second.url}/health`, { headers: { authorization: `Bearer ${first.token}` } });
+      expect(crossed.status).toBe(401);
+    } finally {
+      await first.stop();
+      await second.stop();
+    }
+  });
+});
