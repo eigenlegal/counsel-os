@@ -1210,6 +1210,77 @@ describe('runStep — the run record', () => {
     expect(log.provider).toBe('fake/fake');
   });
 
+  test('a caller that hangs up mid-step leaves an abandoned record, not one stuck at running', async () => {
+    // The routine case: an SSE client closes its tab. Nothing failed, but the
+    // record must not read as `running` — that now means the process died.
+    const { provider } = pausing([
+      { type: 'text', text: 'thinking' },
+      { type: 'tool_call', id: 'c1', name: 'read_primitive', input: { name: 'draft' } },
+    ]);
+    const { id } = await store.create('default', {});
+
+    const it = runStep(deps([provider]), { threadId: id, message: 'hello' })[Symbol.asyncIterator]();
+    const first = await it.next();
+    await it.next();
+    await it.return?.(undefined);
+
+    const rec = readRun(vaultRoot, 'default', first.value!.runId)!;
+    expect(rec.status).toBe('abandoned');
+    expect(rec.error).toBe('the caller abandoned the step');
+    expect(typeof rec.finishedAt).toBe('string');
+    expect(rec.durationMs).toBeGreaterThanOrEqual(0);
+    // What the step had done by then is still recorded.
+    expect(rec.primitivesRead).toEqual(['draft']);
+  });
+
+  test('a provider that THROWS is an error record, not an abandoned one', async () => {
+    // The `finally` that marks abandonment also runs when an exception
+    // unwinds the step. A provider that threw instead of yielding an `error`
+    // failed; nobody walked away.
+    const exploding: ModelProvider = {
+      id: 'boom/boom',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+      async *run(): AsyncIterable<StepEvent> {
+        yield { type: 'text', text: 'a' };
+        throw new Error('provider exploded');
+      },
+    };
+    const { id } = await store.create('default', {});
+
+    const it = runStep(deps([exploding]), { threadId: id, message: 'hello' })[Symbol.asyncIterator]();
+    const runId = (await it.next()).value!.runId;
+    await expect(it.next()).rejects.toThrow('provider exploded');
+
+    const rec = readRun(vaultRoot, 'default', runId)!;
+    expect(rec.status).toBe('error');
+    expect(rec.error).toBe('provider exploded');
+  });
+
+  test('a step that ran to completion is NOT re-marked abandoned on the way out', async () => {
+    // The `finally` that marks abandonment runs on every exit, the normal one
+    // included; a finalized record must survive it untouched.
+    const fake = new FakeModelProvider([{ text: 'hi', usage: { inputTokens: 1, outputTokens: 2 } }]);
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([fake]), { threadId: id, message: 'hello' }));
+    const rec = readRun(vaultRoot, 'default', events[0]!.runId)!;
+
+    expect(rec.status).toBe('done');
+    expect(rec.error).toBeUndefined();
+  });
+
+  test('a step that ended in an error is not re-marked abandoned either', async () => {
+    const fake = new FakeModelProvider([{ error: 'the model gave up' }]);
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([fake]), { threadId: id, message: 'hello' }));
+    const rec = readRun(vaultRoot, 'default', events[0]!.runId)!;
+
+    expect(rec.status).toBe('error');
+    expect(rec.error).toBe('the model gave up');
+  });
+
   test('every run of a thread is listed, newest first', async () => {
     const fake = new FakeModelProvider([{ text: 'one' }, { text: 'two' }]);
     const { id } = await store.create('default', {});

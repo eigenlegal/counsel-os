@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { RouterError } from '../core/types';
 import { DEFAULT_STEP_TIMEOUT_MS, runStep, type CounselLoopDeps } from '../loop/counsel-loop';
 import { applyProposal } from '../loop/proposals';
-import { listRuns, readRun } from '../loop/run-record';
+import { listRuns, readRun, type RunRecord } from '../loop/run-record';
 import type { ThreadEvent, ThreadHeader } from '../threads/store';
 import { normalizeVaultPath } from '../vault/knowledge-paths';
 import { isAuthorized } from './auth';
@@ -320,7 +320,7 @@ export function createApp(deps: ServerDeps): App {
   };
 
   const getRun = (runId: string): Response => {
-    let record;
+    let record: RunRecord | null;
     try {
       record = readRun(deps.vaultRoot, deps.tenant, runId);
     } catch (err) {

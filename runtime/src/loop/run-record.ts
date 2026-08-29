@@ -9,14 +9,16 @@ import { runFilePath, runsDir, type ToolCallLog } from './run-log';
  * `.log.jsonl` telemetry line at
  * `<vaultRoot>/.counsel/runs/<tenant>/<runId>.json` and, unlike the log, is
  * rewritten as the step progresses: opened `running` before the provider is
- * even chosen, finalized `done` / `error` / `timeout` when the step ends. A
- * record left `running` is itself the signal — the process died mid-step.
+ * even chosen, finalized when the step ends — `done` / `error` / `timeout`, or
+ * `abandoned` when the caller hung up mid-step (a closed browser tab, not a
+ * failure). Every way out of the loop finalizes, so a record left `running`
+ * is itself the signal: the process died mid-step.
  *
  * Like `run-log.ts` and `ThreadStore`, this writes `.counsel/` through
  * `node:fs` rather than `VaultStore`, which deliberately refuses that prefix
  * so no model-reachable tool can reach the runtime's own bookkeeping.
  */
-export type RunStatus = 'running' | 'done' | 'error' | 'timeout';
+export type RunStatus = 'running' | 'done' | 'error' | 'timeout' | 'abandoned';
 
 export interface RunRecord {
   runId: string;
@@ -88,7 +90,24 @@ export function finishRun(vaultRoot: string, tenant: Tenant, runId: string, patc
   writeRecord(vaultRoot, { ...current, ...patch });
 }
 
-/** The record, or `null` when no run by that id was ever opened. */
+/**
+ * Parses one record file. A record that will not parse is treated as one that
+ * is not there — the detail goes to stderr for the operator. Every reader
+ * agrees on this: `listRuns` skips it rather than failing the whole listing,
+ * and `GET /runs/:runId` answers 404 rather than 500, because to a caller an
+ * unreadable record and a missing one are the same thing.
+ */
+function parseRecord(path: string, raw: string): RunRecord | null {
+  try {
+    return JSON.parse(raw) as RunRecord;
+  } catch (err) {
+    console.error(`run-record: unreadable record ${path}: ${err instanceof Error ? err.message : String(err)}`);
+    return null;
+  }
+}
+
+/** The record, or `null` when no run by that id was ever opened — or when
+ * what is there cannot be read (see `parseRecord`). */
 export function readRun(vaultRoot: string, tenant: Tenant, runId: string): RunRecord | null {
   const path = runRecordPath(vaultRoot, tenant, runId);
   let raw: string;
@@ -98,7 +117,7 @@ export function readRun(vaultRoot: string, tenant: Tenant, runId: string): RunRe
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
     throw err;
   }
-  return JSON.parse(raw) as RunRecord;
+  return parseRecord(path, raw);
 }
 
 /**
@@ -121,16 +140,11 @@ export function listRuns(vaultRoot: string, tenant: Tenant, threadId: string): R
     // Records only: this leaves out `<runId>.log.jsonl` and any `.json.tmp`
     // a crashed write left mid-rename.
     if (!name.endsWith('.json')) continue;
-    let rec: RunRecord;
-    try {
-      rec = JSON.parse(readFileSync(join(dir, name), 'utf8')) as RunRecord;
-    } catch (err) {
-      // One unreadable record must not cost the caller every other run of
-      // the thread; the operator gets the detail on stderr.
-      console.error(`run-record: skipping unreadable record ${name}: ${err instanceof Error ? err.message : String(err)}`);
-      continue;
-    }
-    if (rec.threadId === threadId) runs.push(rec);
+    const path = join(dir, name);
+    // One unreadable record must not cost the caller every other run of the
+    // thread.
+    const rec = parseRecord(path, readFileSync(path, 'utf8'));
+    if (rec !== null && rec.threadId === threadId) runs.push(rec);
   }
   // Newest first. `startedAt` is an ISO string, so it sorts lexically; the
   // run id breaks ties so the order is stable rather than readdir's.

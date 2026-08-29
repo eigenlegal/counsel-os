@@ -181,11 +181,17 @@ export async function* runStep(
   // after it dies (spec §4.3). The unknown-thread return above is the one
   // exception: there was no run to record.
   beginRun(deps, opts, runId, new Date(startedAt).toISOString());
+  // Tracks whether the record has reached a terminal status yet, so the
+  // `finally` below can tell "the step ended" from "the caller walked away".
+  const run: RunState = {
+    finalized: false,
+    outcome: () => ({ finishedAt: nowIso(), durationMs: Date.now() - startedAt }),
+  };
   /** Finalizes the record for a step ending in a yielded `error`, before the
    * yield: these paths `return` straight after it, so a consumer that stops
    * reading would leave anything written afterwards unrun. */
   const failRun = (error: string): void => {
-    patchRun(deps, runId, { status: 'error', finishedAt: nowIso(), durationMs: Date.now() - startedAt, error });
+    finalizeRun(deps, runId, run, { status: 'error', error });
   };
 
   const userFailed = await tryPersist(() =>
@@ -324,10 +330,42 @@ export async function* runStep(
       attempt = await beginAttempt(provider, req, deadline);
     }
 
-    yield* stream(deps, opts, provider, runId, chain(attempt, deadline, timeoutMs), startedAt);
+    yield* stream(deps, opts, provider, runId, chain(attempt, deadline, timeoutMs), startedAt, run);
+  } catch (err) {
+    // A provider that THREW instead of yielding an `error`. The loop turns
+    // its own failures into events (spec §5), but a provider is free to
+    // reject, and the record must call that an error rather than let the
+    // `finally` below read it as a caller walking away.
+    finalizeRun(deps, runId, run, { status: 'error', error: message(err) });
+    throw err;
   } finally {
     deadline.cancel();
+    // The consumer walked away — an SSE client that hung up, which reaches
+    // this generator as `return()` — so no terminal event was ever produced
+    // and nothing above finalized the record. That is not a failure of the
+    // step, and it must not be left as `running`, which is now reserved for
+    // "the process died". A run that DID reach a terminal status is already
+    // finalized, and this never overwrites it.
+    if (!run.finalized) {
+      finalizeRun(deps, runId, run, { status: 'abandoned', error: ABANDONED_MESSAGE });
+    }
   }
+}
+
+/** What an abandoned run records as its `error` — the reason it stopped,
+ * though nothing actually failed. */
+const ABANDONED_MESSAGE = 'the caller abandoned the step';
+
+/**
+ * The run record's live state for one step: whether it already reached a
+ * terminal status, and how to describe the work done so far. `stream`
+ * replaces `outcome` with the richer version — tool calls, primitives,
+ * proposals — once it starts reading events; before that there is nothing to
+ * report but the clock.
+ */
+interface RunState {
+  finalized: boolean;
+  outcome: () => RunPatch;
 }
 
 function isResumeFailure(ev: StepEvent): boolean {
@@ -651,6 +689,7 @@ async function* stream(
   runId: string,
   events: AsyncIterable<StepEvent>,
   startedAt: number,
+  run: RunState,
 ): AsyncIterable<StepEvent & { runId: string }> {
   const { tenant, store } = deps;
   const pending = new Map<string, { name: string; at: number; input: unknown }>();
@@ -662,8 +701,10 @@ async function* stream(
   const proposals: string[] = [];
   let sawTerminal = false;
 
-  /** What every finalization of the run record carries, whatever the outcome. */
-  const outcome = (): RunPatch => ({
+  // What every finalization of this run's record carries from here on,
+  // whatever the outcome — including the `abandoned` one `runStep` writes if
+  // the caller hangs up before any of the terminal paths below is reached.
+  run.outcome = (): RunPatch => ({
     finishedAt: nowIso(),
     durationMs: Date.now() - startedAt,
     toolCalls: finishToolCalls(toolCalls, pending),
@@ -691,7 +732,7 @@ async function* stream(
       if (ev.type === 'session') {
         const failed = await tryPersist(() => store.setSession(tenant, opts.threadId, provider.id, ev.id));
         if (failed) {
-          patchRun(deps, runId, { ...outcome(), status: 'error', error: failed });
+          finalizeRun(deps, runId, run, { status: 'error', error: failed });
           yield { type: 'error', message: failed, runId };
           return;
         }
@@ -706,7 +747,7 @@ async function* stream(
 
       const flushFailed = await flushText();
       if (flushFailed) {
-        patchRun(deps, runId, { ...outcome(), status: 'error', error: flushFailed });
+        finalizeRun(deps, runId, run, { status: 'error', error: flushFailed });
         yield { type: 'error', message: flushFailed, runId };
         return;
       }
@@ -715,7 +756,7 @@ async function* stream(
       if (failed) {
         // The store is broken, so the error event cannot be logged either —
         // it only reaches the caller.
-        patchRun(deps, runId, { ...outcome(), status: 'error', error: failed });
+        finalizeRun(deps, runId, run, { status: 'error', error: failed });
         yield { type: 'error', message: failed, runId };
         return;
       }
@@ -742,7 +783,7 @@ async function* stream(
             store.setSession(tenant, opts.threadId, provider.id, ev.sessionId as string),
           );
           if (sessionFailed) {
-            patchRun(deps, runId, { ...outcome(), status: 'error', error: sessionFailed });
+            finalizeRun(deps, runId, run, { status: 'error', error: sessionFailed });
             yield { type: 'error', message: sessionFailed, runId };
             return;
           }
@@ -764,8 +805,7 @@ async function* stream(
       // stderr: neither may cost a caller its `done`.
       if (ev.type === 'done') {
         recordRun(deps, opts, provider, runId, ev.usage, Date.now() - startedAt, finishToolCalls(toolCalls, pending));
-        patchRun(deps, runId, {
-          ...outcome(),
+        finalizeRun(deps, runId, run, {
           status: 'done',
           usage: ev.usage,
           ...(ev.usage.costUsd === undefined ? {} : { costUsd: ev.usage.costUsd }),
@@ -775,8 +815,7 @@ async function* stream(
           ...(opts.outputSchema ? { output: ev.output } : {}),
         });
       } else if (ev.type === 'error') {
-        patchRun(deps, runId, {
-          ...outcome(),
+        finalizeRun(deps, runId, run, {
           status: isTimeoutError(ev) ? 'timeout' : 'error',
           error: ev.message,
         });
@@ -787,7 +826,7 @@ async function* stream(
     // text in the log.
     const tailFailed = await flushText();
     if (tailFailed) {
-      patchRun(deps, runId, { ...outcome(), status: 'error', error: tailFailed });
+      finalizeRun(deps, runId, run, { status: 'error', error: tailFailed });
       yield { type: 'error', message: tailFailed, runId };
       return;
     }
@@ -795,7 +834,7 @@ async function* stream(
     if (!sawTerminal) {
       const ev: StepEvent = { type: 'error', message: `${provider.id} ended the step without a done or error event` };
       await tryPersist(() => store.append(tenant, opts.threadId, { ...ev, at: nowIso() }));
-      patchRun(deps, runId, { ...outcome(), status: 'error', error: ev.message });
+      finalizeRun(deps, runId, run, { status: 'error', error: ev.message });
       yield { ...ev, runId };
     }
   } finally {
@@ -884,6 +923,16 @@ function beginRun(deps: CounselLoopDeps, opts: RunStepOptions, runId: string, st
   } catch (err) {
     console.error(`counsel-loop: run record write failed for ${runId}: ${message(err)}`);
   }
+}
+
+/**
+ * Closes out a run record: the outcome so far plus the terminal status, and
+ * the flag that stops `runStep`'s `finally` from marking the step abandoned.
+ * `patch` wins over `outcome()`, so a caller can override a derived field.
+ */
+function finalizeRun(deps: CounselLoopDeps, runId: string, run: RunState, patch: RunPatch): void {
+  run.finalized = true;
+  patchRun(deps, runId, { ...run.outcome(), ...patch });
 }
 
 /** Updates an open run record, swallowing failures to stderr — same rule as

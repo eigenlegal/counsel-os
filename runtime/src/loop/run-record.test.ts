@@ -66,6 +66,14 @@ describe('startRun / readRun', () => {
   test('a malformed id is a caller error, not a missing run', () => {
     expect(() => readRun(vaultRoot, 'default', 'nope')).toThrow('invalid run id');
   });
+
+  test('a record that will not parse reads as missing — the same answer listRuns gives', () => {
+    const rec = record();
+    startRun(vaultRoot, rec);
+    writeFileSync(runRecordPath(vaultRoot, rec.tenant, rec.runId), '{ not json', 'utf8');
+
+    expect(readRun(vaultRoot, rec.tenant, rec.runId)).toBeNull();
+  });
 });
 
 describe('finishRun', () => {

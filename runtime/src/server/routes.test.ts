@@ -727,6 +727,19 @@ describe('runs', () => {
     expect((await call(app, 'GET', '/runs/not-a-uuid')).status).toBe(400);
   });
 
+  test('a corrupt record is 404, not a 500', async () => {
+    const app = appWithFake();
+    const id = await newThread(app);
+    const runId = await stepped(app, id, 'hello');
+    writeFileSync(join(vaultRoot, '.counsel', 'runs', 'default', `${runId}.json`), '{ not json', 'utf8');
+
+    expect((await call(app, 'GET', `/runs/${runId}`)).status).toBe(404);
+    // And it is skipped rather than failing the thread's whole listing.
+    const res = await call(app, 'GET', `/runs?thread=${id}`);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual([]);
+  });
+
   test('the runs API is read-only', async () => {
     const app = appWithFake();
     const id = await newThread(app);
