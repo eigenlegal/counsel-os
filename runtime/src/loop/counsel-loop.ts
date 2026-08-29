@@ -616,7 +616,7 @@ async function* stream(
   startedAt: number,
 ): AsyncIterable<StepEvent & { runId: string }> {
   const { tenant, store } = deps;
-  const pending = new Map<string, { name: string; at: number }>();
+  const pending = new Map<string, { name: string; at: number; input: unknown }>();
   const toolCalls: ToolCallLog[] = [];
   let sawTerminal = false;
 
@@ -666,8 +666,9 @@ async function* stream(
         return;
       }
 
+      let proposalToYield: Extract<StepEvent, { type: 'proposal' }> | null = null;
       if (ev.type === 'tool_call') {
-        pending.set(ev.id, { name: ev.name, at: Date.now() });
+        pending.set(ev.id, { name: ev.name, at: Date.now(), input: ev.input });
       } else if (ev.type === 'tool_result') {
         const call = pending.get(ev.id);
         pending.delete(ev.id);
@@ -675,6 +676,9 @@ async function* stream(
         // result, or an id that did not round-trip) still happened — it is
         // logged with an unknown duration rather than a fabricated 0.
         toolCalls.push({ name: ev.name, ms: call ? Date.now() - call.at : null, isError: ev.isError === true });
+        if (ev.name === 'propose_update' && ev.isError !== true && call) {
+          proposalToYield = proposalEvent(ev.output, call.input);
+        }
       } else if (ev.type === 'done') {
         sawTerminal = true;
         if (ev.sessionId) {
@@ -691,6 +695,12 @@ async function* stream(
       }
 
       yield { ...ev, runId };
+
+      // Synthesized, never logged: the `proposal` ThreadEvent the tool
+      // itself appended (during `execute`, before this `tool_result` was
+      // even produced) is the durable record. This is the caller-facing
+      // signal — SSE clients, the adapter — that a proposal now exists.
+      if (proposalToYield) yield { ...proposalToYield, runId };
 
       if (ev.type === 'done') {
         recordRun(deps, opts, provider, runId, ev.usage, Date.now() - startedAt, finishToolCalls(toolCalls, pending));
@@ -724,6 +734,35 @@ async function* stream(
     const failed = await flushText();
     if (failed) console.error(`counsel-loop: ${failed} (thread ${opts.threadId})`);
   }
+}
+
+/**
+ * Builds the `proposal` StepEvent for a successful `propose_update` result,
+ * or `null` if the output doesn't carry a `proposalId` the way the tool
+ * promises to (spec §4.2). `output` may be the object the in-process tiers
+ * produce directly, or the JSON-stringified form a stdio harness round-trips
+ * it through — both are accepted so this works for Claude/direct and Codex
+ * alike. `path`/`rationale` come from the matching `tool_call`'s input,
+ * which `proposeUpdateTool`'s own schema already requires to be strings.
+ */
+function proposalEvent(output: unknown, input: unknown): Extract<StepEvent, { type: 'proposal' }> | null {
+  let parsed = output;
+  if (typeof parsed === 'string') {
+    try {
+      parsed = JSON.parse(parsed);
+    } catch {
+      return null;
+    }
+  }
+  if (typeof parsed !== 'object' || parsed === null) return null;
+  const id = (parsed as Record<string, unknown>).proposalId;
+  if (typeof id !== 'string') return null;
+
+  if (typeof input !== 'object' || input === null) return null;
+  const { path, rationale } = input as Record<string, unknown>;
+  if (typeof path !== 'string' || typeof rationale !== 'string') return null;
+
+  return { type: 'proposal', id, path, rationale };
 }
 
 /**

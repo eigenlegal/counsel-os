@@ -132,6 +132,54 @@ describe('runStep', () => {
     expect(String(result.output)).toContain('propose_update');
   });
 
+  test('(a3) a successful propose_update synthesizes a proposal StepEvent right after its tool_result, not logged twice', async () => {
+    const fake = new FakeModelProvider([
+      {
+        toolCalls: [
+          {
+            name: 'propose_update',
+            input: { path: 'practice/standards/x.md', content: 'NEW TEXT\n', rationale: 'because' },
+          },
+        ],
+        text: 'proposed',
+      },
+    ]);
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([fake]), { threadId: id, message: 'propose it' }));
+
+    expect(events.map(e => e.type)).toEqual(['tool_call', 'tool_result', 'proposal', 'text', 'done']);
+    const proposalEvent = events.find(e => e.type === 'proposal') as Extract<StepEvent, { type: 'proposal' }> & {
+      runId: string;
+    };
+    expect(proposalEvent.path).toBe('practice/standards/x.md');
+    expect(proposalEvent.rationale).toBe('because');
+    expect(proposalEvent.runId).toBe(events[0]!.runId);
+
+    // The `id` matches the thread log's `proposal` ThreadEvent — the durable
+    // record the tool itself wrote — and that ThreadEvent appears exactly
+    // once: the synthesized StepEvent is yielded to the caller, not appended.
+    expect(await logKinds(id)).toEqual(['user', 'step', 'tool_call', 'proposal', 'tool_result', 'text', 'done']);
+    const { events: log } = await store.get('default', id);
+    const loggedProposal = log.find(
+      (ev): ev is Extract<ThreadEvent, { t: 'proposal' }> => 't' in ev && ev.t === 'proposal',
+    )!;
+    expect(proposalEvent.id).toBe(loggedProposal.id);
+  });
+
+  test('(a4) an unsuccessful propose_update yields no proposal StepEvent', async () => {
+    const fake = new FakeModelProvider([
+      { toolCalls: [{ name: 'propose_update', input: { path: 'not/a/knowledge/path.md' } }], text: 'nope' },
+    ]);
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([fake]), { threadId: id, message: 'propose it' }));
+
+    expect(events.map(e => e.type)).not.toContain('proposal');
+    const result = events.find(e => e.type === 'tool_result') as Extract<StepEvent, { type: 'tool_result' }>;
+    expect(result.isError).toBe(true);
+  });
+
   test('(b) a session event is stored on the header and never yielded to the caller', async () => {
     const fake = new FakeModelProvider([{ session: 's1', text: 'ok' }]);
     const { id } = await store.create('default', {});

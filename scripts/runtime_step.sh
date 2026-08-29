@@ -116,6 +116,11 @@ while IFS= read -r line; do
             echo "→ tool ${name}" >&2
           fi
           ;;
+        proposal)
+          if formatted="$(jq -rn --argjson d "$payload" '"\($d.path) (\($d.id))"' 2>/dev/null)"; then
+            echo "→ proposal ${formatted}" >&2
+          fi
+          ;;
         error)
           if message="$(jq -rn --argjson d "$payload" '$d.message' 2>/dev/null)"; then
             echo "⚠ ${message}" >&2

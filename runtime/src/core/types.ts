@@ -49,6 +49,11 @@ export type StepEvent =
   | { type: 'tool_call'; id: string; name: string; input: unknown }
   | { type: 'tool_result'; id: string; name: string; output: unknown; isError?: boolean }
   | { type: 'session'; id: string }
+  // Synthesized by the loop right after a successful `propose_update`
+  // tool_result (see `counsel-loop.ts`'s `stream`); never appended to the
+  // thread log — the `proposal` ThreadEvent the tool itself writes is the
+  // durable record.
+  | { type: 'proposal'; id: string; path: string; rationale: string }
   | { type: 'done'; output: unknown; usage: Usage; sessionId?: string }
   | { type: 'error'; message: string };
 

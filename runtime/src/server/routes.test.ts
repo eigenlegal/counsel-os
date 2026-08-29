@@ -327,6 +327,40 @@ describe('POST /threads/:id/steps', () => {
   });
 });
 
+describe('proposal event', () => {
+  test('the step stream carries a proposal frame after propose_update, with the id the log recorded', async () => {
+    const app = appWithFake([
+      {
+        toolCalls: [
+          {
+            name: 'propose_update',
+            input: { path: 'practice/standards/x.md', content: 'NEW TEXT\n', rationale: 'because' },
+          },
+        ],
+        text: 'proposed',
+      },
+    ]);
+    const id = await newThread(app);
+
+    const { res, frames } = await step(app, id, { message: 'remember this' });
+
+    expect(res.status).toBe(200);
+    expect(frames.map(f => f.event)).toEqual(['tool_call', 'tool_result', 'proposal', 'text', 'done']);
+    const proposalFrame = frames.find(f => f.event === 'proposal')!;
+    expect(proposalFrame.data['path']).toBe('practice/standards/x.md');
+    expect(proposalFrame.data['rationale']).toBe('because');
+
+    const { events } = await store.get('default', id);
+    const logged = events.find(
+      (ev): ev is Extract<ThreadEvent, { t: 'proposal' }> => 't' in ev && ev.t === 'proposal',
+    )!;
+    expect(proposalFrame.data['id']).toBe(logged.id);
+
+    // Not double-logged: the log has the one ThreadEvent the tool wrote.
+    expect(events.map(kindOf)).toEqual(['user', 'step', 'tool_call', 'proposal', 'tool_result', 'text', 'done']);
+  });
+});
+
 describe('POST /threads/:id/approve', () => {
   const proposal = {
     toolCalls: [
