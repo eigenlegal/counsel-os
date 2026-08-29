@@ -72,7 +72,7 @@ skills/counsel/SKILL.md   + one preamble paragraph: use the runtime when present
 
 ```ts
 interface ThreadHeader {
-  id: string;                 // ulid
+  id: string;                 // uuid v4
   title?: string;
   matter?: string;            // vault-relative matter path
   createdAt: string; updatedAt: string;
@@ -98,8 +98,9 @@ interface ThreadStore {
 
 `StepRequest` gains `session?: { id?: string }`; `StepEvent` `done` gains
 `sessionId?: string`. Claude harness passes `resume: session.id` and reports
-`session_id` from the result; Codex harness uses `resumeThread(id)` and reports
-`thread_id` from `thread.started`. Direct providers ignore both.
+`session_id` from the `system/init` message; Codex harness uses
+`resumeThread(id)` and reports `thread_id` from `thread.started`. Direct
+providers ignore both.
 
 ### 4.3 Loop
 
