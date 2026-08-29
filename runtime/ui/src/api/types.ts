@@ -145,3 +145,74 @@ export interface ConflictBody {
   conflict?: { expected: string; actual: string };
   proposal?: Extract<ThreadEvent, { t: 'proposal' }> | null;
 }
+
+/** One entry of `GET /vault/list`. `path` is vault-relative, from the root
+ * — the tree needs the whole path to ask for the level below it. */
+export interface VaultEntry {
+  path: string;
+  kind: 'file' | 'dir';
+}
+
+/** `GET /vault/read` — 200. `version` is the content hash the vault stores;
+ * it is what a proposal's `expectedVersion` is compared against. */
+export interface VaultFile {
+  path: string;
+  content: string;
+  version: string;
+}
+
+/** One provider entry of `providers.yaml`, as `RegistryFile` parses it.
+ * COPIED from `runtime/src/providers/registry.ts`; a change there is a
+ * change here. */
+export interface RegistryEntry {
+  id: string;
+  baseURL?: string;
+  apiKeyEnv?: string;
+  capabilities?: Partial<Capabilities>;
+}
+
+/** `providers.yaml` as data: what `GET /settings` hands out and `PUT
+ * /settings` takes back. `tasks` is left opaque — the form edits it as JSON
+ * and the server owns its schema. */
+export interface RegistryFileData {
+  default?: string;
+  providers?: RegistryEntry[];
+  tasks?: Record<string, unknown>;
+  stepTimeoutMs?: number;
+}
+
+/** `GET /settings` and a successful `PUT /settings` (spec §4.1). `registry`
+ * is the file as configured; `effective` is the runtime it produced — they
+ * differ, because the built-ins and `--fake` appear in no file. */
+export interface SettingsView {
+  file: string;
+  registry: RegistryFileData;
+  effective: {
+    default: string | null;
+    stepTimeoutMs: number;
+    providers: ProviderInfo[];
+  };
+}
+
+/** One zod issue as a 400 reports it. `path` locates the field the form
+ * puts the message under. */
+export interface SettingsIssue {
+  path?: (string | number)[];
+  message: string;
+}
+
+/** `PUT /settings` — 400 (schema) or 422 (the registry parsed but would not
+ * build). Only the 400 carries `issues`. */
+export interface SettingsErrorBody {
+  error: string;
+  issues?: SettingsIssue[];
+}
+
+/** `POST /settings/test` — always 200 for a known provider; `ok: false`
+ * with the message is the answer "this provider does not work". */
+export interface TestResult {
+  ok: boolean;
+  usage?: Usage;
+  error?: string;
+  ms: number;
+}

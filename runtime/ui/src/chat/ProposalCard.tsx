@@ -85,6 +85,13 @@ export function ProposalCard({ threadId, proposal, onReload }: ProposalCardProps
       <header className="proposal-head">
         <span className="proposal-label">proposed update</span>
         <code className="proposal-path">{proposal.path}</code>
+        {/* The file as it stands right now, which is the question a reviewer
+            actually has: the card shows what the model WANTS the file to
+            say, and approving is only safe once you have seen what it says
+            today. Same tab, same fragment router — Back returns here. */}
+        <a className="proposal-open" href={`#/vault?path=${encodeURIComponent(proposal.path)}`}>
+          open in vault
+        </a>
         <span className={`badge badge-${status}`}>{status}</span>
       </header>
 

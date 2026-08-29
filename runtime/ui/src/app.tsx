@@ -5,20 +5,41 @@ import { onUnauthorized } from './api/unauthorized';
 import type { Health, ThreadHeader } from './api/types';
 import { Chat } from './chat/Chat';
 import { ThreadList } from './chat/ThreadList';
+import { Settings } from './settings/Settings';
+import { Vault } from './vault/Vault';
 
-/** The three surfaces the fragment routes between. Two of them are stubs
- * until the vault and settings screens land. */
+/** The three surfaces the fragment routes between. */
 type Route = 'chat' | 'vault' | 'settings';
 
 /** Spec §5, word for word: the page cannot fix this itself — the token is
  * printed by the process that owns it. */
 export const TOKEN_MESSAGE = 'token missing or stale — restart `counsel-os serve` and open the printed URL';
 
+/** The fragment split into the part that picks a surface and the part that
+ * parameterizes it — `#/vault?path=matters/acme/notes.md`. The query lives
+ * in the FRAGMENT, not the URL's own query string: the token lives there
+ * too, and neither is anything the server should ever see. */
+export function parseHash(hash: string): { route: Route; params: URLSearchParams } {
+  const raw = hash.replace(/^#/, '');
+  const cut = raw.indexOf('?');
+  const path = cut === -1 ? raw : raw.slice(0, cut);
+  const params = new URLSearchParams(cut === -1 ? '' : raw.slice(cut + 1));
+  if (path === '/vault' || path.startsWith('/vault/')) return { route: 'vault', params };
+  if (path === '/settings' || path.startsWith('/settings/')) return { route: 'settings', params };
+  return { route: 'chat', params };
+}
+
 export function routeFromHash(hash: string): Route {
-  const path = hash.replace(/^#/, '');
-  if (path === '/vault' || path.startsWith('/vault/')) return 'vault';
-  if (path === '/settings' || path.startsWith('/settings/')) return 'settings';
-  return 'chat';
+  return parseHash(hash).route;
+}
+
+/** The vault file the fragment names, or `null` for "the tree, nothing
+ * open". */
+export function vaultPathFromHash(hash: string): string | null {
+  const { route, params } = parseHash(hash);
+  if (route !== 'vault') return null;
+  const path = params.get('path');
+  return path === null || path === '' ? null : path;
 }
 
 function detail(err: unknown): string {
@@ -32,6 +53,7 @@ function byRecent(a: ThreadHeader, b: ThreadHeader): number {
 
 export function App(): JSX.Element {
   const [route, setRoute] = useState<Route>(() => routeFromHash(globalThis.location.hash));
+  const [vaultPath, setVaultPath] = useState<string | null>(() => vaultPathFromHash(globalThis.location.hash));
   // The token bootstrap has already run (`main.tsx`), so a token that is
   // missing NOW is missing for good — the page can say so before it makes a
   // single request rather than after a failed one.
@@ -43,7 +65,10 @@ export function App(): JSX.Element {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    const onHashChange = (): void => setRoute(routeFromHash(globalThis.location.hash));
+    const onHashChange = (): void => {
+      setRoute(routeFromHash(globalThis.location.hash));
+      setVaultPath(vaultPathFromHash(globalThis.location.hash));
+    };
     globalThis.addEventListener('hashchange', onHashChange);
     return () => globalThis.removeEventListener('hashchange', onHashChange);
   }, []);
@@ -163,22 +188,21 @@ export function App(): JSX.Element {
             )}
           </main>
         </div>
+      ) : route === 'vault' ? (
+        // The fragment owns which file is open, so a proposal card's link
+        // and a click in the tree land in exactly the same state — and the
+        // browser's Back button walks between files for free.
+        <Vault
+          path={vaultPath}
+          onOpen={path => {
+            globalThis.location.hash = `#/vault?path=${encodeURIComponent(path)}`;
+          }}
+        />
       ) : (
-        <main className="column-main">
-          <ComingNext surface={route} />
+        <main className="column-main settings-page">
+          <Settings health={health} />
         </main>
       )}
     </div>
-  );
-}
-
-/** The vault and settings surfaces are the next build step (spec §7); the
- * routes exist now so the shell they land in does not change under them. */
-function ComingNext({ surface }: { surface: 'vault' | 'settings' }): JSX.Element {
-  return (
-    <section className="page-message">
-      <h2>{surface === 'vault' ? 'Vault' : 'Settings'}</h2>
-      <p className="muted">Coming next.</p>
-    </section>
   );
 }
