@@ -55,7 +55,12 @@ export type StepEvent =
   // durable record.
   | { type: 'proposal'; id: string; path: string; rationale: string }
   | { type: 'done'; output: unknown; usage: Usage; sessionId?: string }
-  | { type: 'error'; message: string };
+  // `text` is the model's RAW answer when a typed step could not honor its
+  // schema (web-ui spec §4.3): the request failed, so this is an `error`, but
+  // the words the model produced are still worth showing. Providers fill it
+  // only on a structured-output failure — never on a transport or harness
+  // error, where there is no answer to keep.
+  | { type: 'error'; message: string; text?: string };
 
 export function isTerminal(e: StepEvent): boolean {
   return e.type === 'done' || e.type === 'error';

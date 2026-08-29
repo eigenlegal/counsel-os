@@ -184,6 +184,24 @@ async function* withRelease(source: AsyncIterable<StreamEvent>, release: () => v
   }
 }
 
+/** The comment line a typed stream opens with. A client that sees it knows the
+ * missing `text` frames are suppression, not silence. */
+export const TYPED_PREAMBLE = ': typed\n\n';
+
+/**
+ * Drops `text` events (web-ui spec §4.3). Under an `outputSchema` the deltas
+ * are the model working its way toward JSON, not an answer to show, and a UI
+ * that streamed them would render half a JSON object and then replace it.
+ * The thread log still keeps them — the loop writes them upstream of this —
+ * and a structured-output failure hands the raw answer back on the terminal
+ * `error`'s own `text`, which is NOT dropped.
+ */
+async function* withoutText(source: AsyncIterable<StreamEvent>): AsyncIterable<StreamEvent> {
+  for await (const ev of source) {
+    if (ev.type !== 'text') yield ev;
+  }
+}
+
 /**
  * The whole HTTP surface (spec §4.5) as a plain fetch handler: no socket, no
  * Bun.serve, so the route tests drive it directly with `Request` objects.
@@ -266,7 +284,10 @@ export function createApp(deps: ServerDeps): App {
         ...(input.provider === undefined ? {} : { providerId: input.provider }),
         ...(outputSchema === undefined ? {} : { outputSchema }),
       });
-      return await sseFromEvents(withRelease(events, release));
+      const stream = withRelease(events, release);
+      return outputSchema === undefined
+        ? await sseFromEvents(stream)
+        : await sseFromEvents(withoutText(stream), { preamble: TYPED_PREAMBLE });
     } catch (err) {
       release();
       throw err;

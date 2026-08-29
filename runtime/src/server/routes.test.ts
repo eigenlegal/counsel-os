@@ -76,6 +76,9 @@ function parseSse(text: string): Frame[] {
   return text
     .split('\n\n')
     .filter(block => block.trim() !== '')
+    // SSE comment lines (`: typed`) are not frames — the typed-answer
+    // preamble is one, and a client ignores it the same way this does.
+    .filter(block => !block.startsWith(':'))
     .map(block => {
       const lines = block.split('\n');
       const eventLine = lines.find(l => l.startsWith('event: '))!;
@@ -90,10 +93,11 @@ async function newThread(app: App): Promise<string> {
   return ((await res.json()) as { id: string }).id;
 }
 
-async function step(app: App, id: string, body: Record<string, unknown>): Promise<{ res: Response; frames: Frame[] }> {
+async function step(app: App, id: string, body: Record<string, unknown>): Promise<{ res: Response; frames: Frame[]; body: string }> {
   const res = await call(app, 'POST', `/threads/${id}/steps`, { body });
-  const frames = res.headers.get('content-type') === 'text/event-stream' ? parseSse(await res.text()) : [];
-  return { res, frames };
+  const sse = res.headers.get('content-type') === 'text/event-stream';
+  const raw = sse ? await res.text() : '';
+  return { res, frames: sse ? parseSse(raw) : [], body: raw };
 }
 
 function kindOf(ev: ThreadEvent): string {
@@ -327,6 +331,20 @@ describe('POST /threads/:id/steps', () => {
   });
 });
 
+/** A provider that answers a typed request in prose — the shape the fallback
+ * exists for. */
+function failingTyped(text: string): ModelProvider {
+  return {
+    id: 'typed/fail',
+    kind: 'direct',
+    capabilities: { tools: true, caching: false, thinking: false, contextTokens: 1_000_000, auth: 'local' },
+    async *run(): AsyncIterable<StepEvent> {
+      yield { type: 'text', text };
+      yield { type: 'error', message: 'structured output failed validation: not an object', text };
+    },
+  };
+}
+
 describe('typed answers', () => {
   test('an outputSchema on the request reaches the provider, and done carries the parsed output', async () => {
     const app = appWithFake([{ text: 'ok', output: { files: ['a'] } }]);
@@ -344,6 +362,48 @@ describe('typed answers', () => {
     expect(res.status).toBe(200);
     const done = frames.find(f => f.event === 'done')!;
     expect(done.data['output']).toEqual({ files: ['a'] });
+  });
+
+  test('a typed step does not stream raw text deltas, and says so with a `: typed` comment', async () => {
+    // Under a schema the deltas are the model working toward the JSON, not an
+    // answer to show; the thread log still keeps them (web-ui spec §4.3).
+    const app = appWithFake([{ text: 'thinking out loud', output: { files: ['a'] } }]);
+    const id = await newThread(app);
+
+    const { res, frames, body } = await step(app, id, {
+      message: 'list the files',
+      outputSchema: { type: 'object', properties: { files: { type: 'array', items: { type: 'string' } } }, required: ['files'] },
+    });
+
+    expect(res.status).toBe(200);
+    expect(body.startsWith(': typed\n\n')).toBe(true);
+    expect(frames.map(f => f.event)).toEqual(['done']);
+    // Dropped from the wire, kept in the log.
+    const log = (await (await call(app, 'GET', `/threads/${id}`)).json()) as { events: ThreadEvent[] };
+    expect(log.events.map(kindOf)).toContain('text');
+  });
+
+  test('an untyped step still streams its text and carries no preamble', async () => {
+    const app = appWithFake([{ text: 'thinking out loud' }]);
+    const id = await newThread(app);
+
+    const { frames, body } = await step(app, id, { message: 'hi' });
+
+    expect(body.startsWith(':')).toBe(false);
+    expect(frames.map(f => f.event)).toEqual(['text', 'done']);
+  });
+
+  test('a typed step whose answer fails validation still delivers the raw text on the error', async () => {
+    const app = appWith([failingTyped('I cannot answer in JSON.')]);
+    const id = await newThread(app);
+
+    const { frames } = await step(app, id, {
+      message: 'list the files',
+      outputSchema: { type: 'object', properties: { files: { type: 'array' } }, required: ['files'] },
+    });
+
+    expect(frames.map(f => f.event)).toEqual(['error']);
+    expect(frames[0]!.data['text']).toBe('I cannot answer in JSON.');
   });
 
   test('an invalid outputSchema is 400 and never reaches the provider', async () => {

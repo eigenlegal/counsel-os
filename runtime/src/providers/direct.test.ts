@@ -295,5 +295,9 @@ describe('DirectProvider', () => {
     const last = events.at(-1) as any;
     expect(last.type).toBe('error');
     expect(last.message).toContain('structured output failed validation');
+    // The raw answer is not thrown away: the model DID say something, and a
+    // reader who asked for a typed answer still deserves to see it (web-ui
+    // spec §4.3). The deltas are buffered as they stream and attached here.
+    expect(last.text).toBe('{\"a\":\"no\"}');
   });
 });

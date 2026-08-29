@@ -55,7 +55,13 @@ export function mapClaudeMessage(raw: unknown, outputSchema?: ZodType<unknown>):
       // fixture shape.
       const structuredOutput = 'structured_output' in msg ? msg.structured_output : msg.output;
       const parsed = outputSchema.safeParse(structuredOutput);
-      if (!parsed.success) return [{ type: 'error', message: `structured output failed validation: ${parsed.error.message}` }];
+      if (!parsed.success) {
+        // `msg.result` is the turn's raw text. The typed request was not
+        // honored — so this stays an error — but the answer the model DID
+        // give rides along for the caller to show (web-ui spec §4.3).
+        const raw = typeof msg.result === 'string' && msg.result !== '' ? msg.result : undefined;
+        return [{ type: 'error', message: `structured output failed validation: ${parsed.error.message}`, ...(raw === undefined ? {} : { text: raw }) }];
+      }
       return [{ type: 'done', output: parsed.data, usage: u }];
     }
     return [{ type: 'done', output: typeof msg.result === 'string' ? msg.result : null, usage: u }];

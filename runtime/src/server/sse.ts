@@ -13,6 +13,12 @@ export interface SseOptions {
   coalesceMs?: number;
   /** Buffered characters after which text is flushed regardless of the timer. */
   maxChars?: number;
+  /** Raw bytes written once, before any frame. Meant for an SSE comment line
+   * (`': typed\n\n'`) — a client ignores it, so it says something about the
+   * stream without inventing a frame type. Written even when the source dies
+   * before its first event, so what it announces is true of the whole
+   * stream. */
+  preamble?: string;
 }
 
 /** Spec §2: Ollama streams per token; the UI must not. */
@@ -77,6 +83,10 @@ export async function sseFromEvents(
       let buffer = '';
       let bufferRunId: string | undefined;
       let timer: ReturnType<typeof setTimeout> | undefined;
+
+      if (opts.preamble !== undefined && opts.preamble !== '') {
+        controller.enqueue(encoder.encode(opts.preamble));
+      }
 
       const send = (ev: StreamEvent): void => {
         if (closed) return;
