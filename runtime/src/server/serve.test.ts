@@ -1,9 +1,17 @@
-import { afterEach, describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, spyOn, test } from 'bun:test';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DEFAULT_STEP_TIMEOUT_MS } from '../loop/counsel-loop';
-import { counselHome, runtimeFilePath, startServer, type RunningServer, type RuntimeFile } from './serve';
+import {
+  browserCommand,
+  counselHome,
+  openUrl,
+  runtimeFilePath,
+  startServer,
+  type RunningServer,
+  type RuntimeFile,
+} from './serve';
 
 let running: RunningServer | undefined;
 
@@ -167,5 +175,133 @@ describe('startServer', () => {
       await first.stop();
       await second.stop();
     }
+  });
+});
+
+describe('serve --fake', () => {
+  test('registers fake/fake and makes it the default', async () => {
+    const { vault, pluginRoot, env } = fixture();
+    running = await startServer({
+      vault,
+      pluginRoot,
+      port: 0,
+      env,
+      registryFile: join(vault, 'none.yaml'),
+      fake: [{ text: 'This is the fake provider.' }],
+    });
+
+    const res = await fetch(`${running.url}/health`, { headers: { authorization: `Bearer ${running.token}` } });
+    const health = (await res.json()) as { default: string; providers: Array<{ id: string }> };
+    expect(health.default).toBe('fake/fake');
+    expect(health.providers.map(p => p.id)).toContain('fake/fake');
+  });
+
+  test('the fake answers a step, so no model is ever called', async () => {
+    const { vault, pluginRoot, env } = fixture();
+    running = await startServer({
+      vault,
+      pluginRoot,
+      port: 0,
+      env,
+      registryFile: join(vault, 'none.yaml'),
+      fake: [{ text: 'This is the fake provider.' }],
+    });
+    const auth = { authorization: `Bearer ${running.token}` };
+
+    const created = await fetch(`${running.url}/threads`, { method: 'POST', headers: auth });
+    const { id } = (await created.json()) as { id: string };
+    const step = await fetch(`${running.url}/threads/${id}/steps`, {
+      method: 'POST',
+      headers: { ...auth, 'content-type': 'application/json' },
+      body: JSON.stringify({ message: 'hello' }),
+    });
+    expect(step.status).toBe(200);
+    expect(await step.text()).toContain('This is the fake provider.');
+  });
+});
+
+describe('the printed line', () => {
+  test('is the token URL, exactly once, and nothing else prints the token', async () => {
+    const { vault, pluginRoot, env } = fixture();
+    const logged: string[] = [];
+    const log = spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
+      logged.push(args.map(String).join(' '));
+    });
+    try {
+      running = await startServer({ vault, pluginRoot, port: 0, env, registryFile: join(vault, 'none.yaml') });
+    } finally {
+      log.mockRestore();
+    }
+
+    expect(logged).toEqual([
+      `counsel-os runtime on http://127.0.0.1:${running.port}/#token=${running.token} (vault: ${vault})`,
+    ]);
+    expect(logged[0]).toContain('#token=');
+    expect(running.tokenUrl).toBe(`http://127.0.0.1:${running.port}/#token=${running.token}`);
+  });
+});
+
+describe('serving the UI', () => {
+  test('the shell loads with no token while /health still needs one', async () => {
+    const { vault, pluginRoot, env } = fixture();
+    const dist = mkdtempSync(join(tmpdir(), 'serve-dist-'));
+    writeFileSync(join(dist, 'index.html'), '<!doctype html><title>counsel-os</title>\n', 'utf8');
+    running = await startServer({ vault, pluginRoot, port: 0, env, registryFile: join(vault, 'none.yaml'), distDir: dist });
+
+    const page = await fetch(`${running.url}/`);
+    expect(page.status).toBe(200);
+    expect(await page.text()).toContain('counsel-os');
+    expect((await fetch(`${running.url}/health`)).status).toBe(401);
+  });
+
+  test('an unbuilt UI serves the placeholder rather than failing', async () => {
+    const { vault, pluginRoot, env } = fixture();
+    running = await startServer({
+      vault,
+      pluginRoot,
+      port: 0,
+      env,
+      registryFile: join(vault, 'none.yaml'),
+      distDir: join(tmpdir(), 'serve-no-such-dist'),
+    });
+    const page = await fetch(`${running.url}/`);
+    expect(page.status).toBe(200);
+    expect(await page.text()).toContain('bun run ui:build');
+  });
+});
+
+describe('--open', () => {
+  test('uses the platform opener, and never one on Windows', () => {
+    expect(browserCommand('darwin')).toBe('open');
+    expect(browserCommand('linux')).toBe('xdg-open');
+    expect(browserCommand('win32')).toBeNull();
+    expect(browserCommand('freebsd' as NodeJS.Platform)).toBeNull();
+  });
+
+  test('spawns the opener detached, and does not spawn at all on Windows', () => {
+    const calls: Array<{ cmd: string[]; opts: Record<string, unknown> }> = [];
+    let unrefs = 0;
+    const spawn = (cmd: string[], opts: Record<string, unknown>) => {
+      calls.push({ cmd, opts });
+      return { unref: () => { unrefs += 1; } };
+    };
+
+    expect(openUrl('http://127.0.0.1:7431/#token=abc', { platform: 'darwin', spawn })).toBe(true);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.cmd).toEqual(['open', 'http://127.0.0.1:7431/#token=abc']);
+    // Nothing of the child's is inherited: the token is in argv, and a child
+    // writing to this process's stdout would print it a second time.
+    expect(calls[0]!.opts.stdio).toEqual(['ignore', 'ignore', 'ignore']);
+    expect(unrefs).toBe(1);
+
+    expect(openUrl('http://127.0.0.1:7431/#token=abc', { platform: 'win32', spawn })).toBe(false);
+    expect(calls).toHaveLength(1);
+  });
+
+  test('a failing opener does not take the server down', () => {
+    const spawn = (): never => {
+      throw new Error('no such file or directory: open');
+    };
+    expect(openUrl('http://127.0.0.1:7431/', { platform: 'darwin', spawn })).toBe(false);
   });
 });

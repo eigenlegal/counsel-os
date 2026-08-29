@@ -7,6 +7,7 @@ import type { ThreadEvent, ThreadHeader } from '../threads/store';
 import { normalizeVaultPath } from '../vault/knowledge-paths';
 import { isAuthorized } from './auth';
 import { sseFromEvents, type StreamEvent } from './sse';
+import { serveStatic } from './static';
 
 export interface ServerDeps extends CounselLoopDeps {
   /** The bearer token every request must present (spec §4.5). */
@@ -14,9 +15,27 @@ export interface ServerDeps extends CounselLoopDeps {
   /** The provider `GET /health` reports as the default. Defaults to whatever
    * the router resolves with no task. */
   defaultProviderId?: string;
+  /** The built UI's `dist/` (spec §4.2). Omitted → no static serving at all,
+   * and a non-API path is the 404 it has always been. */
+  distDir?: string;
 }
 
 export type App = (req: Request) => Promise<Response>;
+
+/**
+ * The first path segment of every route that needs the bearer token. It is
+ * the WHOLE definition of the API surface: anything not on this list is
+ * static, served with no credential, so a new route whose prefix is missing
+ * here would be reachable by anyone who can reach the port.
+ */
+export const API_PREFIXES: readonly string[] = ['health', 'threads', 'runs', 'vault', 'settings'];
+
+/** True when `pathname` belongs to the API (and so needs a token). `/` and
+ * every client-side route are false. */
+export function isApiPath(pathname: string): boolean {
+  const first = pathname.split('/').find(s => s !== '');
+  return first !== undefined && API_PREFIXES.includes(first);
+}
 
 const CreateThreadBody = z.object({ title: z.string().optional(), matter: z.string().optional() });
 
@@ -209,6 +228,7 @@ async function* withoutText(source: AsyncIterable<StreamEvent>): AsyncIterable<S
  */
 export function createApp(deps: ServerDeps): App {
   const locks = new ThreadLocks();
+  const staticHandler = deps.distDir === undefined ? null : serveStatic(deps.distDir);
 
   /** Runs `fn` with this thread's lock held for its whole duration — for the
    * handlers that finish inside one function. `steps` cannot use it: its work
@@ -379,9 +399,20 @@ export function createApp(deps: ServerDeps): App {
 
   return async function app(req: Request): Promise<Response> {
     try {
+      const url = new URL(req.url);
+
+      // Static first, and only for non-API paths. The page gets its token
+      // from the URL fragment, which never reaches the server, so the shell
+      // and its assets have to load unauthenticated. The API list above is
+      // what keeps that from becoming a hole: a path that is not on it can
+      // only ever reach `serveStatic`, which reads nothing outside `dist/`.
+      if (!isApiPath(url.pathname)) {
+        const res = staticHandler === null ? null : await staticHandler(req);
+        return res ?? fail(404, `no route for ${req.method} ${url.pathname}`);
+      }
+
       if (!isAuthorized(req, deps.token)) return fail(401, 'unauthorized');
 
-      const url = new URL(req.url);
       const segments = url.pathname.split('/').filter(s => s !== '');
       const [first, second, third] = segments;
       const { method } = req;

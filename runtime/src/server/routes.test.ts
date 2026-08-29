@@ -839,3 +839,56 @@ describe('runs', () => {
     expect((await call(app, 'DELETE', `/runs/${randomUUID()}`)).status).toBe(404);
   });
 });
+
+describe('static UI', () => {
+  /** A built `dist/` next to the fixtures, plus an app that serves it. */
+  function appWithDist(): { app: App; dist: string } {
+    const dist = mkdtempSync(join(tmpdir(), 'routes-dist-'));
+    mkdirSync(join(dist, 'assets'), { recursive: true });
+    writeFileSync(join(dist, 'index.html'), '<!doctype html><title>counsel-os</title>\n', 'utf8');
+    writeFileSync(join(dist, 'assets', 'app.js'), 'console.log(1)\n', 'utf8');
+    return { app: appWith([new FakeModelProvider([{ text: 'hi' }])], { distDir: dist }), dist };
+  }
+
+  test('the page and its assets need no token; the API still does', async () => {
+    const { app } = appWithDist();
+
+    const page = await call(app, 'GET', '/', { token: null });
+    expect(page.status).toBe(200);
+    expect(page.headers.get('content-type')).toContain('text/html');
+    expect(await page.text()).toContain('counsel-os');
+
+    const asset = await call(app, 'GET', '/assets/app.js', { token: null });
+    expect(asset.status).toBe(200);
+    expect(asset.headers.get('cache-control')).toBe('public, max-age=31536000, immutable');
+
+    // The token lives in the URL fragment, which the browser never sends. So
+    // the shell has to load unauthenticated — and every API route must not.
+    expect((await call(app, 'GET', '/health', { token: null })).status).toBe(401);
+    expect((await call(app, 'GET', '/threads', { token: null })).status).toBe(401);
+    expect((await call(app, 'GET', '/runs', { token: null })).status).toBe(401);
+    expect((await call(app, 'GET', '/vault/list', { token: null })).status).toBe(401);
+    expect((await call(app, 'GET', '/settings', { token: null })).status).toBe(401);
+  });
+
+  test('a client-side route falls back to the shell', async () => {
+    const { app } = appWithDist();
+    const res = await call(app, 'GET', '/threads-ui/abc', { token: null });
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain('counsel-os');
+  });
+
+  test('a write to a static path is a 404, not a 401 and not the shell', async () => {
+    const { app } = appWithDist();
+    const res = await call(app, 'POST', '/', { token: null });
+    expect(res.status).toBe(404);
+    expect(((await res.json()) as { error: string }).error).toContain('no route for POST /');
+  });
+
+  test('without a dist directory an unknown path is still a 404', async () => {
+    // Every route test above builds its app with no `distDir`; that must keep
+    // behaving exactly as it did before static serving existed.
+    expect((await call(appWithFake(), 'GET', '/nope')).status).toBe(404);
+    expect((await call(appWithFake(), 'GET', '/', { token: null })).status).toBe(404);
+  });
+});

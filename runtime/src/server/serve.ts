@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { chmodSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { counselHome } from '../core/home';
+import { FakeModelProvider, type FakeScript } from '../core/fake-provider';
 import { DEFAULT_TENANT } from '../core/types';
 import { DEFAULT_STEP_TIMEOUT_MS } from '../loop/counsel-loop';
 import { loadRegistry } from '../providers/registry';
@@ -33,6 +34,14 @@ export interface StartServerOptions {
   /** The per-step deadline in milliseconds. Beats `stepTimeoutMs` in
    * `providers.yaml`; both beat `DEFAULT_STEP_TIMEOUT_MS`. */
   stepTimeoutMs?: number;
+  /** Registers `fake/fake` with this script and makes it the default (spec
+   * §2, "Fake provider for tests"). The whole runtime then answers without a
+   * model — what the Playwright flow and the screenshots run against. */
+  fake?: FakeScript[];
+  /** Launch the token URL in the operator's browser once the server is up. */
+  open?: boolean;
+  /** The built UI's `dist/`. Omitted → `defaultDistDir()`. */
+  distDir?: string;
   env?: NodeJS.ProcessEnv;
 }
 
@@ -41,6 +50,9 @@ export interface RunningServer {
   token: string;
   vault: string;
   url: string;
+  /** The URL a human opens: the token rides in the fragment, which the
+   * browser keeps to itself. This is the only place the token is printed. */
+  tokenUrl: string;
   /** The thread store this server is serving from — exposed so a caller (and
    * the tests) can see where thread state, including each thread's Codex
    * home, actually lands. */
@@ -83,6 +95,53 @@ export interface RuntimeFile {
  */
 export function defaultPluginRoot(env: NodeJS.ProcessEnv = process.env): string {
   return env.COUNSEL_PLUGIN_ROOT ?? resolve(import.meta.dir, '../../..');
+}
+
+/**
+ * Where `bun run ui:build` puts the built page: `runtime/ui/dist`, relative
+ * to this file rather than to the process's cwd, so `serve` finds it from
+ * anywhere. Unlike the plugin root this is not overridable by environment —
+ * the page ships with the runtime that serves it.
+ */
+export function defaultDistDir(): string {
+  return resolve(import.meta.dir, '../../..', 'runtime', 'ui', 'dist');
+}
+
+/** The command that opens a URL in the desktop browser, or `null` where
+ * there is no safe one. Windows is deliberately `null`: `start` is a shell
+ * builtin, so opening a URL there means handing a string with `#` and `&` in
+ * it to `cmd.exe`, and the string contains the server's token. */
+export function browserCommand(platform: NodeJS.Platform): string | null {
+  if (platform === 'darwin') return 'open';
+  if (platform === 'linux') return 'xdg-open';
+  return null;
+}
+
+type Spawner = (cmd: string[], opts: { stdio: ['ignore', 'ignore', 'ignore'] }) => { unref(): void };
+
+/**
+ * Opens `url` in the operator's browser. Returns whether it spawned
+ * anything.
+ *
+ * Detached and silent on purpose: the child outlives nothing (`unref`, so it
+ * never holds the runtime open), and all three of its streams are `ignore`
+ * — the URL carries the token, and a browser writing diagnostics to this
+ * process's stdout would print it a second time, into whatever log the
+ * operator is capturing.
+ *
+ * Opening a browser is a convenience. A missing `xdg-open` must not take
+ * down a server that is already listening, so a failure is swallowed.
+ */
+export function openUrl(url: string, opts: { platform?: NodeJS.Platform; spawn?: Spawner } = {}): boolean {
+  const cmd = browserCommand(opts.platform ?? process.platform);
+  if (cmd === null) return false;
+  const spawn = opts.spawn ?? ((c, o) => Bun.spawn(c, o));
+  try {
+    spawn([cmd, url], { stdio: ['ignore', 'ignore', 'ignore'] }).unref();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -169,10 +228,15 @@ export async function startServer(opts: StartServerOptions = {}): Promise<Runnin
   const env = opts.env ?? process.env;
   const vaultRoot = resolveVaultOrExit(opts);
   const pluginRoot = opts.pluginRoot ?? defaultPluginRoot(env);
+  // `--fake` puts the canned provider in front of the registry's own, as an
+  // override rather than a config change: nothing is written to
+  // `providers.yaml`, so the operator's real setup is untouched.
+  const fake = opts.fake === undefined ? undefined : new FakeModelProvider(opts.fake);
   const { providers, router, defaultId, stepTimeoutMs } = loadRegistry({
     vaultRoot,
     env,
     ...(opts.registryFile === undefined ? {} : { file: opts.registryFile }),
+    ...(fake === undefined ? {} : { extraProviders: [fake], defaultId: fake.id }),
   });
 
   const token = randomBytes(32).toString('hex');
@@ -190,6 +254,7 @@ export async function startServer(opts: StartServerOptions = {}): Promise<Runnin
     providers,
     router,
     defaultProviderId: defaultId,
+    distDir: opts.distDir ?? defaultDistDir(),
     // Explicit option first, then the registry file, then the default.
     stepTimeoutMs: opts.stepTimeoutMs ?? stepTimeoutMs ?? DEFAULT_STEP_TIMEOUT_MS,
   });
@@ -225,13 +290,21 @@ export async function startServer(opts: StartServerOptions = {}): Promise<Runnin
   process.on('SIGTERM', onSignal);
   process.on('exit', removeFile);
 
-  console.log(`counsel-os runtime on http://${HOSTNAME}:${port} (vault: ${vaultRoot})`);
+  const url = `http://${HOSTNAME}:${port}`;
+  const tokenUrl = `${url}/#token=${token}`;
+
+  // The one line that carries the token, and the only one: it is what the
+  // operator clicks. `runtime.json` (0600) is the other copy; nothing else
+  // logs it.
+  console.log(`counsel-os runtime on ${tokenUrl} (vault: ${vaultRoot})`);
+  if (opts.open) openUrl(tokenUrl);
 
   return {
     port,
     token,
     vault: vaultRoot,
-    url: `http://${HOSTNAME}:${port}`,
+    url,
+    tokenUrl,
     store,
     async stop(): Promise<void> {
       process.off('SIGINT', onSignal);
