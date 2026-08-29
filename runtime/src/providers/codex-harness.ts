@@ -1,4 +1,4 @@
-import { chmodSync, constants, copyFileSync, existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, statSync } from 'node:fs';
+import { chmodSync, constants, copyFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, realpathSync, rmSync, statSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join, resolve, sep } from 'node:path';
 import type { ZodType } from 'zod';
@@ -300,6 +300,13 @@ function normalizePath(p: string): string {
  * before the enclosing directory's 0700 was tightened — would otherwise
  * publish the operator's credentials to every local account.
  *
+ * A symlink at the destination is removed rather than written through: both
+ * `copyFileSync` and `chmodSync` follow links, so a planted one would send
+ * the live credential wherever it points. Everything after that point is
+ * best-effort and logs to stderr instead of throwing — a home without a
+ * usable credential still runs, and the CLI's own auth error says more than
+ * an exception thrown from here would.
+ *
  * Initial copy (destination doesn't exist yet) uses
  * `constants.COPYFILE_EXCL`, which makes `copyFileSync` fail rather than
  * write through the destination path if something already occupies it
@@ -325,6 +332,17 @@ function seedCodexAuth(homeDir: string, realHome: string): void {
     }
     return;
   }
+  // A symlink at the destination is not a copy of anything — it is a pointer
+  // someone else chose. `copyFileSync` and `chmodSync` both FOLLOW it, so the
+  // re-seed below would write the operator's live credentials through it and
+  // then chmod whatever it aims at. Drop it and fall through to the EXCL
+  // create path, which refuses to write through anything at all.
+  try {
+    if (lstatSync(authDest).isSymbolicLink()) rmSync(authDest, { force: true });
+  } catch {
+    // Nothing at the destination yet — the create path below handles it.
+  }
+
   if (!existsSync(authDest)) {
     try {
       copyFileSync(authSrc, authDest, constants.COPYFILE_EXCL);
@@ -334,13 +352,23 @@ function seedCodexAuth(homeDir: string, realHome: string): void {
     }
     return;
   }
-  if (statSync(authSrc).mtimeMs > statSync(authDest).mtimeMs) {
-    copyFileSync(authSrc, authDest);
+
+  // Seeding is best-effort: a home that ends up without a usable credential
+  // still runs, and the CLI reports its own auth failure with far better
+  // context than a thrown error from here, which would take down a step that
+  // may not have needed the credential at all.
+  try {
+    if (statSync(authSrc).mtimeMs > statSync(authDest).mtimeMs) {
+      copyFileSync(authSrc, authDest);
+    }
+    // Unconditional, not just after a re-copy: an overwrite keeps the
+    // destination's existing mode, and a copy made before this rule existed
+    // still has whatever mode the source had.
+    chmodSync(authDest, 0o600);
+  } catch (err) {
+    const why = err instanceof Error ? err.message : String(err);
+    console.error(`counsel-os: could not refresh ${authDest}: ${why}`);
   }
-  // Unconditional, not just after a re-copy: an overwrite keeps the
-  // destination's existing mode, and a copy made before this rule existed
-  // still has whatever mode the source had.
-  chmodSync(authDest, 0o600);
 }
 
 /**

@@ -1,4 +1,4 @@
-import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, lstatSync, mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, test } from 'bun:test';
@@ -281,6 +281,27 @@ describe('resolveCodexHome — credential re-seed', () => {
     resolveCodexHome({ homeDir, realHome });
     expect(readFileSync(join(homeDir, 'auth.json'), 'utf8')).toBe('{"token":"second"}');
     expect(statSync(join(homeDir, 'auth.json')).mode & 0o777).toBe(0o600);
+  });
+
+  test('a symlink planted at the destination is replaced by a real 0600 copy', () => {
+    const realHome = mkdtempSync(join(tmpdir(), 'real-home-'));
+    const homeDir = mkdtempSync(join(tmpdir(), 'persist-home-'));
+    const elsewhere = mkdtempSync(join(tmpdir(), 'elsewhere-'));
+    writeFileSync(join(realHome, 'auth.json'), '{"token":"real"}');
+    // Someone else's file, aimed at by a link where our copy belongs.
+    const target = join(elsewhere, 'target.json');
+    writeFileSync(target, 'NOT OURS');
+    symlinkSync(target, join(homeDir, 'auth.json'));
+
+    resolveCodexHome({ homeDir, realHome });
+
+    // A real file, not a link: copyFileSync and chmodSync both FOLLOW links,
+    // so writing through it would have leaked the credential to `target`.
+    expect(lstatSync(join(homeDir, 'auth.json')).isSymbolicLink()).toBe(false);
+    expect(readFileSync(join(homeDir, 'auth.json'), 'utf8')).toBe('{"token":"real"}');
+    expect(statSync(join(homeDir, 'auth.json')).mode & 0o777).toBe(0o600);
+    // The link's target was never touched.
+    expect(readFileSync(target, 'utf8')).toBe('NOT OURS');
   });
 
   test('a logout removes the copy rather than leaving a revoked credential behind', () => {

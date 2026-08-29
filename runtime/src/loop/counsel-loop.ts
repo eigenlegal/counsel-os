@@ -364,7 +364,9 @@ async function tryPersist(write: () => Promise<void>): Promise<string | null> {
  * thread log and yielded with the run id; `session` (and `done.sessionId`)
  * updates the thread header instead. Consecutive `text` events are the one
  * exception — they reach the caller immediately but are merged into a single
- * logged `text` event. Tool-call durations are measured
+ * logged `text` event, flushed when the run of text ends, when the stream
+ * ends, or when the consumer abandons the step (the `finally`). Tool-call
+ * durations are measured
  * between a `tool_call` and the `tool_result` carrying the same id, and the
  * whole tally is written to the run log once the step completes.
  *
@@ -407,79 +409,94 @@ async function* stream(
     return tryPersist(() => store.append(tenant, opts.threadId, { type: 'text', text: merged, at: nowIso() }));
   };
 
-  for await (const ev of events) {
-    if (ev.type === 'session') {
-      const failed = await tryPersist(() => store.setSession(tenant, opts.threadId, provider.id, ev.id));
+  try {
+    for await (const ev of events) {
+      if (ev.type === 'session') {
+        const failed = await tryPersist(() => store.setSession(tenant, opts.threadId, provider.id, ev.id));
+        if (failed) {
+          yield { type: 'error', message: failed, runId };
+          return;
+        }
+        continue;
+      }
+
+      if (ev.type === 'text') {
+        textBuffer.push(ev.text);
+        yield { ...ev, runId };
+        continue;
+      }
+
+      const flushFailed = await flushText();
+      if (flushFailed) {
+        yield { type: 'error', message: flushFailed, runId };
+        return;
+      }
+
+      const failed = await tryPersist(() => store.append(tenant, opts.threadId, { ...ev, at: nowIso() } as ThreadEvent));
       if (failed) {
+        // The store is broken, so the error event cannot be logged either —
+        // it only reaches the caller.
         yield { type: 'error', message: failed, runId };
         return;
       }
-      continue;
-    }
 
-    if (ev.type === 'text') {
-      textBuffer.push(ev.text);
-      yield { ...ev, runId };
-      continue;
-    }
-
-    const flushFailed = await flushText();
-    if (flushFailed) {
-      yield { type: 'error', message: flushFailed, runId };
-      return;
-    }
-
-    const failed = await tryPersist(() => store.append(tenant, opts.threadId, { ...ev, at: nowIso() } as ThreadEvent));
-    if (failed) {
-      // The store is broken, so the error event cannot be logged either —
-      // it only reaches the caller.
-      yield { type: 'error', message: failed, runId };
-      return;
-    }
-
-    if (ev.type === 'tool_call') {
-      pending.set(ev.id, { name: ev.name, at: Date.now() });
-    } else if (ev.type === 'tool_result') {
-      const call = pending.get(ev.id);
-      pending.delete(ev.id);
-      // A result with no matching call (a harness that reports only the
-      // result, or an id that did not round-trip) still happened — it is
-      // logged with an unknown duration rather than a fabricated 0.
-      toolCalls.push({ name: ev.name, ms: call ? Date.now() - call.at : null, isError: ev.isError === true });
-    } else if (ev.type === 'done') {
-      sawTerminal = true;
-      if (ev.sessionId) {
-        const sessionFailed = await tryPersist(() =>
-          store.setSession(tenant, opts.threadId, provider.id, ev.sessionId as string),
-        );
-        if (sessionFailed) {
-          yield { type: 'error', message: sessionFailed, runId };
-          return;
+      if (ev.type === 'tool_call') {
+        pending.set(ev.id, { name: ev.name, at: Date.now() });
+      } else if (ev.type === 'tool_result') {
+        const call = pending.get(ev.id);
+        pending.delete(ev.id);
+        // A result with no matching call (a harness that reports only the
+        // result, or an id that did not round-trip) still happened — it is
+        // logged with an unknown duration rather than a fabricated 0.
+        toolCalls.push({ name: ev.name, ms: call ? Date.now() - call.at : null, isError: ev.isError === true });
+      } else if (ev.type === 'done') {
+        sawTerminal = true;
+        if (ev.sessionId) {
+          const sessionFailed = await tryPersist(() =>
+            store.setSession(tenant, opts.threadId, provider.id, ev.sessionId as string),
+          );
+          if (sessionFailed) {
+            yield { type: 'error', message: sessionFailed, runId };
+            return;
+          }
         }
+      } else if (ev.type === 'error') {
+        sawTerminal = true;
       }
-    } else if (ev.type === 'error') {
-      sawTerminal = true;
+
+      yield { ...ev, runId };
+
+      if (ev.type === 'done') {
+        recordRun(deps, opts, provider, runId, ev.usage, Date.now() - startedAt, finishToolCalls(toolCalls, pending));
+      }
     }
 
-    yield { ...ev, runId };
-
-    if (ev.type === 'done') {
-      recordRun(deps, opts, provider, runId, ev.usage, Date.now() - startedAt, finishToolCalls(toolCalls, pending));
+    // A stream that ends on text (no terminal event) still has to leave that
+    // text in the log.
+    const tailFailed = await flushText();
+    if (tailFailed) {
+      yield { type: 'error', message: tailFailed, runId };
+      return;
     }
-  }
 
-  // A stream that ends on text (no terminal event) still has to leave that
-  // text in the log.
-  const tailFailed = await flushText();
-  if (tailFailed) {
-    yield { type: 'error', message: tailFailed, runId };
-    return;
-  }
-
-  if (!sawTerminal) {
-    const ev: StepEvent = { type: 'error', message: `${provider.id} ended the step without a done or error event` };
-    await tryPersist(() => store.append(tenant, opts.threadId, { ...ev, at: nowIso() }));
-    yield { ...ev, runId };
+    if (!sawTerminal) {
+      const ev: StepEvent = { type: 'error', message: `${provider.id} ended the step without a done or error event` };
+      await tryPersist(() => store.append(tenant, opts.threadId, { ...ev, at: nowIso() }));
+      yield { ...ev, runId };
+    }
+  } finally {
+    // A consumer that abandons the step — an SSE client hanging up, which
+    // reaches this generator as `return()` — unwinds it at the `yield` in the
+    // text branch above, so neither the mid-loop flush nor the tail flush
+    // ever runs and the whole run of deltas is lost. The partial answer was
+    // real and the user may have seen it, so it belongs in the transcript.
+    //
+    // Nothing here may throw or yield: this runs during an unwind, where a
+    // thrown error would replace the completion that caused it and a `yield`
+    // is illegal outright. A failed flush is reported the way `recordRun`
+    // reports its own — to stderr — and the unwind continues.
+    const failed = await flushText();
+    if (failed) console.error(`counsel-loop: ${failed} (thread ${opts.threadId})`);
   }
 }
 

@@ -613,6 +613,36 @@ describe('runStep — logged text coalescing', () => {
     expect(await logKinds(id)).toEqual(['user', 'step', 'text', 'tool_call', 'tool_result', 'text', 'done']);
   });
 
+  test('an abandoned step still leaves its buffered text in the log', async () => {
+    // The SSE layer's `cancel()` reaches this generator as `return()`, which
+    // unwinds it at the `yield` in the text branch — so nothing after the
+    // loop runs. Without the `finally` flush the deltas the user already saw
+    // would be missing from the transcript entirely.
+    const provider = streaming([
+      { type: 'text', text: 'a' },
+      { type: 'text', text: 'b' },
+    ]);
+    const stalling: ModelProvider = {
+      ...provider,
+      async *run(): AsyncIterable<StepEvent> {
+        yield { type: 'text', text: 'a' };
+        yield { type: 'text', text: 'b' };
+        // The client hangs up here, mid-turn: the step is still in flight.
+        await new Promise(r => setTimeout(r, 10_000));
+        yield { type: 'done', output: null, usage: { inputTokens: 0, outputTokens: 0 } };
+      },
+    };
+    const { id } = await store.create('default', {});
+
+    const it = runStep(deps([stalling]), { threadId: id, message: 'hello' })[Symbol.asyncIterator]();
+    expect((await it.next()).value!.type).toBe('text');
+    expect((await it.next()).value!.type).toBe('text');
+    await it.return?.(undefined);
+
+    expect(await loggedText(id)).toEqual(['ab']);
+    expect(await logKinds(id)).toEqual(['user', 'step', 'text']);
+  });
+
   test('text with no terminal event still reaches the log', async () => {
     const provider = streaming([
       { type: 'text', text: 'a' },
