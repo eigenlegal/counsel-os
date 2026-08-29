@@ -57,6 +57,27 @@ describe('startServer', () => {
     expect(existsSync(file)).toBe(false);
   });
 
+  test('COUNSEL_OS_HOME redirects the codex homes and the provider registry', async () => {
+    const { vault, pluginRoot, env } = fixture();
+    const home = env.COUNSEL_OS_HOME!;
+    // No `registryFile`: this is the whole point — the DEFAULT registry path
+    // has to follow the override, not the developer's real home.
+    writeFileSync(join(home, 'providers.yaml'), 'default: ollama/gemma4:e4b\n', 'utf8');
+
+    running = await startServer({ vault, pluginRoot, port: 0, env });
+
+    // Each thread's Codex home holds a copy of `auth.json`, so it must land
+    // under the home the operator pointed at, not under the real `$HOME`.
+    const threadId = '11111111-2222-4333-8444-555555555555';
+    expect(running.store.codexHomeFor(threadId)).toBe(join(home, 'codex', threadId));
+
+    const health = await fetch(`${running.url}/health`, {
+      headers: { authorization: `Bearer ${running.token}` },
+    });
+    expect(health.status).toBe(200);
+    expect(((await health.json()) as { default: string }).default).toBe('ollama/gemma4:e4b');
+  });
+
   test('a busy default port falls through to an OS-assigned one', async () => {
     const a = fixture();
     const b = fixture();

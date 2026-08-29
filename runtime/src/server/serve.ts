@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { chmodSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
-import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { counselHome } from '../core/home';
 import { DEFAULT_TENANT } from '../core/types';
 import { loadRegistry } from '../providers/registry';
 import { ThreadStore } from '../threads/store';
@@ -27,7 +27,7 @@ export interface StartServerOptions {
   /** Where `skills/`, `primitives/`, and `scripts/` live. Defaults to the
    * repo root, or `COUNSEL_PLUGIN_ROOT` for an installed-plugin layout. */
   pluginRoot?: string;
-  /** Overrides `~/.counsel-os/providers.yaml`. */
+  /** Overrides `<counselHome>/providers.yaml`. */
   registryFile?: string;
   env?: NodeJS.ProcessEnv;
 }
@@ -37,14 +37,26 @@ export interface RunningServer {
   token: string;
   vault: string;
   url: string;
+  /** The thread store this server is serving from — exposed so a caller (and
+   * the tests) can see where thread state, including each thread's Codex
+   * home, actually lands. */
+  store: ThreadStore;
   /** Stops listening and removes `runtime.json`. */
   stop(): Promise<void>;
 }
 
 /** `~/.counsel-os`, or `COUNSEL_OS_HOME` — the override the tests use so they
- * never touch the developer's real runtime file. */
-export function counselHome(env: NodeJS.ProcessEnv = process.env): string {
-  return env.COUNSEL_OS_HOME ?? join(homedir(), '.counsel-os');
+ * never touch the developer's real runtime file. Defined in `core/home.ts`
+ * (the registry needs it too, without a server dependency) and re-exported
+ * here, where it has always been imported from. */
+export { counselHome };
+
+/** Where each thread's persistent Codex home lives. Under `counselHome`, not
+ * unconditionally under the real `$HOME`: these directories hold a copy of
+ * the operator's `auth.json`, so they belong wherever the operator pointed
+ * the runtime's state. */
+export function codexHomeRoot(env: NodeJS.ProcessEnv = process.env): string {
+  return join(counselHome(env), 'codex');
 }
 
 /** The handshake file the plugin adapter reads (spec §4.7). */
@@ -160,13 +172,17 @@ export async function startServer(opts: StartServerOptions = {}): Promise<Runnin
   });
 
   const token = randomBytes(32).toString('hex');
+  // The store is given the environment's codex root explicitly: its own
+  // default is the real `$HOME`, which would ignore `COUNSEL_OS_HOME` and
+  // drop a copy of `auth.json` somewhere the operator never pointed at.
+  const store = new ThreadStore(vaultRoot, { codexHomeRoot: codexHomeRoot(env) });
   const app = createApp({
     token,
     tenant: DEFAULT_TENANT,
     vaultRoot,
     pluginRoot,
     vault: new FsVaultStore(vaultRoot),
-    store: new ThreadStore(vaultRoot),
+    store,
     providers,
     router,
     defaultProviderId: defaultId,
@@ -210,6 +226,7 @@ export async function startServer(opts: StartServerOptions = {}): Promise<Runnin
     token,
     vault: vaultRoot,
     url: `http://${HOSTNAME}:${port}`,
+    store,
     async stop(): Promise<void> {
       process.off('SIGINT', onSignal);
       process.off('SIGTERM', onSignal);
