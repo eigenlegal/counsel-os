@@ -15,6 +15,14 @@ import { extname, isAbsolute, relative, resolve, sep } from 'node:path';
  * for as long as they exist, and a miss here is a miss rather than a route. */
 export const ASSETS_PREFIX = '/assets/';
 
+/** `ASSETS_PREFIX` as a `StaticTarget.rel` prefix (no leading slash). */
+const ASSETS_DIR = 'assets/';
+
+/** The SPA shell. Served for `/` and for every client-side route, and
+ * `no-store` however it is asked for — it names the build's hashed assets,
+ * so a cached copy points at files that may already be gone. */
+const INDEX = 'index.html';
+
 export const IMMUTABLE_CACHE = 'public, max-age=31536000, immutable';
 
 /** The shell carries the app's version in its script tags, so a cached copy
@@ -64,10 +72,21 @@ function contentType(file: string): string {
   return CONTENT_TYPES[extname(file).toLowerCase()] ?? 'application/octet-stream';
 }
 
+/** What a request path resolves to inside `distDir`. `rel` is the path
+ * RELATIVE to the dist root, after decoding and after `.` / `..` are
+ * collapsed — the only spelling of the request that can safely be compared
+ * against `assets/`, since `/assets/%2e%2e%2findex.html` starts with
+ * `/assets/` and does not live there. `file` is the absolute real path when
+ * it names a regular file, and `null` when it names nothing. */
+export interface StaticTarget {
+  rel: string;
+  file: string | null;
+}
+
 /**
- * The path a request names, as an absolute path to a real regular file
- * inside `distDir` — or `null` for everything else, which the caller turns
- * into the SPA shell or a 404 and never into a file.
+ * The path a request names, as a `StaticTarget` inside `distDir` — or `null`
+ * when the path cannot be inside it at all, which the caller turns into the
+ * SPA shell and never into a file.
  *
  * Three checks, and all three are needed:
  *
@@ -85,7 +104,7 @@ function contentType(file: string): string {
  * that nothing here is ever created, so only paths that already exist matter
  * and there is no "nearest existing ancestor" case.
  */
-export function resolveStaticFile(distDir: string, pathname: string): string | null {
+export function resolveStaticTarget(distDir: string, pathname: string): StaticTarget | null {
   let decoded: string;
   try {
     decoded = decodeURIComponent(pathname);
@@ -103,6 +122,9 @@ export function resolveStaticFile(distDir: string, pathname: string): string | n
   const full = resolve(distDir, rel);
   const inside = relative(distDir, full);
   if (inside === '' || isAbsolute(inside) || inside.split(sep)[0] === '..') return null;
+  // The caller keys its cache rules on this, so it is always the collapsed
+  // path and always forward-slashed, whatever the host separator is.
+  const target: StaticTarget = { rel: inside.split(sep).join('/'), file: null };
 
   let realRoot: string;
   let real: string;
@@ -110,22 +132,37 @@ export function resolveStaticFile(distDir: string, pathname: string): string | n
     realRoot = realpathSync(distDir);
     real = realpathSync(full);
   } catch {
-    return null; // no dist directory, or no such file
+    return target; // no dist directory, or no such file: a real path, no file
   }
   if (real !== realRoot && !real.startsWith(realRoot + sep)) return null;
 
   try {
     // Not a directory, not a fifo, not a device. `Bun.file` on a directory
     // fails at read time, which would be a 500 for a path a visitor chose.
-    if (!statSync(real).isFile()) return null;
+    if (!statSync(real).isFile()) return target;
   } catch {
-    return null;
+    return target;
   }
-  return real;
+  return { rel: target.rel, file: real };
 }
 
+/** The resolved regular file a request names, or `null`. The whole of the
+ * containment decision; `resolveStaticTarget` adds the relative path the
+ * cache rules need. */
+export function resolveStaticFile(distDir: string, pathname: string): string | null {
+  return resolveStaticTarget(distDir, pathname)?.file ?? null;
+}
+
+/**
+ * `nosniff` on every static answer. Content-type sniffing is what turns a
+ * file this server labelled `application/octet-stream` into a script the
+ * browser runs — and `dist/` is build output, so its contents are only as
+ * trustworthy as the build that wrote them.
+ */
+const SECURITY_HEADERS: Record<string, string> = { 'x-content-type-options': 'nosniff' };
+
 function fileResponse(method: string, file: string, cache: string, type = contentType(file)): Response {
-  const headers: Record<string, string> = { 'content-type': type, 'cache-control': cache };
+  const headers: Record<string, string> = { ...SECURITY_HEADERS, 'content-type': type, 'cache-control': cache };
   if (method === 'HEAD') {
     // A HEAD must carry the headers a GET would and no body at all, and
     // `content-length` is the one header the body would otherwise supply.
@@ -135,11 +172,11 @@ function fileResponse(method: string, file: string, cache: string, type = conten
 }
 
 function notFound(pathname: string): Response {
-  return Response.json({ error: `no such file: ${pathname}` }, { status: 404 });
+  return Response.json({ error: `no such file: ${pathname}` }, { status: 404, headers: SECURITY_HEADERS });
 }
 
 function placeholder(method: string): Response {
-  const headers = { 'content-type': HTML, 'cache-control': SHELL_CACHE };
+  const headers = { ...SECURITY_HEADERS, 'content-type': HTML, 'cache-control': SHELL_CACHE };
   if (method === 'HEAD') {
     return new Response(null, { headers: { ...headers, 'content-length': String(Buffer.byteLength(PLACEHOLDER_HTML)) } });
   }
@@ -171,14 +208,20 @@ export function serveStatic(distDir: string): (req: Request) => Promise<Response
     }
 
     try {
-      const file = resolveStaticFile(distDir, pathname);
-      if (file !== null) {
-        const cache = pathname.startsWith(ASSETS_PREFIX) ? IMMUTABLE_CACHE : REVALIDATE_CACHE;
-        return fileResponse(req.method, file, cache);
+      const target = resolveStaticTarget(distDir, pathname);
+      // Both rules below key on the RESOLVED relative path, never on the
+      // request's spelling: `/assets/%2e%2e%2findex.html` starts with
+      // `/assets/` and is the shell (a year of immutable caching would
+      // strand the browser on a dead build), and `/%61ssets/gone.js` does
+      // not start with it and is an asset miss.
+      const isAsset = target !== null && target.rel.startsWith(ASSETS_DIR);
+      if (target?.file != null) {
+        const cache = isAsset ? IMMUTABLE_CACHE : target.rel === INDEX ? SHELL_CACHE : REVALIDATE_CACHE;
+        return fileResponse(req.method, target.file, cache);
       }
-      if (pathname.startsWith(ASSETS_PREFIX)) return notFound(pathname);
+      if (isAsset) return notFound(pathname);
 
-      const index = resolveStaticFile(distDir, '/index.html');
+      const index = resolveStaticFile(distDir, `/${INDEX}`);
       if (index !== null) return fileResponse(req.method, index, SHELL_CACHE, HTML);
       return placeholder(req.method);
     } catch {

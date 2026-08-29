@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DEFAULT_STEP_TIMEOUT_MS } from '../loop/counsel-loop';
@@ -303,5 +303,42 @@ describe('--open', () => {
       throw new Error('no such file or directory: open');
     };
     expect(openUrl('http://127.0.0.1:7431/', { platform: 'darwin', spawn })).toBe(false);
+  });
+});
+
+describe('the --dist guard', () => {
+  test('refuses a dist directory that is the vault, or inside it, or contains it', async () => {
+    const { vault, pluginRoot, env } = fixture();
+    mkdirSync(join(vault, 'sub'), { recursive: true });
+    const opts = { vault, pluginRoot, port: 0, env, registryFile: join(vault, 'none.yaml') };
+
+    // Everything under `distDir` is served with NO token. Pointing it at the
+    // vault would publish the practice's files to anything that can reach
+    // the port.
+    for (const distDir of [vault, join(vault, 'sub')]) {
+      await expect(startServer({ ...opts, distDir })).rejects.toThrow(/--dist|dist directory/i);
+    }
+    // And the other direction: a dist that CONTAINS the vault serves it too.
+    const parent = mkdtempSync(join(tmpdir(), 'serve-parent-'));
+    const nested = join(parent, 'vault');
+    mkdirSync(nested, { recursive: true });
+    await expect(startServer({ ...opts, vault: nested, distDir: parent })).rejects.toThrow(/--dist|dist directory/i);
+  });
+
+  test('accepts a dist directory unrelated to the vault', async () => {
+    const { vault, pluginRoot, env } = fixture();
+    const dist = mkdtempSync(join(tmpdir(), 'serve-dist-ok-'));
+    writeFileSync(join(dist, 'index.html'), '<!doctype html><title>counsel-os</title>\n', 'utf8');
+    running = await startServer({ vault, pluginRoot, port: 0, env, registryFile: join(vault, 'none.yaml'), distDir: dist });
+    expect((await fetch(`${running.url}/`)).status).toBe(200);
+  });
+
+  test('the guard follows symlinks, so a link into the vault is refused too', async () => {
+    const { vault, pluginRoot, env } = fixture();
+    const link = join(mkdtempSync(join(tmpdir(), 'serve-link-')), 'dist');
+    symlinkSync(vault, link);
+    await expect(
+      startServer({ vault, pluginRoot, port: 0, env, registryFile: join(vault, 'none.yaml'), distDir: link }),
+    ).rejects.toThrow(/--dist|dist directory/i);
   });
 });

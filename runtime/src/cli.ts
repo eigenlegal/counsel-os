@@ -41,6 +41,7 @@ const [cmd, ...rest] = positionals;
 function usage(): never {
   console.error('usage: bun runtime/src/cli.ts step --vault <dir> --provider <id> [--task <name>] [--schema <json>] [--session <id>] [--codex-home <dir>] [--cwd <dir>] [--step-timeout <ms>] "<prompt>"');
   console.error('       bun runtime/src/cli.ts serve [--port <n>] [--vault <dir>] [--step-timeout <ms>] [--dist <dir>] [--open] [--fake [--fake-script <file.json>]]');
+  console.error('         --dist <dir> is the built UI; everything in it is served WITHOUT a token, so it must not overlap the vault');
   process.exit(2);
 }
 
@@ -103,14 +104,21 @@ if (cmd === 'serve') {
       process.exit(2);
     }
   }
-  await startServer({
-    ...(values.vault ? { vault: values.vault } : {}),
-    ...(port === undefined ? {} : { port }),
-    ...(stepTimeoutMs === undefined ? {} : { stepTimeoutMs }),
-    ...(values.dist ? { distDir: resolve(values.dist) } : {}),
-    ...(values.open ? { open: true } : {}),
-    ...(values.fake ? { fake: fakeScript(values['fake-script']) } : {}),
-  });
+  try {
+    await startServer({
+      ...(values.vault ? { vault: values.vault } : {}),
+      ...(port === undefined ? {} : { port }),
+      ...(stepTimeoutMs === undefined ? {} : { stepTimeoutMs }),
+      ...(values.dist ? { distDir: resolve(values.dist) } : {}),
+      ...(values.open ? { open: true } : {}),
+      ...(values.fake ? { fake: fakeScript(values['fake-script']) } : {}),
+    });
+  } catch (err) {
+    // A refused `--dist`, a port already taken: the operator needs the
+    // sentence, not a stack trace through Bun's internals.
+    console.error(err instanceof Error ? err.message : String(err));
+    process.exit(2);
+  }
 } else {
   await step();
 }

@@ -8,7 +8,7 @@ import type { Capabilities, ModelProvider, StepEvent, StepRequest } from '../cor
 import { Router } from '../router/router';
 import { ThreadStore, type ThreadEvent } from '../threads/store';
 import { FsVaultStore } from '../vault/fs-store';
-import { createApp, type App, type ServerDeps } from './routes';
+import { API_PREFIXES, createApp, type App, type ServerDeps } from './routes';
 
 const TOKEN = 'test-token-0123456789';
 
@@ -890,5 +890,24 @@ describe('static UI', () => {
     // behaving exactly as it did before static serving existed.
     expect((await call(appWithFake(), 'GET', '/nope')).status).toBe(404);
     expect((await call(appWithFake(), 'GET', '/', { token: null })).status).toBe(404);
+  });
+});
+
+describe('API_PREFIXES', () => {
+  test('covers every first path segment the router matches', () => {
+    // Static serving runs BEFORE the bearer check for anything not on this
+    // list, so a route added under a prefix that is missing from it would be
+    // reachable with no token at all. This reads the router's own source so
+    // the list cannot drift away from the routes it guards.
+    const source = readFileSync(join(import.meta.dir, 'routes.ts'), 'utf8');
+    const matched = [...source.matchAll(/\bfirst === '([^']+)'/g)].map(m => m[1]!);
+    expect(matched.length).toBeGreaterThan(0);
+    for (const segment of new Set(matched)) {
+      expect(API_PREFIXES).toContain(segment);
+    }
+  });
+
+  test('reserves settings, which Task 3 mounts into', () => {
+    expect(API_PREFIXES).toContain('settings');
   });
 });

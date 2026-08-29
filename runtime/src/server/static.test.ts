@@ -115,3 +115,48 @@ describe('serveStatic', () => {
     }
   });
 });
+
+describe('the cache rules follow the resolved path, not the spelling', () => {
+  test('an encoded escape out of /assets/ does not get the immutable header', async () => {
+    const res = (await serveStatic(builtDist())(get('/assets/%2e%2e%2findex.html')))!;
+    // Decoded, this is `/assets/../index.html`, which resolves to the shell.
+    // Keying the header on the raw pathname would cache the shell for a year
+    // and strand the browser on a build whose assets are gone.
+    expect(res.status).toBe(200);
+    expect(res.headers.get('cache-control')).not.toBe('public, max-age=31536000, immutable');
+    expect(res.headers.get('cache-control')).toBe('no-store');
+    expect(await res.text()).toContain('counsel-os');
+  });
+
+  test('an encoded spelling of /assets/ still gets the assets-miss 404', async () => {
+    const res = (await serveStatic(builtDist())(get('/%61ssets/gone.js')))!;
+    expect(res.status).toBe(404);
+    expect(res.headers.get('content-type')).not.toContain('text/html');
+  });
+
+  test('index.html is no-store whether it is asked for by name or as the shell', async () => {
+    const serve = serveStatic(builtDist());
+    for (const path of ['/', '/index.html', '/a/client/route']) {
+      const res = (await serve(get(path)))!;
+      expect(res.status).toBe(200);
+      expect(res.headers.get('cache-control')).toBe('no-store');
+      expect(res.headers.get('content-type')).toContain('text/html');
+    }
+  });
+
+  test('every static answer says nosniff', async () => {
+    const dist = builtDist();
+    const serve = serveStatic(dist);
+    for (const path of ['/', '/index.html', '/assets/app-abc123.js', '/assets/gone.js', '/a/route']) {
+      const res = (await serve(get(path)))!;
+      expect(res.headers.get('x-content-type-options')).toBe('nosniff');
+    }
+    // The placeholder is a response too, and it is the one served before any
+    // build has run.
+    const placeholder = (await serveStatic(join(tmpdir(), 'static-no-such-dist'))(get('/')))!;
+    expect(placeholder.headers.get('x-content-type-options')).toBe('nosniff');
+    // And a HEAD, which builds its headers on a separate path.
+    const head = (await serve(get('/assets/app-abc123.js', 'HEAD')))!;
+    expect(head.headers.get('x-content-type-options')).toBe('nosniff');
+  });
+});

@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
-import { chmodSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { chmodSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { join, resolve, sep } from 'node:path';
 import { counselHome } from '../core/home';
 import { FakeModelProvider, type FakeScript } from '../core/fake-provider';
 import { DEFAULT_TENANT } from '../core/types';
@@ -107,6 +107,36 @@ export function defaultDistDir(): string {
   return resolve(import.meta.dir, '../../..', 'runtime', 'ui', 'dist');
 }
 
+/**
+ * Refuses a `distDir` that overlaps the vault. Everything under `distDir` is
+ * served with NO token — that is the whole point of static serving — so a
+ * dist directory that is the vault, sits inside it, or contains it would
+ * publish the practice's files to anything that can reach the port. Both
+ * directions matter, and both sides are resolved through `realpath` first,
+ * so a symlink cannot spell its way past the check.
+ *
+ * A path that does not exist yet is compared lexically instead: it cannot be
+ * serving anything today, and if it appears later it will be checked on the
+ * next start.
+ */
+export function assertDistOutsideVault(distDir: string, vaultRoot: string): void {
+  const real = (p: string): string => {
+    try {
+      return realpathSync(p);
+    } catch {
+      return resolve(p);
+    }
+  };
+  const dist = real(distDir);
+  const vault = real(vaultRoot);
+  const overlaps = dist === vault || dist.startsWith(vault + sep) || vault.startsWith(dist + sep);
+  if (overlaps) {
+    throw new Error(
+      `--dist must not overlap the vault: the UI directory is served with no token, so this would publish the vault. dist: ${dist}, vault: ${vault}`,
+    );
+  }
+}
+
 /** The command that opens a URL in the desktop browser, or `null` where
  * there is no safe one. Windows is deliberately `null`: `start` is a shell
  * builtin, so opening a URL there means handing a string with `#` and `&` in
@@ -128,6 +158,11 @@ type Spawner = (cmd: string[], opts: { stdio: ['ignore', 'ignore', 'ignore'] }) 
  * — the URL carries the token, and a browser writing diagnostics to this
  * process's stdout would print it a second time, into whatever log the
  * operator is capturing.
+ *
+ * The token is nonetheless in the child's argv, where `ps` shows it to every
+ * local account for as long as the `open` process lives; that is inherent to
+ * handing a URL to a system opener, and it is the same secret `runtime.json`
+ * already holds (0600) for the life of the server.
  *
  * Opening a browser is a convenience. A missing `xdg-open` must not take
  * down a server that is already listening, so a failure is swallowed.
@@ -228,6 +263,10 @@ export async function startServer(opts: StartServerOptions = {}): Promise<Runnin
   const env = opts.env ?? process.env;
   const vaultRoot = resolveVaultOrExit(opts);
   const pluginRoot = opts.pluginRoot ?? defaultPluginRoot(env);
+  const distDir = opts.distDir ?? defaultDistDir();
+  // Before anything binds: a dist that overlaps the vault is a config
+  // mistake that would serve the vault without a token.
+  assertDistOutsideVault(distDir, vaultRoot);
   // `--fake` puts the canned provider in front of the registry's own, as an
   // override rather than a config change: nothing is written to
   // `providers.yaml`, so the operator's real setup is untouched.
@@ -254,7 +293,7 @@ export async function startServer(opts: StartServerOptions = {}): Promise<Runnin
     providers,
     router,
     defaultProviderId: defaultId,
-    distDir: opts.distDir ?? defaultDistDir(),
+    distDir,
     // Explicit option first, then the registry file, then the default.
     stepTimeoutMs: opts.stepTimeoutMs ?? stepTimeoutMs ?? DEFAULT_STEP_TIMEOUT_MS,
   });
