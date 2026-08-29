@@ -466,6 +466,12 @@ def main() -> int:
         print("--dry-run is only supported with --runner runtime", file=sys.stderr)
         return 2
 
+    # The runtime runner is model-agnostic: the model is whatever the provider
+    # id names. Say so rather than let a --model the run never reads look like
+    # it took effect.
+    if args.model and args.runner == "runtime":
+        print("--model is ignored with --runner runtime; the model comes from --provider", file=sys.stderr)
+
     if args.generate:
         for fixture_path in fixture_paths(fixtures):
             fixture = load_json(fixture_path)

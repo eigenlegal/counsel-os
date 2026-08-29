@@ -139,6 +139,35 @@ class DryRunTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, msg=f"stdout={result.stdout!r} stderr={result.stderr!r}")
         self.assertIn("bun runtime/src/cli.ts step", result.stdout)
 
+    def test_model_with_the_runtime_runner_warns_that_it_is_ignored(self) -> None:
+        # --model belongs to the claude runner. The runtime runner takes its
+        # model from --provider, so a --model here changes nothing and the run
+        # has to say so rather than look like it took effect.
+        result = subprocess.run(
+            [
+                sys.executable, str(REPO_ROOT / "scripts" / "run_evals.py"),
+                "--generate", "--runner", "runtime", "--dry-run",
+                "--model", "claude-opus-5",
+                "--only", "green-yellow-red-calibration",
+            ],
+            cwd=REPO_ROOT, capture_output=True, text=True, timeout=30,
+        )
+
+        self.assertEqual(result.returncode, 0, msg=f"stdout={result.stdout!r} stderr={result.stderr!r}")
+        self.assertIn("--model is ignored with --runner runtime", result.stderr)
+
+    def test_model_with_the_claude_runner_is_not_warned_about(self) -> None:
+        result = subprocess.run(
+            [
+                sys.executable, str(REPO_ROOT / "scripts" / "run_evals.py"),
+                "--runner", "claude", "--model", "claude-opus-5",
+                "--only", "green-yellow-red-calibration",
+            ],
+            cwd=REPO_ROOT, capture_output=True, text=True, timeout=30,
+        )
+
+        self.assertNotIn("--model is ignored", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
