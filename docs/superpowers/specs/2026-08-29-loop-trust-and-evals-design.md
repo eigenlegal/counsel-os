@@ -40,7 +40,7 @@ primitives say so.
 | Timeout semantics | On expiry: close the provider iterator, append + yield one terminal `error` ("step timed out after Ns"), run record `status: 'timeout'` | Spec §5 of step 2: never a dropped stream without a terminal event |
 | `proposal` event | New `StepEvent` variant `{ type: 'proposal'; id; path; rationale }`, synthesized by the loop right after the `tool_result` of a successful `propose_update`; forwarded on SSE; NOT appended to the thread log (the `proposal` ThreadEvent already is) | Works for in-process (Claude, direct) and stdio (Codex) tools alike — both surface the tool result |
 | Run record | `.counsel/runs/<tenant>/<runId>.json` written at step start (`status: 'running'`) and finalized at end; the `.log.jsonl` entry stays as the per-step telemetry line | Crash/timeout visibility; the UI's "what did counsel do" view |
-| Run record shape | `{ runId, threadId, tenant, startedAt, finishedAt?, status, message, provider, task?, primitivesRead: string[], toolCalls: [{name, ms, isError}], proposals: string[], output?: unknown, usage?, costUsd?, durationMs?, error? }` | Everything is derived from events the loop already sees; no new model calls |
+| Run record shape | `{ runId, threadId, tenant, startedAt, finishedAt?, status: 'running'\|'done'\|'error'\|'timeout'\|'abandoned', message, provider, task?, primitivesRead: string[], toolCalls: [{name, ms, isError}], proposals: string[], output?: unknown, usage?, costUsd?, durationMs?, error? }` — `abandoned` = the caller hung up mid-step; a record left `running` therefore means the process died | Everything is derived from events the loop already sees; no new model calls |
 | Runs API | `GET /runs?thread=<id>` (list, newest first), `GET /runs/:runId` | Read-only |
 | Typed answers | `POST /threads/:id/steps { outputSchema?: <JSON Schema> }` → `z.fromJSONSchema` → `StepRequest.outputSchema`; `done.output` carries the parsed object; preamble gains one line: when the request carries an output schema, do the work with the primitives first, then answer in exactly that structure | Already supported by the loop and CLI; this exposes it to clients without the runtime choosing a schema |
 | Evals runner | `scripts/run_evals.py --generate --runner runtime [--provider <id>]` copies the fixture mini-vault, runs `bun runtime/src/cli.ts step --vault … --provider … --schema <findings schema> "<task>"`, takes `done.output` as the output JSON; default runner stays `claude` (unchanged) | Measures the methodology on Claude, Codex, and Ollama with the scorer that already exists |
@@ -58,15 +58,6 @@ Implementation: a deadline promise raced against each `next()` of the provider i
 (not one race for the whole step — the loop must keep streaming). On expiry: `await
 closeQuietly(it)`, flush buffered text, append `{ type:'error', message }`, finalize the
 run record with `status:'timeout'`, yield the error, return.
-
-Amended after build: the close is FIRED, not awaited — `return()` on an iterator parked on a
-never-resolving `await` is queued behind that `await` and would hang the timeout itself — and
-the step's `AbortSignal` (`StepRequest.signal`, forwarded by every tier: `abortController` for
-the Claude harness, the turn's `signal` for Codex, `abortSignal` for direct) is aborted first,
-which is what actually settles the SDK so the provider unwinds and its child process dies.
-Every close the loop DOES await (`chain`'s `finally`, the resume fallback) is bounded by
-`min(2000ms, what is left of the step)`, so a provider that will not close cannot wedge the
-thread one step later.
 
 ### 4.2 `proposal` StepEvent
 
