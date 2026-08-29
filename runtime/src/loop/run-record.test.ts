@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
 import { randomUUID } from 'node:crypto';
-import { mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { writeRunLog } from './run-log';
@@ -156,6 +156,20 @@ describe('listRuns', () => {
     ]);
 
     expect(listRuns(vaultRoot, 'default', threadId).map(r => r.runId)).toEqual([rec.runId]);
+  });
+
+  test('a record file that cannot even be READ is skipped, not fatal', () => {
+    // A directory where a record should be: `readFileSync` throws EISDIR, and
+    // the same shape covers a record that vanished between the readdir and
+    // the read. The rest of the thread's runs must still come back.
+    const threadId = randomUUID();
+    const rec = record({ threadId });
+    const other = record({ threadId, startedAt: '2026-08-29T09:00:00.000Z' });
+    startRun(vaultRoot, rec);
+    startRun(vaultRoot, other);
+    mkdirSync(join(dirname(runRecordPath(vaultRoot, 'default', rec.runId)), `${randomUUID()}.json`));
+
+    expect(listRuns(vaultRoot, 'default', threadId).map(r => r.runId)).toEqual([rec.runId, other.runId]);
   });
 
   test('a corrupt record is skipped rather than failing the whole listing', () => {

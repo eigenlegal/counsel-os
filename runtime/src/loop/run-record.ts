@@ -90,6 +90,10 @@ export function finishRun(vaultRoot: string, tenant: Tenant, runId: string, patc
   writeRecord(vaultRoot, { ...current, ...patch });
 }
 
+function detail(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
 /**
  * Parses one record file. A record that will not parse is treated as one that
  * is not there — the detail goes to stderr for the operator. Every reader
@@ -101,9 +105,27 @@ function parseRecord(path: string, raw: string): RunRecord | null {
   try {
     return JSON.parse(raw) as RunRecord;
   } catch (err) {
-    console.error(`run-record: unreadable record ${path}: ${err instanceof Error ? err.message : String(err)}`);
+    console.error(`run-record: unreadable record ${path}: ${detail(err)}`);
     return null;
   }
+}
+
+/**
+ * One record file for `listRuns`, or `null` if anything about it is
+ * unreadable. The READ is inside the guard, not just the parse: a record can
+ * vanish between the `readdir` and the read, or be something that is not a
+ * readable file at all, and neither may cost the caller the rest of the
+ * thread's runs.
+ */
+function readRecordAt(path: string): RunRecord | null {
+  let raw: string;
+  try {
+    raw = readFileSync(path, 'utf8');
+  } catch (err) {
+    console.error(`run-record: unreadable record ${path}: ${detail(err)}`);
+    return null;
+  }
+  return parseRecord(path, raw);
 }
 
 /** The record, or `null` when no run by that id was ever opened — or when
@@ -140,10 +162,7 @@ export function listRuns(vaultRoot: string, tenant: Tenant, threadId: string): R
     // Records only: this leaves out `<runId>.log.jsonl` and any `.json.tmp`
     // a crashed write left mid-rename.
     if (!name.endsWith('.json')) continue;
-    const path = join(dir, name);
-    // One unreadable record must not cost the caller every other run of the
-    // thread.
-    const rec = parseRecord(path, readFileSync(path, 'utf8'));
+    const rec = readRecordAt(join(dir, name));
     if (rec !== null && rec.threadId === threadId) runs.push(rec);
   }
   // Newest first. `startedAt` is an ISO string, so it sorts lexically; the

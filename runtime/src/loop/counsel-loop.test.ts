@@ -1233,6 +1233,57 @@ describe('runStep — the run record', () => {
     expect(rec.primitivesRead).toEqual(['draft']);
   });
 
+  test('a caller that hangs up during the step SETUP still ends abandoned', async () => {
+    // Nothing yields during the setup — the user append, the router, the
+    // prompt assembly — so the guard has to be in scope for all of it, not
+    // just from the provider onward.
+    class SlowStore extends ThreadStore {
+      override async append(tenant: string, id: string, ev: ThreadEvent): Promise<void> {
+        await new Promise(r => setTimeout(r, 50));
+        return super.append(tenant, id, ev);
+      }
+    }
+    const slow = new SlowStore(vaultRoot, { codexHomeRoot: mkdtempSync(join(tmpdir(), 'loop-codex-')) });
+    const { id } = await slow.create('default', {});
+
+    const it = runStep({ ...deps([new FakeModelProvider([{ text: 'hi' }])]), store: slow }, {
+      threadId: id,
+      message: 'hello',
+    })[Symbol.asyncIterator]();
+    // Kick the step off — it parks on the user-turn append — then walk away.
+    const pull = it.next();
+    await new Promise(r => setTimeout(r, 10));
+    await it.return?.(undefined);
+    await pull;
+
+    const [rec] = listRuns(vaultRoot, 'default', id);
+    expect(rec!.status).toBe('abandoned');
+    expect(typeof rec!.finishedAt).toBe('string');
+  });
+
+  test('a thread-store read that throws during setup is an error record, not `running`', async () => {
+    // `replay()` reads the log outside any of the setup's own try/catches; a
+    // failure there escapes as an exception. The record must not be left
+    // saying the step is still going.
+    class BrokenStore extends ThreadStore {
+      reads = 0;
+      override async get(tenant: string, id: string): ReturnType<ThreadStore['get']> {
+        // 1: the existence check. 2: the header read. 3: the window replay.
+        if (++this.reads === 3) throw new Error('log read failed');
+        return super.get(tenant, id);
+      }
+    }
+    const broken = new BrokenStore(vaultRoot, { codexHomeRoot: mkdtempSync(join(tmpdir(), 'loop-codex-')) });
+    const { id } = await broken.create('default', {});
+
+    const d = { ...deps([new FakeModelProvider([{ text: 'hi' }])]), store: broken };
+    await expect(collect(runStep(d, { threadId: id, message: 'hello' }))).rejects.toThrow('log read failed');
+
+    const [rec] = listRuns(vaultRoot, 'default', id);
+    expect(rec!.status).toBe('error');
+    expect(rec!.error).toBe('log read failed');
+  });
+
   test('a provider that THROWS is an error record, not an abandoned one', async () => {
     // The `finally` that marks abandonment also runs when an exception
     // unwinds the step. A provider that threw instead of yielding an `error`

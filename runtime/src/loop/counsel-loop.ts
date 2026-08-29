@@ -194,114 +194,121 @@ export async function* runStep(
     finalizeRun(deps, runId, run, { status: 'error', error });
   };
 
-  const userFailed = await tryPersist(() =>
-    store.append(tenant, threadId, { t: 'user', at: nowIso(), content: opts.message }),
-  );
-  if (userFailed) {
-    failRun(userFailed);
-    yield { type: 'error', message: userFailed, runId };
-    return;
-  }
-
-  let provider: ModelProvider;
+  // ONE try/finally over the whole step, from the first thing that can be
+  // interrupted onward. It has to start here rather than at the provider:
+  // a caller that hangs up during the setup — the user append, the router,
+  // the prompt assembly — unwinds through whatever `finally` is in scope,
+  // and outside this one there is none, which would leave the record at
+  // `running` for a step nothing was wrong with.
+  let deadline: Deadline | undefined;
   try {
-    provider = bindToThread(deps, resolveProvider(deps, opts), threadId);
-  } catch (err) {
-    failRun(message(err));
-    yield { type: 'error', message: message(err), runId };
-    return;
-  }
-  patchRun(deps, runId, { provider: provider.id });
-
-  const stepFailed = await tryPersist(() =>
-    store.append(tenant, threadId, {
-      t: 'step',
-      at: nowIso(),
-      runId,
-      provider: provider.id,
-      ...(opts.task ? { task: opts.task } : {}),
-    }),
-  );
-  if (stepFailed) {
-    failRun(stepFailed);
-    yield { type: 'error', message: stepFailed, runId };
-    return;
-  }
-
-  // One header read serves both the system prompt (the thread's matter) and
-  // the session lookup below — nothing between them can change either.
-  let header: ThreadHeader;
-  let base: StepRequest;
-  let budgetTokens: number;
-  try {
-    ({ header } = await store.get(tenant, threadId));
-    const cfg = readVaultConfig(deps.vaultRoot);
-    const platform = deps.platform ?? currentPlatform();
-    const registry = new ToolRegistry();
-    for (const t of builtinTools({ vaultRoot: deps.vaultRoot, repoRoot: deps.pluginRoot })) registry.register(t);
-    const scriptTools = registry.available(platform);
-
-    const system = assembleSystemPrompt({
-      pluginRoot: deps.pluginRoot,
-      vaultRoot: deps.vaultRoot,
-      ...(header.matter ? { matterPath: header.matter } : {}),
-      platform,
-      cfg,
-      tools: {
-        available: scriptTools.map(t => t.name),
-        unavailable: registry.unavailable(platform),
-      },
-    });
-
-    // An oversize system prompt is not a windowing problem — no amount of
-    // dropped history makes the request fit — so it fails the step outright
-    // rather than silently sending a request the provider will reject.
-    const systemTokens = estimateTokens(system);
-    const contextTokens = provider.capabilities.contextTokens;
-    const floor = systemTokens + REPLY_RESERVE_TOKENS;
-    if (floor > contextTokens) {
-      throw new Error(`system prompt exceeds the provider's context window (${floor} > ${contextTokens})`);
+    const userFailed = await tryPersist(() =>
+      store.append(tenant, threadId, { t: 'user', at: nowIso(), content: opts.message }),
+    );
+    if (userFailed) {
+      failRun(userFailed);
+      yield { type: 'error', message: userFailed, runId };
+      return;
     }
-    budgetTokens = Math.max(0, contextTokens - floor);
-    base = {
-      tenant,
-      system,
-      messages: [],
-      tools: stepTools(deps, threadId, cfg, scriptTools),
-      signal: cancel.signal,
-      ...(opts.outputSchema ? { outputSchema: opts.outputSchema } : {}),
+
+    let provider: ModelProvider;
+    try {
+      provider = bindToThread(deps, resolveProvider(deps, opts), threadId);
+    } catch (err) {
+      failRun(message(err));
+      yield { type: 'error', message: message(err), runId };
+      return;
+    }
+    patchRun(deps, runId, { provider: provider.id });
+
+    const stepFailed = await tryPersist(() =>
+      store.append(tenant, threadId, {
+        t: 'step',
+        at: nowIso(),
+        runId,
+        provider: provider.id,
+        ...(opts.task ? { task: opts.task } : {}),
+      }),
+    );
+    if (stepFailed) {
+      failRun(stepFailed);
+      yield { type: 'error', message: stepFailed, runId };
+      return;
+    }
+
+    // One header read serves both the system prompt (the thread's matter) and
+    // the session lookup below — nothing between them can change either.
+    let header: ThreadHeader;
+    let base: StepRequest;
+    let budgetTokens: number;
+    try {
+      ({ header } = await store.get(tenant, threadId));
+      const cfg = readVaultConfig(deps.vaultRoot);
+      const platform = deps.platform ?? currentPlatform();
+      const registry = new ToolRegistry();
+      for (const t of builtinTools({ vaultRoot: deps.vaultRoot, repoRoot: deps.pluginRoot })) registry.register(t);
+      const scriptTools = registry.available(platform);
+
+      const system = assembleSystemPrompt({
+        pluginRoot: deps.pluginRoot,
+        vaultRoot: deps.vaultRoot,
+        ...(header.matter ? { matterPath: header.matter } : {}),
+        platform,
+        cfg,
+        tools: {
+          available: scriptTools.map(t => t.name),
+          unavailable: registry.unavailable(platform),
+        },
+      });
+
+      // An oversize system prompt is not a windowing problem — no amount of
+      // dropped history makes the request fit — so it fails the step outright
+      // rather than silently sending a request the provider will reject.
+      const systemTokens = estimateTokens(system);
+      const contextTokens = provider.capabilities.contextTokens;
+      const floor = systemTokens + REPLY_RESERVE_TOKENS;
+      if (floor > contextTokens) {
+        throw new Error(`system prompt exceeds the provider's context window (${floor} > ${contextTokens})`);
+      }
+      budgetTokens = Math.max(0, contextTokens - floor);
+      base = {
+        tenant,
+        system,
+        messages: [],
+        tools: stepTools(deps, threadId, cfg, scriptTools),
+        signal: cancel.signal,
+        ...(opts.outputSchema ? { outputSchema: opts.outputSchema } : {}),
+      };
+    } catch (err) {
+      const ev: StepEvent = { type: 'error', message: message(err) };
+      // Best-effort: the caller gets the error either way (spec §5).
+      await tryPersist(() => store.append(tenant, threadId, { ...ev, at: nowIso() }));
+      failRun(ev.message);
+      yield { ...ev, runId };
+      return;
+    }
+
+    const replay = async (): Promise<StepRequest> => {
+      const { events } = await store.get(tenant, threadId);
+      return { ...base, messages: window(events, budgetTokens, estimateTokens) };
     };
-  } catch (err) {
-    const ev: StepEvent = { type: 'error', message: message(err) };
-    // Best-effort: the caller gets the error either way (spec §5).
-    await tryPersist(() => store.append(tenant, threadId, { ...ev, at: nowIso() }));
-    failRun(ev.message);
-    yield { ...ev, runId };
-    return;
-  }
 
-  const replay = async (): Promise<StepRequest> => {
-    const { events } = await store.get(tenant, threadId);
-    return { ...base, messages: window(events, budgetTokens, estimateTokens) };
-  };
+    // A provider that already holds a session for this thread gets only the
+    // new turn plus the session id — its own side keeps the history, and
+    // re-sending ours would double it. Everyone else replays the window.
+    const sessionId = header.sessions[provider.id];
+    let req: StepRequest = sessionId
+      ? { ...base, messages: [{ role: 'user', content: opts.message } satisfies Message], session: { id: sessionId } }
+      : await replay();
 
-  // A provider that already holds a session for this thread gets only the
-  // new turn plus the session id — its own side keeps the history, and
-  // re-sending ours would double it. Everyone else replays the window.
-  const sessionId = header.sessions[provider.id];
-  let req: StepRequest = sessionId
-    ? { ...base, messages: [{ role: 'user', content: opts.message } satisfies Message], session: { id: sessionId } }
-    : await replay();
-
-  // The step's deadline starts here — one clock for the whole step, shared
-  // by the resume fallback's second attempt, cancelled in the `finally` below
-  // however the step ends.
-  const timeoutMs = opts.timeoutMs ?? deps.stepTimeoutMs ?? DEFAULT_STEP_TIMEOUT_MS;
-  // Aborting is what makes a hung provider actually stop; closing its
-  // iterator only stops US reading it. Every tier forwards `req.signal` to
-  // its SDK, so this reaches the CLI child process too.
-  const deadline = deadlineIn(timeoutMs, () => cancel.abort(new Error(timeoutMessage(timeoutMs))));
-  try {
+    // The step's deadline starts here — one clock for the whole step, shared
+    // by the resume fallback's second attempt, cancelled in the `finally` below
+    // however the step ends.
+    const timeoutMs = opts.timeoutMs ?? deps.stepTimeoutMs ?? DEFAULT_STEP_TIMEOUT_MS;
+    // Aborting is what makes a hung provider actually stop; closing its
+    // iterator only stops US reading it. Every tier forwards `req.signal` to
+    // its SDK, so this reaches the CLI child process too.
+    deadline = deadlineIn(timeoutMs, () => cancel.abort(new Error(timeoutMessage(timeoutMs))));
     let attempt = await beginAttempt(provider, req, deadline);
 
     // Resume failure (spec §5): the vendor's session is gone. Drop the dead id
@@ -332,14 +339,15 @@ export async function* runStep(
 
     yield* stream(deps, opts, provider, runId, chain(attempt, deadline, timeoutMs), startedAt, run);
   } catch (err) {
-    // A provider that THREW instead of yielding an `error`. The loop turns
-    // its own failures into events (spec §5), but a provider is free to
-    // reject, and the record must call that an error rather than let the
-    // `finally` below read it as a caller walking away.
+    // Something THREW rather than becoming an event: a provider that rejects,
+    // or a thread-store read the setup does not guard (the window replay).
+    // The loop turns its own failures into events (spec §5); when one escapes
+    // anyway, the record must call it an error rather than let the `finally`
+    // below read it as a caller walking away.
     finalizeRun(deps, runId, run, { status: 'error', error: message(err) });
     throw err;
   } finally {
-    deadline.cancel();
+    deadline?.cancel();
     // The consumer walked away — an SSE client that hung up, which reaches
     // this generator as `return()` — so no terminal event was ever produced
     // and nothing above finalized the record. That is not a failure of the
