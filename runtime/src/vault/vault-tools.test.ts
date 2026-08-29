@@ -103,6 +103,18 @@ describe('guardedVaultTools', () => {
       expect(r.isError).toBe(false);
       expect(await store.read('default', 'matters/a.md')).toBe('hi');
     });
+
+    test('vault_write to a backslash-separated path is an error result, not a silent write outside the gate', async () => {
+      // On a Windows host, `practice\x.md` would resolve *inside* `practice/`
+      // via `path.win32`, while `posix.normalize` would see it as a single
+      // opaque filename and never trip the knowledge-path check. Vault paths
+      // are forward-slash only precisely so this can't happen.
+      const store = new FsVaultStore(mkdtempSync(join(tmpdir(), 'gvt-')));
+      const tools = guardedVaultTools(store, defaultCfg);
+      const r = await runToolDef(tools, 'vault_write', { path: 'practice\\x.md', content: 'hi' }, 'default');
+      expect(r.isError).toBe(true);
+      expect(String(r.output)).toMatch(/backslash/);
+    });
   });
 
   test('vault_read normalizes its path before hitting the store, same as vault_write', async () => {

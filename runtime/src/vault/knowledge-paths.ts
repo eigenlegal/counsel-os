@@ -8,9 +8,19 @@ import type { VaultConfig } from './resolve-root';
  * check (`isKnowledgePath`, the `vault_write` guard) that a plain
  * `path.startsWith(...)` would miss. Throws on anything that would escape
  * the vault root — absolute paths, or a path that still starts with `..`
- * after normalizing — mirroring `FsVaultStore.abs()`'s own escape check.
+ * after normalizing.
+ *
+ * Vault paths are forward-slash only, on every host OS: a backslash is
+ * rejected outright, before `posix.normalize` gets a chance to treat it as
+ * one opaque path segment (which would hide `practice\x.md` from the
+ * `practice/` prefix check here, while `FsVaultStore.abs()` on a Windows
+ * host — using `path.win32` — resolves the very same string *inside*
+ * `practice/`). This function and `FsVaultStore.abs()` enforce that
+ * backslash rule independently, in the same words, so the two can never
+ * disagree about which path is inside the vault.
  */
 export function normalizeVaultPath(path: string): string {
+  if (path.includes('\\')) throw new Error('path outside vault: backslashes are not allowed');
   let normalized = posix.normalize(path);
   if (normalized.startsWith('./')) normalized = normalized.slice(2);
   if (normalized.startsWith('/') || normalized === '..' || normalized.startsWith('../')) {

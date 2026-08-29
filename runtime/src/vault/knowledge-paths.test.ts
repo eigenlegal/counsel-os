@@ -30,6 +30,17 @@ describe('normalizeVaultPath', () => {
   test('leaves an already-normal path alone', () => {
     expect(normalizeVaultPath('practice/standards/x.md')).toBe('practice/standards/x.md');
   });
+
+  test('rejects a backslash-separated path outright, rather than treating it as one opaque segment', () => {
+    // On a Windows host, `FsVaultStore.abs()` uses `path.win32` and would
+    // resolve `practice\x.md` *inside* `practice/` — but `posix.normalize`
+    // here would see it as a single filename, invisible to the `practice/`
+    // prefix check. Rejecting backslashes outright keeps the two in
+    // agreement on every host OS.
+    expect(() => normalizeVaultPath('practice\\x.md')).toThrow(/backslash/);
+    expect(() => normalizeVaultPath('practice\\standards\\x.md')).toThrow(/backslash/);
+    expect(() => normalizeVaultPath('a\\b.md')).toThrow(/backslash/);
+  });
 });
 
 describe('isKnowledgePath', () => {
@@ -74,5 +85,9 @@ describe('isKnowledgePath', () => {
     expect(isKnowledgePath('./practice/standards/x.md', defaults)).toBe(true);
     expect(isKnowledgePath('matters/../practice/x.md', defaults)).toBe(true);
     expect(isKnowledgePath('matters/../matters/a.md', defaults)).toBe(false);
+  });
+
+  test('a backslash-separated path throws instead of silently reading as "not a knowledge path"', () => {
+    expect(() => isKnowledgePath('practice\\standards\\x.md', defaults)).toThrow(/backslash/);
   });
 });

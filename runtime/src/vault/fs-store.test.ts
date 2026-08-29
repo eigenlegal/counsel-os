@@ -70,6 +70,15 @@ describe('FsVaultStore', () => {
     await expect(store.read('default', '../etc/passwd')).rejects.toThrow(/outside vault/);
   });
 
+  test('backslash-separated paths are rejected — vault paths are forward-slash only on every host OS', async () => {
+    // On a Windows host, `resolve`/`relative` use `path.win32` and would
+    // otherwise resolve `a\b.md` *inside* `a/`, disagreeing with
+    // `normalizeVaultPath` (`knowledge-paths.ts`), which treats a backslash
+    // as one opaque, non-separator character.
+    await expect(store.read('default', 'a\\b.md')).rejects.toThrow(/backslash/);
+    await expect(store.write('default', 'a\\b.md', 'x')).rejects.toThrow(/backslash/);
+  });
+
   test('version of a missing file is null', async () => {
     expect(await store.version('default', 'missing.md')).toBeNull();
   });

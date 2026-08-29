@@ -25,6 +25,14 @@ export class FsVaultStore implements VaultStore {
 
   // Local runtime has one tenant; the parameter is threaded for hosted later.
   private abs(_tenant: Tenant, path: string): string {
+    // Vault paths are forward-slash only, on every host OS — see
+    // `normalizeVaultPath` in `knowledge-paths.ts`, which enforces the same
+    // rule so a knowledge-path check can never disagree with what this store
+    // actually resolves. On a Windows host, `resolve`/`relative` below use
+    // `path.win32` and would otherwise treat `practice\x.md` as a path
+    // *inside* `practice/`, silently reinterpreting a backslash as a
+    // directory separator that the guard never saw.
+    if (path.includes('\\')) throw new Error(`path outside vault: backslashes are not allowed: ${path}`);
     const full = resolve(this.root, path);
     const rel = relative(this.root, full);
     const head = rel.split(sep)[0];
