@@ -583,3 +583,362 @@ and is left for a future spike if the loop's fast-follow needs stronger proof.
 
 No retries were needed on either side; the 2+2 call budget was used exactly
 once per side.
+
+---
+
+## Step 2 — server, resume, proposals, adapter
+
+Task 9. Question: does the whole stack work end to end against real
+providers — the HTTP/SSE server, per-provider session resume across two
+steps of one thread, the propose-then-approve write gate, and the plugin
+adapter's exit-code contract?
+
+Budget: 4 subscription calls (2 Claude, 2 Codex), all 4 used, none retried.
+Ollama covered the rest.
+
+### Setup
+
+A fresh temp vault, marked and fictional:
+
+```
+<vault>/config.md                      # counsel-os-config: true, legal_root: <vault>
+<vault>/practice/profile.md            # Wren Halloway, Halloway Law PLLC (fictional solo practice)
+<vault>/practice/standards/nda.md      # two NDA positions
+<vault>/matters/acme.md                # Acme Robotics reseller agreement, deadline 2026-09-15
+```
+
+The server ran with `COUNSEL_OS_HOME` pointed at a temp directory, so it
+never touched the real `~/.counsel-os/runtime.json`:
+
+```bash
+COUNSEL_OS_HOME=<home> bun runtime/src/cli.ts serve --vault <vault>
+# counsel-os runtime on http://127.0.0.1:7431 (vault: <vault>)
+```
+
+`<home>/runtime.json` appeared with mode `0600`:
+
+```json
+{ "port": 7431, "token": "<64 hex chars>", "vault": "<vault>", "pid": 9334,
+  "startedAt": "2026-08-29T02:31:52.915Z" }
+```
+
+`GET /health` (bearer token from that file) listed all three builtin
+providers and `"default": "claude-sub/claude-opus-5"`. The same request
+without the header returned **401**.
+
+Every step below used:
+
+```bash
+curl -sN -H "Authorization: Bearer $TOK" -H 'Content-Type: application/json' \
+  --data-binary '{"message":"…","provider":"…"}' \
+  "http://127.0.0.1:$PORT/threads/$TID/steps"
+```
+
+### (a) Claude — resume across two steps · PASS
+
+Thread `9b79cf78`, provider `claude-sub/claude-opus-5`.
+
+Step 1 — `"Remember the codeword 'tangerine' for this thread."` (3.0 s):
+
+```
+event: text
+data: {"type":"text","text":"Got it — the codeword for this thread is **tangerine**.",…}
+event: done
+data: {"type":"done","output":"Got it …","usage":{"inputTokens":12878,"outputTokens":22,"costUsd":0.130304},
+       "sessionId":"386d84be-b4e7-4d23-a36e-aeb82c5d33c0","runId":"9837478b-…"}
+```
+
+The thread header then held the session:
+
+```json
+{ "id": "9b79cf78-…", "sessions": { "claude-sub/claude-opus-5": "386d84be-b4e7-4d23-a36e-aeb82c5d33c0" } }
+```
+
+Step 2 — `"What codeword did I give you?"` (2.5 s):
+
+```
+event: text
+data: {"type":"text","text":"The codeword you gave me is **tangerine**.",…}
+event: done
+data: {"type":"done","usage":{"inputTokens":12937,"outputTokens":18,"costUsd":0.007488},
+       "sessionId":"386d84be-b4e7-4d23-a36e-aeb82c5d33c0","runId":"cbfcaac6-…"}
+```
+
+**PASS.** How the resume was verified — four independent signals, since no
+event says "this request carried a session id":
+
+1. The header carried the id **before** step 2 ran (shown above).
+2. Step 2 recalled `tangerine`. The word appears nowhere in the vault, the
+   system prompt, or step 2's own message, so only the vendor-side session
+   could supply it.
+3. The thread log holds **no `warning` event**. `runStep` appends
+   `session expired; replaying history` whenever the resume attempt fails and
+   it falls back to replaying the window. Its absence means the resume
+   attempt stood.
+4. `done.sessionId` on step 2 equals step 1's id, and `inputTokens` moved
+   only 12,878 → 12,937 (+59) — a new turn on a live session, not a replayed
+   two-turn window.
+
+The full thread log, in order: `user`, `step`, `text`, `done`, `user`,
+`step`, `text`, `done` — one `step` event per request, each naming its
+provider and `runId`.
+
+### (b) Codex — resume across two steps · PASS
+
+Thread `8961dec6`, provider `codex-sub/gpt-5.6-terra`.
+
+Step 1 (5.3 s):
+
+```
+event: text
+data: {"type":"text","text":"I’ll remember “tangerine” for this thread.",…}
+event: done
+data: {"type":"done","usage":{"inputTokens":18281,"outputTokens":34},
+       "sessionId":"01a04b5e-73dc-7011-9df9-4ef6285e949b","runId":"54e7fd42-…"}
+```
+
+Step 2 (3.1 s):
+
+```
+event: text
+data: {"type":"text","text":"Tangerine.",…}
+event: done
+data: {"type":"done","usage":{"inputTokens":25086,"outputTokens":8},
+       "sessionId":"01a04b5e-73dc-7011-9df9-4ef6285e949b","runId":"64be9481-…"}
+```
+
+**PASS**, and cleaner than the Task 1 spike above: the model answered from
+conversational memory with **zero** tool calls, so this run does distinguish
+"the resumed thread remembers" from "the model re-read the vault". The Task 1
+caveat is now retired. No `warning` event, same `sessionId`, `inputTokens`
+18,281 → 25,086 (the prior turn carried forward).
+
+**Where the Codex home actually landed:** `ThreadStore.codexHomeFor(id)`
+returns `join(this.codexHomeRoot, id)`, and `codexHomeRoot` defaults to
+`join(homedir(), '.counsel-os', 'codex')`. `serve.ts` constructs
+`new ThreadStore(vaultRoot)` with **no** `codexHomeRoot` option, so the
+directory was created at
+
+```
+~/.counsel-os/codex/8961dec6-0c7d-47f7-8042-8a518e8cb4b5/
+```
+
+— in the developer's real home, **not** under `COUNSEL_OS_HOME`. It held
+`auth.json`, `sessions/`, `thread_history_1.sqlite`, and the rest of a live
+Codex home. The session id round-tripped into the rollout file name:
+
+```
+sessions/2026/08/28/rollout-2026-08-28T19-34-36-01a04b5e-73dc-7011-9df9-4ef6285e949b.jsonl
+```
+
+Session storage works. The location ignores the environment override — see
+defect 1. The directory was removed after the run.
+
+### (c) Ollama — vault tools · PASS
+
+Thread `8aaedd7a`, provider `ollama/gemma4:e4b`, one step:
+`"List the vault root and read matters/acme.md, then summarize the deadline"`.
+28.8 s wall-clock.
+
+```json
+{"type":"tool_call","name":"vault_read","input":{"path":"matters/acme.md"}}
+{"type":"tool_call","name":"docket_sweep","input":{"days":60}}
+{"type":"tool_result","name":"vault_read","output":{"content":"# Matter: Acme Robotics — reseller agreement…"},"isError":false}
+{"type":"tool_result","name":"docket_sweep","output":{"stdout":"{\"today\":\"2026-08-28\",\"window\":60,\"counts\":{…}}"},"isError":false}
+{"type":"done","usage":{"inputTokens":16659,"outputTokens":1139}}
+```
+
+Answer (abridged): *"the specific, critical deadline for the Acme Robotics
+matter is **September 15, 2026** … Borealis Components LLC plans to withdraw
+its pricing afterward."*
+
+**PASS** on the graded behavior: the vault tools attached over HTTP, both
+calls returned `isError:false`, and the deadline summary is correct.
+
+One deviation from the expected shape: the model never called `vault_list`.
+It read the named file directly and reached for `docket_sweep` instead, then
+asserted *"the current directory context is treated as the vault root"*
+without having listed anything. `docket_sweep` proves the platform script
+tools reach the model through the server, which the prompt did not ask for.
+
+### (d) Proposal gate · PASS
+
+Thread `dd166299`, provider `ollama/gemma4:e4b` (free tier, per the brief).
+Step: `"Update practice/standards/nda.md to add a position: term of
+confidentiality is 3 years."` 14.0 s.
+
+```json
+{"type":"tool_call","name":"vault_read","input":{"path":"practice/standards/nda.md"}}
+{"type":"tool_call","name":"propose_update","input":{"path":"practice/standards/nda.md",
+  "content":"# NDA standards\n\n## Positions\n\n- Mutual by default…\n- Carve-outs…\n- Term of confidentiality: 3 years.",
+  "rationale":"Proposed update to reflect the standard 3-year term…"}}
+{"type":"tool_result","name":"propose_update","output":"{\"proposalId\":\"284689ff-0c54-44f1-a3c6-c7137c682e56\"}","isError":false}
+{"type":"done","usage":{"inputTokens":24970,"outputTokens":893}}
+```
+
+The thread log carried the proposal, pending, with the path's version at
+proposal time:
+
+```json
+{"t":"proposal","id":"284689ff-…","path":"practice/standards/nda.md","status":"pending",
+ "expectedVersion":"64a7bfe4cca650c41b87d74a4c68dd9771e561317ba21a253c6f0886cd37b01d"}
+```
+
+`practice/standards/nda.md` was **byte-identical** to before the step
+(`shasum` `ccc573c4…` before and after). The gate held.
+
+Approve:
+
+```bash
+curl -X POST … -d '{"proposalId":"284689ff-…","decision":"approve"}' \
+  "http://127.0.0.1:$PORT/threads/$TID/approve"
+```
+
+```json
+{ "proposal": { "status": "approved", "path": "practice/standards/nda.md" },
+  "version": "ed8abed66b10be053b05a4e89293e11ca66f44629de5c354934c439dffd91e01" }
+```
+
+The file then held the proposal content verbatim, `shasum` `db739d34…`, with
+the new position appended. The proposal event in the log reads
+`"status":"approved"`. A **second** approve of the same proposal returned
+**409** and wrote nothing.
+
+**PASS.** Propose does not write, approve does, and the decision is
+idempotent.
+
+### (e) Plugin adapter · PASS
+
+`scripts/runtime_step.sh` was exercised against a server whose router default
+was set to `ollama/gemma4:e4b`, so the adapter's own step cost no
+subscription call. (Setting that default required writing
+`~/.counsel-os/providers.yaml` in the real home — see defect 2. The file was
+removed afterwards.)
+
+Server **running** (11 s):
+
+```bash
+COUNSEL_OS_HOME=<home> CLAUDE_SESSION_ID=task9-smoke bash scripts/runtime_step.sh "What matters do I have?"
+# exit 0
+# stdout: 380 bytes of prose
+# stderr: "→ tool vault_search"
+```
+
+The adapter created its own thread (`f13ed831-…`) and cached the id at
+`$TMPDIR/counsel-os-thread-task9-smoke`. Exit **0**, text on stdout, the tool
+trace on stderr where it belongs.
+
+Server **stopped** (`SIGTERM`, `runtime.json` removed by the signal handler):
+
+```
+exit 3   stdout 0 bytes   stderr 0 bytes
+```
+
+A **stale** `runtime.json` (a hand-written file naming a dead pid and a
+closed port) behaved the same way: exit **3**, both streams empty — the
+`/health` probe caught it.
+
+**PASS** on all three arms of the exit-code contract.
+
+Content note, not an adapter defect: `gemma4:e4b` answered *"I didn't find
+any currently recorded matters"* after searching for the string
+`counsel-os-type: matter`. The vault does contain `matters/acme.md`. The
+model invented a frontmatter marker the system prompt never mentions, rather
+than listing `matters/`, which the preamble does name. The adapter relayed
+that answer faithfully.
+
+### Usage and wall-clock
+
+Wall-clock is measured at `curl`; `durationMs` is the run log's own number.
+
+| # | Provider | Wall | `durationMs` | in / out tokens | costUsd |
+|---|---|---|---|---|---|
+| (a) 1 | `claude-sub/claude-opus-5` | 3.0 s | **9** | 12,878 / 22 | 0.130304 |
+| (a) 2 | `claude-sub/claude-opus-5` | 2.5 s | **7** | 12,937 / 18 | 0.007488 |
+| (b) 1 | `codex-sub/gpt-5.6-terra` | 5.3 s | **20** | 18,281 / 34 | — |
+| (b) 2 | `codex-sub/gpt-5.6-terra` | 3.1 s | **12** | 25,086 / 8 | — |
+| (c) | `ollama/gemma4:e4b` | 28.8 s | 9,148 | 16,659 / 1,139 | — |
+| (d) | `ollama/gemma4:e4b` | 14.0 s | 9,281 | 24,970 / 893 | — |
+| (e) | `ollama/gemma4:e4b` | 11 s | 3,730 | 16,348 / 684 | — |
+
+Two things stand out. The `durationMs` column is wrong on every row (defect
+3). And the system prompt is now the floor of every step: ~12.9 k input
+tokens on Claude for a two-sentence exchange, against ~1.3 k in the Task 1
+resume spike, because `assembleSystemPrompt` prepends the host preamble plus
+the whole 27 KB `skills/counsel/SKILL.md`. Codex's first call cost $0.13 on
+Claude and 18 k input tokens on Codex for the same reason.
+
+### Verdict
+
+| Smoke | Result |
+|---|---|
+| (a) Claude resume across two steps | **PASS** |
+| (b) Codex resume across two steps | **PASS** — and the Task 1 vault-read caveat is retired |
+| (c) Ollama vault tools over the server | **PASS** — `vault_read` + `docket_sweep`; no `vault_list` |
+| (d) Propose → no write → approve → write | **PASS** — double-approve is 409 |
+| (e) Adapter exit 0 / 3 (live, stopped, stale) | **PASS** |
+
+The server, the loop, the session hook, the proposal gate, and the adapter
+all work end to end against real providers.
+
+### Defects found — Step 2
+
+Recorded, not fixed.
+
+1. **Codex thread homes ignore `COUNSEL_OS_HOME`.** `serve.ts` builds
+   `new ThreadStore(vaultRoot)` with no `codexHomeRoot`, and the store's
+   default is `join(homedir(), '.counsel-os', 'codex')`. A server started
+   with `COUNSEL_OS_HOME=<temp>` still wrote
+   `~/.counsel-os/codex/<threadId>/` — including a copy of `auth.json` —
+   into the real home. `serve.ts` already has `counselHome(env)` for
+   `runtime.json`; the store is simply not given it. Two costs: a test or a
+   sandboxed run cannot be isolated, and credentials land somewhere the
+   operator did not point at.
+   (`runtime/src/server/serve.ts`, `runtime/src/threads/store.ts`.)
+2. **The provider registry ignores `COUNSEL_OS_HOME` too.**
+   `DEFAULT_REGISTRY_FILE` is `join(homedir(), '.counsel-os', 'providers.yaml')`,
+   not `counselHome(env)`. Overriding the default provider for this smoke
+   required writing into the developer's real home. Same one-line family as
+   defect 1. (`runtime/src/providers/registry.ts`.)
+3. **Run-log `durationMs` measures almost nothing.** `stream()` starts its
+   clock **after** `beginAttempt()` has already awaited the provider's first
+   non-`session` event — which, on both harnesses, is the whole model turn.
+   Claude steps of 3.0 s and 2.5 s logged `durationMs` of **9** and **7**;
+   Codex steps of 5.3 s and 3.1 s logged **20** and **12**. The Ollama rows
+   are wrong by a smaller factor (28.8 s wall → 9,148 ms) because that tier
+   streams early. Any latency or cost report built on this field is wrong by
+   two orders of magnitude on the harness tiers. The clock belongs at the top
+   of `runStep`, not inside `stream`. (`runtime/src/loop/counsel-loop.ts`.)
+4. **The thread log stores one `text` event per Ollama token.** SSE
+   coalescing lives in `sseFromEvents`, downstream of `store.append`, so the
+   log keeps the raw deltas: smoke (c) wrote **177** `text` events / 13 KB of
+   JSONL for one ~800-character answer, while the client saw 45 coalesced
+   frames. `window()` re-joins consecutive `text` events, so replay is
+   correct — this is size and client ergonomics, not correctness. But every
+   consumer of `GET /threads/:id` now has to redo the coalescing the SSE
+   layer already does. (`runtime/src/loop/counsel-loop.ts` `stream`,
+   `runtime/src/server/sse.ts`.)
+5. **No `proposal` frame on the SSE stream.** The proposal reaches the thread
+   log and `GET /threads/:id`, but a client watching only the step's stream
+   sees an ordinary `tool_call` / `tool_result` pair for `propose_update`. To
+   render the diff and to get the `proposalId` that `POST /approve` requires,
+   it must parse the tool call's arguments or re-`GET` the whole thread.
+   Spec §4.4's approve flow is reachable but not streamable.
+   (`runtime/src/loop/counsel-loop.ts`, `runtime/src/server/sse.ts`.)
+
+### What the next plan should assume — Step 2
+
+- The stack is viable end to end. Nothing here blocks the API or the adapter.
+- **Fix the three `homedir()` call sites together** (defects 1 and 2). One
+  shared `counselHome(env)` helper, passed into `ThreadStore` and
+  `loadRegistry`, closes both — and makes the runtime testable without
+  writing to the developer's home.
+- **Do not report `durationMs` to a user until defect 3 is fixed.** It is not
+  slightly off; it is off by ~300× on the Claude tier.
+- **The system prompt is the dominant cost of a small step.** 12.9 k input
+  tokens before the user says anything. If short exchanges matter, the
+  preamble plus `SKILL.md` needs trimming, or the harness tiers need prompt
+  caching that our usage numbers can actually see (spike 9.x defect 4 is
+  still open).
+- **A UI needs the proposal as a first-class frame** (defect 5), or it will
+  reverse-engineer the gate out of tool-call arguments.
