@@ -88,6 +88,48 @@ describe('runStep', () => {
     expect(closed).toBe(true);
   });
 
+  test('(z2) abandoning the step ABORTS the provider, so one parked on an await settles and unwinds', async () => {
+    // Closing the iterator is not enough on its own. A real harness answers
+    // `return()` only once the await it is parked on settles — here the
+    // teardown every tier does on the way out — and the only thing that
+    // settles that await is the request's signal. Without the abort the
+    // bounded close waits out its whole budget and the provider is still
+    // running when the step is reported over.
+    let unwound = false;
+    const abortable: ModelProvider = {
+      id: 'abortable/abortable',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+      async *run(req): AsyncIterable<StepEvent> {
+        try {
+          yield { type: 'text', text: 'a' };
+        } finally {
+          await new Promise<void>((_, reject) => {
+            if (req.signal?.aborted) return reject(new Error('aborted'));
+            req.signal?.addEventListener('abort', () => reject(new Error('aborted')), { once: true });
+          }).catch(() => {
+            /* the abort IS how this settles */
+          });
+          unwound = true;
+        }
+      },
+    };
+    const { id } = await store.create('default', {});
+
+    // The default 600 s deadline: nothing here may depend on it expiring.
+    const it = runStep(deps([abortable]), { threadId: id, message: 'hello' })[Symbol.asyncIterator]();
+    const first = await it.next();
+    expect(first.value!.type).toBe('text');
+    const startedAt = Date.now();
+    await it.return?.(undefined);
+
+    expect(unwound).toBe(true);
+    // Not "eventually": the close budget alone is 2 s, so a pass here is the
+    // abort and nothing else.
+    expect(Date.now() - startedAt).toBeLessThan(100);
+    expect(readRun(vaultRoot, 'default', first.value!.runId)!.status).toBe('abandoned');
+  });
+
   test('(a) first step appends user, step, the model events, and done; the request replays the window with no session', async () => {
     const fake = new FakeModelProvider([{ text: 'hi there' }]);
     const { id } = await store.create('default', {});
@@ -1016,6 +1058,87 @@ describe('runStep — step timeout', () => {
     const events = await collect(runStep(deps([fake]), { threadId: id, message: 'hello', timeoutMs: 600_000 }));
 
     expect(events.map(e => e.type)).toEqual(['text', 'done']);
+  });
+
+  test('a done with a slow tail behind it ends the step — one terminal event, not a timeout on top of it', async () => {
+    // The provider answered. What is left is teardown the caller must not be
+    // billed for: reading on would race the deadline against a tail that owes
+    // the caller nothing, and append a `timeout` error behind a finished step.
+    // Both doors are tested: a `done` that arrives as the step's first event,
+    // and one that arrives mid-stream, where the deadline race lives.
+    function trailingDone(lead: StepEvent[]): ModelProvider {
+      return {
+        id: 'trailing/trailing',
+        kind: 'direct',
+        capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+        async *run(): AsyncIterable<StepEvent> {
+          for (const ev of lead) yield ev;
+          yield { type: 'done', output: null, usage: { inputTokens: 1, outputTokens: 2 } };
+          // Ends 150 ms later — well past the 50 ms deadline below.
+          await new Promise(r => setTimeout(r, 150));
+        },
+      };
+    }
+
+    const first = await store.create('default', {});
+    const firstEvents = await collect(
+      runStep(deps([trailingDone([])]), { threadId: first.id, message: 'hello', timeoutMs: 50 }),
+    );
+    expect(firstEvents.map(e => e.type)).toEqual(['done']);
+    expect(await logKinds(first.id)).toEqual(['user', 'step', 'done']);
+    expect(readRun(vaultRoot, 'default', firstEvents[0]!.runId)!.status).toBe('done');
+
+    const mid = await store.create('default', {});
+    const midEvents = await collect(
+      runStep(deps([trailingDone([{ type: 'text', text: 'a' }])]), {
+        threadId: mid.id,
+        message: 'hello',
+        timeoutMs: 50,
+      }),
+    );
+    expect(midEvents.map(e => e.type)).toEqual(['text', 'done']);
+    expect(await logKinds(mid.id)).toEqual(['user', 'step', 'text', 'done']);
+    expect(readRun(vaultRoot, 'default', midEvents[0]!.runId)!.status).toBe('done');
+  });
+
+  test('a deadline that passes during the resume fallback does not start a second attempt', async () => {
+    // Clearing the dead session is a disk write, and it can outlast what is
+    // left of the step. Calling the provider again then would hand it an
+    // already-aborted signal: a run that can only produce the timeout the
+    // caller is owed anyway.
+    let runs = 0;
+    const provider: ModelProvider = {
+      id: 'resume/resume',
+      kind: 'direct',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 100_000, auth: 'local' },
+      async *run(): AsyncIterable<StepEvent> {
+        runs++;
+        yield { type: 'error', message: 'session not found' };
+      },
+    };
+    class SlowClearStore extends ThreadStore {
+      override async clearSession(tenant: string, id: string, providerId: string): Promise<void> {
+        await new Promise(r => setTimeout(r, 60));
+        return super.clearSession(tenant, id, providerId);
+      }
+    }
+    const slow = new SlowClearStore(vaultRoot, { codexHomeRoot: mkdtempSync(join(tmpdir(), 'loop-codex-')) });
+    const { id } = await slow.create('default', {});
+    await slow.setSession('default', id, provider.id, 'dead-session');
+
+    const events = await collect(
+      runStep({ ...deps([provider]), store: slow }, { threadId: id, message: 'hello', timeoutMs: 30 }),
+    );
+
+    expect(events.map(e => e.type)).toEqual(['error']);
+    expect((events[0] as Extract<StepEvent, { type: 'error' }>).message).toMatch(/^step timed out after \d+s$/);
+    expect(runs).toBe(1);
+    // The fallback still did its half: the dead session is gone and the
+    // warning is in the transcript.
+    expect(await logKinds(id)).toEqual(['user', 'step', 'warning', 'error']);
+    const { header } = await slow.get('default', id);
+    expect(header.sessions[provider.id]).toBeUndefined();
+    expect(readRun(vaultRoot, 'default', events[0]!.runId)!.status).toBe('timeout');
   });
 });
 

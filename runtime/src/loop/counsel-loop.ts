@@ -193,6 +193,22 @@ export async function* runStep(
   const failRun = (error: string): void => {
     finalizeRun(deps, runId, run, { status: 'error', error });
   };
+  /**
+   * Tells the provider to stop, for a step the caller walked away from.
+   *
+   * Closing the provider's iterator only stops US reading it. A real harness
+   * or SDK is parked on an `await`, and a `return()` queued behind that await
+   * settles only when the await does — so without an abort the provider keeps
+   * running (a harness child process with nobody reading it, an open HTTP
+   * response) until the bounded close gives up on it. The abort settles the
+   * SDK's own promise, which is what actually runs the provider's `finally`.
+   *
+   * Only for abandonment: a step that reached a terminal status is already
+   * over, and an expired deadline aborts with its own reason.
+   */
+  const abandonProvider = (): void => {
+    if (!run.finalized) cancel.abort(new Error(ABANDONED_MESSAGE));
+  };
 
   // ONE try/finally over the whole step, from the first thing that can be
   // interrupted onward. It has to start here rather than at the provider:
@@ -334,10 +350,14 @@ export async function* runStep(
         return;
       }
       req = await replay();
-      attempt = await beginAttempt(provider, req, deadline);
+      // The deadline can pass while the dead session is being cleared. A
+      // second attempt now would hand the provider an already-aborted signal:
+      // a wasted run whose only possible outcome is the timeout the caller is
+      // owed anyway. Take that path directly instead.
+      attempt = deadline.remaining() === 0 ? expiredAttempt(attempt.it) : await beginAttempt(provider, req, deadline);
     }
 
-    yield* stream(deps, opts, provider, runId, chain(attempt, deadline, timeoutMs), startedAt, run);
+    yield* stream(deps, opts, provider, runId, chain(attempt, deadline, timeoutMs, abandonProvider), startedAt, run);
   } catch (err) {
     // Something THREW rather than becoming an event: a provider that rejects,
     // or a thread-store read the setup does not guard (the window replay).
@@ -347,6 +367,11 @@ export async function* runStep(
     finalizeRun(deps, runId, run, { status: 'error', error: message(err) });
     throw err;
   } finally {
+    // Abort FIRST — before the deadline is cancelled, and before anything
+    // else gets to give up on the provider. `chain` already fires this on its
+    // way through the bounded close; this covers a caller that walked away
+    // during the step SETUP, where there is no provider stream yet.
+    abandonProvider();
     deadline?.cancel();
     // The consumer walked away — an SSE client that hung up, which reaches
     // this generator as `return()` — so no terminal event was ever produced
@@ -373,7 +398,10 @@ const ABANDONED_MESSAGE = 'the caller abandoned the step';
  */
 interface RunState {
   finalized: boolean;
-  outcome: () => RunPatch;
+  /** `calls` is the step's finished tool tally when the caller already has
+   * one — the `done` path computes it for the run log — so a finalization
+   * never tallies the same calls twice. */
+  outcome: (calls?: ToolCallLog[]) => RunPatch;
 }
 
 function isResumeFailure(ev: StepEvent): boolean {
@@ -406,7 +434,7 @@ async function beginAttempt(provider: ModelProvider, req: StepRequest, deadline:
   const head: StepEvent[] = [];
   const expired = (): Attempt => {
     closeWithoutWaiting(it);
-    return { it, head, first: { done: true, value: undefined }, timedOut: true };
+    return expiredAttempt(it);
   };
 
   let first = await deadline.race(it.next());
@@ -418,6 +446,12 @@ async function beginAttempt(provider: ModelProvider, req: StepRequest, deadline:
     first = next;
   }
   return { it, head, first };
+}
+
+/** An attempt the deadline outran: nothing to replay, nothing to close, and
+ * `chain` turns it into the step's one terminal timeout error. */
+function expiredAttempt(it: AsyncIterator<StepEvent>): Attempt {
+  return { it, head: [], first: { done: true, value: undefined }, timedOut: true };
 }
 
 /**
@@ -433,25 +467,49 @@ async function beginAttempt(provider: ModelProvider, req: StepRequest, deadline:
  *
  * This is also where the step's deadline is enforced: each read is raced
  * against it, so an expiry closes the provider and ends the stream with one
- * terminal `error` instead of waiting on an event that is never coming.
+ * terminal `error` instead of waiting on an event that is never coming — and
+ * where the step stops after the provider's own terminal event, so a
+ * provider with a slow tail cannot turn one `done` into a second, contrary
+ * terminal event.
+ *
+ * `onAbandon` fires when the way out is the consumer hanging up, before the
+ * close it would otherwise have to outwait.
  */
-async function* chain(attempt: Attempt, deadline: Deadline, timeoutMs: number): AsyncIterable<StepEvent> {
+async function* chain(
+  attempt: Attempt,
+  deadline: Deadline,
+  timeoutMs: number,
+  onAbandon: () => void,
+): AsyncIterable<StepEvent> {
   // Cleared once a timeout has already fired the close it must not wait for.
   // Set BEFORE the head events go out: a consumer that hangs up while they
   // are streaming would otherwise unwind into a close this provider cannot
   // answer.
   let closeOnExit = !attempt.timedOut;
+  // Cleared by every deliberate way out. What is left over is the unwind: the
+  // consumer stopped reading, which reaches this generator as `return()` at
+  // whichever `yield` it was parked on.
+  let abandoned = true;
   try {
     for (const ev of attempt.head) yield ev;
     if (attempt.timedOut) {
+      abandoned = false;
       yield timeoutError(timeoutMs);
       return;
     }
-    if (attempt.first.done) return;
+    if (attempt.first.done) {
+      abandoned = false;
+      return;
+    }
     yield attempt.first.value;
+    if (isTerminal(attempt.first.value)) {
+      abandoned = false;
+      return;
+    }
     for (;;) {
       const n = await deadline.race(attempt.it.next());
       if (n === TIMED_OUT) {
+        abandoned = false;
         closeOnExit = false;
         closeWithoutWaiting(attempt.it);
         // The timeout leaves the stream through the same door as any other
@@ -460,12 +518,31 @@ async function* chain(attempt: Attempt, deadline: Deadline, timeoutMs: number): 
         yield timeoutError(timeoutMs);
         return;
       }
-      if (n.done) return;
+      if (n.done) {
+        abandoned = false;
+        return;
+      }
       yield n.value;
+      // The provider has said its last word. Stop HERE rather than read on
+      // and race the deadline against whatever tail it still has to flush: a
+      // slow tail would otherwise append a `timeout` error behind a step that
+      // already finished, and the caller would see two terminal events. The
+      // `finally` closes the provider within budget.
+      if (isTerminal(n.value)) {
+        abandoned = false;
+        return;
+      }
     }
   } finally {
+    if (abandoned) onAbandon();
     if (closeOnExit) await closeWithin(attempt.it, deadline);
   }
+}
+
+/** The events that end a step: after one, nothing the provider has left to
+ * say may reach the caller (spec §5 — one terminal event per step). */
+function isTerminal(ev: StepEvent): boolean {
+  return ev.type === 'done' || ev.type === 'error';
 }
 
 /** Closes an abandoned provider iterator. A throwing `return()` must not
@@ -615,7 +692,7 @@ function timeoutError(ms: number): StepEvent {
 
 /** True only for the terminal `error` a timed-out step produced — the exact
  * object `timeoutError` made, before anything copied it. */
-export function isTimeoutError(ev: StepEvent): boolean {
+function isTimeoutError(ev: StepEvent): boolean {
   return TIMEOUT_ERRORS.has(ev);
 }
 
@@ -712,10 +789,10 @@ async function* stream(
   // What every finalization of this run's record carries from here on,
   // whatever the outcome — including the `abandoned` one `runStep` writes if
   // the caller hangs up before any of the terminal paths below is reached.
-  run.outcome = (): RunPatch => ({
+  run.outcome = (calls?: ToolCallLog[]): RunPatch => ({
     finishedAt: nowIso(),
     durationMs: Date.now() - startedAt,
-    toolCalls: finishToolCalls(toolCalls, pending),
+    toolCalls: calls ?? finishToolCalls(toolCalls, pending),
     primitivesRead: [...primitivesRead],
     proposals: [...proposals],
   });
@@ -812,16 +889,26 @@ async function* stream(
       // AFTER the terminal event reached the caller, and its failures go to
       // stderr: neither may cost a caller its `done`.
       if (ev.type === 'done') {
-        recordRun(deps, opts, provider, runId, ev.usage, Date.now() - startedAt, finishToolCalls(toolCalls, pending));
-        finalizeRun(deps, runId, run, {
-          status: 'done',
-          usage: ev.usage,
-          ...(ev.usage.costUsd === undefined ? {} : { costUsd: ev.usage.costUsd }),
-          // Only a step that ASKED for a structured answer records one: a
-          // provider's `output` is `null` otherwise, and a null in the record
-          // would read as "it produced nothing".
-          ...(opts.outputSchema ? { output: ev.output } : {}),
-        });
+        // One tally, two readers: the run log's entry and the record's.
+        // Tallying twice would walk the same still-pending calls again for no
+        // reason, and leave two lists that only happen to agree.
+        const calls = finishToolCalls(toolCalls, pending);
+        recordRun(deps, opts, provider, runId, ev.usage, Date.now() - startedAt, calls);
+        finalizeRun(
+          deps,
+          runId,
+          run,
+          {
+            status: 'done',
+            usage: ev.usage,
+            ...(ev.usage.costUsd === undefined ? {} : { costUsd: ev.usage.costUsd }),
+            // Only a step that ASKED for a structured answer records one: a
+            // provider's `output` is `null` otherwise, and a null in the record
+            // would read as "it produced nothing".
+            ...(opts.outputSchema ? { output: ev.output } : {}),
+          },
+          calls,
+        );
       } else if (ev.type === 'error') {
         finalizeRun(deps, runId, run, {
           status: isTimeoutError(ev) ? 'timeout' : 'error',
@@ -937,10 +1024,12 @@ function beginRun(deps: CounselLoopDeps, opts: RunStepOptions, runId: string, st
  * Closes out a run record: the outcome so far plus the terminal status, and
  * the flag that stops `runStep`'s `finally` from marking the step abandoned.
  * `patch` wins over `outcome()`, so a caller can override a derived field.
+ * `calls` hands `outcome()` a tool tally the caller already finished, so the
+ * `done` path tallies once for both the run log and the record.
  */
-function finalizeRun(deps: CounselLoopDeps, runId: string, run: RunState, patch: RunPatch): void {
+function finalizeRun(deps: CounselLoopDeps, runId: string, run: RunState, patch: RunPatch, calls?: ToolCallLog[]): void {
   run.finalized = true;
-  patchRun(deps, runId, { ...run.outcome(), ...patch });
+  patchRun(deps, runId, { ...run.outcome(calls), ...patch });
 }
 
 /** Updates an open run record, swallowing failures to stderr — same rule as
