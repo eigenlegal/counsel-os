@@ -210,6 +210,7 @@ a { color: var(--accent); }
 .composer textarea { width: 100%; resize: vertical; font-family: inherit; }
 .composer-actions { display: flex; gap: 0.5rem; align-items: center; justify-content: flex-end; }
 .composer-actions label { display: flex; gap: 0.35rem; align-items: center; margin-right: auto; }
+.composer-note { margin: 0; font-size: 0.85rem; }
 .label-text { color: var(--fg-muted); font-size: 0.8rem; }
 
 /* ── Vault ─────────────────────────────────────────────────────────────── */

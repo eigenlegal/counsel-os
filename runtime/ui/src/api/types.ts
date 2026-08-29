@@ -113,7 +113,11 @@ export interface Health {
   vault: string;
   tenant: string;
   providers: ProviderInfo[];
-  default: string;
+  /** `null` when no provider resolves — the runtime reports that state
+   * rather than throwing, because `/health` is how an operator diagnoses
+   * it. It can also name a provider that is NOT in `providers`: the
+   * registry accepts a default you have not added yet. */
+  default: string | null;
   stepTimeoutMs: number;
 }
 
@@ -158,7 +162,8 @@ export interface VaultEntry {
 export interface VaultFile {
   path: string;
   content: string;
-  version: string;
+  /** `null` if the file went away between the read and the hash. */
+  version: string | null;
 }
 
 /** One provider entry of `providers.yaml`, as `RegistryFile` parses it.

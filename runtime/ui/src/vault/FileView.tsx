@@ -14,7 +14,9 @@ export interface FileViewProps {
  * approving a proposal, so this surface has no editor and no save. What it
  * shows besides the content is the `version` — the hash a proposal's
  * `expectedVersion` is checked against, and therefore the number that
- * explains a 409 on the chat surface.
+ * explains a 409 on the chat surface. The server sends `null` for it if the
+ * file vanished between the read and the hash, and then there is no hash to
+ * show.
  */
 export function FileView({ path }: FileViewProps): JSX.Element {
   const [file, setFile] = useState<VaultFile | null>(null);
@@ -44,7 +46,7 @@ export function FileView({ path }: FileViewProps): JSX.Element {
     <article className="vault-file-view">
       <header className="vault-file-head">
         <code className="vault-file-path">{path}</code>
-        {file === null ? null : <span className="vault-version">version {file.version}</span>}
+        {file === null || file.version === null ? null : <span className="vault-version">version {file.version}</span>}
       </header>
 
       {error !== null ? (
