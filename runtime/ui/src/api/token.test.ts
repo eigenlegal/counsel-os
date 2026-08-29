@@ -25,6 +25,13 @@ describe('splitTokenFromHash', () => {
   test('decodes a percent-encoded token', () => {
     expect(splitTokenFromHash('#token=a%2Bb').token).toBe('a+b');
   });
+
+  test('a fragment that will not decode does not throw', () => {
+    // `decodeURIComponent` throws on a lone `%`; this runs before React
+    // renders, so a throw here would be a blank page.
+    expect(splitTokenFromHash('#token=%').token).toBe('%');
+    expect(splitTokenFromHash('#token=%zz').token).toBe('%zz');
+  });
 });
 
 describe('bootstrapToken', () => {
@@ -36,6 +43,12 @@ describe('bootstrapToken', () => {
     expect(sessionStorage.getItem(TOKEN_KEY)).toBe('secret-token');
     expect(globalThis.location.hash).toBe('#/');
     expect(globalThis.location.href).not.toContain('secret-token');
+  });
+
+  test('survives a malformed fragment instead of blanking the page', () => {
+    globalThis.history.replaceState(null, '', '/#token=%');
+    expect(bootstrapToken()).toBe('%');
+    expect(globalThis.location.hash).toBe('#/');
   });
 
   test('leaves a fragment with no token alone', () => {

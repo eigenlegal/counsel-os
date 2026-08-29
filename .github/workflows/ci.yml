@@ -38,7 +38,7 @@ jobs:
         run: bun run typecheck:ui
 
       - name: Test
-        run: bun test
+        run: bun run test
 
       - name: UI tests
         run: bun run ui:test

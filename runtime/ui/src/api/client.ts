@@ -7,7 +7,7 @@
  * app can show the spec §5 message instead of each caller inventing its own.
  */
 import { parseSseChunk } from './sse';
-import { getToken, TokenMissingError } from './token';
+import { clearToken, getToken, TokenMissingError } from './token';
 import { reportUnauthorized } from './unauthorized';
 import type { StepBody, StreamEvent } from './types';
 
@@ -62,7 +62,14 @@ async function readBody(res: Response): Promise<unknown> {
 }
 
 async function failure(res: Response): Promise<ApiError> {
-  if (res.status === 401) reportUnauthorized();
+  if (res.status === 401) {
+    // The server has rejected this token, so it will reject every later use
+    // of it. Dropping it stops the page from replaying a credential it knows
+    // is dead, and leaves the tab in the same state as one that never got a
+    // token — which is exactly what the message on screen says it is.
+    clearToken();
+    reportUnauthorized();
+  }
   return new ApiError(res.status, await readBody(res));
 }
 

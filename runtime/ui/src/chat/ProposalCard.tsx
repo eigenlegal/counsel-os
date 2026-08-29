@@ -33,6 +33,19 @@ export function ProposalCard({ threadId, proposal, onReload }: ProposalCardProps
   const [conflict, setConflict] = useState<Conflict | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // The card keeps its own status so a decision shows without waiting for a
+  // refetch — but a reload brings a fresh proposal in on the same React key,
+  // and the server's copy has to win. Tracking the prop this state was
+  // synced from is React's own answer to that; without it, Reload would
+  // redraw the stale local guess.
+  const [syncedFrom, setSyncedFrom] = useState<ProposalStatus>(proposal.status);
+  if (proposal.status !== syncedFrom) {
+    setSyncedFrom(proposal.status);
+    setStatus(proposal.status);
+    setConflict(null);
+    setError(null);
+  }
+
   const decide = async (decision: 'approve' | 'reject'): Promise<void> => {
     setBusy(true);
     setConflict(null);
@@ -48,11 +61,17 @@ export function ProposalCard({ threadId, proposal, onReload }: ProposalCardProps
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         const body = err.body as ConflictBody | null;
-        // Two different 409s share the status: the file moved (a `conflict`
-        // to show), or the proposal was already decided (no `conflict`, and
-        // the message is the whole story).
-        if (body?.conflict) setConflict(body.conflict);
-        else setError(body?.error ?? 'this proposal is no longer pending');
+        // Two different 409s share the status. The file moved under the
+        // proposal — show both versions and offer a reload. Or somebody
+        // already decided it, in which case the server hands back the
+        // settled proposal: adopt that status, so the card stops offering
+        // buttons for a decision that has already been made.
+        if (body?.conflict) {
+          setConflict(body.conflict);
+        } else {
+          if (body?.proposal) setStatus(body.proposal.status);
+          setError(body?.error ?? 'this proposal is no longer pending');
+        }
       } else {
         setError(err instanceof Error ? err.message : String(err));
       }
@@ -104,7 +123,18 @@ export function ProposalCard({ threadId, proposal, onReload }: ProposalCardProps
               <code>{conflict.actual}</code>
             </dd>
           </dl>
-          <button type="button" onClick={onReload}>
+          <button
+            type="button"
+            onClick={() => {
+              // Clear the conflict here, not just in the parent: the refetch
+              // may bring back a proposal in the same state it is already in
+              // (nothing was written), and the card must not keep showing a
+              // stale conflict over it.
+              setConflict(null);
+              setError(null);
+              onReload();
+            }}
+          >
             Reload
           </button>
         </div>

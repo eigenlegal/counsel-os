@@ -40,6 +40,16 @@ export function Chat({ threadId, health, onThreadTouched }: ChatProps): JSX.Elem
   const abort = useRef<AbortController | null>(null);
   const transcript = useRef<HTMLDivElement | null>(null);
 
+  /**
+   * Refetches everything and installs it in ONE pass: transcript, runs, and
+   * the live turn cleared together. Two passes would draw a frame in which
+   * the server's copy of the turn and the streamed one are both on screen —
+   * the same answer, twice, flashing.
+   *
+   * The live turn is only cleared when no step is running (`abort.current`),
+   * so a Reload from a card inside a streaming turn refreshes the history
+   * underneath it without wiping the turn being written.
+   */
   const load = useCallback(async (): Promise<void> => {
     setError(null);
     try {
@@ -51,6 +61,10 @@ export function Chat({ threadId, health, onThreadTouched }: ChatProps): JSX.Elem
       ]);
       setThread(next);
       setRuns(nextRuns);
+      if (abort.current === null) {
+        setLive(null);
+        setPending(null);
+      }
     } catch (err) {
       // A 401 is already on screen as the whole-page message; anything else
       // belongs here, next to the thread it happened to.
@@ -109,12 +123,16 @@ export function Chat({ threadId, health, onThreadTouched }: ChatProps): JSX.Elem
         setError(detail(err));
       }
     } finally {
+      // Cleared BEFORE the refetch, so `load` knows the step is over and can
+      // retire the live turn in the same pass that installs the transcript
+      // containing it.
       abort.current = null;
       // The server's transcript is now the truth — including the events the
-      // stream suppressed and the run record's final status.
+      // stream suppressed and the run record's final status. If the refetch
+      // fails, `load` reports it and leaves the streamed turn on screen:
+      // losing the answer to a failed refresh would be worse than the
+      // duplicate this ordering avoids.
       await load();
-      setLive(null);
-      setPending(null);
       onThreadTouched?.();
     }
   };

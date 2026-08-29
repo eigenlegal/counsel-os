@@ -2,7 +2,7 @@ import '../test/dom';
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { ApiError, fetchJson, streamStep } from './client';
-import { clearToken, TOKEN_KEY } from './token';
+import { clearToken, readToken, TOKEN_KEY } from './token';
 import { onUnauthorized } from './unauthorized';
 import type { StreamEvent } from './types';
 
@@ -70,6 +70,13 @@ describe('fetchJson', () => {
     await fetchJson('/health').catch(() => undefined);
     off();
     expect(reports).toBe(1);
+  });
+
+  test('a 401 drops the token the server just rejected', async () => {
+    responds(401, { error: 'unauthorized' });
+    await fetchJson('/health').catch(() => undefined);
+    expect(readToken()).toBeNull();
+    expect(sessionStorage.getItem(TOKEN_KEY)).toBeNull();
   });
 });
 

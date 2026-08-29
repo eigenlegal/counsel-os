@@ -44,11 +44,26 @@ export function splitTokenFromHash(hash: string): HashSplit {
 
   for (const part of raw.split('&')) {
     if (part === '') continue;
-    if (part.startsWith('token=')) token = decodeURIComponent(part.slice('token='.length));
+    if (part.startsWith('token=')) token = decode(part.slice('token='.length));
     else kept.push(part);
   }
 
   return { token, rest: kept.join('&') || HOME };
+}
+
+/**
+ * `decodeURIComponent` throws on a malformed escape (`%`, `%zz`), and this
+ * runs before React renders: a throw here is a blank page with the answer
+ * only in the console. A fragment that will not decode is far more likely to
+ * be a truncated paste than a real token, so the raw value is passed through
+ * and the server gets to be the one that rejects it.
+ */
+function decode(raw: string): string {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
 }
 
 function session(): Storage | null {

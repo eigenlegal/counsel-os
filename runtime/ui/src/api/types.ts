@@ -131,9 +131,17 @@ export interface ApproveResult {
   version?: string;
 }
 
-/** `POST /threads/:id/approve` — 409. `conflict` is present when the file
- * moved under the proposal; absent when the proposal was already decided. */
+/**
+ * `POST /threads/:id/approve` — 409, which covers two different situations
+ * that the fields tell apart:
+ *
+ * - `conflict` set — the file moved under the proposal, nothing was written,
+ *   and the two versions are the whole story.
+ * - `proposal` set — somebody already decided this one. The earlier decision
+ *   stands, and the proposal it returns is the current, settled state.
+ */
 export interface ConflictBody {
   error: string;
   conflict?: { expected: string; actual: string };
+  proposal?: Extract<ThreadEvent, { t: 'proposal' }> | null;
 }

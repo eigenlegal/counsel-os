@@ -10,7 +10,7 @@
     "evals:runtime": "python3 scripts/run_evals.py --generate --runner runtime",
     "evals:runner-test": "python3 scripts/eval_runtime_runner_test.py",
     "law:frontmatter": "python3 scripts/validate_law_frontmatter.py",
-    "test": "bun test",
+    "test": "bun test runtime/src browse/src scripts",
     "test:runtime": "bun test runtime/src",
     "test:server": "bun test browse/src",
     "typecheck": "tsc --noEmit -p browse/tsconfig.json",
