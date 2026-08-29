@@ -19,7 +19,7 @@
  * operator would type rather than calling `startServer` behind its back.
  */
 import { join, resolve } from 'node:path';
-import { HOME_DIR, PORT, ROOT, seedVault, VAULT_DIR } from './paths';
+import { BASE_URL, HOME_DIR, PORT, ROOT, seedVault, VAULT_DIR } from './paths';
 
 seedVault();
 
@@ -47,10 +47,30 @@ const child = Bun.spawn(
     // `COUNSEL_OS_HOME` decides where `runtime.json` lands, and the spec
     // reads the bearer token out of it.
     env: { ...process.env, COUNSEL_OS_HOME: HOME_DIR },
-    stdout: 'inherit',
+    // Piped, not inherited, so the ONE line `serve` prints — the page URL
+    // with the bearer token in its fragment — never reaches the test log.
+    // Playwright relays this process's stdout into the runner output, and a
+    // token belongs in no log, however short its life.
+    stdout: 'pipe',
     stderr: 'inherit',
   },
 );
+
+/** Everything the server says, except the line that carries the token. That
+ * one becomes an address with no credential in it. */
+async function relay(): Promise<void> {
+  const decoder = new TextDecoder();
+  let rest = '';
+  for await (const chunk of child.stdout) {
+    const lines = (rest + decoder.decode(chunk as Uint8Array, { stream: true })).split('\n');
+    rest = lines.pop() ?? '';
+    for (const line of lines) {
+      console.log(line.includes('#token=') ? `counsel-os runtime on ${BASE_URL} (token withheld)` : line);
+    }
+  }
+  if (rest !== '') console.log(rest.includes('#token=') ? `counsel-os runtime on ${BASE_URL} (token withheld)` : rest);
+}
+void relay();
 
 // Playwright kills the whole process group, so this is belt and braces — but
 // a wrapper that dies and leaves a listener behind would wedge the NEXT run
