@@ -286,8 +286,19 @@ function normalizePath(p: string): string {
 /**
  * Seeds or refreshes `<homeDir>/auth.json` from the real `CODEX_HOME`'s
  * `auth.json`, per the "keeps a credential copy for the life of the thread"
- * policy in `resolveCodexHome`'s doc comment. No-op when the real home has
- * no `auth.json` (not logged in) — same rationale as `prepareIsolatedHome`.
+ * policy in `resolveCodexHome`'s doc comment.
+ *
+ * When the real home has NO `auth.json` — the operator logged out, or the
+ * file was revoked — an existing copy is removed rather than left behind. A
+ * persistent home outlives the credential it was seeded from, so leaving the
+ * copy would keep a revoked token usable from this thread and would keep it
+ * on disk indefinitely after the operator believed they had logged out.
+ *
+ * Every copy is chmod'ed 0600 afterwards. `copyFileSync` gives the
+ * destination the SOURCE's mode on create and leaves the existing mode alone
+ * on overwrite, so a permissive `~/.codex/auth.json` — or a copy created
+ * before the enclosing directory's 0700 was tightened — would otherwise
+ * publish the operator's credentials to every local account.
  *
  * Initial copy (destination doesn't exist yet) uses
  * `constants.COPYFILE_EXCL`, which makes `copyFileSync` fail rather than
@@ -304,11 +315,20 @@ function normalizePath(p: string): string {
  */
 function seedCodexAuth(homeDir: string, realHome: string): void {
   const authSrc = join(realHome, 'auth.json');
-  if (!existsSync(authSrc)) return;
   const authDest = join(homeDir, 'auth.json');
+  if (!existsSync(authSrc)) {
+    // Logged out: the copy must not outlive the credential it copied.
+    try {
+      rmSync(authDest, { force: true });
+    } catch {
+      /* best effort — nothing here can make a missing credential worse */
+    }
+    return;
+  }
   if (!existsSync(authDest)) {
     try {
       copyFileSync(authSrc, authDest, constants.COPYFILE_EXCL);
+      chmodSync(authDest, 0o600);
     } catch {
       // Refused (already exists / symlink) — leave the destination alone.
     }
@@ -317,6 +337,10 @@ function seedCodexAuth(homeDir: string, realHome: string): void {
   if (statSync(authSrc).mtimeMs > statSync(authDest).mtimeMs) {
     copyFileSync(authSrc, authDest);
   }
+  // Unconditional, not just after a re-copy: an overwrite keeps the
+  // destination's existing mode, and a copy made before this rule existed
+  // still has whatever mode the source had.
+  chmodSync(authDest, 0o600);
 }
 
 /**

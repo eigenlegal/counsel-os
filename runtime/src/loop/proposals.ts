@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { Tenant, ToolDef, VaultStore, Version } from '../core/types';
 import { VaultConflictError } from '../core/types';
 import type { ThreadEvent, ThreadStore } from '../threads/store';
+import { normalizeVaultPath } from '../vault/knowledge-paths';
 
 export interface ProposeUpdateInput {
   path: string;
@@ -16,6 +17,15 @@ export interface ProposeUpdateInput {
  * `proposal` event, carrying the path's version at proposal time, and hands
  * the model back the proposal id to reference when telling the user what it
  * proposed. `applyProposal` is what actually writes, on approval.
+ *
+ * The path is normalized before it is recorded. `isKnowledgePath` already
+ * normalizes for its gate decision, so `matters/../practice/x.md` is
+ * correctly treated as a knowledge path — but the raw spelling is what used
+ * to land in the proposal event, and that is what a reviewer reads, what a
+ * UI groups by, and what `applyProposal` writes to. Two spellings of one
+ * file must not read as two different proposals. A path that normalizes out
+ * of the vault throws, which `runToolDef` turns into an error result the
+ * model can see, rather than recording an unapprovable proposal.
  */
 export function proposeUpdateTool(
   store: ThreadStore,
@@ -34,13 +44,14 @@ export function proposeUpdateTool(
       rationale: z.string().describe('Why this update is proposed, for the user to review.'),
     }),
     execute: async ({ path, content, rationale }) => {
+      const vaultPath = normalizeVaultPath(path);
       const proposalId = randomUUID();
-      const expectedVersion = await vault.version(tenant, path);
+      const expectedVersion = await vault.version(tenant, vaultPath);
       await store.append(tenant, threadId, {
         t: 'proposal',
         at: new Date().toISOString(),
         id: proposalId,
-        path,
+        path: vaultPath,
         content,
         rationale,
         status: 'pending',

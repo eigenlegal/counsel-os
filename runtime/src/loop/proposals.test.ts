@@ -50,6 +50,39 @@ describe('proposeUpdateTool', () => {
     expect(await vault.read('default', 'practice/standards/indemnification.md')).toBe('old content');
   });
 
+  test('the recorded path is normalized, not the spelling the model used', async () => {
+    // `isKnowledgePath` already normalizes, so this reaches propose_update
+    // rather than vault_write. What lands in the event is what a reviewer
+    // reads and what applyProposal writes to, so it must be the real path.
+    const tool = proposeUpdateTool(store, vault, threadId, 'default');
+    const r = await runToolDef(
+      [tool],
+      'propose_update',
+      { path: 'matters/../practice/x.md', content: 'body', rationale: 'why' },
+      'default',
+    );
+    expect(r.isError).toBe(false);
+
+    const { events } = await store.get('default', threadId);
+    const proposal = events.find(ev => 't' in ev && ev.t === 'proposal') as any;
+    expect(proposal.path).toBe('practice/x.md');
+  });
+
+  test('a path that normalizes out of the vault is an error result, not a proposal', async () => {
+    const tool = proposeUpdateTool(store, vault, threadId, 'default');
+    const r = await runToolDef(
+      [tool],
+      'propose_update',
+      { path: '../escape.md', content: 'body', rationale: 'why' },
+      'default',
+    );
+    expect(r.isError).toBe(true);
+    expect(String(r.output)).toContain('path outside vault');
+
+    const { events } = await store.get('default', threadId);
+    expect(events.some(ev => 't' in ev && ev.t === 'proposal')).toBe(false);
+  });
+
   test('a proposal for a path that does not exist yet records a null expectedVersion', async () => {
     const tool = proposeUpdateTool(store, vault, threadId, 'default');
     await runToolDef(

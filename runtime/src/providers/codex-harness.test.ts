@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, utimesSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, test } from 'bun:test';
@@ -259,6 +259,45 @@ describe('resolveCodexHome — credential re-seed', () => {
 
     resolveCodexHome({ homeDir, realHome });
     expect(readFileSync(join(homeDir, 'auth.json'), 'utf8')).toBe('{"token":"first"}');
+  });
+
+  test('the copy is 0600 however permissive the real auth.json is', () => {
+    const realHome = mkdtempSync(join(tmpdir(), 'real-home-'));
+    const homeDir = mkdtempSync(join(tmpdir(), 'persist-home-'));
+    writeFileSync(join(realHome, 'auth.json'), '{"token":"first"}');
+    chmodSync(join(realHome, 'auth.json'), 0o644);
+
+    // Initial copy: copyFileSync would otherwise give it the source's mode.
+    resolveCodexHome({ homeDir, realHome });
+    expect(statSync(join(homeDir, 'auth.json')).mode & 0o777).toBe(0o600);
+
+    // Re-seed: an overwrite keeps the DESTINATION's mode, so a copy loosened
+    // in between has to be tightened again too.
+    chmodSync(join(homeDir, 'auth.json'), 0o644);
+    const future = new Date(Date.now() + 60_000);
+    writeFileSync(join(realHome, 'auth.json'), '{"token":"second"}');
+    utimesSync(join(realHome, 'auth.json'), future, future);
+
+    resolveCodexHome({ homeDir, realHome });
+    expect(readFileSync(join(homeDir, 'auth.json'), 'utf8')).toBe('{"token":"second"}');
+    expect(statSync(join(homeDir, 'auth.json')).mode & 0o777).toBe(0o600);
+  });
+
+  test('a logout removes the copy rather than leaving a revoked credential behind', () => {
+    const realHome = mkdtempSync(join(tmpdir(), 'real-home-'));
+    const homeDir = mkdtempSync(join(tmpdir(), 'persist-home-'));
+    writeFileSync(join(realHome, 'auth.json'), '{"token":"first"}');
+
+    resolveCodexHome({ homeDir, realHome });
+    expect(existsSync(join(homeDir, 'auth.json'))).toBe(true);
+
+    // The operator logs out: the real auth.json is gone. A persistent home
+    // outlives it, so the copy must not survive the credential.
+    rmSync(join(realHome, 'auth.json'));
+    resolveCodexHome({ homeDir, realHome });
+    expect(existsSync(join(homeDir, 'auth.json'))).toBe(false);
+    // Still a usable home, just an unauthenticated one.
+    expect(existsSync(homeDir)).toBe(true);
   });
 });
 

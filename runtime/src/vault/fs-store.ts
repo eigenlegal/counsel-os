@@ -70,6 +70,12 @@ export class FsVaultStore implements VaultStore {
    * own, so the nearest existing ancestor is checked instead — that is the
    * directory the file would be created in, and a symlinked directory is the
    * escape that matters for writes.
+   *
+   * The `.counsel/` ban is re-applied here for the same reason. The lexical
+   * check in `abs()` only sees the path's FIRST segment, so a symlink at
+   * `matters/x` → `../.counsel/threads` spells clean and still lands the read
+   * or write squarely on the audit trail the ban exists to protect. Landing
+   * inside the vault is not enough; it has to land outside `.counsel/` too.
    */
   private assertInsideRealRoot(full: string, path: string): void {
     let realRoot: string;
@@ -90,6 +96,15 @@ export class FsVaultStore implements VaultStore {
     const real = realpathSync(existing);
     if (real !== realRoot && !real.startsWith(realRoot + sep)) {
       throw new Error(`path outside vault (symlink): ${path}`);
+    }
+    // Case-insensitively, like `abs()`: on APFS and NTFS `.Counsel` and
+    // `.counsel` are the same directory, and only this path's own segments
+    // vary in case — `realRoot` is a shared literal prefix on both sides, so
+    // lowercasing the whole string cannot make two different roots collide.
+    const reserved = join(realRoot, RESERVED_DIR).toLowerCase();
+    const lowered = real.toLowerCase();
+    if (lowered === reserved || lowered.startsWith(reserved + sep)) {
+      throw new Error(`reserved path (symlink): ${path}`);
     }
   }
 

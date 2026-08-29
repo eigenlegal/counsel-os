@@ -129,6 +129,20 @@ describe('FsVaultStore', () => {
     expect(await store.read('default', 'real/added.md')).toBe('also inside');
   });
 
+  test('a symlink into .counsel/ is rejected — the lexical ban only sees the first segment', async () => {
+    // `matters/x` spells clean: its first segment is `matters`, so `abs()`'s
+    // reserved-path check never fires. Following it lands on the runtime's
+    // own audit trail, which is exactly what the ban exists to stop.
+    mkdirSync(join(root, '.counsel', 'threads'), { recursive: true });
+    mkdirSync(join(root, 'matters'), { recursive: true });
+    symlinkSync(join('..', '.counsel', 'threads'), join(root, 'matters', 'x'));
+
+    await expect(store.read('default', 'matters/x')).rejects.toThrow(/reserved path/);
+    await expect(store.read('default', 'matters/x/default.json')).rejects.toThrow(/reserved path/);
+    await expect(store.write('default', 'matters/x/planted.md', 'planted')).rejects.toThrow(/reserved path/);
+    await expect(store.list('default', 'matters/x')).rejects.toThrow(/reserved path/);
+  });
+
   test('the reserved check is on the whole first segment, not a prefix', async () => {
     // `.counselor.md` is an ordinary vault file; only `.counsel` itself is reserved.
     const v = await store.write('default', '.counselor.md', 'fine');
