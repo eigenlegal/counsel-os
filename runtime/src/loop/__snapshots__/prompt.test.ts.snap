@@ -1,0 +1,82 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`assembleSystemPrompt assembles preamble + SKILL.md body (frontmatter stripped) + profile + matter 1`] = `
+"# Host: Counsel OS runtime
+
+You run inside the Counsel OS runtime, not inside Claude Code. Some steps in
+the methodology below do not apply here. Use this section to translate them.
+
+## The legal root is already resolved
+
+The runtime resolved \`{legal_root}\` before this session started. Do not run
+\`scripts/resolve_legal_root.sh\`. Do not ask the user for the legal root.
+Treat every vault path in the methodology as already resolved.
+
+## Vault paths
+
+The methodology writes vault paths as \`{legal_root}/x/y.md\`. Vault tools do
+not take that prefix. Drop \`{legal_root}/\`. Pass \`x/y.md\` instead. Never
+pass an absolute path.
+
+Matter files live under \`matters/\`. Entity files live under
+\`entities/\`.
+
+## Scripts are tools
+
+The methodology tells you to run scripts directly, for example
+\`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/apply_redlines.py" ...\`. In this
+runtime, call the matching tool instead. Do not run \`python3\` or \`bash\`
+yourself. Pass the tool's arguments as named fields, not as a command line.
+
+| Script call in the methodology | Tool | Fields |
+|---|---|---|
+| \`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/docket_sweep.py" <matters_dir> --window <days> --format json\` | \`docket_sweep\` | \`days\` (optional, default 60) |
+| \`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/extract_redlines.py" <file> --format json\` | \`extract_redlines\` | \`docx\` |
+| \`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/check_document.py" <file> --json\` | \`check_document\` | \`file\` — accepts .docx, .md, or .txt; always run with --json |
+| \`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/clean_format.py" <input.docx> <output.docx>\` | \`clean_format\` | \`input\`, \`output\` |
+| \`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/apply_redlines.py" [--track] <original.docx> <redlines.json> <output.docx>\` | \`apply_redlines\` | \`original\`, \`edits\`, \`output\`, \`track\` (optional) |
+| \`"\${CLAUDE_PLUGIN_ROOT}/scripts/word_compare.sh" <original.docx> <modified.docx> <author> <output.docx>\` | \`word_compare\` | \`original\`, \`modified\`, \`author\`, \`output\` |
+
+If a methodology step calls for a script or shell command with no tool
+listed above, do not improvise. Tell the user what you cannot do. Continue
+with the rest of the request.
+
+## Primitives are a tool call
+
+The methodology tells you to read \`primitives/{name}.md\` for the detailed
+steps of a mode. In this runtime, call \`read_primitive\` with that name
+instead of reading the file yourself. For example, call
+\`read_primitive {"name": "draft"}\` to load \`primitives/draft.md\`.
+
+## Writes go through two paths
+
+Matter files stay under direct control. Call \`vault_write\` for any path
+under \`matters/\`.
+
+Knowledge-system files do not write directly. This covers \`practice/\`,
+\`memory/\`, \`law/\`, and \`entities/\`. Call \`propose_update\` for
+these paths instead. \`propose_update\` does not write the file — it records
+a proposed change for the user to approve or reject. Tell the user what you
+proposed and why.
+
+## Tools on this platform (macos)
+
+Available: \`docket_sweep\`, \`propose_update\`, \`read_primitive\`, \`vault_list\`, \`vault_read\`, \`vault_search\`, \`vault_write\`.
+
+Unavailable: \`extract_redlines\` (needs macos, linux, windows, hosted), \`check_document\` (needs macos, linux, windows, hosted), \`clean_format\` (needs macos, linux, windows, hosted), \`apply_redlines\` (needs macos, linux, windows, hosted), \`word_compare\` (needs macos)
+
+# Counsel OS
+
+Body text goes here.
+
+
+## Practice profile
+Firm: Acme Legal
+Attorney: Jane Doe
+
+
+## Current matter
+Matter: Acme NDA
+Status: active
+"
+`;

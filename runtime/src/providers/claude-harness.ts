@@ -16,6 +16,9 @@ type AnyMsg = { type: string; [k: string]: unknown };
 export function mapClaudeMessage(raw: unknown, outputSchema?: ZodType<unknown>): StepEvent[] {
   const msg = raw as AnyMsg;
   const out: StepEvent[] = [];
+  if (msg.type === 'system' && msg.subtype === 'init' && typeof msg.session_id === 'string') {
+    return [{ type: 'session', id: msg.session_id }];
+  }
   if (msg.type === 'assistant' || msg.type === 'user') {
     const content = ((msg.message as { content?: unknown[] })?.content ?? []) as Array<Record<string, unknown>>;
     for (const block of content) {
@@ -99,6 +102,7 @@ export function buildQueryOptions(req: StepRequest, model: string, server: unkno
     allowDangerouslySkipPermissions: true,
     maxTurns: req.maxToolCalls ?? 20,
     cwd,
+    ...(req.session?.id ? { resume: req.session.id } : {}),
     // `env` REPLACES the child CLI process's environment. Pinned to the three
     // variables the CLI needs to run at all: `PATH` (so `bun` and the CLI's
     // own subprocesses resolve), `HOME`, and `USER`. Everything else in
@@ -123,13 +127,25 @@ export function buildQueryOptions(req: StepRequest, model: string, server: unkno
   };
 }
 
+/**
+ * Pure decision for `run()`'s `finally`: a caller-supplied `cwd` (the CLI's
+ * debug-only `--cwd`) is reused as-is and must survive the run, so cleanup
+ * only ever removes a directory `run()` created itself (`mkdtempSync`, when
+ * no `cwd` was supplied).
+ */
+export function shouldCleanupCwd(suppliedCwd?: string): boolean {
+  return !suppliedCwd;
+}
+
 export class ClaudeHarnessProvider implements ModelProvider {
   readonly id: string;
   readonly kind = 'harness' as const;
   readonly capabilities: Capabilities = { tools: true, caching: true, thinking: true, contextTokens: 200_000, auth: 'subscription' };
+  readonly cwd: string | undefined;
 
-  constructor(private readonly opts: { model: string; id?: string }) {
+  constructor(private readonly opts: { model: string; id?: string; cwd?: string }) {
     this.id = opts.id ?? `claude-sub/${opts.model}`;
+    this.cwd = opts.cwd;
   }
 
   async *run(req: StepRequest): AsyncIterable<StepEvent> {
@@ -142,7 +158,10 @@ export class ClaudeHarnessProvider implements ModelProvider {
     const prompt = req.messages.map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n\n');
     // Acquired inside the try so a failure here (e.g. tmpdir unwritable)
     // reaches the caller as an `error` event and the finally can clean up
-    // whatever was created.
+    // whatever was created. A caller-supplied `opts.cwd` (debug-only, used by
+    // the CLI's `--cwd` option to pin the resume spike to a stable directory)
+    // is reused as-is and never removed here — the cleanup below only ever
+    // touches a directory this run created itself.
     let cwd: string | undefined;
 
     // `query()` throws on a non-zero CLI exit — e.g. the CLI rejecting the
@@ -153,18 +172,24 @@ export class ClaudeHarnessProvider implements ModelProvider {
     // contract every consumer is written against. `CodexHarnessProvider.run`
     // does the same.
     try {
-      cwd = mkdtempSync(join(tmpdir(), 'counsel-cwd-'));
+      cwd = this.opts.cwd ?? mkdtempSync(join(tmpdir(), 'counsel-cwd-'));
       const stream = query({ prompt, options: buildQueryOptions(req, this.opts.model, server, cwd) });
 
+      let sessionId: string | undefined;
       for await (const msg of stream) {
-        for (const ev of mapClaudeMessage(msg, req.outputSchema)) yield ev;
+        for (const ev of mapClaudeMessage(msg, req.outputSchema)) {
+          if (ev.type === 'session') { sessionId = ev.id; yield ev; continue; }
+          yield ev.type === 'done' && sessionId ? { ...ev, sessionId } : ev;
+        }
       }
     } catch (err) {
       yield { type: 'error', message: `claude harness: ${err instanceof Error ? err.message : String(err)}` };
     } finally {
       // One temp cwd per step; without this they accumulate for the life of
-      // the process. Also runs when the consumer abandons the generator early.
-      if (cwd) rmSync(cwd, { recursive: true, force: true });
+      // the process. Also runs when the consumer abandons the generator
+      // early. Never removes a caller-supplied `opts.cwd` — this run didn't
+      // create it (see `shouldCleanupCwd`).
+      if (cwd && shouldCleanupCwd(this.opts.cwd)) rmSync(cwd, { recursive: true, force: true });
     }
   }
 }

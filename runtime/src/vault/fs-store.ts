@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { existsSync, realpathSync } from 'node:fs';
 import { mkdir, readdir, readFile, writeFile, appendFile, stat } from 'node:fs/promises';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import type { Entry, Hit, Tenant, VaultStore, Version } from '../core/types';
@@ -25,6 +26,14 @@ export class FsVaultStore implements VaultStore {
 
   // Local runtime has one tenant; the parameter is threaded for hosted later.
   private abs(_tenant: Tenant, path: string): string {
+    // Vault paths are forward-slash only, on every host OS — see
+    // `normalizeVaultPath` in `knowledge-paths.ts`, which enforces the same
+    // rule so a knowledge-path check can never disagree with what this store
+    // actually resolves. On a Windows host, `resolve`/`relative` below use
+    // `path.win32` and would otherwise treat `practice\x.md` as a path
+    // *inside* `practice/`, silently reinterpreting a backslash as a
+    // directory separator that the guard never saw.
+    if (path.includes('\\')) throw new Error(`path outside vault: backslashes are not allowed: ${path}`);
     const full = resolve(this.root, path);
     const rel = relative(this.root, full);
     const head = rel.split(sep)[0];
@@ -39,8 +48,64 @@ export class FsVaultStore implements VaultStore {
     // own writes are recorded in. `list` already hides it; this closes read
     // and write too. `historyFile` builds its paths directly and so is
     // unaffected.
-    if (head === RESERVED_DIR) throw new Error(`reserved path: ${path}`);
+    // Case-insensitively: APFS and NTFS are case-INsensitive, so `.Counsel/`
+    // and `.counsel/` are the same directory on the hosts this actually runs
+    // on. A case-sensitive compare would let `.Counsel/history/...` through
+    // to rewrite the very audit trail this ban exists to protect. Rejecting
+    // `.Counsel` on a case-sensitive filesystem too is a harmless
+    // over-rejection — nothing legitimate lives there.
+    if (head?.toLowerCase() === RESERVED_DIR) throw new Error(`reserved path: ${path}`);
+    this.assertInsideRealRoot(full, path);
     return full;
+  }
+
+  /**
+   * The lexical check above proves the *spelling* stays inside the vault; it
+   * says nothing about where the filesystem actually points. A symlink at
+   * `matters/acme/notes.md` → `~/.ssh/id_rsa` spells clean and reads
+   * someone's key. So the resolved path is checked again against the real
+   * root, following links.
+   *
+   * A path that does not exist yet (every new write) has no real path of its
+   * own, so the nearest existing ancestor is checked instead — that is the
+   * directory the file would be created in, and a symlinked directory is the
+   * escape that matters for writes.
+   *
+   * The `.counsel/` ban is re-applied here for the same reason. The lexical
+   * check in `abs()` only sees the path's FIRST segment, so a symlink at
+   * `matters/x` → `../.counsel/threads` spells clean and still lands the read
+   * or write squarely on the audit trail the ban exists to protect. Landing
+   * inside the vault is not enough; it has to land outside `.counsel/` too.
+   */
+  private assertInsideRealRoot(full: string, path: string): void {
+    let realRoot: string;
+    try {
+      realRoot = realpathSync(this.root);
+    } catch {
+      // No vault root on disk: nothing can be inside it, and every real
+      // operation is about to fail with ENOENT anyway. The lexical check
+      // stands on its own.
+      return;
+    }
+    let existing = full;
+    while (!existsSync(existing)) {
+      const parent = dirname(existing);
+      if (parent === existing) return;
+      existing = parent;
+    }
+    const real = realpathSync(existing);
+    if (real !== realRoot && !real.startsWith(realRoot + sep)) {
+      throw new Error(`path outside vault (symlink): ${path}`);
+    }
+    // Case-insensitively, like `abs()`: on APFS and NTFS `.Counsel` and
+    // `.counsel` are the same directory, and only this path's own segments
+    // vary in case — `realRoot` is a shared literal prefix on both sides, so
+    // lowercasing the whole string cannot make two different roots collide.
+    const reserved = join(realRoot, RESERVED_DIR).toLowerCase();
+    const lowered = real.toLowerCase();
+    if (lowered === reserved || lowered.startsWith(reserved + sep)) {
+      throw new Error(`reserved path (symlink): ${path}`);
+    }
   }
 
   private historyFile(tenant: Tenant, path: string): string {
@@ -60,11 +125,15 @@ export class FsVaultStore implements VaultStore {
     }
   }
 
-  async write(tenant: Tenant, path: string, content: string, opts: { expectedVersion?: Version } = {}): Promise<Version> {
+  async write(tenant: Tenant, path: string, content: string, opts: { expectedVersion?: Version | null } = {}): Promise<Version> {
     const full = this.abs(tenant, path);
     if (opts.expectedVersion !== undefined) {
       const actual = await this.version(tenant, path);
-      if (actual !== opts.expectedVersion) {
+      if (opts.expectedVersion === null) {
+        // The proposal was made against a path that didn't exist yet; a
+        // write in the meantime — by anyone — is a conflict too.
+        if (actual !== null) throw new VaultConflictError(path, 'missing', actual);
+      } else if (actual !== opts.expectedVersion) {
         throw new VaultConflictError(path, opts.expectedVersion, actual ?? 'missing');
       }
     }

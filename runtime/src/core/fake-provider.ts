@@ -1,9 +1,14 @@
-import type { Capabilities, ModelProvider, StepEvent, StepRequest, ToolDef } from './types';
+import type { Capabilities, ModelProvider, StepEvent, StepRequest, ToolDef, Usage } from './types';
 
 export interface FakeScript {
   toolCalls?: Array<{ name: string; input: unknown }>;
+  /** Emitted before anything else, as a `session` event. */
+  session?: string;
   text?: string;
   output?: unknown;
+  usage?: Usage;
+  /** When set, the step ends with this `error` instead of a `done`. */
+  error?: string;
 }
 
 export async function runToolDef(tools: ToolDef[], name: string, input: unknown, tenant: string):
@@ -25,11 +30,18 @@ export class FakeModelProvider implements ModelProvider {
   readonly capabilities: Capabilities = { tools: true, caching: false, thinking: false, contextTokens: 1_000_000, auth: 'local' };
   private calls = 0;
 
+  /** The most recent `StepRequest` this provider was handed — the seam tests
+   * use to assert what the caller assembled (system prompt, tools, messages,
+   * `session`) without a live model call. */
+  lastRequest?: StepRequest;
+
   constructor(private readonly script: FakeScript[]) {}
 
   async *run(req: StepRequest): AsyncIterable<StepEvent> {
+    this.lastRequest = req;
     const s = this.script[this.calls++] ?? {};
     let n = 0;
+    if (s.session) yield { type: 'session', id: s.session };
     for (const call of s.toolCalls ?? []) {
       const id = `fake-${this.calls}-${n++}`;
       yield { type: 'tool_call', id, name: call.name, input: call.input };
@@ -37,6 +49,10 @@ export class FakeModelProvider implements ModelProvider {
       yield { type: 'tool_result', id, name: call.name, output: r.output, isError: r.isError };
     }
     if (s.text) yield { type: 'text', text: s.text };
-    yield { type: 'done', output: s.output ?? null, usage: { inputTokens: 0, outputTokens: 0 } };
+    if (s.error) {
+      yield { type: 'error', message: s.error };
+      return;
+    }
+    yield { type: 'done', output: s.output ?? null, usage: s.usage ?? { inputTokens: 0, outputTokens: 0 } };
   }
 }

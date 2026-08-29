@@ -1,6 +1,6 @@
-import { copyFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { chmodSync, constants, copyFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, realpathSync, rmSync, statSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join, resolve, sep } from 'node:path';
 import type { ZodType } from 'zod';
 import { Codex, type CodexOptions, type ThreadOptions } from '@openai/codex-sdk';
 import type { Capabilities, ModelProvider, StepEvent, StepRequest, Tenant } from '../core/types';
@@ -32,6 +32,10 @@ type AnyEv = { type: string; [k: string]: unknown };
  */
 export function mapCodexEvent(raw: unknown, outputSchema?: ZodType<unknown>, finalResponse?: string): StepEvent[] {
   const ev = raw as AnyEv;
+
+  if (ev.type === 'thread.started' && typeof ev.thread_id === 'string') {
+    return [{ type: 'session', id: ev.thread_id }];
+  }
 
   if (ev.type === 'item.completed') {
     const item = ev.item as Record<string, unknown>;
@@ -176,14 +180,30 @@ export function buildThreadOptions(model: string, cwd: string): ThreadOptions {
  * persisted under `~/.codex/sessions`) land in the isolated temp home
  * instead of the operator's real one (round-1 review, "Important 4").
  */
-export function buildCodexConfig(opts: { vaultRoot: string; tenant: Tenant }): CodexOptions {
+export function buildCodexConfig(opts: {
+  vaultRoot: string;
+  tenant: Tenant;
+  /** The thread whose transcript `propose_update` appends to. The stdio
+   * server registers that tool only when this is set — without a thread
+   * there is nowhere for a proposal to live. */
+  threadId?: string;
+  /** Where `read_primitive` reads `primitives/*.md` from. Omitted, the
+   * stdio server falls back to its own repo root, which is correct in a
+   * normal install and wrong only for a relocated plugin. */
+  pluginRoot?: string;
+}): CodexOptions {
   return {
     config: {
       mcp_servers: {
         counsel: {
           command: 'bun',
           args: [STDIO_SERVER],
-          env: { COUNSEL_VAULT: opts.vaultRoot, COUNSEL_TENANT: opts.tenant },
+          env: {
+            COUNSEL_VAULT: opts.vaultRoot,
+            COUNSEL_TENANT: opts.tenant,
+            ...(opts.threadId ? { COUNSEL_THREAD_ID: opts.threadId } : {}),
+            ...(opts.pluginRoot ? { COUNSEL_PLUGIN_ROOT: opts.pluginRoot } : {}),
+          },
           // Without this, EVERY MCP tool call is denied with "MCP tool call
           // requires approval, but approval policy is never" — the thread's
           // `approvalPolicy` default of `never` means *deny*, not *allow*
@@ -246,6 +266,148 @@ export function cleanupIsolatedHome(isolatedHome: string): void {
 }
 
 /**
+ * Resolves a filesystem path to a canonical form for comparison: absolute
+ * (`resolve`) and, when the path actually exists, symlink-resolved
+ * (`realpathSync`) so a symlinked alias of the real `CODEX_HOME` can't slip
+ * past the guard below. A nonexistent path (the common case for `homeDir`,
+ * which this function may be about to create) falls back to the resolved
+ * form — `resolve()` alone already normalizes away trailing slashes and
+ * `.`/`..` segments, which is what catches the trailing-slash-variant case.
+ */
+function normalizePath(p: string): string {
+  const abs = resolve(p);
+  try {
+    return realpathSync(abs);
+  } catch {
+    return abs;
+  }
+}
+
+/**
+ * Seeds or refreshes `<homeDir>/auth.json` from the real `CODEX_HOME`'s
+ * `auth.json`, per the "keeps a credential copy for the life of the thread"
+ * policy in `resolveCodexHome`'s doc comment.
+ *
+ * When the real home has NO `auth.json` — the operator logged out, or the
+ * file was revoked — an existing copy is removed rather than left behind. A
+ * persistent home outlives the credential it was seeded from, so leaving the
+ * copy would keep a revoked token usable from this thread and would keep it
+ * on disk indefinitely after the operator believed they had logged out.
+ *
+ * Every copy is chmod'ed 0600 afterwards. `copyFileSync` gives the
+ * destination the SOURCE's mode on create and leaves the existing mode alone
+ * on overwrite, so a permissive `~/.codex/auth.json` — or a copy created
+ * before the enclosing directory's 0700 was tightened — would otherwise
+ * publish the operator's credentials to every local account.
+ *
+ * A symlink at the destination is removed rather than written through: both
+ * `copyFileSync` and `chmodSync` follow links, so a planted one would send
+ * the live credential wherever it points. Everything after that point is
+ * best-effort and logs to stderr instead of throwing — a home without a
+ * usable credential still runs, and the CLI's own auth error says more than
+ * an exception thrown from here would.
+ *
+ * Initial copy (destination doesn't exist yet) uses
+ * `constants.COPYFILE_EXCL`, which makes `copyFileSync` fail rather than
+ * write through the destination path if something already occupies it
+ * (e.g. a symlink planted between the `existsSync` check and this call, or
+ * one restored from a stale persistent home) — the failure is swallowed
+ * because the safe response to "something unexpected is already there" is
+ * to leave it alone, not to overwrite it.
+ *
+ * Re-seed (destination already exists as a plain file): only overwrites
+ * when the real file's `mtimeMs` is strictly newer than the copy's, so an
+ * operator re-login (new `auth.json`) propagates into a long-lived
+ * persistent home without re-copying on every single call.
+ */
+function seedCodexAuth(homeDir: string, realHome: string): void {
+  const authSrc = join(realHome, 'auth.json');
+  const authDest = join(homeDir, 'auth.json');
+  if (!existsSync(authSrc)) {
+    // Logged out: the copy must not outlive the credential it copied.
+    try {
+      rmSync(authDest, { force: true });
+    } catch {
+      /* best effort — nothing here can make a missing credential worse */
+    }
+    return;
+  }
+  // A symlink at the destination is not a copy of anything — it is a pointer
+  // someone else chose. `copyFileSync` and `chmodSync` both FOLLOW it, so the
+  // re-seed below would write the operator's live credentials through it and
+  // then chmod whatever it aims at. Drop it and fall through to the EXCL
+  // create path, which refuses to write through anything at all.
+  try {
+    if (lstatSync(authDest).isSymbolicLink()) rmSync(authDest, { force: true });
+  } catch {
+    // Nothing at the destination yet — the create path below handles it.
+  }
+
+  if (!existsSync(authDest)) {
+    try {
+      copyFileSync(authSrc, authDest, constants.COPYFILE_EXCL);
+      chmodSync(authDest, 0o600);
+    } catch {
+      // Refused (already exists / symlink) — leave the destination alone.
+    }
+    return;
+  }
+
+  // Seeding is best-effort: a home that ends up without a usable credential
+  // still runs, and the CLI reports its own auth failure with far better
+  // context than a thrown error from here, which would take down a step that
+  // may not have needed the credential at all.
+  try {
+    if (statSync(authSrc).mtimeMs > statSync(authDest).mtimeMs) {
+      copyFileSync(authSrc, authDest);
+    }
+    // Unconditional, not just after a re-copy: an overwrite keeps the
+    // destination's existing mode, and a copy made before this rule existed
+    // still has whatever mode the source had.
+    chmodSync(authDest, 0o600);
+  } catch (err) {
+    const why = err instanceof Error ? err.message : String(err);
+    console.error(`counsel-os: could not refresh ${authDest}: ${why}`);
+  }
+}
+
+/**
+ * Resolves which `CODEX_HOME` a run should use. When the caller supplies a
+ * persistent `homeDir` (e.g. so a session can be resumed across steps via
+ * `resumeThread`), that directory is reused as-is and seeded with the
+ * operator's `auth.json` via `seedCodexAuth`, but it is never removed by the
+ * caller (`ephemeral: false`) — the same directory has to still be there on
+ * the next step. This deliberately **reverses** `prepareIsolatedHome`'s
+ * per-run rule ("must not outlive the run that needed it"): a persistent
+ * home keeps its plaintext credential copy for the life of the *thread*
+ * (spec §2), not just one step. `ThreadStore.remove()` (a later task) is
+ * what deletes it once the thread itself is gone.
+ *
+ * Without a `homeDir`, behavior is unchanged from before: a fresh isolated
+ * home is created per run and must be torn down after (`ephemeral: true`).
+ *
+ * The real-home guard compares *normalized* paths (`normalizePath`), so it
+ * also rejects a `homeDir` that only differs from `realHome` by a trailing
+ * slash, a symlink alias, or by being nested inside it — any of those would
+ * still hand the operator's live credentials directory to what's supposed
+ * to be an isolated slot.
+ */
+export function resolveCodexHome(opts: { homeDir?: string; realHome: string }): { isolatedHome: string; ephemeral: boolean } {
+  if (opts.homeDir) {
+    const normHome = normalizePath(opts.homeDir);
+    const normReal = normalizePath(opts.realHome);
+    if (normHome === normReal || normHome.startsWith(normReal + sep)) {
+      throw new Error('homeDir must not be the real CODEX_HOME, or nested inside it');
+    }
+    mkdirSync(opts.homeDir, { recursive: true, mode: 0o700 });
+    chmodSync(opts.homeDir, 0o700);
+    seedCodexAuth(opts.homeDir, opts.realHome);
+    return { isolatedHome: opts.homeDir, ephemeral: false };
+  }
+  return { isolatedHome: prepareIsolatedHome(opts.realHome), ephemeral: true };
+}
+
+/**
  * Pure builder for the child CLI process's environment. `CodexOptions.env`
  * *replaces* the child's environment rather than extending `process.env`
  * (index.d.ts:236-239: "When provided, the SDK will not inherit variables
@@ -278,16 +440,65 @@ export class CodexHarnessProvider implements ModelProvider {
   readonly kind = 'harness' as const;
   readonly capabilities: Capabilities = { tools: true, caching: true, thinking: true, contextTokens: 200_000, auth: 'subscription' };
 
-  constructor(private readonly opts: { model: string; vaultRoot: string; id?: string }) {
+  readonly homeDir: string | undefined;
+
+  constructor(
+    private readonly opts: {
+      model: string;
+      vaultRoot: string;
+      id?: string;
+      homeDir?: string;
+      threadId?: string;
+      pluginRoot?: string;
+    },
+  ) {
     this.id = opts.id ?? `codex-sub/${opts.model}`;
+    this.homeDir = opts.homeDir;
+  }
+
+  /**
+   * A copy of this provider — same model, id, and vault — bound to one
+   * thread: its persistent `CODEX_HOME` (so `resumeThread` finds the session
+   * state a previous step left behind) and its id, which reaches the stdio
+   * MCP server as `COUNSEL_THREAD_ID` and is what lets that server offer
+   * `propose_update`. A registry-built provider is shared across threads, so
+   * both have to be bound per thread, not per provider. Returns a new
+   * instance rather than mutating, so two threads can use the same registry
+   * entry concurrently.
+   */
+  withThread(opts: { homeDir: string; threadId?: string; pluginRoot?: string }): CodexHarnessProvider {
+    return new CodexHarnessProvider({
+      ...this.opts,
+      homeDir: opts.homeDir,
+      ...(opts.threadId ? { threadId: opts.threadId } : {}),
+      ...(opts.pluginRoot ? { pluginRoot: opts.pluginRoot } : {}),
+    });
+  }
+
+  /** `withThread` with only the home bound — the original two-step spelling,
+   * kept for callers that have no thread id to give. */
+  withHome(dir: string): CodexHarnessProvider {
+    return this.withThread({ homeDir: dir });
   }
 
   async *run(req: StepRequest): AsyncIterable<StepEvent> {
+    // Checked first, before anything is created: `resumeThread` needs the
+    // same `CODEX_HOME` the original thread ran under (session/thread state
+    // lives under it), so resuming into a fresh ephemeral home — which
+    // `prepareIsolatedHome` would otherwise silently hand this run — can
+    // never find that state. A caller-supplied `homeDir` is the only way
+    // that continuity is guaranteed across two separate `run()` calls.
+    if (req.session?.id && !this.opts.homeDir) {
+      yield { type: 'error', message: 'codex harness: resuming a thread requires a persistent homeDir' };
+      return;
+    }
+
     const realHome = process.env.CODEX_HOME ?? join(homedir(), '.codex');
     // Acquired inside the try: if either temp dir cannot be created the
     // failure becomes an `error` event, and the finally removes whatever
     // did get created (the isolated home holds a credential copy).
     let isolatedHome: string | undefined;
+    let ephemeralHome = true;
     let cwd: string | undefined;
 
     // `CodexExec.run` (the SDK's process runner) throws on a non-zero CLI
@@ -299,13 +510,22 @@ export class CodexHarnessProvider implements ModelProvider {
     // try for the same reason — `buildCodexEnv` throws on a defeated
     // isolation, and that must reach the caller as an `error` event too.
     try {
-      isolatedHome = prepareIsolatedHome(realHome);
+      const resolved = resolveCodexHome({ homeDir: this.opts.homeDir, realHome });
+      isolatedHome = resolved.isolatedHome;
+      ephemeralHome = resolved.ephemeral;
       cwd = mkdtempSync(join(tmpdir(), 'counsel-cwd-'));
       const codex = new Codex({
-        ...buildCodexConfig({ vaultRoot: this.opts.vaultRoot, tenant: req.tenant }),
+        ...buildCodexConfig({
+          vaultRoot: this.opts.vaultRoot,
+          tenant: req.tenant,
+          ...(this.opts.threadId ? { threadId: this.opts.threadId } : {}),
+          ...(this.opts.pluginRoot ? { pluginRoot: this.opts.pluginRoot } : {}),
+        }),
         env: buildCodexEnv(isolatedHome, realHome, process.env),
       });
-      const thread = codex.startThread(buildThreadOptions(this.opts.model, cwd));
+      const thread = req.session?.id
+        ? codex.resumeThread(req.session.id, buildThreadOptions(this.opts.model, cwd))
+        : codex.startThread(buildThreadOptions(this.opts.model, cwd));
 
       const transcript = req.messages.map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n\n');
       const prompt = `${req.system}\n\n${transcript}`;
@@ -313,12 +533,16 @@ export class CodexHarnessProvider implements ModelProvider {
       const { events } = await thread.runStreamed(prompt, req.outputSchema ? { outputSchema: toHarnessJsonSchema(req.outputSchema) } : {});
 
       let lastText = '';
+      let sessionId: string | undefined;
       for await (const ev of events) {
         const e = ev as AnyEv;
         if (e.type === 'item.completed' && (e.item as { type?: string })?.type === 'agent_message') {
           lastText = String((e.item as { text?: string }).text ?? '');
         }
-        for (const out of mapCodexEvent(ev, req.outputSchema, lastText)) yield out;
+        for (const out of mapCodexEvent(ev, req.outputSchema, lastText)) {
+          if (out.type === 'session') { sessionId = out.id; yield out; continue; }
+          yield out.type === 'done' && sessionId ? { ...out, sessionId } : out;
+        }
       }
     } catch (err) {
       yield { type: 'error', message: `codex harness: ${err instanceof Error ? err.message : String(err)}` };
@@ -326,8 +550,10 @@ export class CodexHarnessProvider implements ModelProvider {
       // The isolated home holds a plaintext copy of the operator's
       // `auth.json`; leaving one behind per run would scatter live
       // credentials through the temp directory. This also runs when the
-      // consumer abandons the generator early.
-      if (isolatedHome) cleanupIsolatedHome(isolatedHome);
+      // consumer abandons the generator early. A persistent `homeDir` is
+      // never removed here — it must survive to be reused by a later
+      // `resumeThread` step (see `resolveCodexHome`).
+      if (isolatedHome && ephemeralHome) cleanupIsolatedHome(isolatedHome);
       if (cwd) rmSync(cwd, { recursive: true, force: true });
     }
   }

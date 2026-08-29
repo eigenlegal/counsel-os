@@ -1,9 +1,9 @@
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, lstatSync, mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, test } from 'bun:test';
 import { z } from 'zod';
-import { buildCodexConfig, buildCodexEnv, buildThreadOptions, cleanupIsolatedHome, mapCodexEvent, prepareIsolatedHome } from './codex-harness';
+import { buildCodexConfig, buildCodexEnv, buildThreadOptions, CodexHarnessProvider, cleanupIsolatedHome, mapCodexEvent, prepareIsolatedHome, resolveCodexHome } from './codex-harness';
 
 describe('mapCodexEvent', () => {
   test('agent_message → text', () => {
@@ -63,7 +63,6 @@ describe('mapCodexEvent', () => {
 
   test('unhandled item types (reasoning, command_execution, file_change, ...) are ignored, not thrown', () => {
     expect(mapCodexEvent({ type: 'item.completed', item: { type: 'reasoning', text: 'thinking...' } })).toEqual([]);
-    expect(mapCodexEvent({ type: 'thread.started', thread_id: 't1' })).toEqual([]);
     expect(mapCodexEvent({ type: 'turn.started' })).toEqual([]);
   });
 });
@@ -194,5 +193,204 @@ describe('cleanupIsolatedHome', () => {
     const proxied = buildCodexEnv('/iso', '/real', { PATH: '/p', HOME: '/h', HTTP_PROXY: 'http://px', OPENAI_API_KEY: 'sk' });
     expect(proxied.HTTP_PROXY).toBe('http://px');
     expect(proxied.OPENAI_API_KEY).toBeUndefined();
+  });
+});
+
+describe('sessions', () => {
+  test('thread.started → session event with the thread id', () => {
+    expect(mapCodexEvent({ type: 'thread.started', thread_id: 'th-1' })).toEqual([{ type: 'session', id: 'th-1' }]);
+  });
+  test('resolveCodexHome reports ephemeral:false for a persistent homeDir', () => {
+    const home = mkdtempSync(join(tmpdir(), 'persist-home-'));
+    const p = new CodexHarnessProvider({ model: 'm', vaultRoot: '/v', homeDir: home });
+    expect(p.homeDir).toBe(home);
+    // run() is not executed here (live); the contract is asserted via the exported helper:
+    expect(resolveCodexHome({ homeDir: home, realHome: '/real' })).toEqual({ isolatedHome: home, ephemeral: false });
+    expect(resolveCodexHome({ realHome: '/real' }).ephemeral).toBe(true);
+  });
+});
+
+describe('resolveCodexHome — real-home guard (normalized)', () => {
+  test('throws when homeDir equals the real CODEX_HOME', () => {
+    expect(() => resolveCodexHome({ homeDir: '/real/home', realHome: '/real/home' })).toThrow();
+  });
+
+  test('throws on a trailing-slash variant of the real CODEX_HOME', () => {
+    expect(() => resolveCodexHome({ homeDir: '/real/home/', realHome: '/real/home' })).toThrow();
+  });
+
+  test('throws when homeDir is nested inside the real CODEX_HOME', () => {
+    expect(() => resolveCodexHome({ homeDir: '/real/home/nested', realHome: '/real/home' })).toThrow();
+  });
+
+  test('passes for an unrelated homeDir', () => {
+    const home = mkdtempSync(join(tmpdir(), 'unrelated-home-'));
+    expect(resolveCodexHome({ homeDir: home, realHome: '/real/home' })).toEqual({ isolatedHome: home, ephemeral: false });
+  });
+});
+
+describe('resolveCodexHome — credential re-seed', () => {
+  test('re-copies auth.json when the real file is newer than the existing copy', () => {
+    const realHome = mkdtempSync(join(tmpdir(), 'real-home-'));
+    const homeDir = mkdtempSync(join(tmpdir(), 'persist-home-'));
+    writeFileSync(join(realHome, 'auth.json'), '{"token":"first"}');
+
+    resolveCodexHome({ homeDir, realHome }); // initial copy
+    expect(readFileSync(join(homeDir, 'auth.json'), 'utf8')).toBe('{"token":"first"}');
+
+    const future = new Date(Date.now() + 60_000);
+    writeFileSync(join(realHome, 'auth.json'), '{"token":"second"}');
+    utimesSync(join(realHome, 'auth.json'), future, future);
+
+    resolveCodexHome({ homeDir, realHome });
+    expect(readFileSync(join(homeDir, 'auth.json'), 'utf8')).toBe('{"token":"second"}');
+  });
+
+  test('leaves the copy untouched when the real file is not newer', () => {
+    const realHome = mkdtempSync(join(tmpdir(), 'real-home-'));
+    const homeDir = mkdtempSync(join(tmpdir(), 'persist-home-'));
+    writeFileSync(join(realHome, 'auth.json'), '{"token":"first"}');
+
+    resolveCodexHome({ homeDir, realHome }); // initial copy
+
+    const past = new Date(Date.now() - 60_000);
+    writeFileSync(join(realHome, 'auth.json'), '{"token":"stale-but-untouched"}');
+    utimesSync(join(realHome, 'auth.json'), past, past);
+
+    resolveCodexHome({ homeDir, realHome });
+    expect(readFileSync(join(homeDir, 'auth.json'), 'utf8')).toBe('{"token":"first"}');
+  });
+
+  test('the copy is 0600 however permissive the real auth.json is', () => {
+    const realHome = mkdtempSync(join(tmpdir(), 'real-home-'));
+    const homeDir = mkdtempSync(join(tmpdir(), 'persist-home-'));
+    writeFileSync(join(realHome, 'auth.json'), '{"token":"first"}');
+    chmodSync(join(realHome, 'auth.json'), 0o644);
+
+    // Initial copy: copyFileSync would otherwise give it the source's mode.
+    resolveCodexHome({ homeDir, realHome });
+    expect(statSync(join(homeDir, 'auth.json')).mode & 0o777).toBe(0o600);
+
+    // Re-seed: an overwrite keeps the DESTINATION's mode, so a copy loosened
+    // in between has to be tightened again too.
+    chmodSync(join(homeDir, 'auth.json'), 0o644);
+    const future = new Date(Date.now() + 60_000);
+    writeFileSync(join(realHome, 'auth.json'), '{"token":"second"}');
+    utimesSync(join(realHome, 'auth.json'), future, future);
+
+    resolveCodexHome({ homeDir, realHome });
+    expect(readFileSync(join(homeDir, 'auth.json'), 'utf8')).toBe('{"token":"second"}');
+    expect(statSync(join(homeDir, 'auth.json')).mode & 0o777).toBe(0o600);
+  });
+
+  test('a symlink planted at the destination is replaced by a real 0600 copy', () => {
+    const realHome = mkdtempSync(join(tmpdir(), 'real-home-'));
+    const homeDir = mkdtempSync(join(tmpdir(), 'persist-home-'));
+    const elsewhere = mkdtempSync(join(tmpdir(), 'elsewhere-'));
+    writeFileSync(join(realHome, 'auth.json'), '{"token":"real"}');
+    // Someone else's file, aimed at by a link where our copy belongs.
+    const target = join(elsewhere, 'target.json');
+    writeFileSync(target, 'NOT OURS');
+    symlinkSync(target, join(homeDir, 'auth.json'));
+
+    resolveCodexHome({ homeDir, realHome });
+
+    // A real file, not a link: copyFileSync and chmodSync both FOLLOW links,
+    // so writing through it would have leaked the credential to `target`.
+    expect(lstatSync(join(homeDir, 'auth.json')).isSymbolicLink()).toBe(false);
+    expect(readFileSync(join(homeDir, 'auth.json'), 'utf8')).toBe('{"token":"real"}');
+    expect(statSync(join(homeDir, 'auth.json')).mode & 0o777).toBe(0o600);
+    // The link's target was never touched.
+    expect(readFileSync(target, 'utf8')).toBe('NOT OURS');
+  });
+
+  test('a logout removes the copy rather than leaving a revoked credential behind', () => {
+    const realHome = mkdtempSync(join(tmpdir(), 'real-home-'));
+    const homeDir = mkdtempSync(join(tmpdir(), 'persist-home-'));
+    writeFileSync(join(realHome, 'auth.json'), '{"token":"first"}');
+
+    resolveCodexHome({ homeDir, realHome });
+    expect(existsSync(join(homeDir, 'auth.json'))).toBe(true);
+
+    // The operator logs out: the real auth.json is gone. A persistent home
+    // outlives it, so the copy must not survive the credential.
+    rmSync(join(realHome, 'auth.json'));
+    resolveCodexHome({ homeDir, realHome });
+    expect(existsSync(join(homeDir, 'auth.json'))).toBe(false);
+    // Still a usable home, just an unauthenticated one.
+    expect(existsSync(homeDir)).toBe(true);
+  });
+});
+
+describe('CodexHarnessProvider.withThread / withHome', () => {
+  test('returns a new instance with the same id, pinned to the given home', () => {
+    const provider = new CodexHarnessProvider({ model: 'gpt-5.6-terra', vaultRoot: '/v', id: 'codex-sub/gpt-5.6-terra' });
+    const bound = provider.withHome('/homes/thread-1');
+
+    expect(bound).not.toBe(provider);
+    expect(bound.id).toBe('codex-sub/gpt-5.6-terra');
+    expect(bound.homeDir).toBe('/homes/thread-1');
+    // The original is untouched, so one registry entry can serve many threads.
+    expect(provider.homeDir).toBeUndefined();
+  });
+
+  test('two threads get independent homes off one provider', () => {
+    const provider = new CodexHarnessProvider({ model: 'm', vaultRoot: '/v' });
+    expect(provider.withHome('/a').homeDir).toBe('/a');
+    expect(provider.withHome('/b').homeDir).toBe('/b');
+  });
+
+  test('withThread carries the thread id and plugin root into the stdio server env', () => {
+    const provider = new CodexHarnessProvider({ model: 'm', vaultRoot: '/v' });
+    const bound = provider.withThread({ homeDir: '/homes/t1', threadId: 'thread-1', pluginRoot: '/plugin' });
+
+    expect(bound.homeDir).toBe('/homes/t1');
+    // The binding is what reaches the out-of-process MCP server.
+    const env = mcpEnv(buildCodexConfig({ vaultRoot: '/v', tenant: 'default', threadId: 'thread-1', pluginRoot: '/plugin' }));
+    expect(env.COUNSEL_THREAD_ID).toBe('thread-1');
+    expect(env.COUNSEL_PLUGIN_ROOT).toBe('/plugin');
+  });
+});
+
+/** The `mcp_servers.counsel.env` block `buildCodexConfig` flattens into
+ * `--config` overrides for the child CLI. */
+function mcpEnv(cfg: ReturnType<typeof buildCodexConfig>): Record<string, string> {
+  const servers = (cfg.config as { mcp_servers: { counsel: { env: Record<string, string> } } }).mcp_servers;
+  return servers.counsel.env;
+}
+
+describe('buildCodexConfig — stdio server environment', () => {
+  test('always passes the vault and tenant', () => {
+    const env = mcpEnv(buildCodexConfig({ vaultRoot: '/vault', tenant: 'acme' }));
+    expect(env.COUNSEL_VAULT).toBe('/vault');
+    expect(env.COUNSEL_TENANT).toBe('acme');
+  });
+
+  test('omits COUNSEL_THREAD_ID and COUNSEL_PLUGIN_ROOT when not given', () => {
+    const env = mcpEnv(buildCodexConfig({ vaultRoot: '/vault', tenant: 'default' }));
+    expect('COUNSEL_THREAD_ID' in env).toBe(false);
+    expect('COUNSEL_PLUGIN_ROOT' in env).toBe(false);
+  });
+
+  test('includes both when given — this is what unlocks propose_update and read_primitive', () => {
+    const env = mcpEnv(buildCodexConfig({
+      vaultRoot: '/vault',
+      tenant: 'default',
+      threadId: 'e4d0d0b2-0000-4000-8000-000000000000',
+      pluginRoot: '/repo',
+    }));
+    expect(env.COUNSEL_THREAD_ID).toBe('e4d0d0b2-0000-4000-8000-000000000000');
+    expect(env.COUNSEL_PLUGIN_ROOT).toBe('/repo');
+  });
+});
+
+describe('CodexHarnessProvider.run — resume precondition', () => {
+  test('resuming without a persistent homeDir yields a single error event, before any SDK call', async () => {
+    const provider = new CodexHarnessProvider({ model: 'm', vaultRoot: '/v' });
+    const events: unknown[] = [];
+    for await (const ev of provider.run({ tenant: 'default', system: 's', messages: [], tools: [], session: { id: 'x' } })) {
+      events.push(ev);
+    }
+    expect(events).toEqual([{ type: 'error', message: 'codex harness: resuming a thread requires a persistent homeDir' }]);
   });
 });

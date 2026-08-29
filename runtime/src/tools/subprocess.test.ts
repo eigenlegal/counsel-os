@@ -30,6 +30,27 @@ describe('pythonScriptTool', () => {
     expect(r.exitCode).toBe(1);
   });
 
+  test('runs a `command` with no script at all', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'sh-'));
+    const script = join(dir, 'hello.sh');
+    writeFileSync(script, 'echo "hello $1"\n');
+    const tool = pythonScriptTool({
+      name: 'hello_sh', description: 'hello', command: ['bash', script], platforms: ['macos', 'linux'],
+      inputSchema: z.object({ who: z.string() }),
+      args: ({ who }) => [who],
+    });
+    const r = await tool.execute({ who: 'world' }, { tenant: 'default' });
+    expect(r.stdout.trim()).toBe('hello world');
+    expect(r.exitCode).toBe(0);
+  });
+
+  test('needs a script or a command', () => {
+    expect(() => pythonScriptTool({
+      name: 'nothing', description: 'nothing', platforms: ['macos'],
+      inputSchema: z.object({}), args: () => [],
+    })).toThrow(/needs a script or a command/);
+  });
+
   test('kills the process on timeout', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'py-'));
     const script = join(dir, 'sleep.py');
