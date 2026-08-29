@@ -173,6 +173,7 @@ a { color: var(--accent); }
 .notice { padding: 0.45rem 0.6rem; border-radius: var(--radius); border: 1px solid currentColor; }
 .notice p:last-child { margin-bottom: 0; }
 .notice-error { color: var(--error); }
+.chat-error { display: flex; gap: 0.6rem; align-items: center; justify-content: space-between; margin: 0 0.9rem; }
 .notice-warning { color: var(--warn); }
 
 /* ── Proposal card ─────────────────────────────────────────────────────── */

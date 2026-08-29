@@ -127,8 +127,13 @@ export function getToken(): string {
   return token;
 }
 
-/** Forgets the token — used by the tests, and by nothing in the app: a stale
- * token is reported, not cleared, so the page can say what went wrong. */
+/**
+ * Forgets the token. `client.ts` calls this when the server answers 401: a
+ * credential the runtime has already refused will be refused every later
+ * time, and keeping it would only let the page replay it. Dropping it leaves
+ * the tab in the state the message on screen describes — no token, restart
+ * `serve` and open the printed URL.
+ */
 export function clearToken(): void {
   memoryToken = null;
   try {
