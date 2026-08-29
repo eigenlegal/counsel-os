@@ -9,15 +9,24 @@ export function withRetry(p: ModelProvider, opts: { tries?: number; baseMs?: num
     async *run(req: StepRequest): AsyncIterable<StepEvent> {
       for (let attempt = 1; ; attempt++) {
         const it = p.run(req)[Symbol.asyncIterator]();
-        const head: StepEvent[] = []; let first = await it.next();
-        while (!first.done && first.value.type === 'session') { head.push(first.value); first = await it.next(); }
-        if (!first.done && first.value.type === 'error' && attempt < tries && RETRYABLE.test(first.value.message)) { await sleep(baseMs * 2 ** (attempt - 1)); continue; }
-        for (const e of head) yield e;
-        if (first.done) return;
-        yield first.value;
-        if (first.value.type === 'error') return;
-        for (let n = await it.next(); !n.done; n = await it.next()) yield n.value;
-        return;
+        try {
+          const head: StepEvent[] = []; let first = await it.next();
+          while (!first.done && first.value.type === 'session') { head.push(first.value); first = await it.next(); }
+          if (!first.done && first.value.type === 'error' && attempt < tries && RETRYABLE.test(first.value.message)) { await sleep(baseMs * 2 ** (attempt - 1)); continue; }
+          for (const e of head) yield e;
+          if (first.done) return;
+          yield first.value;
+          if (first.value.type === 'error') return;
+          for (let n = await it.next(); !n.done; n = await it.next()) yield n.value;
+          return;
+        } finally {
+          // Close the underlying provider's iterator whether we're abandoning
+          // it to retry, or our own caller abandoned us mid-stream (a `break`
+          // out of a `for await` on this generator resumes us here via an
+          // implicit `.return()`). A throwing `return()` must not escape and
+          // mask whatever the try block was already doing (yielding/retrying).
+          try { await it.return?.(); } catch { /* ignore */ }
+        }
       }
     },
   };
