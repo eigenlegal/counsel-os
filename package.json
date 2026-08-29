@@ -15,6 +15,7 @@
     "test:server": "bun test browse/src",
     "typecheck": "tsc --noEmit -p browse/tsconfig.json",
     "typecheck:runtime": "tsc --noEmit -p runtime/tsconfig.json",
+    "typecheck:ui": "tsc --noEmit -p runtime/ui",
     "ui:build": "cd runtime/ui && bun install --frozen-lockfile && bunx vite build",
     "ui:dev": "cd runtime/ui && bunx vite",
     "ui:test": "cd runtime/ui && bun test"

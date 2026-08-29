@@ -1,6 +1,7 @@
 .DS_Store
 node_modules/
 browse/dist/
+runtime/ui/dist/
 backups/
 evals/outputs/
 *.bun-build

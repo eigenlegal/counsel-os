@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- The token rides in the URL fragment. `referrer` is belt and braces:
+         a fragment is never sent to a server, but a referrer never leaves
+         this origin either. -->
+    <meta name="referrer" content="same-origin" />
+    <title>counsel-os</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
