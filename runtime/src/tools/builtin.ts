@@ -89,7 +89,8 @@ export function builtinTools(opts: { vaultRoot: string; repoRoot: string }): Too
     pythonScriptTool({
       name: 'word_compare',
       description: 'Use Microsoft Word to compare two .docx files and produce a tracked-changes document, revisions attributed to the given author. macOS only — requires Microsoft Word for Mac.',
-      script: resolve(opts.repoRoot, 'scripts/word_compare.sh'),
+      // `command` only: this is a shell script, so there is no `python3
+      // <script>` default to fall back to and no second path to drift.
       command: ['bash', resolve(opts.repoRoot, 'scripts/word_compare.sh')],
       platforms: ['macos'],
       inputSchema: z.object({

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { withRetry } from './retry';
+import { isRetryable, withRetry } from './retry';
 import type { ModelProvider, StepEvent } from '../core/types';
 function flaky(fails: number, msg: string): ModelProvider & { calls: number } {
   const p = { id: 'x/y', kind: 'direct' as const, calls: 0, capabilities: { tools: true, caching: false, thinking: false, contextTokens: 1, auth: 'apikey' as const },
@@ -59,5 +59,30 @@ describe('withRetry', () => {
     const p = textThenMore(); const r = withRetry(p, { tries: 3, sleep: async () => {} });
     for await (const _e of r.run(req)) { break; }
     expect(p.closed).toBe(1);
+  });
+});
+
+describe('isRetryable', () => {
+  test('a bare three-digit number in prose is not a status code', () => {
+    // The old `\b(429|5\d\d)\b` retried these three times each.
+    expect(isRetryable('row 512 missing')).toBe(false);
+    expect(isRetryable('clause 500 of the agreement is ambiguous')).toBe(false);
+    expect(isRetryable('exhibit 429 not found')).toBe(false);
+    expect(isRetryable('structured output failed validation')).toBe(false);
+  });
+
+  test('a status code introduced as one, or leading the message, is retryable', () => {
+    expect(isRetryable('HTTP 503')).toBe(true);
+    expect(isRetryable('status 429')).toBe(true);
+    expect(isRetryable('503 Service Unavailable')).toBe(true);
+    expect(isRetryable('status code: 500')).toBe(true);
+    expect(isRetryable('upstream returned HTTP/529')).toBe(true);
+  });
+
+  test('a named transient condition is retryable with no status code at all', () => {
+    expect(isRetryable('rate limit exceeded')).toBe(true);
+    expect(isRetryable('the model is Overloaded')).toBe(true);
+    expect(isRetryable('read ECONNRESET')).toBe(true);
+    expect(isRetryable('connect ETIMEDOUT 10.0.0.1:443')).toBe(true);
   });
 });
