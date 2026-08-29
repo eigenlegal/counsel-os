@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { FakeModelProvider } from '../core/fake-provider';
@@ -184,6 +184,76 @@ describe('PUT /settings', () => {
     expect(existsSync(file)).toBe(false);
     expect((await call(app, 'PUT', '/settings', { providers: [{ id: 'openai-compatible/x' }] })).status).toBe(422);
     expect(existsSync(file)).toBe(false);
+  });
+
+  test('a baseURL outside the bound is 400, and the file is untouched', async () => {
+    const contents = 'default: ollama/gemma4:e4b\n';
+    const { app, file } = harness({ contents });
+    const res = await call(app, 'PUT', '/settings', {
+      providers: [{ id: 'openai-compatible/x', baseURL: 'http://attacker.example/v1', apiKeyEnv: 'SECRET' }],
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: string; issues?: Array<{ message: string }> };
+    expect(body.issues?.some(i => i.message.includes('baseURL must be https'))).toBe(true);
+    expect(readFileSync(file, 'utf8')).toBe(contents);
+  });
+
+  test('https and loopback http baseURLs are accepted', async () => {
+    const { app } = harness();
+    const res = await call(app, 'PUT', '/settings', {
+      providers: [
+        { id: 'openai-compatible/groq', baseURL: 'https://api.groq.com/openai/v1' },
+        { id: 'openai-compatible/local', baseURL: 'http://127.0.0.1:11434/v1' },
+      ],
+    });
+    expect(res.status).toBe(200);
+    const ids = (await health(app)).providers.map(p => p.id);
+    expect(ids).toContain('openai-compatible/groq');
+    expect(ids).toContain('openai-compatible/local');
+  });
+
+  test('a task route with the wrong shape is 400', async () => {
+    const { app } = harness();
+    const res = await call(app, 'PUT', '/settings', { tasks: { classify: { prefer: 5 } } });
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { issues?: unknown[] }).issues?.length).toBeGreaterThan(0);
+  });
+
+  test('a rejected PUT restores the previous file byte for byte', async () => {
+    const { app, file } = harness();
+    // Not valid UTF-8: a lone 0x80 continuation byte, inside a YAML comment
+    // so the file still parses. A restore that decoded to a string would put
+    // U+FFFD back and call it unchanged.
+    const raw = Buffer.concat([Buffer.from('# \u00ff'), Buffer.from([0x80]), Buffer.from('\ndefault: ollama/gemma4:e4b\n')]);
+    writeFileSync(file, raw);
+    expect((await call(app, 'PUT', '/settings', { providers: [{ id: 'openai-compatible/x' }] })).status).toBe(422);
+    expect(readFileSync(file).equals(raw)).toBe(true);
+  });
+
+  test('the file it writes is 0600', async () => {
+    const { app, file } = harness();
+    expect((await call(app, 'PUT', '/settings', { default: 'ollama/gemma4:e4b' })).status).toBe(200);
+    expect(statSync(file).mode & 0o777).toBe(0o600);
+  });
+
+  test('overlapping PUTs do not interleave: the valid one is what survives', async () => {
+    const { app, file } = harness({ contents: 'default: claude-sub/claude-opus-5\n' });
+    const [good, bad] = await Promise.all([
+      call(app, 'PUT', '/settings', { default: 'ollama/gemma4:e4b' }),
+      call(app, 'PUT', '/settings', { providers: [{ id: 'openai-compatible/x' }] }),
+    ]);
+    expect(good.status).toBe(200);
+    expect(bad.status).toBe(422);
+    // The rejected PUT restored what IT found, not what it never saw: the
+    // file and the live runtime agree, and they agree on the valid write.
+    //
+    // This pins the OUTCOME, not the mechanism. `applySettings` has no
+    // `await` inside it today, so there is no yield point for two PUTs to
+    // interleave at and the assertion holds with the lock removed. It is the
+    // regression guard for the day the write or the reload becomes async —
+    // when it does, this test is what fails.
+    expect(readRegistry(file)).toEqual({ default: 'ollama/gemma4:e4b' });
+    expect((await health(app)).default).toBe('ollama/gemma4:e4b');
   });
 
   test('--fake survives a reload', async () => {

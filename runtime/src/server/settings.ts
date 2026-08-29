@@ -1,8 +1,9 @@
 import { z } from 'zod';
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync } from 'node:fs';
+import { writeFileAtomic } from '../core/atomic-write';
 import type { Capabilities, ModelProvider, Usage } from '../core/types';
 import { DEFAULT_STEP_TIMEOUT_MS, runStep, type CounselLoopDeps } from '../loop/counsel-loop';
-import { readRegistry, writeRegistry, type RegistryFileData } from '../providers/registry';
+import { readRegistry, writeRegistry, REGISTRY_WRITE, type RegistryFileData } from '../providers/registry';
 import type { Router } from '../router/router';
 
 /**
@@ -127,16 +128,25 @@ function message(err: unknown): string {
  * (or the file is removed, when there was none), so a rejected `PUT` leaves
  * the operator's configuration where they left it. The live state never
  * moved: `reload` installs nothing when `loadRegistry` throws.
+ *
+ * The snapshot is a `Buffer`, not a decoded string, and it goes back through
+ * the same atomic write the forward path uses. A restore that decoded as
+ * UTF-8 would silently replace any byte sequence that is not valid UTF-8
+ * with U+FFFD — turning "your change was rejected" into "your file was
+ * quietly rewritten", which is the one thing this path exists to prevent.
+ *
+ * Callers must hold the settings lock: this is read-modify-write on a file,
+ * and two of them interleaved could restore over each other.
  */
 export function applySettings(ctx: SettingsContext, next: RegistryFileData): Response {
   const { file } = ctx.settings;
-  const previous = existsSync(file) ? readFileSync(file, 'utf8') : null;
+  const previous = existsSync(file) ? readFileSync(file) : null;
   writeRegistry(file, next);
   try {
     ctx.settings.reload();
   } catch (err) {
     if (previous === null) rmSync(file, { force: true });
-    else writeFileSync(file, previous, 'utf8');
+    else writeFileAtomic(file, previous, REGISTRY_WRITE);
     return Response.json({ error: message(err) }, { status: 422 });
   }
   return Response.json(settingsView(ctx));

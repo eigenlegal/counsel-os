@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
-import { chmodSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { readFileSync, realpathSync, rmSync } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
+import { writeFileAtomic } from '../core/atomic-write';
 import { counselHome } from '../core/home';
 import { FakeModelProvider, type FakeScript } from '../core/fake-provider';
 import { DEFAULT_TENANT, type ModelProvider } from '../core/types';
@@ -220,26 +221,14 @@ function listen(port: number | undefined, fetch: (req: Request) => Promise<Respo
 }
 
 /**
- * Publishes `runtime.json`, which holds the bearer token, so two properties
- * have to hold at once.
- *
- * 0600: `writeFileSync`'s mode applies only when it creates the file, so a
- * leftover world-readable file from an earlier run would keep its mode and
- * quietly publish the token. Writing a fresh temp file and renaming over the
- * old one replaces the inode, mode and all.
- *
- * Atomic: a reader (the plugin adapter, on every skill invocation) must
- * never catch a half-written file. `rename` within a directory is atomic, so
- * a reader sees either the old file or the new one.
+ * Publishes `runtime.json`, which holds the bearer token: 0600, in a 0700
+ * directory, and atomically — the plugin adapter reads this file on every
+ * skill invocation and must never catch a half-written one. `writeFileAtomic`
+ * is where both properties are argued; this is the caller that needs them
+ * most.
  */
 function writeRuntimeFile(path: string, contents: RuntimeFile): void {
-  mkdirSync(join(path, '..'), { recursive: true, mode: 0o700 });
-  // Named for this process: two servers starting at once must not write the
-  // same temp file.
-  const tmp = `${path}.${process.pid}.tmp`;
-  writeFileSync(tmp, JSON.stringify(contents, null, 2) + '\n', { encoding: 'utf8', mode: 0o600 });
-  chmodSync(tmp, 0o600);
-  renameSync(tmp, path);
+  writeFileAtomic(path, JSON.stringify(contents, null, 2) + '\n', { mode: 0o600, dirMode: 0o700 });
 }
 
 /** Reads the pid out of a `runtime.json`, or `null` when there is nothing

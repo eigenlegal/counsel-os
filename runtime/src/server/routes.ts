@@ -223,6 +223,11 @@ async function* withRelease(source: AsyncIterable<StreamEvent>, release: () => v
   }
 }
 
+/** The key `PUT /settings` serializes on. `ThreadLocks` is a keyed mutex,
+ * not something that knows about threads; this key is not a thread id and
+ * cannot collide with one, since thread ids are uuids. */
+const SETTINGS_LOCK = 'settings';
+
 /** The comment line a typed stream opens with. A client that sees it knows the
  * missing `text` frames are suppression, not silence. */
 export const TYPED_PREAMBLE = ': typed\n\n';
@@ -301,10 +306,25 @@ export function createApp(deps: ServerDeps): App {
     });
   };
 
-  /** `PUT /settings` (spec §4.1). The body is the whole registry file, so a
-   * schema failure is the shared 400-with-issues every other route gives. */
-  const putSettings = async (req: Request): Promise<Response> =>
-    applySettings(deps, await body(req, RegistryFile));
+  /**
+   * `PUT /settings` (spec §4.1). The body is the whole registry file, so a
+   * schema failure is the shared 400-with-issues every other route gives.
+   *
+   * Serialized on `SETTINGS_LOCK`, because `applySettings` is a
+   * read-modify-write of one file: two overlapping PUTs could otherwise
+   * restore each other's contents, and the loser's registry would win. The
+   * lock is taken AFTER the body is read — a slow client must not be able to
+   * hold the settings surface shut by trickling out a request.
+   */
+  const putSettings = async (req: Request): Promise<Response> => {
+    const next = await body(req, RegistryFile);
+    const release = await locks.acquire(SETTINGS_LOCK);
+    try {
+      return applySettings(deps, next);
+    } finally {
+      release();
+    }
+  };
 
   const runProviderTest = async (req: Request): Promise<Response> =>
     testProvider(loopDeps(), (await body(req, TestBody)).provider);
