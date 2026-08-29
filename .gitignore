@@ -24,3 +24,6 @@ __pycache__/
 # Isolated dev worktrees (git worktree add / EnterWorktree)
 .worktrees/
 .claude/worktrees/
+
+# End-to-end run scratch: the throwaway COUNSEL_OS_HOME, vault and traces
+e2e/.tmp/
