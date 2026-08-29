@@ -234,6 +234,14 @@ describe('HOST_PREAMBLE', () => {
     expect(preamble).toContain('`file`');
     expect(preamble).toContain('--json');
   });
+
+  test('states the typed-answer rule for requests carrying an output schema', () => {
+    const preamble = HOST_PREAMBLE(allTools, 'macos', defaultCfg);
+    expect(preamble).toContain(
+      'If the request carries an output schema, do the work with the primitives first, ' +
+        'then give the final answer in exactly that structure — nothing else in the final answer.',
+    );
+  });
 });
 
 describe('readPrimitiveTool', () => {

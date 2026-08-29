@@ -327,6 +327,38 @@ describe('POST /threads/:id/steps', () => {
   });
 });
 
+describe('typed answers', () => {
+  test('an outputSchema on the request reaches the provider, and done carries the parsed output', async () => {
+    const app = appWithFake([{ text: 'ok', output: { files: ['a'] } }]);
+    const id = await newThread(app);
+
+    const { res, frames } = await step(app, id, {
+      message: 'list the files',
+      outputSchema: {
+        type: 'object',
+        properties: { files: { type: 'array', items: { type: 'string' } } },
+        required: ['files'],
+      },
+    });
+
+    expect(res.status).toBe(200);
+    const done = frames.find(f => f.event === 'done')!;
+    expect(done.data['output']).toEqual({ files: ['a'] });
+  });
+
+  test('an invalid outputSchema is 400 and never reaches the provider', async () => {
+    const app = appWithFake();
+    const id = await newThread(app);
+
+    const res = await call(app, 'POST', `/threads/${id}/steps`, {
+      body: { message: 'hi', outputSchema: { type: 'nope' } },
+    });
+
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error: string }).error).toContain('invalid outputSchema');
+  });
+});
+
 describe('proposal event', () => {
   test('the step stream carries a proposal frame after propose_update, with the id the log recorded', async () => {
     const app = appWithFake([

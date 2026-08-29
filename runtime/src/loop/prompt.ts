@@ -134,6 +134,10 @@ these paths instead. \`propose_update\` does not write the file — it records
 a proposed change for the user to approve or reject. Tell the user what you
 proposed and why.
 
+## Typed answers
+
+If the request carries an output schema, do the work with the primitives first, then give the final answer in exactly that structure — nothing else in the final answer.
+
 ## Tools on this platform (${platform})
 
 Available: ${available || 'none'}.
