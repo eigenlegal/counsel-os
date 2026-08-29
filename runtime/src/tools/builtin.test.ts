@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { join } from 'node:path';
-import { builtinTools, docketSweepArgs } from './builtin';
+import { builtinTools, checkDocumentArgs, docketSweepArgs } from './builtin';
 
 describe('builtinTools', () => {
   test('returns docket_sweep, available on all four platforms', () => {
@@ -35,6 +35,23 @@ describe('builtinTools', () => {
     const tools = builtinTools({ vaultRoot: '/tmp/v', repoRoot: '/tmp/repo' });
     const wc = tools.find(t => t.name === 'word_compare')!;
     expect([...wc.platforms]).toEqual(['macos']);
+  });
+
+  test('check_document takes a `file` field, accepts non-docx, and always runs --json', async () => {
+    const tools = builtinTools({ vaultRoot: '/tmp/v', repoRoot: '/tmp/repo' });
+    const check = tools.find(t => t.name === 'check_document')!;
+    const parsed = check.inputSchema.parse({ file: 'draft.md' });
+    expect(parsed).toEqual({ file: 'draft.md' });
+    expect(check.description).toContain('.md');
+    expect(check.description).toContain('.txt');
+    expect(check.description).toContain('--json');
+  });
+});
+
+describe('checkDocumentArgs', () => {
+  test('always appends --json', () => {
+    expect(checkDocumentArgs('draft.docx')).toEqual(['draft.docx', '--json']);
+    expect(checkDocumentArgs('draft.md')).toEqual(['draft.md', '--json']);
   });
 });
 

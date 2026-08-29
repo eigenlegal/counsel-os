@@ -12,6 +12,15 @@ The runtime resolved \`{legal_root}\` before this session started. Do not run
 \`scripts/resolve_legal_root.sh\`. Do not ask the user for the legal root.
 Treat every vault path in the methodology as already resolved.
 
+## Vault paths
+
+The methodology writes vault paths as \`{legal_root}/x/y.md\`. Vault tools do
+not take that prefix. Drop \`{legal_root}/\`. Pass \`x/y.md\` instead. Never
+pass an absolute path.
+
+Matter files live under \`matters/\`. Entity files live under
+\`entities/\`.
+
 ## Scripts are tools
 
 The methodology tells you to run scripts directly, for example
@@ -22,11 +31,15 @@ yourself. Pass the tool's arguments as named fields, not as a command line.
 | Script call in the methodology | Tool | Fields |
 |---|---|---|
 | \`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/docket_sweep.py" <matters_dir> --window <days> --format json\` | \`docket_sweep\` | \`days\` (optional, default 60) |
-| \`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/extract_redlines.py" <input.docx>\` | \`extract_redlines\` | \`docx\` |
-| \`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/check_document.py" <input>\` | \`check_document\` | \`docx\` |
+| \`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/extract_redlines.py" <file> --format json\` | \`extract_redlines\` | \`docx\` |
+| \`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/check_document.py" <file> --json\` | \`check_document\` | \`file\` — accepts .docx, .md, or .txt; always run with --json |
 | \`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/clean_format.py" <input.docx> <output.docx>\` | \`clean_format\` | \`input\`, \`output\` |
-| \`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/apply_redlines.py" [--track] <original.docx> <edits.json> <output.docx>\` | \`apply_redlines\` | \`original\`, \`edits\`, \`output\`, \`track\` (optional) |
+| \`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/apply_redlines.py" [--track] <original.docx> <redlines.json> <output.docx>\` | \`apply_redlines\` | \`original\`, \`edits\`, \`output\`, \`track\` (optional) |
 | \`"\${CLAUDE_PLUGIN_ROOT}/scripts/word_compare.sh" <original.docx> <modified.docx> <author> <output.docx>\` | \`word_compare\` | \`original\`, \`modified\`, \`author\`, \`output\` |
+
+If a methodology step calls for a script or shell command with no tool
+listed above, do not improvise. Tell the user what you cannot do. Continue
+with the rest of the request.
 
 ## Primitives are a tool call
 
@@ -41,7 +54,7 @@ Matter files stay under direct control. Call \`vault_write\` for any path
 under \`matters/\`.
 
 Knowledge-system files do not write directly. This covers \`practice/\`,
-\`memory/\`, \`law/\`, and the entities directory. Call \`propose_update\` for
+\`memory/\`, \`law/\`, and \`entities/\`. Call \`propose_update\` for
 these paths instead. \`propose_update\` does not write the file — it records
 a proposed change for the user to approve or reject. Tell the user what you
 proposed and why.
@@ -50,7 +63,7 @@ proposed and why.
 
 Available: \`docket_sweep\`, \`propose_update\`, \`read_primitive\`, \`vault_list\`, \`vault_read\`, \`vault_search\`, \`vault_write\`.
 
-Unavailable: \`extract_redlines\` (not available on this platform), \`check_document\` (not available on this platform), \`clean_format\` (not available on this platform), \`apply_redlines\` (not available on this platform), \`word_compare\` (requires Microsoft Word for Mac)
+Unavailable: \`extract_redlines\` (needs macos, linux, windows, hosted), \`check_document\` (needs macos, linux, windows, hosted), \`clean_format\` (needs macos, linux, windows, hosted), \`apply_redlines\` (needs macos, linux, windows, hosted), \`word_compare\` (needs macos)
 
 # Counsel OS
 

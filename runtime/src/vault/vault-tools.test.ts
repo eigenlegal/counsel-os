@@ -71,4 +71,46 @@ describe('guardedVaultTools', () => {
     expect(r.isError).toBe(false);
     expect((r.output as any).content).toBe('profile content');
   });
+
+  test('vault_write description states the gate and names the real knowledge-system dirs', () => {
+    const store = new FsVaultStore(mkdtempSync(join(tmpdir(), 'gvt-')));
+    const tools = guardedVaultTools(store, { entitiesPath: 'clients', mattersPath: 'deals' });
+    const write = tools.find(t => t.name === 'vault_write')!;
+    expect(write.description).toMatch(/propose_update/);
+    expect(write.description).toContain('practice/');
+    expect(write.description).toContain('memory/');
+    expect(write.description).toContain('law/');
+    expect(write.description).toContain('clients/');
+  });
+
+  describe('a spelled-around knowledge path does not bypass the gate', () => {
+    for (const spelling of ['./practice/standards/x.md', 'matters/../practice/x.md', './/practice/x.md']) {
+      test(`vault_write to "${spelling}" is refused with a propose_update pointer`, async () => {
+        const store = new FsVaultStore(mkdtempSync(join(tmpdir(), 'gvt-')));
+        const tools = guardedVaultTools(store, defaultCfg);
+        const r = await runToolDef(tools, 'vault_write', { path: spelling, content: 'hi' }, 'default');
+        expect(r.isError).toBe(true);
+        expect(String(r.output)).toMatch(/propose_update/);
+        expect(await store.version('default', 'practice/standards/x.md')).toBeNull();
+        expect(await store.version('default', 'practice/x.md')).toBeNull();
+      });
+    }
+
+    test('vault_write to "matters/../matters/a.md" is still allowed — it normalizes to a matter path', async () => {
+      const store = new FsVaultStore(mkdtempSync(join(tmpdir(), 'gvt-')));
+      const tools = guardedVaultTools(store, defaultCfg);
+      const r = await runToolDef(tools, 'vault_write', { path: 'matters/../matters/a.md', content: 'hi' }, 'default');
+      expect(r.isError).toBe(false);
+      expect(await store.read('default', 'matters/a.md')).toBe('hi');
+    });
+  });
+
+  test('vault_read normalizes its path before hitting the store, same as vault_write', async () => {
+    const store = new FsVaultStore(mkdtempSync(join(tmpdir(), 'gvt-')));
+    await store.write('default', 'matters/a.md', 'hi');
+    const tools = guardedVaultTools(store, defaultCfg);
+    const r = await runToolDef(tools, 'vault_read', { path: 'matters/../matters/a.md' }, 'default');
+    expect(r.isError).toBe(false);
+    expect((r.output as any).content).toBe('hi');
+  });
 });

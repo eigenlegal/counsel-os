@@ -13,6 +13,12 @@ export function docketSweepArgs(vaultRoot: string, days: number): string[] {
   return [join(vaultRoot, 'matters'), '--window', String(days), '--format', 'json'];
 }
 
+/** `check_document` always runs `--json` — the `read` primitive's `--qa` mode
+ * consumes the machine-readable report, not the human-readable one. */
+export function checkDocumentArgs(file: string): string[] {
+  return [file, '--json'];
+}
+
 // Runs on all four platforms, same as docket_sweep — but reads/writes local
 // .docx files, which a `hosted` deployment may not have direct filesystem
 // access to. Recorded in each tool's description (below) rather than the
@@ -47,11 +53,11 @@ export function builtinTools(opts: { vaultRoot: string; repoRoot: string }): Too
     }),
     pythonScriptTool({
       name: 'check_document',
-      description: 'Deterministic mechanical QA for a contract draft (.docx, markdown, or text): cross-references, defined terms, exhibits. Reads a local file path — the document must already be on disk.',
+      description: 'Deterministic mechanical QA for a contract draft: cross-references, defined terms, exhibits. Accepts .docx, .md, or .txt. Always run with --json. Reads a local file path — the document must already be on disk.',
       script: resolve(opts.repoRoot, 'scripts/check_document.py'),
       platforms: [...DOCX_SCRIPT_PLATFORMS],
-      inputSchema: z.object({ docx: z.string().describe('Path to the document to check.') }),
-      args: ({ docx }) => [docx],
+      inputSchema: z.object({ file: z.string().describe('Path to the .docx, .md, or .txt document to check.') }),
+      args: ({ file }) => checkDocumentArgs(file),
       cwd: opts.repoRoot,
     }),
     pythonScriptTool({

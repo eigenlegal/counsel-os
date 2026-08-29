@@ -60,11 +60,15 @@ export class FsVaultStore implements VaultStore {
     }
   }
 
-  async write(tenant: Tenant, path: string, content: string, opts: { expectedVersion?: Version } = {}): Promise<Version> {
+  async write(tenant: Tenant, path: string, content: string, opts: { expectedVersion?: Version | null } = {}): Promise<Version> {
     const full = this.abs(tenant, path);
     if (opts.expectedVersion !== undefined) {
       const actual = await this.version(tenant, path);
-      if (actual !== opts.expectedVersion) {
+      if (opts.expectedVersion === null) {
+        // The proposal was made against a path that didn't exist yet; a
+        // write in the meantime — by anyone — is a conflict too.
+        if (actual !== null) throw new VaultConflictError(path, 'missing', actual);
+      } else if (actual !== opts.expectedVersion) {
         throw new VaultConflictError(path, opts.expectedVersion, actual ?? 'missing');
       }
     }

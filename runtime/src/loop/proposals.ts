@@ -54,15 +54,24 @@ export function proposeUpdateTool(
 export type ApplyProposalResult =
   | { status: 'approved'; version: Version }
   | { status: 'rejected' }
-  | { status: 'conflict'; conflict: { expected: Version; actual: Version } };
+  | { status: 'conflict'; conflict: { expected: Version; actual: Version } }
+  // The proposal was already decided (by an earlier approve/reject) before
+  // this call — no write happens, and the earlier decision is not disturbed.
+  | { status: 'approved' | 'rejected'; error: string };
 
 /**
- * Applies a founder/user decision on a pending proposal. `reject` marks the
- * event rejected and writes nothing. `approve` writes `proposal.content` to
- * `proposal.path` with the proposal's recorded `expectedVersion` — if the
- * path changed since the proposal was made, the write conflicts and the
- * proposal is left `pending` so the model can re-propose against the current
- * content instead of silently clobbering the intervening edit.
+ * Applies a founder/user decision on a pending proposal. A proposal that is
+ * no longer `pending` (already approved or rejected) is a no-op: its past
+ * status is returned with an error, and nothing is written — `decision` is
+ * not consulted before that check, so `approve` can't re-run a write behind
+ * an already-rejected proposal's back. Otherwise `reject` marks the event
+ * rejected and writes nothing. `approve` writes `proposal.content` to
+ * `proposal.path` with the proposal's recorded `expectedVersion` (`null`
+ * when the path didn't exist at proposal time — that still conflicts if the
+ * path was created in the meantime, see `FsVaultStore.write`) — if the path
+ * changed since the proposal was made, the write conflicts and the proposal
+ * is left `pending` so the model can re-propose against the current content
+ * instead of silently clobbering the intervening edit.
  */
 export async function applyProposal(
   store: ThreadStore,
@@ -78,6 +87,10 @@ export async function applyProposal(
   );
   if (!proposal) throw new Error(`unknown proposal: ${proposalId}`);
 
+  if (proposal.status !== 'pending') {
+    return { status: proposal.status, error: 'proposal is not pending' };
+  }
+
   if (decision === 'reject') {
     await store.updateProposal(tenant, threadId, proposalId, 'rejected');
     return { status: 'rejected' };
@@ -85,7 +98,7 @@ export async function applyProposal(
 
   try {
     const version = await vault.write(tenant, proposal.path, proposal.content, {
-      expectedVersion: proposal.expectedVersion ?? undefined,
+      expectedVersion: proposal.expectedVersion,
     });
     await store.updateProposal(tenant, threadId, proposalId, 'approved');
     return { status: 'approved', version };

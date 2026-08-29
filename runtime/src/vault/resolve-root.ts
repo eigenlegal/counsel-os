@@ -173,7 +173,11 @@ export function readVaultConfig(root: string): VaultConfig {
   const findOverride = (key: string): string | undefined => {
     const prefix = `${key}:`;
     for (const line of lines) {
-      if (line.startsWith(prefix)) return line.slice(prefix.length).trim();
+      // Trim a trailing slash — `entities_path: entities/` and
+      // `entities_path: entities` must resolve to the same prefix; a stray
+      // slash otherwise turns `isKnowledgePath`'s `${entitiesPath}/` prefix
+      // into `entities//`, which matches nothing.
+      if (line.startsWith(prefix)) return line.slice(prefix.length).trim().replace(/\/+$/, '');
     }
     return undefined;
   };

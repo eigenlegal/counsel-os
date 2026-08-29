@@ -82,7 +82,11 @@ export interface Hit {
 
 export interface VaultStore {
   read(tenant: Tenant, path: string): Promise<string>;
-  write(tenant: Tenant, path: string, content: string, opts?: { expectedVersion?: Version }): Promise<Version>;
+  // `expectedVersion: null` means "expect the file NOT to exist yet" (the
+  // new-file case a proposal records when nothing was there to hash) —
+  // distinct from omitting `expectedVersion`, which skips the check
+  // entirely and always overwrites.
+  write(tenant: Tenant, path: string, content: string, opts?: { expectedVersion?: Version | null }): Promise<Version>;
   list(tenant: Tenant, dir: string): Promise<Entry[]>;
   search(tenant: Tenant, query: string): Promise<Hit[]>;
   history(tenant: Tenant, path: string): Promise<Version[]>;

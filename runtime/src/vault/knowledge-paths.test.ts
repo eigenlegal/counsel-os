@@ -1,8 +1,36 @@
 import { describe, expect, test } from 'bun:test';
-import { isKnowledgePath } from './knowledge-paths';
+import { isKnowledgePath, normalizeVaultPath } from './knowledge-paths';
 import type { VaultConfig } from './resolve-root';
 
 const defaults: VaultConfig = { entitiesPath: 'entities', mattersPath: 'matters' };
+
+describe('normalizeVaultPath', () => {
+  test('strips a leading ./', () => {
+    expect(normalizeVaultPath('./practice/x.md')).toBe('practice/x.md');
+  });
+
+  test('collapses a doubled leading slash', () => {
+    expect(normalizeVaultPath('.//practice/x.md')).toBe('practice/x.md');
+  });
+
+  test('resolves internal .. segments that stay inside the vault', () => {
+    expect(normalizeVaultPath('matters/../practice/x.md')).toBe('practice/x.md');
+    expect(normalizeVaultPath('matters/../matters/a.md')).toBe('matters/a.md');
+  });
+
+  test('rejects an absolute path', () => {
+    expect(() => normalizeVaultPath('/etc/passwd')).toThrow(/outside vault/);
+  });
+
+  test('rejects a path that escapes the vault root', () => {
+    expect(() => normalizeVaultPath('../etc/passwd')).toThrow(/outside vault/);
+    expect(() => normalizeVaultPath('..')).toThrow(/outside vault/);
+  });
+
+  test('leaves an already-normal path alone', () => {
+    expect(normalizeVaultPath('practice/standards/x.md')).toBe('practice/standards/x.md');
+  });
+});
 
 describe('isKnowledgePath', () => {
   test('practice/ is a knowledge path', () => {
@@ -40,5 +68,11 @@ describe('isKnowledgePath', () => {
   test('a name that merely starts with a knowledge prefix is not matched', () => {
     // "lawsuit-tracker.md" begins with "law" but is not under "law/".
     expect(isKnowledgePath('lawsuit-tracker.md', defaults)).toBe(false);
+  });
+
+  test('a spelled-around path is normalized before the prefix check', () => {
+    expect(isKnowledgePath('./practice/standards/x.md', defaults)).toBe(true);
+    expect(isKnowledgePath('matters/../practice/x.md', defaults)).toBe(true);
+    expect(isKnowledgePath('matters/../matters/a.md', defaults)).toBe(false);
   });
 });

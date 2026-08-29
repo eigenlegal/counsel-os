@@ -33,6 +33,27 @@ describe('FsVaultStore', () => {
     expect(v2).not.toBe(v1);
   });
 
+  test('write with expectedVersion: null succeeds when the path does not exist yet', async () => {
+    const v = await store.write('default', 'new.md', 'brand new', { expectedVersion: null });
+    expect(v).toMatch(/^[0-9a-f]{64}$/);
+    expect(await store.read('default', 'new.md')).toBe('brand new');
+  });
+
+  test('write with expectedVersion: null conflicts when the path was created in the meantime', async () => {
+    await store.write('default', 'new.md', 'someone got there first');
+    const actual = await store.version('default', 'new.md');
+    let error: unknown;
+    try {
+      await store.write('default', 'new.md', 'my content', { expectedVersion: null });
+    } catch (err) {
+      error = err;
+    }
+    expect(error).toBeInstanceOf(VaultConflictError);
+    expect((error as VaultConflictError).expected).toBe('missing');
+    expect((error as VaultConflictError).actual).toBe(actual!);
+    expect(await store.read('default', 'new.md')).toBe('someone got there first');
+  });
+
   test('list returns files and dirs, history is newest first', async () => {
     await store.write('default', 'd/x.md', '1');
     await store.write('default', 'd/x.md', '2');

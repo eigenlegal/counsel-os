@@ -1,88 +1,85 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Platform } from '../core/types';
+import type { VaultConfig } from '../vault/resolve-root';
 
 /**
- * A script tool the methodology may reference, and the fields the matching
- * runtime tool takes. Used by `HOST_PREAMBLE` to build the script-mapping
- * table and to compute which tools are unavailable on a given platform. Keep
- * this list in lockstep with `tools/builtin.ts`'s `builtinTools()` — the
- * field names here must match that file's `inputSchema`s exactly, or the
- * preamble will teach the model to call tools with the wrong arguments.
+ * A script call the methodology may reference, and the tool + fields it maps
+ * to. Purely the mapping-table content for `HOST_PREAMBLE` — which tools are
+ * actually available on a given platform is supplied by the caller (see
+ * `AvailableTools`), not looked up here. Keep this list in lockstep with
+ * `tools/builtin.ts`'s `builtinTools()` — the field names here must match
+ * that file's `inputSchema`s exactly, or the preamble will teach the model
+ * to call tools with the wrong arguments.
  */
-interface KnownScriptTool {
+interface ScriptToolMapping {
   name: string;
   invocation: string;
   fields: string;
-  platforms: Platform[];
-  unavailableReason: string;
 }
 
-const ALL_PLATFORMS: Platform[] = ['macos', 'linux', 'windows', 'hosted'];
-
-const KNOWN_SCRIPT_TOOLS: KnownScriptTool[] = [
+const SCRIPT_TOOL_MAPPINGS: ScriptToolMapping[] = [
   {
     name: 'docket_sweep',
     invocation: 'python3 "${CLAUDE_PLUGIN_ROOT}/scripts/docket_sweep.py" <matters_dir> --window <days> --format json',
     fields: '`days` (optional, default 60)',
-    platforms: ALL_PLATFORMS,
-    unavailableReason: 'not available on this platform',
   },
   {
     name: 'extract_redlines',
-    invocation: 'python3 "${CLAUDE_PLUGIN_ROOT}/scripts/extract_redlines.py" <input.docx>',
+    invocation: 'python3 "${CLAUDE_PLUGIN_ROOT}/scripts/extract_redlines.py" <file> --format json',
     fields: '`docx`',
-    platforms: ALL_PLATFORMS,
-    unavailableReason: 'not available on this platform',
   },
   {
     name: 'check_document',
-    invocation: 'python3 "${CLAUDE_PLUGIN_ROOT}/scripts/check_document.py" <input>',
-    fields: '`docx`',
-    platforms: ALL_PLATFORMS,
-    unavailableReason: 'not available on this platform',
+    invocation: 'python3 "${CLAUDE_PLUGIN_ROOT}/scripts/check_document.py" <file> --json',
+    fields: '`file` — accepts .docx, .md, or .txt; always run with --json',
   },
   {
     name: 'clean_format',
     invocation: 'python3 "${CLAUDE_PLUGIN_ROOT}/scripts/clean_format.py" <input.docx> <output.docx>',
     fields: '`input`, `output`',
-    platforms: ALL_PLATFORMS,
-    unavailableReason: 'not available on this platform',
   },
   {
     name: 'apply_redlines',
-    invocation: 'python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply_redlines.py" [--track] <original.docx> <edits.json> <output.docx>',
+    invocation: 'python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply_redlines.py" [--track] <original.docx> <redlines.json> <output.docx>',
     fields: '`original`, `edits`, `output`, `track` (optional)',
-    platforms: ALL_PLATFORMS,
-    unavailableReason: 'not available on this platform',
   },
   {
     name: 'word_compare',
     invocation: '"${CLAUDE_PLUGIN_ROOT}/scripts/word_compare.sh" <original.docx> <modified.docx> <author> <output.docx>',
     fields: '`original`, `modified`, `author`, `output`',
-    platforms: ['macos'],
-    unavailableReason: 'requires Microsoft Word for Mac',
   },
 ];
 
 /**
- * The host-specific header prepended to the methodology body. Written for the
- * model, not the user: it maps every "run this script" / "read this file"
- * step in `SKILL.md` and the primitives onto the tool calls this runtime
- * actually exposes, states what the propose-then-approve write gate is, and
- * lists which tools exist on this run's platform.
+ * The tool availability this run's caller already computed — typically from
+ * a `ToolRegistry` built with every builtin tool registered:
+ * `{ available: registry.available(platform).map(t => t.name), unavailable: registry.unavailable(platform) }`.
+ * `HOST_PREAMBLE` only renders this; it does not decide platform gating.
  */
-export function HOST_PREAMBLE(toolNames: string[], platform: Platform): string {
-  const scriptTable = KNOWN_SCRIPT_TOOLS
+export interface AvailableTools {
+  available: string[];
+  unavailable: Array<{ name: string; needs: Platform[] }>;
+}
+
+/**
+ * The host-specific header prepended to the methodology body. Written for the
+ * model, not the user: it maps every "run this script" / "read this file" /
+ * "{legal_root}/..." step in `SKILL.md` and the primitives onto the tool
+ * calls and vault-relative paths this runtime actually uses, states what the
+ * propose-then-approve write gate is, says what to do when no tool covers a
+ * step, and lists which tools exist on this run's platform.
+ */
+export function HOST_PREAMBLE(tools: AvailableTools, platform: Platform, cfg: VaultConfig): string {
+  const scriptTable = SCRIPT_TOOL_MAPPINGS
     .map(t => `| \`${t.invocation}\` | \`${t.name}\` | ${t.fields} |`)
     .join('\n');
 
-  const available = [...toolNames].sort().map(n => `\`${n}\``).join(', ');
+  const available = [...tools.available].sort().map(n => `\`${n}\``).join(', ');
 
-  const unavailable = KNOWN_SCRIPT_TOOLS.filter(t => !toolNames.includes(t.name));
-  const unavailableList = unavailable.length === 0
+  const unavailableList = tools.unavailable.length === 0
     ? 'none — every tool listed above is available on this platform.'
-    : unavailable.map(t => `\`${t.name}\` (${t.unavailableReason})`).join(', ');
+    : tools.unavailable.map(t => `\`${t.name}\` (needs ${t.needs.join(', ')})`).join(', ');
 
   return `# Host: Counsel OS runtime
 
@@ -95,6 +92,15 @@ The runtime resolved \`{legal_root}\` before this session started. Do not run
 \`scripts/resolve_legal_root.sh\`. Do not ask the user for the legal root.
 Treat every vault path in the methodology as already resolved.
 
+## Vault paths
+
+The methodology writes vault paths as \`{legal_root}/x/y.md\`. Vault tools do
+not take that prefix. Drop \`{legal_root}/\`. Pass \`x/y.md\` instead. Never
+pass an absolute path.
+
+Matter files live under \`${cfg.mattersPath}/\`. Entity files live under
+\`${cfg.entitiesPath}/\`.
+
 ## Scripts are tools
 
 The methodology tells you to run scripts directly, for example
@@ -106,6 +112,10 @@ yourself. Pass the tool's arguments as named fields, not as a command line.
 |---|---|---|
 ${scriptTable}
 
+If a methodology step calls for a script or shell command with no tool
+listed above, do not improvise. Tell the user what you cannot do. Continue
+with the rest of the request.
+
 ## Primitives are a tool call
 
 The methodology tells you to read \`primitives/{name}.md\` for the detailed
@@ -116,10 +126,10 @@ instead of reading the file yourself. For example, call
 ## Writes go through two paths
 
 Matter files stay under direct control. Call \`vault_write\` for any path
-under \`matters/\`.
+under \`${cfg.mattersPath}/\`.
 
 Knowledge-system files do not write directly. This covers \`practice/\`,
-\`memory/\`, \`law/\`, and the entities directory. Call \`propose_update\` for
+\`memory/\`, \`law/\`, and \`${cfg.entitiesPath}/\`. Call \`propose_update\` for
 these paths instead. \`propose_update\` does not write the file — it records
 a proposed change for the user to approve or reject. Tell the user what you
 proposed and why.
@@ -141,13 +151,18 @@ function stripFrontmatter(text: string): string {
   return body.replace(/^\n+/, '');
 }
 
-/** Reads `path` with `readFile`, returning `null` instead of throwing when
- * the file does not exist (or any other read error occurs). */
+/** Reads `path` with `readFile`, returning `null` when the file does not
+ * exist (`ENOENT`) — the only expected reason `practice/profile.md` or a
+ * matter file might be absent. Any other error (permissions, a directory
+ * where a file was expected, a broken injected `readFile`) is a real
+ * failure and is left to propagate rather than silently rendered as
+ * "absent". */
 function readIfPresent(readFile: (path: string) => string, path: string): string | null {
   try {
     return readFile(path);
-  } catch {
-    return null;
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException)?.code === 'ENOENT') return null;
+    throw err;
   }
 }
 
@@ -156,7 +171,8 @@ export interface AssembleSystemPromptOptions {
   vaultRoot: string;
   matterPath?: string;
   platform: Platform;
-  toolNames: string[];
+  tools: AvailableTools;
+  cfg: VaultConfig;
 }
 
 /**
@@ -175,7 +191,7 @@ export function assembleSystemPrompt(
   const skillPath = join(opts.pluginRoot, 'skills', 'counsel', 'SKILL.md');
   const skillBody = stripFrontmatter(readFile(skillPath));
 
-  let prompt = HOST_PREAMBLE(opts.toolNames, opts.platform) + '\n\n' + skillBody;
+  let prompt = HOST_PREAMBLE(opts.tools, opts.platform, opts.cfg) + '\n\n' + skillBody;
 
   const profile = readIfPresent(readFile, join(opts.vaultRoot, 'practice', 'profile.md'));
   if (profile !== null) {

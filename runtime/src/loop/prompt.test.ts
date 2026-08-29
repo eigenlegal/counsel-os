@@ -3,8 +3,21 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { assembleSystemPrompt, HOST_PREAMBLE } from './prompt';
+import type { AvailableTools } from './prompt';
 import { readPrimitiveTool } from './primitives';
 import { runToolDef } from '../core/fake-provider';
+import type { VaultConfig } from '../vault/resolve-root';
+
+const defaultCfg: VaultConfig = { entitiesPath: 'entities', mattersPath: 'matters' };
+
+const allTools: AvailableTools = {
+  available: [
+    'vault_read', 'vault_write', 'vault_list', 'vault_search',
+    'propose_update', 'read_primitive',
+    'docket_sweep', 'extract_redlines', 'check_document', 'clean_format', 'apply_redlines', 'word_compare',
+  ],
+  unavailable: [],
+};
 
 function makeFixturePluginRoot(): string {
   const root = mkdtempSync(join(tmpdir(), 'plugin-'));
@@ -38,7 +51,17 @@ describe('assembleSystemPrompt', () => {
       vaultRoot,
       matterPath: 'matters/acme-nda.md',
       platform: 'macos',
-      toolNames: ['vault_read', 'vault_write', 'vault_list', 'vault_search', 'propose_update', 'read_primitive', 'docket_sweep'],
+      tools: {
+        available: ['vault_read', 'vault_write', 'vault_list', 'vault_search', 'propose_update', 'read_primitive', 'docket_sweep'],
+        unavailable: [
+          { name: 'extract_redlines', needs: ['macos', 'linux', 'windows', 'hosted'] },
+          { name: 'check_document', needs: ['macos', 'linux', 'windows', 'hosted'] },
+          { name: 'clean_format', needs: ['macos', 'linux', 'windows', 'hosted'] },
+          { name: 'apply_redlines', needs: ['macos', 'linux', 'windows', 'hosted'] },
+          { name: 'word_compare', needs: ['macos'] },
+        ],
+      },
+      cfg: defaultCfg,
     });
 
     // Frontmatter is gone; body content is present.
@@ -70,7 +93,8 @@ describe('assembleSystemPrompt', () => {
       vaultRoot,
       matterPath: 'matters/acme-nda.md',
       platform: 'macos' as const,
-      toolNames: ['vault_read', 'vault_write', 'read_primitive'],
+      tools: { available: ['vault_read', 'vault_write', 'read_primitive'], unavailable: [] },
+      cfg: defaultCfg,
     };
 
     const before = assembleSystemPrompt(opts);
@@ -89,7 +113,8 @@ describe('assembleSystemPrompt', () => {
       pluginRoot,
       vaultRoot,
       platform: 'linux',
-      toolNames: ['vault_read'],
+      tools: { available: ['vault_read'], unavailable: [] },
+      cfg: defaultCfg,
     });
 
     expect(prompt).not.toContain('## Practice profile');
@@ -106,7 +131,13 @@ describe('assembleSystemPrompt', () => {
     };
 
     const prompt = assembleSystemPrompt(
-      { pluginRoot: '/fake/plugin', vaultRoot: '/fake/vault', platform: 'hosted', toolNames: [] },
+      {
+        pluginRoot: '/fake/plugin',
+        vaultRoot: '/fake/vault',
+        platform: 'hosted',
+        tools: { available: [], unavailable: [] },
+        cfg: defaultCfg,
+      },
       readFile,
     );
 
@@ -114,26 +145,94 @@ describe('assembleSystemPrompt', () => {
     expect(prompt).not.toContain('name: counsel');
     expect(calls.some(p => p.includes('SKILL.md'))).toBe(true);
   });
+
+  test('a non-ENOENT readFile error propagates instead of being treated as "file absent"', () => {
+    const fakeSkill = '---\nname: counsel\n---\nBODY\n';
+    const readFile = (path: string) => {
+      if (path.endsWith('SKILL.md')) return fakeSkill;
+      if (path.endsWith('profile.md')) throw Object.assign(new Error('permission denied'), { code: 'EACCES' });
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' });
+    };
+
+    expect(() =>
+      assembleSystemPrompt(
+        {
+          pluginRoot: '/fake/plugin',
+          vaultRoot: '/fake/vault',
+          platform: 'hosted',
+          tools: { available: [], unavailable: [] },
+          cfg: defaultCfg,
+        },
+        readFile,
+      ),
+    ).toThrow(/permission denied/);
+  });
+
+  test('prints the configured mattersPath and does not leak the default "matters/" when overridden', () => {
+    const pluginRoot = makeFixturePluginRoot();
+    const vaultRoot = makeFixtureVaultRoot();
+
+    const prompt = assembleSystemPrompt({
+      pluginRoot,
+      vaultRoot,
+      platform: 'macos',
+      tools: { available: ['vault_read', 'vault_write'], unavailable: [] },
+      cfg: { entitiesPath: 'clients', mattersPath: 'cases' },
+    });
+
+    expect(prompt).toContain('cases/');
+    expect(prompt).toContain('clients/');
+    expect(prompt).not.toContain('matters/');
+    expect(prompt).not.toContain('entities/');
+  });
 });
 
 describe('HOST_PREAMBLE', () => {
-  test('lists available tools and unavailable script tools with a reason', () => {
-    const preamble = HOST_PREAMBLE(['vault_read', 'read_primitive', 'docket_sweep'], 'linux');
+  test('lists available tools and unavailable tools with what platform they need', () => {
+    const tools: AvailableTools = {
+      available: ['vault_read', 'read_primitive', 'docket_sweep'],
+      unavailable: [{ name: 'word_compare', needs: ['macos'] }],
+    };
+    const preamble = HOST_PREAMBLE(tools, 'linux', defaultCfg);
     expect(preamble).toContain('vault_read');
     expect(preamble).toContain('word_compare');
-    expect(preamble).toContain('requires Microsoft Word for Mac');
+    expect(preamble).toContain('needs macos');
   });
 
   test('says every tool is available when nothing is missing', () => {
-    const all = ['docket_sweep', 'extract_redlines', 'check_document', 'clean_format', 'apply_redlines', 'word_compare'];
-    const preamble = HOST_PREAMBLE(all, 'macos');
+    const preamble = HOST_PREAMBLE(allTools, 'macos', defaultCfg);
     expect(preamble).toContain('every tool listed above is available on this platform');
   });
 
   test('tells the model not to run resolve_legal_root.sh', () => {
-    const preamble = HOST_PREAMBLE([], 'macos');
+    const preamble = HOST_PREAMBLE({ available: [], unavailable: [] }, 'macos', defaultCfg);
     expect(preamble).toContain('resolve_legal_root.sh');
     expect(preamble).toMatch(/[Dd]o not run/);
+  });
+
+  test('translates {legal_root}/x/y.md paths and states matters/entities live at the configured dirs', () => {
+    const preamble = HOST_PREAMBLE(allTools, 'macos', { entitiesPath: 'clients', mattersPath: 'cases' });
+    expect(preamble).toContain('{legal_root}/x/y.md');
+    expect(preamble.toLowerCase()).toContain('drop');
+    expect(preamble).toContain('cases/');
+    expect(preamble).toContain('clients/');
+  });
+
+  test('tells the model not to improvise when no tool covers a methodology step', () => {
+    const preamble = HOST_PREAMBLE(allTools, 'macos', defaultCfg);
+    expect(preamble).toMatch(/do not improvise/i);
+    expect(preamble).toMatch(/tell the user what you cannot do/i);
+  });
+
+  test('the apply_redlines mapping row matches the script\'s own usage text', () => {
+    const preamble = HOST_PREAMBLE(allTools, 'macos', defaultCfg);
+    expect(preamble).toContain('<redlines.json>');
+  });
+
+  test('the check_document mapping row reflects the file field and --json', () => {
+    const preamble = HOST_PREAMBLE(allTools, 'macos', defaultCfg);
+    expect(preamble).toContain('`file`');
+    expect(preamble).toContain('--json');
   });
 });
 

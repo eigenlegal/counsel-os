@@ -174,4 +174,15 @@ describe('readVaultConfig', () => {
     mkdirSync(root, { recursive: true });
     expect(readVaultConfig(root)).toEqual({ entitiesPath: 'entities', mattersPath: 'matters' });
   });
+
+  test('trims a trailing slash from entities_path and matters_path', () => {
+    const root = tmpDir('root-');
+    mkdirSync(root, { recursive: true });
+    writeFileSync(
+      join(root, 'config.md'),
+      `counsel-os-config: true\nlegal_root: ${root}\nentities_path: entities/\nmatters_path: cases/\n`,
+      'utf8',
+    );
+    expect(readVaultConfig(root)).toEqual({ entitiesPath: 'entities', mattersPath: 'cases' });
+  });
 });

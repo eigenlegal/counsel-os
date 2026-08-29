@@ -131,6 +131,55 @@ describe('applyProposal', () => {
     expect(proposal.status).toBe('rejected');
   });
 
+  test('approve after a prior reject is a no-op — the earlier decision stands and nothing is written', async () => {
+    const tool = proposeUpdateTool(store, vault, threadId, 'default');
+    const propose = await runToolDef(
+      [tool],
+      'propose_update',
+      { path: 'practice/standards/z.md', content: 'proposed content', rationale: 'r' },
+      'default',
+    );
+    const proposalId = (propose.output as { proposalId: string }).proposalId;
+
+    const rejected = await applyProposal(store, vault, 'default', threadId, proposalId, 'reject');
+    expect(rejected.status).toBe('rejected');
+
+    const second = await applyProposal(store, vault, 'default', threadId, proposalId, 'approve');
+    expect(second.status).toBe('rejected');
+    expect((second as any).error).toMatch(/not pending/);
+
+    expect(await vault.version('default', 'practice/standards/z.md')).toBeNull();
+    const { events } = await store.get('default', threadId);
+    const proposal = events.find(ev => 't' in ev && ev.t === 'proposal') as any;
+    expect(proposal.status).toBe('rejected');
+  });
+
+  test('approving an already-approved proposal is a no-op and does not re-write', async () => {
+    await vault.write('default', 'practice/standards/w.md', 'initial');
+    const tool = proposeUpdateTool(store, vault, threadId, 'default');
+    const propose = await runToolDef(
+      [tool],
+      'propose_update',
+      { path: 'practice/standards/w.md', content: 'first approval', rationale: 'r' },
+      'default',
+    );
+    const proposalId = (propose.output as { proposalId: string }).proposalId;
+
+    const first = await applyProposal(store, vault, 'default', threadId, proposalId, 'approve');
+    expect(first.status).toBe('approved');
+
+    // Someone edits the file again after the first approval.
+    await vault.write('default', 'practice/standards/w.md', 'edited after approval');
+
+    const second = await applyProposal(store, vault, 'default', threadId, proposalId, 'approve');
+    expect(second.status).toBe('approved');
+    expect((second as any).error).toMatch(/not pending/);
+    expect((second as any).version).toBeUndefined();
+
+    // The second call didn't touch the vault — the post-approval edit stands.
+    expect(await vault.read('default', 'practice/standards/w.md')).toBe('edited after approval');
+  });
+
   test('an unknown proposal id throws', async () => {
     await expect(applyProposal(store, vault, 'default', threadId, 'nonexistent', 'approve')).rejects.toThrow(/unknown proposal/);
   });
