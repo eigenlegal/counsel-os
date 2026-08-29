@@ -12,6 +12,9 @@ export function pythonScriptTool<I>(opts: {
   args: (input: I) => string[];
   cwd?: string;
   timeoutMs?: number;
+  /** Overrides the spawned command; defaults to `['python3', script]`. Used
+   * for non-Python scripts, e.g. `['bash', script]` for a `.sh` file. */
+  command?: string[];
 }): Tool<I, SubprocessResult> {
   return {
     name: opts.name,
@@ -19,7 +22,7 @@ export function pythonScriptTool<I>(opts: {
     inputSchema: opts.inputSchema,
     platforms: new Set(opts.platforms),
     async execute(input) {
-      const proc = Bun.spawn(['python3', opts.script, ...opts.args(input)], {
+      const proc = Bun.spawn([...(opts.command ?? ['python3', opts.script]), ...opts.args(input)], {
         cwd: opts.cwd,
         stdout: 'pipe',
         stderr: 'pipe',

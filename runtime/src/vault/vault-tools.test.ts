@@ -3,8 +3,11 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { FsVaultStore } from './fs-store';
-import { vaultTools } from './vault-tools';
+import { guardedVaultTools, vaultTools } from './vault-tools';
 import { runToolDef } from '../core/fake-provider';
+import type { VaultConfig } from './resolve-root';
+
+const defaultCfg: VaultConfig = { entitiesPath: 'entities', mattersPath: 'matters' };
 
 describe('vault tools', () => {
   test('exposes four tools and round-trips through runToolDef', async () => {
@@ -31,5 +34,41 @@ describe('vault tools', () => {
       expect(t.description).toContain('relative to the vault root');
       expect(t.description).toContain('use `.` for the root');
     }
+  });
+});
+
+describe('guardedVaultTools', () => {
+  test('exposes the same four tools as vaultTools', () => {
+    const store = new FsVaultStore(mkdtempSync(join(tmpdir(), 'gvt-')));
+    const tools = guardedVaultTools(store, defaultCfg);
+    expect(tools.map(t => t.name).sort()).toEqual(['vault_list', 'vault_read', 'vault_search', 'vault_write']);
+  });
+
+  test('vault_write to a knowledge-system path is refused with a propose_update pointer', async () => {
+    const store = new FsVaultStore(mkdtempSync(join(tmpdir(), 'gvt-')));
+    const tools = guardedVaultTools(store, defaultCfg);
+    const r = await runToolDef(tools, 'vault_write', { path: 'practice/standards/x.md', content: 'hi' }, 'default');
+    expect(r.isError).toBe(true);
+    expect(String(r.output)).toMatch(/propose_update/);
+
+    const readBack = await store.version('default', 'practice/standards/x.md');
+    expect(readBack).toBeNull();
+  });
+
+  test('vault_write to a matter path still writes directly', async () => {
+    const store = new FsVaultStore(mkdtempSync(join(tmpdir(), 'gvt-')));
+    const tools = guardedVaultTools(store, defaultCfg);
+    const r = await runToolDef(tools, 'vault_write', { path: 'matters/a.md', content: 'hi' }, 'default');
+    expect(r.isError).toBe(false);
+    expect(await store.read('default', 'matters/a.md')).toBe('hi');
+  });
+
+  test('vault_read/vault_list/vault_search are unaffected by the guard', async () => {
+    const store = new FsVaultStore(mkdtempSync(join(tmpdir(), 'gvt-')));
+    await store.write('default', 'practice/profile.md', 'profile content');
+    const tools = guardedVaultTools(store, defaultCfg);
+    const r = await runToolDef(tools, 'vault_read', { path: 'practice/profile.md' }, 'default');
+    expect(r.isError).toBe(false);
+    expect((r.output as any).content).toBe('profile content');
   });
 });

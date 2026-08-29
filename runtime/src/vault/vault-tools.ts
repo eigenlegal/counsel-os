@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import type { ToolDef, VaultStore } from '../core/types';
+import { isKnowledgePath } from './knowledge-paths';
+import type { VaultConfig } from './resolve-root';
 
 // Every vault path is relative to the vault root, and an absolute-looking one
 // is rejected by `FsVaultStore`. Models do not infer that: both Codex spike
@@ -43,4 +45,27 @@ export function vaultTools(store: VaultStore): ToolDef[] {
     execute: async ({ query }, { tenant }) => store.search(tenant, query),
   };
   return [read, write, list, search] as ToolDef[];
+}
+
+/**
+ * Same tools as `vaultTools`, except `vault_write` refuses knowledge-system
+ * paths (`practice/`, `memory/`, `law/`, the configured entities dir — see
+ * `isKnowledgePath`). The `remember` gate: those writes must go through
+ * `propose_update` and founder/user approval; matter paths stay directly
+ * writable.
+ */
+export function guardedVaultTools(store: VaultStore, cfg: VaultConfig): ToolDef[] {
+  return vaultTools(store).map(tool => {
+    if (tool.name !== 'vault_write') return tool;
+    const write = tool as ToolDef<{ path: string; content: string; expectedVersion?: string }, { version: string }>;
+    return {
+      ...write,
+      execute: async (input: { path: string; content: string; expectedVersion?: string }, ctx) => {
+        if (isKnowledgePath(input.path, cfg)) {
+          throw new Error(`${input.path} is a knowledge-system path — use propose_update instead of vault_write.`);
+        }
+        return write.execute(input, ctx);
+      },
+    };
+  });
 }
