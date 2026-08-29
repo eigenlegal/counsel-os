@@ -1,14 +1,26 @@
 #!/usr/bin/env bash
 # Hands a request off to the local counsel-os runtime (spec §4.7), when one
 # is running. Called by the plugin skill before it does anything else; a
-# non-zero exit means "no runtime, proceed with the skill as usual" and must
-# stay silent, so a missing/optional runtime is never visible to the user.
+# non-zero exit means "no runtime, proceed with the skill as usual".
 #
 #   exit 0  the runtime handled it; its text is already on stdout
-#   exit 1  the runtime reported an error; the message is on stderr
-#   exit 3  no runtime available (missing deps, no runtime.json, dead
-#           server, or anything else that stops us before a step could
-#           even start) — always silent: no stdout, no stderr
+#   exit 1  the runtime reported an `error` event, OR the stream ended
+#           without a terminal event AFTER some text had already reached
+#           stdout — the message is on stderr ("⚠ ...")
+#   exit 3  no runtime available, and NOTHING has been printed yet (missing
+#           deps, no runtime.json, dead server, a step that ended before
+#           its first byte of text) — always silent: no stdout, no stderr
+#
+# The silent exit-3 contract holds ONLY until the first byte of text has
+# gone to stdout. Once text has been relayed to the user, a failure can no
+# longer be swallowed silently — the caller already has partial output on
+# screen — so from that point on a broken stream is reported (exit 1 + a
+# stderr warning) instead.
+#
+# A malformed `data:` line (bad JSON) is skipped, not fatal: the loop keeps
+# reading for the terminal event that follows it.
+
+set -euo pipefail
 
 REQUEST="${1:-}"
 
@@ -20,47 +32,59 @@ command -v jq >/dev/null 2>&1 || exit 3
 runtime_file=""
 if [[ -n "${COUNSEL_OS_HOME:-}" && -f "${COUNSEL_OS_HOME}/runtime.json" ]]; then
   runtime_file="${COUNSEL_OS_HOME}/runtime.json"
-elif [[ -f "${HOME}/.counsel-os/runtime.json" ]]; then
-  runtime_file="${HOME}/.counsel-os/runtime.json"
+elif [[ -f "${HOME:-}/.counsel-os/runtime.json" ]]; then
+  runtime_file="${HOME:-}/.counsel-os/runtime.json"
 fi
 [[ -n "$runtime_file" && -r "$runtime_file" ]] || exit 3
 
-port="$(jq -r '.port // empty' "$runtime_file" 2>/dev/null)"
-token="$(jq -r '.token // empty' "$runtime_file" 2>/dev/null)"
-[[ -n "$port" && -n "$token" ]] || exit 3
+port="$(jq -r '.port // empty' "$runtime_file" 2>/dev/null)" || true
+token="$(jq -r '.token // empty' "$runtime_file" 2>/dev/null)" || true
+[[ -n "${port:-}" && -n "${token:-}" ]] || exit 3
 
 base="http://127.0.0.1:${port}"
 
+# Every request authenticates through a curl config file handed in via
+# process substitution (`header = "..."`), never `-H` on the command line,
+# so the bearer token never lands in this process's argv — and so never in
+# `ps`. `printf` here is the bash builtin, not an external binary, so the
+# token never appears as an exec'd process's argv either.
+curl_auth() {
+  curl -K <(printf 'header = "Authorization: Bearer %s"\n' "$token") "$@"
+}
+
 # A dead/unreachable server (stale runtime.json, crashed process) is exactly
 # like no runtime at all.
-curl -sf --max-time 1 -H "Authorization: Bearer ${token}" "${base}/health" >/dev/null 2>&1 || exit 3
+curl_auth -sf --max-time 1 "${base}/health" >/dev/null 2>&1 || exit 3
 
 cache_file="${TMPDIR:-/tmp}/counsel-os-thread-${CLAUDE_SESSION_ID:-$PPID}"
 
 create_thread() {
-  curl -sf --max-time 5 -X POST -H "Authorization: Bearer ${token}" "${base}/threads" 2>/dev/null \
+  curl_auth -sf --max-time 5 -X POST "${base}/threads" 2>/dev/null \
     | jq -r '.id // empty' 2>/dev/null
 }
 
 thread_id=""
-[[ -f "$cache_file" ]] && thread_id="$(cat "$cache_file" 2>/dev/null)"
+if [[ -f "$cache_file" ]]; then
+  thread_id="$(cat "$cache_file" 2>/dev/null)" || true
+fi
 
 # A cached thread the runtime no longer knows about (restarted server, vault
 # moved) gets replaced rather than failed on.
 if [[ -n "$thread_id" ]]; then
-  status="$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 -H "Authorization: Bearer ${token}" "${base}/threads/${thread_id}" 2>/dev/null)"
-  [[ "$status" == "200" ]] || thread_id=""
+  status="$(curl_auth -s -o /dev/null -w '%{http_code}' --max-time 3 "${base}/threads/${thread_id}" 2>/dev/null)" || true
+  [[ "${status:-}" == "200" ]] || thread_id=""
 fi
 
 if [[ -z "$thread_id" ]]; then
-  thread_id="$(create_thread)"
+  thread_id="$(create_thread)" || true
   [[ -n "$thread_id" ]] || exit 3
   printf '%s' "$thread_id" > "$cache_file" 2>/dev/null || exit 3
 fi
 
-step_body="$(jq -n --arg msg "$REQUEST" '{message: $msg}')"
+step_body="$(jq -n --arg msg "$REQUEST" '{message: $msg}')" || exit 3
 
 current_event=""
+printed=0
 saw_terminal=0
 exit_code=3
 
@@ -73,18 +97,24 @@ while IFS= read -r line; do
       payload="${line#data: }"
       case "$current_event" in
         text)
-          printf '%s' "$(jq -rn --unbuffered --argjson d "$payload" '$d.text')"
+          # Written directly (no `$(...)`) so every fragment reaches stdout
+          # byte-exact, with no trailing newline appended.
+          if jq -j -n --argjson d "$payload" '$d.text' 2>/dev/null; then
+            printed=1
+          fi
           ;;
         tool_call)
-          name="$(jq -rn --unbuffered --argjson d "$payload" '$d.name')"
-          echo "→ tool ${name}" >&2
+          if name="$(jq -rn --argjson d "$payload" '$d.name' 2>/dev/null)"; then
+            echo "→ tool ${name}" >&2
+          fi
           ;;
         error)
-          message="$(jq -rn --unbuffered --argjson d "$payload" '$d.message')"
-          echo "⚠ ${message}" >&2
-          saw_terminal=1
-          exit_code=1
-          break
+          if message="$(jq -rn --argjson d "$payload" '$d.message' 2>/dev/null)"; then
+            echo "⚠ ${message}" >&2
+            saw_terminal=1
+            exit_code=1
+            break
+          fi
           ;;
         done)
           saw_terminal=1
@@ -94,14 +124,17 @@ while IFS= read -r line; do
       esac
       ;;
   esac
-done < <(curl -sN --max-time 120 -X POST \
-  -H "Authorization: Bearer ${token}" \
+done < <(curl_auth -sN --max-time 120 -X POST \
   -H "Content-Type: application/json" \
   --data-binary "$step_body" \
   "${base}/threads/${thread_id}/steps")
 
-# The stream closed without a terminal event (transport failure, server
-# killed mid-step) — not a runtime we can trust the answer from.
-[[ "$saw_terminal" == "1" ]] || exit 3
+if [[ "$saw_terminal" != "1" ]]; then
+  if [[ "$printed" == "1" ]]; then
+    echo "⚠ runtime stream ended unexpectedly" >&2
+    exit 1
+  fi
+  exit 3
+fi
 
 exit "$exit_code"

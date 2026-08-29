@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, test } from 'bun:test';
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -83,6 +83,57 @@ async function run(env: Record<string, string | undefined>, request = 'what is a
   return { stdout, stderr, exitCode };
 }
 
+/** One SSE frame, formatted the way `runtime/src/server/sse.ts` writes them. */
+function sseFrame(type: string, data: unknown): string {
+  return `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
+}
+
+/**
+ * A hand-rolled server exposing just enough of the real HTTP surface
+ * (`/health`, `POST /threads`, `GET /threads/:id`, `POST
+ * /threads/:id/steps`) to drive the adapter, but with the steps response
+ * built by the caller — raw bytes, not `sseFromEvents` — so a test can hand
+ * the script malformed frames, timed chunks, or a stream that ends with no
+ * terminal event at all. No `createApp`, no provider, live or fake.
+ */
+function serveThreadShaped(threadId: string, respondSteps: () => Response): { url: string } {
+  const server = Bun.serve({
+    hostname: '127.0.0.1',
+    port: 0,
+    fetch(req) {
+      const url = new URL(req.url);
+      if (url.pathname === '/health') return Response.json({});
+      if (url.pathname === '/threads' && req.method === 'POST') return Response.json({ id: threadId }, { status: 201 });
+      if (url.pathname === `/threads/${threadId}` && req.method === 'GET') {
+        return Response.json({ header: { id: threadId }, events: [] });
+      }
+      if (url.pathname === `/threads/${threadId}/steps` && req.method === 'POST') return respondSteps();
+      return new Response('not found', { status: 404 });
+    },
+  });
+  servers.push(server);
+  return { url: `http://127.0.0.1:${server.port}` };
+}
+
+/** Runs the script and timestamps every chunk that reaches its stdout, so a
+ * test can assert *when* text arrived, not just that it eventually did. */
+async function runStreaming(
+  env: Record<string, string | undefined>,
+  request = 'what is a force majeure clause?',
+): Promise<{ chunks: Array<{ text: string; at: number }>; exitCode: number }> {
+  const proc = Bun.spawn(['bash', SCRIPT, request], { env: { ...process.env, ...env }, stdout: 'pipe', stderr: 'pipe' });
+  const chunks: Array<{ text: string; at: number }> = [];
+  const reader = proc.stdout.getReader();
+  const decoder = new TextDecoder();
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    chunks.push({ text: decoder.decode(value), at: Date.now() });
+  }
+  const exitCode = await proc.exited;
+  return { chunks, exitCode };
+}
+
 describe('runtime_step.sh', () => {
   test('relays the fake provider text to stdout and exits 0', async () => {
     const { url } = serveFake([{ text: 'a force majeure clause excuses non-performance.' }]);
@@ -144,5 +195,78 @@ describe('runtime_step.sh', () => {
     const userEvents = one.events.filter(ev => ev['t'] === 'user');
     expect(userEvents.length).toBe(2);
     expect(userEvents.map(ev => ev['content'])).toEqual(['first question', 'second question']);
+  });
+
+  test('a malformed data line is skipped, not fatal — text and done around it still work', async () => {
+    const threadId = 'aaaaaaaa-0000-0000-0000-000000000001';
+    const body =
+      'event: text\ndata: not-json-at-all\n\n' + // malformed on purpose — not valid JSON at all
+      sseFrame('text', { type: 'text', text: 'hello' }) +
+      sseFrame('done', { type: 'done', output: null, usage: { inputTokens: 0, outputTokens: 0 } });
+    const { url } = serveThreadShaped(
+      threadId,
+      () => new Response(body, { status: 200, headers: { 'content-type': 'text/event-stream' } }),
+    );
+    const home = homeFor({ url });
+
+    const result = await run({ COUNSEL_OS_HOME: home, TMPDIR: home });
+
+    expect(result.stdout).toBe('hello');
+    expect(result.stderr).toBe('');
+    expect(result.exitCode).toBe(0);
+  });
+
+  test('text arrives incrementally, not buffered until the stream ends', async () => {
+    const threadId = 'aaaaaaaa-0000-0000-0000-000000000002';
+    const { url } = serveThreadShaped(threadId, () => {
+      const encoder = new TextEncoder();
+      const streamBody = new ReadableStream<Uint8Array>({
+        async start(controller) {
+          controller.enqueue(encoder.encode(sseFrame('text', { type: 'text', text: 'A' })));
+          await new Promise(resolve => setTimeout(resolve, 300));
+          controller.enqueue(encoder.encode(sseFrame('text', { type: 'text', text: 'B' })));
+          controller.enqueue(
+            encoder.encode(sseFrame('done', { type: 'done', output: null, usage: { inputTokens: 0, outputTokens: 0 } })),
+          );
+          controller.close();
+        },
+      });
+      return new Response(streamBody, { status: 200, headers: { 'content-type': 'text/event-stream' } });
+    });
+    const home = homeFor({ url });
+
+    const { chunks, exitCode } = await runStreaming({ COUNSEL_OS_HOME: home, TMPDIR: home });
+
+    expect(exitCode).toBe(0);
+    const combined = chunks.map(c => c.text).join('');
+    expect(combined).toBe('AB');
+    const aArrival = chunks.find(c => c.text.includes('A'))?.at;
+    const bArrival = chunks.find(c => c.text.includes('B'))?.at;
+    expect(aArrival).toBeDefined();
+    expect(bArrival).toBeDefined();
+    // The server held 'B' back for 300ms; a script that buffered until the
+    // stream closed would deliver both in the same chunk, ~0ms apart.
+    expect(bArrival! - aArrival!).toBeGreaterThanOrEqual(250);
+  });
+
+  test('text printed, then the stream is cut short with no terminal event: exit 1, not silent exit 3', async () => {
+    const threadId = 'aaaaaaaa-0000-0000-0000-000000000003';
+    const { url } = serveThreadShaped(threadId, () => {
+      const encoder = new TextEncoder();
+      const streamBody = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(encoder.encode(sseFrame('text', { type: 'text', text: 'partial' })));
+          controller.close(); // no `done`, no `error` — simulates a provider that threw mid-stream
+        },
+      });
+      return new Response(streamBody, { status: 200, headers: { 'content-type': 'text/event-stream' } });
+    });
+    const home = homeFor({ url });
+
+    const result = await run({ COUNSEL_OS_HOME: home, TMPDIR: home });
+
+    expect(result.stdout).toBe('partial');
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain('⚠');
   });
 });
