@@ -102,6 +102,10 @@ The runtime runner parses the CLI's JSON lines and writes `done.output` to
 - Run-record write failure → stderr, never an exception out of the loop (same as run log).
 - `/runs` for a thread that exists but has no runs → `[]`.
 - Evals: a step that yields `error` → `generate_output` returns `(False, message)`.
+- An unparsable structured answer stays a terminal `error` (a typed request was not
+  honored); the `error` event may carry `text` with the model's raw answer, and the run
+  record stores it under `error`. The text is also in the thread log as the coalesced
+  `text` event. (Decision recorded 2026-08-29 against live defect 1; not yet implemented.)
 
 ## 6. Testing
 
