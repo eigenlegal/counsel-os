@@ -36,9 +36,19 @@ const answered = thread([
   { type: 'done', at, output: null, usage: { inputTokens: 1, outputTokens: 2 } },
 ]);
 
-const SSE =
-  `event: text\ndata: ${JSON.stringify({ type: 'text', text: ANSWER, runId: 'r-1' })}\n\n`
-  + `event: done\ndata: ${JSON.stringify({ type: 'done', output: null, usage: { inputTokens: 1, outputTokens: 2 }, runId: 'r-1' })}\n\n`;
+function frame(ev: Record<string, unknown>): string {
+  return `event: ${String(ev['type'])}\ndata: ${JSON.stringify({ ...ev, runId: 'r-1' })}\n\n`;
+}
+
+const DONE = frame({ type: 'done', output: null, usage: { inputTokens: 1, outputTokens: 2 } });
+const SSE = frame({ type: 'text', text: ANSWER }) + DONE;
+
+/** The same step, but it also raises a proposal — which is what puts a card
+ * with its own Reload button inside the live turn. */
+const SSE_WITH_PROPOSAL =
+  frame({ type: 'text', text: ANSWER })
+  + frame({ type: 'proposal', id: 'p-1', path: 'practice/standards/cap.md', rationale: 'Write the cap down.' })
+  + DONE;
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -59,20 +69,37 @@ function stream(body: string): Response {
 
 const realFetch = globalThis.fetch;
 
-/** `threadFor(n)` answers the nth `GET /threads/:id`; runs are always empty
- * and the step always streams `SSE`. */
-function install(threadFor: (n: number) => Promise<Response>): void {
+interface Options {
+  /** What the step streams. */
+  sse?: string;
+  /** What `POST /threads/:id/approve` answers. */
+  approve?: () => Response;
+}
+
+/** `threadFor(n)` answers the nth `GET /threads/:id`; runs are always empty. */
+function install(threadFor: (n: number) => Promise<Response>, opts: Options = {}): void {
   let calls = 0;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = String(input);
     if (url.startsWith('/runs')) return json([]);
-    if (url.endsWith('/steps')) return stream(SSE);
+    // Before the `/threads/` prefix: these are thread sub-routes.
+    if (url.endsWith('/steps')) return stream(opts.sse ?? SSE);
+    if (url.endsWith('/approve')) {
+      if (opts.approve === undefined) throw new Error('no approve response configured');
+      return opts.approve();
+    }
     if (url.startsWith('/threads/')) {
       calls += 1;
       return threadFor(calls);
     }
     throw new Error(`unexpected fetch: ${url}`);
   }) as unknown as typeof fetch;
+}
+
+/** What every "the composer works again" assertion checks. */
+function composerIsUsable(): void {
+  expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull();
+  expect((screen.getByLabelText('Message') as HTMLTextAreaElement).disabled).toBe(false);
 }
 
 async function ask(): Promise<void> {
@@ -110,9 +137,8 @@ describe('Chat, when the end-of-stream refetch fails', () => {
 
     // And the step is over as far as the composer is concerned: no Stop, an
     // editable box, and Send live again as soon as there is something to send.
-    expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull();
+    composerIsUsable();
     const box = screen.getByLabelText('Message') as HTMLTextAreaElement;
-    expect(box.disabled).toBe(false);
     await userEvent.type(box, 'and again');
     expect((screen.getByRole('button', { name: 'Send' }) as HTMLButtonElement).disabled).toBe(false);
 
@@ -161,5 +187,69 @@ describe('Chat, when two loads are in flight', () => {
     expect(screen.getByText(ANSWER)).toBeTruthy();
     expect(screen.getAllByText(ANSWER)).toHaveLength(1);
     expect(screen.queryByText('No messages yet. Ask counsel something.')).toBeNull();
+  });
+});
+
+describe('Chat, when a Reload supersedes the end-of-stream refetch', () => {
+  test('the Reload that fails is the one that settles the finished turn', async () => {
+    // The step's own refetch never answers. A Reload fired on top of it takes
+    // the ticket, fails, and is therefore the load that owns the finished
+    // stream — the case where settling from inside `send` did nothing at all.
+    let release!: () => void;
+    const held = new Promise<void>(resolve => {
+      release = resolve;
+    });
+    let healthy = false;
+
+    install(
+      async n => {
+        if (n === 1) return json(thread([]));
+        if (n === 2) {
+          await held;
+          return json(thread([]));
+        }
+        return healthy ? json(answered) : json({ error: 'the vault went away' }, 500);
+      },
+      {
+        sse: SSE_WITH_PROPOSAL,
+        approve: () => json({ error: 'vault conflict', conflict: { expected: 'exp-hash', actual: 'act-hash' } }, 409),
+      },
+    );
+
+    render(<Chat threadId="t-1" health={health} />);
+    await waitFor(() => expect(screen.getByText('No messages yet. Ask counsel something.')).toBeTruthy());
+
+    await ask();
+
+    // The stream has ended and `send` is stuck awaiting its own refetch, so
+    // the live turn — proposal card and all — is still on screen.
+    await waitFor(() => expect(screen.getByRole('button', { name: /approve/i })).toBeTruthy());
+
+    // A conflict is how a Reload button gets on screen mid-turn.
+    await userEvent.click(screen.getByRole('button', { name: /approve/i }));
+    await waitFor(() => expect(screen.getByText(/exp-hash/)).toBeTruthy());
+
+    await userEvent.click(screen.getByRole('button', { name: /reload/i }));
+
+    // That Reload failed — and it, not `send`, had to hand the turn back.
+    await waitFor(() => expect(screen.getByText(/the vault went away/)).toBeTruthy());
+    expect(screen.getByText(ANSWER)).toBeTruthy();
+    expect(screen.getByText(QUESTION)).toBeTruthy();
+    composerIsUsable();
+
+    // The superseded refetch answering late changes nothing.
+    await act(async () => {
+      release();
+      await Promise.resolve();
+    });
+    expect(screen.getAllByText(ANSWER)).toHaveLength(1);
+    composerIsUsable();
+
+    healthy = true;
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+    await waitFor(() => expect(screen.queryByText(/the vault went away/)).toBeNull());
+    expect(screen.getAllByText(ANSWER)).toHaveLength(1);
+    expect(screen.getAllByText(QUESTION)).toHaveLength(1);
   });
 });

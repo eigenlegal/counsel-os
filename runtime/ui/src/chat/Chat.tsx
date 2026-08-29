@@ -53,14 +53,49 @@ export function Chat({ threadId, health, onThreadTouched }: ChatProps): JSX.Elem
   const abort = useRef<AbortController | null>(null);
   const transcript = useRef<HTMLDivElement | null>(null);
 
-  /** `live` as of right now, for the code that has to read it outside a
-   * render — the stream's own updates and the freeze below. State would be a
-   * render behind at both. */
+  /** The streamed turn and the sent message as of right now, for the code
+   * that has to read them outside a render — the stream's own updates and
+   * the settle below. State would be a render behind at both. */
   const liveRef = useRef<AssistantTurn | null>(null);
+  const pendingRef = useRef<string | null>(null);
 
   const showLive = (next: AssistantTurn | null): void => {
     liveRef.current = next;
     setLive(next);
+  };
+
+  const showPending = (next: string | null): void => {
+    pendingRef.current = next;
+    setPending(next);
+  };
+
+  /**
+   * Retires a finished stream's turn — the last thing every load does, on
+   * both paths, and the reason `load` owns this rather than `send`.
+   *
+   * `keep` is what to do with the turn on screen. A load that installed a
+   * transcript containing it just drops it (`false`); a load that FAILED
+   * parks it in `frozen` (`true`), because the turn is real, the step is
+   * over, and the transcript on screen does not have it.
+   *
+   * Nothing happens while a step is still running (`abort.current`): the
+   * stream owns `live` then, and a Reload from a card inside the turn being
+   * written must not retire the turn out from under it.
+   */
+  const settle = (keep: boolean): void => {
+    if (abort.current !== null) return;
+    const streamed = liveRef.current;
+    const asked = pendingRef.current;
+    if (streamed === null && asked === null) return;
+    if (keep) {
+      setFrozen(current => [
+        ...current,
+        ...(asked === null ? [] : [{ kind: 'user', content: asked } as Turn]),
+        ...(streamed === null ? [] : [streamed]),
+      ]);
+    }
+    showLive(null);
+    showPending(null);
   };
 
   /**
@@ -83,12 +118,13 @@ export function Chat({ threadId, health, onThreadTouched }: ChatProps): JSX.Elem
    * so a Reload from a card inside a streaming turn refreshes the history
    * underneath it without wiping the turn being written.
    *
-   * Returns whether this call installed a transcript: `false` means the
-   * refetch failed and the caller still owns whatever it was going to hand
-   * over. A superseded load returns `true` — it installed nothing, but the
-   * newer load that replaced it owns the outcome.
+   * A load that FAILS settles too — parking the finished turn in `frozen`
+   * rather than leaving it live. That belongs here, not in `send`, because
+   * any load can be the one that ends up owning a finished stream: a Reload
+   * fired while `send` is still waiting on its own refetch supersedes it,
+   * and then the Reload's failure is what has to hand the composer back.
    */
-  const load = useCallback(async (): Promise<boolean> => {
+  const load = useCallback(async (): Promise<void> => {
     const ticket = ++seq.current;
     setError(null);
     try {
@@ -98,23 +134,21 @@ export function Chat({ threadId, health, onThreadTouched }: ChatProps): JSX.Elem
         fetchJson<Thread>(`/threads/${encodeURIComponent(threadId)}`),
         fetchJson<RunRecord[]>(`/runs?thread=${encodeURIComponent(threadId)}`),
       ]);
-      if (ticket !== seq.current) return true;
+      if (ticket !== seq.current) return;
       setThread(next);
       setRuns(nextRuns);
       setFrozen([]);
-      if (abort.current === null) {
-        showLive(null);
-        setPending(null);
-      }
+      settle(false);
       setLoading(false);
-      return true;
     } catch (err) {
-      if (ticket !== seq.current) return true;
+      if (ticket !== seq.current) return;
       // A 401 is already on screen as the whole-page message; anything else
       // belongs here, next to the thread it happened to.
       if (!(err instanceof ApiError && err.status === 401)) setError(detail(err));
+      // The transcript on screen still does not contain the finished turn,
+      // so keep it — and give the composer back either way.
+      settle(true);
       setLoading(false);
-      return false;
     }
   }, [threadId]);
 
@@ -124,7 +158,7 @@ export function Chat({ threadId, health, onThreadTouched }: ChatProps): JSX.Elem
     setRuns([]);
     setFrozen([]);
     showLive(null);
-    setPending(null);
+    showPending(null);
     void load();
   }, [load]);
 
@@ -141,7 +175,7 @@ export function Chat({ threadId, health, onThreadTouched }: ChatProps): JSX.Elem
     const controller = new AbortController();
     abort.current = controller;
     setError(null);
-    setPending(message);
+    showPending(message);
     showLive(emptyAssistantTurn());
 
     try {
@@ -171,21 +205,10 @@ export function Chat({ threadId, health, onThreadTouched }: ChatProps): JSX.Elem
       // containing it.
       abort.current = null;
       // The server's transcript is now the truth — including the events the
-      // stream suppressed and the run record's final status.
-      if (!(await load())) {
-        // The refresh failed, so the server's copy of this turn never
-        // arrived. Park the streamed one instead of leaving it live: the
-        // step is over, and the composer has to work again. The error banner
-        // offers Retry, and a successful load drops what is parked here.
-        const streamed = liveRef.current;
-        setFrozen(current => [
-          ...current,
-          { kind: 'user', content: message },
-          ...(streamed === null ? [] : [streamed]),
-        ]);
-        showLive(null);
-        setPending(null);
-      }
+      // stream suppressed and the run record's final status. Whatever this
+      // load does with the streamed turn, it does inside `settle`; there is
+      // nothing for `send` to special-case, and no outcome it has to own.
+      await load();
       onThreadTouched?.();
     }
   };
