@@ -1,8 +1,8 @@
-import { cleanup, fireEvent, render, screen, userEvent, waitFor } from '../test/dom';
+import { act, cleanup, fireEvent, render, screen, userEvent, waitFor } from '../test/dom';
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { TOKEN_KEY } from '../api/token';
-import type { Health, Thread, ThreadHeader } from '../api/types';
+import type { Health, SettingsView, Thread, ThreadHeader } from '../api/types';
 import { Shell } from './Shell';
 
 const realFetch = globalThis.fetch;
@@ -30,6 +30,12 @@ const beta: ThreadHeader = {
   sessions: {},
 };
 
+const settings: SettingsView = {
+  file: '/tmp/providers.yaml',
+  registry: { default: 'fake/fake', providers: [] },
+  effective: { default: 'fake/fake', stepTimeoutMs: 600_000, providers: [] },
+};
+
 function json(body: unknown): Response {
   return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
 }
@@ -53,6 +59,23 @@ function install(): void {
 /** The mounted v2 `Chat`. Its identity is the test: a remount replaces the node. */
 function chatNode(): Element | null {
   return document.querySelector('section.v2-chat');
+}
+
+/** The chat workspace — rail, thread and drawer. It is hidden off `#/`. */
+function workNode(): Element | null {
+  return document.querySelector('.v2-work');
+}
+
+/**
+ * A click on a nav link, as far as the shell is concerned: the fragment
+ * changes and `hashchange` fires. `replaceState` is what the other tests
+ * use, and it does not fire the event by itself.
+ */
+function goTo(hash: string): void {
+  act(() => {
+    history.replaceState(null, '', `/${hash}`);
+    globalThis.dispatchEvent(new Event('hashchange'));
+  });
 }
 
 beforeEach(() => {
@@ -226,5 +249,98 @@ describe('Shell', () => {
 
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(document.querySelector('aside[aria-label="Vault drawer"]')).toBeNull();
+  });
+
+  test('a step in flight survives a trip to the vault page and back', async () => {
+    // A step that never answers: what the reader does while it runs is the
+    // whole test. The signal it was given says whether anything killed it.
+    const step: { signal: AbortSignal | null } = { signal: null };
+    const base = globalThis.fetch;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith('/steps')) {
+        step.signal = init?.signal ?? null;
+        return await new Promise<Response>(() => {});
+      }
+      if (url.startsWith('/vault/list')) return json([]);
+      return await (base as unknown as typeof fetch)(input, init);
+    }) as unknown as typeof fetch;
+
+    render(<Shell />);
+    await waitFor(() => expect(chatNode()).toBeTruthy());
+    await userEvent.type(await screen.findByLabelText('Message'), 'Is the cap mutual?');
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }));
+    // Streaming: Stop stands where Send was, and the step is in flight.
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy());
+    expect(step.signal).not.toBeNull();
+    const before = chatNode();
+
+    goTo('#/vault');
+    await waitFor(() => expect(document.querySelector('.v2-vault')).toBeTruthy());
+    // The page is up and the workspace is out of sight — but still MOUNTED.
+    expect(workNode()?.hasAttribute('hidden')).toBe(true);
+    expect(chatNode()).toBe(before);
+    expect(document.contains(before)).toBe(true);
+    // The point of all of it: nobody aborted the step, so the run is not
+    // recorded `abandoned` for the crime of looking at a file.
+    expect(step.signal?.aborted).toBe(false);
+
+    goTo('#/');
+    await waitFor(() => expect(document.querySelector('.v2-vault')).toBeNull());
+    expect(workNode()?.hasAttribute('hidden')).toBe(false);
+    expect(chatNode()).toBe(before);
+    expect(step.signal?.aborted).toBe(false);
+    // And the composer came back exactly as it was left: still streaming.
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy();
+  });
+
+  test('on #/vault the chat is hidden, not gone', async () => {
+    history.replaceState(null, '', '/#/vault');
+    const base = globalThis.fetch;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).startsWith('/vault/list')) return json([]);
+      return await (base as unknown as typeof fetch)(input, init);
+    }) as unknown as typeof fetch;
+
+    render(<Shell />);
+    await waitFor(() => expect(document.querySelector('.v2-vault')).toBeTruthy());
+    await waitFor(() => expect(chatNode()).toBeTruthy());
+
+    expect(workNode()?.hasAttribute('hidden')).toBe(true);
+    // `hidden` takes the block out of the accessibility tree, so nothing in
+    // there answers a query, takes focus, or is read out while the page is
+    // up — a hidden workspace is not a focus trap.
+    expect(screen.queryByRole('textbox', { name: 'Message' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'New' })).toBeNull();
+    // It is there all the same, holding whatever the chat was doing.
+    expect(document.contains(chatNode())).toBe(true);
+  });
+
+  test('the drawer is still open after a trip to settings', async () => {
+    history.replaceState(null, '', '/#/');
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.startsWith('/health')) return json(health);
+      if (url.startsWith('/runs')) return json([]);
+      if (url === '/threads') return json([]);
+      if (url.startsWith('/vault/list')) return json([]);
+      if (url.startsWith('/settings')) return json(settings);
+      throw new Error(`unexpected fetch: ${url}`);
+    }) as unknown as typeof fetch;
+
+    render(<Shell />);
+    await waitFor(() => expect(document.querySelector('li.v2-draft[aria-current="true"]')).toBeTruthy());
+    await userEvent.click(screen.getByRole('link', { name: 'Vault' }));
+    expect(document.querySelector('aside[aria-label="Vault drawer"]')).toBeTruthy();
+
+    goTo('#/settings');
+    await waitFor(() => expect(document.querySelector('.v2-page')).toBeTruthy());
+    expect(workNode()?.hasAttribute('hidden')).toBe(true);
+
+    goTo('#/');
+    await waitFor(() => expect(workNode()?.hasAttribute('hidden')).toBe(false));
+    // The drawer belongs to the workspace and was hidden with it, not
+    // closed: the file someone was reading is still on screen.
+    expect(document.querySelector('aside[aria-label="Vault drawer"]')).toBeTruthy();
   });
 });

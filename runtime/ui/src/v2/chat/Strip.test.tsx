@@ -46,6 +46,25 @@ describe('pillFor', () => {
     expect(pillFor({ ...turn, status: 'error' })).toEqual({ kind: 'error', label: 'error' });
     expect(pillFor({ ...turn, status: 'streaming' })).toEqual({ kind: 'running', label: 'running' });
   });
+
+  test('an abandoned run reads as disconnected, and says what that means', () => {
+    // The record on disk stays `abandoned`. "Abandoned" reads as though
+    // somebody gave up on the question; what happened is that the page went
+    // away mid-step, and the answer may well be waiting on a reload.
+    expect(pillFor(turn, { ...run, status: 'abandoned' })).toEqual({
+      kind: 'abandoned',
+      label: 'disconnected',
+      title: 'the page disconnected mid-step; the answer may still have completed',
+    });
+
+    render(<Strip turn={turn} run={{ ...run, status: 'abandoned' }} ms={{}} />);
+    const pill = document.querySelector('summary .v2-pill');
+    expect(pill?.textContent).toBe('disconnected');
+    expect(pill?.getAttribute('title')).toBe('the page disconnected mid-step; the answer may still have completed');
+    // The class still carries the status the runtime recorded, so the
+    // styling — and anything reading the DOM — sees the real thing.
+    expect(pill?.className).toBe('v2-pill v2-pill-abandoned');
+  });
 });
 
 describe('Strip', () => {

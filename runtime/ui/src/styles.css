@@ -4,6 +4,12 @@
  * one, and nothing here is a component library.
  */
 
+/* `hidden` is how a surface leaves the screen WITHOUT unmounting — the v2
+   chat workspace keeps its step stream alive that way. The user agent's own
+   rule for it is weaker than any class the element carries (`.v2-work` sets
+   `display: grid`), so it is stated here, and it wins. */
+[hidden] { display: none !important; }
+
 :root {
   color-scheme: light dark;
 
