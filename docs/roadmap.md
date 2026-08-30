@@ -56,6 +56,19 @@ Counsel OS is single-lawyer by decision (2026-06-11): a multi-lawyer design was 
 
 **Shape:** a draft mode: from the final tracked-changes .docx, generate the execution version (docx tooling already exists), insert signature blocks per the contracting entities, flag the signer per the vault's signing-authority matrix vs. deal value, and emit an execution checklist (exhibits present, dates filled, entity names consistent — reusing #4's checker).
 
+## 9. Runtime distribution + installer — NEXT (founder, 2026-08-30)
+
+**Gap:** the multi-model runtime and the web UI (v0.10.0) run only from a source checkout: Bun, `bun install` twice, `bun run ui:build`, `bun runtime/src/cli.ts serve --vault … --open`, plus per-provider login or `~/.counsel-os/providers.yaml` whose shape lives only in source. The plugin is one marketplace command; the runtime is a developer install. A lawyer cannot run it.
+
+**Target:** one installer, three entry points that all reach the same thing.
+- **Compiled `counsel-os` binary** (`bun build --compile`, the pattern the browse skill already uses) with the prebuilt `runtime/ui/dist` embedded, published as release assets (darwin-arm64, linux-x64) by `release-binaries.yml`.
+- **Installer script** (`curl -fsSL https://eigenlegal.com/install.sh | sh` or the GitHub raw equivalent): downloads the right binary, verifies its checksum, puts it on PATH, runs `counsel-os doctor` (finds `claude` / `codex` logins, Ollama, API keys), and prints the one command to start. Homebrew tap as a follow-up.
+- **Plugin hand-off**: `/counsel-os:serve` downloads the binary on first use exactly as browse does (`COUNSEL_OS_NO_DOWNLOAD=1` to disable) and opens the UI, so an existing plugin user is one slash command from the runtime.
+- **First run in the UI**: with no `providers.yaml`, the picker shows what was detected and a one-click enable per provider; the Settings page already edits the registry.
+- **Docs**: a runtime page (install, serve, model setup per provider incl. the subscription logins, the token URL, `providers.yaml`), a README section, eigenlegal.com/docs.
+
+**Not in scope:** hosted/multi-tenant, auto-update (the plugin's `/counsel-os:update` covers the plugin; the binary re-downloads on version mismatch), Windows (later; the vault path rules already reject backslashes).
+
 ## Shipped from this roadmap
 
 - **Matter-aware law impact** — shipped v0.9.26 as doctor Step 11 (open matters whose law areas were refreshed after the matter's last update), rather than as an update-skill extension. An update-time variant (flag at the moment law changes, with the specific delta) remains a possible refinement.
