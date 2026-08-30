@@ -475,3 +475,28 @@ html[data-ui="v2"] h1, html[data-ui="v2"] h2, html[data-ui="v2"] h3 { letter-spa
 .v2-composer-note { margin: 0 auto; max-width: 56rem; width: 100%; }
 .v2-label { color: var(--fg-muted); font-size: 0.78rem; }
 .v2-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* ── v2 proposal card ─────────────────────────────────────────────────── */
+
+.v2-card { border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-raised); box-shadow: var(--shadow); }
+.v2-proposal { padding: var(--s3) var(--s4); border-left: 3px solid var(--accent); display: flex; flex-direction: column; gap: var(--s2); }
+.v2-proposal-head { display: flex; gap: var(--s3); align-items: center; flex-wrap: wrap; }
+.v2-tag { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); font-weight: 700; }
+.v2-proposal-path { word-break: break-all; }
+.v2-proposal-head .v2-pill { margin-left: auto; }
+.v2-proposal-rationale { margin: 0; font-family: var(--serif); }
+.v2-proposal-tools { display: flex; gap: var(--s3); align-items: baseline; font-size: 0.82rem; }
+.v2-proposal-version { margin-left: auto; color: var(--fg-muted); font-family: var(--mono); font-size: 0.75rem; }
+.v2-proposal-actions { display: flex; gap: var(--s2); }
+.v2-proposal .v2-notice { margin: 0; }
+.v2-diff { display: flex; flex-direction: column; gap: var(--s2); }
+.v2-hunk { margin: 0; padding: var(--s2) 0; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-sunken); font-size: 0.82rem; line-height: 1.5; white-space: pre; overflow-x: auto; }
+.v2-diff-line { display: block; padding: 0 var(--s3); }
+.v2-diff-add { background: rgba(47, 122, 62, 0.14); color: var(--ok); }
+.v2-diff-del { background: rgba(180, 35, 24, 0.12); color: var(--error); text-decoration: line-through; text-decoration-color: rgba(180, 35, 24, 0.5); }
+.v2-diff-ctx { color: var(--fg-muted); }
+.v2-preview { padding: var(--s3); border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-sunken); font-family: var(--serif); }
+.v2-proposal-raw { margin: 0; }
+.v2-conflict { display: grid; grid-template-columns: auto 1fr; gap: var(--s1) var(--s3); margin: 0 0 var(--s2); }
+.v2-conflict dt { color: var(--fg-muted); font-size: 0.8rem; }
+.v2-conflict dd { margin: 0; word-break: break-all; }

@@ -114,7 +114,13 @@ export function Strip({ turn, run, ms, onOpenFile }: StripProps): JSX.Element {
           </dl>
         )}
 
-        {run?.error === undefined ? null : (
+        {/* The turn owns the error text. `run.error` / `run.errorText` are
+            the very same pair the stream's `error` frame put on the turn
+            (the loop finalizes the record from that frame), so a turn that
+            carries one already shows it above, unfolded — repeating it here
+            reads as two failures. The record keeps its copy for the turn
+            that has none: a run that failed after the stream was gone. */}
+        {run?.error === undefined || turn.error !== undefined ? null : (
           <div className="v2-notice v2-notice-error">
             <p>{run.error}</p>
             {run.errorText === undefined ? null : <pre>{run.errorText}</pre>}

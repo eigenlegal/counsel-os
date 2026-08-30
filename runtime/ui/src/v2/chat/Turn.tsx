@@ -1,7 +1,6 @@
 import type { RunRecord } from '../../api/types';
-// Task 3 replaces this import with `./ProposalCard` (the redline card).
-import { ProposalCard } from '../../chat/ProposalCard';
 import type { ToolCallView, Turn } from '../../chat/turns';
+import { ProposalCard } from './ProposalCard';
 import { Steps } from './Steps';
 import { Strip } from './Strip';
 
@@ -71,6 +70,8 @@ export function TurnView({ turn, threadId, run, live = false, liveMs = {}, onRel
         <>
           {turn.text === '' ? null : <p className="v2-prose">{turn.text}</p>}
 
+          {/* The turn owns its error text: it reads here, unfolded, and the
+              strip's record leaves out the identical copy it holds. */}
           {turn.error === undefined ? null : (
             <div className="v2-notice v2-notice-error" role="alert">
               <p>{turn.error.message}</p>
@@ -86,7 +87,7 @@ export function TurnView({ turn, threadId, run, live = false, liveMs = {}, onRel
           {threadId === null
             ? null
             : turn.proposals.map(proposal => (
-                <ProposalCard key={proposal.id} threadId={threadId} proposal={proposal} onReload={onReload} />
+                <ProposalCard key={proposal.id} threadId={threadId} proposal={proposal} onReload={onReload} onOpenFile={onOpenFile} />
               ))}
 
           <Strip turn={turn} run={run} ms={ms} onOpenFile={onOpenFile} />

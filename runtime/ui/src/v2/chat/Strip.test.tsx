@@ -83,4 +83,17 @@ describe('Strip', () => {
     expect(screen.getByText('schema')).toBeTruthy();
     expect(screen.getByText('{"a":1}')).toBeTruthy();
   });
+
+  test('an error the turn already shows is not repeated in the record', async () => {
+    render(
+      <Strip
+        turn={{ ...turn, status: 'error', error: { message: 'schema', text: '{"a":1}' } }}
+        run={{ ...run, status: 'error', error: 'schema', errorText: '{"a":1}' }}
+        ms={{}}
+      />,
+    );
+    await userEvent.click(document.querySelector('summary') as HTMLElement);
+    expect(document.querySelector('.v2-strip-body .v2-notice-error')).toBeNull();
+    expect(screen.queryByText('schema')).toBeNull();
+  });
 });
