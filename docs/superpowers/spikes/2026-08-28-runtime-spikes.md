@@ -1461,3 +1461,255 @@ directory outside the repo for its home, vault and server log; the server was
 killed and `pgrep -fl 'cli.ts serve'` reports nothing. `~/.counsel-os` was
 never written. The two screenshots are kept, in
 `docs/superpowers/spikes/img/`.
+
+## Step 5 — design pass
+
+Date: 2026-08-30
+Branch: `ui-v2` (Tasks 1–4 landed, head `e902967`)
+Spec: `docs/superpowers/specs/2026-08-29-ui-design-pass-design.md` §6
+
+Question: does the new design hold up end to end — the flag, a draft that
+names its thread, the step timeline and strip, the redline card, the drawer —
+against the fake provider, and against a real local model?
+
+### Setup
+
+Two runs, each with its own throwaway `COUNSEL_OS_HOME` and its own marked
+vault. Neither touched `~/.counsel-os`; after both it still holds only
+`backups/`, `browse/` and `legal-root` — no `runtime.json`, no
+`providers.yaml`.
+
+The e2e run uses the fixture `e2e/serve.ts` already owns (`e2e/.tmp/home`,
+`e2e/.tmp/vault`, port 7499, `--fake --fake-script e2e/fake-script.json`).
+The live run used a scratch directory outside the repo:
+
+```
+/tmp/counsel-step5-live/home/providers.yaml   # default: ollama/gemma4:e4b
+                                              # stepTimeoutMs: 300000
+/tmp/counsel-step5-live/vault/config.md       # counsel-os-config: true, legal_root: <vault>
+/tmp/counsel-step5-live/vault/matters/acme.md # Acme Corp NDA — term 2 years, Delaware
+```
+
+`ollama/gemma4:e4b` is a builtin id, so no `providers:` entry was needed. No
+subscription provider was called at any point; `GET /health` reported
+`ollama/gemma4:e4b` as the default and the top bar showed it, so nothing
+metered could be reached by accident. Chromium for `@playwright/test@1.58.2`
+was already installed (`bunx playwright install chromium` — a no-op).
+
+### (a) `bun run e2e` — v1 and v2 · PASS
+
+```bash
+bun run e2e     # bunx playwright test -c e2e/playwright.config.ts
+```
+
+**2 passed, 3.7 s** (the two tests 1.1 s and 1.0 s; the rest is the UI build
+and the server start). One server, one vault, one fake provider, two stories
+in order — and the v2 story cannot leak its flag into the v1 one, because the
+flag lives in `localStorage` and Playwright gives each test a fresh browser
+context.
+
+```
+Running 2 tests using 1 worker
+  1.1 … › the token in the fragment becomes the tab's credential (47ms)
+  1.2 … › a new thread opens an empty transcript (40ms)
+  1.3 … › the step streams text, a tool card and a proposal (135ms)
+  1.4 … › approving the proposal settles it (127ms)
+  1.5 … › the vault holds what was approved (392ms)
+  1.6 … › the run record says what the step did (133ms)
+  1.7 … › settings show the runtime that is actually running (123ms)
+  ✓ 1 [chromium] › a step runs tools, raises a proposal, and approving it writes the vault (1.1s)
+  2.1 … › ?ui=v2 in the fragment turns the design on and leaves the URL (57ms)
+  2.2 … › New opens a draft and makes no thread (34ms)
+  2.3 … › the first send names the thread; the answer reads first, the work folds into a strip (125ms)
+  2.4 … › the proposal is a redline of the current file, and approving it settles it (136ms)
+  2.5 … › open in vault shows the written file in the drawer; Esc closes it (36ms)
+  2.6 … › the strip says done, and opens into the record (24ms)
+  2.7 … › the vault page and settings are the new design too (506ms)
+  ✓ 2 [chromium] › the new design: … (977ms)
+
+  2 passed (3.7s)
+```
+
+What the v2 story proves, beyond the v1 one:
+
+| Step | What it proves |
+| --- | --- |
+| `#token=…&/?ui=v2` | the flag is entered by a page LOAD, `bootstrapUiFlag` consumes it, `html[data-ui="v2"]` is stamped, and BOTH `token=` and `ui=` are gone from the URL afterwards |
+| New | the draft is a rail row (`li.v2-draft`) with no thread behind it — `POST /threads` has not run |
+| First send | the thread is created on send and titled from the first line, so the rail row reads "Check the Acme NDA term." rather than a date |
+| Proposal | the card is a real redline against what is on disk — `-Term: 2 years` / `+Term: 3 years` — and it keeps the diff after `approved` |
+| open in vault | the drawer opens beside the thread, reads the file the approval wrote, and Esc closes it without navigating |
+| Strip | `done` · `read 1 file, ran 1 tool` · `fake/fake`; expanded it shows the verb lines `Read` / `Proposed` and the run record |
+| Vault + Settings | both are the v2 pages: `.v2-crumb-last`, `.v2-vault-main`, seven `.v2-group` cards, and the design switch reads checked |
+
+One fixture change was needed and made (it is inside `e2e/`, not the product):
+`FakeModelProvider` consumes one script step per call for the life of the
+server and returns `{}` forever after, so running the story twice on one
+server gave the second run an empty turn — no tools, no text. `e2e/fake-script.json`
+now carries two identical steps.
+
+### (b) One live step on Ollama, in v2 · PASS
+
+Prompt, typed into the page:
+
+> What is the term and governing law of the Acme NDA? Then propose adding
+> "Term: 3 years" to practice/standards/nda.md with a one-line rationale.
+
+| | |
+| --- | --- |
+| Provider | `ollama/gemma4:e4b` (top bar and composer both showed it as the default) |
+| Duration | 28.6 s on the strip; `durationMs: 28563`, `status: done` in the record; 29.0 s wall clock |
+| Usage | 24 662 in / 1 141 out |
+| Answer | "I first attempted to locate the \"Acme NDA\" using the vault search, but \*\*no documents matching that name were found\*\* in the vault. Therefore, I cannot tell you the specific term or governing law of that agreement. … \*\*Action:\*\* Proposed to add \"Term: 3 years\" to \`practice/standards/nda.md\`. …" |
+| Steps shown | `Searched Acme NDA · 15 ms`, `Proposed practice/standards/nda.md · 16 ms` — both `ok`, each with its own `show` |
+| Strip summary | `done` · `ran 2 tools` · `ollama/gemma4:e4b` · `28.6 s` · `24662 in / 1141 out`; expanded: Primitives read `none`, Proposals `7d83f020-…`, Usage, Run id |
+| Rail title | "What is the term and governing law of the Acme NDA? Then" (the first line, cut at 60 chars) |
+| Proposal card | rendered. `practice/standards/nda.md` does not exist in this vault, so `GET /vault/read` answered 404, the card took that as an empty "before", and the diff was all additions — one `+Term: 3 years` line, no deletions, and no "against version …" note (there is no version to name). `preview` rendered `<p>Term: 3 years</p>` through the sanitizer and `diff` flipped back to the same one-line redline. Not approved — the live run is a reading check. |
+| Errors on screen | none in the thread. The drawer, opened from the card, showed the read error for the not-yet-existing file (defect 2). |
+
+![Chat with the strip expanded](img/design-pass-chat-strip.png)
+![The proposal as a redline](img/design-pass-proposal.png)
+![The vault drawer beside the thread](img/design-pass-drawer.png)
+![Grouped settings with the design switch](img/design-pass-settings.png)
+
+**The four screenshots above were retaken after the fix wave** (2026-08-30),
+against `serve --fake` on a throwaway vault — no model was called. They are
+the same four surfaces, so they still read as the record of what the design
+does; what they show that the live shots could not is the fixes themselves:
+the answer as rendered markdown, `no results` on the empty search line and
+`1 empty` on the collapsed strip, the drawer's sentence in place of the
+`ENOENT`, the tree opened to `practice › standards`, short run and proposal
+ids, the switch in the v2 accent, the muted placeholder, and one `Save`
+below every card it writes. The numbers in the table above are the live
+Ollama run's and are unchanged.
+
+The design did what it was built to do here: the answer reads first, in serif,
+and the two tool calls are one grey line at the bottom of the turn instead of
+two JSON cards in the middle of it. The proposal card is the only place the
+page asks for a decision, and it says what would change rather than what was
+written.
+
+### Defects found in Step 5
+
+Recorded here as they were found. The fix wave of 2026-08-30 (branch `ui-v2`,
+after the final review) closed every UI one; each is marked below. Defect 1 is
+a runtime defect and is **still open** — it is filed as its own task.
+
+1. **`vault_search` always returns `[]` — it is a stub, in every entry point.**
+   `FsVaultStore`'s constructor takes an optional `search` and defaults it to
+   `async () => []`; `cli.ts`, `server/serve.ts` and `mcp/stdio.ts` all build
+   the store with `new FsVaultStore(vaultRoot)` and pass none. So the tool is
+   wired, described to the model as "Search the vault", called happily, and
+   answers "nothing found" for every query on every vault. This run is what it
+   costs: the model reached for `vault_search "Acme NDA"`, got `[]` against a
+   vault whose `matters/acme.md` is literally titled "Acme Corp — NDA", and
+   told the reader the document does not exist. The fake provider never
+   exposed this because the script calls `vault_read` by path.
+   (`runtime/src/vault/fs-store.ts:24`, `runtime/src/cli.ts:131`,
+   `runtime/src/server/serve.ts:344`, `runtime/src/mcp/stdio.ts:40`.)
+   **OPEN — runtime, not UI. Filed as its own task at high priority; nothing in this wave touches `runtime/src`.**
+
+2. **A tool that found nothing looks exactly like a tool that worked.** The
+   step line renders `Searched Acme NDA · 15 ms` in the `ok` state — the same
+   ink as `Read matters/acme.md`. `Step` only distinguishes `running` /
+   `error` / `ok`, and an empty result is not an error, so the one line that
+   explains the whole answer is invisible until the reader clicks `show`. The
+   collapsed strip is worse: `ran 2 tools` says nothing about what came back.
+   Under a design whose promise is "the work folds away, and you can still
+   audit it", an empty result is exactly the thing that must not fold away
+   silently. (`runtime/ui/src/v2/chat/Steps.tsx`,
+   `runtime/ui/src/v2/verbs.ts` `summarize`.)
+   **FIXED — an empty result (`[]`, `{}`, `''`, `null`) is its own step state: the line reads `no results` and the collapsed strip counts it as `1 empty`, apart from the failures (`v2/verbs.ts` `isEmptyResult` / `stateOf`, `Steps.tsx`, `Strip.tsx`).**
+
+3. **The answer is plain text, in the design that makes prose the headline.**
+   `.v2-prose` is `<p>{turn.text}</p>` with `white-space: pre-wrap`, so the
+   local model's markdown reached the screen as literal `**Action:**` and
+   backticked paths (visible in the chat screenshot) — while the vault reader
+   and the card's own `preview` both render markdown through the sanitizer
+   that is already imported two files away. v1 has the same gap
+   (`.turn-text`), so this is carried over rather than new, but the design
+   pass raises the stakes: the serif answer column is the first thing the
+   reader looks at. (`runtime/ui/src/v2/chat/Turn.tsx:66,71`,
+   `runtime/ui/src/styles.css:431`; the renderer is
+   `runtime/ui/src/vault/markdown.ts`.)
+   **FIXED — `.v2-prose` renders `renderMarkdown(turn.text)`, streaming and finished alike, through the one sanitizer sink (`v2/chat/Turn.tsx`).**
+
+4. **The drawer shows a raw Node error for a file that does not exist yet.**
+   Opening a pending proposal's path — the single most likely thing to do
+   from a card — gives `ENOENT: no such file or directory, open
+   '/tmp/counsel-step5-live/vault/practice/standards/nda.md' (404)` in a red
+   box. It leaks an absolute host path, it repeats the status code, and it
+   reads as a failure when the honest sentence is "this file does not exist
+   yet — approving the proposal creates it". `FileView` is shared with v1, so
+   the full vault page has it too. (`runtime/ui/src/vault/FileView.tsx:53`.)
+   **FIXED — a 404 in the v2 drawer and vault page reads "This file does not exist yet — approving a proposal that names it creates it.", and every error message is stripped of absolute host paths before it is shown (`vault/FileView.tsx` `missingNote` / `withoutHostPaths`). v1 keeps the server's message, as it always did.**
+
+5. **The drawer's tree does not follow the file it is showing.** With
+   `practice/standards/nda.md` open in the drawer, the tree above it still
+   shows `matters` and `practice` collapsed — `Tree` takes `selected` but
+   does not expand the path to it. The reader is given a breadcrumb and a
+   tree that disagree. (`runtime/ui/src/vault/Tree.tsx`,
+   `runtime/ui/src/v2/Drawer.tsx`.)
+   **FIXED — `Tree` takes `expandToSelected` and opens (and lists) every directory above the open file; the v2 drawer and vault page pass it, v1 does not (`vault/Tree.tsx` `ancestorsOf`).**
+
+6. **Minor, cosmetic.** (a) FIXED — the design switch is now a switch in the
+   v2 accent, not a native blue checkbox (`styles.css` `.design-switch input`;
+   it stays a checkbox with `role="switch"` for assistive tech and the tests).
+   (b) FIXED — the Task routes placeholder is muted and italic
+   (`.v2-settings ::placeholder`). (c) still true, and still worth knowing.
+   As recorded: (a) The design switch is a bare browser checkbox —
+   native blue, no v2 accent — inside the one group that introduces the new
+   design (`.design-switch`, `runtime/ui/src/settings/DesignToggle.tsx`).
+   (b) The Task routes placeholder is dark enough to read as a saved value,
+   so an unconfigured runtime looks like it routes `review` to
+   `claude-sub/claude-opus-5` (`runtime/ui/src/v2/settings/SettingsPage.tsx:284`).
+   (c) `.v2-shell` owns its own scroll, so `fullPage: true` screenshots the
+   viewport and nothing more — the settings shot above needed a 1 900 px
+   viewport instead. Worth knowing before anyone tries to capture a long
+   surface.
+
+Four more, found by the final review rather than by this run, closed in the
+same wave: the settings `Save` sat inside the Task routes card while it saved
+four groups (now one `Save` in a form footer below every card it writes); a
+drawer already open on a proposal's path kept showing the file as it was
+before the approval (the shell now re-keys it, and the rail hears the thread
+move); the run record printed raw UUIDs (now seven characters, with the whole
+value in the `title`); and `#token=…&ui=v2` — the form a person types after
+the printed URL — was silently ignored, while the near miss
+`#token=…?ui=v2` fed the `?ui=v2` into the credential and answered 401.
+Both working forms are now accepted, both are stripped from the address bar,
+and `ui-flag.test.ts` covers the token-then-flag ordering.
+
+### What the next plan should assume — Step 5
+
+- **v2 is behind the flag, default off, and both stories pass.** `?ui=v2` on a
+  page LOAD turns it on and `localStorage['counsel-os.ui']` keeps it; the
+  Settings switch flips either way without a reload. `bun run e2e` is now the
+  regression gate for BOTH designs and still costs ~4 s.
+- **A hash change alone does not flip the design.** `bootstrapUiFlag` runs
+  once, before React renders. Any script or test that wants v2 must navigate
+  with `?ui=v2` in the fragment or seed `localStorage` before load.
+- **What the founder should compare when deciding the default:** the two
+  designs differ on where the work sits (v1 puts tool JSON in the middle of
+  the answer; v2 folds it into one strip under it), on what a proposal shows
+  (v1 shows the proposed text, v2 shows the redline against what is on disk),
+  and on whether the vault interrupts the thread (v1 navigates away, v2
+  opens a 320 px drawer). Defect 3 was the one thing that had to be fixed
+  BEFORE that comparison — raw `**` in the serif column argued against the
+  design for a reason that had nothing to do with the design — and it is
+  fixed, so the comparison is now about the design.
+- **Defect 1 is not a UI defect and should not be fixed in the UI.**
+  `vault_search` needs a real implementation before any model is asked to
+  find something by name; until then the search tool is worse than absent,
+  because it answers confidently.
+
+### Throwaway artifacts — Step 5
+
+`e2e/.tmp/` (the e2e run's `COUNSEL_OS_HOME`, its vault, Playwright's traces,
+and the throwaway `shots.ts` / `reshoot.ts` / `settings-shot.ts` drivers) is
+gitignored and rebuilt on every run. The live run used
+`/tmp/counsel-step5-live/` for its home, vault and server log; the fix wave's
+retake used `/tmp/counsel-fixwave/` the same way, with `serve --fake` and a
+throwaway fake script — no model call. Both servers were killed and
+`pgrep -fl 'cli.ts serve'` reports nothing. `~/.counsel-os` was never written.
+The four PNGs are kept, in `docs/superpowers/spikes/img/`.

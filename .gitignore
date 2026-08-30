@@ -27,3 +27,6 @@ __pycache__/
 
 # End-to-end run scratch: the throwaway COUNSEL_OS_HOME, vault and traces
 e2e/.tmp/
+
+# brainstorm/SDD scratch
+.superpowers/

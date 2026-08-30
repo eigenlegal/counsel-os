@@ -6,6 +6,8 @@ import type { Health, ThreadHeader } from './api/types';
 import { Chat } from './chat/Chat';
 import { ThreadList } from './chat/ThreadList';
 import { Settings } from './settings/Settings';
+import { onUiFlagChange, readUiFlag, type UiFlag } from './ui-flag';
+import { Shell } from './v2/Shell';
 import { Vault } from './vault/Vault';
 
 /** The three surfaces the fragment routes between. */
@@ -205,4 +207,17 @@ export function App(): JSX.Element {
       )}
     </div>
   );
+}
+
+/**
+ * Picks the shell by the design flag and stamps it on `<html data-ui>` so the
+ * v2 tokens in `styles.css` apply to the whole page, dialogs included.
+ */
+export function Root(): JSX.Element {
+  const [ui, setUi] = useState<UiFlag>(() => readUiFlag());
+  useEffect(() => onUiFlagChange(setUi), []);
+  useEffect(() => {
+    document.documentElement.dataset['ui'] = ui;
+  }, [ui]);
+  return ui === 'v2' ? <Shell /> : <App />;
 }

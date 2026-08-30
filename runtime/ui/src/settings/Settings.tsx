@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ApiError, fetchJson } from '../api/client';
 import type { Health as HealthData, SettingsView } from '../api/types';
+import { DesignToggle } from './DesignToggle';
 import { Health } from './Health';
 import { ProvidersForm } from './ProvidersForm';
 
@@ -46,6 +47,7 @@ export function Settings({ health }: SettingsProps): JSX.Element {
 
   return (
     <section className="settings">
+      <DesignToggle />
       <Health health={health} effective={view.effective} file={view.file} />
       {/* Keyed on the file: a save replaces `registry`, and the form seeds
           its state from it once. The key is stable, so the form keeps the
