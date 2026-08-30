@@ -56,6 +56,10 @@ export function Chat({ threadId: initialThreadId, health, onThreadCreated, onThr
   const pendingRef = useRef<string | null>(null);
   const started = useRef<Map<string, number>>(new Map());
   const seq = useRef(0);
+  /** The send that never reached the server, kept so Retry can run the whole
+   * thing again — the create included. Only a draft whose `POST /threads`
+   * failed can be in this state; every other error has a thread to reload. */
+  const retry = useRef<{ message: string; provider: string } | null>(null);
 
   const showLive = (next: AssistantTurn | null): void => {
     liveRef.current = next;
@@ -87,13 +91,16 @@ export function Chat({ threadId: initialThreadId, health, onThreadCreated, onThr
   };
 
   const load = useCallback(async (): Promise<void> => {
+    // Cleared before the draft guard: a load that finds nothing to fetch
+    // must still dismiss whatever is on screen, or the button that called it
+    // does nothing at all.
+    setError(null);
     const id = idRef.current;
     if (id === null) {
       setLoading(false);
       return;
     }
     const ticket = ++seq.current;
-    setError(null);
     try {
       const [next, nextRuns] = await Promise.all([
         fetchJson<Thread>(`/threads/${encodeURIComponent(id)}`),
@@ -125,29 +132,54 @@ export function Chat({ threadId: initialThreadId, health, onThreadCreated, onThr
   }, [thread, live, pending, frozen]);
 
   const send = async (message: string, provider: string): Promise<void> => {
+    // One send at a time. The composer is locked for the whole of it, so this
+    // only catches a caller that got past the UI.
+    if (abort.current !== null) return;
+
+    // The controller and the live turn are armed BEFORE the create is
+    // awaited, and the create runs on the same controller. `live` is what
+    // disables the box and arms Stop, so setting it after a `POST /threads`
+    // that can take a network round trip would leave the composer wide open:
+    // a second ⌘⏎ in that window would take the create branch again and open
+    // a second thread, with the first orphaned and never stepped.
+    const controller = new AbortController();
+    abort.current = controller;
+    started.current = new Map();
+    retry.current = null;
+    setLiveMs({});
     setError(null);
     showPending(message);
+    showLive(emptyAssistantTurn());
 
     if (idRef.current === null) {
       try {
-        const header = await createThread({ title: titleFor(message) });
+        const header = await createThread({ title: titleFor(message) }, controller.signal);
         idRef.current = header.id;
         setThreadId(header.id);
         onThreadCreated?.(header);
       } catch (err) {
+        // No step ran and there may be no thread, so there is nothing for
+        // `load` to fetch: this is the one path that retires its own turn.
+        // `settle` no-ops while a controller is live, so clear it first.
+        abort.current = null;
+        // The empty assistant turn never became an answer; freezing it would
+        // park a blank bubble in the transcript for good.
+        showLive(null);
+        if (controller.signal.aborted) {
+          // Stop during creation. Nothing was created and nothing was sent,
+          // so nothing is left behind either.
+          showPending(null);
+          return;
+        }
         if (!(err instanceof ApiError && err.status === 401)) setError(`could not start the thread: ${detail(err)}`);
-        // No step ran. The message stays on screen (frozen) and the box is free.
+        // The message stays on screen (frozen) and the box is free; `retry`
+        // remembers it so the notice's button can run the send again.
+        retry.current = { message, provider };
         settle(true);
         return;
       }
     }
     const id = idRef.current;
-
-    const controller = new AbortController();
-    abort.current = controller;
-    started.current = new Map();
-    setLiveMs({});
-    showLive(emptyAssistantTurn());
 
     try {
       await streamStep(
@@ -184,6 +216,23 @@ export function Chat({ threadId: initialThreadId, health, onThreadCreated, onThr
   const stop = (): void => abort.current?.abort();
   const reload = (): void => void load();
 
+  /** The error notice's button. On a thread it refetches; on a draft whose
+   * create failed there is nothing to refetch, so it runs the whole send
+   * again — which is also the only way back to the message, since the
+   * composer cleared it on the first attempt. */
+  const retryNow = (): void => {
+    const again = retry.current;
+    if (again === null) {
+      reload();
+      return;
+    }
+    retry.current = null;
+    // The failed attempt froze this message as a user bubble; the resend
+    // shows it again as `pending`, so drop that one rather than stack two.
+    setFrozen(current => current.slice(0, -1));
+    void send(again.message, again.provider);
+  };
+
   const runById = new Map(runs.map(run => [run.runId, run]));
   const turns: Turn[] = thread === null ? [] : buildTurns(thread.events);
   const streaming = live !== null;
@@ -217,7 +266,7 @@ export function Chat({ threadId: initialThreadId, health, onThreadCreated, onThr
       {error === null ? null : (
         <div className="v2-notice v2-notice-error v2-chat-error" role="alert">
           <span>{error}</span>
-          <button type="button" onClick={reload}>
+          <button type="button" onClick={retryNow}>
             Retry
           </button>
         </div>

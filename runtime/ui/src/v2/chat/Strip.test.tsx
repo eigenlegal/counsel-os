@@ -69,6 +69,13 @@ describe('Strip', () => {
     expect(screen.getByText('r-1')).toBeTruthy();
   });
 
+  test('a failed tool is visible while the strip is still collapsed', () => {
+    render(<Strip turn={{ ...turn, tools: [{ ...turn.tools[0]!, isError: true }] }} run={{ ...run, status: 'error' }} ms={{}} />);
+    expect(screen.getByText('1 failed')).toBeTruthy();
+    // The container carries the status too, so the strip itself reads as red.
+    expect(document.querySelector('.v2-strip')?.getAttribute('data-status')).toBe('error');
+  });
+
   test('an error record shows the message and the raw text', async () => {
     render(<Strip turn={{ ...turn, status: 'error' }} run={{ ...run, status: 'error', error: 'schema', errorText: '{"a":1}' }} ms={{}} />);
     expect(document.querySelector('summary .v2-pill')?.textContent).toBe('error');

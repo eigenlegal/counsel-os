@@ -430,6 +430,8 @@ html[data-ui="v2"] h1, html[data-ui="v2"] h2, html[data-ui="v2"] h3 { letter-spa
 .v2-turn-assistant { display: flex; flex-direction: column; gap: var(--s3); }
 .v2-prose { font-family: var(--serif); font-size: 1.06rem; line-height: 1.6; white-space: pre-wrap; margin: 0; }
 .v2-working { color: var(--fg-muted); font-style: italic; margin: 0; }
+/* The turn being written: its timeline rule is live work, not history. */
+.v2-live .v2-steps { border-left-color: var(--accent); }
 .v2-turn-assistant .v2-notice { margin: 0; }
 .v2-chat-error { display: flex; gap: var(--s3); align-items: center; justify-content: space-between; }
 
@@ -450,7 +452,9 @@ html[data-ui="v2"] h1, html[data-ui="v2"] h2, html[data-ui="v2"] h3 { letter-spa
 .v2-strip { border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-raised); font-size: 0.85rem; }
 .v2-strip > summary { display: flex; gap: var(--s3); align-items: center; padding: var(--s2) var(--s3); cursor: pointer; list-style: none; color: var(--fg-muted); }
 .v2-strip > summary::-webkit-details-marker { display: none; }
+.v2-strip[data-status="error"], .v2-strip[data-status="timeout"] { border-color: var(--error); }
 .v2-strip-summary { color: var(--fg); }
+.v2-strip-failed { color: var(--error); }
 .v2-strip-provider { font-family: var(--mono); font-size: 0.78rem; }
 .v2-strip-duration, .v2-strip-tokens { font-variant-numeric: tabular-nums; }
 .v2-chevron { margin-left: auto; transition: transform 120ms; }

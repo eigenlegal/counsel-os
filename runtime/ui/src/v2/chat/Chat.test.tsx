@@ -1,4 +1,4 @@
-import { cleanup, render, screen, userEvent, waitFor } from '../../test/dom';
+import { cleanup, fireEvent, render, screen, userEvent, waitFor } from '../../test/dom';
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { clearToken, TOKEN_KEY } from '../../api/token';
@@ -129,6 +129,41 @@ describe('v2 Chat, from a draft', () => {
     composerIsUsable();
   });
 
+  test('a second send while the create is in flight cannot open a second thread', async () => {
+    install(async () => json(answered('t-9')));
+    const inner = globalThis.fetch;
+    let release: () => void = () => {};
+    const held = new Promise<void>(resolve => {
+      release = resolve;
+    });
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      // The create is the widest window in the send: on a real deployment it
+      // is a whole round trip during which the box used to stay enabled.
+      if ((init?.method ?? 'GET') === 'POST' && String(input) === '/threads') await held;
+      return (inner as unknown as typeof fetch)(input, init);
+    }) as unknown as typeof fetch;
+
+    render(<Chat threadId={null} health={health} />);
+    await ask();
+
+    // The create is on the wire and the composer is already locked.
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy());
+    const box = screen.getByLabelText('Message') as HTMLTextAreaElement;
+    expect(box.disabled).toBe(true);
+    expect(screen.queryByRole('button', { name: 'Send' })).toBeNull();
+
+    // Two more attempts, by both routes the UI offers.
+    await userEvent.type(box, 'and another thing');
+    fireEvent.keyDown(box, { key: 'Enter', metaKey: true });
+    expect(box.value).toBe('');
+
+    release();
+    await waitFor(() => expect(screen.getByText(ANSWER)).toBeTruthy());
+    expect(calls.filter(c => c.method === 'POST' && c.url === '/threads')).toHaveLength(1);
+    expect(calls.filter(c => c.url.endsWith('/steps'))).toHaveLength(1);
+    composerIsUsable();
+  });
+
   test('a failed create keeps the message on screen and frees the composer', async () => {
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       if ((init?.method ?? 'GET') === 'POST' && String(input) === '/threads') return json({ error: 'disk full' }, 500);
@@ -140,6 +175,34 @@ describe('v2 Chat, from a draft', () => {
 
     await waitFor(() => expect(screen.getByText(/disk full/)).toBeTruthy());
     expect(screen.getByText(QUESTION)).toBeTruthy();
+    composerIsUsable();
+  });
+
+  test('Retry after a failed create runs the whole send again', async () => {
+    install(async () => json(answered('t-9')));
+    const inner = globalThis.fetch;
+    let attempts = 0;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      if ((init?.method ?? 'GET') === 'POST' && String(input) === '/threads') {
+        attempts += 1;
+        // Only the first attempt fails — the vault was briefly unwritable.
+        if (attempts === 1) return json({ error: 'disk full' }, 500);
+      }
+      return (inner as unknown as typeof fetch)(input, init);
+    }) as unknown as typeof fetch;
+
+    render(<Chat threadId={null} health={health} />);
+    await ask();
+    await waitFor(() => expect(screen.getByText(/disk full/)).toBeTruthy());
+
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+    // The whole send ran again: a new create, then the step.
+    await waitFor(() => expect(screen.getByText(ANSWER)).toBeTruthy());
+    expect(attempts).toBe(2);
+    expect(screen.queryByText(/disk full/)).toBeNull();
+    // The frozen bubble was replaced, not stacked on the server's copy.
+    expect(screen.getAllByText(QUESTION)).toHaveLength(1);
     composerIsUsable();
   });
 });

@@ -41,11 +41,16 @@ export function formatCost(usd: number): string {
 export function Strip({ turn, run, ms, onOpenFile }: StripProps): JSX.Element {
   const pill = pillFor(turn, run);
   const provider = run?.provider !== undefined && run.provider !== '' ? run.provider : (turn.provider ?? '');
+  // `summarize` counts by tool NAME, so a failed call is invisible in it.
+  // Carried alongside rather than folded in: the count is the collapsed
+  // strip's only hint that something inside it went wrong.
+  const failed = turn.tools.filter(tool => tool.isError === true).length;
   return (
-    <details className="v2-strip" data-testid={run === undefined ? undefined : `run-${run.runId}`}>
+    <details className="v2-strip" data-status={pill.kind} data-testid={run === undefined ? undefined : `run-${run.runId}`}>
       <summary>
         <span className={`v2-pill v2-pill-${pill.kind}`}>{pill.label}</span>
         <span className="v2-strip-summary">{summarize(turn.tools)}</span>
+        {failed === 0 ? null : <span className="v2-strip-failed">{failed === 1 ? '1 failed' : `${failed} failed`}</span>}
         {provider === '' ? null : <span className="v2-strip-provider">{provider}</span>}
         {run?.durationMs === undefined ? null : <span className="v2-strip-duration">{formatMs(run.durationMs)}</span>}
         {run?.usage === undefined ? null : (

@@ -57,6 +57,12 @@ export function Shell(): JSX.Element {
    * when a draft opens, but it does have to see one. */
   const draftRef = useRef(draft);
   draftRef.current = draft;
+  /** `selected` as of right now, for the same reason: the load effect must
+   * not open a draft behind a thread the first send created while it ran. */
+  const selectedRef = useRef(selected);
+  selectedRef.current = selected;
+  /** Which `GET /threads` is allowed to repaint the rail. */
+  const listSeq = useRef(0);
 
   const openDrawer = useCallback((path: string | null): void => {
     setDrawer(current => ({ open: true, path: path ?? current.path }));
@@ -75,9 +81,14 @@ export function Shell(): JSX.Element {
   useEffect(() => onUnauthorized(() => setUnauthorized(true)), []);
 
   const loadThreads = useCallback(async (): Promise<ThreadHeader[]> => {
+    const ticket = ++listSeq.current;
     const list = await fetchJson<ThreadHeader[]>('/threads');
     const sorted = [...list].sort(byRecent);
-    setThreads(sorted);
+    // A slower, older list must not repaint the rail over a newer one: the
+    // mount effect's fetch can still be in flight when a first send creates
+    // a thread, and the thread would vanish from the rail until the next
+    // touch. The caller still gets what IT asked for.
+    if (ticket === listSeq.current) setThreads(sorted);
     return sorted;
   }, []);
 
@@ -92,9 +103,15 @@ export function Shell(): JSX.Element {
         // selection behind that draft leaves the shell somewhere the reader
         // never asked to be.
         if (!draftRef.current) setSelected(current => current ?? first);
-        if (first === null) setDraft(true);
+        // Only when there is still nothing on screen: a first send may have
+        // created a thread while this list was in flight, and flipping the
+        // rail to the draft row would disagree with the chat holding it.
+        if (first === null && selectedRef.current === null) setDraft(true);
       } catch (err) {
         if (!(err instanceof ApiError && err.status === 401)) setError(detail(err));
+        // The chat mounts as a draft below; the rail has to say so too, or
+        // no row is current while the transcript shows one.
+        setDraft(true);
       } finally {
         // Either way the shell now knows as much as it is going to: a
         // failed list leaves a draft rather than "Loading…" forever.

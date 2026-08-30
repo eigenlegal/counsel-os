@@ -10,8 +10,8 @@ export const TITLE_MAX = 60;
  *
  * A cut that lands inside a word backs off to the last space rather than
  * ending on half of one — "…the indemnific" reads as a bug, "…the" reads as
- * a title. A single word longer than the limit has no space to back off to,
- * so it is cut hard.
+ * a title. The backoff has a floor at half the limit, so a long first word
+ * is cut hard rather than trimmed away to nothing.
  */
 export function titleFor(message: string): string {
   const first = message.split('\n').find(line => line.trim() !== '') ?? '';
@@ -19,10 +19,21 @@ export function titleFor(message: string): string {
   if (line.length <= TITLE_MAX) return line;
   const cut = line.slice(0, TITLE_MAX);
   const space = cut.lastIndexOf(' ');
-  return (space > 0 ? cut.slice(0, space) : cut).trimEnd();
+  // Only back off to a space in the second half: `'A ' + 'x'.repeat(70)` has
+  // one at index 1, and honouring it would title the thread "A".
+  return (space > TITLE_MAX / 2 ? cut.slice(0, space) : cut).trimEnd();
 }
 
-/** `POST /threads` — the route already accepts `title`; no API change. */
-export function createThread(init: { title: string }): Promise<ThreadHeader> {
-  return fetchJson<ThreadHeader>('/threads', { method: 'POST', body: JSON.stringify(init) });
+/**
+ * `POST /threads` — the route already accepts `title`; no API change.
+ *
+ * `signal` is the sending step's own controller, so Stop reaches the create
+ * as well as the stream that follows it.
+ */
+export function createThread(init: { title: string }, signal?: AbortSignal): Promise<ThreadHeader> {
+  return fetchJson<ThreadHeader>('/threads', {
+    method: 'POST',
+    body: JSON.stringify(init),
+    ...(signal === undefined ? {} : { signal }),
+  });
 }
