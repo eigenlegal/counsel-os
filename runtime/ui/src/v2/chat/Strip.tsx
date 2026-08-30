@@ -15,12 +15,29 @@ export interface StripProps {
 export interface Pill {
   kind: RunStatus;
   label: string;
+  /** Hover text, for a label that needs one. */
+  title?: string;
 }
+
+/** Where the status the runtime records is not the word to show a reader. */
+const PILL_LABEL: Partial<Record<RunStatus, string>> = {
+  timeout: 'timed out',
+  // On disk the run is `abandoned`, which reads as "nobody wanted it". What
+  // happened is that the page went away mid-step — the runtime may well have
+  // finished the answer, and a reload can show it.
+  abandoned: 'disconnected',
+};
+
+const PILL_TITLE: Partial<Record<RunStatus, string>> = {
+  abandoned: 'the page disconnected mid-step; the answer may still have completed',
+};
 
 /** The status pill: the record when there is one, else the turn's own state. */
 export function pillFor(turn: AssistantTurn, run?: RunRecord): Pill {
   const kind: RunStatus = run?.status ?? (turn.status === 'error' ? 'error' : turn.status === 'done' ? 'done' : 'running');
-  return { kind, label: kind === 'timeout' ? 'timed out' : kind };
+  const label = PILL_LABEL[kind] ?? kind;
+  const title = PILL_TITLE[kind];
+  return title === undefined ? { kind, label } : { kind, label, title };
 }
 
 export function formatMs(ms: number): string {
@@ -61,7 +78,9 @@ export function Strip({ turn, run, ms, onOpenFile }: StripProps): JSX.Element {
   return (
     <details className="v2-strip" data-status={pill.kind} data-testid={run === undefined ? undefined : `run-${run.runId}`}>
       <summary>
-        <span className={`v2-pill v2-pill-${pill.kind}`}>{pill.label}</span>
+        <span className={`v2-pill v2-pill-${pill.kind}`} title={pill.title}>
+          {pill.label}
+        </span>
         <span className="v2-strip-summary">{summarize(turn.tools)}</span>
         {failed === 0 ? null : <span className="v2-strip-failed">{failed === 1 ? '1 failed' : `${failed} failed`}</span>}
         {empty === 0 ? null : <span className="v2-strip-empty">{empty === 1 ? '1 empty' : `${empty} empty`}</span>}

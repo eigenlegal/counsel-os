@@ -34,6 +34,11 @@ function byRecent(a: ThreadHeader, b: ThreadHeader): number {
  * The chat is keyed by `chatKey`, which changes when the reader PICKS a
  * different thread or starts a draft — never when a draft becomes a thread
  * on its first send. Re-keying then would remount the chat mid-stream.
+ *
+ * A full page HIDES the workspace, it does not replace it. The chat owns
+ * the step stream, and unmounting the chat aborts that stream — a step left
+ * running while someone looks at a file would be recorded `abandoned`. So
+ * the workspace renders on every route and the page renders beside it.
  */
 export function Shell(): JSX.Element {
   const [route, setRoute] = useState<Route>(() => parseHash(globalThis.location.hash).route);
@@ -232,53 +237,63 @@ export function Shell(): JSX.Element {
         </p>
       )}
 
-      {route === 'chat' ? (
-        <div className={drawer.open ? 'v2-work v2-drawer-open' : 'v2-work'}>
-          <Rail
-            threads={threads}
-            selected={selected}
-            draft={draft}
-            busy={busy}
-            onSelect={selectThread}
-            onNew={newDraft}
-            onDelete={id => void deleteThread(id)}
-          />
-          <main className="v2-main">
-            {health === null || (!draft && !listed) ? (
-              <p className="muted v2-empty">Loading…</p>
-            ) : (
-              <Chat
-                key={chatKey}
-                threadId={draft ? null : selected}
-                health={health}
-                onThreadCreated={header => {
-                  // The draft is now a thread; select it without re-keying.
-                  setSelected(header.id);
-                  setDraft(false);
-                  void loadThreads();
-                }}
-                onThreadTouched={() => void loadThreads()}
-                onFileDecided={fileDecided}
-                onOpenFile={openDrawer}
-              />
-            )}
-          </main>
-          {drawer.open ? (
-            <Drawer path={drawer.path} revision={drawerRevision} onOpen={path => openDrawer(path)} onClose={closeDrawer} />
-          ) : null}
-        </div>
-      ) : route === 'vault' ? (
+      {/* The chat workspace stays MOUNTED on every route and is only
+          HIDDEN off `#/`. Unmounting it would tear down `Chat`, and that
+          teardown aborts the step in flight: the runtime finishes the work
+          anyway, but the record it writes reads `abandoned`. `hidden` also
+          takes the block out of the accessibility tree, so nothing in here
+          is reachable — or focusable — while a full page is up. The rail
+          and the drawer go with it: they belong to the workspace, and a
+          full page owns the width. */}
+      <div className={drawer.open ? 'v2-work v2-drawer-open' : 'v2-work'} hidden={route !== 'chat'}>
+        <Rail
+          threads={threads}
+          selected={selected}
+          draft={draft}
+          busy={busy}
+          onSelect={selectThread}
+          onNew={newDraft}
+          onDelete={id => void deleteThread(id)}
+        />
+        <main className="v2-main">
+          {health === null || (!draft && !listed) ? (
+            <p className="muted v2-empty">Loading…</p>
+          ) : (
+            <Chat
+              key={chatKey}
+              threadId={draft ? null : selected}
+              health={health}
+              onThreadCreated={header => {
+                // The draft is now a thread; select it without re-keying.
+                setSelected(header.id);
+                setDraft(false);
+                void loadThreads();
+              }}
+              onThreadTouched={() => void loadThreads()}
+              onFileDecided={fileDecided}
+              onOpenFile={openDrawer}
+            />
+          )}
+        </main>
+        {drawer.open ? (
+          <Drawer path={drawer.path} revision={drawerRevision} onOpen={path => openDrawer(path)} onClose={closeDrawer} />
+        ) : null}
+      </div>
+
+      {route === 'vault' ? (
         <VaultPage
           path={vaultPath}
           onOpen={path => {
             globalThis.location.hash = `#/vault?path=${encodeURIComponent(path)}`;
           }}
         />
-      ) : (
+      ) : null}
+
+      {route === 'settings' ? (
         <main className="v2-page">
           <SettingsPage health={health} />
         </main>
-      )}
+      ) : null}
     </div>
   );
 }
