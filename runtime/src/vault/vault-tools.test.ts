@@ -3,9 +3,11 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { FsVaultStore } from './fs-store';
+import { fsSearch } from './search';
 import { guardedVaultTools, vaultTools } from './vault-tools';
 import { runToolDef } from '../core/fake-provider';
 import type { VaultConfig } from './resolve-root';
+import type { Hit } from '../core/types';
 
 const defaultCfg: VaultConfig = { entitiesPath: 'entities', mattersPath: 'matters' };
 
@@ -24,6 +26,20 @@ describe('vault tools', () => {
     const stale = await runToolDef(tools, 'vault_write', { path: 'a.md', content: 'x', expectedVersion: 'deadbeef' }, 'default');
     expect(stale.isError).toBe(true);
     expect(String(stale.output)).toMatch(/conflict/);
+  });
+
+  test('vault_search returns real hits when the store is built with fsSearch — every entry point '
+    + 'once built FsVaultStore without one, so the tool answered `[]` to every query (cou-72)', async () => {
+    const store = new FsVaultStore(mkdtempSync(join(tmpdir(), 'vt-search-')), { search: fsSearch() });
+    const tools = vaultTools(store);
+    await runToolDef(tools, 'vault_write', { path: 'matters/acme/notes.md', content: 'the indemnity cap is 2x fees' }, 'default');
+
+    const found = await runToolDef(tools, 'vault_search', { query: 'indemnity cap' }, 'default');
+    expect(found.isError).toBe(false);
+    expect(found.output as Hit[]).toMatchObject([{ path: 'matters/acme/notes.md', snippet: 'the indemnity cap is 2x fees' }]);
+
+    const missing = await runToolDef(tools, 'vault_search', { query: 'arbitration' }, 'default');
+    expect(missing.output as Hit[]).toEqual([]);
   });
 
   test('every path/dir tool states that paths are vault-relative — models otherwise open with '

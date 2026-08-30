@@ -17,6 +17,7 @@ import { resolve } from 'node:path';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { FsVaultStore } from '../vault/fs-store';
+import { fsSearch } from '../vault/search';
 import { guardedVaultTools } from '../vault/vault-tools';
 import { readVaultConfig } from '../vault/resolve-root';
 import { registerOnServer, toMcpTools } from './bridge';
@@ -37,7 +38,7 @@ const tenant = process.env.COUNSEL_TENANT ?? DEFAULT_TENANT;
 const pluginRoot = process.env.COUNSEL_PLUGIN_ROOT ?? resolve(import.meta.dir, '../../..');
 const threadId = process.env.COUNSEL_THREAD_ID;
 
-const store = new FsVaultStore(vault);
+const store = new FsVaultStore(vault, { search: fsSearch() });
 
 const registry = new ToolRegistry();
 for (const t of builtinTools({ vaultRoot: vault, repoRoot: pluginRoot })) registry.register(t);
