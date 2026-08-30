@@ -3,7 +3,6 @@ import { cleanup, render, screen, userEvent, waitFor } from '../../test/dom';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { clearToken, TOKEN_KEY } from '../../api/token';
 import type { Health as HealthData, SettingsView } from '../../api/types';
-import { setUiFlag } from '../../ui-flag';
 import { SettingsPage } from './SettingsPage';
 
 const health: HealthData = { vault: '/Users/jack/legal', tenant: 'default', providers: [], default: 'fake/fake', stepTimeoutMs: 120000 };
@@ -48,23 +47,18 @@ afterEach(() => {
   globalThis.fetch = realFetch;
   clearToken();
   sessionStorage.clear();
-  // `setUiFlag('v2')` FIRST, then clear: v2 is the default, so setting it
-  // removes the key and drops `ui-flag`'s session copy.
-  setUiFlag('v2');
-  localStorage.clear();
 });
 
 describe('SettingsPage', () => {
-  test('is grouped in the spec order and carries the design switch', async () => {
+  test('is grouped in the spec order', async () => {
     install(() => json(view));
     render(<SettingsPage health={health} />);
     // By its LABEL: the group's own heading says "Default provider" too.
     await waitFor(() => expect(screen.getByLabelText('Default provider')).toBeTruthy());
-    // Descendant, not child: `DesignToggle` and `Health` each draw their own
-    // heading inside their own section, one level under the group card.
+    // Descendant, not child: `Health` draws its own heading inside its own
+    // section, one level under the group card.
     const headings = Array.from(document.querySelectorAll('.v2-group h2'), el => el.textContent);
-    expect(headings).toEqual(['Design', 'Default provider', 'Step timeout', 'Providers', 'Task routes', 'Test', 'Runtime']);
-    expect(screen.getByRole('switch', { name: 'New design' })).toBeTruthy();
+    expect(headings).toEqual(['Default provider', 'Step timeout', 'Providers', 'Task routes', 'Test', 'Runtime']);
     // The Test group keeps the step-4 confirm, word for word.
     await userEvent.click(screen.getByRole('button', { name: 'Test' }));
     expect(screen.getByText('This uses one call on fake/fake.')).toBeTruthy();

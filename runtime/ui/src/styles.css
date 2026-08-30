@@ -1,10 +1,13 @@
 /*
- * Functional styling only (spec §1): legible, two columns, light and dark.
- * The design pass is a separate step — nothing here should be mistaken for
- * one, and nothing here is a component library.
+ * The workbench (spec 2026-08-29-ui-design-pass). One design: the classic
+ * page was removed on 2026-08-30, so what were the `html[data-ui="v2"]`
+ * tokens are simply the page's tokens now.
+ *
+ * The `.v2-*` prefix is kept as-is — it is what every component, test and
+ * e2e locator already says, and renaming it would be a diff with no reader.
  */
 
-/* `hidden` is how a surface leaves the screen WITHOUT unmounting — the v2
+/* `hidden` is how a surface leaves the screen WITHOUT unmounting — the
    chat workspace keeps its step stream alive that way. The user agent's own
    rule for it is weaker than any class the element carries (`.v2-work` sets
    `display: grid`), so it is stated here, and it wins. */
@@ -13,34 +16,39 @@
 :root {
   color-scheme: light dark;
 
-  --bg: #ffffff;
-  --bg-sunken: #f5f5f4;
-  --bg-raised: #fafaf9;
-  --fg: #1c1917;
-  --fg-muted: #6b6560;
-  --border: #d9d5d0;
-  --accent: #1d4ed8;
-  --ok: #15803d;
-  --warn: #a16207;
-  --error: #b91c1c;
+  --bg: #fbfaf7;
+  --bg-sunken: #f4f1ea;
+  --bg-raised: #ffffff;
+  --fg: #1f1d1a;
+  --fg-muted: #6b645b;
+  --border: #e8e3d9;
+  --accent: #b45309;
+  --ok: #2f7a3e;
+  --warn: #b45309;
+  --error: #b42318;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --radius: 6px;
-  --gap: 0.75rem;
+  --serif: "Iowan Old Style", Charter, Georgia, serif;
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px;
+  --radius: 8px;
+  --shadow: 0 1px 2px rgba(31, 29, 26, 0.06), 0 4px 12px rgba(31, 29, 26, 0.06);
+  --rail-w: 240px;
+  --drawer-w: 320px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #17161a;
-    --bg-sunken: #100f12;
-    --bg-raised: #1f1e23;
-    --fg: #ebe9e6;
-    --fg-muted: #a09a94;
-    --border: #38353c;
-    --accent: #93b4ff;
-    --ok: #6ee7a0;
-    --warn: #e3bd63;
-    --error: #ff9b93;
+    --bg: #1b1917;
+    --bg-sunken: #151311;
+    --bg-raised: #23201c;
+    --fg: #ece7dd;
+    --fg-muted: #a39b8f;
+    --border: #3a3531;
+    --accent: #e0873a;
+    --ok: #6fc283;
+    --warn: #e0a24a;
+    --error: #ff8f85;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.35);
   }
 }
 
@@ -54,6 +62,7 @@ body {
 }
 
 h1, h2, h3, h4 { margin: 0 0 0.4rem; font-weight: 600; line-height: 1.25; }
+h1, h2, h3 { letter-spacing: -0.01em; }
 h1 { font-size: 1.05rem; }
 h2 { font-size: 0.95rem; }
 h4 { font-size: 0.8rem; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.04em; }
@@ -63,9 +72,8 @@ pre {
   margin: 0 0 0.6rem;
   padding: 0.5rem 0.6rem;
   overflow-x: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
   background: var(--bg-sunken);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
 }
 .muted { color: var(--fg-muted); }
@@ -76,150 +84,33 @@ button, select, textarea {
   background: var(--bg-raised);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 0.3rem 0.6rem;
+  padding: 0.25rem 0.55rem;
 }
 button { cursor: pointer; }
 button:disabled, textarea:disabled, select:disabled { opacity: 0.55; cursor: not-allowed; }
 a { color: var(--accent); }
 
-/* ── Shell ─────────────────────────────────────────────────────────────── */
+/* ── Shared: notices, badges, the token page ──────────────────────────── */
 
-.app { display: flex; flex-direction: column; height: 100vh; }
-
-.app-header {
-  display: flex;
-  gap: var(--gap);
-  align-items: center;
-  padding: 0.5rem 0.9rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-raised);
-}
-.app-header nav { display: flex; gap: 0.8rem; }
-.app-header nav a { text-decoration: none; }
-.app-header nav a[aria-current="page"] { text-decoration: underline; font-weight: 600; }
-.app-vault {
-  margin-left: auto;
-  max-width: 40ch;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--fg-muted);
-  font-family: var(--mono);
-  font-size: 0.78rem;
-}
-
-/* Thread list | chat. */
-.two-column { display: grid; grid-template-columns: minmax(12rem, 17rem) 1fr; flex: 1; min-height: 0; }
-.column-main { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
 .page-message { max-width: 44rem; margin: 3rem auto; padding: 0 1rem; }
 
-@media (max-width: 44rem) {
-  .two-column { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-  .thread-list { max-height: 12rem; border-right: none; border-bottom: 1px solid var(--border); }
-}
-
-/* ── Thread list ───────────────────────────────────────────────────────── */
-
-.thread-list { border-right: 1px solid var(--border); overflow-y: auto; padding: 0.6rem; background: var(--bg-sunken); }
-.thread-list-head { display: flex; align-items: center; justify-content: space-between; }
-.thread-list ul { list-style: none; margin: 0.4rem 0 0; padding: 0; }
-.thread-list li { display: flex; align-items: center; gap: 0.2rem; }
-.thread-list li.selected .thread-open { background: var(--bg-raised); border-color: var(--border); }
-.thread-open {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.1rem;
-  text-align: left;
-  background: none;
-  border-color: transparent;
-}
-.thread-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
-.thread-date { color: var(--fg-muted); font-size: 0.75rem; }
-.thread-delete { background: none; border-color: transparent; color: var(--fg-muted); }
-
-/* ── Chat ──────────────────────────────────────────────────────────────── */
-
-.chat { display: flex; flex-direction: column; min-height: 0; flex: 1; }
-.transcript { flex: 1; overflow-y: auto; padding: 0.9rem; display: flex; flex-direction: column; gap: var(--gap); }
-
-.turn { max-width: 52rem; }
-.turn-text { white-space: pre-wrap; margin: 0; }
-.turn-user {
-  align-self: flex-end;
-  padding: 0.5rem 0.7rem;
-  background: var(--bg-sunken);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-.turn-assistant { display: flex; flex-direction: column; gap: 0.5rem; }
-.working { color: var(--fg-muted); font-style: italic; margin: 0; }
-
-.card { border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-raised); }
-.card > summary { padding: 0.35rem 0.6rem; cursor: pointer; display: flex; gap: 0.5rem; align-items: center; }
-.card-body { padding: 0 0.6rem 0.4rem; }
-.tool-name { font-family: var(--mono); font-size: 0.85em; }
+.notice { padding: 0.45rem 0.6rem; border-radius: var(--radius); border: 1px solid currentColor; }
+.notice p:last-child { margin-bottom: 0; }
+.notice-error { color: var(--error); }
 
 .badge {
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  padding: 0.05rem 0.35rem;
   border: 1px solid currentColor;
   border-radius: 999px;
-  color: var(--fg-muted);
+  padding: 0 0.35rem;
+  white-space: nowrap;
 }
-.badge-ok, .badge-done, .badge-approved { color: var(--ok); }
-.badge-running, .badge-pending { color: var(--accent); }
-.badge-error, .badge-timeout { color: var(--error); }
-.badge-abandoned, .badge-rejected { color: var(--warn); }
+.badge-ok { color: var(--ok); }
+.badge-error { color: var(--error); }
 
-.notice { padding: 0.45rem 0.6rem; border-radius: var(--radius); border: 1px solid currentColor; }
-.notice p:last-child { margin-bottom: 0; }
-.notice-error { color: var(--error); }
-.chat-error { display: flex; gap: 0.6rem; align-items: center; justify-content: space-between; margin: 0 0.9rem; }
-.notice-warning { color: var(--warn); }
-
-/* ── Proposal card ─────────────────────────────────────────────────────── */
-
-.proposal-card { padding: 0.55rem 0.7rem; border-left: 3px solid var(--accent); }
-.proposal-head { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.3rem; }
-.proposal-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--fg-muted); }
-.proposal-path { word-break: break-all; }
-.proposal-actions { display: flex; gap: 0.4rem; }
-.conflict { display: grid; grid-template-columns: auto 1fr; gap: 0.15rem 0.6rem; margin: 0 0 0.5rem; }
-.conflict dt { color: var(--fg-muted); font-size: 0.8rem; }
-.conflict dd { margin: 0; word-break: break-all; }
-
-/* ── Run panel ─────────────────────────────────────────────────────────── */
-
-.run-panel {
-  border: 1px dashed var(--border);
-  border-radius: var(--radius);
-  padding: 0.35rem 0.6rem;
-  font-size: 0.88rem;
-}
-.run-panel > summary { cursor: pointer; display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
-.run-provider, .run-duration, .run-cost { color: var(--fg-muted); font-size: 0.8rem; }
-.run-facts { display: grid; grid-template-columns: auto 1fr; gap: 0.1rem 0.6rem; margin: 0.5rem 0; }
-.run-facts dt { color: var(--fg-muted); }
-.run-facts dd { margin: 0; }
-.run-tools, .run-proposals { list-style: none; margin: 0 0 0.5rem; padding: 0; }
-.run-tools li { display: flex; gap: 0.5rem; align-items: center; }
-.tool-ms { color: var(--fg-muted); font-size: 0.8rem; }
-
-/* ── Composer ──────────────────────────────────────────────────────────── */
-
-.composer { border-top: 1px solid var(--border); padding: 0.6rem 0.9rem; display: flex; flex-direction: column; gap: 0.4rem; background: var(--bg-raised); }
-.composer textarea { width: 100%; resize: vertical; font-family: inherit; }
-.composer-actions { display: flex; gap: 0.5rem; align-items: center; justify-content: flex-end; }
-.composer-actions label { display: flex; gap: 0.35rem; align-items: center; margin-right: auto; }
-.composer-note { margin: 0; font-size: 0.85rem; }
-.label-text { color: var(--fg-muted); font-size: 0.8rem; }
-
-/* ── Vault ─────────────────────────────────────────────────────────────── */
+/* ── Shared: the vault tree and file view ─────────────────────────────── */
 
 .vault-tree { border-right: 1px solid var(--border); overflow-y: auto; padding: 0.6rem; background: var(--bg-sunken); }
 .vault-level { list-style: none; margin: 0.2rem 0 0; padding: 0 0 0 0.7rem; }
@@ -230,16 +121,15 @@ a { color: var(--accent); }
   width: 100%;
   text-align: left;
   background: none;
-  border-color: transparent;
-  padding: 0.15rem 0.3rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  padding: 0.1rem 0.3rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .vault-file[aria-current="page"] { background: var(--bg-raised); border-color: var(--border); font-weight: 600; }
 
-.vault-main { overflow-y: auto; padding: 0.9rem; }
-.vault-empty { margin: 2rem auto; }
 .vault-file-view { max-width: 52rem; }
 .vault-file-head { display: flex; gap: 0.6rem; align-items: baseline; flex-wrap: wrap; margin-bottom: 0.6rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
 .vault-file-path { word-break: break-all; }
@@ -257,12 +147,7 @@ a { color: var(--accent); }
 .markdown th, .markdown td { border: 1px solid var(--border); padding: 0.25rem 0.5rem; text-align: left; }
 .markdown hr { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
 
-.proposal-open { font-size: 0.78rem; }
-
-/* ── Settings ──────────────────────────────────────────────────────────── */
-
-.settings-page { overflow-y: auto; padding: 0.9rem; }
-.settings { max-width: 56rem; display: flex; flex-direction: column; gap: 1.4rem; }
+/* ── Shared: the settings form, health facts, and the provider test ───── */
 
 .facts { display: grid; grid-template-columns: auto 1fr; gap: 0.15rem 0.8rem; margin: 0 0 0.8rem; }
 .facts dt { color: var(--fg-muted); }
@@ -277,75 +162,19 @@ a { color: var(--accent); }
 .field input, .field textarea, .field select {
   font: inherit;
   color: inherit;
-  background: var(--bg-raised);
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 0.3rem 0.5rem;
-  max-width: 32rem;
+  padding: 0.25rem 0.4rem;
+  min-width: 0;
 }
 .field textarea { font-family: var(--mono); font-size: 0.85em; max-width: 44rem; }
 .field-error { font-size: 0.82rem; max-width: 32rem; }
-.notice-ok { color: var(--ok); }
 
-.providers-fieldset { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.7rem; margin: 0 0 0.9rem; }
-.providers-fieldset legend { color: var(--fg-muted); font-size: 0.8rem; padding: 0 0.3rem; }
-.provider-row { border-top: 1px dashed var(--border); padding-top: 0.6rem; margin-top: 0.6rem; }
-.provider-row:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
-.capabilities { display: flex; gap: 0.6rem; flex-wrap: wrap; }
-.capabilities .field { margin-bottom: 0.5rem; }
-.capabilities input, .capabilities select { max-width: 9rem; }
-.row-remove { color: var(--error); }
-
-.provider-tests ul { list-style: none; margin: 0; padding: 0; }
-.provider-tests li { display: flex; gap: 0.6rem; align-items: baseline; flex-wrap: wrap; padding: 0.25rem 0; border-bottom: 1px solid var(--border); }
 .provider-test { display: flex; gap: 0.5rem; align-items: baseline; flex-wrap: wrap; }
 .provider-test-confirm { display: flex; gap: 0.4rem; align-items: baseline; flex-wrap: wrap; padding: 0.3rem 0.5rem; border: 1px solid var(--warn); border-radius: var(--radius); }
 .provider-test-confirm p { margin: 0; }
 .provider-test-result { margin: 0; font-size: 0.85rem; }
-
-/* ═══ v2 — the design pass (spec 2026-08-29-ui-design-pass) ═══════════════
- * Everything below applies only under <html data-ui="v2">. Shared v1
- * components (Tree, FileView, the settings form) pick up the tokens; the
- * v2 components use the .v2-* rules. */
-
-html[data-ui="v2"] {
-  --bg: #fbfaf7;
-  --bg-sunken: #f4f1ea;
-  --bg-raised: #ffffff;
-  --fg: #1f1d1a;
-  --fg-muted: #6b645b;
-  --border: #e8e3d9;
-  --accent: #b45309;
-  --ok: #2f7a3e;
-  --warn: #b45309;
-  --error: #b42318;
-  --serif: "Iowan Old Style", Charter, Georgia, serif;
-  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px;
-  --radius: 8px;
-  --shadow: 0 1px 2px rgba(31, 29, 26, 0.06), 0 4px 12px rgba(31, 29, 26, 0.06);
-  --rail-w: 240px;
-  --drawer-w: 320px;
-}
-
-@media (prefers-color-scheme: dark) {
-  html[data-ui="v2"] {
-    --bg: #1b1917;
-    --bg-sunken: #151311;
-    --bg-raised: #23201c;
-    --fg: #ece7dd;
-    --fg-muted: #a39b8f;
-    --border: #3a3531;
-    --accent: #e0873a;
-    --ok: #6fc283;
-    --warn: #e0a24a;
-    --error: #ff8f85;
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.35);
-  }
-}
-
-html[data-ui="v2"] body { font-size: 15px; }
-html[data-ui="v2"] h1, html[data-ui="v2"] h2, html[data-ui="v2"] h3 { letter-spacing: -0.01em; }
 
 /* ── v2 shell ─────────────────────────────────────────────────────────── */
 
@@ -415,41 +244,6 @@ html[data-ui="v2"] h1, html[data-ui="v2"] h2, html[data-ui="v2"] h3 { letter-spa
 .v2-drawer-tree { flex: 0 0 auto; max-height: 40%; overflow-y: auto; }
 .v2-drawer-tree .vault-tree { border-right: none; background: transparent; }
 .v2-drawer-file { flex: 1; min-height: 0; overflow-y: auto; padding: var(--s3) var(--s4); border-top: 1px solid var(--border); }
-
-/* The design switch reads as a switch, not as a browser checkbox: the one
-   card that introduces the new look should not be the one place a native
-   blue tick sits. `appearance: none` keeps the input a checkbox for
-   assistive tech and for the tests — only the paint changes. */
-.settings-design .design-switch { display: inline-flex; gap: 0.5rem; align-items: center; cursor: pointer; }
-.design-switch input[type="checkbox"] {
-  appearance: none;
-  -webkit-appearance: none;
-  margin: 0;
-  flex: none;
-  width: 2.1rem;
-  height: 1.2rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--bg-sunken);
-  position: relative;
-  cursor: pointer;
-  transition: background 120ms, border-color 120ms;
-}
-.design-switch input[type="checkbox"]::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 0.15rem;
-  width: 0.9rem;
-  height: 0.9rem;
-  border-radius: 50%;
-  background: var(--fg-muted);
-  transform: translate(0, -50%);
-  transition: transform 120ms, background 120ms;
-}
-.design-switch input[type="checkbox"]:checked { background: var(--accent); border-color: var(--accent); }
-.design-switch input[type="checkbox"]:checked::after { background: var(--bg); transform: translate(0.85rem, -50%); }
-.design-switch input[type="checkbox"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ── v2 chat ──────────────────────────────────────────────────────────── */
 
@@ -568,7 +362,7 @@ html[data-ui="v2"] h1, html[data-ui="v2"] h2, html[data-ui="v2"] h3 { letter-spa
 
 .v2-settings { max-width: 60rem; display: flex; flex-direction: column; gap: var(--s4); }
 .v2-group { border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-raised); padding: var(--s4) var(--s5); box-shadow: var(--shadow); }
-.v2-group > h2, .v2-group .settings-design > h2, .v2-group .settings-health > h2 { margin-bottom: var(--s3); font-family: var(--serif); font-size: 1.05rem; }
+.v2-group > h2, .v2-group .settings-health > h2 { margin-bottom: var(--s3); font-family: var(--serif); font-size: 1.05rem; }
 .v2-registry { display: contents; }
 .v2-save { display: flex; flex-direction: column; gap: var(--s2); }
 .v2-save-row { display: flex; gap: var(--s3); align-items: center; flex-wrap: wrap; }
@@ -582,3 +376,4 @@ html[data-ui="v2"] h1, html[data-ui="v2"] h2, html[data-ui="v2"] h3 { letter-spa
 .v2-test-list { list-style: none; margin: 0; padding: 0; }
 .v2-test-list li { display: flex; gap: var(--s3); align-items: baseline; flex-wrap: wrap; padding: var(--s2) 0; border-bottom: 1px solid var(--border); }
 .v2-notice-ok { color: var(--ok); }
+
