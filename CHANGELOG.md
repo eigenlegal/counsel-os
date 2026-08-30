@@ -6,6 +6,18 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.10.0] — 2026-08-30
+
+runtime: multi-model counsel runtime + local web UI (preview)
+
+- NEW (preview, runs from source): a local counsel runtime (runtime/, Bun) that runs the five primitives on Claude (Pro/Max subscription login), Codex (ChatGPT login), OpenAI/Anthropic API keys, or local Ollama — configured in ~/.counsel-os/providers.yaml or in the UI; no API key required
+- NEW (preview): a local web UI — chat with streamed answers, tool activity and per-request run records, proposals as redlines you approve in place, a vault browser, and settings; start with: bun runtime/src/cli.ts serve --vault <vault> --open
+- the new design (v2: workbench shell, answer-first turns, redline proposal cards) is the default; the classic design stays one switch away (Settings -> New design off, or ui=v1)
+- vault_search is real (AND-first with OR fallback, idf ranking, filename hits for any file type); it previously returned nothing in every entry point
+- step timeout, run records (.counsel/runs), typed answers on demand, and evals through the runtime (scripts/run_evals.py --runner runtime)
+- plugin adapter: the counsel skill hands off to a running local runtime via scripts/runtime_step.sh and falls back to the plugin flow when none is running
+- plugin users are unaffected: skills, primitives, and scripts behave as before; an installer for the runtime is on the roadmap (docs/roadmap.md §9)
+
 ## [0.9.43] — 2026-08-14
 
 draft.md: --edit mode for in-place .docx revisions
