@@ -1,23 +1,29 @@
 /**
- * The design-pass rollout flag (spec §2, "Rollout"). Default off.
+ * The design flag (spec §2, "Rollout"). **v2 is the default** — the founder
+ * flipped it on 2026-08-30; v1 is still one switch away and never went away.
  *
- * Two sources, in order: the in-memory copy set this session, then
- * `localStorage['counsel-os.ui']`. The memory copy is what makes the switch
- * work in a tab whose storage is blocked — it holds for the session and the
- * toggle says so.
+ * Only the NON-default choice is stored, so the key is absent for everybody
+ * who has not asked for the classic design: `localStorage['counsel-os.ui']`
+ * is `'v1'` or missing. A stored `'v2'` is still read as v2 — tabs that
+ * opted in while v2 was the option keep working — but nothing writes it any
+ * more.
  *
- * `ui=v2` in the fragment is a THIRD source, but it is consumed once by
- * `bootstrapUiFlag` before React renders — beside `bootstrapToken()` and for
- * the same reason. A fragment that has to be read and then rewritten is not
- * something a component may do from its render phase, and `readUiFlag` is a
- * pure read so that a `useState` initializer can call it.
+ * Two sources, in order: the in-memory copy set this session, then storage.
+ * The memory copy is what makes the switch work in a tab whose storage is
+ * blocked — it holds for the session and the toggle says so.
+ *
+ * `ui=v1` / `ui=v2` in the fragment is a THIRD source, but it is consumed
+ * once by `bootstrapUiFlag` before React renders — beside `bootstrapToken()`
+ * and for the same reason. A fragment that has to be read and then rewritten
+ * is not something a component may do from its render phase, and
+ * `readUiFlag` is a pure read so that a `useState` initializer can call it.
  *
  * Both spellings work, and both leave the address bar afterwards:
  *
- *   http://127.0.0.1:7431/#/?ui=v2                 (a page already open)
- *   http://127.0.0.1:7431/#token=<token>&ui=v2     (the URL `serve` prints)
+ *   http://127.0.0.1:7431/#/?ui=v1                 (a page already open)
+ *   http://127.0.0.1:7431/#token=<token>&ui=v1     (the URL `serve` prints)
  *
- * Do NOT write `#token=<token>?ui=v2`: `token=` is split off at the `&`, so
+ * Do NOT write `#token=<token>?ui=v1`: `token=` is split off at the `&`, so
  * a `?` there becomes part of the credential and the page answers 401.
  */
 
@@ -57,17 +63,23 @@ const PAIRS = /(?:^|&)ui=/;
 
 /**
  * The `ui` param of a fragment, in either form it arrives in:
- * `#/?ui=v2` (the route's query half) and `#token=…&ui=v2` (pairs, no `?`).
+ * `#/?ui=v1` (the route's query half) and `#token=…&ui=v1` (pairs, no `?`).
  *
  * The second is the one a reader produces by hand, and it used to be
- * ignored — which sent them to `#token=…?ui=v2` instead, where the token
- * splitter took `…?ui=v2` for the credential and the page answered 401.
+ * ignored — which sent them to `#token=…?ui=v1` instead, where the token
+ * splitter took `…?ui=v1` for the credential and the page answered 401.
+ *
+ * BOTH designs are nameable here. `ui=v2` was the only useful value while v2
+ * was opt-in; now that v2 is the default, `ui=v1` is the one a reader needs
+ * — and a link that names the design it wants should not depend on which one
+ * happens to be the default.
  */
 function fragmentFlag(hash: string): UiFlag | null {
   const raw = hash.replace(/^#/, '');
   const cut = raw.indexOf('?');
   if (cut === -1 && !PAIRS.test(raw)) return null;
-  return new URLSearchParams(cut === -1 ? raw : raw.slice(cut + 1)).get('ui') === 'v2' ? 'v2' : null;
+  const value = new URLSearchParams(cut === -1 ? raw : raw.slice(cut + 1)).get('ui');
+  return value === 'v1' || value === 'v2' ? value : null;
 }
 
 /** The fragment (without its `#`) with the `ui` param removed. Pure.
@@ -104,6 +116,10 @@ export function onUiFlagChange(fn: Listener): () => void {
  * Records the choice. `persisted` is false when storage refused it; the
  * memory copy still applies for this session. The `ui` fragment param, if
  * present, is removed so a later reload obeys the stored choice.
+ *
+ * Only `'v1'` is written. v2 is what an untouched browser gets, so choosing
+ * it is choosing the default — and the honest way to record that is to leave
+ * no key behind rather than to stamp the default into every profile.
  */
 export function setUiFlag(flag: UiFlag): { persisted: boolean } {
   memory = flag;
@@ -111,7 +127,7 @@ export function setUiFlag(flag: UiFlag): { persisted: boolean } {
   try {
     const store = storage();
     if (store !== null) {
-      if (flag === 'v2') store.setItem(UI_FLAG_KEY, 'v2');
+      if (flag === 'v1') store.setItem(UI_FLAG_KEY, 'v1');
       else store.removeItem(UI_FLAG_KEY);
       persisted = true;
     }
@@ -141,9 +157,10 @@ function stripFromLocation(): void {
 }
 
 /**
- * Consumes `?ui=v2` from the fragment, once, before React renders. Returns
- * the flag now in force. The strip runs either way, so a `ui` value that is
- * not `v2` does not sit in the URL forever waiting to be misread.
+ * Consumes `?ui=v1` / `?ui=v2` from the fragment, once, before React renders.
+ * Returns the flag now in force. The strip runs either way, so a `ui` value
+ * that names neither design does not sit in the URL forever waiting to be
+ * misread.
  */
 export function bootstrapUiFlag(): UiFlag {
   const fromFragment = fragmentFlag(globalThis.location?.hash ?? '');
@@ -152,12 +169,17 @@ export function bootstrapUiFlag(): UiFlag {
   return readUiFlag();
 }
 
-/** The flag in force. Pure — the fragment is `bootstrapUiFlag`'s job. */
+/**
+ * The flag in force. Pure — the fragment is `bootstrapUiFlag`'s job.
+ *
+ * v2 unless the classic design was asked for by name: a missing key, and a
+ * value that is neither design's name, both mean the default.
+ */
 export function readUiFlag(): UiFlag {
   if (memory !== null) return memory;
   try {
-    return storage()?.getItem(UI_FLAG_KEY) === 'v2' ? 'v2' : 'v1';
+    return storage()?.getItem(UI_FLAG_KEY) === 'v1' ? 'v1' : 'v2';
   } catch {
-    return 'v1';
+    return 'v2';
   }
 }

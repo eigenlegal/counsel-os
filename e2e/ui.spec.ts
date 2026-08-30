@@ -9,6 +9,10 @@ import { RUNTIME_FILE, VAULT_DIR } from './paths';
  * proposal, approving it, reading the written file in the vault, the run
  * record, and settings.
  *
+ * This is the CLASSIC design, which is no longer what the printed URL opens
+ * on — v2 became the default on 2026-08-30 — so the story asks for v1 by
+ * name in the fragment. Both designs are still regression-gated here.
+ *
  * One test, not seven. The steps are a single story — there is no thread to
  * approve a proposal in until the step before it has run — and splitting it
  * would either re-run the whole prefix per test or leave tests depending on
@@ -52,14 +56,17 @@ async function openDir(page: Page, name: string): Promise<void> {
   await expect(dir).toHaveAttribute('aria-expanded', 'true');
 }
 
-test('a step runs tools, raises a proposal, and approving it writes the vault', async ({ page }) => {
-  await test.step('the token in the fragment becomes the tab\'s credential', async () => {
-    await page.goto(`/#token=${await token()}`);
+test('the classic design: a step runs tools, raises a proposal, and approving it writes the vault', async ({ page }) => {
+  await test.step('the token in the fragment becomes the tab\'s credential, and ?ui=v1 asks for the classic design', async () => {
+    await page.goto(`/#token=${await token()}&/?ui=v1`);
+    await expect(page.locator('html')).toHaveAttribute('data-ui', 'v1');
     // The header only renders once `/health` answered — which it could only
     // do with the token the fragment carried.
     await expect(page.getByRole('heading', { name: 'counsel-os' })).toBeVisible();
-    // And the credential is out of the URL by the time anything can screenshot it.
+    // And neither the credential nor the flag is in the URL by the time
+    // anything can screenshot it.
     await expect.poll(() => page.url()).not.toContain('token=');
+    await expect.poll(() => page.url()).not.toContain('ui=');
     await expect(page.locator('nav[aria-label="Threads"]')).toContainText('No threads yet.');
   });
 
@@ -121,28 +128,31 @@ test('a step runs tools, raises a proposal, and approving it writes the vault', 
     const facts = page.locator('.settings-health .facts');
     await expect(facts).toContainText('fake/fake');
     await expect(page.locator('.providers-table')).toContainText('fake/fake');
+    // The switch still means "new design"; this tab turned it off by URL.
+    await expect(page.getByRole('switch', { name: 'New design' })).not.toBeChecked();
   });
 });
 
 /**
- * The same story in the new design (spec 2026-08-29-ui-design-pass §6),
- * turned on by `?ui=v2` in the fragment. It runs AFTER the v1 test on the
- * same server and vault, which the v1 approval has already written — so it
- * starts by putting a different "before" on disk, which is what makes the
- * redline show a deletion and an addition rather than nothing at all.
+ * The same story in the new design (spec 2026-08-29-ui-design-pass §6) —
+ * which is what the printed URL opens on since 2026-08-30, so this story
+ * asks for nothing. It runs AFTER the v1 test on the same server and vault,
+ * which the v1 approval has already written — so it starts by putting a
+ * different "before" on disk, which is what makes the redline show a
+ * deletion and an addition rather than nothing at all.
  *
  * The flag is per browser CONTEXT (`localStorage`), and Playwright gives
- * each test a fresh one — so this test turning v2 on cannot leak back into
- * the v1 story above, whatever order they run in.
+ * each test a fresh one — so the v1 story's `?ui=v1` cannot leak into this
+ * one, whatever order they run in.
  */
 test('the new design: a draft names its thread, the proposal is a redline, the drawer shows the file, the strip says done', async ({ page }) => {
   writeFileSync(join(VAULT_DIR, 'practice', 'standards', 'nda.md'), '# NDA\nTerm: 2 years\n');
 
-  await test.step('?ui=v2 in the fragment turns the design on and leaves the URL', async () => {
-    await page.goto(`/#token=${await token()}&/?ui=v2`);
+  await test.step('the printed URL alone opens the new design', async () => {
+    // No `ui=` at all: a browser that has never been told anything gets v2.
+    await page.goto(`/#token=${await token()}`);
     await expect(page.locator('html')).toHaveAttribute('data-ui', 'v2');
     await expect.poll(() => page.url()).not.toContain('token=');
-    await expect.poll(() => page.url()).not.toContain('ui=');
     await expect(page.locator('.v2-top-model')).toHaveText('fake/fake');
   });
 
@@ -209,7 +219,7 @@ test('the new design: a draft names its thread, the proposal is a redline, the d
 
   await test.step('the vault page and settings are the new design too', async () => {
     await nav(page, 'Settings').click();
-    await expect(page.getByRole('switch', { name: 'Try the new design' })).toBeChecked();
+    await expect(page.getByRole('switch', { name: 'New design' })).toBeChecked();
     await expect(page.locator('.settings-health .facts')).toContainText('fake/fake');
 
     await nav(page, 'Vault').click();
