@@ -5,7 +5,9 @@ import { RESERVED_DIR, type SearchFn } from './fs-store';
 
 /** Text formats a vault actually holds. Anything else (PDF, DOCX, images) is
  * bytes as far as a substring scan is concerned — reading it would burn the
- * file-size budget to produce mojibake matches. */
+ * file-size budget to produce mojibake matches. Their FILENAMES are still
+ * searched: in a legal vault the signed PDFs are most of the documents, and
+ * `MSA-indemnity-signed.pdf` is the most reliable metadata there is. */
 const DEFAULT_EXTENSIONS = ['.md', '.txt', '.json', '.yaml', '.yml', '.csv'];
 
 /** Directories that are never a user's knowledge, at any depth. `.counsel/` is
@@ -18,6 +20,10 @@ const SKIP_DIRS = new Set(['node_modules']);
  * veto every file that happens not to spell them. Models do not send keyword
  * queries — they send questions ("what is our indemnity position"), and
  * `what`/`is`/`our` would each have to appear verbatim in the file.
+ *
+ * The list is deliberately short. It is a cheap first cut; the real defence
+ * against conversational filler is the idf weighting below, which does not
+ * need to know a word in advance to discount it.
  */
 const STOPWORDS = new Set([
   'the', 'a', 'an', 'of', 'in', 'on', 'for', 'to', 'and', 'or', 'is', 'are',
@@ -27,11 +33,10 @@ const STOPWORDS = new Set([
 const DEFAULT_MAX_HITS = 50;
 const DEFAULT_MAX_FILE_BYTES = 2 * 1024 * 1024;
 const SNIPPET_CHARS = 200;
-
-/** In the OR fallback, one more distinct term matched always outranks any
- * number of repetitions of a term already counted. Five mentions of one word
- * are weaker evidence than one mention each of two. */
-const DISTINCT_TERM_WEIGHT = 1000;
+/** How much of a file's head is inspected for NUL bytes before deciding it is
+ * binary. A text file has none; a mislabelled `.txt` of raw bytes has one
+ * almost immediately. */
+const BINARY_SNIFF_BYTES = 1024;
 
 /** Non-overlapping occurrences of `term` in `haystack`; both already lowercased. */
 function countOccurrences(haystack: string, term: string): number {
@@ -64,8 +69,9 @@ interface Candidate {
  *
  * Matching is AND-first, OR-as-fallback. AND keeps a deliberate query precise;
  * the fallback keeps a conversational one from returning nothing, which is the
- * exact failure this function was written to end. Stopwords are dropped before
- * either pass.
+ * exact failure this function was written to end. Both passes are ranked by
+ * the same idf-weighted score, so `Hit.score` means one thing regardless of
+ * which pass produced it.
  *
  * Scale note: a vault is a person's or a firm's document set, walked and read
  * per query. That is fine at thousands of files and wrong at millions; when it
@@ -78,21 +84,28 @@ export function fsSearch(opts: { maxHits?: number; maxFileBytes?: number; extens
   const extensions = new Set((opts.extensions ?? DEFAULT_EXTENSIONS).map(e => e.toLowerCase()));
 
   return async function search(query: string, root: string): Promise<Hit[]> {
-    const raw = query.toLowerCase().split(/\s+/).filter(Boolean);
+    // Split on every run of non-alphanumerics, so `indemnity?`, `"indemnity
+    // cap"` and `indemnity.` all reduce to the words a model meant. Matching
+    // is a literal substring test, so punctuation welded to a token was a
+    // silently different term — and a question mark is the single most likely
+    // character at the end of a natural-language query.
+    const raw = query.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
     if (raw.length === 0) return [];
     // Someone searching for `the` means it. Only drop stopwords when there is
     // something left to search for.
     const stripped = raw.filter(t => !STOPWORDS.has(t));
-    const terms = stripped.length > 0 ? stripped : raw;
+    // Deduplicated: repeating a word in the query is not evidence about a file.
+    const terms = [...new Set(stripped.length > 0 ? stripped : raw)];
 
     const candidates: Candidate[] = [];
+    let filesScanned = 0;
 
     async function walk(dir: string): Promise<void> {
       let names: string[];
       try {
         names = await readdir(dir);
       } catch {
-        return; // Unreadable directory: skip it, never fail the whole search.
+        return; // Unreadable or missing directory: skip it, never fail the search.
       }
       for (const name of names) {
         // `.counsel` is caught by the dot rule, but name it too: the ban is a
@@ -114,22 +127,19 @@ export function fsSearch(opts: { maxHits?: number; maxFileBytes?: number; extens
           continue;
         }
         if (!st.isFile()) continue;
-        if (!extensions.has(extname(name).toLowerCase())) continue;
-        if (st.size > maxFileBytes) continue;
-        const candidate = await scan(full);
+        filesScanned++;
+        // The extension and size gates decide whether the CONTENT is read.
+        // The file is scanned either way, so its path can still match.
+        const readContent = extensions.has(extname(name).toLowerCase()) && st.size <= maxFileBytes;
+        const candidate = await scan(full, readContent);
         if (candidate) candidates.push(candidate);
       }
     }
 
-    async function scan(full: string): Promise<Candidate | null> {
-      let content: string;
-      try {
-        content = await readFile(full, 'utf8');
-      } catch {
-        return null; // Permissions, a race, a deleted file: skip it.
-      }
+    async function scan(full: string, readContent: boolean): Promise<Candidate | null> {
       const path = relative(root, full).split(sep).join('/');
       const lowerPath = path.toLowerCase();
+      const content = readContent ? await readText(full) : '';
       const lowerContent = content.toLowerCase();
 
       // A term counts once for appearing anywhere in the path, plus once per
@@ -141,34 +151,56 @@ export function fsSearch(opts: { maxHits?: number; maxFileBytes?: number; extens
       return { path, snippet: snippetFor(content, path), counts };
     }
 
+    async function readText(full: string): Promise<string> {
+      let buf: Buffer;
+      try {
+        buf = await readFile(full);
+      } catch {
+        return ''; // Permissions, a race, a deleted file: fall back to the path.
+      }
+      // `readFile(…, 'utf8')` does not throw on invalid UTF-8; it substitutes
+      // replacement characters, which reach the model as a snippet of noise.
+      // A NUL in the head is the cheap, reliable binary tell.
+      if (buf.subarray(0, BINARY_SNIFF_BYTES).includes(0)) return '';
+      return buf.toString('utf8');
+    }
+
     function snippetFor(content: string, path: string): string {
       for (const line of content.split('\n')) {
         const lower = line.toLowerCase();
+        // `.trim()` before `.slice()` also drops the `\r` of a CRLF file.
         if (terms.some(t => lower.includes(t))) return line.trim().slice(0, SNIPPET_CHARS);
       }
-      // Matched on the path alone; the path is the only evidence there is.
+      // Matched on the path alone — a PDF, or a text file whose name carries
+      // the term. The path is the only evidence there is.
       return path.slice(0, SNIPPET_CHARS);
     }
 
-    function finish(matched: Candidate[], score: (c: Candidate) => number): Hit[] {
-      return matched
-        .map(c => ({ path: c.path, snippet: c.snippet, score: score(c) }))
-        .sort((a, b) => b.score - a.score || (a.path < b.path ? -1 : a.path > b.path ? 1 : 0))
-        .slice(0, maxHits);
-    }
-
-    const sum = (c: Candidate): number => c.counts.reduce((a, b) => a + b, 0);
-
     await walk(root);
+
+    // Rarity beats repetition. Weighting every term equally let four
+    // conversational words ("how do we handle") outrank the one file that
+    // actually said "indemnity"; idf discounts a word that half the vault
+    // spells, without needing a stopword list to name it in advance.
+    const df = terms.map((_, i) => candidates.reduce((n, c) => n + (c.counts[i]! > 0 ? 1 : 0), 0));
+    const idf = df.map(d => Math.log(1 + filesScanned / Math.max(d, 1)));
+    // Occurrences count, but with a logarithm: the tenth mention of a word is
+    // not ten times the evidence of the first.
+    const scoreOf = (c: Candidate): number => c.counts.reduce(
+      (sum, n, i) => n > 0 ? sum + idf[i]! * (1 + Math.log(n)) : sum, 0);
+
+    const finish = (matched: Candidate[]): Hit[] => matched
+      .map(c => ({ path: c.path, snippet: c.snippet, score: scoreOf(c) }))
+      .sort((a, b) => b.score - a.score || (a.path < b.path ? -1 : a.path > b.path ? 1 : 0))
+      .slice(0, maxHits);
 
     // AND first: if some file spells every word, a looser pass could only
     // bury it under files that spell one.
     const all = candidates.filter(c => c.counts.every(n => n > 0));
-    if (all.length > 0) return finish(all, sum);
+    if (all.length > 0) return finish(all);
 
     // Nothing matched everything. Returning `[]` here is what taught a model
-    // that an existing document did not exist, so answer with what did match,
-    // ranked by how much of the query each file accounts for.
-    return finish(candidates, c => c.counts.filter(n => n > 0).length * DISTINCT_TERM_WEIGHT + sum(c));
+    // that an existing document did not exist, so answer with what did match.
+    return finish(candidates);
   };
 }
