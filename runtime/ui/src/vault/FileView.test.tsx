@@ -105,4 +105,10 @@ describe('withoutHostPaths', () => {
     expect(withoutHostPaths('no such file: matters/gone.md')).toBe('no such file: matters/gone.md');
     expect(withoutHostPaths('the server said no')).toBe('the server said no');
   });
+
+  test('leaves vault-relative paths with several segments alone', () => {
+    expect(withoutHostPaths('cannot write practice/standards/nda.md (500)')).toBe('cannot write practice/standards/nda.md (500)');
+    expect(withoutHostPaths('path escapes the vault: matters/acme/nda.md')).toBe('path escapes the vault: matters/acme/nda.md');
+    expect(withoutHostPaths("open '/srv/vault/matters/acme/nda.md' failed")).toBe("open 'acme/nda.md' failed");
+  });
 });

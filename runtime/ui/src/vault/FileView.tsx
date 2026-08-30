@@ -25,8 +25,12 @@ export interface FileViewProps {
  * the rest.
  */
 export function withoutHostPaths(message: string): string {
-  return message.replace(/\/(?:[^\s'"()]+\/)+[^\s'"()]*/g, match =>
-    match
+  // Only a path that STARTS with `/` (at the message start or after a space
+  // or a quote/bracket) is a host path. A vault-relative `practice/standards/
+  // nda.md` has slashes inside it and must come through untouched.
+  return message.replace(/(^|[\s'"(\[])(\/(?:[^\s'"()\[\]]+\/)+[^\s'"()\[\]]*)/g, (_m, lead: string, path: string) =>
+    lead +
+    path
       .split('/')
       .filter(segment => segment !== '')
       .slice(-2)
