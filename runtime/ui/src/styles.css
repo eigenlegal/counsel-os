@@ -503,3 +503,28 @@ html[data-ui="v2"] h1, html[data-ui="v2"] h2, html[data-ui="v2"] h3 { letter-spa
 .v2-conflict { display: grid; grid-template-columns: auto 1fr; gap: var(--s1) var(--s3); margin: 0 0 var(--s2); }
 .v2-conflict dt { color: var(--fg-muted); font-size: 0.8rem; }
 .v2-conflict dd { margin: 0; word-break: break-all; }
+
+/* ── v2 vault page + breadcrumb ───────────────────────────────────────── */
+
+.v2-vault { display: grid; grid-template-columns: minmax(14rem, 18rem) 1fr; flex: 1; min-height: 0; }
+.v2-vault-main { min-width: 0; overflow-y: auto; padding: var(--s5) var(--s6); }
+.v2-vault-main .vault-file-view, .v2-drawer-file .vault-file-view { max-width: 56rem; }
+.v2-vault-main .markdown, .v2-drawer-file .markdown { font-family: var(--serif); font-size: 1.02rem; line-height: 1.6; }
+.v2-vault-main .markdown code, .v2-drawer-file .markdown code, .v2-vault-main .markdown pre, .v2-drawer-file .markdown pre { font-family: var(--mono); }
+.v2-crumbs { display: flex; gap: var(--s1); align-items: baseline; font-size: 0.8rem; color: var(--fg-muted); margin-bottom: var(--s2); }
+.v2-crumb-sep { margin: 0 var(--s1); }
+.v2-crumb-last { color: var(--fg); font-weight: 600; }
+
+/* ── v2 settings ──────────────────────────────────────────────────────── */
+
+.v2-settings { max-width: 60rem; display: flex; flex-direction: column; gap: var(--s4); }
+.v2-group { border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-raised); padding: var(--s4) var(--s5); box-shadow: var(--shadow); }
+.v2-group > h2, .v2-group .settings-design > h2, .v2-group .settings-health > h2 { margin-bottom: var(--s3); font-family: var(--serif); font-size: 1.05rem; }
+.v2-registry { display: contents; }
+.v2-provider { border-top: 1px dashed var(--border); padding-top: var(--s3); margin-top: var(--s3); }
+.v2-provider:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+.v2-provider-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: var(--s2) var(--s3); }
+.v2-remove { color: var(--error); }
+.v2-test-list { list-style: none; margin: 0; padding: 0; }
+.v2-test-list li { display: flex; gap: var(--s3); align-items: baseline; flex-wrap: wrap; padding: var(--s2) 0; border-bottom: 1px solid var(--border); }
+.v2-notice-ok { color: var(--ok); }

@@ -1,4 +1,4 @@
-import { cleanup, render, screen, userEvent, waitFor } from '../test/dom';
+import { cleanup, fireEvent, render, screen, userEvent, waitFor } from '../test/dom';
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { TOKEN_KEY } from '../api/token';
@@ -64,6 +64,7 @@ afterEach(() => {
   cleanup();
   globalThis.fetch = realFetch;
   sessionStorage.clear();
+  history.replaceState(null, '', '/');
 });
 
 describe('Shell', () => {
@@ -199,5 +200,31 @@ describe('Shell', () => {
     // The chat is mounted, but as a draft: it fetched no thread and says so.
     // Scoped to the transcript — the rail's draft row says "New conversation" too.
     expect(document.querySelector('.v2-transcript .v2-empty')?.textContent).toContain('the thread is created when you send');
+  });
+
+  test('nav Vault opens the drawer over the chat; Esc closes it', async () => {
+    // An empty vault: the shell opens a draft, so the drawer is the only
+    // thing this test can be about.
+    history.replaceState(null, '', '/#/');
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.startsWith('/health')) return json(health);
+      if (url === '/threads') return json([]);
+      if (url.startsWith('/vault/list')) return json([]);
+      throw new Error(`unexpected fetch: ${url}`);
+    }) as unknown as typeof fetch;
+
+    render(<Shell />);
+    await waitFor(() => expect(document.querySelector('li.v2-draft[aria-current="true"]')).toBeTruthy());
+    expect(screen.getByText('fake/fake')).toBeTruthy();
+    expect(document.querySelector('aside[aria-label="Vault drawer"]')).toBeNull();
+
+    await userEvent.click(screen.getByRole('link', { name: 'Vault' }));
+    expect(document.querySelector('aside[aria-label="Vault drawer"]')).toBeTruthy();
+    // Still on the chat route: the link opened a drawer, not a page.
+    expect(location.hash).toBe('#/');
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(document.querySelector('aside[aria-label="Vault drawer"]')).toBeNull();
   });
 });

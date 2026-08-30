@@ -4,11 +4,11 @@ import { readToken } from '../api/token';
 import { onUnauthorized } from '../api/unauthorized';
 import type { Health, ThreadHeader } from '../api/types';
 import { parseHash, TOKEN_MESSAGE, vaultPathFromHash } from '../app';
-import { Settings } from '../settings/Settings';
-import { Vault } from '../vault/Vault';
 import { Chat } from './chat/Chat';
 import { Drawer } from './Drawer';
 import { Rail } from './Rail';
+import { SettingsPage } from './settings/SettingsPage';
+import { VaultPage } from './vault/VaultPage';
 
 type Route = 'chat' | 'vault' | 'settings';
 
@@ -248,7 +248,7 @@ export function Shell(): JSX.Element {
           {drawer.open ? <Drawer path={drawer.path} onOpen={path => openDrawer(path)} onClose={closeDrawer} /> : null}
         </div>
       ) : route === 'vault' ? (
-        <Vault
+        <VaultPage
           path={vaultPath}
           onOpen={path => {
             globalThis.location.hash = `#/vault?path=${encodeURIComponent(path)}`;
@@ -256,7 +256,7 @@ export function Shell(): JSX.Element {
         />
       ) : (
         <main className="v2-page">
-          <Settings health={health} />
+          <SettingsPage health={health} />
         </main>
       )}
     </div>

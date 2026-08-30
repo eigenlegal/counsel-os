@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { FileView } from '../vault/FileView';
 import { Tree } from '../vault/Tree';
+import { Breadcrumb } from './vault/VaultPage';
 
 export interface DrawerProps {
   /** The file open in the drawer, or `null` for the tree alone. */
@@ -40,7 +41,14 @@ export function Drawer({ path, onOpen, onClose }: DrawerProps): JSX.Element {
         <Tree selected={path} onSelect={onOpen} />
       </div>
       <div className="v2-drawer-file">
-        {path === null ? <p className="muted v2-empty">Pick a file to read it.</p> : <FileView key={path} path={path} />}
+        {path === null ? (
+          <p className="muted v2-empty">Pick a file to read it.</p>
+        ) : (
+          <>
+            <Breadcrumb path={path} />
+            <FileView key={path} path={path} />
+          </>
+        )}
       </div>
     </aside>
   );
