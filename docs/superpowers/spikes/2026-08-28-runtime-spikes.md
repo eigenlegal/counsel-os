@@ -1572,13 +1572,28 @@ Prompt, typed into the page:
 ![The vault drawer beside the thread](img/design-pass-drawer.png)
 ![Grouped settings with the design switch](img/design-pass-settings.png)
 
+**The four screenshots above were retaken after the fix wave** (2026-08-30),
+against `serve --fake` on a throwaway vault — no model was called. They are
+the same four surfaces, so they still read as the record of what the design
+does; what they show that the live shots could not is the fixes themselves:
+the answer as rendered markdown, `no results` on the empty search line and
+`1 empty` on the collapsed strip, the drawer's sentence in place of the
+`ENOENT`, the tree opened to `practice › standards`, short run and proposal
+ids, the switch in the v2 accent, the muted placeholder, and one `Save`
+below every card it writes. The numbers in the table above are the live
+Ollama run's and are unchanged.
+
 The design did what it was built to do here: the answer reads first, in serif,
 and the two tool calls are one grey line at the bottom of the turn instead of
 two JSON cards in the middle of it. The proposal card is the only place the
 page asks for a decision, and it says what would change rather than what was
 written.
 
-### Defects found in Step 5 (recorded, not fixed)
+### Defects found in Step 5
+
+Recorded here as they were found. The fix wave of 2026-08-30 (branch `ui-v2`,
+after the final review) closed every UI one; each is marked below. Defect 1 is
+a runtime defect and is **still open** — it is filed as its own task.
 
 1. **`vault_search` always returns `[]` — it is a stub, in every entry point.**
    `FsVaultStore`'s constructor takes an optional `search` and defaults it to
@@ -1592,6 +1607,7 @@ written.
    exposed this because the script calls `vault_read` by path.
    (`runtime/src/vault/fs-store.ts:24`, `runtime/src/cli.ts:131`,
    `runtime/src/server/serve.ts:344`, `runtime/src/mcp/stdio.ts:40`.)
+   **OPEN — runtime, not UI. Filed as its own task at high priority; nothing in this wave touches `runtime/src`.**
 
 2. **A tool that found nothing looks exactly like a tool that worked.** The
    step line renders `Searched Acme NDA · 15 ms` in the `ok` state — the same
@@ -1603,6 +1619,7 @@ written.
    audit it", an empty result is exactly the thing that must not fold away
    silently. (`runtime/ui/src/v2/chat/Steps.tsx`,
    `runtime/ui/src/v2/verbs.ts` `summarize`.)
+   **FIXED — an empty result (`[]`, `{}`, `''`, `null`) is its own step state: the line reads `no results` and the collapsed strip counts it as `1 empty`, apart from the failures (`v2/verbs.ts` `isEmptyResult` / `stateOf`, `Steps.tsx`, `Strip.tsx`).**
 
 3. **The answer is plain text, in the design that makes prose the headline.**
    `.v2-prose` is `<p>{turn.text}</p>` with `white-space: pre-wrap`, so the
@@ -1615,6 +1632,7 @@ written.
    reader looks at. (`runtime/ui/src/v2/chat/Turn.tsx:66,71`,
    `runtime/ui/src/styles.css:431`; the renderer is
    `runtime/ui/src/vault/markdown.ts`.)
+   **FIXED — `.v2-prose` renders `renderMarkdown(turn.text)`, streaming and finished alike, through the one sanitizer sink (`v2/chat/Turn.tsx`).**
 
 4. **The drawer shows a raw Node error for a file that does not exist yet.**
    Opening a pending proposal's path — the single most likely thing to do
@@ -1624,6 +1642,7 @@ written.
    reads as a failure when the honest sentence is "this file does not exist
    yet — approving the proposal creates it". `FileView` is shared with v1, so
    the full vault page has it too. (`runtime/ui/src/vault/FileView.tsx:53`.)
+   **FIXED — a 404 in the v2 drawer and vault page reads "This file does not exist yet — approving a proposal that names it creates it.", and every error message is stripped of absolute host paths before it is shown (`vault/FileView.tsx` `missingNote` / `withoutHostPaths`). v1 keeps the server's message, as it always did.**
 
 5. **The drawer's tree does not follow the file it is showing.** With
    `practice/standards/nda.md` open in the drawer, the tree above it still
@@ -1631,8 +1650,14 @@ written.
    does not expand the path to it. The reader is given a breadcrumb and a
    tree that disagree. (`runtime/ui/src/vault/Tree.tsx`,
    `runtime/ui/src/v2/Drawer.tsx`.)
+   **FIXED — `Tree` takes `expandToSelected` and opens (and lists) every directory above the open file; the v2 drawer and vault page pass it, v1 does not (`vault/Tree.tsx` `ancestorsOf`).**
 
-6. **Minor, cosmetic.** (a) The design switch is a bare browser checkbox —
+6. **Minor, cosmetic.** (a) FIXED — the design switch is now a switch in the
+   v2 accent, not a native blue checkbox (`styles.css` `.design-switch input`;
+   it stays a checkbox with `role="switch"` for assistive tech and the tests).
+   (b) FIXED — the Task routes placeholder is muted and italic
+   (`.v2-settings ::placeholder`). (c) still true, and still worth knowing.
+   As recorded: (a) The design switch is a bare browser checkbox —
    native blue, no v2 accent — inside the one group that introduces the new
    design (`.design-switch`, `runtime/ui/src/settings/DesignToggle.tsx`).
    (b) The Task routes placeholder is dark enough to read as a saved value,
@@ -1642,6 +1667,18 @@ written.
    viewport and nothing more — the settings shot above needed a 1 900 px
    viewport instead. Worth knowing before anyone tries to capture a long
    surface.
+
+Four more, found by the final review rather than by this run, closed in the
+same wave: the settings `Save` sat inside the Task routes card while it saved
+four groups (now one `Save` in a form footer below every card it writes); a
+drawer already open on a proposal's path kept showing the file as it was
+before the approval (the shell now re-keys it, and the rail hears the thread
+move); the run record printed raw UUIDs (now seven characters, with the whole
+value in the `title`); and `#token=…&ui=v2` — the form a person types after
+the printed URL — was silently ignored, while the near miss
+`#token=…?ui=v2` fed the `?ui=v2` into the credential and answered 401.
+Both working forms are now accepted, both are stripped from the address bar,
+and `ui-flag.test.ts` covers the token-then-flag ordering.
 
 ### What the next plan should assume — Step 5
 
@@ -1657,9 +1694,10 @@ written.
   the answer; v2 folds it into one strip under it), on what a proposal shows
   (v1 shows the proposed text, v2 shows the redline against what is on disk),
   and on whether the vault interrupts the thread (v1 navigates away, v2
-  opens a 320 px drawer). Defect 3 is worth fixing BEFORE that comparison —
-  raw `**` in the serif column argues against the design for a reason that
-  has nothing to do with the design.
+  opens a 320 px drawer). Defect 3 was the one thing that had to be fixed
+  BEFORE that comparison — raw `**` in the serif column argued against the
+  design for a reason that had nothing to do with the design — and it is
+  fixed, so the comparison is now about the design.
 - **Defect 1 is not a UI defect and should not be fixed in the UI.**
   `vault_search` needs a real implementation before any model is asked to
   find something by name; until then the search tool is worse than absent,
@@ -1670,6 +1708,8 @@ written.
 `e2e/.tmp/` (the e2e run's `COUNSEL_OS_HOME`, its vault, Playwright's traces,
 and the throwaway `shots.ts` / `reshoot.ts` / `settings-shot.ts` drivers) is
 gitignored and rebuilt on every run. The live run used
-`/tmp/counsel-step5-live/` for its home, vault and server log; the server was
-killed and `pgrep -fl 'cli.ts serve'` reports nothing. `~/.counsel-os` was
-never written. The four PNGs are kept, in `docs/superpowers/spikes/img/`.
+`/tmp/counsel-step5-live/` for its home, vault and server log; the fix wave's
+retake used `/tmp/counsel-fixwave/` the same way, with `serve --fake` and a
+throwaway fake script — no model call. Both servers were killed and
+`pgrep -fl 'cli.ts serve'` reports nothing. `~/.counsel-os` was never written.
+The four PNGs are kept, in `docs/superpowers/spikes/img/`.
