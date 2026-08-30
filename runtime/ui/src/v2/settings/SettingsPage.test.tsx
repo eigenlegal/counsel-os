@@ -100,4 +100,21 @@ describe('SettingsPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(screen.getByText('must be positive')).toBeTruthy());
   });
+
+  test('one Save, below every card it writes — not inside Task routes', async () => {
+    install(() => json(view));
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByLabelText('Task routes (JSON)')).toBeTruthy());
+
+    const save = screen.getByRole('button', { name: 'Save' });
+    // The button belongs to the form's footer, not to any one group.
+    expect(save.closest('.v2-group')).toBeNull();
+    expect(save.closest('.v2-save')).not.toBeNull();
+    expect(screen.getByText(/Saves Default provider, Step timeout, Providers and Task routes/)).toBeTruthy();
+
+    await userEvent.click(save);
+    await waitFor(() => expect(screen.getByText(/^Saved\./)).toBeTruthy());
+    // The confirmation reads beside the button that caused it.
+    expect(screen.getByText(/^Saved\./).closest('.v2-save')).not.toBeNull();
+  });
 });

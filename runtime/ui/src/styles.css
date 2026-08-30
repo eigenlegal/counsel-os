@@ -410,7 +410,40 @@ html[data-ui="v2"] h1, html[data-ui="v2"] h2, html[data-ui="v2"] h3 { letter-spa
 .v2-drawer-tree .vault-tree { border-right: none; background: transparent; }
 .v2-drawer-file { flex: 1; min-height: 0; overflow-y: auto; padding: var(--s3) var(--s4); border-top: 1px solid var(--border); }
 
-.settings-design .design-switch { display: inline-flex; gap: 0.4rem; align-items: center; }
+/* The design switch reads as a switch, not as a browser checkbox: the one
+   card that introduces the new look should not be the one place a native
+   blue tick sits. `appearance: none` keeps the input a checkbox for
+   assistive tech and for the tests — only the paint changes. */
+.settings-design .design-switch { display: inline-flex; gap: 0.5rem; align-items: center; cursor: pointer; }
+.design-switch input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+  flex: none;
+  width: 2.1rem;
+  height: 1.2rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-sunken);
+  position: relative;
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms;
+}
+.design-switch input[type="checkbox"]::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0.15rem;
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 50%;
+  background: var(--fg-muted);
+  transform: translate(0, -50%);
+  transition: transform 120ms, background 120ms;
+}
+.design-switch input[type="checkbox"]:checked { background: var(--accent); border-color: var(--accent); }
+.design-switch input[type="checkbox"]:checked::after { background: var(--bg); transform: translate(0.85rem, -50%); }
+.design-switch input[type="checkbox"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ── v2 chat ──────────────────────────────────────────────────────────── */
 
@@ -453,6 +486,9 @@ html[data-ui="v2"] h1, html[data-ui="v2"] h2, html[data-ui="v2"] h3 { letter-spa
 .v2-step-detail { margin: var(--s1) 0 var(--s2); }
 .v2-step-detail pre { font-size: 0.8rem; max-height: 16rem; overflow: auto; }
 .v2-step-error .v2-step-verb { color: var(--error); }
+/* A tool that answered "nothing". Not red — nothing failed — but not the
+   same ink as a hit either. */
+.v2-step-note { margin-left: var(--s2); font-style: italic; color: var(--accent); }
 
 /* Strip */
 .v2-strip { border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-raised); font-size: 0.85rem; }
@@ -461,6 +497,7 @@ html[data-ui="v2"] h1, html[data-ui="v2"] h2, html[data-ui="v2"] h3 { letter-spa
 .v2-strip[data-status="error"], .v2-strip[data-status="timeout"] { border-color: var(--error); }
 .v2-strip-summary { color: var(--fg); }
 .v2-strip-failed { color: var(--error); }
+.v2-strip-empty { color: var(--accent); }
 .v2-strip-provider { font-family: var(--mono); font-size: 0.78rem; }
 .v2-strip-duration, .v2-strip-tokens { font-variant-numeric: tabular-nums; }
 .v2-chevron { margin-left: auto; transition: transform 120ms; }
@@ -527,6 +564,11 @@ html[data-ui="v2"] h1, html[data-ui="v2"] h2, html[data-ui="v2"] h3 { letter-spa
 .v2-group { border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-raised); padding: var(--s4) var(--s5); box-shadow: var(--shadow); }
 .v2-group > h2, .v2-group .settings-design > h2, .v2-group .settings-health > h2 { margin-bottom: var(--s3); font-family: var(--serif); font-size: 1.05rem; }
 .v2-registry { display: contents; }
+.v2-save { display: flex; flex-direction: column; gap: var(--s2); }
+.v2-save-row { display: flex; gap: var(--s3); align-items: center; flex-wrap: wrap; }
+/* A placeholder is an example, not a value. Left at the browser's default
+   weight, the Task routes example reads as a saved route. */
+.v2-settings input::placeholder, .v2-settings textarea::placeholder { color: var(--fg-muted); opacity: 0.65; font-style: italic; }
 .v2-provider { border-top: 1px dashed var(--border); padding-top: var(--s3); margin-top: var(--s3); }
 .v2-provider:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
 .v2-provider-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: var(--s2) var(--s3); }

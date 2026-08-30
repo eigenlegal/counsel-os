@@ -40,6 +40,15 @@ describe('Steps', () => {
     expect(opened).toEqual(['matters/acme.md']);
   });
 
+  test('a step that came back with nothing says so on the line', () => {
+    render(<Steps tools={[{ ...done, output: [] }]} ms={{ 'c-1': 15 }} />);
+    expect(screen.getByText('no results')).toBeTruthy();
+    // Not an error, and not the same ink as a hit either.
+    expect(document.querySelector('.v2-step-empty')).toBeTruthy();
+    expect(document.querySelector('.v2-step-error')).toBeNull();
+    expect(screen.getByText(/15 ms/)).toBeTruthy();
+  });
+
   test('an errored step says so', () => {
     render(<Steps tools={[{ ...done, isError: true, output: 'boom' }]} ms={{}} />);
     expect(screen.getByText('error')).toBeTruthy();

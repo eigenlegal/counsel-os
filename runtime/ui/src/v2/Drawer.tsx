@@ -1,11 +1,15 @@
 import { useEffect } from 'react';
 import { FileView } from '../vault/FileView';
 import { Tree } from '../vault/Tree';
-import { Breadcrumb } from './vault/VaultPage';
+import { Breadcrumb, MISSING_FILE_NOTE } from './vault/VaultPage';
 
 export interface DrawerProps {
   /** The file open in the drawer, or `null` for the tree alone. */
   path: string | null;
+  /** Bumped by the shell when something wrote the open path — an approved
+   * proposal. `FileView` reads once per key, so without this the drawer
+   * would keep showing the file as it was before the decision. */
+  revision?: number;
   onOpen(path: string): void;
   onClose(): void;
 }
@@ -16,7 +20,7 @@ export interface DrawerProps {
  * by the shell's `openDrawer` — from the nav link on the chat route, a
  * step's path, or a proposal's "open in vault".
  */
-export function Drawer({ path, onOpen, onClose }: DrawerProps): JSX.Element {
+export function Drawer({ path, revision = 0, onOpen, onClose }: DrawerProps): JSX.Element {
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') onClose();
@@ -38,7 +42,7 @@ export function Drawer({ path, onOpen, onClose }: DrawerProps): JSX.Element {
         </button>
       </header>
       <div className="v2-drawer-tree">
-        <Tree selected={path} onSelect={onOpen} />
+        <Tree selected={path} expandToSelected onSelect={onOpen} />
       </div>
       <div className="v2-drawer-file">
         {path === null ? (
@@ -46,7 +50,7 @@ export function Drawer({ path, onOpen, onClose }: DrawerProps): JSX.Element {
         ) : (
           <>
             <Breadcrumb path={path} />
-            <FileView key={path} path={path} />
+            <FileView key={`${path}#${revision}`} path={path} missingNote={MISSING_FILE_NOTE} />
           </>
         )}
       </div>

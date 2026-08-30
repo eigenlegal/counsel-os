@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { ToolCallView } from '../chat/turns';
-import { pathOf, summarize, verbFor } from './verbs';
+import { isEmptyResult, pathOf, stateOf, summarize, verbFor } from './verbs';
 
 function tool(name: string, input: unknown = {}): ToolCallView {
   return { id: `${name}-1`, name, input, hasResult: true };
@@ -43,5 +43,33 @@ describe('summarize', () => {
     expect(summarize([tool('read_primitive'), tool('read_primitive'), tool('vault_list'), tool('vault_search')])).toBe(
       'consulted 2 primitives, ran 2 tools',
     );
+  });
+});
+
+describe('isEmptyResult', () => {
+  test('an answer of nothing, in every shape a tool returns it', () => {
+    expect(isEmptyResult([])).toBe(true);
+    expect(isEmptyResult({})).toBe(true);
+    expect(isEmptyResult('')).toBe(true);
+    expect(isEmptyResult('   ')).toBe(true);
+    expect(isEmptyResult(null)).toBe(true);
+    expect(isEmptyResult(undefined)).toBe(true);
+  });
+
+  test('an answer of something is not empty — including a falsy one', () => {
+    expect(isEmptyResult([{ path: 'a.md' }])).toBe(false);
+    expect(isEmptyResult({ content: '' })).toBe(false);
+    expect(isEmptyResult('found')).toBe(false);
+    expect(isEmptyResult(0)).toBe(false);
+    expect(isEmptyResult(false)).toBe(false);
+  });
+});
+
+describe('stateOf', () => {
+  test('running, error, empty, ok — in that order of precedence', () => {
+    expect(stateOf({ ...tool('vault_search'), hasResult: false })).toBe('running');
+    expect(stateOf({ ...tool('vault_search'), isError: true, output: [] })).toBe('error');
+    expect(stateOf({ ...tool('vault_search'), output: [] })).toBe('empty');
+    expect(stateOf({ ...tool('vault_read'), output: '# Acme' })).toBe('ok');
   });
 });

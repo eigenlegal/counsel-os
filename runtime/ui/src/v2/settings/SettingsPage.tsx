@@ -161,19 +161,6 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
         void save();
       }}
     >
-      {general.length === 0 ? null : (
-        <div className="v2-notice v2-notice-error" role="alert">
-          {general.map(message => (
-            <p key={message}>{message}</p>
-          ))}
-        </div>
-      )}
-      {saved ? (
-        <p className="v2-notice v2-notice-ok" role="status">
-          Saved. The providers and the router were rebuilt in place.
-        </p>
-      ) : null}
-
       <section className="v2-group">
         <h2>Default provider</h2>
         <div className="field">
@@ -286,10 +273,33 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
           />
           <FieldError message={errors['tasks']} />
         </div>
-        <button type="submit" className="v2-primary" disabled={busy}>
-          {busy ? 'Saving…' : 'Save'}
-        </button>
       </section>
+
+      {/* One Save for the whole form, below every card it writes. Inside the
+          last group it read as "save the routes", which is three quarters of
+          a lie: the PUT carries the default, the timeout, the providers and
+          the routes together. The notices live here too, beside the button
+          that produced them. */}
+      <footer className="v2-save">
+        {general.length === 0 ? null : (
+          <div className="v2-notice v2-notice-error" role="alert">
+            {general.map(message => (
+              <p key={message}>{message}</p>
+            ))}
+          </div>
+        )}
+        {saved ? (
+          <p className="v2-notice v2-notice-ok" role="status">
+            Saved. The providers and the router were rebuilt in place.
+          </p>
+        ) : null}
+        <div className="v2-save-row">
+          <button type="submit" className="v2-primary" disabled={busy}>
+            {busy ? 'Saving…' : 'Save'}
+          </button>
+          <span className="muted">Saves Default provider, Step timeout, Providers and Task routes together.</span>
+        </div>
+      </footer>
     </form>
   );
 }

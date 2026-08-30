@@ -50,6 +50,31 @@ export function pathOf(tool: ToolCallView): string | null {
   return typeof path === 'string' && path !== '' ? path : null;
 }
 
+/**
+ * A call that came back with nothing: `[]`, `{}`, `''`, `null`, or no result
+ * field at all.
+ *
+ * It is not an error, and that is the problem this answers — a search that
+ * found nothing renders in the same ink as a read that found the file, and
+ * under a design whose promise is "the work folds away and you can still
+ * audit it", the one line that explains the whole answer must not fold away
+ * silently.
+ */
+export function isEmptyResult(output: unknown): boolean {
+  if (output === null || output === undefined) return true;
+  if (typeof output === 'string') return output.trim() === '';
+  if (Array.isArray(output)) return output.length === 0;
+  if (typeof output === 'object') return Object.keys(output).length === 0;
+  return false;
+}
+
+/** What a step line reads as: still running, failed, came back empty, or ok. */
+export function stateOf(tool: ToolCallView): 'running' | 'error' | 'empty' | 'ok' {
+  if (!tool.hasResult) return 'running';
+  if (tool.isError === true) return 'error';
+  return isEmptyResult(tool.output) ? 'empty' : 'ok';
+}
+
 function plural(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`;
 }

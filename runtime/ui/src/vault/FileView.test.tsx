@@ -2,7 +2,7 @@ import { cleanup, render, screen, waitFor } from '../test/dom';
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { clearToken, TOKEN_KEY } from '../api/token';
-import { FileView } from './FileView';
+import { FileView, withoutHostPaths } from './FileView';
 
 const realFetch = globalThis.fetch;
 
@@ -71,5 +71,38 @@ describe('FileView', () => {
     render(<FileView path="matters/gone.md" />);
 
     await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('no such file'));
+  });
+
+  test('a missing file reads as a sentence when the caller offers one', async () => {
+    serve(404, { error: "ENOENT: no such file or directory, open '/tmp/vault/practice/standards/nda.md'" });
+    render(<FileView path="practice/standards/nda.md" missingNote="This file does not exist yet — approving a proposal that names it creates it." />);
+
+    await waitFor(() => expect(screen.getByRole('status').textContent).toContain('does not exist yet'));
+    // Not a failure, and not a place to print the server's disk.
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(document.body.textContent).not.toContain('/tmp/vault');
+  });
+
+  test('an error that carries an absolute host path does not print one', async () => {
+    serve(500, { error: "EACCES: permission denied, open '/Users/jack/legal/practice/standards/nda.md'" });
+    render(<FileView path="practice/standards/nda.md" />);
+
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('EACCES'));
+    const shown = screen.getByRole('alert').textContent ?? '';
+    expect(shown).not.toContain('/Users/jack');
+    expect(shown).toContain('standards/nda.md');
+  });
+});
+
+describe('withoutHostPaths', () => {
+  test('keeps the last two segments of an absolute path and drops the rest', () => {
+    expect(withoutHostPaths("ENOENT: no such file or directory, open '/tmp/x/vault/practice/standards/nda.md' (404)")).toBe(
+      "ENOENT: no such file or directory, open 'standards/nda.md' (404)",
+    );
+  });
+
+  test('leaves a message with no path in it alone', () => {
+    expect(withoutHostPaths('no such file: matters/gone.md')).toBe('no such file: matters/gone.md');
+    expect(withoutHostPaths('the server said no')).toBe('the server said no');
   });
 });

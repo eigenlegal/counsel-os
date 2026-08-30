@@ -16,6 +16,8 @@ export interface TurnProps {
   /** Milliseconds measured by the stream, per tool id, for the live turn. */
   liveMs?: Record<string, number>;
   onReload: () => void;
+  /** Passed to every proposal card: a decision landed on this path. */
+  onDecided?: (path: string) => void;
   onOpenFile?: (path: string) => void;
 }
 
@@ -57,7 +59,7 @@ function Prose({ text }: { text: string }): JSX.Element {
  * its proposals, then the strip. While streaming, the timeline runs above
  * the text so the reader sees the work as it happens.
  */
-export function TurnView({ turn, threadId, run, live = false, liveMs = {}, onReload, onOpenFile }: TurnProps): JSX.Element {
+export function TurnView({ turn, threadId, run, live = false, liveMs = {}, onReload, onDecided, onOpenFile }: TurnProps): JSX.Element {
   if (turn.kind === 'user') {
     return (
       <article className="v2-turn v2-turn-user">
@@ -109,7 +111,14 @@ export function TurnView({ turn, threadId, run, live = false, liveMs = {}, onRel
           {threadId === null
             ? null
             : turn.proposals.map(proposal => (
-                <ProposalCard key={proposal.id} threadId={threadId} proposal={proposal} onReload={onReload} onOpenFile={onOpenFile} />
+                <ProposalCard
+                  key={proposal.id}
+                  threadId={threadId}
+                  proposal={proposal}
+                  onReload={onReload}
+                  onDecided={onDecided}
+                  onOpenFile={onOpenFile}
+                />
               ))}
 
           <Strip turn={turn} run={run} ms={ms} onOpenFile={onOpenFile} />

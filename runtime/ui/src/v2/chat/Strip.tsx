@@ -1,6 +1,6 @@
 import type { RunRecord, RunStatus } from '../../api/types';
 import type { AssistantTurn } from '../../chat/turns';
-import { summarize } from '../verbs';
+import { stateOf, summarize } from '../verbs';
 import { Steps } from './Steps';
 
 export interface StripProps {
@@ -27,6 +27,15 @@ export function formatMs(ms: number): string {
   return ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`;
 }
 
+/**
+ * A UUID, cut to the seven characters a person can compare at a glance —
+ * the same length git shows. The full value stays in the `title`, so it is
+ * one hover (and one copy) away for anyone matching it against a log.
+ */
+export function shortId(id: string): string {
+  return id.length <= 7 ? id : id.slice(0, 7);
+}
+
 /** Sub-cent runs are the common case; two decimals would read as free. */
 export function formatCost(usd: number): string {
   return usd === 0 ? '$0' : usd < 0.01 ? `$${usd.toFixed(4)}` : `$${usd.toFixed(2)}`;
@@ -44,13 +53,18 @@ export function Strip({ turn, run, ms, onOpenFile }: StripProps): JSX.Element {
   // `summarize` counts by tool NAME, so a failed call is invisible in it.
   // Carried alongside rather than folded in: the count is the collapsed
   // strip's only hint that something inside it went wrong.
-  const failed = turn.tools.filter(tool => tool.isError === true).length;
+  const failed = turn.tools.filter(tool => stateOf(tool) === 'error').length;
+  // Counted apart from the failures: a tool that answered "nothing" did not
+  // fail, and saying it did would send the reader looking for a broken tool
+  // instead of an empty vault.
+  const empty = turn.tools.filter(tool => stateOf(tool) === 'empty').length;
   return (
     <details className="v2-strip" data-status={pill.kind} data-testid={run === undefined ? undefined : `run-${run.runId}`}>
       <summary>
         <span className={`v2-pill v2-pill-${pill.kind}`}>{pill.label}</span>
         <span className="v2-strip-summary">{summarize(turn.tools)}</span>
         {failed === 0 ? null : <span className="v2-strip-failed">{failed === 1 ? '1 failed' : `${failed} failed`}</span>}
+        {empty === 0 ? null : <span className="v2-strip-empty">{empty === 1 ? '1 empty' : `${empty} empty`}</span>}
         {provider === '' ? null : <span className="v2-strip-provider">{provider}</span>}
         {run?.durationMs === undefined ? null : <span className="v2-strip-duration">{formatMs(run.durationMs)}</span>}
         {run?.usage === undefined ? null : (
@@ -92,8 +106,8 @@ export function Strip({ turn, run, ms, onOpenFile }: StripProps): JSX.Element {
               {run.proposals.length === 0
                 ? 'none'
                 : run.proposals.map(id => (
-                    <code key={id} className="v2-record-id">
-                      {id}
+                    <code key={id} className="v2-record-id" title={id}>
+                      {shortId(id)}
                     </code>
                   ))}
             </dd>
@@ -109,7 +123,7 @@ export function Strip({ turn, run, ms, onOpenFile }: StripProps): JSX.Element {
             )}
             <dt>Run</dt>
             <dd>
-              <code>{run.runId}</code>
+              <code title={run.runId}>{shortId(run.runId)}</code>
             </dd>
           </dl>
         )}

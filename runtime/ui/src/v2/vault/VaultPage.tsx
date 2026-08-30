@@ -1,6 +1,13 @@
 import { FileView } from '../../vault/FileView';
 import { Tree } from '../../vault/Tree';
 
+/**
+ * What the reader is told when the open path holds no file. The likeliest
+ * way to get here is "open in vault" on a proposal nobody has approved yet,
+ * and that is not a failure — it is the state the card is asking about.
+ */
+export const MISSING_FILE_NOTE = 'This file does not exist yet — approving a proposal that names it creates it.';
+
 export interface VaultPageProps {
   /** The file named by `#/vault?path=…`, or `null` for the tree alone. */
   path: string | null;
@@ -37,14 +44,14 @@ export function Breadcrumb({ path }: { path: string }): JSX.Element {
 export function VaultPage({ path, onOpen }: VaultPageProps): JSX.Element {
   return (
     <div className="v2-vault">
-      <Tree selected={path} onSelect={onOpen} />
+      <Tree selected={path} expandToSelected onSelect={onOpen} />
       <main className="v2-vault-main">
         {path === null ? (
           <p className="muted v2-empty">Pick a file to read it.</p>
         ) : (
           <>
             <Breadcrumb path={path} />
-            <FileView key={path} path={path} />
+            <FileView key={path} path={path} missingNote={MISSING_FILE_NOTE} />
           </>
         )}
       </main>

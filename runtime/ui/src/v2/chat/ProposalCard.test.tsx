@@ -205,4 +205,27 @@ describe('v2 ProposalCard', () => {
     expect(calls.filter(call => call.url.endsWith('/approve'))).toHaveLength(1);
     await act(async () => { land(json({ proposal: { ...proposal, status: 'approved' } })); });
   });
+
+  test('a decision tells the shell which path settled, so an open reader can refetch', async () => {
+    install({ approve: () => json({ proposal: { ...proposal, status: 'approved' } }) });
+    const decided: string[] = [];
+    render(<ProposalCard threadId="t-1" proposal={proposal} onReload={() => {}} onDecided={path => decided.push(path)} />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Approve' })).toBeTruthy());
+
+    await userEvent.click(screen.getByRole('button', { name: 'Approve' }));
+    await waitFor(() => expect(decided).toEqual(['practice/standards/nda.md']));
+    // And the card still shows what changed.
+    expect(lines('add')).toEqual(['+Term: 3 years\n']);
+  });
+
+  test('a decision the server refuses tells nobody to refetch', async () => {
+    install({ approve: () => json({ error: 'this proposal is no longer pending' }, 409) });
+    const decided: string[] = [];
+    render(<ProposalCard threadId="t-1" proposal={proposal} onReload={() => {}} onDecided={path => decided.push(path)} />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Approve' })).toBeTruthy());
+
+    await userEvent.click(screen.getByRole('button', { name: 'Approve' }));
+    await waitFor(() => expect(screen.getByText('this proposal is no longer pending')).toBeTruthy());
+    expect(decided).toEqual([]);
+  });
 });

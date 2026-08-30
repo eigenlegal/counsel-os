@@ -50,6 +50,9 @@ export function Shell(): JSX.Element {
    * the list would adopt `null` and stay a draft for good. */
   const [listed, setListed] = useState(false);
   const [drawer, setDrawer] = useState<DrawerState>({ open: false, path: null });
+  /** Bumped when something wrote the file the drawer is showing, which
+   * re-keys its `FileView` and makes it read the path again. */
+  const [drawerRevision, setDrawerRevision] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -67,6 +70,20 @@ export function Shell(): JSX.Element {
     setDrawer(current => ({ open: true, path: path ?? current.path }));
   }, []);
   const closeDrawer = useCallback((): void => setDrawer(current => ({ ...current, open: false })), []);
+
+  /** What the drawer is showing right now, readable outside a render. The
+   * callback below must not take `drawer` as a dependency: it is handed to
+   * `Chat`, and a new identity on every drawer move would be a new prop on
+   * the component that owns the stream. */
+  const drawerRef = useRef(drawer);
+  drawerRef.current = drawer;
+
+  /** An approval wrote `path`. Only the drawer that is open ON that path is
+   * stale, so only that one is made to read again. */
+  const fileDecided = useCallback((path: string): void => {
+    const open = drawerRef.current;
+    if (open.open && open.path === path) setDrawerRevision(revision => revision + 1);
+  }, []);
 
   useEffect(() => {
     const onHashChange = (): void => {
@@ -241,11 +258,14 @@ export function Shell(): JSX.Element {
                   void loadThreads();
                 }}
                 onThreadTouched={() => void loadThreads()}
+                onFileDecided={fileDecided}
                 onOpenFile={openDrawer}
               />
             )}
           </main>
-          {drawer.open ? <Drawer path={drawer.path} onOpen={path => openDrawer(path)} onClose={closeDrawer} /> : null}
+          {drawer.open ? (
+            <Drawer path={drawer.path} revision={drawerRevision} onOpen={path => openDrawer(path)} onClose={closeDrawer} />
+          ) : null}
         </div>
       ) : route === 'vault' ? (
         <VaultPage

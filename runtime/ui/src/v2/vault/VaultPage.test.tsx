@@ -61,7 +61,9 @@ describe('VaultPage', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Acme' })).toBeTruthy());
     expect(document.querySelector('.v2-crumb-last')?.textContent).toBe('acme.md');
     expect(screen.getByText(/version abc1234def/)).toBeTruthy();
-    await userEvent.click(screen.getByRole('button', { name: 'matters' }));
+    // The tree follows the open file: `matters` is already expanded, so the
+    // breadcrumb and the tree agree without a click.
+    expect(screen.getByRole('button', { name: /matters/ }).getAttribute('aria-expanded')).toBe('true');
     await userEvent.click(await screen.findByRole('button', { name: 'acme.md' }));
     expect(opened).toEqual(['matters/acme.md']);
   });

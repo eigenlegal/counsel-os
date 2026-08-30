@@ -10,6 +10,10 @@ export interface ProposalCardProps {
   proposal: ProposalView;
   /** Refetches the thread. Offered after a conflict. */
   onReload: () => void;
+  /** A decision landed on this path. The shell uses it to refetch a drawer
+   * already open on the file the approval just wrote, and to move the
+   * thread's place in the rail. */
+  onDecided?: (path: string) => void;
   /** Opens the path in the vault drawer. Without it, "open in vault" is a
    * link to the full page. */
   onOpenFile?: (path: string) => void;
@@ -37,7 +41,7 @@ type Current =
  * so an approved card keeps showing what changed rather than an empty diff
  * of the file against itself.
  */
-export function ProposalCard({ threadId, proposal, onReload, onOpenFile }: ProposalCardProps): JSX.Element {
+export function ProposalCard({ threadId, proposal, onReload, onDecided, onOpenFile }: ProposalCardProps): JSX.Element {
   const [status, setStatus] = useState<ProposalStatus>(proposal.status);
   const [busy, setBusy] = useState(false);
   const [conflict, setConflict] = useState<Conflict | null>(null);
@@ -86,6 +90,11 @@ export function ProposalCard({ threadId, proposal, onReload, onOpenFile }: Propo
         body: JSON.stringify({ proposalId: proposal.id, decision }),
       });
       setStatus(result.proposal?.status ?? (decision === 'approve' ? 'approved' : 'rejected'));
+      // The server now holds the settled proposal — and, on an approval, a
+      // vault file that is not what any open reader is showing. The card
+      // keeps its own diff (the "before" was fetched once, on mount), so
+      // nothing here undoes the redline.
+      onDecided?.(proposal.path);
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         const body = err.body as ConflictBody | null;

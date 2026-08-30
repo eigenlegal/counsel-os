@@ -3,7 +3,7 @@ import { cleanup, render, screen, userEvent, waitFor } from '../test/dom';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { clearToken, TOKEN_KEY } from '../api/token';
 import type { VaultEntry } from '../api/types';
-import { isReserved, orderEntries, Tree } from './Tree';
+import { ancestorsOf, isReserved, orderEntries, Tree } from './Tree';
 
 const realFetch = globalThis.fetch;
 let requested: string[] = [];
@@ -119,5 +119,41 @@ describe('Tree', () => {
 
     await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('404'));
     expect(screen.getByRole('button', { name: /gone/ })).toBeTruthy();
+  });
+
+  test('with expandToSelected it opens and lists every folder above the open file', async () => {
+    serve({
+      '': [{ path: 'practice', kind: 'dir' }],
+      practice: [{ path: 'practice/standards', kind: 'dir' }],
+      'practice/standards': [{ path: 'practice/standards/nda.md', kind: 'file' }],
+    });
+    render(<Tree selected="practice/standards/nda.md" expandToSelected onSelect={() => {}} />);
+
+    // The breadcrumb's path, open all the way down, with no click.
+    await waitFor(() => expect(screen.getByRole('button', { name: 'nda.md' })).toBeTruthy());
+    expect(screen.getByRole('button', { name: /practice/ }).getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByRole('button', { name: /standards/ }).getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByRole('button', { name: 'nda.md' }).getAttribute('aria-current')).toBe('page');
+    expect(requested).toEqual(['/vault/list', '/vault/list?dir=practice', '/vault/list?dir=practice%2Fstandards']);
+  });
+
+  test('without it the tree stays where the reader put it — v1 is unchanged', async () => {
+    serve({
+      '': [{ path: 'practice', kind: 'dir' }],
+      practice: [{ path: 'practice/standards', kind: 'dir' }],
+    });
+    render(<Tree selected="practice/standards/nda.md" onSelect={() => {}} />);
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /practice/ })).toBeTruthy());
+    expect(screen.getByRole('button', { name: /practice/ }).getAttribute('aria-expanded')).toBe('false');
+    expect(requested).toEqual(['/vault/list']);
+  });
+});
+
+describe('ancestorsOf', () => {
+  test('every directory above a path, root first', () => {
+    expect(ancestorsOf('practice/standards/nda.md')).toEqual(['', 'practice', 'practice/standards']);
+    expect(ancestorsOf('notes.md')).toEqual(['']);
+    expect(ancestorsOf('')).toEqual(['']);
   });
 });

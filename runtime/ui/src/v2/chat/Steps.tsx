@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { pretty } from '../../chat/json';
 import type { ToolCallView } from '../../chat/turns';
-import { pathOf, verbFor } from '../verbs';
+import { pathOf, stateOf, verbFor } from '../verbs';
 
 export interface StepsProps {
   tools: ToolCallView[];
@@ -40,7 +40,7 @@ function Step({
   const [shown, setShown] = useState(false);
   const { verb, object } = verbFor(tool);
   const path = pathOf(tool);
-  const state = !tool.hasResult ? 'running' : tool.isError === true ? 'error' : 'ok';
+  const state = stateOf(tool);
 
   return (
     <li className={`v2-step v2-step-${state}`} data-testid={`step-${tool.id}`}>
@@ -59,6 +59,11 @@ function Step({
         </span>
       ) : state === 'error' ? (
         <span className="v2-pill v2-pill-error">error</span>
+      ) : state === 'empty' ? (
+        // The tool answered, and the answer was nothing. Said on the line
+        // itself, because the reader should not have to click `show` to
+        // learn that the search behind the paragraph above found no files.
+        <span className="v2-step-note">no results</span>
       ) : null}
       <button type="button" className="v2-link v2-step-show" aria-expanded={shown} onClick={() => setShown(s => !s)}>
         {shown ? 'hide' : 'show'}

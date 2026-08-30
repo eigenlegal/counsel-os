@@ -3,7 +3,7 @@ import { cleanup, render, screen, userEvent } from '../../test/dom';
 import { afterEach, describe, expect, test } from 'bun:test';
 import type { RunRecord } from '../../api/types';
 import { emptyAssistantTurn, type AssistantTurn } from '../../chat/turns';
-import { pillFor, Strip } from './Strip';
+import { pillFor, shortId, Strip } from './Strip';
 
 const turn: AssistantTurn = emptyAssistantTurn({
   runId: 'r-1',
@@ -76,6 +76,26 @@ describe('Strip', () => {
     expect(document.querySelector('.v2-strip')?.getAttribute('data-status')).toBe('error');
   });
 
+  test('a tool that found nothing is counted apart from the failures', () => {
+    render(<Strip turn={{ ...turn, tools: [{ ...turn.tools[0]!, output: [] }] }} run={run} ms={{}} />);
+    expect(screen.getByText('1 empty')).toBeTruthy();
+    // Nothing failed, so the strip must not say anything did.
+    expect(screen.queryByText('1 failed')).toBeNull();
+    expect(document.querySelector('.v2-strip')?.getAttribute('data-status')).toBe('done');
+  });
+
+  test('the record shows ids short, with the whole value one hover away', async () => {
+    const uuid = '7d83f020-6a2b-4f7e-9a1e-2b7c3d4e5f60';
+    render(<Strip turn={turn} run={{ ...run, runId: uuid, proposals: [uuid] }} ms={{}} />);
+    await userEvent.click(document.querySelector('summary') as HTMLElement);
+    const ids = Array.from(document.querySelectorAll('.v2-record code'));
+    expect(ids).toHaveLength(2);
+    for (const id of ids) {
+      expect(id.textContent).toBe('7d83f02');
+      expect(id.getAttribute('title')).toBe(uuid);
+    }
+  });
+
   test('an error record shows the message and the raw text', async () => {
     render(<Strip turn={{ ...turn, status: 'error' }} run={{ ...run, status: 'error', error: 'schema', errorText: '{"a":1}' }} ms={{}} />);
     expect(document.querySelector('summary .v2-pill')?.textContent).toBe('error');
@@ -95,5 +115,13 @@ describe('Strip', () => {
     await userEvent.click(document.querySelector('summary') as HTMLElement);
     expect(document.querySelector('.v2-strip-body .v2-notice-error')).toBeNull();
     expect(screen.queryByText('schema')).toBeNull();
+  });
+});
+
+
+describe('shortId', () => {
+  test('cuts a uuid to seven and leaves a short id alone', () => {
+    expect(shortId('7d83f020-6a2b-4f7e-9a1e-2b7c3d4e5f60')).toBe('7d83f02');
+    expect(shortId('r-1')).toBe('r-1');
   });
 });

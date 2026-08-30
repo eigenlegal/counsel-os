@@ -6,11 +6,19 @@
  * work in a tab whose storage is blocked — it holds for the session and the
  * toggle says so.
  *
- * `?ui=v2` in the fragment is a THIRD source, but it is consumed once by
+ * `ui=v2` in the fragment is a THIRD source, but it is consumed once by
  * `bootstrapUiFlag` before React renders — beside `bootstrapToken()` and for
  * the same reason. A fragment that has to be read and then rewritten is not
  * something a component may do from its render phase, and `readUiFlag` is a
  * pure read so that a `useState` initializer can call it.
+ *
+ * Both spellings work, and both leave the address bar afterwards:
+ *
+ *   http://127.0.0.1:7431/#/?ui=v2                 (a page already open)
+ *   http://127.0.0.1:7431/#token=<token>&ui=v2     (the URL `serve` prints)
+ *
+ * Do NOT write `#token=<token>?ui=v2`: `token=` is split off at the `&`, so
+ * a `?` there becomes part of the credential and the page answers 401.
  */
 
 export const UI_FLAG_KEY = 'counsel-os.ui';
@@ -41,22 +49,47 @@ function storage(): Storage | null {
   }
 }
 
-/** The `ui` param of the fragment's query half (`#/?ui=v2`), or `null`. */
+/** A fragment that is `&`-separated pairs rather than a route and a query —
+ * which is what `#token=…&ui=v2` is, the form a person types onto the URL
+ * `serve` prints. A bare route (`#/vault`) has no pair in it and is left
+ * alone. */
+const PAIRS = /(?:^|&)ui=/;
+
+/**
+ * The `ui` param of a fragment, in either form it arrives in:
+ * `#/?ui=v2` (the route's query half) and `#token=…&ui=v2` (pairs, no `?`).
+ *
+ * The second is the one a reader produces by hand, and it used to be
+ * ignored — which sent them to `#token=…?ui=v2` instead, where the token
+ * splitter took `…?ui=v2` for the credential and the page answered 401.
+ */
 function fragmentFlag(hash: string): UiFlag | null {
-  const cut = hash.indexOf('?');
-  if (cut === -1) return null;
-  return new URLSearchParams(hash.slice(cut + 1)).get('ui') === 'v2' ? 'v2' : null;
+  const raw = hash.replace(/^#/, '');
+  const cut = raw.indexOf('?');
+  if (cut === -1 && !PAIRS.test(raw)) return null;
+  return new URLSearchParams(cut === -1 ? raw : raw.slice(cut + 1)).get('ui') === 'v2' ? 'v2' : null;
 }
 
-/** The fragment (without its `#`) with the `ui` param removed. Pure. */
+/** The fragment (without its `#`) with the `ui` param removed. Pure.
+ * Every other pair is kept exactly as it was written — this must not
+ * re-encode a route or a path on its way through. */
 export function stripUiParam(hash: string): string {
   const raw = hash.replace(/^#/, '');
   const cut = raw.indexOf('?');
-  if (cut === -1) return raw;
-  const params = new URLSearchParams(raw.slice(cut + 1));
-  params.delete('ui');
-  const rest = params.toString();
+  if (cut === -1) {
+    if (!PAIRS.test(raw)) return raw;
+    return keepOthers(raw);
+  }
+  const rest = keepOthers(raw.slice(cut + 1));
   return rest === '' ? raw.slice(0, cut) : `${raw.slice(0, cut)}?${rest}`;
+}
+
+/** `&`-separated pairs, minus the `ui` one. */
+function keepOthers(query: string): string {
+  return query
+    .split('&')
+    .filter(part => part !== '' && !part.startsWith('ui='))
+    .join('&');
 }
 
 /** Subscribes to flag changes; the returned function unsubscribes. */
@@ -98,9 +131,13 @@ export function setUiFlag(flag: UiFlag): { persisted: boolean } {
 /** Drops a consumed `ui` param from the address bar, keeping the route. */
 function stripFromLocation(): void {
   const hash = globalThis.location?.hash ?? '';
-  if (!/[?&]ui=/.test(hash)) return;
+  const stripped = stripUiParam(hash);
+  // Compared rather than pattern-matched: the `ui` pair can be the whole
+  // fragment (`#ui=v2`, what is left after the token is taken out of
+  // `#token=…&ui=v2`), which no `[?&]ui=` test would ever see.
+  if (stripped === hash.replace(/^#/, '')) return;
   const { pathname, search } = globalThis.location;
-  globalThis.history?.replaceState(null, '', `${pathname}${search}#${stripUiParam(hash)}`);
+  globalThis.history?.replaceState(null, '', `${pathname}${search}#${stripped}`);
 }
 
 /**

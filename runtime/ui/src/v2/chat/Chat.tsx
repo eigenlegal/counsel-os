@@ -15,6 +15,8 @@ export interface ChatProps {
    * component — a remount here would drop the stream in flight. */
   onThreadCreated?: (header: ThreadHeader) => void;
   onThreadTouched?: () => void;
+  /** A proposal was approved or rejected, on this vault path. */
+  onFileDecided?: (path: string) => void;
   onOpenFile?: (path: string) => void;
 }
 
@@ -32,7 +34,7 @@ function detail(err: unknown): string {
  * paths, so any load that ends up owning a finished stream hands the
  * composer back.
  */
-export function Chat({ threadId: initialThreadId, health, onThreadCreated, onThreadTouched, onOpenFile }: ChatProps): JSX.Element {
+export function Chat({ threadId: initialThreadId, health, onThreadCreated, onThreadTouched, onFileDecided, onOpenFile }: ChatProps): JSX.Element {
   /** The thread this pane is about. A ref, not only state: `load` and
    * `send` read it outside a render, and it changes exactly once — from
    * `null` to the id the first send created. Switching THREADS is the
@@ -216,6 +218,16 @@ export function Chat({ threadId: initialThreadId, health, onThreadCreated, onThr
   const stop = (): void => abort.current?.abort();
   const reload = (): void => void load();
 
+  /** A card settled a proposal. The thread is refetched so its proposals
+   * read as the server has them, the rail hears that this thread moved,
+   * and the shell gets the path — a drawer open on it is showing the file
+   * as it was BEFORE the approval wrote it. */
+  const decided = (path: string): void => {
+    reload();
+    onThreadTouched?.();
+    onFileDecided?.(path);
+  };
+
   /** The error notice's button. On a thread it refetches; on a draft whose
    * create failed there is nothing to refetch, so it runs the whole send
    * again — which is also the only way back to the message, since the
@@ -253,14 +265,17 @@ export function Chat({ threadId: initialThreadId, health, onThreadCreated, onThr
             threadId={threadId}
             {...(turn.kind === 'assistant' && turn.runId !== undefined && runById.has(turn.runId) ? { run: runById.get(turn.runId)! } : {})}
             onReload={reload}
+            onDecided={decided}
             onOpenFile={onOpenFile}
           />
         ))}
         {frozen.map((turn, i) => (
-          <TurnView key={`frozen-${i}`} turn={turn} threadId={threadId} onReload={reload} onOpenFile={onOpenFile} />
+          <TurnView key={`frozen-${i}`} turn={turn} threadId={threadId} onReload={reload} onDecided={decided} onOpenFile={onOpenFile} />
         ))}
         {pending === null ? null : <TurnView turn={{ kind: 'user', content: pending }} threadId={threadId} onReload={reload} />}
-        {live === null ? null : <TurnView turn={live} threadId={threadId} live liveMs={liveMs} onReload={reload} onOpenFile={onOpenFile} />}
+        {live === null ? null : (
+          <TurnView turn={live} threadId={threadId} live liveMs={liveMs} onReload={reload} onDecided={decided} onOpenFile={onOpenFile} />
+        )}
       </div>
 
       {error === null ? null : (
