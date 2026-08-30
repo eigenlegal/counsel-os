@@ -12,5 +12,19 @@
       }
     ],
     "text": "Done."
+  },
+  {
+    "toolCalls": [
+      { "name": "vault_read", "input": { "path": "matters/acme.md" } },
+      {
+        "name": "propose_update",
+        "input": {
+          "path": "practice/standards/nda.md",
+          "content": "# NDA\nTerm: 3 years\n",
+          "rationale": "test"
+        }
+      }
+    ],
+    "text": "Done."
   }
 ]

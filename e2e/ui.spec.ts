@@ -1,6 +1,7 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
-import { RUNTIME_FILE } from './paths';
+import { RUNTIME_FILE, VAULT_DIR } from './paths';
 
 /**
  * The whole page, end to end, against a real `counsel-os serve --fake`
@@ -120,5 +121,102 @@ test('a step runs tools, raises a proposal, and approving it writes the vault', 
     const facts = page.locator('.settings-health .facts');
     await expect(facts).toContainText('fake/fake');
     await expect(page.locator('.providers-table')).toContainText('fake/fake');
+  });
+});
+
+/**
+ * The same story in the new design (spec 2026-08-29-ui-design-pass §6),
+ * turned on by `?ui=v2` in the fragment. It runs AFTER the v1 test on the
+ * same server and vault, which the v1 approval has already written — so it
+ * starts by putting a different "before" on disk, which is what makes the
+ * redline show a deletion and an addition rather than nothing at all.
+ *
+ * The flag is per browser CONTEXT (`localStorage`), and Playwright gives
+ * each test a fresh one — so this test turning v2 on cannot leak back into
+ * the v1 story above, whatever order they run in.
+ */
+test('the new design: a draft names its thread, the proposal is a redline, the drawer shows the file, the strip says done', async ({ page }) => {
+  writeFileSync(join(VAULT_DIR, 'practice', 'standards', 'nda.md'), '# NDA\nTerm: 2 years\n');
+
+  await test.step('?ui=v2 in the fragment turns the design on and leaves the URL', async () => {
+    await page.goto(`/#token=${await token()}&/?ui=v2`);
+    await expect(page.locator('html')).toHaveAttribute('data-ui', 'v2');
+    await expect.poll(() => page.url()).not.toContain('token=');
+    await expect.poll(() => page.url()).not.toContain('ui=');
+    await expect(page.locator('.v2-top-model')).toHaveText('fake/fake');
+  });
+
+  const threads = page.locator('nav[aria-label="Threads"] li.v2-thread');
+  const before = await threads.count();
+
+  await test.step('New opens a draft and makes no thread', async () => {
+    await page.getByRole('button', { name: 'New', exact: true }).click();
+    await expect(page.locator('.v2-transcript')).toContainText('New conversation');
+    await expect(threads).toHaveCount(before);
+    await expect(page.locator('nav[aria-label="Threads"] li.v2-draft')).toHaveCount(1);
+  });
+
+  await test.step('the first send names the thread; the answer reads first, the work folds into a strip', async () => {
+    await page.getByRole('textbox', { name: 'Message' }).fill('Check the Acme NDA term.');
+    await page.getByRole('textbox', { name: 'Message' }).press('Meta+Enter');
+
+    await expect(page.locator('.v2-prose')).toHaveText('Done.');
+    await expect(threads).toHaveCount(before + 1);
+    await expect(threads.first()).toContainText('Check the Acme NDA term.');
+    await expect(page.locator('nav[aria-label="Threads"] li.v2-draft')).toHaveCount(0);
+  });
+
+  await test.step('the proposal is a redline of the current file, and approving it settles it', async () => {
+    const card = page.locator('.v2-proposal');
+    await expect(card).toHaveCount(1);
+    await expect(card.locator('.v2-proposal-path')).toHaveText('practice/standards/nda.md');
+    await expect(card.locator('.v2-diff-del')).toContainText('Term: 2 years');
+    await expect(card.locator('.v2-diff-add')).toContainText('Term: 3 years');
+    await expect(card.locator('.v2-pill')).toHaveText('pending');
+
+    await card.getByRole('button', { name: 'Approve' }).click();
+    await expect(card.locator('.v2-pill')).toHaveText('approved');
+    await expect(card.getByRole('button', { name: 'Approve' })).toHaveCount(0);
+    // The redline stays readable after the decision.
+    await expect(card.locator('.v2-diff-add')).toContainText('Term: 3 years');
+  });
+
+  await test.step('open in vault shows the written file in the drawer; Esc closes it', async () => {
+    await page.locator('.v2-proposal').getByRole('button', { name: 'open in vault' }).click();
+    const drawer = page.locator('aside[aria-label="Vault drawer"]');
+    await expect(drawer).toHaveCount(1);
+    await expect(drawer.locator('.vault-file-path')).toHaveText('practice/standards/nda.md');
+    await expect(drawer.locator('.markdown h1')).toHaveText('NDA');
+    await expect(drawer.locator('.markdown')).toContainText('Term: 3 years');
+    // Still the thread underneath — the drawer did not navigate.
+    await expect(page.locator('.v2-prose')).toHaveText('Done.');
+
+    await page.keyboard.press('Escape');
+    await expect(drawer).toHaveCount(0);
+  });
+
+  await test.step('the strip says done, and opens into the record', async () => {
+    const strip = page.locator('.v2-strip');
+    await expect(strip).toHaveCount(1);
+    await expect(strip.locator('summary .v2-pill')).toHaveText('done');
+    await expect(strip.locator('.v2-strip-summary')).toHaveText('read 1 file, ran 1 tool');
+    await expect(strip.locator('.v2-strip-provider')).toHaveText('fake/fake');
+
+    await strip.locator('summary').click();
+    await expect(strip.locator('.v2-step-verb')).toHaveText(['Read', 'Proposed']);
+    await expect(strip.locator('.v2-record')).toContainText('Proposals');
+  });
+
+  await test.step('the vault page and settings are the new design too', async () => {
+    await nav(page, 'Settings').click();
+    await expect(page.getByRole('switch', { name: 'Try the new design' })).toBeChecked();
+    await expect(page.locator('.settings-health .facts')).toContainText('fake/fake');
+
+    await nav(page, 'Vault').click();
+    await openDir(page, 'practice');
+    await openDir(page, 'standards');
+    await page.locator('button.vault-file', { hasText: 'nda.md' }).click();
+    await expect(page.locator('.v2-crumb-last')).toHaveText('nda.md');
+    await expect(page.locator('.v2-vault-main .markdown')).toContainText('Term: 3 years');
   });
 });
