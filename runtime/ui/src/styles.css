@@ -428,7 +428,13 @@ html[data-ui="v2"] h1, html[data-ui="v2"] h2, html[data-ui="v2"] h3 { letter-spa
   white-space: pre-wrap;
 }
 .v2-turn-assistant { display: flex; flex-direction: column; gap: var(--s3); }
-.v2-prose { font-family: var(--serif); font-size: 1.06rem; line-height: 1.6; white-space: pre-wrap; margin: 0; }
+/* Markdown, not a text node: `renderMarkdown` owns the line breaks now
+   (`breaks: true`), so `pre-wrap` would double every blank line. */
+.v2-prose { font-family: var(--serif); font-size: 1.06rem; line-height: 1.6; margin: 0; }
+.v2-prose > :first-child { margin-top: 0; }
+.v2-prose > :last-child { margin-bottom: 0; }
+.v2-prose code, .v2-prose pre { font-family: var(--mono); }
+.v2-prose pre { background: var(--bg-sunken); border: 1px solid var(--border); border-radius: var(--radius); }
 .v2-working { color: var(--fg-muted); font-style: italic; margin: 0; }
 /* The turn being written: its timeline rule is live work, not history. */
 .v2-live .v2-steps { border-left-color: var(--accent); }

@@ -1,5 +1,7 @@
+import { useMemo } from 'react';
 import type { RunRecord } from '../../api/types';
 import type { ToolCallView, Turn } from '../../chat/turns';
+import { renderMarkdown } from '../../vault/markdown';
 import { ProposalCard } from './ProposalCard';
 import { Steps } from './Steps';
 import { Strip } from './Strip';
@@ -28,6 +30,26 @@ export function msFromRun(tools: ToolCallView[], run: RunRecord | undefined): Re
     if (call !== undefined && call.name === tool.name && call.ms !== null) out[tool.id] = call.ms;
   });
   return out;
+}
+
+/**
+ * The assistant's answer, as markdown.
+ *
+ * Models write markdown whether or not they are asked to, and this column is
+ * serif prose — the one place the reader looks first — so `**Action:**` and
+ * backticked paths must not reach it as literal characters. `renderMarkdown`
+ * is the sanitizer's single entry point (`vault/markdown.ts` →
+ * `vault/sanitize.ts`), which is why it is also the only thing this file
+ * feeds to `dangerouslySetInnerHTML`.
+ *
+ * The streaming branch renders the SAME way. `marked` parses a partial
+ * document without complaining — an unclosed `**` is simply not emphasis
+ * yet — and re-parsing per chunk is memoized on the text, so the answer does
+ * not change typeface at the moment the stream ends.
+ */
+function Prose({ text }: { text: string }): JSX.Element {
+  const html = useMemo(() => renderMarkdown(text), [text]);
+  return <div className="markdown v2-prose" dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
 /**
@@ -63,12 +85,12 @@ export function TurnView({ turn, threadId, run, live = false, liveMs = {}, onRel
               working…
             </p>
           ) : (
-            <p className="v2-prose">{turn.text}</p>
+            <Prose text={turn.text} />
           )}
         </>
       ) : (
         <>
-          {turn.text === '' ? null : <p className="v2-prose">{turn.text}</p>}
+          {turn.text === '' ? null : <Prose text={turn.text} />}
 
           {/* The turn owns its error text: it reads here, unfolded, and the
               strip's record leaves out the identical copy it holds. */}

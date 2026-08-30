@@ -124,7 +124,9 @@ describe('v2 Chat, from a draft', () => {
     expect(calls[1]!.url).toBe('/threads/t-9/steps');
     expect(created).toEqual(['t-9']);
     // Finished: the answer is prose, the work is a strip, the timeline is folded away.
-    expect(document.querySelector('.v2-prose')?.textContent).toBe(ANSWER);
+    // Trimmed: the prose is rendered markdown now, and `marked` ends a
+    // block with a newline.
+    expect(document.querySelector('.v2-prose')?.textContent?.trim()).toBe(ANSWER);
     expect(document.querySelector('.v2-strip .v2-strip-summary')?.textContent).toBe('read 1 file');
     composerIsUsable();
   });
