@@ -57,11 +57,10 @@ export function Shell(): JSX.Element {
    * when a draft opens, but it does have to see one. */
   const draftRef = useRef(draft);
   draftRef.current = draft;
-  /** `selected` as of right now, for the same reason: the load effect must
-   * not open a draft behind a thread the first send created while it ran. */
-  const selectedRef = useRef(selected);
-  selectedRef.current = selected;
-  /** Which `GET /threads` is allowed to repaint the rail. */
+  /** Which `GET /threads` still speaks for the shell. Every caller takes a
+   * ticket before its fetch, so a newer request invalidates an older one's
+   * answer — including for the mount effect's seeding below, which must not
+   * act on a list that predates a thread the first send created. */
   const listSeq = useRef(0);
 
   const openDrawer = useCallback((path: string | null): void => {
@@ -80,16 +79,17 @@ export function Shell(): JSX.Element {
 
   useEffect(() => onUnauthorized(() => setUnauthorized(true)), []);
 
-  const loadThreads = useCallback(async (): Promise<ThreadHeader[]> => {
+  /** The thread list, plus whether this answer is still the current one.
+   * `fresh` is false when a newer `GET /threads` was asked for while this
+   * one was in flight; the rail keeps the newer list and the caller is told
+   * not to draw conclusions from a stale one. */
+  const loadThreads = useCallback(async (): Promise<{ threads: ThreadHeader[]; fresh: boolean }> => {
     const ticket = ++listSeq.current;
     const list = await fetchJson<ThreadHeader[]>('/threads');
     const sorted = [...list].sort(byRecent);
-    // A slower, older list must not repaint the rail over a newer one: the
-    // mount effect's fetch can still be in flight when a first send creates
-    // a thread, and the thread would vanish from the rail until the next
-    // touch. The caller still gets what IT asked for.
-    if (ticket === listSeq.current) setThreads(sorted);
-    return sorted;
+    const fresh = ticket === listSeq.current;
+    if (fresh) setThreads(sorted);
+    return { threads: sorted, fresh };
   }, []);
 
   useEffect(() => {
@@ -97,16 +97,19 @@ export function Shell(): JSX.Element {
     void (async () => {
       try {
         setHealth(await fetchJson<Health>('/health'));
-        const list = await loadThreads();
+        const { threads: list, fresh } = await loadThreads();
+        // A newer list was requested while this one was in flight, which
+        // only happens once a thread has been created or touched. That
+        // caller owns the selection now; seeding from this answer would
+        // fight it — and `selected`/`draft` cannot be consulted instead,
+        // because a state update set moments ago has not rendered yet.
+        if (!fresh) return;
         const first = list[0]?.id ?? null;
         // "New" may have been clicked while this was in flight. Seeding a
         // selection behind that draft leaves the shell somewhere the reader
         // never asked to be.
         if (!draftRef.current) setSelected(current => current ?? first);
-        // Only when there is still nothing on screen: a first send may have
-        // created a thread while this list was in flight, and flipping the
-        // rail to the draft row would disagree with the chat holding it.
-        if (first === null && selectedRef.current === null) setDraft(true);
+        if (first === null) setDraft(true);
       } catch (err) {
         if (!(err instanceof ApiError && err.status === 401)) setError(detail(err));
         // The chat mounts as a draft below; the rail has to say so too, or
@@ -142,7 +145,7 @@ export function Shell(): JSX.Element {
     setError(null);
     try {
       await fetchJson<void>(`/threads/${encodeURIComponent(id)}`, { method: 'DELETE' });
-      const list = await loadThreads();
+      const { threads: list } = await loadThreads();
       if (selected === id) {
         const next = list[0]?.id ?? null;
         if (next === null) newDraft();

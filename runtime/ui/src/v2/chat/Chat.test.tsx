@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, userEvent, waitFor } from '../../test/dom';
+import { cleanup, render, screen, userEvent, waitFor } from '../../test/dom';
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { clearToken, TOKEN_KEY } from '../../api/token';
@@ -150,12 +150,14 @@ describe('v2 Chat, from a draft', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy());
     const box = screen.getByLabelText('Message') as HTMLTextAreaElement;
     expect(box.disabled).toBe(true);
-    expect(screen.queryByRole('button', { name: 'Send' })).toBeNull();
 
-    // Two more attempts, by both routes the UI offers.
+    // A second attempt, by the route a user actually has. Typing does
+    // nothing to a disabled box, and there is no Send to press: on the
+    // unfixed code both the text and the button were there, and ⌘⏎ or a
+    // click opened a second thread.
     await userEvent.type(box, 'and another thing');
-    fireEvent.keyDown(box, { key: 'Enter', metaKey: true });
     expect(box.value).toBe('');
+    expect(screen.queryByRole('button', { name: 'Send' })).toBeNull();
 
     release();
     await waitFor(() => expect(screen.getByText(ANSWER)).toBeTruthy());

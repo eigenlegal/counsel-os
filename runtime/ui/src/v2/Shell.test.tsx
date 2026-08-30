@@ -131,6 +131,63 @@ describe('Shell', () => {
     expect(document.querySelector('li.v2-thread[aria-current="true"]')?.textContent).toContain('Beta MSA scope');
   });
 
+  test('a stale empty list cannot reopen a draft over the thread just created', async () => {
+    const fresh: ThreadHeader = {
+      id: 't-9',
+      title: 'Check the cap.',
+      createdAt: '2026-08-29T12:00:00.000Z',
+      updatedAt: '2026-08-29T12:00:00.000Z',
+      sessions: {},
+    };
+    let releaseList = (): void => {};
+    const listHeld = new Promise<void>(resolve => {
+      releaseList = resolve;
+    });
+    let created = false;
+
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+      if (url.startsWith('/health')) return json(health);
+      if (url.startsWith('/runs')) return json([]);
+      if (method === 'POST' && url === '/threads') {
+        created = true;
+        // The stale list lands in the SAME tick the create resolves. That is
+        // the whole race: `setSelected`/`setDraft(false)` have been called
+        // but React has not re-rendered, so any mirror of them still reads
+        // as "nothing selected, still a draft".
+        releaseList();
+        return json(fresh);
+      }
+      if (url === '/threads') {
+        // What THIS request saw when it was made — an empty vault.
+        const snapshot = created ? [fresh] : [];
+        if (!created) await listHeld;
+        return json(snapshot);
+      }
+      if (url.endsWith('/steps')) {
+        return new Response('event: done\ndata: {"type":"done","output":null}\n\n', {
+          status: 200,
+          headers: { 'content-type': 'text/event-stream' },
+        });
+      }
+      if (url.startsWith('/threads/')) return json({ header: fresh, events: [] } satisfies Thread);
+      throw new Error(`unexpected fetch: ${method} ${url}`);
+    }) as unknown as typeof fetch;
+
+    render(<Shell />);
+    await userEvent.click(await screen.findByRole('button', { name: 'New' }));
+    await userEvent.type(await screen.findByLabelText('Message'), 'Check the cap.');
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }));
+
+    await waitFor(() => expect(document.querySelector('li.v2-thread[aria-current="true"]')).toBeTruthy());
+    // The draft is gone and the created thread is the current row. If the
+    // stale list had won, the rail would show "New conversation" as current
+    // and the next click on this row would remount the chat mid-stream.
+    expect(document.querySelector('li.v2-draft')).toBeNull();
+    expect(document.querySelector('li.v2-thread[aria-current="true"]')?.textContent).toContain('Check the cap.');
+  });
+
   test('a draft started while the thread list is loading is not overruled', async () => {
     render(<Shell />);
     await userEvent.click(await screen.findByRole('button', { name: 'New' }));
