@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ApiError, fetchJson } from '../../api/client';
 import type { Health as HealthData, SettingsErrorBody, SettingsView } from '../../api/types';
-import { DesignToggle } from '../../settings/DesignToggle';
 import { Health } from '../../settings/Health';
 import { ProviderTest } from '../../settings/ProviderTest';
 import {
@@ -20,10 +19,11 @@ export interface SettingsPageProps {
 }
 
 /**
- * Settings, grouped (spec §2, "Settings page"): Design · Default provider ·
- * Step timeout · Providers · Task routes · Test — then Runtime, read-only.
- * The form edits `providers.yaml` exactly as the v1 form does; only the
- * arrangement is new.
+ * Settings, grouped (spec §2, "Settings page"): Default provider · Step
+ * timeout · Providers · Task routes · Test — then Runtime, read-only.
+ *
+ * The Design group went with the classic design on 2026-08-30: there is one
+ * design now, so there is nothing to switch between.
  */
 export function SettingsPage({ health }: SettingsPageProps): JSX.Element {
   const [view, setView] = useState<SettingsView | null>(null);
@@ -42,13 +42,6 @@ export function SettingsPage({ health }: SettingsPageProps): JSX.Element {
 
   return (
     <div className="v2-settings">
-      {/* `DesignToggle` draws its own `<h2>Design</h2>`; the group wrapper
-          gives it the same card as every other group. It sits ABOVE the
-          load, so the switch back to v1 works even when `/settings` fails. */}
-      <section className="v2-group">
-        <DesignToggle />
-      </section>
-
       {error !== null ? (
         <p className="v2-notice v2-notice-error" role="alert">
           {error}
@@ -57,8 +50,8 @@ export function SettingsPage({ health }: SettingsPageProps): JSX.Element {
         <p className="muted">Loading…</p>
       ) : (
         <>
-          {/* Keyed on the file, as the v1 page is: a save replaces
-              `registry`, and the form seeds its state from it once. */}
+          {/* Keyed on the file: a save replaces `registry`, and the form
+              seeds its state from it once. */}
           <RegistryForm key={view.file} view={view} onSaved={setView} />
           <section className="v2-group">
             <h2>Test</h2>
@@ -92,7 +85,7 @@ const TRI_OPTIONS: { value: Tri; label: string }[] = [
 ];
 
 /**
- * `providers.yaml`, edited — the v1 form's logic, laid out as groups.
+ * `providers.yaml`, edited.
  *
  * Bound to `registry` (the FILE) and never to `effective`, which also holds
  * the built-ins and anything `serve --fake` added: a form that round-tripped

@@ -7,11 +7,8 @@ import { RUNTIME_FILE, VAULT_DIR } from './paths';
  * The whole page, end to end, against a real `counsel-os serve --fake`
  * (spec §6): token bootstrap, a thread, a step that runs tools and raises a
  * proposal, approving it, reading the written file in the vault, the run
- * record, and settings.
- *
- * This is the CLASSIC design, which is no longer what the printed URL opens
- * on — v2 became the default on 2026-08-30 — so the story asks for v1 by
- * name in the fragment. Both designs are still regression-gated here.
+ * record, and settings — the workbench, which since 2026-08-30 is the only
+ * design there is.
  *
  * One test, not seven. The steps are a single story — there is no thread to
  * approve a proposal in until the step before it has run — and splitting it
@@ -56,114 +53,33 @@ async function openDir(page: Page, name: string): Promise<void> {
   await expect(dir).toHaveAttribute('aria-expanded', 'true');
 }
 
-test('the classic design: a step runs tools, raises a proposal, and approving it writes the vault', async ({ page }) => {
-  await test.step('the token in the fragment becomes the tab\'s credential, and ?ui=v1 asks for the classic design', async () => {
-    await page.goto(`/#token=${await token()}&/?ui=v1`);
-    await expect(page.locator('html')).toHaveAttribute('data-ui', 'v1');
-    // The header only renders once `/health` answered — which it could only
-    // do with the token the fragment carried.
-    await expect(page.getByRole('heading', { name: 'counsel-os' })).toBeVisible();
-    // And neither the credential nor the flag is in the URL by the time
-    // anything can screenshot it.
-    await expect.poll(() => page.url()).not.toContain('token=');
-    await expect.poll(() => page.url()).not.toContain('ui=');
-    await expect(page.locator('nav[aria-label="Threads"]')).toContainText('No threads yet.');
-  });
-
-  await test.step('a new thread opens an empty transcript', async () => {
-    await page.getByRole('button', { name: 'New', exact: true }).click();
-    await expect(page.locator('nav[aria-label="Threads"] li')).toHaveCount(1);
-    await expect(page.locator('.transcript')).toContainText('No messages yet.');
-  });
-
-  await test.step('the step streams text, a tool card and a proposal', async () => {
-    await page.getByRole('textbox', { name: 'Message' }).fill('Check the Acme NDA term.');
-    await page.getByRole('button', { name: 'Send' }).click();
-
-    await expect(page.locator('.turn-assistant .turn-text')).toHaveText('Done.');
-    // Both tools the script runs, in order, each paired with its result.
-    await expect(page.locator('.tool-card .tool-name')).toHaveText(['vault_read', 'propose_update']);
-    await expect(page.locator('.tool-card .badge-ok')).toHaveCount(2);
-  });
-
-  await test.step('approving the proposal settles it', async () => {
-    const card = page.locator('.proposal-card');
-    await expect(card).toHaveCount(1);
-    await expect(card.locator('.proposal-path')).toHaveText('practice/standards/nda.md');
-    await expect(card.locator('.badge')).toHaveText('pending');
-
-    await card.getByRole('button', { name: 'Approve' }).click();
-    await expect(card.locator('.badge')).toHaveText('approved');
-    // A settled proposal offers no buttons — the decision is made.
-    await expect(card.getByRole('button', { name: 'Approve' })).toHaveCount(0);
-  });
-
-  await test.step('the vault holds what was approved', async () => {
-    await nav(page, 'Vault').click();
-    await openDir(page, 'practice');
-    await openDir(page, 'standards');
-    await page.locator('button.vault-file', { hasText: 'nda.md' }).click();
-
-    await expect(page.locator('.vault-file-path')).toHaveText('practice/standards/nda.md');
-    // Rendered markdown, not the raw file: the heading is an <h1>.
-    await expect(page.locator('.markdown h1')).toHaveText('NDA');
-    await expect(page.locator('.markdown')).toContainText('Term: 3 years');
-  });
-
-  await test.step('the run record says what the step did', async () => {
-    await nav(page, 'Chat').click();
-    const run = page.locator('.run-panel');
-    await expect(run).toHaveCount(1);
-    await expect(run.locator('summary .badge')).toHaveText('done');
-    await expect(run.locator('.run-provider')).toHaveText('fake/fake');
-
-    // The panel is evidence, collapsed until asked for.
-    await run.locator('summary').click();
-    await expect(run.locator('.run-tools .tool-name')).toHaveText(['vault_read', 'propose_update']);
-    await expect(run.locator('.run-proposals li')).toHaveCount(1);
-  });
-
-  await test.step('settings show the runtime that is actually running', async () => {
-    await nav(page, 'Settings').click();
-    const facts = page.locator('.settings-health .facts');
-    await expect(facts).toContainText('fake/fake');
-    await expect(page.locator('.providers-table')).toContainText('fake/fake');
-    // The switch still means "new design"; this tab turned it off by URL.
-    await expect(page.getByRole('switch', { name: 'New design' })).not.toBeChecked();
-  });
-});
-
 /**
- * The same story in the new design (spec 2026-08-29-ui-design-pass §6) —
- * which is what the printed URL opens on since 2026-08-30, so this story
- * asks for nothing. It runs AFTER the v1 test on the same server and vault,
- * which the v1 approval has already written — so it starts by putting a
- * different "before" on disk, which is what makes the redline show a
- * deletion and an addition rather than nothing at all.
- *
- * The flag is per browser CONTEXT (`localStorage`), and Playwright gives
- * each test a fresh one — so the v1 story's `?ui=v1` cannot leak into this
- * one, whatever order they run in.
+ * `nda.md` is written first: the fixture vault seeds the directory but not
+ * the file, and a "before" on disk is what makes the redline show a deletion
+ * and an addition rather than nothing at all.
  */
-test('the new design: a draft names its thread, the proposal is a redline, the drawer shows the file, the strip says done', async ({ page }) => {
+test('a draft names its thread, the proposal is a redline, the drawer shows the file, the strip says done', async ({ page }) => {
   writeFileSync(join(VAULT_DIR, 'practice', 'standards', 'nda.md'), '# NDA\nTerm: 2 years\n');
 
-  await test.step('the printed URL alone opens the new design', async () => {
-    // No `ui=` at all: a browser that has never been told anything gets v2.
+  await test.step('the token in the fragment becomes the tab\'s credential', async () => {
     await page.goto(`/#token=${await token()}`);
-    await expect(page.locator('html')).toHaveAttribute('data-ui', 'v2');
-    await expect.poll(() => page.url()).not.toContain('token=');
+    // The top bar only renders once `/health` answered — which it could only
+    // do with the token the fragment carried.
     await expect(page.locator('.v2-top-model')).toHaveText('fake/fake');
+    // And the credential is not in the URL by the time anything can
+    // screenshot it.
+    await expect.poll(() => page.url()).not.toContain('token=');
   });
 
   const threads = page.locator('nav[aria-label="Threads"] li.v2-thread');
-  const before = await threads.count();
 
-  await test.step('New opens a draft and makes no thread', async () => {
-    await page.getByRole('button', { name: 'New', exact: true }).click();
+  await test.step('an empty vault opens on a draft, and makes no thread', async () => {
     await expect(page.locator('.v2-transcript')).toContainText('New conversation');
-    await expect(threads).toHaveCount(before);
     await expect(page.locator('nav[aria-label="Threads"] li.v2-draft')).toHaveCount(1);
+    await expect(threads).toHaveCount(0);
+    // Nothing left for "New" to make — the draft on screen IS the new
+    // conversation, and the button says so rather than opening a second one.
+    await expect(page.getByRole('button', { name: 'New', exact: true })).toBeDisabled();
   });
 
   await test.step('the first send names the thread; the answer reads first, the work folds into a strip', async () => {
@@ -171,7 +87,7 @@ test('the new design: a draft names its thread, the proposal is a redline, the d
     await page.getByRole('textbox', { name: 'Message' }).press('Meta+Enter');
 
     await expect(page.locator('.v2-prose')).toHaveText('Done.');
-    await expect(threads).toHaveCount(before + 1);
+    await expect(threads).toHaveCount(1);
     await expect(threads.first()).toContainText('Check the Acme NDA term.');
     await expect(page.locator('nav[aria-label="Threads"] li.v2-draft')).toHaveCount(0);
   });
@@ -217,9 +133,8 @@ test('the new design: a draft names its thread, the proposal is a redline, the d
     await expect(strip.locator('.v2-record')).toContainText('Proposals');
   });
 
-  await test.step('the vault page and settings are the new design too', async () => {
+  await test.step('the vault page and settings are the workbench too', async () => {
     await nav(page, 'Settings').click();
-    await expect(page.getByRole('switch', { name: 'New design' })).toBeChecked();
     await expect(page.locator('.settings-health .facts')).toContainText('fake/fake');
 
     await nav(page, 'Vault').click();
