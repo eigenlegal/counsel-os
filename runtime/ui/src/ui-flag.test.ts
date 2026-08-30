@@ -1,7 +1,7 @@
 import './test/dom';
 
 import { afterEach, describe, expect, test } from 'bun:test';
-import { onUiFlagChange, readUiFlag, setUiFlag, stripUiParam, UI_FLAG_KEY } from './ui-flag';
+import { bootstrapUiFlag, isSessionOnly, onUiFlagChange, readUiFlag, setUiFlag, stripUiParam, UI_FLAG_KEY } from './ui-flag';
 
 /**
  * A tab whose storage refuses writes (Safari private mode, blocked site
@@ -38,16 +38,38 @@ describe('readUiFlag', () => {
     expect(readUiFlag()).toBe('v2');
   });
 
+  test('is pure — a fragment it has not been handed changes nothing', () => {
+    history.replaceState(null, '', '/#/?ui=v2');
+    expect(readUiFlag()).toBe('v1');
+    expect(location.hash).toBe('#/?ui=v2');
+  });
+});
+
+describe('bootstrapUiFlag', () => {
   test('?ui=v2 in the fragment wins for this load, is persisted, and leaves the fragment', () => {
     history.replaceState(null, '', '/#/?ui=v2');
-    expect(readUiFlag()).toBe('v2');
+    expect(bootstrapUiFlag()).toBe('v2');
     expect(localStorage.getItem(UI_FLAG_KEY)).toBe('v2');
     expect(location.hash).toBe('#/');
   });
 
   test('a fragment with other params keeps them', () => {
     history.replaceState(null, '', '/#/vault?path=a.md&ui=v2');
-    expect(readUiFlag()).toBe('v2');
+    expect(bootstrapUiFlag()).toBe('v2');
+    expect(location.hash).toBe('#/vault?path=a.md');
+  });
+
+  test('a ui value that is not v2 is dropped, not obeyed and not left behind', () => {
+    localStorage.setItem(UI_FLAG_KEY, 'v2');
+    history.replaceState(null, '', '/#/settings?ui=v1');
+    expect(bootstrapUiFlag()).toBe('v2');
+    expect(location.hash).toBe('#/settings');
+  });
+
+  test('no ui param leaves the fragment and the stored choice alone', () => {
+    localStorage.setItem(UI_FLAG_KEY, 'v2');
+    history.replaceState(null, '', '/#/vault?path=a.md');
+    expect(bootstrapUiFlag()).toBe('v2');
     expect(location.hash).toBe('#/vault?path=a.md');
   });
 });
@@ -70,9 +92,14 @@ describe('setUiFlag', () => {
     try {
       expect(setUiFlag('v2')).toEqual({ persisted: false });
       expect(readUiFlag()).toBe('v2');
+      // The fact outlives the component that caused it — see `isSessionOnly`.
+      expect(isSessionOnly()).toBe(true);
     } finally {
       unblock();
     }
+    // And a write that lands clears it again.
+    expect(setUiFlag('v2')).toEqual({ persisted: true });
+    expect(isSessionOnly()).toBe(false);
   });
 });
 

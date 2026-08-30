@@ -1,11 +1,16 @@
 /**
  * The design-pass rollout flag (spec §2, "Rollout"). Default off.
  *
- * Three sources, in order: `?ui=v2` in the fragment (one load, and it is
- * persisted), the in-memory copy set this session, then
+ * Two sources, in order: the in-memory copy set this session, then
  * `localStorage['counsel-os.ui']`. The memory copy is what makes the switch
  * work in a tab whose storage is blocked — it holds for the session and the
  * toggle says so.
+ *
+ * `?ui=v2` in the fragment is a THIRD source, but it is consumed once by
+ * `bootstrapUiFlag` before React renders — beside `bootstrapToken()` and for
+ * the same reason. A fragment that has to be read and then rewritten is not
+ * something a component may do from its render phase, and `readUiFlag` is a
+ * pure read so that a `useState` initializer can call it.
  */
 
 export const UI_FLAG_KEY = 'counsel-os.ui';
@@ -16,6 +21,17 @@ type Listener = (flag: UiFlag) => void;
 
 const listeners = new Set<Listener>();
 let memory: UiFlag | null = null;
+let sessionOnly = false;
+
+/**
+ * True when the last choice could not be saved, so it holds for this tab
+ * alone. It lives here rather than in `DesignToggle` because setting the flag
+ * REMOUNTS the toggle — `Root` swaps the shell in the same React batch — and
+ * a fact kept in the old component's state would go with it.
+ */
+export function isSessionOnly(): boolean {
+  return sessionOnly;
+}
 
 function storage(): Storage | null {
   try {
@@ -73,21 +89,34 @@ export function setUiFlag(flag: UiFlag): { persisted: boolean } {
   // has nothing left to say. Keeping it would shadow a value written from
   // anywhere else — another tab, or a test that seeds the key directly.
   if (persisted) memory = null;
-  const hash = globalThis.location?.hash ?? '';
-  if (/[?&]ui=/.test(hash)) {
-    const { pathname, search } = globalThis.location;
-    globalThis.history?.replaceState(null, '', `${pathname}${search}#${stripUiParam(hash)}`);
-  }
+  sessionOnly = !persisted;
+  stripFromLocation();
   for (const fn of [...listeners]) fn(flag);
   return { persisted };
 }
 
-export function readUiFlag(): UiFlag {
+/** Drops a consumed `ui` param from the address bar, keeping the route. */
+function stripFromLocation(): void {
+  const hash = globalThis.location?.hash ?? '';
+  if (!/[?&]ui=/.test(hash)) return;
+  const { pathname, search } = globalThis.location;
+  globalThis.history?.replaceState(null, '', `${pathname}${search}#${stripUiParam(hash)}`);
+}
+
+/**
+ * Consumes `?ui=v2` from the fragment, once, before React renders. Returns
+ * the flag now in force. The strip runs either way, so a `ui` value that is
+ * not `v2` does not sit in the URL forever waiting to be misread.
+ */
+export function bootstrapUiFlag(): UiFlag {
   const fromFragment = fragmentFlag(globalThis.location?.hash ?? '');
-  if (fromFragment !== null) {
-    setUiFlag(fromFragment);
-    return fromFragment;
-  }
+  if (fromFragment !== null) setUiFlag(fromFragment);
+  stripFromLocation();
+  return readUiFlag();
+}
+
+/** The flag in force. Pure — the fragment is `bootstrapUiFlag`'s job. */
+export function readUiFlag(): UiFlag {
   if (memory !== null) return memory;
   try {
     return storage()?.getItem(UI_FLAG_KEY) === 'v2' ? 'v2' : 'v1';

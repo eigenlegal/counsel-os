@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { readUiFlag, setUiFlag, type UiFlag } from '../ui-flag';
+import { isSessionOnly, readUiFlag, setUiFlag, type UiFlag } from '../ui-flag';
 
 /**
  * The "Try the new design" switch (spec §2, "Rollout"). Rendered by the v1
@@ -9,7 +9,10 @@ import { readUiFlag, setUiFlag, type UiFlag } from '../ui-flag';
  */
 export function DesignToggle(): JSX.Element {
   const [flag, setFlag] = useState<UiFlag>(() => readUiFlag());
-  const [sessionOnly, setSessionOnly] = useState(false);
+  // Seeded from the module, not from `false`: flipping the switch remounts
+  // this component (`Root` swaps the shell), so the toggle that renders the
+  // warning is never the one that set it.
+  const [sessionOnly, setSessionOnly] = useState(() => isSessionOnly());
 
   const change = (on: boolean): void => {
     const next: UiFlag = on ? 'v2' : 'v1';

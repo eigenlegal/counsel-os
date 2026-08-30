@@ -51,4 +51,23 @@ describe('DesignToggle', () => {
       unblock();
     }
   });
+
+  test('and still says so after the flip remounts it', async () => {
+    // The product path: setting the flag swaps the shell in the same React
+    // batch, so the toggle that called `setUiFlag` unmounts before it can
+    // paint. A FRESH toggle has to know — the fact lives in `ui-flag`, not
+    // in this component's state.
+    const unblock = blockWrites();
+    try {
+      const first = render(<DesignToggle />);
+      await userEvent.click(screen.getByRole('switch', { name: 'Try the new design' }));
+      first.unmount();
+
+      render(<DesignToggle />);
+      expect((screen.getByRole('switch', { name: 'Try the new design' }) as HTMLInputElement).checked).toBe(true);
+      expect(screen.getByText(/this tab only/)).toBeTruthy();
+    } finally {
+      unblock();
+    }
+  });
 });

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, fetchJson } from '../api/client';
 import { readToken } from '../api/token';
 import { onUnauthorized } from '../api/unauthorized';
@@ -48,6 +48,11 @@ export function Shell(): JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  /** `draft` as of right now, for the load effect below — it must not RE-RUN
+   * when a draft opens, but it does have to see one. */
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+
   const openDrawer = useCallback((path: string | null): void => {
     setDrawer(current => ({ open: true, path: path ?? current.path }));
   }, []);
@@ -78,7 +83,10 @@ export function Shell(): JSX.Element {
         setHealth(await fetchJson<Health>('/health'));
         const list = await loadThreads();
         const first = list[0]?.id ?? null;
-        setSelected(current => current ?? first);
+        // "New" may have been clicked while this was in flight. Seeding a
+        // selection behind that draft leaves the shell somewhere the reader
+        // never asked to be.
+        if (!draftRef.current) setSelected(current => current ?? first);
         if (first === null) setDraft(true);
       } catch (err) {
         if (!(err instanceof ApiError && err.status === 401)) setError(detail(err));
@@ -87,6 +95,10 @@ export function Shell(): JSX.Element {
   }, [unauthorized, loadThreads]);
 
   const selectThread = (id: string): void => {
+    // Picking the thread already on screen must change NOTHING. Bumping the
+    // key would remount `Chat`, and a remount mid-stream throws away the
+    // answer being streamed and whatever is typed in the composer.
+    if (id === selected && !draft) return;
     setSelected(id);
     setDraft(false);
     setChatKey(k => k + 1);
@@ -142,7 +154,10 @@ export function Shell(): JSX.Element {
             onClick={
               route === 'chat'
                 ? event => {
-                    // On the chat route the vault is a drawer, not a page.
+                    // On the chat route the vault is a drawer, not a page —
+                    // but a cmd/ctrl/shift-click still means "open the page
+                    // in a new tab", so those are left to the browser.
+                    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
                     event.preventDefault();
                     openDrawer(null);
                   }
