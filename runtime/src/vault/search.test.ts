@@ -133,6 +133,49 @@ describe('fsSearch', () => {
     expect(hits[0]!.score).toBe(4);
   });
 
+  test('drops English stopwords before matching, so a natural-language query still ANDs', async () => {
+    put('a.md', 'indemnity clause\n');
+    // `the` never appears in the file; dropped as a stopword, the query is
+    // just `indemnity` and still matches under AND.
+    expect((await fsSearch()('the indemnity', root)).map(h => h.path)).toEqual(['a.md']);
+  });
+
+  test('a query of nothing but stopwords keeps them — otherwise it would match everything', async () => {
+    put('a.md', 'the cap is agreed\n');
+    put('b.md', 'no such word here\n');
+    expect((await fsSearch()('the', root)).map(h => h.path)).toEqual(['a.md']);
+  });
+
+  test('falls back to OR when AND finds nothing — a full question finds the one word that hits', async () => {
+    put('a.md', 'the indemnity cap is 2x fees\n');
+    put('b.md', 'unrelated notes\n');
+    const hits = await fsSearch()('what is our indemnity position', root);
+    expect(hits.map(h => h.path)).toEqual(['a.md']);
+    expect(hits[0]!.snippet).toBe('the indemnity cap is 2x fees');
+  });
+
+  test('the OR fallback ranks a file matching more distinct terms above one matching fewer', async () => {
+    // No file has all three terms, so the fallback runs. `one.md` mentions its
+    // single term five times and must still lose to the file covering two.
+    put('one.md', 'indemnity indemnity indemnity indemnity indemnity\n');
+    put('two.md', 'indemnity and arbitration\n');
+    const hits = await fsSearch()('indemnity arbitration waiver', root);
+    expect(hits.map(h => h.path)).toEqual(['two.md', 'one.md']);
+    expect(hits[0]!.score).toBeGreaterThan(hits[1]!.score);
+  });
+
+  test('AND wins whenever it has hits — the fallback never dilutes a precise query', async () => {
+    put('both.md', 'indemnity cap\n');
+    put('one.md', 'indemnity indemnity indemnity\n');
+    const hits = await fsSearch()('indemnity cap', root);
+    expect(hits.map(h => h.path)).toEqual(['both.md']);
+  });
+
+  test('the OR fallback still returns nothing when no term matches anywhere', async () => {
+    put('a.md', 'unrelated notes\n');
+    expect(await fsSearch()('indemnity arbitration', root)).toEqual([]);
+  });
+
   test('a store built with fsSearch actually searches', async () => {
     const store = new FsVaultStore(root, { search: fsSearch() });
     await store.write('default', 'matters/acme/notes.md', 'the indemnity cap\n');
