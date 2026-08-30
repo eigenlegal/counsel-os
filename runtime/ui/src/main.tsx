@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { bootstrapToken } from './api/token';
-import { App } from './app';
+import { Root } from './app';
 import './styles.css';
 
 // FIRST, before React renders anything: the app's very first effect asks
@@ -15,6 +15,6 @@ if (root === null) throw new Error('counsel-os: no #root element in the page she
 
 createRoot(root).render(
   <StrictMode>
-    <App />
+    <Root />
   </StrictMode>,
 );
