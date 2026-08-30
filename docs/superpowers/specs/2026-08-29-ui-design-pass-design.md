@@ -27,7 +27,7 @@ surfaces before it becomes the default.
 | Turn when finished | Steps collapse into one strip: status pill (`done` / `error` / `timed out`) · summary of what was read/run ("read 2 files, ran 1 tool") · provider · duration · tokens · chevron. Expanded: the full record — steps with show/hide, primitives read, proposals, model + usage + cost, run id | Answer-first reading |
 | Verb table | `vault_read` → "Read", `vault_list` → "Listed", `vault_search`/`grep`-like → "Searched", `read_primitive` → "Consulted primitive", `propose_update` → "Proposed", `vault_write` → "Wrote", anything else → "Ran `<name>`" | One glance; no raw JSON by default |
 | Error turn | Red strip + the message; the raw `error.text` fallback under "show answer" | Step-4 §4.3 kept |
-| Proposal card | Brown-accent card: `PROPOSAL` tag · path · "open in vault" (drawer) · rationale · **unified diff** of the current vault file (`GET /vault/read`) vs the proposed `content` (client-side, `diff` npm package `diffLines`) · Approve / Reject · "based on version <7 chars>" · "preview" flip renders the proposed markdown through `sanitize.ts`. Approved/rejected cards show the state and keep the diff readable. 409 → footer becomes "file changed since — reload" (existing behavior) | Redline is the lawyer's idiom; deletions must be visible |
+| Proposal card | Brown-accent card: `PROPOSAL` tag · path · "open in vault" (drawer) · rationale · **unified diff** of the current vault file (`GET /vault/read`) vs the proposed `content` (client-side, `diff` npm package (`^8`, ships its own types) `diffLines`) · Approve / Reject · "based on version <7 chars>" · "preview" flip renders the proposed markdown through `sanitize.ts`. Approved/rejected cards show the state and keep the diff readable. 409 → footer becomes "file changed since — reload" (existing behavior) | Redline is the lawyer's idiom; deletions must be visible |
 | Live proposal | The stream's `proposal` event has no `content`; the card shows path + rationale + "loading diff…" until the reload brings the content (existing `onReload` after the step) | No API change |
 | Vault page + drawer | Same `Tree`/`FileView`, v2 tokens; file header with path + version; breadcrumb | |
 | Settings page | Grouped: Design (toggle) · Default provider · Step timeout · Providers · Task routes · Test (confirm kept: "This uses one call on <id>.") | |
@@ -57,7 +57,7 @@ runtime/ui/src/
   styles.css              + [data-ui="v2"] tokens and v2 component styles (namespaced .v2-*)
 ```
 
-Dependencies added: `diff` (^7) to `runtime/ui`. Nothing added to the runtime.
+Dependencies added: `diff` (^8.0.4) to `runtime/ui`. Nothing added to the runtime.
 
 ## 4. Interfaces
 
