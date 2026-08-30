@@ -877,17 +877,14 @@ async function* stream(
         sawTerminal = true;
       }
 
-      yield { ...ev, runId };
-
-      // Synthesized, never logged: the `proposal` ThreadEvent the tool
-      // itself appended (during `execute`, before this `tool_result` was
-      // even produced) is the durable record. This is the caller-facing
-      // signal — SSE clients, the adapter — that a proposal now exists.
-      if (proposalToYield) yield { ...proposalToYield, runId };
-
       // Telemetry — the run log and the run record's final state — is written
-      // AFTER the terminal event reached the caller, and its failures go to
-      // stderr: neither may cost a caller its `done`.
+      // BEFORE the terminal event reaches the caller, and its failures go to
+      // stderr: neither may cost a caller its `done`. It CANNOT be written
+      // after the yield. A real SSE client cancels the response the instant
+      // it has the `done` frame; the cancel reaches this generator as
+      // `return()` AT that yield, so nothing past it ever runs and the
+      // record is left for `runStep`'s `finally` to stamp `abandoned` —
+      // a step that finished, filed as one the caller walked away from.
       if (ev.type === 'done') {
         // One tally, two readers: the run log's entry and the record's.
         // Tallying twice would walk the same still-pending calls again for no
@@ -919,6 +916,15 @@ async function* stream(
           ...(ev.text === undefined ? {} : { errorText: ev.text }),
         });
       }
+
+      yield { ...ev, runId };
+
+      // Synthesized, never logged: the `proposal` ThreadEvent the tool
+      // itself appended (during `execute`, before this `tool_result` was
+      // even produced) is the durable record. This is the caller-facing
+      // signal — SSE clients, the adapter — that a proposal now exists.
+      // Terminals never carry one, so the telemetry above cannot displace it.
+      if (proposalToYield) yield { ...proposalToYield, runId };
     }
 
     // A stream that ends on text (no terminal event) still has to leave that

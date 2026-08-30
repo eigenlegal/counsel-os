@@ -125,8 +125,10 @@ describe('runStep', () => {
 
     expect(unwound).toBe(true);
     // Not "eventually": the close budget alone is 2 s, so a pass here is the
-    // abort and nothing else.
-    expect(Date.now() - startedAt).toBeLessThan(100);
+    // abort and nothing else. The bound is 1 s, not the close budget: shared
+    // CI runners jitter — this measured 117 ms on a GitHub runner and failed
+    // — and 1 s is still 2x under the budget it has to tell apart.
+    expect(Date.now() - startedAt).toBeLessThan(1000);
     expect(readRun(vaultRoot, 'default', first.value!.runId)!.status).toBe('abandoned');
   });
 
@@ -1364,6 +1366,61 @@ describe('runStep — the run record', () => {
       readFileSync(join(vaultRoot, '.counsel', 'runs', 'default', `${runId}.log.jsonl`), 'utf8').trim(),
     ) as RunLogEntry;
     expect(log.provider).toBe('fake/fake');
+  });
+
+  test('a caller that cancels the INSTANT it has the `done` records a done run, not an abandoned one', async () => {
+    // What a real browser does: it cancels the SSE response the moment the
+    // `done` frame lands, and never asks for another event. The cancel
+    // reaches the generator as `return()` parked AT the yield of that `done`,
+    // so anything the loop leaves until after that yield never runs — which
+    // is how five finished steps on a live vault came back `abandoned`.
+    const fake = new FakeModelProvider([{ text: 'hi', usage: { inputTokens: 12, outputTokens: 34, costUsd: 0.5 } }]);
+    const { id } = await store.create('default', {});
+
+    const it = runStep(deps([fake]), { threadId: id, message: 'hello' })[Symbol.asyncIterator]();
+    let last: (StepEvent & { runId: string }) | undefined;
+    for (;;) {
+      const step = await it.next();
+      if (step.done) throw new Error('the step ended without a terminal event');
+      last = step.value;
+      if (last.type === 'done' || last.type === 'error') break;
+    }
+    expect(last!.type).toBe('done');
+    // The browser shape: hang up on the terminal frame, never pull again.
+    await it.return?.(undefined);
+
+    const rec = readRun(vaultRoot, 'default', last!.runId)!;
+    expect(rec.status).toBe('done');
+    expect(rec.error).toBeUndefined();
+    // The telemetry the step actually earned, not an empty husk.
+    expect(rec.usage).toEqual({ inputTokens: 12, outputTokens: 34, costUsd: 0.5 });
+    expect(rec.costUsd).toBe(0.5);
+    expect(typeof rec.finishedAt).toBe('string');
+    // The run log is written on the same path, so it lands too.
+    const log = JSON.parse(
+      readFileSync(join(vaultRoot, '.counsel', 'runs', 'default', `${last!.runId}.log.jsonl`), 'utf8').trim(),
+    ) as RunLogEntry;
+    expect(log.inputTokens).toBe(12);
+  });
+
+  test('a caller that cancels the instant it has the `error` records an error run, not an abandoned one', async () => {
+    const fake = new FakeModelProvider([{ error: 'the model gave up' }]);
+    const { id } = await store.create('default', {});
+
+    const it = runStep(deps([fake]), { threadId: id, message: 'hello' })[Symbol.asyncIterator]();
+    let last: (StepEvent & { runId: string }) | undefined;
+    for (;;) {
+      const step = await it.next();
+      if (step.done) throw new Error('the step ended without a terminal event');
+      last = step.value;
+      if (last.type === 'done' || last.type === 'error') break;
+    }
+    expect(last!.type).toBe('error');
+    await it.return?.(undefined);
+
+    const rec = readRun(vaultRoot, 'default', last!.runId)!;
+    expect(rec.status).toBe('error');
+    expect(rec.error).toBe('the model gave up');
   });
 
   test('a caller that hangs up mid-step leaves an abandoned record, not one stuck at running', async () => {
