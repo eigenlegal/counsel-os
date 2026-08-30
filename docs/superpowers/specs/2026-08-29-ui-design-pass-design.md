@@ -7,6 +7,14 @@ Parent: `2026-08-29-web-ui-design.md` (step 4 — the plain surfaces this pass r
 reorganizes). Founder rule from the step-3 spec §2 still binds: no gates, no flows, no
 contract-shaped structure. This pass changes how the four surfaces read, not what counsel does.
 
+> **2026-08-30 — the classic design (v1) was removed.** Founder decision, the same day the
+> default flipped: "I don't think we need to keep the old design." The `ui` flag
+> (`ui-flag.ts`, `localStorage['counsel-os.ui']`, `#/?ui=v1`), the Settings "New design"
+> switch (`settings/DesignToggle.tsx`), the v1 `App` and its chat / vault / settings
+> components, and the v1 e2e story are all gone; the `html[data-ui="v2"]` token scoping
+> became unconditional. Everything below describes the rollout as it was designed and
+> shipped — it is history, not the current state. The `.v2-*` class prefix stays as-is.
+
 ## 1. Goal
 
 A lawyer opens the page and it reads like counsel, not a developer tool: the answer first, the
