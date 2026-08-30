@@ -50,9 +50,9 @@ function install(): void {
   }) as unknown as typeof fetch;
 }
 
-/** The mounted `Chat`. Its identity is the test: a remount replaces the node. */
+/** The mounted v2 `Chat`. Its identity is the test: a remount replaces the node. */
 function chatNode(): Element | null {
-  return document.querySelector('section.chat');
+  return document.querySelector('section.v2-chat');
 }
 
 beforeEach(() => {
@@ -73,6 +73,30 @@ describe('Shell', () => {
     expect(screen.getByText('Beta MSA scope')).toBeTruthy();
     // Newest first, and it is the one on screen.
     expect(document.querySelector('li.v2-thread[aria-current="true"]')?.textContent).toContain('Acme NDA term');
+    // Its TRANSCRIPT, not a draft: the chat must not mount before the shell
+    // knows which thread to open, because the chat adopts its thread once.
+    await waitFor(() =>
+      expect(document.querySelector('.v2-transcript .v2-empty')?.textContent).toBe('No messages yet. Ask counsel something.'),
+    );
+  });
+
+  test('a thread list that lands after /health still opens its thread', async () => {
+    // The real ordering: `/health` answers, the shell renders, and only
+    // THEN does the list arrive. A chat mounted in that gap would have
+    // adopted `null` and stayed a draft for good.
+    const fast = globalThis.fetch;
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      if (String(input) === '/threads') {
+        await new Promise(resolve => setTimeout(resolve, 5));
+      }
+      return (fast as unknown as typeof fetch)(input);
+    }) as unknown as typeof fetch;
+
+    render(<Shell />);
+    await waitFor(() => expect(chatNode()).toBeTruthy());
+    await waitFor(() =>
+      expect(document.querySelector('.v2-transcript .v2-empty')?.textContent).toBe('No messages yet. Ask counsel something.'),
+    );
   });
 
   test('re-selecting the thread already open changes nothing', async () => {
@@ -115,6 +139,8 @@ describe('Shell', () => {
     // The draft is still the current row, and no thread was selected behind it.
     expect(document.querySelector('li.v2-draft[aria-current="true"]')).toBeTruthy();
     expect(document.querySelector('li.v2-thread[aria-current="true"]')).toBeNull();
-    expect(chatNode()).toBeNull();
+    // The chat is mounted, but as a draft: it fetched no thread and says so.
+    // Scoped to the transcript — the rail's draft row says "New conversation" too.
+    expect(document.querySelector('.v2-transcript .v2-empty')?.textContent).toContain('the thread is created when you send');
   });
 });

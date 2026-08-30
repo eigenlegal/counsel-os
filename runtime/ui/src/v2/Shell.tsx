@@ -4,9 +4,9 @@ import { readToken } from '../api/token';
 import { onUnauthorized } from '../api/unauthorized';
 import type { Health, ThreadHeader } from '../api/types';
 import { parseHash, TOKEN_MESSAGE, vaultPathFromHash } from '../app';
-import { Chat } from '../chat/Chat';
 import { Settings } from '../settings/Settings';
 import { Vault } from '../vault/Vault';
+import { Chat } from './chat/Chat';
 import { Drawer } from './Drawer';
 import { Rail } from './Rail';
 
@@ -44,6 +44,11 @@ export function Shell(): JSX.Element {
   const [selected, setSelected] = useState<string | null>(null);
   const [draft, setDraft] = useState(false);
   const [chatKey, setChatKey] = useState(0);
+  /** True once the first `GET /threads` has settled. The chat adopts its
+   * thread ONCE, at mount, so it must not mount before the shell knows
+   * which one that is — a chat mounted in the gap between `/health` and
+   * the list would adopt `null` and stay a draft for good. */
+  const [listed, setListed] = useState(false);
   const [drawer, setDrawer] = useState<DrawerState>({ open: false, path: null });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -90,6 +95,10 @@ export function Shell(): JSX.Element {
         if (first === null) setDraft(true);
       } catch (err) {
         if (!(err instanceof ApiError && err.status === 401)) setError(detail(err));
+      } finally {
+        // Either way the shell now knows as much as it is going to: a
+        // failed list leaves a draft rather than "Loading…" forever.
+        setListed(true);
       }
     })();
   }, [unauthorized, loadThreads]);
@@ -198,13 +207,22 @@ export function Shell(): JSX.Element {
             onDelete={id => void deleteThread(id)}
           />
           <main className="v2-main">
-            {health === null ? (
+            {health === null || (!draft && !listed) ? (
               <p className="muted v2-empty">Loading…</p>
-            ) : draft || selected === null ? (
-              // Task 2 replaces this branch with the v2 Chat's draft mode.
-              <p className="muted v2-empty">New conversation. Send a message to start it.</p>
             ) : (
-              <Chat key={chatKey} threadId={selected} health={health} onThreadTouched={() => void loadThreads()} />
+              <Chat
+                key={chatKey}
+                threadId={draft ? null : selected}
+                health={health}
+                onThreadCreated={header => {
+                  // The draft is now a thread; select it without re-keying.
+                  setSelected(header.id);
+                  setDraft(false);
+                  void loadThreads();
+                }}
+                onThreadTouched={() => void loadThreads()}
+                onOpenFile={openDrawer}
+              />
             )}
           </main>
           {drawer.open ? <Drawer path={drawer.path} onOpen={path => openDrawer(path)} onClose={closeDrawer} /> : null}
