@@ -9,6 +9,7 @@ import { DEFAULT_STEP_TIMEOUT_MS } from '../loop/counsel-loop';
 import { defaultRegistryFile, loadRegistry } from '../providers/registry';
 import { ThreadStore } from '../threads/store';
 import { FsVaultStore } from '../vault/fs-store';
+import { fsSearch } from '../vault/search';
 import { resolveLegalRoot } from '../vault/resolve-root';
 import { createApp } from './routes';
 import type { RuntimeState } from './settings';
@@ -341,7 +342,7 @@ export async function startServer(opts: StartServerOptions = {}): Promise<Runnin
     tenant: DEFAULT_TENANT,
     vaultRoot,
     pluginRoot,
-    vault: new FsVaultStore(vaultRoot),
+    vault: new FsVaultStore(vaultRoot, { search: fsSearch() }),
     store,
     state: runtime.state,
     settings: { file: registryFile, reload: runtime.reload },

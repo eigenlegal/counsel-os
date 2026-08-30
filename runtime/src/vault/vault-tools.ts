@@ -40,7 +40,7 @@ export function vaultTools(store: VaultStore): ToolDef[] {
   };
   const search: ToolDef<{ query: string }, unknown> = {
     name: 'vault_search',
-    description: 'Search the vault. Returns paths with snippets, relative to the vault root.',
+    description: 'Search the vault by keyword. Every word in the query must appear in a file\'s contents or its path (case-insensitive, literal substrings — no wildcards or boolean operators). Returns matching paths with a snippet, best matches first, relative to the vault root. An empty result means nothing matched those words — not that the topic is absent from the vault; try fewer or different words, or vault_list, before concluding a document does not exist.',
     inputSchema: z.object({ query: z.string() }),
     execute: async ({ query }, { tenant }) => store.search(tenant, query),
   };

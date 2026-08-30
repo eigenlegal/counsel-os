@@ -9,7 +9,7 @@ export type SearchFn = (query: string, root: string) => Promise<Hit[]>;
 
 /** The store's own directory inside the vault root: version history, and
  * anything the runtime adds later. Not reachable through the public API. */
-const RESERVED_DIR = '.counsel';
+export const RESERVED_DIR = '.counsel';
 
 export function hashContent(content: string): Version {
   return createHash('sha256').update(content, 'utf8').digest('hex');

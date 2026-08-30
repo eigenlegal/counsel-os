@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { z } from 'zod';
 import { FsVaultStore } from './vault/fs-store';
+import { fsSearch } from './vault/search';
 import { guardedVaultTools } from './vault/vault-tools';
 import { readVaultConfig } from './vault/resolve-root';
 import { ToolRegistry } from './tools/registry';
@@ -128,7 +129,7 @@ async function step(): Promise<void> {
 
   const vaultRoot = resolve(values.vault);
   const repoRoot = resolve(import.meta.dir, '../..');
-  const store = new FsVaultStore(vaultRoot);
+  const store = new FsVaultStore(vaultRoot, { search: fsSearch() });
   const registry = new ToolRegistry();
   for (const t of builtinTools({ vaultRoot, repoRoot })) registry.register(t);
 
