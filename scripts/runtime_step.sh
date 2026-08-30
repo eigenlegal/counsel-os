@@ -35,14 +35,20 @@ REQUEST="${1:-}"
 command -v curl >/dev/null 2>&1 || exit 3
 command -v jq >/dev/null 2>&1 || exit 3
 
-# `runtime.json` may live under an explicit COUNSEL_OS_HOME override (what
-# the tests use) or the real default; check both, in that order.
+# COUNSEL_OS_HOME, when set, is the WHOLE answer — never a first guess with
+# the real default behind it. A scratch home with no `runtime.json` means "no
+# runtime here", not "fall through to ~/.counsel-os": that fallback let a test
+# with an isolated home reach whatever runtime the machine happens to be
+# running, and send its steps to a live server. The default applies only when
+# the variable is unset.
 runtime_file=""
-if [[ -n "${COUNSEL_OS_HOME:-}" && -f "${COUNSEL_OS_HOME}/runtime.json" ]]; then
+if [[ -n "${COUNSEL_OS_HOME:-}" ]]; then
   runtime_file="${COUNSEL_OS_HOME}/runtime.json"
-elif [[ -f "${HOME:-}/.counsel-os/runtime.json" ]]; then
-  runtime_file="${HOME:-}/.counsel-os/runtime.json"
+elif [[ -n "${HOME:-}" ]]; then
+  runtime_file="${HOME}/.counsel-os/runtime.json"
 fi
+# `-r` covers both "missing" and "unreadable" — a runtime.json that is not
+# there fails this exactly as one we cannot open does.
 [[ -n "$runtime_file" && -r "$runtime_file" ]] || exit 3
 
 port="$(jq -r '.port // empty' "$runtime_file" 2>/dev/null)" || true
