@@ -24,7 +24,7 @@ function json(body: unknown, status = 200): Response {
 const realFetch = globalThis.fetch;
 let calls: { url: string; body: unknown }[] = [];
 
-function install(opts: { read?: () => Response; approve?: () => Response } = {}): void {
+function install(opts: { read?: () => Response; approve?: () => Response | Promise<Response> } = {}): void {
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     calls.push({ url, body: init?.body === undefined ? undefined : JSON.parse(String(init.body)) });
@@ -159,5 +159,50 @@ describe('v2 ProposalCard', () => {
     render(<ProposalCard threadId="t-1" proposal={proposal} onReload={() => {}} onOpenFile={path => opened.push(path)} />);
     await userEvent.click(screen.getByRole('button', { name: 'open in vault' }));
     expect(opened).toEqual([proposal.path]);
+  });
+
+  test('with no drawer, open in vault is a link to the vault page', async () => {
+    install();
+    render(<ProposalCard threadId="t-1" proposal={proposal} onReload={() => {}} />);
+    expect(screen.getByRole('link', { name: 'open in vault' }).getAttribute('href')).toBe('#/vault?path=practice%2Fstandards%2Fnda.md');
+    await act(async () => {});
+  });
+
+  test('a reload with a decided proposal replaces the local state and clears the conflict', async () => {
+    install({ approve: () => json({ error: 'vault conflict', conflict: { expected: 'e-hash', actual: 'a-hash' } }, 409) });
+    const { rerender } = render(<ProposalCard threadId="t-1" proposal={proposal} onReload={() => {}} />);
+    await waitFor(() => expect(lines('del').length).toBe(1));
+    await userEvent.click(screen.getByRole('button', { name: 'Approve' }));
+    await waitFor(() => expect(screen.getByText(/e-hash/)).toBeTruthy());
+
+    // What Reload brings back: the server's copy of the proposal, on the
+    // same React key. It wins over everything the card decided locally.
+    rerender(<ProposalCard threadId="t-1" proposal={{ ...proposal, status: 'approved' }} onReload={() => {}} />);
+
+    expect(screen.getByText('approved')).toBeTruthy();
+    expect(screen.queryByText(/e-hash/)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Approve' })).toBeNull();
+  });
+
+  test('a non-markdown proposal previews as text, never through the HTML sink', async () => {
+    const txt = { ...proposal, path: 'matters/notes.txt', content: '<b>not bold</b>\n' };
+    install({ read: () => json({ path: txt.path, content: 'plain\n', version: 'abc1234def0' }) });
+    render(<ProposalCard threadId="t-1" proposal={txt} onReload={() => {}} />);
+    await waitFor(() => expect(lines('add')).toEqual(['+<b>not bold</b>\n']));
+    await userEvent.click(screen.getByRole('button', { name: 'preview' }));
+    expect(document.querySelector('pre.v2-preview')?.textContent).toBe(txt.content);
+    expect(document.querySelector('.v2-preview b')).toBeNull();
+  });
+
+  test('a decision in flight blocks a second one', async () => {
+    let land: (res: Response) => void = () => {};
+    install({ approve: () => new Promise<Response>(resolve => { land = resolve; }) });
+    render(<ProposalCard threadId="t-1" proposal={proposal} onReload={() => {}} />);
+    await waitFor(() => expect(lines('del').length).toBe(1));
+    await userEvent.click(screen.getByRole('button', { name: 'Approve' }));
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Reject' }) as HTMLButtonElement).disabled).toBe(true));
+    await userEvent.click(screen.getByRole('button', { name: 'Reject' }));
+    expect(calls.filter(call => call.url.endsWith('/approve'))).toHaveLength(1);
+    await act(async () => { land(json({ proposal: { ...proposal, status: 'approved' } })); });
   });
 });

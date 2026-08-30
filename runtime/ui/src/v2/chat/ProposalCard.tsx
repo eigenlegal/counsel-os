@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ApiError, fetchJson } from '../../api/client';
 import type { ApproveResult, ConflictBody, ProposalStatus, VaultFile } from '../../api/types';
 import type { ProposalView } from '../../chat/turns';
@@ -103,8 +103,16 @@ export function ProposalCard({ threadId, proposal, onReload, onOpenFile }: Propo
     }
   };
 
-  const hunks: Hunk[] | null =
-    current.state === 'ready' && proposal.content !== undefined ? unifiedHunks(current.content, proposal.content) : null;
+  // Keyed on the two texts and NOT on `view`. A full rewrite of a long file
+  // costs hundreds of milliseconds, so it is paid once: flipping to preview
+  // and back reuses this, and a re-render for `busy` or for the streaming
+  // parent above recomputes nothing. Adding `view` to the deps would skip
+  // the compute while previewing at the price of redoing it on the way back,
+  // which is the more common move of the two.
+  const hunks: Hunk[] | null = useMemo(
+    () => (current.state === 'ready' && proposal.content !== undefined ? unifiedHunks(current.content, proposal.content) : null),
+    [current, proposal.content],
+  );
 
   return (
     <section className="v2-card v2-proposal" data-testid={`proposal-${proposal.id}`}>

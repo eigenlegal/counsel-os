@@ -489,7 +489,10 @@ html[data-ui="v2"] h1, html[data-ui="v2"] h2, html[data-ui="v2"] h3 { letter-spa
 .v2-proposal-version { margin-left: auto; color: var(--fg-muted); font-family: var(--mono); font-size: 0.75rem; }
 .v2-proposal-actions { display: flex; gap: var(--s2); }
 .v2-proposal .v2-notice { margin: 0; }
-.v2-diff { display: flex; flex-direction: column; gap: var(--s2); }
+/* Bounded like `.v2-step-detail pre`: a full rewrite of a long file is one
+   very tall hunk, and unbounded it would push the rest of the thread off
+   screen. The hunks scroll inside the card; each still scrolls sideways. */
+.v2-diff { display: flex; flex-direction: column; gap: var(--s2); max-height: 24rem; overflow: auto; }
 .v2-hunk { margin: 0; padding: var(--s2) 0; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-sunken); font-size: 0.82rem; line-height: 1.5; white-space: pre; overflow-x: auto; }
 .v2-diff-line { display: block; padding: 0 var(--s3); }
 .v2-diff-add { background: rgba(47, 122, 62, 0.14); color: var(--ok); }
