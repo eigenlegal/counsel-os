@@ -11,7 +11,7 @@ import './styles.css';
 // bookmark or a screenshot carries is the route and not the credential.
 bootstrapToken();
 
-// Likewise before React renders: `?ui=v2` is read out of the fragment and
+// Likewise before React renders: `?ui=v1` / `?ui=v2` is read out of the fragment and
 // stripped here, so no component has to mutate the URL from its render phase.
 bootstrapUiFlag();
 

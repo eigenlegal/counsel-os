@@ -12,10 +12,17 @@ export interface RailProps {
   onDelete: (id: string) => void;
 }
 
-/** The title the first send gave the thread, or the day it was made. */
+/**
+ * The title the first send gave the thread, or `Untitled`.
+ *
+ * A thread made by v1 or by the CLI has no title, and the row already prints
+ * a date on its second line — so falling back to a date said the same thing
+ * twice and told the reader nothing about which thread this is. `Untitled`
+ * at least reads as a missing name rather than as a name.
+ */
 export function railLabel(thread: ThreadHeader): string {
   const title = thread.title?.trim() ?? '';
-  return title !== '' ? title : new Date(thread.createdAt).toLocaleDateString();
+  return title !== '' ? title : 'Untitled';
 }
 
 export function Rail({ threads, selected, draft, busy = false, onSelect, onNew, onDelete }: RailProps): JSX.Element {

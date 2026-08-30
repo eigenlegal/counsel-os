@@ -48,8 +48,10 @@ afterEach(() => {
   globalThis.fetch = realFetch;
   clearToken();
   sessionStorage.clear();
+  // `setUiFlag('v2')` FIRST, then clear: v2 is the default, so setting it
+  // removes the key and drops `ui-flag`'s session copy.
+  setUiFlag('v2');
   localStorage.clear();
-  setUiFlag('v1');
 });
 
 describe('SettingsPage', () => {
@@ -62,7 +64,7 @@ describe('SettingsPage', () => {
     // heading inside their own section, one level under the group card.
     const headings = Array.from(document.querySelectorAll('.v2-group h2'), el => el.textContent);
     expect(headings).toEqual(['Design', 'Default provider', 'Step timeout', 'Providers', 'Task routes', 'Test', 'Runtime']);
-    expect(screen.getByRole('switch', { name: 'Try the new design' })).toBeTruthy();
+    expect(screen.getByRole('switch', { name: 'New design' })).toBeTruthy();
     // The Test group keeps the step-4 confirm, word for word.
     await userEvent.click(screen.getByRole('button', { name: 'Test' }));
     expect(screen.getByText('This uses one call on fake/fake.')).toBeTruthy();

@@ -13,9 +13,12 @@ function noop(): void {}
 afterEach(cleanup);
 
 describe('railLabel', () => {
-  test('is the title, or the creation date', () => {
+  test('is the title, or Untitled', () => {
     expect(railLabel(titled)).toBe('Acme NDA term');
-    expect(railLabel(untitled)).toBe(new Date(at).toLocaleDateString());
+    // Not a date: the row's second line is already the date, and a title
+    // that repeats it names nothing.
+    expect(railLabel(untitled)).toBe('Untitled');
+    expect(railLabel({ ...titled, title: '   ' })).toBe('Untitled');
   });
 });
 
@@ -38,10 +41,10 @@ describe('Rail', () => {
     expect(screen.getByText('Acme NDA term')).toBeTruthy();
     expect(document.querySelector('li.v2-thread[aria-current="true"]')?.textContent).toContain('Acme NDA term');
 
-    // By the title span: the fixtures share a day, so the bare date string
-    // also appears as every row's `updatedAt`.
-    await userEvent.click(screen.getByText(new Date(at).toLocaleDateString(), { selector: '.v2-thread-title' }));
+    // The untitled row reads `Untitled`, and its date line still says when.
+    await userEvent.click(screen.getByText('Untitled', { selector: '.v2-thread-title' }));
     expect(picked).toEqual(['t-2']);
+    expect(document.querySelectorAll('.v2-thread-date')).toHaveLength(2);
 
     await userEvent.click(screen.getByRole('button', { name: 'New' }));
     expect(created).toBe(1);

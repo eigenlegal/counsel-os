@@ -22,31 +22,50 @@ function blockWrites(): () => void {
 
 afterEach(() => {
   cleanup();
+  // `setUiFlag('v2')` FIRST, then clear: v2 is the default, so setting it
+  // removes the key and drops `ui-flag`'s session copy. The other order
+  // would leave `'v1'` stored for the next test.
+  setUiFlag('v2');
   localStorage.clear();
-  setUiFlag('v1');
 });
 
 describe('DesignToggle', () => {
-  test('is off by default and turns v2 on', async () => {
+  test('is on by default and turning it off goes back to v1', async () => {
     render(<DesignToggle />);
-    const toggle = screen.getByRole('switch', { name: 'Try the new design' }) as HTMLInputElement;
+    const toggle = screen.getByRole('switch', { name: 'New design' }) as HTMLInputElement;
+    expect(toggle.checked).toBe(true);
+    // On is the default, so there is nothing stored to say so.
+    expect(localStorage.getItem(UI_FLAG_KEY)).toBeNull();
+
+    await userEvent.click(toggle);
+
+    expect(toggle.checked).toBe(false);
+    expect(readUiFlag()).toBe('v1');
+    expect(localStorage.getItem(UI_FLAG_KEY)).toBe('v1');
+    expect(screen.queryByText(/this tab only/)).toBeNull();
+  });
+
+  test('and turning it back on clears the opt-out', async () => {
+    setUiFlag('v1');
+    render(<DesignToggle />);
+    const toggle = screen.getByRole('switch', { name: 'New design' }) as HTMLInputElement;
     expect(toggle.checked).toBe(false);
 
     await userEvent.click(toggle);
 
     expect(toggle.checked).toBe(true);
     expect(readUiFlag()).toBe('v2');
-    expect(localStorage.getItem(UI_FLAG_KEY)).toBe('v2');
-    expect(screen.queryByText(/this tab only/)).toBeNull();
+    expect(localStorage.getItem(UI_FLAG_KEY)).toBeNull();
   });
 
   test('says so when the choice could not be saved', async () => {
     const unblock = blockWrites();
     try {
       render(<DesignToggle />);
-      await userEvent.click(screen.getByRole('switch', { name: 'Try the new design' }));
+      // Turning it OFF is the write now — the opt-out is the stored value.
+      await userEvent.click(screen.getByRole('switch', { name: 'New design' }));
       expect(screen.getByText(/this tab only/)).toBeTruthy();
-      expect(readUiFlag()).toBe('v2');
+      expect(readUiFlag()).toBe('v1');
     } finally {
       unblock();
     }
@@ -60,11 +79,11 @@ describe('DesignToggle', () => {
     const unblock = blockWrites();
     try {
       const first = render(<DesignToggle />);
-      await userEvent.click(screen.getByRole('switch', { name: 'Try the new design' }));
+      await userEvent.click(screen.getByRole('switch', { name: 'New design' }));
       first.unmount();
 
       render(<DesignToggle />);
-      expect((screen.getByRole('switch', { name: 'Try the new design' }) as HTMLInputElement).checked).toBe(true);
+      expect((screen.getByRole('switch', { name: 'New design' }) as HTMLInputElement).checked).toBe(false);
       expect(screen.getByText(/this tab only/)).toBeTruthy();
     } finally {
       unblock();
