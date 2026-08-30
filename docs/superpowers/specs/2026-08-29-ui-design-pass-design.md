@@ -12,13 +12,14 @@ contract-shaped structure. This pass changes how the four surfaces read, not wha
 A lawyer opens the page and it reads like counsel, not a developer tool: the answer first, the
 work counsel did one glance away, a proposal as a redline they can decide on in place, the vault
 beside the thread. Shipped **behind a toggle** so the founder can compare it with the plain
-surfaces before it becomes the default.
+surfaces before it becomes the default. That comparison happened: **v2 became the default on
+2026-08-30**, and the toggle now turns it off rather than on.
 
 ## 2. Decisions
 
 | Decision | Choice | Why |
 |---|---|---|
-| Rollout | `ui.v2` flag in `localStorage['counsel-os.ui']` (`'v2'` / absent); Settings shows a "Try the new design" switch; `#/?ui=v2` in the fragment also turns it on for one load. Default **off** | Founder rule: ship redesigns as an opt-in toggle |
+| Rollout | Shipped opt-in: `ui.v2` flag in `localStorage['counsel-os.ui']`, a Settings switch, `#/?ui=v2` in the fragment. **Default flipped to v2 on 2026-08-30 by founder decision**, after the comparison the toggle existed for. v1 stays reachable — the switch (now labelled "New design", on by default) and `ui=v1` in the fragment. Only the non-default choice is stored, so the key is `'v1'` or absent | Founder rule: ship redesigns as an opt-in toggle — then decide |
 | Code layout | v2 is a second set of surfaces under `runtime/ui/src/v2/`, sharing `api/`, `chat/turns.ts`, `vault/sanitize.ts`, `vault/markdown.ts`, `settings/registry-form.ts`. v1 components untouched. `app.tsx` picks the shell by the flag | Both must keep passing their tests; no API change |
 | Visual system | Tokens in `styles.css` under `[data-ui="v2"]`: warm paper (`--bg #fbfaf7`, `--fg #1f1d1a`, sunken `#f4f1ea`, border `#e8e3d9`), accent brown `#b45309` (proposals), status green `#2f7a3e` / amber `#b45309` / red `#b42318`; dark counterpart under `prefers-color-scheme: dark`; `--serif: "Iowan Old Style", Charter, Georgia, serif` for assistant prose only; `--sans` system; 4/8/12/16/24/32 px spacing; radius 8 px; one shadow | Warm tone chosen; no component library |
 | Shell | Top bar (brand · Chat / Vault / Settings · vault path · active model). Left rail: threads. Main: chat. Right: **vault drawer**, 320 px, closable, opened by the nav "Vault" link inside chat, a step's file link, or a proposal's "open in vault"; it renders `Tree` + `FileView`. `#/vault` and `#/settings` full pages stay | Workbench chosen: check a file without leaving the thread |
@@ -61,7 +62,7 @@ Dependencies added: `diff` (^8.0.4) to `runtime/ui`. Nothing added to the runtim
 
 ## 4. Interfaces
 
-- `readUiFlag(): 'v1' | 'v2'` — fragment `?ui=v2` wins for the load and is persisted; else `localStorage['counsel-os.ui'] === 'v2'`.
+- `readUiFlag(): 'v1' | 'v2'` — fragment `?ui=v1` / `?ui=v2` wins for the load and is persisted; else `localStorage['counsel-os.ui'] === 'v1' ? 'v1' : 'v2'` (v2 is the default since 2026-08-30; only the `'v1'` opt-out is stored).
 - `verbFor(tool: ToolCallView): { verb: string; object?: string }` — object is the `path` input when present.
 - `summarize(tools: ToolCallView[]): string` — "read 2 files, ran 1 tool" / "no tools".
 - `unifiedHunks(before: string, after: string): Hunk[]` where `Hunk = { kind: 'ctx' | 'add' | 'del'; text: string }[]`, 3 lines of context.
@@ -76,7 +77,7 @@ Same as step 4: 401 page, stream `error` → red strip, 409 on approve → reloa
 
 - Unit: `ui-flag` (fragment, storage, absent); `verbs` (table + fallback); `diff.ts` hunks; `Steps` (streaming lines, ms appears with result, show toggle); `Strip` (collapsed summary text; expanded record; error/timeout pills); `ProposalCard` v2 (diff renders del/add lines; preview flip goes through the sanitizer — script stripped; approve → status; 409 → reload prompt; fetch failure fallback); `Rail` titles; draft-create-on-send (one `POST /threads` with the title, then the step); Drawer open/close/Esc.
 - Existing v1 tests unchanged and green.
-- Playwright: the step-4 flow runs twice — v1 and v2 (`?ui=v2`); v2 adds: proposal diff visible → approve → drawer opens the file → strip shows `done`.
+- Playwright: the step-4 flow runs twice — v1 (`?ui=v1`, since the default flip) and v2 (the printed URL, no flag); v2 adds: proposal diff visible → approve → drawer opens the file → strip shows `done`.
 - Screenshots of v2 (chat with strip expanded, proposal card, drawer, settings) under `docs/superpowers/spikes/img/` + a "## Step 5 — design pass" section in the spikes doc; one live Ollama step, no subscription calls.
 
 ## 7. Build order

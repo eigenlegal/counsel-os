@@ -1682,6 +1682,7 @@ and `ui-flag.test.ts` covers the token-then-flag ordering.
 
 ### What the next plan should assume — Step 5
 
+- **The founder flipped the default to v2 on 2026-08-30** (after this run, and on the strength of the comparison below): an untouched browser opens v2, the switch reads "New design" and is on, and the classic page is `ui=v1` or that switch — so everything below that says "default off" describes how it shipped, not how it stands.
 - **v2 is behind the flag, default off, and both stories pass.** `?ui=v2` on a
   page LOAD turns it on and `localStorage['counsel-os.ui']` keeps it; the
   Settings switch flips either way without a reload. `bun run e2e` is now the
