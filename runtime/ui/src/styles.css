@@ -60,7 +60,7 @@
     --bg-hover: #262019;
     --fg: #ece5da;
     --fg-muted: #b8ad9e;
-    --fg-faint: #877c6d;
+    --fg-faint: #8c8172; /* 4.80:1 on --bg, 4.52:1 on --bg-raised — was #877c6d at 4.48:1 */
     --border: #322b24;
     --border-strong: #3e352c;
     --accent: #d99a4e;

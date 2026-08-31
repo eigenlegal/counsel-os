@@ -46,14 +46,13 @@ export function contrast(fg: string, bg: string): number {
 /** Every token that paints text a reader has to read. */
 const INKS = ['--fg', '--fg-muted', '--fg-faint', '--accent', '--ok', '--warn', '--amber', '--error'];
 
-/**
- * The one documented shortfall. Dark `--fg-faint: #877c6d` measures 4.48:1
- * on `#171412` — two hundredths under. It is spec §2 verbatim from the
- * approved mockups, and the 2026-08-30 contrast amendment deliberately
- * changed the LIGHT ramp only, so it stays. Pinned by its own test below so
- * the number is a decision on the record rather than a silent pass.
+/*
+ * Dark `--fg-faint` was the one documented shortfall (#877c6d, 4.48:1 on
+ * `--bg`). The final-review fix wave lightened it to #8c8172 so it clears
+ * 4.5:1 on BOTH dark backgrounds; the ramp test below now enforces it like
+ * every other ink, and the extra test pins the `--bg-raised` case the ramp
+ * test does not measure.
  */
-const DARK_FAINT_RATIO = 4.48;
 
 describe('the token ramps', () => {
   test('the ratio maths is right (white on black is 21:1, a colour on itself is 1:1)', () => {
@@ -70,7 +69,6 @@ describe('the token ramps', () => {
       const bg = tokens.get('--bg');
       expect(bg).toBeDefined();
       for (const ink of INKS) {
-        if (which === 'dark' && ink === '--fg-faint') continue;
         const value = tokens.get(ink);
         expect(value).toBeDefined();
         const ratio = contrast(value as string, bg as string);
@@ -84,10 +82,11 @@ describe('the token ramps', () => {
     });
   }
 
-  test('dark --fg-faint is the one documented exception, and has not drifted', () => {
+  test('dark --fg-faint clears 4.5:1 on the raised background too', () => {
     const tokens = ramp('dark');
-    const ratio = contrast(tokens.get('--fg-faint') as string, tokens.get('--bg') as string);
-    expect(Number(ratio.toFixed(2))).toBe(DARK_FAINT_RATIO);
+    const raised = tokens.get('--bg-raised');
+    expect(raised).toBeDefined();
+    expect(contrast(tokens.get('--fg-faint') as string, raised as string)).toBeGreaterThanOrEqual(4.5);
   });
 
   test('light: the on-accent ink is readable on the accent it sits on', () => {
