@@ -3,7 +3,7 @@ import { ApiError, fetchJson, streamStep } from '../../api/client';
 import type { Health, RunRecord, Thread, ThreadHeader } from '../../api/types';
 import { applyStepEvent, buildTurns, emptyAssistantTurn, type AssistantTurn, type Turn } from '../../chat/turns';
 import { createThread, titleFor } from '../threads';
-import { Composer } from './Composer';
+import { Composer, type ComposerSeed } from './Composer';
 import { TurnView } from './Turn';
 
 export interface ChatProps {
@@ -18,6 +18,9 @@ export interface ChatProps {
   /** A proposal was approved or rejected, on this vault path. */
   onFileDecided?: (path: string) => void;
   onOpenFile?: (path: string) => void;
+  /** A composer prefill from another surface — the vault reader's "Ask
+   * counsel about this file" (spec §3.4). */
+  seed?: ComposerSeed;
 }
 
 function detail(err: unknown): string {
@@ -34,7 +37,7 @@ function detail(err: unknown): string {
  * paths, so any load that ends up owning a finished stream hands the
  * composer back.
  */
-export function Chat({ threadId: initialThreadId, health, onThreadCreated, onThreadTouched, onFileDecided, onOpenFile }: ChatProps): JSX.Element {
+export function Chat({ threadId: initialThreadId, health, onThreadCreated, onThreadTouched, onFileDecided, onOpenFile, seed }: ChatProps): JSX.Element {
   /** The thread this pane is about. A ref, not only state: `load` and
    * `send` read it outside a render, and it changes exactly once — from
    * `null` to the id the first send created. Switching THREADS is the
@@ -291,6 +294,7 @@ export function Chat({ threadId: initialThreadId, health, onThreadCreated, onThr
         providers={health.providers}
         defaultProvider={health.default}
         streaming={streaming}
+        seed={seed}
         onSend={(message, provider) => void send(message, provider)}
         onStop={stop}
       />

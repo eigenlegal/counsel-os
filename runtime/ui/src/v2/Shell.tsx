@@ -5,6 +5,7 @@ import { onUnauthorized } from '../api/unauthorized';
 import type { Health, ThreadHeader } from '../api/types';
 import { parseHash, threadFromHash, TOKEN_MESSAGE, vaultPathFromHash, type Route } from '../app';
 import { Chat } from './chat/Chat';
+import type { ComposerSeed } from './chat/Composer';
 import { Drawer } from './Drawer';
 import { Rail } from './Rail';
 import { SettingsPage } from './settings/SettingsPage';
@@ -55,6 +56,8 @@ export function Shell(): JSX.Element {
    * the one thing a pasted link must never do. */
   const [notFound, setNotFound] = useState(false);
   const [busy, setBusy] = useState(false);
+  /** A prefill for the composer, pushed from the vault reader's ask bar. */
+  const [seed, setSeed] = useState<ComposerSeed | undefined>(undefined);
 
   const draftRef = useRef(draft);
   draftRef.current = draft;
@@ -69,6 +72,15 @@ export function Shell(): JSX.Element {
     setDrawer(current => ({ open: true, path: path ?? current.path }));
   }, []);
   const closeDrawer = useCallback((): void => setDrawer(current => ({ ...current, open: false })), []);
+
+  /** The vault's "Ask counsel about this file ↵": prefill the composer with
+   * the path and go to chat (spec §3.4). A prompt-fill, not a flow. */
+  const askAbout = useCallback((path: string): void => {
+    setSeed(current => ({ text: `Regarding \`${path}\`: `, nonce: (current?.nonce ?? 0) + 1 }));
+    setRoute('chat');
+    setVaultPath(null);
+    globalThis.history.replaceState(null, '', '#/chat');
+  }, []);
 
   const drawerRef = useRef(drawer);
   drawerRef.current = drawer;
@@ -274,13 +286,20 @@ export function Shell(): JSX.Element {
                   void loadThreads();
                 }}
                 onThreadTouched={() => void loadThreads()}
+                seed={seed}
                 onFileDecided={fileDecided}
                 onOpenFile={openDrawer}
               />
             )}
           </main>
           {drawer.open ? (
-            <Drawer path={drawer.path} revision={drawerRevision} onOpen={path => openDrawer(path)} onClose={closeDrawer} />
+            <Drawer
+              path={drawer.path}
+              revision={drawerRevision}
+              onOpen={path => openDrawer(path)}
+              onClose={closeDrawer}
+              onAsk={askAbout}
+            />
           ) : null}
         </div>
 
@@ -294,6 +313,7 @@ export function Shell(): JSX.Element {
         {route === 'vault' ? (
           <VaultPage
             path={vaultPath}
+            onAsk={askAbout}
             onOpen={path => {
               globalThis.location.hash = `#/vault?path=${encodeURIComponent(path)}`;
             }}

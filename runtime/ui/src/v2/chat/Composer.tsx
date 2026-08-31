@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import type { ProviderInfo } from '../../api/types';
 
+/** A prefill pushed in from outside — the vault's "Ask counsel about this
+ * file" (spec §3.4). The nonce distinguishes two asks about the same file. */
+export interface ComposerSeed {
+  text: string;
+  nonce: number;
+}
+
 export interface ComposerProps {
   providers: ProviderInfo[];
   /** `/health`'s `default`; `null` or an id no loaded provider answers to
@@ -10,6 +17,9 @@ export interface ComposerProps {
   disabled?: boolean;
   onSend: (message: string, provider: string) => void;
   onStop: () => void;
+  /** A prefill from another surface. Applied ONCE per nonce, so what the
+   * reader types after it survives every re-render. */
+  seed?: ComposerSeed;
 }
 
 /**
@@ -18,8 +28,16 @@ export interface ComposerProps {
  * from the saved default (the step-4 fix): a default naming an unloaded
  * provider falls back to the first loaded one, and the swap is said.
  */
-export function Composer({ providers, defaultProvider, streaming, disabled = false, onSend, onStop }: ComposerProps): JSX.Element {
+export function Composer({ providers, defaultProvider, streaming, disabled = false, onSend, onStop, seed }: ComposerProps): JSX.Element {
   const [message, setMessage] = useState('');
+  // Derived-from-props during render (React's own pattern), not an effect:
+  // an effect would paint the empty box first and steal a keystroke typed
+  // in between.
+  const [seenSeed, setSeenSeed] = useState(0);
+  if (seed !== undefined && seed.nonce !== seenSeed) {
+    setSeenSeed(seed.nonce);
+    setMessage(seed.text);
+  }
   const fallback = providers[0]?.id ?? '';
   const defaultLoaded = providers.some(p => p.id === defaultProvider);
   const [provider, setProvider] = useState(defaultLoaded ? (defaultProvider as string) : fallback);

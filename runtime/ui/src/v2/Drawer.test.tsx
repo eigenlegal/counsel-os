@@ -20,7 +20,8 @@ function install(read?: () => Response): void {
       if (dir === 'matters') return json([{ path: 'matters/acme.md', kind: 'file' }]);
       return json([]);
     }
-    if (url.startsWith('/vault/read')) return read === undefined ? json({ path: 'matters/acme.md', content: '# Acme\n', version: 'abc1234def' }) : read();
+    if (url.startsWith('/vault/read'))
+      return read === undefined ? json({ path: 'matters/acme.md', content: '# Acme\n', version: 'abc1234def', mtimeMs: null }) : read();
     throw new Error(`unexpected fetch: ${url}`);
   }) as unknown as typeof fetch;
 }
@@ -42,7 +43,9 @@ describe('Drawer', () => {
     render(<Drawer path="matters/acme.md" onOpen={() => {}} onClose={() => {}} />);
     await waitFor(() => expect(screen.getByText('matters')).toBeTruthy());
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Acme' })).toBeTruthy());
-    expect(screen.getByText(/version abc1234def/)).toBeTruthy();
+    // The Reader's crumbs and meta line replace FileView's path + full hash.
+    expect(document.querySelector('.v2-doc-crumbs b')?.textContent).toBe('acme.md');
+    expect(document.querySelector('.v2-doc-meta')?.textContent).toBe('version abc1234');
     // The full page is one link away, at the same path.
     expect((screen.getByRole('link', { name: 'open page' }) as HTMLAnchorElement).getAttribute('href')).toBe(
       '#/vault?path=matters%2Facme.md',
@@ -83,7 +86,7 @@ describe('Drawer', () => {
 
   test('a bumped revision makes the drawer read the file again', async () => {
     let content = '# Acme\nTerm: 2 years\n';
-    install(() => json({ path: 'matters/acme.md', content, version: 'v1' }));
+    install(() => json({ path: 'matters/acme.md', content, version: 'v1', mtimeMs: null }));
     const { rerender } = render(<Drawer path="matters/acme.md" revision={0} onOpen={() => {}} onClose={() => {}} />);
     await waitFor(() => expect(screen.getByText(/Term: 2 years/)).toBeTruthy());
 

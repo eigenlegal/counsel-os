@@ -1,26 +1,27 @@
 import { useEffect } from 'react';
-import { FileView } from '../vault/FileView';
 import { Tree } from '../vault/Tree';
-import { Breadcrumb, MISSING_FILE_NOTE } from './vault/VaultPage';
+import { Reader } from './vault/Reader';
 
 export interface DrawerProps {
   /** The file open in the drawer, or `null` for the tree alone. */
   path: string | null;
   /** Bumped by the shell when something wrote the open path — an approved
-   * proposal. `FileView` reads once per key, so without this the drawer
+   * proposal. The `Reader` reads once per key, so without this the drawer
    * would keep showing the file as it was before the decision. */
   revision?: number;
   onOpen(path: string): void;
   onClose(): void;
+  /** The reader's ask bar, when the shell offers it. */
+  onAsk?: (path: string) => void;
 }
 
 /**
- * The vault beside the thread (spec §2, "Shell"): 320 px, the same `Tree`
- * and `FileView` as the full page, closable by its button or Esc. Opened
- * by the shell's `openDrawer` — from the nav link on the chat route, a
- * step's path, or a proposal's "open in vault".
+ * The vault beside the thread: the same reading pane as the vault page,
+ * minus the outline, at 420px (spec §3.4). Closable by its button or Esc.
+ * Opened by the shell's `openDrawer` — from a step's path, or a proposal's
+ * "open in vault".
  */
-export function Drawer({ path, revision = 0, onOpen, onClose }: DrawerProps): JSX.Element {
+export function Drawer({ path, revision = 0, onOpen, onClose, onAsk }: DrawerProps): JSX.Element {
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') onClose();
@@ -48,10 +49,7 @@ export function Drawer({ path, revision = 0, onOpen, onClose }: DrawerProps): JS
         {path === null ? (
           <p className="muted v2-empty">Pick a file to read it.</p>
         ) : (
-          <>
-            <Breadcrumb path={path} />
-            <FileView key={`${path}#${revision}`} path={path} missingNote={MISSING_FILE_NOTE} />
-          </>
+          <Reader key={`${path}#${revision}`} path={path} onAsk={onAsk} />
         )}
       </div>
     </aside>

@@ -68,6 +68,7 @@ function install(opts: { events?: ThreadEvent[] } = {}): void {
     if (url.startsWith('/runs')) return json([]);
     if (url === '/threads') return json([acme, beta]);
     if (url.startsWith('/vault/read')) return json({ path: 'practice/standards/nda.md', content: '# NDA\nTerm: 2 years\n', version: 'abc1234def0', mtimeMs: 1 });
+    if (url.startsWith('/vault/overview')) return json({ matters: [], groups: { practice: 0, knowledge: 0, other: 0 } });
     if (url.startsWith('/vault/list')) return json([]);
     if (url.startsWith('/settings')) return json(settings);
     const match = /^\/threads\/(.+)$/.exec(url);

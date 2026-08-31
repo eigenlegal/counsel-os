@@ -33,6 +33,20 @@ describe('v2 Composer', () => {
     expect(screen.getByText(/is not loaded/).textContent).toContain('openai/nope');
   });
 
+  test('a seed fills the box once per nonce, and typing after it survives re-renders', async () => {
+    const seed = { text: 'Regarding `matters/acme.md`: ', nonce: 1 };
+    const { rerender } = render(
+      <Composer providers={PROVIDERS} defaultProvider="fake/fake" streaming={false} onSend={noop} onStop={noop} seed={seed} />,
+    );
+    const box = screen.getByRole('textbox', { name: 'Message' }) as HTMLTextAreaElement;
+    expect(box.value).toBe('Regarding `matters/acme.md`: ');
+    await userEvent.type(box, 'is the cap mutual?');
+    rerender(
+      <Composer providers={PROVIDERS} defaultProvider="fake/fake" streaming={false} onSend={noop} onStop={noop} seed={seed} />,
+    );
+    expect(box.value).toBe('Regarding `matters/acme.md`: is the cap mutual?');
+  });
+
   test('streaming disables the box and offers Stop', async () => {
     let stopped = 0;
     render(<Composer providers={PROVIDERS} defaultProvider="fake/fake" streaming onSend={noop} onStop={() => { stopped += 1; }} />);
