@@ -6,6 +6,12 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.11.0] — 2026-08-31
+
+Comprehensive UI redesign — brief/ledger workbench
+
+- Home dashboard (ask box, docket, matters), Word-style tracked-changes proposal redlines, real vault reading environment (grouped tree, cmd-K search, outline), brief/ledger design language in both themes, new read-only endpoints (/vault/overview, /proposals, /vault/search).
+
 ## [0.10.0] — 2026-08-30
 
 runtime: multi-model counsel runtime + local web UI (preview)
