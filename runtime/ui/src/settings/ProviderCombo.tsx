@@ -67,7 +67,9 @@ export function ProviderCombo({ id, label, value, options, onChange }: ProviderC
           aria-label="Show providers"
           aria-labelledby={undefined}
         >
-          <Chevron open={state.isOpen} />
+          {/* Always down: a dropdown trigger points down open or closed —
+              the open/closed rotation is tree-fold semantics, not this. */}
+          <Chevron />
         </button>
         {state.isOpen ? (
           <div className="v2-combo-pop" ref={popoverRef}>
