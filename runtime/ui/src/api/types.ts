@@ -151,10 +151,14 @@ export interface ConflictBody {
 }
 
 /** One entry of `GET /vault/list`. `path` is vault-relative, from the root
- * — the tree needs the whole path to ask for the level below it. */
+ * — the tree needs the whole path to ask for the level below it. `mtimeMs`
+ * and `size` arrived with the redesign (spec §4); optional so an older
+ * runtime still parses. */
 export interface VaultEntry {
   path: string;
   kind: 'file' | 'dir';
+  mtimeMs?: number;
+  size?: number;
 }
 
 /** `GET /vault/read` — 200. `version` is the content hash the vault stores;
@@ -164,6 +168,41 @@ export interface VaultFile {
   content: string;
   /** `null` if the file went away between the read and the hash. */
   version: string | null;
+  /** `null` when the store has no filesystem behind it. */
+  mtimeMs?: number | null;
+}
+
+/** `GET /vault/overview` (redesign spec §4). COPIED from
+ * `runtime/src/vault/overview.ts`; a change there is a change here. */
+export interface MatterOverview {
+  path: string;
+  title: string;
+  frontmatter: Record<string, string>;
+  mtimeMs: number;
+}
+
+export interface VaultOverview {
+  matters: MatterOverview[];
+  groups: { practice: number; knowledge: number; other: number };
+}
+
+/** `GET /proposals?status=pending`. COPIED from
+ * `runtime/src/loop/pending-proposals.ts`. */
+export interface PendingProposal {
+  threadId: string;
+  threadTitle: string;
+  id: string;
+  path: string;
+  rationale: string;
+  at: string;
+}
+
+/** One hit of `GET /vault/search`. COPIED from `Hit` in
+ * `runtime/src/core/types.ts`. */
+export interface VaultHit {
+  path: string;
+  snippet: string;
+  score: number;
 }
 
 /** One provider entry of `providers.yaml`, as `RegistryFile` parses it.

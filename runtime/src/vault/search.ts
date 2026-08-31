@@ -1,7 +1,7 @@
 import { lstat, readdir, readFile } from 'node:fs/promises';
 import { extname, join, relative, sep } from 'node:path';
 import type { Hit } from '../core/types';
-import { RESERVED_DIR, type SearchFn } from './fs-store';
+import { isJunkName, type SearchFn } from './fs-store';
 
 /** Text formats a vault actually holds. Anything else (PDF, DOCX, images) is
  * bytes as far as a substring scan is concerned — reading it would burn the
@@ -9,11 +9,6 @@ import { RESERVED_DIR, type SearchFn } from './fs-store';
  * searched: in a legal vault the signed PDFs are most of the documents, and
  * `MSA-indemnity-signed.pdf` is the most reliable metadata there is. */
 const DEFAULT_EXTENSIONS = ['.md', '.txt', '.json', '.yaml', '.yml', '.csv'];
-
-/** Directories that are never a user's knowledge, at any depth. `.counsel/` is
- * the store's own bookkeeping (version history); dotfiles and dotdirs are
- * tooling; `node_modules` is a dependency tree someone checked into a matter. */
-const SKIP_DIRS = new Set(['node_modules']);
 
 /**
  * Words that carry no signal in a literal substring search but, under AND,
@@ -108,9 +103,9 @@ export function fsSearch(opts: { maxHits?: number; maxFileBytes?: number; extens
         return; // Unreadable or missing directory: skip it, never fail the search.
       }
       for (const name of names) {
-        // `.counsel` is caught by the dot rule, but name it too: the ban is a
-        // rule of its own and should not depend on the directory's spelling.
-        if (name.startsWith('.') || name.toLowerCase() === RESERVED_DIR || SKIP_DIRS.has(name)) continue;
+        // The skip set the vault tree uses, so a walk and a listing can
+        // never disagree about what the vault holds.
+        if (isJunkName(name)) continue;
         const full = join(dir, name);
         let st;
         try {

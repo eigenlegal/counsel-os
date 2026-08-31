@@ -11,6 +11,15 @@ export type SearchFn = (query: string, root: string) => Promise<Hit[]>;
  * anything the runtime adds later. Not reachable through the public API. */
 export const RESERVED_DIR = '.counsel';
 
+/** Directory entries that are never a user's knowledge: the runtime's own
+ * `.counsel/` (any casing), dotfiles and dotdirs (`.DS_Store`, `.git*`,
+ * `.obsidian`), and `node_modules`. ONE predicate, used by both `list()` and
+ * `fsSearch`'s walk, so the tree and the search can never disagree about
+ * what a vault holds (redesign spec §4). */
+export function isJunkName(name: string): boolean {
+  return name.startsWith('.') || name.toLowerCase() === RESERVED_DIR || name === 'node_modules';
+}
+
 export function hashContent(content: string): Version {
   return createHash('sha256').update(content, 'utf8').digest('hex');
 }
@@ -151,11 +160,25 @@ export class FsVaultStore implements VaultStore {
     const names = await readdir(full);
     const out: Entry[] = [];
     for (const name of names) {
-      if (name === RESERVED_DIR) continue;
+      if (isJunkName(name)) continue;
       const s = await stat(join(full, name));
-      out.push({ path: join(dir, name), kind: s.isDirectory() ? 'dir' : 'file' });
+      out.push({
+        path: join(dir, name),
+        kind: s.isDirectory() ? 'dir' : 'file',
+        mtimeMs: s.mtimeMs,
+        size: s.size,
+      });
     }
     return out;
+  }
+
+  async mtime(tenant: Tenant, path: string): Promise<number | null> {
+    try {
+      return (await stat(this.abs(tenant, path))).mtimeMs;
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
+      throw err;
+    }
   }
 
   async search(tenant: Tenant, query: string): Promise<Hit[]> {

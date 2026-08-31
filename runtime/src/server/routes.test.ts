@@ -8,6 +8,7 @@ import type { Capabilities, ModelProvider, StepEvent, StepRequest } from '../cor
 import { Router } from '../router/router';
 import { ThreadStore, type ThreadEvent } from '../threads/store';
 import { FsVaultStore } from '../vault/fs-store';
+import { fsSearch } from '../vault/search';
 import { API_PREFIXES, createApp, type App, type ServerDeps } from './routes';
 import type { RuntimeState } from './settings';
 
@@ -630,8 +631,10 @@ describe('vault', () => {
 
     const list = await call(app, 'GET', '/vault/list?dir=matters/acme');
     expect(list.status).toBe(200);
-    const entries = (await list.json()) as Array<{ path: string; kind: string }>;
-    expect(entries).toEqual([{ path: 'matters/acme/notes.md', kind: 'file' }]);
+    const entries = (await list.json()) as Array<{ path: string; kind: string; mtimeMs: number; size: number }>;
+    expect(entries).toEqual([
+      { path: 'matters/acme/notes.md', kind: 'file', mtimeMs: expect.any(Number), size: expect.any(Number) },
+    ]);
 
     // The vault root lists without a dir parameter.
     const root = (await (await call(app, 'GET', '/vault/list')).json()) as Array<{ path: string }>;
@@ -922,5 +925,94 @@ describe('API_PREFIXES', () => {
 
   test('reserves settings, which Task 3 mounts into', () => {
     expect(API_PREFIXES).toContain('settings');
+  });
+
+  test('reserves proposals for the redesign docket', () => {
+    expect(API_PREFIXES).toContain('proposals');
+  });
+});
+
+describe('redesign reads (spec §4)', () => {
+  test('GET /vault/overview answers matters + groups; an empty vault answers empty', async () => {
+    const app = appWithFake();
+    const empty = (await (await call(app, 'GET', '/vault/overview')).json()) as { matters: unknown[] };
+    expect(empty.matters).toEqual([]);
+
+    mkdirSync(join(vaultRoot, 'matters'), { recursive: true });
+    writeFileSync(
+      join(vaultRoot, 'matters', '2026-06-vendora.md'),
+      '---\ntitle: Vendora × Worldpay\ndeadline: 2026-09-12\nnext_action: send document list\n---\nBody.\n',
+    );
+    mkdirSync(join(vaultRoot, 'practice'), { recursive: true });
+    writeFileSync(join(vaultRoot, 'practice', 'nda.md'), '# NDA\n');
+    writeFileSync(join(vaultRoot, 'note.md'), 'stray\n');
+
+    const res = await call(app, 'GET', '/vault/overview');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      matters: Array<{ path: string; title: string; frontmatter: Record<string, string>; mtimeMs: number }>;
+      groups: { practice: number; knowledge: number; other: number };
+    };
+    expect(body.matters.map(m => m.title)).toEqual(['Vendora × Worldpay']);
+    expect(body.matters[0]!.frontmatter['next_action']).toBe('send document list');
+    expect(body.groups).toEqual({ practice: 1, knowledge: 0, other: 1 });
+  });
+
+  test('GET /proposals lists pending only, with thread titles; other statuses are 400', async () => {
+    const app = appWithFake();
+    const a = await store.create('default', { title: 'NDA residuals fallback' });
+    await store.append('default', a.id, {
+      t: 'proposal',
+      at: '2026-08-30T10:00:00.000Z',
+      id: 'p-1',
+      path: 'practice/standards/nda.md',
+      content: 'X',
+      rationale: 'Record the fallback.',
+      status: 'pending',
+      expectedVersion: null,
+    });
+    const b = await store.create('default', { title: 'Vendora docs' });
+    await store.append('default', b.id, {
+      t: 'proposal',
+      at: '2026-08-30T11:00:00.000Z',
+      id: 'p-2',
+      path: 'memory/decisions.md',
+      content: 'Y',
+      rationale: 'Log it.',
+      status: 'approved',
+      expectedVersion: null,
+    });
+
+    const res = await call(app, 'GET', '/proposals?status=pending');
+    expect(res.status).toBe(200);
+    const listed = (await res.json()) as Array<{ id: string; threadId: string; threadTitle: string }>;
+    expect(listed.map(p => p.id)).toEqual(['p-1']);
+    expect(listed[0]!.threadTitle).toBe('NDA residuals fallback');
+    // Defaulting to pending is fine; anything else is not implemented.
+    expect((await call(app, 'GET', '/proposals')).status).toBe(200);
+    expect((await call(app, 'GET', '/proposals?status=approved')).status).toBe(400);
+    // And it is API surface: no token, no answer.
+    expect((await call(app, 'GET', '/proposals', { token: null })).status).toBe(401);
+  });
+
+  test('GET /vault/search runs the store search; a missing q is 400', async () => {
+    writeFileSync(join(vaultRoot, 'indemnity.md'), 'The indemnity cap is 12 months.\n');
+    const app = appWith([new FakeModelProvider([{ text: 'hi' }])], {
+      vault: new FsVaultStore(vaultRoot, { search: fsSearch() }),
+    });
+    const res = await call(app, 'GET', '/vault/search?q=indemnity');
+    expect(res.status).toBe(200);
+    const hits = (await res.json()) as Array<{ path: string; snippet: string; score: number }>;
+    expect(hits.map(h => h.path)).toEqual(['indemnity.md']);
+    expect(hits[0]!.snippet).toContain('indemnity cap');
+    expect((await call(app, 'GET', '/vault/search')).status).toBe(400);
+    expect((await call(app, 'GET', '/vault/search?q=')).status).toBe(400);
+  });
+
+  test('GET /vault/read carries mtimeMs', async () => {
+    writeFileSync(join(vaultRoot, 'note.md'), 'A note.\n');
+    const app = appWithFake();
+    const body = (await (await call(app, 'GET', '/vault/read?path=note.md')).json()) as { mtimeMs: unknown };
+    expect(typeof body.mtimeMs).toBe('number');
   });
 });

@@ -2,7 +2,7 @@ import { describe, expect, test, beforeEach } from 'bun:test';
 import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { FsVaultStore } from './fs-store';
+import { FsVaultStore, isJunkName } from './fs-store';
 import { VaultConflictError } from '../core/types';
 
 let root: string;
@@ -172,5 +172,57 @@ describe('FsVaultStore', () => {
     // is the correct escape check and the only one left.
     await store.write('default', '..foo.md', 'not an escape');
     expect(await store.read('default', '..foo.md')).toBe('not an escape');
+  });
+});
+
+describe('list metadata and junk filtering (redesign spec §4)', () => {
+  let root: string;
+  let store: FsVaultStore;
+
+  beforeEach(() => {
+    root = mkdtempSync(join(tmpdir(), 'junk-'));
+    store = new FsVaultStore(root);
+    mkdirSync(join(root, 'practice'));
+    mkdirSync(join(root, 'node_modules'));
+    mkdirSync(join(root, '.git'));
+    writeFileSync(join(root, '.DS_Store'), 'junk');
+    writeFileSync(join(root, '.gitignore'), 'junk');
+    writeFileSync(join(root, 'note.md'), 'A note.\n');
+  });
+
+  test('list excludes dotfiles, .git*, node_modules — the same skip set as fsSearch', async () => {
+    const entries = await store.list('default', '');
+    expect(entries.map(e => e.path).sort()).toEqual(['note.md', 'practice']);
+  });
+
+  test('entries carry mtimeMs and size', async () => {
+    const entries = await store.list('default', '');
+    for (const entry of entries) {
+      expect(typeof entry.mtimeMs).toBe('number');
+      expect(typeof entry.size).toBe('number');
+      expect(entry.mtimeMs!).toBeGreaterThan(0);
+    }
+    const note = entries.find(e => e.path === 'note.md')!;
+    expect(note.size).toBe('A note.\n'.length);
+  });
+
+  test('mtime answers a real path with a number and a missing one with null', async () => {
+    expect(await store.mtime('default', 'note.md')).toBeGreaterThan(0);
+    expect(await store.mtime('default', 'nope.md')).toBeNull();
+    // The same path guards as every other method: escapes throw.
+    await expect(store.mtime('default', '../x')).rejects.toThrow('path outside vault');
+  });
+
+  test('isJunkName names the set', () => {
+    for (const name of ['.DS_Store', '.git', '.gitignore', '.counsel', '.Counsel', 'node_modules']) {
+      expect(isJunkName(name)).toBe(true);
+    }
+    // NOTE (deviation from the brief): the brief spelled the negative case
+    // `'..foo.md'.slice(1)`, which is `.foo.md` — a dotfile, and so junk by
+    // the very rule this test states. Plain names are what the predicate
+    // must let through.
+    for (const name of ['matters', 'practice', 'nda.md', 'foo.md']) {
+      expect(isJunkName(name)).toBe(false);
+    }
   });
 });

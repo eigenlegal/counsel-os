@@ -88,6 +88,11 @@ export type Version = string;        // content hash
 export interface Entry {
   path: string;
   kind: 'file' | 'dir';
+  /** Filesystem metadata (redesign spec §4): recency for the tree's month
+   * labels and the home cards. Optional so in-memory test stores need not
+   * fake a filesystem. */
+  mtimeMs?: number;
+  size?: number;
 }
 
 export interface Hit {
@@ -107,6 +112,9 @@ export interface VaultStore {
   search(tenant: Tenant, query: string): Promise<Hit[]>;
   history(tenant: Tenant, path: string): Promise<Version[]>;
   version(tenant: Tenant, path: string): Promise<Version | null>;
+  /** The path's mtime in ms, or `null` when it does not exist. Optional:
+   * only `GET /vault/read` uses it, and only when the store has one. */
+  mtime?(tenant: Tenant, path: string): Promise<number | null>;
 }
 
 // ── Tools with platform gating (subprocess scripts, browse, docx) ─────────
