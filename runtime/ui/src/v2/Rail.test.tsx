@@ -41,6 +41,7 @@ function mount(over: Partial<Parameters<typeof Rail>[0]> = {}) {
       collapsed={false}
       onSelect={() => {}}
       onNew={() => {}}
+      onOpenDraft={() => {}}
       onDelete={() => {}}
       {...over}
     />,
@@ -165,6 +166,13 @@ describe('Rail', () => {
     mount({ draft: true, selected: null });
     expect(document.querySelector('li.v2-draft[aria-current="true"]')).toBeTruthy();
     expect((screen.getByRole('button', { name: 'New conversation' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  test('the draft row is a button that reaches onOpenDraft (cou-88)', async () => {
+    let opened = 0;
+    mount({ draft: true, selected: null, onOpenDraft: () => (opened += 1) });
+    await userEvent.click(screen.getByRole('button', { name: 'Open the new conversation' }));
+    expect(opened).toBe(1);
   });
 
   test('select and delete reach their handlers', async () => {

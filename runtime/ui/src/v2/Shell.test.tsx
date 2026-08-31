@@ -227,6 +227,43 @@ describe('Shell', () => {
     expect(document.querySelector('.v2-transcript .v2-empty')?.textContent).toContain('the thread is created when you send');
   });
 
+  // cou-88 regression: a draft left for another surface must be reachable
+  // again — the Chat nav and the rail's draft row both return to the SAME
+  // draft, never to a thread and never to a fresh (wiped) one.
+  test('the Chat nav returns to the live draft, not to a thread', async () => {
+    render(<Shell />);
+    await waitFor(() => expect(chatNode()).toBeTruthy());
+    await userEvent.click(screen.getByRole('button', { name: 'New conversation' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Message' }), 'half-typed');
+
+    goTo('#/');
+    expect(workNode()?.hasAttribute('hidden')).toBe(true);
+    goTo('#/chat');
+
+    expect(workNode()?.hasAttribute('hidden')).toBe(false);
+    expect(document.querySelector('li.v2-draft[aria-current="true"]')).toBeTruthy();
+    expect(document.querySelector('li.v2-thread[aria-current="true"]')).toBeNull();
+    expect(document.querySelector('.v2-thread-head')).toBeNull();
+    expect((screen.getByRole('textbox', { name: 'Message' }) as HTMLTextAreaElement).value).toBe('half-typed');
+  });
+
+  test("the rail's draft row navigates back to the draft from Home", async () => {
+    render(<Shell />);
+    await waitFor(() => expect(chatNode()).toBeTruthy());
+    await userEvent.click(screen.getByRole('button', { name: 'New conversation' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Message' }), 'keep me');
+
+    goTo('#/');
+    const pane = chatNode();
+    await userEvent.click(screen.getByRole('button', { name: 'Open the new conversation' }));
+
+    expect(workNode()?.hasAttribute('hidden')).toBe(false);
+    expect(location.hash).toBe('#/chat');
+    // The same pane: a return, not a re-keyed (wiped) draft.
+    expect(chatNode()).toBe(pane);
+    expect((screen.getByRole('textbox', { name: 'Message' }) as HTMLTextAreaElement).value).toBe('keep me');
+  });
+
   test('on #/vault the rail collapses to icons and the workspace hides, chat intact', async () => {
     render(<Shell />);
     await waitFor(() => expect(chatNode()).toBeTruthy());

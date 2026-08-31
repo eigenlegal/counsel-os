@@ -8,7 +8,8 @@ export interface RailProps {
   threads: ThreadHeader[];
   selected: string | null;
   /** True while the main pane holds a draft — a conversation with no thread
-   * yet. The draft is a row so the reader can see where they are. */
+   * yet. The draft is a row so the reader can see where they are, and a
+   * BUTTON so they can get back to it from any other surface (cou-88). */
   draft: boolean;
   busy?: boolean;
   /** `/health` — the footer's `● <default model> · <auth>` (spec §3.1). */
@@ -18,6 +19,9 @@ export interface RailProps {
   collapsed: boolean;
   onSelect: (id: string) => void;
   onNew: () => void;
+  /** The draft row: navigate back to the draft already live in the chat
+   * pane — never a reset. `onNew` starts a draft; this one returns to it. */
+  onOpenDraft: () => void;
   onDelete: (id: string) => void;
 }
 
@@ -63,6 +67,7 @@ export function Rail({
   collapsed,
   onSelect,
   onNew,
+  onOpenDraft,
   onDelete,
 }: RailProps): JSX.Element {
   return (
@@ -99,8 +104,14 @@ export function Rail({
           </div>
           <ul className="v2-rail-list" aria-label="Threads">
             {draft ? (
+              /* A button, not dead text (cou-88 nav bug: a draft left for
+                 Home or Settings was unreachable). The aria-label is distinct
+                 from the + button's "New conversation" — the two sit side by
+                 side and name different acts: start vs return. */
               <li className="v2-draft" aria-current="true">
-                <span className="v2-thread-title">New conversation</span>
+                <button type="button" className="v2-thread-open" aria-label="Open the new conversation" onClick={onOpenDraft}>
+                  <span className="v2-thread-title">New conversation</span>
+                </button>
               </li>
             ) : null}
             {threads.map(thread => (
