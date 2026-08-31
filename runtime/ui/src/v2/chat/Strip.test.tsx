@@ -74,7 +74,9 @@ describe('Strip', () => {
     render(<Strip turn={turn} run={run} ms={{}} />);
     expect(document.querySelector('summary .v2-pill')?.textContent).toBe('DONE');
     expect(screen.getByText('2 sources · 1 proposal pending')).toBeTruthy();
-    expect(document.querySelector('summary .v2-chevron')?.textContent).toBe('details ⌄');
+    // An SVG chevron from icons.tsx, not a `⌄` glyph (cou-82).
+    expect(document.querySelector('summary .v2-chevron')?.textContent?.trim()).toBe('details');
+    expect(document.querySelector('summary .v2-chevron svg.v2-chev-svg')).toBeTruthy();
     // The model, the duration and the tokens are NOT on the line any more —
     // they belong to the record, one click down.
     expect(document.querySelector('summary')?.textContent).not.toContain('fake/fake');

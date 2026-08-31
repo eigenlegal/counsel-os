@@ -286,6 +286,12 @@ a { color: var(--accent); }
 .v2-nav a[aria-current="page"] { background: var(--bg-hover); color: var(--fg); }
 .v2-nav a:hover { background: var(--bg-raised); }
 .v2-nav-icon { width: 16px; height: 16px; opacity: 0.75; flex-shrink: 0; }
+/* The shared expander chevron (icons.tsx `Chevron`): sized to the cap height
+   and pulled onto the text baseline, which the old `⌄`/`▸` glyphs never sat
+   on. In flex rows the wrapper centers it instead and vertical-align is
+   moot. */
+.v2-chev-svg { width: 10px; height: 10px; display: inline-block; vertical-align: -0.06em; flex-shrink: 0; }
+.v2-chev-closed { transform: rotate(-90deg); }
 .v2-rail-section {
   margin-top: 20px;
   padding: 0 10px 6px;
@@ -454,7 +460,13 @@ a { color: var(--accent); }
 
 /* Reading pane (mock-vault.html .doc): ~68ch serif measure. */
 .v2-vault-main { flex: 1; min-width: 0; overflow-y: auto; position: relative; }
-.v2-doc { max-width: 760px; margin: 0 auto; padding: 44px 48px 90px; position: relative; }
+/* A flex column at full pane height: `.v2-doc-flow` (the document) takes
+   the slack, so the ask bar under it anchors to the pane bottom on a short
+   document instead of floating just under the last line. The flow block is
+   its own formatting context, which keeps the outline's right float
+   working — floats are ignored by a flex container's direct layout. */
+.v2-doc { max-width: 760px; margin: 0 auto; padding: 44px 48px 90px; position: relative; min-height: 100%; display: flex; flex-direction: column; }
+.v2-doc-flow { flex: 1 0 auto; }
 .v2-drawer-file .v2-doc { padding: 8px 4px 40px; }
 .v2-doc-crumbs { font: 12.5px var(--mono); color: var(--fg-faint); margin-bottom: 8px; }
 .v2-doc-crumbs b { color: var(--fg-muted); font-weight: 500; }
@@ -491,6 +503,16 @@ a { color: var(--accent); }
 }
 .v2-registry { display: contents; }
 .v2-save { display: flex; flex-direction: column; gap: var(--s2); }
+/* The default-provider combobox (ProviderCombo): headless react-aria under
+ * our tokens. The list is an absolute sibling of the input, not a portal. */
+.v2-combo { position: relative; display: flex; align-items: center; }
+.v2-combo input { flex: 1; padding-right: 30px; }
+.v2-combo-toggle { position: absolute; right: 2px; background: none; border: none; color: var(--fg-faint); padding: 6px 8px; cursor: pointer; display: flex; align-items: center; }
+.v2-combo-pop { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 30; background: var(--bg-raised); border: 1px solid var(--border-strong); border-radius: var(--radius); box-shadow: var(--shadow); max-height: 14rem; overflow-y: auto; }
+.v2-combo-list { list-style: none; margin: 0; padding: 4px; }
+.v2-combo-item { padding: 6px 10px; border-radius: var(--radius); font: 13px var(--mono); color: var(--fg-muted); cursor: pointer; }
+.v2-combo-item[data-focused] { background: var(--bg-hover); color: var(--fg); }
+.v2-combo-item[aria-selected="true"] { color: var(--fg); font-weight: 600; }
 .v2-save-row { display: flex; gap: var(--s3); align-items: center; flex-wrap: wrap; }
 /* A placeholder is an example, not a value. Left at the browser's default
    weight, the Task routes example reads as a saved route. */

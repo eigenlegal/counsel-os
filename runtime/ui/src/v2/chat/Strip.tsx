@@ -1,5 +1,6 @@
 import type { RunRecord, RunStatus } from '../../api/types';
 import type { AssistantTurn } from '../../chat/turns';
+import { Chevron } from '../icons';
 import { stateOf } from '../verbs';
 import { readPathsOf } from './cite';
 import { Steps } from './Steps';
@@ -72,7 +73,7 @@ export function stripLine(turn: AssistantTurn): string {
 
 /**
  * A finished turn's work, folded into ONE HAIRLINE LINE (spec §3.3):
- * `DONE · 3 sources · 1 proposal pending · details ⌄`. Not a box and not a
+ * `DONE · 3 sources · 1 proposal pending · details`. Not a box and not a
  * ledger — the model, the duration and the tokens moved INTO the record, so
  * the collapsed line says only what a reader glancing past it needs.
  * Open, it is the full record — the steps with show/hide, primitives read,
@@ -99,7 +100,7 @@ export function Strip({ turn, run, ms, onOpenFile }: StripProps): JSX.Element {
         {failed === 0 ? null : <span className="v2-strip-failed">{failed === 1 ? '1 failed' : `${failed} failed`}</span>}
         {empty === 0 ? null : <span className="v2-strip-empty">{empty === 1 ? '1 empty' : `${empty} empty`}</span>}
         <span className="v2-chevron" aria-hidden="true">
-          details ⌄
+          details <Chevron />
         </span>
       </summary>
 

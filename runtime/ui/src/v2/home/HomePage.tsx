@@ -94,6 +94,11 @@ export function HomePage({ threads, onAsk, onOpenThread }: HomePageProps): JSX.E
    * that gets the getting-started block instead of the grid. A reader who
    * has conversations keeps them, whatever the vault holds. */
   const fresh = overview !== null && vaultError === null && matters.length === 0 && threads.length === 0;
+  /** The vault read has answered, one way or the other. Until then the
+   * lower region stays empty: painting the grid first would flash its
+   * "No matters yet." / "No conversations yet." placeholders over a fresh
+   * vault that is about to get the single getting-started block. */
+  const settled = overview !== null || vaultError !== null;
 
   const ask = (): void => {
     if (message === '') return;
@@ -209,7 +214,7 @@ export function HomePage({ threads, onAsk, onOpenThread }: HomePageProps): JSX.E
           ))}
         </div>
 
-        {fresh ? (
+        {!settled ? null : fresh ? (
           <div className="v2-getting-started rule-double">
             <p>Your vault has no matters yet — counsel files what it learns as you work.</p>
             <p>Ask a question above, or attach a contract from the vault to review.</p>

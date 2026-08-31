@@ -92,6 +92,36 @@ describe('Reader', () => {
     expect(asked).toEqual(['matters/x.md']);
   });
 
+  test('no ask bar before the file loads, or on a file that is not there', async () => {
+    install(() => json({ error: 'not found' }, 404));
+    render(<Reader path="practice/standards/nda.md" onAsk={() => {}} />);
+    await waitFor(() => expect(screen.getByText(MISSING_FILE_NOTE)).toBeTruthy());
+    // Nothing to ask about: the bar would anchor to the pane bottom under
+    // a note that says the file does not exist.
+    expect(document.querySelector('.v2-askbar')).toBeNull();
+  });
+
+  test('a deadline row reads like Home — due <date>, amber, raw date in the title', async () => {
+    const soon = new Date(Date.now() + 5 * 86_400_000).toISOString().slice(0, 10);
+    install(() => json({ path: 'matters/x.md', content: `---\ndeadline: ${soon}\n---\n# X\nBody.\n`, version: null, mtimeMs: null }));
+    render(<Reader path="matters/x.md" />);
+    await waitFor(() => expect(document.querySelector('.v2-fm-row dd')).toBeTruthy());
+    const dd = document.querySelector('.v2-fm-row dd') as HTMLElement;
+    expect(dd.textContent).toMatch(/^due /);
+    expect(dd.classList.contains('v2-due-hot')).toBe(true);
+    expect(dd.getAttribute('title')).toBe(soon);
+  });
+
+  test('a deadline that does not parse stays verbatim', async () => {
+    install(() => json({ path: 'matters/x.md', content: '---\ndeadline: end of Q3\n---\n# X\nBody.\n', version: null, mtimeMs: null }));
+    render(<Reader path="matters/x.md" />);
+    await waitFor(() => expect(document.querySelector('.v2-fm-row dd')).toBeTruthy());
+    const dd = document.querySelector('.v2-fm-row dd') as HTMLElement;
+    expect(dd.textContent).toBe('end of Q3');
+    expect(dd.classList.contains('v2-due-hot')).toBe(false);
+    expect(dd.getAttribute('title')).toBeNull();
+  });
+
   test('a non-markdown file renders raw', async () => {
     install(() => json({ path: 'matters/notes.txt', content: '<b>not bold</b>\n', version: null, mtimeMs: null }));
     render(<Reader path="matters/notes.txt" />);

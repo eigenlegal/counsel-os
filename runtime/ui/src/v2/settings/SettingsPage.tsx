@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ApiError, fetchJson } from '../../api/client';
 import type { Health as HealthData, SettingsErrorBody, SettingsView } from '../../api/types';
 import { Health } from '../../settings/Health';
+import { ProviderCombo } from '../../settings/ProviderCombo';
 import { ProviderTest } from '../../settings/ProviderTest';
 import {
   emptyRow,
@@ -157,16 +158,13 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
       <section className="v2-group">
         <h2>Default provider</h2>
         <div className="field">
-          <label htmlFor="v2-default">Default provider</label>
-          {/* A datalist, not a select: the default may legitimately name a
-              provider that is not loaded right now — the one you are about
-              to add — and a select could not express that. */}
-          <input id="v2-default" list="v2-default-options" value={form.default} onChange={e => patch({ default: e.target.value })} />
-          <datalist id="v2-default-options">
-            {effectiveIds.map(id => (
-              <option key={id} value={id} />
-            ))}
-          </datalist>
+          <ProviderCombo
+            id="v2-default"
+            label="Default provider"
+            value={form.default}
+            options={effectiveIds}
+            onChange={value => patch({ default: value })}
+          />
           <FieldError message={errors['default']} />
           {defaultIsKnown ? null : (
             <p className="v2-notice v2-notice-warn" role="status">

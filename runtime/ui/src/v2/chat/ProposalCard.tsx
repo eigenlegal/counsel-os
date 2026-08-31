@@ -3,6 +3,7 @@ import { ApiError, fetchJson } from '../../api/client';
 import type { ApproveResult, ConflictBody, ProposalStatus, VaultFile } from '../../api/types';
 import type { ProposalView } from '../../chat/turns';
 import { unifiedHunks, type Hunk } from '../diff';
+import { Chevron } from '../icons';
 import { redlineBlocks, wordDiff, type RedlineBlock } from '../redline';
 
 export interface ProposalCardProps {
@@ -57,7 +58,7 @@ export function statusText(status: ProposalStatus, decidedAt?: string): { classN
  * sink, and no part of a redline goes near it.
  *
  * Approved/rejected slips collapse to their set-text status with the change
- * one `view change ⌄` away. The current file is fetched ONCE, on mount —
+ * one `view change` fold away. The current file is fetched ONCE, on mount —
  * not again after a decision — so a settled slip keeps showing what
  * changed. The 409 handling is unchanged from the step-5 card.
  */
@@ -213,7 +214,7 @@ export function ProposalCard({ threadId, proposal, onReload, onDecided, onOpenFi
       {settled ? (
         <div className="v2-slip-acts">
           <button type="button" className="v2-link" aria-expanded={showChange} onClick={() => setShowChange(s => !s)}>
-            view change ⌄
+            view change <Chevron />
           </button>
         </div>
       ) : null}

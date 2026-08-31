@@ -119,7 +119,11 @@ export function Rail({
               </li>
             ))}
           </ul>
-          {threads.length === 0 && !draft ? <p className="muted v2-rail-empty">No threads yet.</p> : null}
+          {/* No "No threads yet." note: a fresh Home already carries the one
+              getting-started copy, and a second empty-state line in the rail
+              beside it read as the app saying the same thing twice
+              (cou-82). An empty list under the Conversations heading reads
+              empty on its own. */}
         </>
       )}
       <button

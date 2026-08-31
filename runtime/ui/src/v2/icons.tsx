@@ -44,3 +44,25 @@ export function SettingsIcon(): JSX.Element {
     </Icon>
   );
 }
+
+/**
+ * The expander chevron — every fold in the app draws THIS, not a `⌄`/`▸`
+ * glyph (whose baseline drifts font by font). Points down; `open={false}`
+ * rotates it to point right for a closed tree row.
+ */
+export function Chevron({ open = true }: { open?: boolean }): JSX.Element {
+  return (
+    <svg
+      className={open ? 'v2-chev-svg' : 'v2-chev-svg v2-chev-closed'}
+      viewBox="0 0 10 10"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.3}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M2.2 3.6 5 6.4l2.8-2.8" />
+    </svg>
+  );
+}
