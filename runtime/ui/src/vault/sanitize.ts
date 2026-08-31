@@ -89,6 +89,12 @@ const SAFE_SCHEME = /^(?:https?:|mailto:)/i;
  * stripped string sees that. HTML entities are already decoded — this reads
  * the parsed attribute, not the source text — so `&#106;avascript:` arrives
  * here spelled out.
+ *
+ * A same-page fragment (`#/vault?path=…`) is dropped with everything else
+ * that names no allowed scheme. The chat's source chips do NOT come through
+ * here: they are built as elements by the client from the files a step
+ * actually read (`v2/chat/cite.ts`), so a `#/vault` link a MODEL or a vault
+ * document wrote can never become one.
  */
 export function safeHref(raw: string): string | null {
   const stripped = raw.replace(/[\u0000-\u0020\u007f]/g, '');

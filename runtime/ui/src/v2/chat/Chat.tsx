@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, fetchJson, streamStep } from '../../api/client';
-import type { Health, RunRecord, Thread, ThreadHeader } from '../../api/types';
+import type { Health, RunRecord, Thread, ThreadEvent, ThreadHeader } from '../../api/types';
+import { proposalFromHash } from '../../app';
 import { applyStepEvent, buildTurns, emptyAssistantTurn, type AssistantTurn, type Turn } from '../../chat/turns';
-import { createThread, titleFor } from '../threads';
-import { Composer } from './Composer';
+import { createThread, defaultProviderId, titleFor } from '../threads';
+import { relTime } from '../time';
+import { prettifyName } from '../vault/frontmatter';
+import { Composer, type ComposerSeed } from './Composer';
 import { TurnView } from './Turn';
 
 export interface ChatProps {
@@ -18,10 +21,50 @@ export interface ChatProps {
   /** A proposal was approved or rejected, on this vault path. */
   onFileDecided?: (path: string) => void;
   onOpenFile?: (path: string) => void;
+  /** A composer prefill from another surface — the vault reader's "Ask
+   * counsel about this file" (spec §3.4). */
+  seed?: ComposerSeed;
+  /** The seed was applied — the shell drops it so it fires only once. */
+  onSeedUsed?: () => void;
+  /**
+   * A message to SEND as soon as this pane mounts — home's ask box, which
+   * has already committed to asking (spec §3.2). Same one-shot shape as
+   * `seed`, and the opposite of it: a seed waits in the box, an ask goes.
+   * It runs on the default provider, since home has no picker.
+   */
+  initialAsk?: ComposerSeed;
+  /** The ask was sent — the shell drops it, so a later remount of this pane
+   * cannot send it a second time. */
+  onAskUsed?: () => void;
 }
 
 function detail(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
+}
+
+/** The thread's own name, or the honest placeholder. A thread created from
+ * a message whose first line was blank has a title of `''`, which would
+ * render as an empty heading rather than as a thread nobody named. */
+function titleOf(header: ThreadHeader): string {
+  const title = header.title?.trim() ?? '';
+  return title === '' ? 'Untitled' : title;
+}
+
+/** Best-effort, client-side (spec §3.3): the thread's matter chip is the
+ * first matter file the thread read, prettified. `matters/` is the
+ * conventional dir; a vault with a custom `matters_path` just shows no chip
+ * — the chip is a courtesy, not a record. */
+export function matterChipOf(events: ThreadEvent[]): string | null {
+  for (const ev of events) {
+    if ('t' in ev) continue;
+    if (ev.type !== 'tool_call' || ev.name !== 'vault_read') continue;
+    const input = ev.input;
+    if (typeof input !== 'object' || input === null) continue;
+    const path = (input as Record<string, unknown>)['path'];
+    if (typeof path !== 'string' || !path.startsWith('matters/')) continue;
+    return prettifyName(path.slice(path.lastIndexOf('/') + 1));
+  }
+  return null;
 }
 
 /**
@@ -34,7 +77,18 @@ function detail(err: unknown): string {
  * paths, so any load that ends up owning a finished stream hands the
  * composer back.
  */
-export function Chat({ threadId: initialThreadId, health, onThreadCreated, onThreadTouched, onFileDecided, onOpenFile }: ChatProps): JSX.Element {
+export function Chat({
+  threadId: initialThreadId,
+  health,
+  onThreadCreated,
+  onThreadTouched,
+  onFileDecided,
+  onOpenFile,
+  seed,
+  onSeedUsed,
+  initialAsk,
+  onAskUsed,
+}: ChatProps): JSX.Element {
   /** The thread this pane is about. A ref, not only state: `load` and
    * `send` read it outside a render, and it changes exactly once — from
    * `null` to the id the first send created. Switching THREADS is the
@@ -126,6 +180,30 @@ export function Chat({ threadId: initialThreadId, health, onThreadCreated, onThr
     void load();
   }, [load]);
 
+  /**
+   * The docket's Review lands here with `&proposal=<id>` in the fragment:
+   * scroll the slip into view once the transcript holding it has rendered.
+   *
+   * The target is STATE, refreshed on `hashchange`, not read imperatively
+   * inside the scroll effect. The docket can list two pending proposals from
+   * one thread; reviewing the second while already in that thread changes
+   * the fragment and nothing else, so an effect keyed on the thread alone
+   * would never run again and the second Review would do nothing.
+   */
+  const [anchor, setAnchor] = useState<string | null>(() => proposalFromHash(globalThis.location.hash));
+  useEffect(() => {
+    const onHash = (): void => setAnchor(proposalFromHash(globalThis.location.hash));
+    globalThis.addEventListener('hashchange', onHash);
+    return () => globalThis.removeEventListener('hashchange', onHash);
+  }, []);
+
+  useEffect(() => {
+    if (thread === null || anchor === null) return;
+    // happy-dom does not implement scrollIntoView; the optional call keeps
+    // the tests honest rather than mocking the whole element.
+    document.getElementById(`proposal-${anchor}`)?.scrollIntoView?.({ block: 'start' });
+  }, [thread, anchor]);
+
   useEffect(() => () => abort.current?.abort(), []);
 
   useEffect(() => {
@@ -215,6 +293,23 @@ export function Chat({ threadId: initialThreadId, health, onThreadCreated, onThr
     }
   };
 
+  /**
+   * Home's ask box, sent (spec §3.2). The nonce is recorded BEFORE the send,
+   * so a re-render cannot send the same ask twice, and `onAskUsed` drops it
+   * from the shell, so a later remount of this pane cannot either.
+   *
+   * `initialAsk` is the only dependency on purpose: the nonce guard is what
+   * decides whether the body runs, whatever identity `send` or `health` has
+   * on a later render.
+   */
+  const askedNonce = useRef(0);
+  useEffect(() => {
+    if (initialAsk === undefined || initialAsk.nonce === askedNonce.current) return;
+    askedNonce.current = initialAsk.nonce;
+    onAskUsed?.();
+    void send(initialAsk.text, defaultProviderId(health));
+  }, [initialAsk]);
+
   const stop = (): void => abort.current?.abort();
   const reload = (): void => void load();
 
@@ -251,8 +346,18 @@ export function Chat({ threadId: initialThreadId, health, onThreadCreated, onThr
   const isDraft = threadId === null && pending === null && frozen.length === 0;
   const empty = !loading && threadId !== null && turns.length === 0 && frozen.length === 0 && pending === null;
 
+  const matter = thread === null ? null : matterChipOf(thread.events);
+
   return (
     <section className="v2-chat">
+      {thread === null ? null : (
+        <header className="v2-thread-head">
+          <h1>{titleOf(thread.header)}</h1>
+          {matter === null ? null : <span className="v2-matter-chip">matter: {matter}</span>}
+          <span className="v2-thread-date">{relTime(thread.header.createdAt)}</span>
+        </header>
+      )}
+
       <div className="v2-transcript" ref={transcript}>
         {loading ? <p className="muted v2-empty">Loading…</p> : null}
         {isDraft ? <p className="muted v2-empty">New conversation. Ask counsel something — the thread is created when you send.</p> : null}
@@ -288,10 +393,10 @@ export function Chat({ threadId: initialThreadId, health, onThreadCreated, onThr
       )}
 
       <Composer
-        providers={health.providers}
-        defaultProvider={health.default}
         streaming={streaming}
-        onSend={(message, provider) => void send(message, provider)}
+        seed={seed}
+        onSeedUsed={onSeedUsed}
+        onSend={message => void send(message, defaultProviderId(health))}
         onStop={stop}
       />
     </section>

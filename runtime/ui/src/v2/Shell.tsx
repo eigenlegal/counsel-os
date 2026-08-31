@@ -3,14 +3,14 @@ import { ApiError, fetchJson } from '../api/client';
 import { readToken } from '../api/token';
 import { onUnauthorized } from '../api/unauthorized';
 import type { Health, ThreadHeader } from '../api/types';
-import { parseHash, TOKEN_MESSAGE, vaultPathFromHash } from '../app';
+import { parseHash, threadFromHash, TOKEN_MESSAGE, vaultPathFromHash, type Route } from '../app';
 import { Chat } from './chat/Chat';
+import type { ComposerSeed } from './chat/Composer';
 import { Drawer } from './Drawer';
+import { HomePage } from './home/HomePage';
 import { Rail } from './Rail';
 import { SettingsPage } from './settings/SettingsPage';
 import { VaultPage } from './vault/VaultPage';
-
-type Route = 'chat' | 'vault' | 'settings';
 
 export interface DrawerState {
   open: boolean;
@@ -26,19 +26,18 @@ function byRecent(a: ThreadHeader, b: ThreadHeader): number {
 }
 
 /**
- * The workbench (spec §2, "Shell"): top bar, thread rail, the thread, and a
- * vault drawer on the right. `#/vault` and `#/settings` are still full
- * pages; on the chat route the nav's "Vault" opens the drawer instead, so a
- * file can be checked without leaving the thread.
+ * The workbench (redesign spec §3.1): the rail on the left of EVERYTHING
+ * (216px; a 56px icon rail on the vault route), then the main column —
+ * Home at `#/`, the chat workspace at `#/chat?thread=<id>`, the vault and
+ * settings pages.
  *
- * The chat is keyed by `chatKey`, which changes when the reader PICKS a
- * different thread or starts a draft — never when a draft becomes a thread
- * on its first send. Re-keying then would remount the chat mid-stream.
- *
- * A full page HIDES the workspace, it does not replace it. The chat owns
- * the step stream, and unmounting the chat aborts that stream — a step left
- * running while someone looks at a file would be recorded `abandoned`. So
- * the workspace renders on every route and the page renders beside it.
+ * The keep-stream invariant (PR #28) still holds: the chat workspace is
+ * HIDDEN off `#/chat`, never unmounted — unmounting aborts the step stream
+ * and records the run `abandoned`. Thread selection is written INTO the
+ * fragment (`?thread=`), but a rail click selects directly and rewrites the
+ * hash with `replaceState` — the `hashchange` listener is for navigation
+ * that arrives from outside (home rows, the docket's Review anchor, a
+ * pasted link).
  */
 export function Shell(): JSX.Element {
   const [route, setRoute] = useState<Route>(() => parseHash(globalThis.location.hash).route);
@@ -49,26 +48,29 @@ export function Shell(): JSX.Element {
   const [selected, setSelected] = useState<string | null>(null);
   const [draft, setDraft] = useState(false);
   const [chatKey, setChatKey] = useState(0);
-  /** True once the first `GET /threads` has settled. The chat adopts its
-   * thread ONCE, at mount, so it must not mount before the shell knows
-   * which one that is — a chat mounted in the gap between `/health` and
-   * the list would adopt `null` and stay a draft for good. */
   const [listed, setListed] = useState(false);
   const [drawer, setDrawer] = useState<DrawerState>({ open: false, path: null });
-  /** Bumped when something wrote the file the drawer is showing, which
-   * re-keys its `FileView` and makes it read the path again. */
   const [drawerRevision, setDrawerRevision] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  /** Set when the fragment named a thread the list does not have. The reader
+   * gets a draft AND is told — silently opening a DIFFERENT conversation is
+   * the one thing a pasted link must never do. */
+  const [notFound, setNotFound] = useState(false);
   const [busy, setBusy] = useState(false);
+  /** A prefill for the composer, pushed from the vault reader's ask bar. */
+  const [seed, setSeed] = useState<ComposerSeed | undefined>(undefined);
+  /** A message home's ask box already committed to — the chat pane SENDS
+   * this one rather than parking it in the box. Same one-shot shape as
+   * `seed`, and cleared the same way (`askUsed`). */
+  const [initialAsk, setInitialAsk] = useState<ComposerSeed | undefined>(undefined);
 
-  /** `draft` as of right now, for the load effect below — it must not RE-RUN
-   * when a draft opens, but it does have to see one. */
   const draftRef = useRef(draft);
   draftRef.current = draft;
-  /** Which `GET /threads` still speaks for the shell. Every caller takes a
-   * ticket before its fetch, so a newer request invalidates an older one's
-   * answer — including for the mount effect's seeding below, which must not
-   * act on a list that predates a thread the first send created. */
+  /** The route as of this render, for the callbacks that must not navigate:
+   * `onThreadCreated` (the send may finish after the reader left chat) and
+   * `deleteThread` (the rail is global now — delete is reachable from Home). */
+  const routeRef = useRef(route);
+  routeRef.current = route;
   const listSeq = useRef(0);
 
   const openDrawer = useCallback((path: string | null): void => {
@@ -76,24 +78,119 @@ export function Shell(): JSX.Element {
   }, []);
   const closeDrawer = useCallback((): void => setDrawer(current => ({ ...current, open: false })), []);
 
-  /** What the drawer is showing right now, readable outside a render. The
-   * callback below must not take `drawer` as a dependency: it is handed to
-   * `Chat`, and a new identity on every drawer move would be a new prop on
-   * the component that owns the stream. */
   const drawerRef = useRef(drawer);
   drawerRef.current = drawer;
 
-  /** An approval wrote `path`. Only the drawer that is open ON that path is
-   * stale, so only that one is made to read again. */
   const fileDecided = useCallback((path: string): void => {
     const open = drawerRef.current;
     if (open.open && open.path === path) setDrawerRevision(revision => revision + 1);
   }, []);
 
+  const selectThread = (id: string): void => {
+    setNotFound(false);
+    if (id === selected && !draft) return;
+    setSelected(id);
+    setDraft(false);
+    setChatKey(k => k + 1);
+  };
+
+  /** A rail/home click: select AND put the thread in the fragment, without
+   * waiting on a hashchange (deterministic under tests, and a no-op remount
+   * for the thread already on screen). */
+  const openThread = (id: string): void => {
+    selectThread(id);
+    setRoute('chat');
+    setVaultPath(null);
+    globalThis.history.replaceState(null, '', `#/chat?thread=${encodeURIComponent(id)}`);
+  };
+
+  const newDraft = (): void => {
+    setNotFound(false);
+    setSelected(null);
+    setDraft(true);
+    setChatKey(k => k + 1);
+  };
+
+  const openDraft = (): void => {
+    newDraft();
+    setRoute('chat');
+    setVaultPath(null);
+    globalThis.history.replaceState(null, '', '#/chat');
+  };
+
+  /** Re-stamp `?thread=` onto a bare `#/chat`. The rail's Chat link has no
+   * thread in its href, so following it from `#/chat?thread=t-1` used to
+   * leave t-1 on screen under a URL that no longer named it — copy the link
+   * or reload and the thread was gone. Only `?thread=` ever CHANGES the
+   * selection; a bare `#/chat` keeps it and fixes the URL instead. */
+  const stampThread = (): void => {
+    if (draft || selected === null) return;
+    globalThis.history.replaceState(null, '', `#/chat?thread=${encodeURIComponent(selected)}`);
+  };
+
+  /** Kept current for the hashchange listener, which must see this render's
+   * `selected`/`draft` without re-subscribing. */
+  const selectRef = useRef(selectThread);
+  selectRef.current = selectThread;
+  const stampRef = useRef(stampThread);
+  stampRef.current = stampThread;
+
+  /** The vault's "Ask counsel about this file ↵": prefill the composer with
+   * the path and go to chat (spec §3.4). A prompt-fill, not a flow.
+   *
+   * The fragment is re-stamped, never left bare: a URL that stops naming the
+   * open thread reopens a DIFFERENT one on reload (the invariant
+   * `stampThread` exists for). A draft has no thread to name, so `#/chat` is
+   * the whole truth there. */
+  const askAbout = useCallback((path: string): void => {
+    setSeed(current => ({ text: `Regarding \`${path}\`: `, nonce: (current?.nonce ?? 0) + 1 }));
+    setRoute('chat');
+    setVaultPath(null);
+    globalThis.history.replaceState(null, '', '#/chat');
+    stampRef.current();
+  }, []);
+
+  /** The composer took the seed. Dropping it here is what makes a seed fire
+   * ONCE: `Chat` is re-keyed on every thread switch and new draft, and a
+   * seed still in state would refill the fresh box with a path the reader
+   * left long ago. */
+  const seedUsed = useCallback((): void => setSeed(undefined), []);
+
+  /** Home's ask box: open a fresh draft chat and send the message. The draft
+   * path already creates the thread on send, titled from the first line —
+   * home adds nothing the composer's own send does not do.
+   *
+   * `setChatKey` remounts `Chat`, so the ask arrives at a pane with nothing
+   * of the last conversation in it. */
+  const startAsk = useCallback((message: string): void => {
+    setNotFound(false);
+    setSelected(null);
+    setDraft(true);
+    setChatKey(k => k + 1);
+    setInitialAsk(current => ({ text: message, nonce: (current?.nonce ?? 0) + 1 }));
+    setRoute('chat');
+    setVaultPath(null);
+    globalThis.history.replaceState(null, '', '#/chat');
+  }, []);
+
+  /** The chat pane sent the ask. Dropping it here is what keeps it to ONE
+   * send: `Chat` is re-keyed on every thread switch, and an ask left in
+   * state would be sent again — into whatever thread the reader opened
+   * next. */
+  const askUsed = useCallback((): void => setInitialAsk(undefined), []);
+
   useEffect(() => {
     const onHashChange = (): void => {
-      setRoute(parseHash(globalThis.location.hash).route);
-      setVaultPath(vaultPathFromHash(globalThis.location.hash));
+      const hash = globalThis.location.hash;
+      const next = parseHash(hash).route;
+      setRoute(next);
+      setVaultPath(vaultPathFromHash(hash));
+      const id = threadFromHash(hash);
+      if (id !== null) {
+        selectRef.current(id);
+        return;
+      }
+      if (next === 'chat') stampRef.current();
     };
     globalThis.addEventListener('hashchange', onHashChange);
     return () => globalThis.removeEventListener('hashchange', onHashChange);
@@ -101,10 +198,6 @@ export function Shell(): JSX.Element {
 
   useEffect(() => onUnauthorized(() => setUnauthorized(true)), []);
 
-  /** The thread list, plus whether this answer is still the current one.
-   * `fresh` is false when a newer `GET /threads` was asked for while this
-   * one was in flight; the rail keeps the newer list and the caller is told
-   * not to draw conclusions from a stale one. */
   const loadThreads = useCallback(async (): Promise<{ threads: ThreadHeader[]; fresh: boolean }> => {
     const ticket = ++listSeq.current;
     const list = await fetchJson<ThreadHeader[]>('/threads');
@@ -120,46 +213,31 @@ export function Shell(): JSX.Element {
       try {
         setHealth(await fetchJson<Health>('/health'));
         const { threads: list, fresh } = await loadThreads();
-        // A newer list was requested while this one was in flight, which
-        // only happens once a thread has been created or touched. That
-        // caller owns the selection now; seeding from this answer would
-        // fight it — and `selected`/`draft` cannot be consulted instead,
-        // because a state update set moments ago has not rendered yet.
         if (!fresh) return;
-        const first = list[0]?.id ?? null;
-        // "New" may have been clicked while this was in flight. Seeding a
-        // selection behind that draft leaves the shell somewhere the reader
-        // never asked to be.
+        // The fragment may already name the thread (a pasted link, the
+        // docket's Review). It wins over "most recent" when it exists.
+        const wanted = threadFromHash(globalThis.location.hash);
+        if (wanted !== null && !list.some(t => t.id === wanted)) {
+          // Deleted, or from another vault. Open a draft and SAY so, and drop
+          // the dead `?thread=` so the URL stops claiming otherwise.
+          if (!draftRef.current) {
+            setNotFound(true);
+            setDraft(true);
+            globalThis.history.replaceState(null, '', '#/chat');
+          }
+          return;
+        }
+        const first = wanted ?? list[0]?.id ?? null;
         if (!draftRef.current) setSelected(current => current ?? first);
         if (first === null) setDraft(true);
       } catch (err) {
         if (!(err instanceof ApiError && err.status === 401)) setError(detail(err));
-        // The chat mounts as a draft below; the rail has to say so too, or
-        // no row is current while the transcript shows one.
         setDraft(true);
       } finally {
-        // Either way the shell now knows as much as it is going to: a
-        // failed list leaves a draft rather than "Loading…" forever.
         setListed(true);
       }
     })();
   }, [unauthorized, loadThreads]);
-
-  const selectThread = (id: string): void => {
-    // Picking the thread already on screen must change NOTHING. Bumping the
-    // key would remount `Chat`, and a remount mid-stream throws away the
-    // answer being streamed and whatever is typed in the composer.
-    if (id === selected && !draft) return;
-    setSelected(id);
-    setDraft(false);
-    setChatKey(k => k + 1);
-  };
-
-  const newDraft = (): void => {
-    setSelected(null);
-    setDraft(true);
-    setChatKey(k => k + 1);
-  };
 
   const deleteThread = async (id: string): Promise<void> => {
     if (!globalThis.confirm('Delete this thread? Its transcript cannot be recovered from here.')) return;
@@ -172,6 +250,12 @@ export function Shell(): JSX.Element {
         const next = list[0]?.id ?? null;
         if (next === null) newDraft();
         else selectThread(next);
+        // The rail is global now, so Delete is reachable from Home and
+        // Settings. Only the chat route follows the new selection into the
+        // fragment — deleting from Home must not navigate away from Home.
+        if (routeRef.current === 'chat') {
+          globalThis.history.replaceState(null, '', next === null ? '#/chat' : `#/chat?thread=${encodeURIComponent(next)}`);
+        }
       }
     } catch (err) {
       if (!(err instanceof ApiError && err.status === 401)) setError(detail(err));
@@ -193,107 +277,93 @@ export function Shell(): JSX.Element {
 
   return (
     <div className="v2-shell">
-      <header className="v2-top">
-        <h1 className="v2-brand">counsel-os</h1>
-        <nav aria-label="Surfaces">
-          <a href="#/" aria-current={route === 'chat' ? 'page' : undefined}>
-            Chat
-          </a>
-          <a
-            href="#/vault"
-            aria-current={route === 'vault' ? 'page' : undefined}
-            onClick={
-              route === 'chat'
-                ? event => {
-                    // On the chat route the vault is a drawer, not a page —
-                    // but a cmd/ctrl/shift-click still means "open the page
-                    // in a new tab", so those are left to the browser.
-                    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
-                    event.preventDefault();
-                    openDrawer(null);
-                  }
-                : undefined
-            }
-          >
-            Vault
-          </a>
-          <a href="#/settings" aria-current={route === 'settings' ? 'page' : undefined}>
-            Settings
-          </a>
-        </nav>
-        {health === null ? null : (
-          <span className="v2-top-meta">
-            <span className="v2-top-vault" title={health.vault}>
-              {health.vault}
-            </span>
-            <span className="v2-top-model">{health.default ?? 'no default model'}</span>
-          </span>
+      <Rail
+        route={route}
+        threads={threads}
+        selected={selected}
+        draft={draft}
+        busy={busy}
+        health={health}
+        collapsed={route === 'vault'}
+        onSelect={openThread}
+        onNew={openDraft}
+        onDelete={id => void deleteThread(id)}
+      />
+      <div className="v2-main-col">
+        {error === null ? null : (
+          <p className="v2-notice v2-notice-error" role="alert">
+            {error}
+          </p>
         )}
-      </header>
+        {notFound ? (
+          <p className="v2-notfound muted" role="status">
+            that conversation was not found
+          </p>
+        ) : null}
 
-      {error === null ? null : (
-        <p className="v2-notice v2-notice-error" role="alert">
-          {error}
-        </p>
-      )}
-
-      {/* The chat workspace stays MOUNTED on every route and is only
-          HIDDEN off `#/`. Unmounting it would tear down `Chat`, and that
-          teardown aborts the step in flight: the runtime finishes the work
-          anyway, but the record it writes reads `abandoned`. `hidden` also
-          takes the block out of the accessibility tree, so nothing in here
-          is reachable — or focusable — while a full page is up. The rail
-          and the drawer go with it: they belong to the workspace, and a
-          full page owns the width. */}
-      <div className={drawer.open ? 'v2-work v2-drawer-open' : 'v2-work'} hidden={route !== 'chat'}>
-        <Rail
-          threads={threads}
-          selected={selected}
-          draft={draft}
-          busy={busy}
-          onSelect={selectThread}
-          onNew={newDraft}
-          onDelete={id => void deleteThread(id)}
-        />
-        <main className="v2-main">
-          {health === null || (!draft && !listed) ? (
-            <p className="muted v2-empty">Loading…</p>
-          ) : (
-            <Chat
-              key={chatKey}
-              threadId={draft ? null : selected}
-              health={health}
-              onThreadCreated={header => {
-                // The draft is now a thread; select it without re-keying.
-                setSelected(header.id);
-                setDraft(false);
-                void loadThreads();
-              }}
-              onThreadTouched={() => void loadThreads()}
-              onFileDecided={fileDecided}
-              onOpenFile={openDrawer}
+        {/* The chat workspace stays MOUNTED on every route and is only
+            HIDDEN off `#/chat` — the keep-stream invariant (PR #28). */}
+        <div className={drawer.open ? 'v2-work v2-drawer-open' : 'v2-work'} hidden={route !== 'chat'}>
+          <main className="v2-main">
+            {health === null || (!draft && !listed) ? (
+              <p className="muted v2-empty">Loading…</p>
+            ) : (
+              <Chat
+                key={chatKey}
+                threadId={draft ? null : selected}
+                health={health}
+                onThreadCreated={header => {
+                  setSelected(header.id);
+                  setDraft(false);
+                  // The fragment now names the thread — replaceState, so no
+                  // hashchange, so no remount mid-stream. Only while the
+                  // reader is still ON chat: a send that finishes after they
+                  // opened the vault must not rewrite the URL out from under
+                  // the page they are reading.
+                  if (routeRef.current === 'chat') {
+                    globalThis.history.replaceState(null, '', `#/chat?thread=${encodeURIComponent(header.id)}`);
+                  }
+                  void loadThreads();
+                }}
+                onThreadTouched={() => void loadThreads()}
+                seed={seed}
+                onSeedUsed={seedUsed}
+                initialAsk={initialAsk}
+                onAskUsed={askUsed}
+                onFileDecided={fileDecided}
+                onOpenFile={openDrawer}
+              />
+            )}
+          </main>
+          {drawer.open ? (
+            <Drawer
+              path={drawer.path}
+              revision={drawerRevision}
+              onOpen={path => openDrawer(path)}
+              onClose={closeDrawer}
+              onAsk={askAbout}
             />
-          )}
-        </main>
-        {drawer.open ? (
-          <Drawer path={drawer.path} revision={drawerRevision} onOpen={path => openDrawer(path)} onClose={closeDrawer} />
+          ) : null}
+        </div>
+
+        {route === 'home' ? <HomePage threads={threads} onAsk={startAsk} onOpenThread={openThread} /> : null}
+
+        {route === 'vault' ? (
+          <VaultPage
+            path={vaultPath}
+            onAsk={askAbout}
+            onOpen={path => {
+              globalThis.location.hash = `#/vault?path=${encodeURIComponent(path)}`;
+            }}
+          />
+        ) : null}
+
+        {route === 'settings' ? (
+          <main className="v2-page">
+            <SettingsPage health={health} />
+          </main>
         ) : null}
       </div>
-
-      {route === 'vault' ? (
-        <VaultPage
-          path={vaultPath}
-          onOpen={path => {
-            globalThis.location.hash = `#/vault?path=${encodeURIComponent(path)}`;
-          }}
-        />
-      ) : null}
-
-      {route === 'settings' ? (
-        <main className="v2-page">
-          <SettingsPage health={health} />
-        </main>
-      ) : null}
     </div>
   );
 }

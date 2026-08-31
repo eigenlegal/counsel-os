@@ -25,23 +25,48 @@ export function Health({ health, effective, file }: HealthProps): JSX.Element {
     <section className="settings-health">
       <h2>Runtime</h2>
       <dl className="facts">
-        <dt>Vault</dt>
-        <dd>
-          <code>{health === null ? '…' : health.vault}</code>
-        </dd>
-        <dt>Tenant</dt>
-        <dd>{health === null ? '…' : health.tenant}</dd>
-        <dt>Config file</dt>
-        <dd>
-          <code>{file}</code>
-        </dd>
-        <dt>Default</dt>
-        <dd>{effective.default === null ? <span className="muted">none — no provider resolves</span> : <code>{effective.default}</code>}</dd>
-        <dt>Step timeout</dt>
-        <dd>{effective.stepTimeoutMs} ms</dd>
+        <div className="fact">
+          <dt>
+            Vault
+            <span className="leader" aria-hidden="true" />
+          </dt>
+          <dd>
+            <code>{health === null ? '…' : health.vault}</code>
+          </dd>
+        </div>
+        <div className="fact">
+          <dt>
+            Tenant
+            <span className="leader" aria-hidden="true" />
+          </dt>
+          <dd>{health === null ? '…' : health.tenant}</dd>
+        </div>
+        <div className="fact">
+          <dt>
+            Config file
+            <span className="leader" aria-hidden="true" />
+          </dt>
+          <dd>
+            <code>{file}</code>
+          </dd>
+        </div>
+        <div className="fact">
+          <dt>
+            Default
+            <span className="leader" aria-hidden="true" />
+          </dt>
+          <dd>{effective.default === null ? <span className="muted">none — no provider resolves</span> : <code>{effective.default}</code>}</dd>
+        </div>
+        <div className="fact">
+          <dt>
+            Step timeout
+            <span className="leader" aria-hidden="true" />
+          </dt>
+          <dd>{effective.stepTimeoutMs} ms</dd>
+        </div>
       </dl>
 
-      <h3>Providers</h3>
+      <h3 className="runin">Providers</h3>
       {effective.providers.length === 0 ? (
         <p className="muted">No providers are loaded.</p>
       ) : (

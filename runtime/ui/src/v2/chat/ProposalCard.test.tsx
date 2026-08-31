@@ -10,12 +10,17 @@ const at = '2026-08-29T10:00:00.000Z';
 const proposal: ProposalView = {
   id: 'p-1',
   path: 'practice/standards/nda.md',
-  rationale: 'The term we agreed is not written down.',
-  content: '# NDA\nTerm: 3 years\n',
+  rationale: 'Record the fallback so drafts start from the position you actually take.',
+  content: '# NDA\n\nTerm: 2 years\n\nResiduals: not offered; fallback = narrow carve-out.\n',
   status: 'pending',
 };
 
-const CURRENT = { path: proposal.path, content: '# NDA\nTerm: 2 years\n', version: 'abc1234def0' };
+const CURRENT = {
+  path: proposal.path,
+  content: '# NDA\n\nTerm: 2 years\n\nResiduals: not offered, ever.\n',
+  version: 'abc1234def0',
+  mtimeMs: 1,
+};
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -37,8 +42,8 @@ function install(opts: { read?: () => Response; approve?: () => Response | Promi
   }) as unknown as typeof fetch;
 }
 
-function lines(kind: 'add' | 'del' | 'ctx'): string[] {
-  return Array.from(document.querySelectorAll(`.v2-diff-${kind}`), el => el.textContent ?? '');
+function marks(kind: 'ins' | 'del'): string[] {
+  return Array.from(document.querySelectorAll(`.v2-redline ${kind}`), el => el.textContent ?? '');
 }
 
 beforeEach(() => {
@@ -53,60 +58,88 @@ afterEach(() => {
   sessionStorage.clear();
 });
 
-describe('v2 ProposalCard', () => {
-  test('renders the redline against the current file, with its version', async () => {
+describe('the proposal slip', () => {
+  test('pending: tracked changes, changed blocks only, set-text status, against version, the anchor id', async () => {
     install();
     render(<ProposalCard threadId="t-1" proposal={proposal} onReload={() => {}} />);
-    await waitFor(() => expect(lines('del')).toEqual(['-Term: 2 years\n']));
-    expect(lines('add')).toEqual(['+Term: 3 years\n']);
-    expect(lines('ctx')).toEqual([' # NDA\n']);
+    // Word-style: only the words that actually moved are marked. The
+    // sentence around them stays one unbroken run of plain text — a redline
+    // that struck the whole line and re-typed it would be a lie about the
+    // size of the edit.
+    await waitFor(() => expect(marks('del').join('')).toContain(', ever'));
+    expect(marks('ins').join('')).toContain('; fallback = narrow carve-out');
+    // Changed blocks only: the untouched "Term" paragraph is not shown.
+    expect(document.querySelector('.v2-redline')?.textContent).not.toContain('Term: 2 years');
+    expect(document.querySelectorAll('.v2-redline del').length).toBeGreaterThan(0);
+    // Set text, not a pill.
+    expect(document.querySelector('.v2-status-pending')?.textContent).toBe('pending');
     expect(screen.getByText('against version abc1234')).toBeTruthy();
-    expect(calls[0]!.url).toBe('/vault/read?path=practice%2Fstandards%2Fnda.md');
+    expect(document.getElementById('proposal-p-1')).toBeTruthy();
     expect(screen.getByText(proposal.rationale)).toBeTruthy();
   });
 
-  test('a file that does not exist yet is all additions', async () => {
+  test('whole document and line diff are one click away, and changes-only comes back', async () => {
+    install();
+    render(<ProposalCard threadId="t-1" proposal={proposal} onReload={() => {}} />);
+    await waitFor(() => expect(marks('ins').length).toBeGreaterThan(0));
+
+    await userEvent.click(screen.getByRole('button', { name: 'whole document' }));
+    expect(document.querySelector('.v2-redline')?.textContent).toContain('Term: 2 years');
+
+    await userEvent.click(screen.getByRole('button', { name: 'line diff' }));
+    expect(document.querySelector('.v2-diff')).toBeTruthy();
+    expect(document.querySelector('.v2-redline')).toBeNull();
+
+    await userEvent.click(screen.getByRole('button', { name: 'changes only' }));
+    expect(document.querySelector('.v2-redline')?.textContent).not.toContain('Term: 2 years');
+  });
+
+  test('a proposal against a missing file is all insertions', async () => {
     install({ read: () => json({ error: 'not found' }, 404) });
     render(<ProposalCard threadId="t-1" proposal={proposal} onReload={() => {}} />);
-    await waitFor(() => expect(lines('add')).toEqual(['+# NDA\n', '+Term: 3 years\n']));
-    expect(lines('del')).toEqual([]);
+    await waitFor(() => expect(marks('ins').length).toBeGreaterThan(0));
+    expect(marks('del')).toEqual([]);
   });
 
-  test('preview renders the proposed markdown through the sanitizer', async () => {
+  test('script-looking content renders as literal text, never as HTML', async () => {
     install();
-    const scripted = { ...proposal, content: '# NDA\n<script>alert(1)</script>\nTerm: 3 years\n' };
+    const scripted = { ...proposal, content: '# NDA\n<script>alert(1)</script>\n' };
     render(<ProposalCard threadId="t-1" proposal={scripted} onReload={() => {}} />);
-    await waitFor(() => expect(lines('add').length).toBeGreaterThan(0));
-
-    await userEvent.click(screen.getByRole('button', { name: 'preview' }));
-
-    expect(document.querySelector('.v2-preview h1')?.textContent).toBe('NDA');
-    expect(document.querySelector('.v2-preview script')).toBeNull();
-    expect(document.querySelector('.v2-preview')?.textContent).not.toContain('alert(1)');
-    expect(document.querySelector('.v2-diff')).toBeNull();
-
-    await userEvent.click(screen.getByRole('button', { name: 'diff' }));
-    expect(document.querySelector('.v2-diff')).toBeTruthy();
+    await waitFor(() => expect(document.querySelector('.v2-redline')).toBeTruthy());
+    expect(document.querySelector('.v2-redline script')).toBeNull();
+    expect(document.querySelector('.v2-redline')?.textContent).toContain('<script>alert(1)</script>');
   });
 
-  test('approve calls the API, shows the status, and keeps the diff readable', async () => {
+  test('approve calls the API; the slip collapses to ✓ approved with the change one click away', async () => {
     install({ approve: () => json({ proposal: { ...proposal, status: 'approved' }, version: 'new0000' }) });
     render(<ProposalCard threadId="t-1" proposal={proposal} onReload={() => {}} />);
-    await waitFor(() => expect(lines('del').length).toBe(1));
+    await waitFor(() => expect(marks('del').length).toBeGreaterThan(0));
 
     await userEvent.click(screen.getByRole('button', { name: 'Approve' }));
 
-    await waitFor(() => expect(screen.getByText('approved')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/✓ approved/)).toBeTruthy());
     expect(calls.at(-1)).toEqual({ url: '/threads/t-1/approve', body: { proposalId: 'p-1', decision: 'approve' } });
     expect(screen.queryByRole('button', { name: 'Approve' })).toBeNull();
-    expect(lines('del')).toEqual(['-Term: 2 years\n']);
+    // Collapsed: the redline folds away…
+    expect(document.querySelector('.v2-redline')).toBeNull();
+    // …and "view change ⌄" brings it back.
+    await userEvent.click(screen.getByRole('button', { name: /view change/ }));
+    expect(marks('ins').length).toBeGreaterThan(0);
   });
 
   test('a 409 conflict becomes the reload footer with both versions', async () => {
     install({ approve: () => json({ error: 'vault conflict', conflict: { expected: 'expected-hash', actual: 'actual-hash' } }, 409) });
     let reloaded = 0;
-    render(<ProposalCard threadId="t-1" proposal={proposal} onReload={() => { reloaded += 1; }} />);
-    await waitFor(() => expect(lines('del').length).toBe(1));
+    render(
+      <ProposalCard
+        threadId="t-1"
+        proposal={proposal}
+        onReload={() => {
+          reloaded += 1;
+        }}
+      />,
+    );
+    await waitFor(() => expect(marks('del').length).toBeGreaterThan(0));
 
     await userEvent.click(screen.getByRole('button', { name: 'Approve' }));
 
@@ -121,12 +154,18 @@ describe('v2 ProposalCard', () => {
   test('a 409 for an already-decided proposal adopts the settled status', async () => {
     install({
       approve: () =>
-        json({ error: 'proposal is not pending', proposal: { t: 'proposal', at, id: 'p-1', path: proposal.path, content: '', rationale: '', status: 'rejected', expectedVersion: null } }, 409),
+        json(
+          {
+            error: 'proposal is not pending',
+            proposal: { t: 'proposal', at, id: 'p-1', path: proposal.path, content: '', rationale: '', status: 'rejected', expectedVersion: null },
+          },
+          409,
+        ),
     });
     render(<ProposalCard threadId="t-1" proposal={proposal} onReload={() => {}} />);
-    await waitFor(() => expect(lines('del').length).toBe(1));
+    await waitFor(() => expect(marks('del').length).toBeGreaterThan(0));
     await userEvent.click(screen.getByRole('button', { name: 'Approve' }));
-    await waitFor(() => expect(screen.getByText('rejected')).toBeTruthy());
+    await waitFor(() => expect(document.querySelector('.v2-status-rejected')?.textContent).toBe('rejected'));
     expect(screen.queryByRole('button', { name: 'Reject' })).toBeNull();
   });
 
@@ -135,20 +174,19 @@ describe('v2 ProposalCard', () => {
     render(<ProposalCard threadId="t-1" proposal={proposal} onReload={() => {}} />);
     await waitFor(() => expect(screen.getByText(/could not load current file: vault unreadable/)).toBeTruthy());
     expect(document.querySelector('.v2-proposal-raw')?.textContent).toBe(proposal.content);
-    expect(document.querySelector('.v2-diff')).toBeNull();
-    // Still decidable.
+    expect(document.querySelector('.v2-redline')).toBeNull();
     expect(screen.getByRole('button', { name: 'Approve' })).toBeTruthy();
   });
 
-  test('a live proposal with no content yet says the diff is loading', async () => {
+  test('a live proposal with no content yet says the change is loading', async () => {
     install();
     const { content: _dropped, ...live } = proposal;
     render(<ProposalCard threadId="t-1" proposal={live} onReload={() => {}} />);
-    expect(screen.getByText('loading diff…')).toBeTruthy();
+    expect(screen.getByText('loading the change…')).toBeTruthy();
     expect(screen.getByText(proposal.path)).toBeTruthy();
     // The card still reads the current file while the content is on its
-    // way, so the diff lands with the reload instead of a round trip after
-    // it. Settle that read here rather than leaving it to land untracked.
+    // way, so the change lands with the reload instead of a round trip
+    // after it. Settle that read here rather than leaving it untracked.
     await act(async () => {});
     expect(calls).toHaveLength(1);
   });
@@ -164,68 +202,108 @@ describe('v2 ProposalCard', () => {
   test('with no drawer, open in vault is a link to the vault page', async () => {
     install();
     render(<ProposalCard threadId="t-1" proposal={proposal} onReload={() => {}} />);
-    expect(screen.getByRole('link', { name: 'open in vault' }).getAttribute('href')).toBe('#/vault?path=practice%2Fstandards%2Fnda.md');
+    expect(screen.getByRole('link', { name: 'open in vault' }).getAttribute('href')).toBe(
+      '#/vault?path=practice%2Fstandards%2Fnda.md',
+    );
     await act(async () => {});
   });
 
   test('a reload with a decided proposal replaces the local state and clears the conflict', async () => {
     install({ approve: () => json({ error: 'vault conflict', conflict: { expected: 'e-hash', actual: 'a-hash' } }, 409) });
     const { rerender } = render(<ProposalCard threadId="t-1" proposal={proposal} onReload={() => {}} />);
-    await waitFor(() => expect(lines('del').length).toBe(1));
+    await waitFor(() => expect(marks('del').length).toBeGreaterThan(0));
     await userEvent.click(screen.getByRole('button', { name: 'Approve' }));
     await waitFor(() => expect(screen.getByText(/e-hash/)).toBeTruthy());
 
-    // What Reload brings back: the server's copy of the proposal, on the
-    // same React key. It wins over everything the card decided locally.
     rerender(<ProposalCard threadId="t-1" proposal={{ ...proposal, status: 'approved' }} onReload={() => {}} />);
 
-    expect(screen.getByText('approved')).toBeTruthy();
+    expect(screen.getByText(/✓ approved/)).toBeTruthy();
     expect(screen.queryByText(/e-hash/)).toBeNull();
     expect(screen.queryByRole('button', { name: 'Approve' })).toBeNull();
   });
 
-  test('a non-markdown proposal previews as text, never through the HTML sink', async () => {
-    const txt = { ...proposal, path: 'matters/notes.txt', content: '<b>not bold</b>\n' };
-    install({ read: () => json({ path: txt.path, content: 'plain\n', version: 'abc1234def0' }) });
-    render(<ProposalCard threadId="t-1" proposal={txt} onReload={() => {}} />);
-    await waitFor(() => expect(lines('add')).toEqual(['+<b>not bold</b>\n']));
-    await userEvent.click(screen.getByRole('button', { name: 'preview' }));
-    expect(document.querySelector('pre.v2-preview')?.textContent).toBe(txt.content);
-    expect(document.querySelector('.v2-preview b')).toBeNull();
-  });
-
   test('a decision in flight blocks a second one', async () => {
     let land: (res: Response) => void = () => {};
-    install({ approve: () => new Promise<Response>(resolve => { land = resolve; }) });
+    install({
+      approve: () =>
+        new Promise<Response>(resolve => {
+          land = resolve;
+        }),
+    });
     render(<ProposalCard threadId="t-1" proposal={proposal} onReload={() => {}} />);
-    await waitFor(() => expect(lines('del').length).toBe(1));
+    await waitFor(() => expect(marks('del').length).toBeGreaterThan(0));
     await userEvent.click(screen.getByRole('button', { name: 'Approve' }));
     await waitFor(() => expect((screen.getByRole('button', { name: 'Reject' }) as HTMLButtonElement).disabled).toBe(true));
     await userEvent.click(screen.getByRole('button', { name: 'Reject' }));
     expect(calls.filter(call => call.url.endsWith('/approve'))).toHaveLength(1);
-    await act(async () => { land(json({ proposal: { ...proposal, status: 'approved' } })); });
+    await act(async () => {
+      land(json({ proposal: { ...proposal, status: 'approved' } }));
+    });
   });
 
-  test('a decision tells the shell which path settled, so an open reader can refetch', async () => {
+  test('a decision tells the shell which path settled; a refused one tells nobody', async () => {
     install({ approve: () => json({ proposal: { ...proposal, status: 'approved' } }) });
     const decided: string[] = [];
     render(<ProposalCard threadId="t-1" proposal={proposal} onReload={() => {}} onDecided={path => decided.push(path)} />);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Approve' })).toBeTruthy());
-
     await userEvent.click(screen.getByRole('button', { name: 'Approve' }));
     await waitFor(() => expect(decided).toEqual(['practice/standards/nda.md']));
-    // And the card still shows what changed.
-    expect(lines('add')).toEqual(['+Term: 3 years\n']);
-  });
 
-  test('a decision the server refuses tells nobody to refetch', async () => {
+    cleanup();
+    calls = [];
     install({ approve: () => json({ error: 'this proposal is no longer pending' }, 409) });
-    const decided: string[] = [];
-    render(<ProposalCard threadId="t-1" proposal={proposal} onReload={() => {}} onDecided={path => decided.push(path)} />);
+    const refused: string[] = [];
+    render(<ProposalCard threadId="t-1" proposal={proposal} onReload={() => {}} onDecided={path => refused.push(path)} />);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Approve' })).toBeTruthy());
-
     await userEvent.click(screen.getByRole('button', { name: 'Approve' }));
     await waitFor(() => expect(screen.getByText('this proposal is no longer pending')).toBeTruthy());
-    expect(decided).toEqual([]);
+    expect(refused).toEqual([]);
+  });
+
+  // Review H1: `diffWords` is blind to whitespace, so these proposals produce
+  // no marks at all — and the gate must not read that as "nothing changes".
+  const WHITESPACE: [string, string, string][] = [
+    ['a dropped trailing newline', '# NDA\n\nTerm: 2 years\n', '# NDA\n\nTerm: 2 years'],
+    ['CRLF normalised to LF', '# NDA\r\n\r\nTerm: 2 years\r\n', '# NDA\n\nTerm: 2 years\n'],
+    ['a reflowed paragraph', '# NDA\n\nTerm:\n2 years\n', '# NDA\n\nTerm: 2 years\n'],
+  ];
+
+  for (const [name, before, after] of WHITESPACE) {
+    test(`${name} says so, opens on the line diff, and never claims the file already says this`, async () => {
+      install({ read: () => json({ ...CURRENT, content: before }) });
+      render(<ProposalCard threadId="t-1" proposal={{ ...proposal, content: after }} onReload={() => {}} />);
+
+      await waitFor(() => expect(screen.getByText(/Only whitespace or line-ending changes/)).toBeTruthy());
+      // The view it opens on is the one that can show the change, and it has
+      // something in it.
+      expect(document.querySelector('.v2-diff .v2-hunk')?.textContent ?? '').not.toBe('');
+      expect((screen.getByRole('button', { name: 'line diff' }) as HTMLElement).getAttribute('aria-pressed')).toBe('true');
+      expect(screen.queryByText(/the file already says this/)).toBeNull();
+      // And Approve is live, which is exactly why the copy had to be honest.
+      expect(screen.getByRole('button', { name: 'Approve' })).toBeTruthy();
+
+      // Back on changes-only there is nothing to mark — and still no lie.
+      await userEvent.click(screen.getByRole('button', { name: 'changes only' }));
+      expect(screen.queryByText(/the file already says this/)).toBeNull();
+      expect(screen.getByText(/Only whitespace or line-ending changes/)).toBeTruthy();
+      cleanup();
+    });
+  }
+
+  test('an approved proposal reloaded against its own result says it was applied, not that nothing changed', async () => {
+    // The page was reloaded: the vault now holds the approved content, so
+    // `wordDiff` finds nothing. The change still happened.
+    install({ read: () => json({ ...CURRENT, content: proposal.content! }) });
+    render(<ProposalCard threadId="t-1" proposal={{ ...proposal, status: 'approved' }} onReload={() => {}} />);
+    await userEvent.click(screen.getByRole('button', { name: /view change/ }));
+    await waitFor(() => expect(screen.getByText(/already applied/)).toBeTruthy());
+    expect(screen.queryByText(/the file already says this/)).toBeNull();
+  });
+
+  test('a proposal that truly matches the file still says the file already says this', async () => {
+    install({ read: () => json({ ...CURRENT, content: proposal.content! }) });
+    render(<ProposalCard threadId="t-1" proposal={proposal} onReload={() => {}} />);
+    await waitFor(() => expect(screen.getByText('No changes — the file already says this.')).toBeTruthy());
+    expect(screen.queryByText(/Only whitespace or line-ending changes/)).toBeNull();
   });
 });

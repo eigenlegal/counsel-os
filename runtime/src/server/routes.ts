@@ -1,11 +1,14 @@
 import { z } from 'zod';
 import { RouterError } from '../core/types';
 import { DEFAULT_STEP_TIMEOUT_MS, runStep, type CounselLoopDeps } from '../loop/counsel-loop';
+import { pendingProposals } from '../loop/pending-proposals';
 import { applyProposal } from '../loop/proposals';
 import { listRuns, readRun, type RunRecord } from '../loop/run-record';
 import { RegistryFile } from '../providers/registry';
 import type { ThreadEvent, ThreadHeader } from '../threads/store';
 import { normalizeVaultPath } from '../vault/knowledge-paths';
+import { vaultOverview } from '../vault/overview';
+import { readVaultConfig } from '../vault/resolve-root';
 import { isAuthorized } from './auth';
 import {
   applySettings,
@@ -48,7 +51,7 @@ export type App = (req: Request) => Promise<Response>;
  * static, served with no credential, so a new route whose prefix is missing
  * here would be reachable by anyone who can reach the port.
  */
-export const API_PREFIXES: readonly string[] = ['health', 'threads', 'runs', 'vault', 'settings'];
+export const API_PREFIXES: readonly string[] = ['health', 'threads', 'runs', 'vault', 'settings', 'proposals'];
 
 /** True when `pathname` belongs to the API (and so needs a token). `/` and
  * every client-side route are false. */
@@ -231,6 +234,10 @@ const SETTINGS_LOCK = 'settings';
 /** The comment line a typed stream opens with. A client that sees it knows the
  * missing `text` frames are suppression, not silence. */
 export const TYPED_PREAMBLE = ': typed\n\n';
+
+/** Set to `1` when a listing is bounded and something was left out — see
+ * `GET /proposals`. Absent means the response is the whole answer. */
+export const TRUNCATED_HEADER = 'x-counsel-truncated';
 
 /**
  * Drops `text` events (web-ui spec §4.3). Under an `outputSchema` the deltas
@@ -445,7 +452,14 @@ export function createApp(deps: ServerDeps): App {
     if (raw === null || raw === '') throw new HttpError(400, 'path is required');
     const path = vaultPath(raw);
     try {
-      return json({ path, content: await deps.vault.read(deps.tenant, path), version: await deps.vault.version(deps.tenant, path) });
+      return json({
+        path,
+        content: await deps.vault.read(deps.tenant, path),
+        version: await deps.vault.version(deps.tenant, path),
+        // Optional on the interface so in-memory stores need not fake a
+        // filesystem; `null` then, the same as "no mtime to show".
+        mtimeMs: (await deps.vault.mtime?.(deps.tenant, path)) ?? null,
+      });
     } catch (err) {
       vaultFailure(err);
     }
@@ -458,6 +472,35 @@ export function createApp(deps: ServerDeps): App {
     } catch (err) {
       vaultFailure(err);
     }
+  };
+
+  /** One call for home + the tree top (redesign spec §4). The config is
+   * re-read per request so a `matters_path` edit takes effect on reload. */
+  const vaultOverviewRoute = async (): Promise<Response> =>
+    json(await vaultOverview(deps.vault, deps.tenant, readVaultConfig(deps.vaultRoot)));
+
+  /** The vault search the ⌘K field runs (spec §3.4) — the same `SearchFn`
+   * behind the model's `vault_search` tool, read-only. */
+  const vaultSearchRoute = async (url: URL): Promise<Response> => {
+    const q = url.searchParams.get('q');
+    if (q === null || q.trim() === '') throw new HttpError(400, 'q is required');
+    return json(await deps.vault.search(deps.tenant, q));
+  };
+
+  /** The docket's feed (spec §4). Only the pending listing exists; an
+   * explicit other status is a 400 so a future caller cannot read
+   * "everything" as "pending".
+   *
+   * The body stays a bare array. The scan's thread bound rides on
+   * `x-counsel-truncated` instead, so a docket that is missing a founder
+   * gate can say so without every existing caller having to change shape. */
+  const proposalsRoute = async (url: URL): Promise<Response> => {
+    const status = url.searchParams.get('status') ?? 'pending';
+    if (status !== 'pending') throw new HttpError(400, `unsupported status: ${status}`);
+    const { proposals, scannedAll } = await pendingProposals(deps.store, deps.tenant);
+    const res = json(proposals);
+    if (!scannedAll) res.headers.set(TRUNCATED_HEADER, '1');
+    return res;
   };
 
   return async function app(req: Request): Promise<Response> {
@@ -515,6 +558,12 @@ export function createApp(deps: ServerDeps): App {
       if (segments.length === 2 && first === 'vault' && method === 'GET') {
         if (second === 'read') return await vaultRead(url);
         if (second === 'list') return await vaultList(url);
+        if (second === 'overview') return await vaultOverviewRoute();
+        if (second === 'search') return await vaultSearchRoute(url);
+      }
+
+      if (segments.length === 1 && first === 'proposals' && method === 'GET') {
+        return await proposalsRoute(url);
       }
 
       return fail(404, `no route for ${method} ${url.pathname}`);

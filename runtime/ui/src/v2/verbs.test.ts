@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { ToolCallView } from '../chat/turns';
-import { isEmptyResult, pathOf, stateOf, summarize, verbFor } from './verbs';
+import { isEmptyResult, pathOf, stateOf, verbFor, workLineOf } from './verbs';
 
 function tool(name: string, input: unknown = {}): ToolCallView {
   return { id: `${name}-1`, name, input, hasResult: true };
@@ -35,17 +35,6 @@ describe('pathOf', () => {
   });
 });
 
-describe('summarize', () => {
-  test('counts reads, primitives and the rest', () => {
-    expect(summarize([])).toBe('no tools');
-    expect(summarize([tool('vault_read'), tool('vault_read'), tool('propose_update')])).toBe('read 2 files, ran 1 tool');
-    expect(summarize([tool('vault_read')])).toBe('read 1 file');
-    expect(summarize([tool('read_primitive'), tool('read_primitive'), tool('vault_list'), tool('vault_search')])).toBe(
-      'consulted 2 primitives, ran 2 tools',
-    );
-  });
-});
-
 describe('isEmptyResult', () => {
   test('an answer of nothing, in every shape a tool returns it', () => {
     expect(isEmptyResult([])).toBe(true);
@@ -71,5 +60,32 @@ describe('stateOf', () => {
     expect(stateOf({ ...tool('vault_search'), isError: true, output: [] })).toBe('error');
     expect(stateOf({ ...tool('vault_search'), output: [] })).toBe('empty');
     expect(stateOf({ ...tool('vault_read'), output: '# Acme' })).toBe('ok');
+  });
+});
+
+describe('workLineOf', () => {
+  test('folds a turn into one line of parts', () => {
+    const parts = workLineOf([
+      tool('vault_search', { query: 'residuals' }),
+      tool('vault_read', { path: 'practice/standards/nda.md' }),
+      tool('vault_read', { path: 'matters/acme-nda.md' }),
+      tool('vault_read', { path: 'practice/standards/nda.md' }),
+      tool('propose_update', { path: 'practice/standards/nda.md', content: '' }),
+      tool('web_fetch', { url: 'https://x' }),
+    ]);
+    expect(parts).toEqual({ searched: true, listed: false, read: ['nda.md', 'acme-nda.md'], proposed: 1, other: 1 });
+  });
+
+  test('two read files sharing a basename keep their parent, so neither hides', () => {
+    const parts = workLineOf([
+      tool('vault_read', { path: 'practice/standards/nda.md' }),
+      tool('vault_read', { path: 'matters/acme/nda.md' }),
+      tool('vault_read', { path: 'memory/decisions.md' }),
+    ]);
+    expect(parts.read).toEqual(['standards/nda.md', 'acme/nda.md', 'decisions.md']);
+  });
+
+  test('nothing ran, nothing to say', () => {
+    expect(workLineOf([])).toEqual({ searched: false, listed: false, read: [], proposed: 0, other: 0 });
   });
 });

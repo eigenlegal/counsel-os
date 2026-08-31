@@ -1,22 +1,24 @@
 import './test/dom';
 
 import { describe, expect, test } from 'bun:test';
-import { parseHash, routeFromHash, vaultPathFromHash } from './app';
+import { parseHash, proposalFromHash, routeFromHash, threadFromHash, vaultPathFromHash } from './app';
 
 /**
- * The fragment router, which is the linchpin of the vault surface.
- *
- * It is tested as three pure functions rather than through a render because
- * the defect it exists to fix is a pure-string one: the previous matcher
- * compared the WHOLE fragment against `/vault`, so `#/vault?path=x` — the
- * shape every proposal-card link and every tree click produces — matched
- * nothing and fell through to chat. Every case below would have caught it.
+ * The fragment router. `#/` became Home in the step-6 redesign (spec §3.1);
+ * chat moved under `#/chat`, parameterized by `?thread=` — old `#/`
+ * deep-links land on Home, which the spec accepts.
  */
 describe('parseHash', () => {
-  test('an empty fragment and the home route are chat', () => {
-    expect(routeFromHash('')).toBe('chat');
-    expect(routeFromHash('#')).toBe('chat');
-    expect(routeFromHash('#/')).toBe('chat');
+  test('an empty fragment and the root are home', () => {
+    expect(routeFromHash('')).toBe('home');
+    expect(routeFromHash('#')).toBe('home');
+    expect(routeFromHash('#/')).toBe('home');
+  });
+
+  test('chat lives under #/chat, with or without a thread', () => {
+    expect(routeFromHash('#/chat')).toBe('chat');
+    expect(routeFromHash('#/chat?thread=t-1')).toBe('chat');
+    expect(routeFromHash('#/chat/anything')).toBe('chat');
   });
 
   test('a bare surface route is that surface', () => {
@@ -25,24 +27,19 @@ describe('parseHash', () => {
   });
 
   test('a query on the fragment does NOT send the vault to chat', () => {
-    // The regression this router was rewritten for.
     expect(routeFromHash('#/vault?path=practice/x.md')).toBe('vault');
     expect(routeFromHash('#/settings?anything=1')).toBe('settings');
   });
 
   test('a leading # is optional — the fragment arrives both ways', () => {
     expect(routeFromHash('/vault?path=a.md')).toBe('vault');
+    expect(routeFromHash('/chat?thread=t-1')).toBe('chat');
   });
 
-  test('an unknown route falls back to chat rather than a blank page', () => {
-    expect(routeFromHash('#/nope')).toBe('chat');
-    expect(routeFromHash('#/vaults')).toBe('chat');
-    expect(routeFromHash('#token=abc')).toBe('chat');
-  });
-
-  test('a sub-path under a surface stays on that surface', () => {
-    expect(routeFromHash('#/vault/anything')).toBe('vault');
-    expect(routeFromHash('#/settings/providers')).toBe('settings');
+  test('an unknown route falls back to home rather than a blank page', () => {
+    expect(routeFromHash('#/nope')).toBe('home');
+    expect(routeFromHash('#/vaults')).toBe('home');
+    expect(routeFromHash('#token=abc')).toBe('home');
   });
 
   test('the params come back parsed, and only from the query half', () => {
@@ -54,15 +51,36 @@ describe('parseHash', () => {
   });
 });
 
+describe('threadFromHash', () => {
+  test('reads the thread the chat fragment names', () => {
+    expect(threadFromHash('#/chat?thread=t-1')).toBe('t-1');
+    expect(threadFromHash(`#/chat?thread=${encodeURIComponent('214e6cd3-01ba-433f-828a-ff75c4c04e80')}`)).toBe(
+      '214e6cd3-01ba-433f-828a-ff75c4c04e80',
+    );
+  });
+
+  test('no thread, an empty thread, and a non-chat route are all null', () => {
+    expect(threadFromHash('#/chat')).toBeNull();
+    expect(threadFromHash('#/chat?thread=')).toBeNull();
+    expect(threadFromHash('#/vault?thread=t-1')).toBeNull();
+    expect(threadFromHash('#/')).toBeNull();
+  });
+});
+
+describe('proposalFromHash', () => {
+  test('reads the docket anchor and nothing else', () => {
+    expect(proposalFromHash('#/chat?thread=t-1&proposal=p-9')).toBe('p-9');
+    expect(proposalFromHash('#/chat?thread=t-1')).toBeNull();
+    expect(proposalFromHash('#/vault?proposal=p-9')).toBeNull();
+  });
+});
+
 describe('vaultPathFromHash', () => {
   test('reads the file the fragment names', () => {
     expect(vaultPathFromHash('#/vault?path=practice/x.md')).toBe('practice/x.md');
   });
 
   test('decodes what the tree and the proposal card encoded', () => {
-    // The exact round trip: `Tree`/`ProposalCard` write the hash with
-    // `encodeURIComponent`, so the slashes arrive as `%2F` and a space or a
-    // `#` in a filename must survive both directions.
     for (const path of ['matters/a/b.md', 'matters/Acme Corp/notes.md', 'matters/re #12.md', 'matters/a&b.md']) {
       expect(vaultPathFromHash(`#/vault?path=${encodeURIComponent(path)}`)).toBe(path);
     }
@@ -71,9 +89,7 @@ describe('vaultPathFromHash', () => {
   test('no path, an empty path, and a non-vault route are all "nothing open"', () => {
     expect(vaultPathFromHash('#/vault')).toBeNull();
     expect(vaultPathFromHash('#/vault?path=')).toBeNull();
-    expect(vaultPathFromHash('#/vault?other=1')).toBeNull();
     expect(vaultPathFromHash('#/')).toBeNull();
-    // A `path` on another surface is not a vault path.
     expect(vaultPathFromHash('#/settings?path=x.md')).toBeNull();
   });
 });

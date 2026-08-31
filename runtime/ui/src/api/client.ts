@@ -73,18 +73,43 @@ async function failure(res: Response): Promise<ApiError> {
   return new ApiError(res.status, await readBody(res));
 }
 
-/**
- * One JSON call. `T` is what the route documents; a 204 (`DELETE /threads/:id`)
- * resolves to `undefined`, which every 204 caller already treats as void.
- */
-export async function fetchJson<T>(path: string, init: RequestInit = {}): Promise<T> {
+/** The one request path: auth, the JSON headers, and the error translation
+ * every JSON caller shares. */
+async function request(path: string, init: RequestInit): Promise<Response> {
   const headers: Record<string, string> = { ...authHeaders(), accept: 'application/json' };
   if (init.body !== undefined && init.body !== null) headers['content-type'] = 'application/json';
 
   const res = await fetch(path, { ...init, headers: { ...headers, ...(init.headers as Record<string, string>) } });
   if (!res.ok) throw await failure(res);
+  return res;
+}
+
+/**
+ * One JSON call. `T` is what the route documents; a 204 (`DELETE /threads/:id`)
+ * resolves to `undefined`, which every 204 caller already treats as void.
+ */
+export async function fetchJson<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const res = await request(path, init);
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
+}
+
+/**
+ * The same call, with the response's headers.
+ *
+ * Some routes put a fact about the BODY in a header rather than in the body
+ * itself, so that adding it changes no caller's shape — `x-counsel-truncated`
+ * on `GET /proposals` says the scan was bounded, which the docket has to
+ * repeat or else it asserts a count it cannot support. A separate function
+ * rather than an option, so `fetchJson`'s own callers stay untouched.
+ */
+export async function fetchJsonWithHeaders<T>(
+  path: string,
+  init: RequestInit = {},
+): Promise<{ body: T; headers: Headers }> {
+  const res = await request(path, init);
+  const body = res.status === 204 ? (undefined as T) : ((await res.json()) as T);
+  return { body, headers: res.headers };
 }
 
 /**

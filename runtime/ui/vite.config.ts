@@ -14,7 +14,7 @@ import { defineConfig } from 'vite';
  */
 const RUNTIME_URL = process.env.RUNTIME_URL ?? 'http://127.0.0.1:7431';
 
-const API_PREFIXES = ['/health', '/threads', '/runs', '/vault', '/settings'];
+const API_PREFIXES = ['/health', '/threads', '/runs', '/vault', '/settings', '/proposals'];
 
 export default defineConfig({
   plugins: [react()],

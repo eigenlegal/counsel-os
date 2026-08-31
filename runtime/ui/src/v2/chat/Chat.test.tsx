@@ -1,4 +1,4 @@
-import { cleanup, render, screen, userEvent, waitFor } from '../../test/dom';
+import { act, cleanup, render, screen, userEvent, waitFor } from '../../test/dom';
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { clearToken, TOKEN_KEY } from '../../api/token';
@@ -76,6 +76,7 @@ function install(threadFor: (n: number) => Promise<Response>): void {
     const method = init?.method ?? 'GET';
     calls.push({ method, url, body: init?.body === undefined ? undefined : JSON.parse(String(init.body)) });
     if (url.startsWith('/runs')) return json([]);
+    if (url.startsWith('/vault/read')) return json({ path: 'practice/standards/nda.md', content: '# NDA\n', version: 'v1', mtimeMs: 1 });
     if (method === 'POST' && url === '/threads') return json({ id: 't-9', title: QUESTION, createdAt: at, updatedAt: at, sessions: {} });
     if (url.endsWith('/steps')) return stream(SSE);
     if (url.startsWith('/threads/')) {
@@ -127,7 +128,7 @@ describe('v2 Chat, from a draft', () => {
     // Trimmed: the prose is rendered markdown now, and `marked` ends a
     // block with a newline.
     expect(document.querySelector('.v2-prose')?.textContent?.trim()).toBe(ANSWER);
-    expect(document.querySelector('.v2-strip .v2-strip-summary')?.textContent).toBe('read 1 file');
+    expect(document.querySelector('.v2-strip .v2-strip-summary')?.textContent).toBe('1 source');
     composerIsUsable();
   });
 
@@ -233,5 +234,169 @@ describe('v2 Chat, when the end-of-stream refetch fails', () => {
     await waitFor(() => expect(screen.queryByText(/the vault went away/)).toBeNull());
     expect(screen.getAllByText(ANSWER)).toHaveLength(1);
     expect(screen.getAllByText(QUESTION)).toHaveLength(1);
+  });
+});
+
+describe("v2 Chat, given home's ask", () => {
+  const ASK = 'Review the Acme NDA.';
+
+  test('initialAsk sends once, on the default provider, creating the thread', async () => {
+    install(async () => json(answered('t-9')));
+    const used: number[] = [];
+    render(<Chat threadId={null} health={health} initialAsk={{ text: ASK, nonce: 1 }} onAskUsed={() => used.push(1)} />);
+
+    await waitFor(() => expect(calls.some(c => c.method === 'POST' && c.url === '/threads')).toBe(true));
+    const step = calls.find(c => c.url.endsWith('/steps'))!;
+    expect(step.body).toEqual({ message: ASK, provider: 'fake/fake' });
+    // The shell is told, so the ask is dropped and cannot fire again.
+    expect(used).toEqual([1]);
+
+    await waitFor(() => expect(screen.getByText(ANSWER)).toBeTruthy());
+    expect(calls.filter(c => c.method === 'POST' && c.url === '/threads')).toHaveLength(1);
+    expect(calls.filter(c => c.url.endsWith('/steps'))).toHaveLength(1);
+    composerIsUsable();
+  });
+
+  test('a re-render with the same ask does not send it again', async () => {
+    install(async () => json(answered('t-9')));
+    const ask = { text: ASK, nonce: 1 };
+    const { rerender } = render(<Chat threadId={null} health={health} initialAsk={ask} />);
+    await waitFor(() => expect(screen.getByText(ANSWER)).toBeTruthy());
+
+    rerender(<Chat threadId={null} health={health} initialAsk={{ ...ask }} />);
+    await waitFor(() => expect(screen.getByText(ANSWER)).toBeTruthy());
+    expect(calls.filter(c => c.url.endsWith('/steps'))).toHaveLength(1);
+  });
+
+  test('no ask sends nothing — a plain draft still waits for the reader', async () => {
+    install(async () => json(answered('t-9')));
+    render(<Chat threadId={null} health={health} />);
+    expect(calls).toEqual([]);
+    composerIsUsable();
+  });
+});
+
+describe('v2 Chat, the thread header', () => {
+  test('serif title, the matter chip from the first matter read, and the date', async () => {
+    const events: ThreadEvent[] = [
+      { t: 'user', at, content: 'check it' },
+      { t: 'step', at, runId: 'r-1', provider: 'fake/fake' },
+      { type: 'tool_call', at, id: 'c1', name: 'vault_read', input: { path: 'practice/standards/nda.md' } },
+      { type: 'tool_call', at, id: 'c2', name: 'vault_read', input: { path: 'matters/acme-nda.md' } },
+      { type: 'done', at, output: null, usage: { inputTokens: 1, outputTokens: 1 } },
+    ];
+    install(async () =>
+      json({ header: { id: 't-1', title: 'NDA residuals fallback', createdAt: at, updatedAt: at, sessions: {} }, events }),
+    );
+    render(<Chat threadId="t-1" health={health} />);
+    await waitFor(() => expect(document.querySelector('.v2-thread-head h1')?.textContent).toBe('NDA residuals fallback'));
+    // The first MATTER file, not the first file read at all.
+    expect(document.querySelector('.v2-matter-chip')?.textContent).toBe('matter: Acme nda');
+  });
+
+  test('a thread nobody named reads as Untitled, and a thread on no matter shows no chip', async () => {
+    install(async () =>
+      json(
+        thread('t-1', [
+          { t: 'user', at, content: 'check it' },
+          { t: 'step', at, runId: 'r-1', provider: 'fake/fake' },
+          { type: 'tool_call', at, id: 'c1', name: 'vault_read', input: { path: 'practice/standards/nda.md' } },
+          { type: 'done', at, output: null, usage: { inputTokens: 1, outputTokens: 1 } },
+        ]),
+      ),
+    );
+    render(<Chat threadId="t-1" health={health} />);
+    await waitFor(() => expect(document.querySelector('.v2-thread-head h1')?.textContent).toBe('Untitled'));
+    expect(document.querySelector('.v2-matter-chip')).toBeNull();
+  });
+
+  test('a draft has no thread, so it has no header', () => {
+    install(async () => json(answered('t-9')));
+    render(<Chat threadId={null} health={health} />);
+    expect(document.querySelector('.v2-thread-head')).toBeNull();
+  });
+});
+
+describe('v2 Chat, the docket anchor', () => {
+  /** Two pending proposals in one thread — the docket's Review row shape. */
+  function withProposals(): Thread {
+    return thread('t-1', [
+      { t: 'user', at, content: QUESTION },
+      { t: 'step', at, runId: 'r-1', provider: 'fake/fake' },
+      { type: 'text', at, text: ANSWER },
+      { t: 'proposal', at, id: 'p-1', path: 'practice/standards/nda.md', content: '# NDA\nTerm: 3 years\n', rationale: 'first', status: 'pending', expectedVersion: null },
+      { t: 'proposal', at, id: 'p-2', path: 'practice/standards/msa.md', content: '# MSA\n', rationale: 'second', status: 'pending', expectedVersion: null },
+      { type: 'done', at, output: null, usage: { inputTokens: 1, outputTokens: 2 } },
+    ]);
+  }
+
+  /** Records which element each scroll landed on. happy-dom has no
+   * `scrollIntoView`, so this is the whole implementation under test. */
+  function recordScrolls(): { ids: string[]; restore: () => void } {
+    const ids: string[] = [];
+    const proto = Element.prototype as unknown as Record<string, unknown>;
+    const had = 'scrollIntoView' in proto;
+    const before = proto['scrollIntoView'];
+    proto['scrollIntoView'] = function scrollIntoView(this: Element): void {
+      ids.push(this.id);
+    };
+    return {
+      ids,
+      restore: () => {
+        if (had) proto['scrollIntoView'] = before;
+        else delete proto['scrollIntoView'];
+      },
+    };
+  }
+
+  test('?proposal= scrolls that slip into view once the transcript holds it', async () => {
+    const scrolls = recordScrolls();
+    history.replaceState(null, '', '/#/chat?thread=t-1&proposal=p-2');
+    install(async () => json(withProposals()));
+    try {
+      render(<Chat threadId="t-1" health={health} />);
+      await waitFor(() => expect(document.getElementById('proposal-p-2')).toBeTruthy());
+      await waitFor(() => expect(scrolls.ids).toContain('proposal-p-2'));
+      expect(scrolls.ids).not.toContain('proposal-p-1');
+    } finally {
+      scrolls.restore();
+      history.replaceState(null, '', '/');
+    }
+  });
+
+  test('a second Review in the SAME thread still scrolls', async () => {
+    const scrolls = recordScrolls();
+    history.replaceState(null, '', '/#/chat?thread=t-1&proposal=p-1');
+    install(async () => json(withProposals()));
+    try {
+      render(<Chat threadId="t-1" health={health} />);
+      await waitFor(() => expect(scrolls.ids).toEqual(['proposal-p-1']));
+
+      // The reader is already in this thread; the docket's other row only
+      // changes the fragment. Nothing about `thread` changes.
+      await act(async () => {
+        history.replaceState(null, '', '/#/chat?thread=t-1&proposal=p-2');
+        globalThis.dispatchEvent(new Event('hashchange'));
+      });
+
+      await waitFor(() => expect(scrolls.ids).toEqual(['proposal-p-1', 'proposal-p-2']));
+    } finally {
+      scrolls.restore();
+      history.replaceState(null, '', '/');
+    }
+  });
+
+  test('no ?proposal= scrolls nothing', async () => {
+    const scrolls = recordScrolls();
+    history.replaceState(null, '', '/#/chat?thread=t-1');
+    install(async () => json(withProposals()));
+    try {
+      render(<Chat threadId="t-1" health={health} />);
+      await waitFor(() => expect(document.getElementById('proposal-p-1')).toBeTruthy());
+      expect(scrolls.ids).toEqual([]);
+    } finally {
+      scrolls.restore();
+      history.replaceState(null, '', '/');
+    }
   });
 });

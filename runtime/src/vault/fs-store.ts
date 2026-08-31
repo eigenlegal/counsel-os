@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { existsSync, realpathSync } from 'node:fs';
-import { mkdir, readdir, readFile, writeFile, appendFile, stat } from 'node:fs/promises';
+import { mkdir, readdir, readFile, writeFile, appendFile, lstat, stat } from 'node:fs/promises';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import type { Entry, Hit, Tenant, VaultStore, Version } from '../core/types';
 import { VaultConflictError } from '../core/types';
@@ -10,6 +10,15 @@ export type SearchFn = (query: string, root: string) => Promise<Hit[]>;
 /** The store's own directory inside the vault root: version history, and
  * anything the runtime adds later. Not reachable through the public API. */
 export const RESERVED_DIR = '.counsel';
+
+/** Directory entries that are never a user's knowledge: the runtime's own
+ * `.counsel/` (any casing), dotfiles and dotdirs (`.DS_Store`, `.git*`,
+ * `.obsidian`), and `node_modules`. ONE predicate, used by both `list()` and
+ * `fsSearch`'s walk, so the tree and the search can never disagree about
+ * what a vault holds (redesign spec §4). */
+export function isJunkName(name: string): boolean {
+  return name.startsWith('.') || name.toLowerCase() === RESERVED_DIR || name === 'node_modules';
+}
 
 export function hashContent(content: string): Version {
   return createHash('sha256').update(content, 'utf8').digest('hex');
@@ -151,11 +160,41 @@ export class FsVaultStore implements VaultStore {
     const names = await readdir(full);
     const out: Entry[] = [];
     for (const name of names) {
-      if (name === RESERVED_DIR) continue;
-      const s = await stat(join(full, name));
-      out.push({ path: join(dir, name), kind: s.isDirectory() ? 'dir' : 'file' });
+      if (isJunkName(name)) continue;
+      // `lstat`, and per-entry: exactly what `fsSearch`'s walk does, for the
+      // same reasons. `stat` FOLLOWS a link, so one dangling symlink threw
+      // ENOENT and failed the whole listing — which `vaultOverview` then read
+      // as "the directory is empty", so a vault with matters reported none.
+      // EACCES, EPERM and ELOOP (a self-referential link) failed identically.
+      // One bad entry must cost that entry, never the directory.
+      let s;
+      try {
+        s = await lstat(join(full, name));
+      } catch {
+        continue;
+      }
+      // A symlink is skipped outright, so `list` and `fsSearch` agree about
+      // what the vault holds. Listing one leaked the TARGET's `mtimeMs` and
+      // `size` into the tree even when the target sat outside the vault —
+      // reading through it was already blocked, but the metadata was not.
+      if (s.isSymbolicLink()) continue;
+      out.push({
+        path: join(dir, name),
+        kind: s.isDirectory() ? 'dir' : 'file',
+        mtimeMs: s.mtimeMs,
+        size: s.size,
+      });
     }
     return out;
+  }
+
+  async mtime(tenant: Tenant, path: string): Promise<number | null> {
+    try {
+      return (await stat(this.abs(tenant, path))).mtimeMs;
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
+      throw err;
+    }
   }
 
   async search(tenant: Tenant, query: string): Promise<Hit[]> {

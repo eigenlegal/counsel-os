@@ -1714,3 +1714,179 @@ retake used `/tmp/counsel-fixwave/` the same way, with `serve --fake` and a
 throwaway fake script — no model call. Both servers were killed and
 `pgrep -fl 'cli.ts serve'` reports nothing. `~/.counsel-os` was never written.
 The four PNGs are kept, in `docs/superpowers/spikes/img/`.
+
+## Step 6 — comprehensive redesign
+
+Date: 2026-08-31
+Branch: `ui-redesign` (worktree `.worktrees/ui-redesign`; Tasks 1–5 landed —
+`d6f2bbe` … `279b17d`)
+Spec: `docs/superpowers/specs/2026-08-30-ui-comprehensive-redesign-design.md` §6–§7
+
+Question: do the three redesigned surfaces hold up end to end — Home's ask
+box and docket, the tracked-changes slip, the vault's search and reading
+pane — against the fake provider, in both themes?
+
+### (a) `bun run e2e` — the redesign story · PASS
+
+```
+$ bunx playwright test -c e2e/playwright.config.ts
+[WebServer] ✓ built in 396ms
+[WebServer] counsel-os runtime on http://127.0.0.1:7499 (token withheld)
+
+Running 1 test using 1 worker
+
+  ✓  1 [chromium] › e2e/ui.spec.ts:40:5 › home asks, the slip redlines, the docket reviews, the vault reads (1.3s)
+
+  1 passed (4.0s)
+```
+
+One test, six `test.step`s, against a real `counsel-os serve --fake` on 7499:
+the token in the fragment becomes the credential and lands on HOME; a starter
+prompt-fills the ask box; `Ask` creates and names the thread and navigates to
+`#/chat?thread=…`; the proposal renders as a tracked-changes slip with all
+three views; the docket's `Review →` lands anchored on the slip and `Approve`
+settles it; the vault's ⌘K search, grouped tree and reading pane read the
+approved file; settings still reports the runtime. No model is called — the
+provider is `fake/fake`, driven by `e2e/fake-script.json`.
+
+Two selectors in the task brief did not survive contact with the built page,
+and the spec carries the corrections with a comment on each:
+
+1. `getByRole('button', { name: 'Review' })` matched TWO buttons — the
+   docket's and home's `Review a contract` starter — because Playwright's
+   `name` is a case-insensitive substring by default. The docket button's
+   accessible name is `Review →`: `.v2-docket-go::after` puts the motif's
+   arrow into the name, so `{ name: 'Review →', exact: true }` is the one
+   spelling that is both unique and true.
+2. `.v2-due` was pinned to the literal `due Sep 12`. The fixture deadline is
+   a fixed `2026-09-12`, so that assertion turns red on a CALENDAR DAY rather
+   than on a regression. It reads `/^(due|overdue) Sep 12$/` now — the label
+   `dueLabel` switches verbs on, without pinning the suite to this September.
+
+Gates, all green on this worktree at the time of writing: `bun run
+typecheck:ui` clean · `bun run ui:test` 296 pass / 0 fail · `bun run test`
+609 pass / 2 skip / 0 fail · `bun run e2e` 1 passed.
+
+### (b) Screenshots
+
+1360×860, both themes, from a throwaway `serve --fake` on 7497. Home is shot
+FIRST for both schemes, before either pass asks anything — the ask creates a
+thread in the shared scratch vault, so a light shot taken after the dark pass
+would carry a Conversations row the dark one never had. The chat and vault
+shots are one pass each, so the light rail legitimately shows the dark pass's
+thread as well as its own.
+
+![Home, dark](img/redesign-home-dark.png)
+![Home, light](img/redesign-home-light.png)
+![Chat with the tracked-changes slip, dark](img/redesign-chat-dark.png)
+![Chat with the tracked-changes slip, light](img/redesign-chat-light.png)
+![The vault reading pane, dark](img/redesign-vault-dark.png)
+![The vault reading pane, light](img/redesign-vault-light.png)
+
+### Defects found in Step 6 (recorded, not fixed)
+
+1. **The DARK ramp's `--fg-faint` misses 4.5:1; the light ramp does not.**
+   `runtime/ui/src/styles.css:63` — `#877c6d` measures **4.48:1** on `--bg`
+   (`#171412`) and **4.22:1** on `--bg-raised` (`#1e1a17`). Task 2 raised the
+   LIGHT `--fg-faint` to `#7a7061` (4.55:1 on paper, spec amended) and did not
+   re-measure its dark counterpart. The token is not decoration: it carries
+   `.v2-docket-path` (12px mono), `.v2-fm-row` (13px), `.v2-work-line`,
+   `.v2-doc-crumbs` and `.v2-strip > summary` — normal-size text, all of it,
+   so the miss is a WCAG 1.4.3 miss and not a nicety. Everything else measures
+   clear, both themes: light `fg` 15.28 · `fg-muted` 6.57 · `accent` 4.97 ·
+   `ok` 4.78 · `warn` 5.12 · `error` 5.00; dark `fg` 14.66 · `fg-muted` 8.30 ·
+   `accent` 7.58 · `ok` 8.51 · `warn` 8.97 · `error` 7.08; `--accent-ink` on
+   `--accent` 5.31 (light) and 7.54 (dark); body ink on the redline tints
+   13.99/13.19 (light) and 10.78/11.74 (dark).
+
+2. **The vault's own marker file is shown to the reader as content.**
+   `runtime/src/vault/fs-store.ts:19` (`isJunkName`) drops dotfiles,
+   `.counsel/` and `node_modules`, but not `config.md` — the `counsel-os-config:
+   true` / `legal_root:` marker `resolveLegalRoot` needs. Both vault shots
+   therefore end with **Other files (1)**, and the one file under that fold is
+   plumbing the reader never authored and cannot use.
+
+3. **The same screen says both "no conversations" and "New conversation".**
+   The shell opens a draft when the thread list is empty (`Shell.tsx`, the
+   `/threads` effect sets `draft` when `first === null`), and the rail is
+   global now — so on a fresh Home the rail's CONVERSATIONS list shows an
+   italic `New conversation` row while home's own Conversations column reads
+   `No conversations yet.` (visible in both home shots). The draft is real;
+   the two panes just disagree about how to say so.
+
+4. **`deadline` is humanized on Home and raw in the reader.** Home prints
+   `due Sep 12` (`home.ts` `dueLabel`); the reading pane's fact rows print
+   `deadline · 2026-09-12` (`v2/vault/frontmatter.ts` passes scalar values
+   through untouched). One fact, two spellings, one screen apart.
+
+5. **The vault's ask bar floats in the middle of a short document.**
+   `.v2-askbar` is `position: sticky; bottom: 24px` inside a pane that is
+   taller than the document, so on `matters/acme.md` the pill sits under the
+   last line with two thirds of the pane empty below it (both vault shots).
+   It reads as a stray button rather than as a bar the pane owns.
+
+6. **Home has no path to a full conversation list.** The Matters column has
+   `open vault →`; the Conversations column has no `all →` and no
+   all-conversations surface exists — the rail's CONVERSATIONS list is the
+   whole list, and it is the one thing the vault route hides behind the 56px
+   icon rail (`HomePage.tsx`, the Conversations `<section>`).
+
+### What the next plan should assume — Step 6
+
+- **The routes are `#/` = Home, `#/chat?thread=<id>&proposal=<id>`,
+  `#/vault?path=<p>`, `#/settings`,** and anything unrecognized falls to Home
+  (`app.tsx` `parseHash`). The chat workspace stays MOUNTED on every route and
+  is only `hidden` off `#/chat` — the keep-stream invariant. Anything that
+  queries the document page-wide (an outline observer, a `.v2-proposal`
+  locator) can see a second, hidden copy of the chat surface.
+- **`FsVaultStore.list` `lstat`s per entry and skips symlinks outright**
+  (`runtime/src/vault/fs-store.ts:158-186`). One bad entry costs that entry,
+  never the directory — a dangling link, ELOOP, EACCES or EPERM is `continue`,
+  which is what stopped `vaultOverview` reading "the directory is empty" for a
+  vault that had matters. A HEALTHY symlink is skipped too, deliberately:
+  listing it leaked the TARGET's `mtimeMs` and `size` into the tree even when
+  the target sat outside the vault. So `/vault/list` and `/vault/overview`
+  show NOTHING for a symlinked matter — a fixture or a real practice that
+  files matters as links into iCloud will read as an empty vault, and that is
+  the store behaving as designed, not a bug to chase in the UI.
+- **StrictMode's double effect can DROP home's ask — in `vite dev` only, never
+  double it.** `Chat`'s `initialAsk` effect records the nonce BEFORE it sends
+  (`Chat.tsx:305-311`), so the second invocation is a no-op; but React's dev
+  remount also runs the unmount cleanup `abort.current?.abort()`
+  (`Chat.tsx:207`) between the two, which cancels the send the first
+  invocation started. `bun run ui:dev` can therefore land on an empty thread
+  after an ask. `vite build` ships production React, which does not
+  double-invoke — `bun run e2e` and the screenshots run the built bundle and
+  never saw it. Debug a "lost ask" in dev before believing it.
+- **The reader's frontmatter humanization is: keys only, and the `title` row
+  is lifted, not printed** (`v2/vault/frontmatter.ts`). `splitFrontmatter`
+  takes simple `key: value` lines only — nested YAML is a structure, not a
+  fact row — and rewrites `_` to a space, so `next_action` reads `next
+  action`. `readerModel` then takes the title from `title:`, else the first H1
+  outside a code fence, else `prettifyName(basename)`; it removes that H1 from
+  the body (by offset, so an inline repeat of the same words survives) and
+  drops the `title` row from the fact list, because the H1 above already says
+  it. VALUES are passed through verbatim — which is defect 4.
+- **What the founder should look at when judging the motif against the mocks:**
+  the ledger fixtures (dotted leaders and the `MATTERS` / `CONVERSATIONS`
+  small-caps run-ins on Home, the two-column fact block in the reader), the
+  tracked-changes slip as the proposal's whole body (`Term: ~~2~~3 years` at
+  the document's own serif, with `changes only · whole document · line diff`
+  under it), the one-hairline strip (`DONE · 1 source · 1 proposal pending ·
+  details ⌄`) where the design pass used to put a ledger box, and the 56px
+  icon rail on the vault route. The pair to weigh hardest is home dark vs
+  home light: the paper ramp is where the motif either reads as a brief or
+  reads as a default web app.
+
+### Throwaway artifacts — Step 6
+
+`e2e/.tmp/` (the e2e run's `COUNSEL_OS_HOME`, its vault, Playwright's traces,
+and the throwaway `shots6.ts` driver) is gitignored and rebuilt on every run.
+The screenshot pass used `/tmp/counsel-step6.IJZB/` for its home, vault and
+server log, with `serve --fake --fake-script e2e/fake-script.json` on port
+**7497** — no model call, and clear of the live `serve` on 7431, which was
+never touched. That server is killed: `lsof -nP -iTCP:7497` reports nothing,
+and `pgrep -fl 'cli.ts serve'` lists only the founder's own long-running
+instance. `~/.counsel-os` was never written — the scratch `COUNSEL_OS_HOME`
+owns the `runtime.json` this pass created. The six PNGs are kept, in
+`docs/superpowers/spikes/img/`.

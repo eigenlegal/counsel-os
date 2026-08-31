@@ -12,6 +12,13 @@ run-in headings, statuses as set text); (2) **proposal diffs render as Word-styl
 changes** (inline `del` strikethrough / `ins` underline in the document's own type), with
 whole-document and line-diff views one click away.
 
+**Amended 2026-08-30 (build step 6, Task 2 review F5/F6).** The §2 light status ramp is corrected:
+the values first named measure below the 4.5:1 the row claims, so accent `#a8681f`→`#9a5d16`
+(4.21:1 → 4.97:1) and amber `#996d10`→`#8a6210` (4.32:1 → 5.12:1), and the derived faint ink is
+set to `#7a7061` (3.63:1 → 4.55:1). The dark ramp's `--fg-faint` was later lifted too — see the
+2026-08-31 amendment below. `runtime/ui/src/tokens.test.ts` now measures every ink on every
+build, so the row cannot drift from its own claim again.
+
 Founder rules that bind: no gates/pipelines/wizards (primitives only; starter chips are
 prompt-fills, never flows); this evolves the one workbench UI in place (v1 is gone; no toggle).
 
@@ -27,8 +34,8 @@ search). Plus the small runtime additions that feed them honestly.
 
 | Element | Treatment |
 |---|---|
-| Palette (dark) | bg `#171412` / raised `#1e1a17` / hover `#262019`; ink `#ece5da` / `#b8ad9e` / `#877c6d`; hairline `#322b24`, strong `#3e352c`; accent `#d99a4e` (on-accent `#1a1410`); green `#7fbf8e`, red `#e08a7e`, amber `#d9b04e` |
-| Palette (light) | paper `#faf7f1`, ink `#241f19`; status ramp darkened to ≥4.5:1: accent `#a8681f`, green `#3f7a4f`, amber `#996d10`, red `#b4483a`; diff/redline tints opaque, never alpha |
+| Palette (dark) | bg `#171412` / raised `#1e1a17` / hover `#262019`; ink `#ece5da` / `#b8ad9e` / `#8c8172` *(faint ink amended 2026-08-31; mockups' `#877c6d` measured 4.48:1)*; hairline `#322b24`, strong `#3e352c`; accent `#d99a4e` (on-accent `#1a1410`); green `#7fbf8e`, red `#e08a7e`, amber `#d9b04e` |
+| Palette (light) | paper `#faf7f1`, ink `#241f19`; status ramp darkened to ≥4.5:1 **against paper, measured**: accent `#9a5d16` (4.97:1), green `#3f7a4f` (4.78:1), amber `#8a6210` (5.12:1), red `#b4483a` (5.00:1); muted ink `#5f584d` (6.57:1), faint ink `#7a7061` (4.55:1); diff/redline tints opaque, never alpha. *(Amended 2026-08-30: accent `#a8681f` and amber `#996d10` as first written measured 4.21:1 and 4.32:1 — under the threshold this row states. `runtime/ui/src/tokens.test.ts` measures every ink on every build. Dark `--fg-faint` `#877c6d` stayed at 4.48:1 as the one documented exception until the final whole-branch review: amended 2026-08-31 to `#8c8172` — 4.80:1 on `--bg`, 4.52:1 on `--bg-raised` — closing the Task 6 WCAG finding; no exceptions remain.)* |
 | Type | serif `"Iowan Old Style", Charter, Georgia` for prose, document text, matter names, greetings, thread titles; sans (system/Inter) for UI labels; mono for paths/filenames. Sub-14px UI sizes on a 13/12/11 ramp |
 | Motifs | **Docket**: double rule + small-caps run-in (`DOCKET · 1 AWAITING YOUR DECISION`). **Dotted leaders** for every label→value row (matters…due, conversations…time, frontmatter…value). **Set-text statuses**: italic serif *pending* (accent), *✓ approved · time* (green) — never pills, never left-accent borders. **Document slips**: proposals bounded by a double rule top / hairline bottom, content on the page |
 | Chrome | one strong container per screen (the ask box / composer); everything else rules + whitespace; radius 9–14px where boxes remain; one shadow token |
