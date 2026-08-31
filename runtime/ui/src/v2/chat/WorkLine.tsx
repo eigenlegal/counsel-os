@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { ToolCallView } from '../../chat/turns';
+import { Chevron } from '../icons';
 import { workLineOf } from '../verbs';
 import { Steps } from './Steps';
 
@@ -11,7 +12,7 @@ export interface WorkLineProps {
 
 /**
  * The turn's one quiet work line (spec §3.3): "Searched the vault · read
- * `nda.md` `acme-nda.md` ⌄" — filename chips, expandable to the full step
+ * `nda.md` `acme-nda.md`" plus a chevron — filename chips, expandable to the full step
  * detail (the existing Steps timeline, show/hide and all).
  */
 export function WorkLine({ tools, ms, onOpenFile }: WorkLineProps): JSX.Element | null {
@@ -34,7 +35,7 @@ export function WorkLine({ tools, ms, onOpenFile }: WorkLineProps): JSX.Element 
         ))}
         {parts.other > 0 ? ` · ran ${parts.other} tool${parts.other === 1 ? '' : 's'}` : ''}
         <span className="v2-chev" aria-hidden="true">
-          {' '}⌄
+          <Chevron />
         </span>
       </button>
       {open ? <Steps tools={tools} ms={ms} onOpenFile={onOpenFile} /> : null}

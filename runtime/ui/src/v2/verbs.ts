@@ -100,7 +100,7 @@ function labelPaths(paths: string[]): string[] {
 }
 
 /** The one quiet work line (spec §3.3): "Searched the vault · read nda.md
- * acme-nda.md ⌄". Proposals are not "work" here — they get slips of their
+ * acme-nda.md ⌄" (the ⌄ now an SVG chevron). Proposals are not "work" here — they get slips of their
  * own below the prose. */
 export function workLineOf(tools: ToolCallView[]): WorkLineParts {
   const parts: WorkLineParts = { searched: false, listed: false, read: [], proposed: 0, other: 0 };

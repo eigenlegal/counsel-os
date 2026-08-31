@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, fetchJson } from '../api/client';
 import type { VaultEntry } from '../api/types';
+import { Chevron } from '../v2/icons';
 
 /** The key the root level is cached under. `GET /vault/list` with no `dir`
  * lists the vault root, and `''` is what the server normalizes `.` to. */
@@ -23,11 +24,19 @@ export function isReserved(path: string): boolean {
   return path.split('/').some(segment => segment.toLowerCase() === RESERVED);
 }
 
+/** The vault-root `config.md` (`{legal_root}/config.md`, CONFIGURATION.md):
+ * plumbing setup wrote, not practice content, so listings skip it. Only at
+ * the ROOT — a matter may keep a config.md of its own — and only from
+ * listings: search and a `?path=` deep link still reach it. */
+export function isRootConfig(entry: VaultEntry): boolean {
+  return entry.kind === 'file' && entry.path.toLowerCase() === 'config.md';
+}
+
 /** Directories first, then by name. A vault is folders of matters with a few
  * files beside them, and a flat alphabetical list buries the folders. */
 export function orderEntries(entries: VaultEntry[]): VaultEntry[] {
   return entries
-    .filter(e => !isReserved(e.path))
+    .filter(e => !isReserved(e.path) && !isRootConfig(e))
     .sort((a, b) =>
       a.kind === b.kind ? baseName(a.path).localeCompare(baseName(b.path)) : a.kind === 'dir' ? -1 : 1,
     );
@@ -181,7 +190,7 @@ function Level({ dir, levels, open, selected, onToggle, onSelect }: LevelProps):
               aria-expanded={open.has(entry.path)}
               onClick={() => onToggle(entry.path)}
             >
-              <span aria-hidden="true">{open.has(entry.path) ? '▾' : '▸'}</span> {baseName(entry.path)}
+              <Chevron open={open.has(entry.path)} /> {baseName(entry.path)}
             </button>
             {open.has(entry.path) ? (
               <Level

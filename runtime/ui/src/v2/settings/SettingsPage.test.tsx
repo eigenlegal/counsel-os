@@ -80,6 +80,10 @@ describe('SettingsPage', () => {
     const input = screen.getByLabelText('Default provider') as HTMLInputElement;
     await user.clear(input);
     await user.type(input, 'ollama/gemma4:e4b');
+    // Typing opened the combobox's suggestion list, and react-aria
+    // aria-hides everything outside an open popup — including Save. Close
+    // it the way a keyboard user would before reaching for the button.
+    await user.keyboard('{Escape}');
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => expect(screen.getByText('unknown provider ollama/gemma4:e4b')).toBeTruthy());

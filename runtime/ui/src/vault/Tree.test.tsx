@@ -43,6 +43,19 @@ describe('orderEntries', () => {
     ]);
     expect(ordered.map(e => e.path)).toEqual(['law', 'matters', 'alpha.md', 'zeta.md']);
   });
+
+  test('drops the vault-root config.md — and only that one', () => {
+    const ordered = orderEntries([
+      { path: 'config.md', kind: 'file' },
+      { path: 'Config.MD', kind: 'file' },
+      { path: 'matters/config.md', kind: 'file' },
+      { path: 'config.md', kind: 'dir' },
+      { path: 'notes.md', kind: 'file' },
+    ]);
+    // A matter's own config.md stays; so does a directory that happens to
+    // share the name. Case falls with the root file (macOS is one file).
+    expect(ordered.map(e => e.path)).toEqual(['config.md', 'matters/config.md', 'notes.md']);
+  });
 });
 
 describe('isReserved', () => {

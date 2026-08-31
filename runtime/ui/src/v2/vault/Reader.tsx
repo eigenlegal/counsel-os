@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, fetchJson } from '../../api/client';
 import type { VaultFile } from '../../api/types';
 import { isMarkdown, renderMarkdown } from '../../vault/markdown';
+import { dueLabel, parseDeadline, type Due } from '../home/home';
 import { relTime } from '../time';
-import { readerModel } from './frontmatter';
+import { readerModel, type FmRow } from './frontmatter';
 import { outlineOf } from './outline';
 
 /** Moved from FileView (which this component supersedes): a missing file is
@@ -31,6 +32,19 @@ export function withoutHostPaths(message: string): string {
       .slice(-2)
       .join('/'),
   );
+}
+
+/**
+ * Home's `dueLabel`, for the frontmatter's own deadline rows: the reader
+ * says `due Sep 12` (amber inside 14 days, `overdue` past it) in the same
+ * words the matters column uses, instead of a raw ISO date. A value
+ * `Date.parse` cannot read passes through untouched — never rewritten to
+ * "no deadline" over a date that is merely oddly spelled.
+ */
+export function dueOf(row: FmRow): Due | null {
+  if (row.key !== 'deadline' && row.key !== 'due') return null;
+  if (parseDeadline({ deadline: row.value }) === null) return null;
+  return dueLabel({ deadline: row.value });
 }
 
 export interface ReaderProps {
@@ -106,8 +120,15 @@ export function Reader({ path, outline = false, onAsk }: ReaderProps): JSX.Eleme
 
   const crumbs = path.split('/').filter(s => s !== '');
 
+  const loaded = error === null && !missing && file !== null && model !== null;
+
   return (
     <article className="v2-doc" ref={article}>
+      {/* Everything except the ask bar. The article is a flex column at
+          min-height 100% and this block takes the slack, so on a document
+          shorter than the pane the bar still sits at the bottom instead of
+          floating mid-pane under the last paragraph. */}
+      <div className="v2-doc-flow">
       <nav className="v2-doc-crumbs" aria-label="Breadcrumb">
         {crumbs.map((part, i) => (
           <span key={`${i}-${part}`}>
@@ -143,13 +164,19 @@ export function Reader({ path, outline = false, onAsk }: ReaderProps): JSX.Eleme
 
           {model.rows.length === 0 ? null : (
             <dl className="v2-fm">
-              {model.rows.map((row, i) => (
-                <div className="v2-fm-row" key={`${i}-${row.key}`}>
-                  <dt>{row.key}</dt>
-                  <span className="leader" aria-hidden="true" />
-                  <dd>{row.value}</dd>
-                </div>
-              ))}
+              {model.rows.map((row, i) => {
+                const due = dueOf(row);
+                return (
+                  <div className="v2-fm-row" key={`${i}-${row.key}`}>
+                    <dt>{row.key}</dt>
+                    <span className="leader" aria-hidden="true" />
+                    {/* The raw date stays one hover away in the title. */}
+                    <dd className={due?.hot === true ? 'v2-due-hot' : undefined} title={due === null ? undefined : row.value}>
+                      {due === null ? row.value : due.text}
+                    </dd>
+                  </div>
+                );
+              })}
             </dl>
           )}
 
@@ -171,15 +198,16 @@ export function Reader({ path, outline = false, onAsk }: ReaderProps): JSX.Eleme
           ) : (
             <pre className="vault-raw">{file.content}</pre>
           )}
-
-          {onAsk === undefined ? null : (
-            <div className="v2-askbar">
-              <button type="button" onClick={() => onAsk(path)}>
-                Ask counsel about this file <b>↵</b>
-              </button>
-            </div>
-          )}
         </>
+      )}
+      </div>
+
+      {onAsk === undefined || !loaded ? null : (
+        <div className="v2-askbar">
+          <button type="button" onClick={() => onAsk(path)}>
+            Ask counsel about this file <b>↵</b>
+          </button>
+        </div>
       )}
     </article>
   );

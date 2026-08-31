@@ -16,7 +16,7 @@ const root: VaultEntry[] = [
   { path: 'matters', kind: 'dir' },
   { path: 'practice', kind: 'dir' },
   { path: 'memory', kind: 'dir' },
-  { path: 'config.md', kind: 'file' },
+  { path: 'scratch.md', kind: 'file' },
 ];
 
 function json(body: unknown): Response {
@@ -59,6 +59,20 @@ describe('VaultTree', () => {
     expect(screen.getByText('memory')).toBeTruthy();
     // Other is a collapsed count; its entries are not in the DOM yet.
     expect(screen.getByText('Other files (1)')).toBeTruthy();
+    expect(screen.queryByText('scratch.md')).toBeNull();
+  });
+
+  test('the vault-root config.md never reaches Other (cou-82)', () => {
+    render(
+      <VaultTree
+        overview={overview}
+        root={[...root, { path: 'config.md', kind: 'file' }]}
+        selected={null}
+        onOpen={() => {}}
+      />,
+    );
+    // Still (1): the setup-written config file is plumbing, not a listing.
+    expect(screen.getByText('Other files (1)')).toBeTruthy();
     expect(screen.queryByText('config.md')).toBeNull();
   });
 
@@ -95,7 +109,7 @@ describe('VaultTree', () => {
     expect(opened).toEqual(['practice/standards/nda.md']);
 
     await userEvent.click(screen.getByText('Other files (1)'));
-    expect(screen.getByText('config.md')).toBeTruthy();
+    expect(screen.getByText('scratch.md')).toBeTruthy();
 
     await userEvent.click(screen.getByText('Vendora × Worldpay'));
     expect(opened).toEqual(['practice/standards/nda.md', 'matters/2026-06-vendora.md']);

@@ -156,8 +156,19 @@ describe('HomePage', () => {
   test('a conversation row opens that thread', async () => {
     const opened: string[] = [];
     mount({ onOpenThread: id => opened.push(id) });
-    await userEvent.click(screen.getByRole('button', { name: /NDA residuals fallback/ }));
+    // The grid waits for the vault read (cou-82) — find, not get.
+    await userEvent.click(await screen.findByRole('button', { name: /NDA residuals fallback/ }));
     expect(opened).toEqual(['t-1']);
+  });
+
+  test('nothing below the starters claims emptiness before the vault read answers', () => {
+    // A fetch that never settles: the page is in its first paint.
+    globalThis.fetch = (async () => new Promise<Response>(() => {})) as unknown as typeof fetch;
+    mount({ threads: [] });
+    // Neither the grid's placeholders nor the getting-started block — a
+    // fresh vault must land on ONE empty-state copy, not a flash of three.
+    expect(document.querySelector('.v2-home-cols')).toBeNull();
+    expect(document.querySelector('.v2-getting-started')).toBeNull();
   });
 
   test('an empty vault with no conversations gets the quiet getting-started block', async () => {

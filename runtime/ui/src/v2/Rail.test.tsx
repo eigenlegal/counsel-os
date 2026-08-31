@@ -155,9 +155,9 @@ describe('Rail', () => {
     expect(globalThis.getComputedStyle(label).position).not.toBe('absolute');
   });
 
-  test('an empty list with no draft says so rather than heading nothing', () => {
+  test('an empty list stays quiet — Home carries the one empty-state copy (cou-82)', () => {
     mount({ threads: [], draft: false, selected: null });
-    expect(screen.getByText('No threads yet.')).toBeTruthy();
+    expect(screen.queryByText('No threads yet.')).toBeNull();
     expect(document.querySelector('.v2-rail-list')?.children.length).toBe(0);
   });
 

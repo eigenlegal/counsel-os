@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, fetchJson } from '../../api/client';
 import type { VaultEntry, VaultOverview } from '../../api/types';
 import { ancestorsOf, baseName, orderEntries, ROOT } from '../../vault/Tree';
+import { Chevron } from '../icons';
 import { groupRoot, monthLabel } from './tree';
 
 export interface VaultTreeProps {
@@ -102,7 +103,7 @@ export function VaultTree({ overview, root, selected, onOpen }: VaultTreeProps):
         onClick={() => toggle(entry.path)}
       >
         <span className="v2-tri" aria-hidden="true">
-          {open.has(entry.path) ? '▾' : '▸'}
+          <Chevron open={open.has(entry.path)} />
         </span>
         <span className="v2-vname">{baseName(entry.path)}</span>
       </button>
@@ -156,7 +157,7 @@ export function VaultTree({ overview, root, selected, onOpen }: VaultTreeProps):
         <>
           <button type="button" className="v2-vrow v2-vdir v2-vother" aria-expanded={otherOpen} onClick={() => setOtherOpen(o => !o)}>
             <span className="v2-tri" aria-hidden="true">
-              {otherOpen ? '▾' : '▸'}
+              <Chevron open={otherOpen} />
             </span>
             <span className="v2-vname">Other files ({groups.other.length})</span>
           </button>
