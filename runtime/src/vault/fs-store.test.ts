@@ -213,6 +213,23 @@ describe('list metadata and junk filtering (redesign spec §4)', () => {
     await expect(store.mtime('default', '../x')).rejects.toThrow('path outside vault');
   });
 
+  test('a dangling symlink costs its own entry, not the whole listing', async () => {
+    // `stat` follows links, so this used to throw ENOENT for the DIRECTORY
+    // and `vaultOverview` reported a vault full of matters as empty.
+    symlinkSync(join(root, 'gone.md'), join(root, 'dangling.md'));
+    const entries = await store.list('default', '');
+    expect(entries.map(e => e.path).sort()).toEqual(['note.md', 'practice']);
+  });
+
+  test('a symlink loop and a healthy symlink are both skipped, like fsSearch', async () => {
+    symlinkSync(join(root, 'loop.md'), join(root, 'loop.md'));  // ELOOP
+    symlinkSync(join(root, 'note.md'), join(root, 'alias.md')); // resolves fine
+    const entries = await store.list('default', '');
+    // Neither appears: a link never carries its target's mtime/size into
+    // the tree, and one unstattable entry never fails the directory.
+    expect(entries.map(e => e.path).sort()).toEqual(['note.md', 'practice']);
+  });
+
   test('isJunkName names the set', () => {
     for (const name of ['.DS_Store', '.git', '.gitignore', '.counsel', '.Counsel', 'node_modules']) {
       expect(isJunkName(name)).toBe(true);

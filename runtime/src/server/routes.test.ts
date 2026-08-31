@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
 import { randomUUID } from 'node:crypto';
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { FakeModelProvider, runToolDef } from '../core/fake-provider';
@@ -9,7 +9,7 @@ import { Router } from '../router/router';
 import { ThreadStore, type ThreadEvent } from '../threads/store';
 import { FsVaultStore } from '../vault/fs-store';
 import { fsSearch } from '../vault/search';
-import { API_PREFIXES, createApp, type App, type ServerDeps } from './routes';
+import { API_PREFIXES, createApp, TRUNCATED_HEADER, type App, type ServerDeps } from './routes';
 import type { RuntimeState } from './settings';
 
 const TOKEN = 'test-token-0123456789';
@@ -956,6 +956,8 @@ describe('redesign reads (spec §4)', () => {
     expect(body.matters.map(m => m.title)).toEqual(['Vendora × Worldpay']);
     expect(body.matters[0]!.frontmatter['next_action']).toBe('send document list');
     expect(body.groups).toEqual({ practice: 1, knowledge: 0, other: 1 });
+    // API surface: no token, no answer (the same bar /proposals asserts).
+    expect((await call(app, 'GET', '/vault/overview', { token: null })).status).toBe(401);
   });
 
   test('GET /proposals lists pending only, with thread titles; other statuses are 400', async () => {
@@ -1007,6 +1009,44 @@ describe('redesign reads (spec §4)', () => {
     expect(hits[0]!.snippet).toContain('indemnity cap');
     expect((await call(app, 'GET', '/vault/search')).status).toBe(400);
     expect((await call(app, 'GET', '/vault/search?q=')).status).toBe(400);
+    expect((await call(app, 'GET', '/vault/search?q=indemnity', { token: null })).status).toBe(401);
+  });
+
+  test('GET /proposals flags a truncated scan on a header, body still an array', async () => {
+    const app = appWithFake();
+    // One thread is well inside the 20-thread bound.
+    const only = await store.create('default', { title: 'only' });
+    await store.append('default', only.id, {
+      t: 'proposal',
+      at: '2026-08-30T10:00:00.000Z',
+      id: 'p-1',
+      path: 'practice/standards/nda.md',
+      content: 'X',
+      rationale: 'Record the fallback.',
+      status: 'pending',
+      expectedVersion: null,
+    });
+    const within = await call(app, 'GET', '/proposals');
+    expect(within.headers.get(TRUNCATED_HEADER)).toBeNull();
+    expect(await within.json()).toHaveLength(1);
+
+    // 21 threads: the scan's bound now hides at least one, and says so.
+    for (let i = 0; i < 20; i++) await store.create('default', { title: `t${i}` });
+    const over = await call(app, 'GET', '/proposals');
+    expect(over.status).toBe(200);
+    expect(over.headers.get(TRUNCATED_HEADER)).toBe('1');
+    expect(Array.isArray(await over.json())).toBe(true);
+  });
+
+  test('GET /vault/overview survives a dangling symlink in matters', async () => {
+    mkdirSync(join(vaultRoot, 'matters'), { recursive: true });
+    writeFileSync(join(vaultRoot, 'matters', 'acme.md'), '# Acme Corp — NDA\n');
+    symlinkSync(join(vaultRoot, 'matters', 'gone.md'), join(vaultRoot, 'matters', 'dangling.md'));
+    const app = appWithFake();
+    const body = (await (await call(app, 'GET', '/vault/overview')).json()) as {
+      matters: Array<{ title: string }>;
+    };
+    expect(body.matters.map(m => m.title)).toEqual(['Acme Corp — NDA']);
   });
 
   test('GET /vault/read carries mtimeMs', async () => {

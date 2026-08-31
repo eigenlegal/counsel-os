@@ -235,6 +235,10 @@ const SETTINGS_LOCK = 'settings';
  * missing `text` frames are suppression, not silence. */
 export const TYPED_PREAMBLE = ': typed\n\n';
 
+/** Set to `1` when a listing is bounded and something was left out — see
+ * `GET /proposals`. Absent means the response is the whole answer. */
+export const TRUNCATED_HEADER = 'x-counsel-truncated';
+
 /**
  * Drops `text` events (web-ui spec §4.3). Under an `outputSchema` the deltas
  * are the model working its way toward JSON, not an answer to show, and a UI
@@ -485,11 +489,18 @@ export function createApp(deps: ServerDeps): App {
 
   /** The docket's feed (spec §4). Only the pending listing exists; an
    * explicit other status is a 400 so a future caller cannot read
-   * "everything" as "pending". */
+   * "everything" as "pending".
+   *
+   * The body stays a bare array. The scan's thread bound rides on
+   * `x-counsel-truncated` instead, so a docket that is missing a founder
+   * gate can say so without every existing caller having to change shape. */
   const proposalsRoute = async (url: URL): Promise<Response> => {
     const status = url.searchParams.get('status') ?? 'pending';
     if (status !== 'pending') throw new HttpError(400, `unsupported status: ${status}`);
-    return json(await pendingProposals(deps.store, deps.tenant));
+    const { proposals, scannedAll } = await pendingProposals(deps.store, deps.tenant);
+    const res = json(proposals);
+    if (!scannedAll) res.headers.set(TRUNCATED_HEADER, '1');
+    return res;
   };
 
   return async function app(req: Request): Promise<Response> {

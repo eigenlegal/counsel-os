@@ -1,11 +1,19 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ThreadStore } from '../threads/store';
 import { pendingProposals } from './pending-proposals';
 
 let store: ThreadStore;
+let storeRoot: string;
+
+/** Rewrites a thread's header on disk, so a test can seed the exact
+ * timestamps it means instead of racing a millisecond clock. */
+function patchHeader(id: string, patch: { createdAt?: string; updatedAt?: string }): void {
+  const file = join(storeRoot, '.counsel', 'threads', 'default', `${id}.json`);
+  writeFileSync(file, JSON.stringify({ ...JSON.parse(readFileSync(file, 'utf8')), ...patch }, null, 2), 'utf8');
+}
 
 function proposal(id: string, at: string, status: 'pending' | 'approved' | 'rejected') {
   return {
@@ -21,7 +29,8 @@ function proposal(id: string, at: string, status: 'pending' | 'approved' | 'reje
 }
 
 beforeEach(() => {
-  store = new ThreadStore(mkdtempSync(join(tmpdir(), 'pending-')), {
+  storeRoot = mkdtempSync(join(tmpdir(), 'pending-'));
+  store = new ThreadStore(storeRoot, {
     codexHomeRoot: mkdtempSync(join(tmpdir(), 'pending-codex-')),
   });
 });
@@ -34,7 +43,8 @@ describe('pendingProposals', () => {
     const b = await store.create('default', {});
     await store.append('default', b.id, proposal('p-new', '2026-08-30T10:00:00.000Z', 'pending'));
 
-    const listed = await pendingProposals(store, 'default');
+    const { proposals: listed, scannedAll } = await pendingProposals(store, 'default');
+    expect(scannedAll).toBe(true);
     expect(listed.map(p => p.id)).toEqual(['p-new', 'p-old']);
     expect(listed[1]).toEqual({
       threadId: a.id,
@@ -60,11 +70,30 @@ describe('pendingProposals', () => {
     const newer = await store.create('default', { title: 'newer' });
     await store.append('default', newer.id, proposal('p-seen', '2026-08-30T11:00:00.000Z', 'pending'));
 
-    const listed = await pendingProposals(store, 'default', { limit: 1 });
+    const { proposals: listed, scannedAll } = await pendingProposals(store, 'default', { limit: 1 });
     expect(listed.map(p => p.id)).toEqual(['p-seen']);
+    // Two threads, one scanned: the caller must be able to tell.
+    expect(scannedAll).toBe(false);
   });
 
-  test('an empty store answers an empty list', async () => {
-    expect(await pendingProposals(store, 'default')).toEqual([]);
+  // L2: the bounded-scan test above sleeps so `updatedAt` differs, which is
+  // exactly the case the createdAt tiebreak does NOT cover. Seed the tie.
+  test('threads tied on updatedAt fall back to createdAt, newest first', async () => {
+    const older = await store.create('default', { title: 'older' });
+    await store.append('default', older.id, proposal('p-older', '2026-08-30T08:00:00.000Z', 'pending'));
+    const newer = await store.create('default', { title: 'newer' });
+    await store.append('default', newer.id, proposal('p-newer', '2026-08-30T11:00:00.000Z', 'pending'));
+    // Identical updatedAt; only createdAt separates them. Without the
+    // tiebreak the stable sort keeps list()'s createdAt-ASCENDING order and
+    // the bound would keep the OLDER thread.
+    patchHeader(older.id, { createdAt: '2026-08-30T07:00:00.000Z', updatedAt: '2026-08-30T12:00:00.000Z' });
+    patchHeader(newer.id, { createdAt: '2026-08-30T10:00:00.000Z', updatedAt: '2026-08-30T12:00:00.000Z' });
+
+    const { proposals } = await pendingProposals(store, 'default', { limit: 1 });
+    expect(proposals.map(p => p.id)).toEqual(['p-newer']);
+  });
+
+  test('an empty store answers an empty list, fully scanned', async () => {
+    expect(await pendingProposals(store, 'default')).toEqual({ proposals: [], scannedAll: true });
   });
 });

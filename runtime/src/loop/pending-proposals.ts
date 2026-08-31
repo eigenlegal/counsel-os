@@ -10,6 +10,11 @@ import type { ThreadEvent, ThreadStore } from '../threads/store';
  * read. A vault with years of threads must not pay a full-log scan to draw
  * the home page, and a proposal in a thread nobody has touched in that long
  * is not "awaiting your decision" in any sense the docket should press.
+ *
+ * The bound is REPORTED, not silent. A founder gate that falls off the end
+ * of the scan would otherwise vanish from the docket with nothing anywhere
+ * saying the list was partial, so `scannedAll` tells the caller whether it
+ * is looking at the whole queue.
  */
 export const DEFAULT_SCAN_LIMIT = 20;
 
@@ -22,11 +27,18 @@ export interface PendingProposal {
   at: string;
 }
 
+export interface PendingProposalsResult {
+  proposals: PendingProposal[];
+  /** False when threads were left unscanned — the docket is showing only
+   * the proposals from the newest `limit` threads. */
+  scannedAll: boolean;
+}
+
 export async function pendingProposals(
   store: ThreadStore,
   tenant: Tenant,
   opts: { limit?: number } = {},
-): Promise<PendingProposal[]> {
+): Promise<PendingProposalsResult> {
   const limit = opts.limit ?? DEFAULT_SCAN_LIMIT;
   const headers = await store.list(tenant);
   // `createdAt` breaks a tie, because `updatedAt` is an ISO string at
@@ -59,5 +71,5 @@ export async function pendingProposals(
     }
   }
   out.sort((a, b) => b.at.localeCompare(a.at));
-  return out;
+  return { proposals: out, scannedAll: headers.length <= limit };
 }

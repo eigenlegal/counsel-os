@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { existsSync, realpathSync } from 'node:fs';
-import { mkdir, readdir, readFile, writeFile, appendFile, stat } from 'node:fs/promises';
+import { mkdir, readdir, readFile, writeFile, appendFile, lstat, stat } from 'node:fs/promises';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import type { Entry, Hit, Tenant, VaultStore, Version } from '../core/types';
 import { VaultConflictError } from '../core/types';
@@ -161,7 +161,23 @@ export class FsVaultStore implements VaultStore {
     const out: Entry[] = [];
     for (const name of names) {
       if (isJunkName(name)) continue;
-      const s = await stat(join(full, name));
+      // `lstat`, and per-entry: exactly what `fsSearch`'s walk does, for the
+      // same reasons. `stat` FOLLOWS a link, so one dangling symlink threw
+      // ENOENT and failed the whole listing — which `vaultOverview` then read
+      // as "the directory is empty", so a vault with matters reported none.
+      // EACCES, EPERM and ELOOP (a self-referential link) failed identically.
+      // One bad entry must cost that entry, never the directory.
+      let s;
+      try {
+        s = await lstat(join(full, name));
+      } catch {
+        continue;
+      }
+      // A symlink is skipped outright, so `list` and `fsSearch` agree about
+      // what the vault holds. Listing one leaked the TARGET's `mtimeMs` and
+      // `size` into the tree even when the target sat outside the vault —
+      // reading through it was already blocked, but the metadata was not.
+      if (s.isSymbolicLink()) continue;
       out.push({
         path: join(dir, name),
         kind: s.isDirectory() ? 'dir' : 'file',

@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { FsVaultStore } from './fs-store';
-import { parseFrontmatter, prettifyName, titleOf, vaultOverview } from './overview';
+import { MAX_MATTERS, MAX_MATTER_BYTES, parseFrontmatter, prettifyName, titleOf, vaultOverview } from './overview';
 
 const CFG = { entitiesPath: 'entities', mattersPath: 'matters' };
 
@@ -30,6 +30,20 @@ describe('parseFrontmatter', () => {
     expect(broken.body).toBe('Body.\n');
   });
 
+  test('a byte-order mark does not hide the block', () => {
+    const { frontmatter, body } = parseFrontmatter('\ufeff---\ntitle: Acme NDA\n---\nBody.\n');
+    expect(frontmatter).toEqual({ title: 'Acme NDA' });
+    expect(body).toBe('Body.\n');
+  });
+
+  test('the terminator must be a line of its own', () => {
+    // `----` and `--- note` are not terminators, so the block never closes.
+    expect(parseFrontmatter('---\ntitle: x\n----\nBody.\n').frontmatter).toEqual({});
+    expect(parseFrontmatter('---\ntitle: x\n--- note\nBody.\n').frontmatter).toEqual({});
+    // Trailing whitespace on the terminator is still a terminator.
+    expect(parseFrontmatter('---\ntitle: x\n--- \nBody.\n').frontmatter).toEqual({ title: 'x' });
+  });
+
   test('scalars come back as strings; nested structures are skipped', () => {
     const { frontmatter } = parseFrontmatter('---\ndeadline: 2026-09-12\ncount: 3\nnested:\n  a: 1\n---\nBody.\n');
     expect(frontmatter['count']).toBe('3');
@@ -52,6 +66,11 @@ describe('prettifyName', () => {
     expect(prettifyName('2026-06-vendora-worldpay.md')).toBe('Vendora worldpay');
     expect(prettifyName('acme_nda.md')).toBe('Acme nda');
     expect(prettifyName('notes.md')).toBe('Notes');
+  });
+
+  test('a date-only filename keeps its date instead of reducing to the day', () => {
+    expect(prettifyName('2026-06-01.md')).toBe('2026 06 01');
+    expect(prettifyName('2026-06.md')).toBe('2026 06');
   });
 });
 
@@ -87,6 +106,43 @@ describe('vaultOverview', () => {
     expect([...times].sort((a, b) => a - b)).toEqual(times);
     // practice: its 1 entry; knowledge: memory's 1 entry; other: config.md.
     expect(overview.groups).toEqual({ practice: 1, knowledge: 1, other: 1 });
+  });
+
+  test('a dangling symlink in matters does not empty the overview (M1)', async () => {
+    mkdirSync(join(root, 'matters'));
+    writeFileSync(join(root, 'matters', 'acme.md'), '# Acme Corp — NDA\n');
+    symlinkSync(join(root, 'matters', 'gone.md'), join(root, 'matters', 'dangling.md'));
+    const overview = await vaultOverview(store, 'default', CFG);
+    expect(overview.matters.map(m => m.title)).toEqual(['Acme Corp — NDA']);
+  });
+
+  test('a matter over the size cap is listed but never read', async () => {
+    mkdirSync(join(root, 'matters'));
+    writeFileSync(
+      join(root, 'matters', '2026-06-huge-transcript.md'),
+      '---\ntitle: Should Not Be Read\n---\n' + 'x'.repeat(MAX_MATTER_BYTES + 1),
+    );
+    const overview = await vaultOverview(store, 'default', CFG);
+    expect(overview.matters).toHaveLength(1);
+    // The frontmatter title would have won had the file been read.
+    expect(overview.matters[0]!.title).toBe('Huge transcript');
+    expect(overview.matters[0]!.frontmatter).toEqual({});
+  });
+
+  test('the count cap keeps the NEWEST matters', async () => {
+    mkdirSync(join(root, 'matters'));
+    const total = MAX_MATTERS + 5;
+    for (let i = 0; i < total; i++) {
+      const file = join(root, 'matters', `m${String(i).padStart(3, '0')}.md`);
+      writeFileSync(file, `# Matter ${i}\n`);
+      // Explicit mtimes: index order is recency order, oldest first.
+      utimesSync(file, new Date(1_700_000_000_000 + i * 1000), new Date(1_700_000_000_000 + i * 1000));
+    }
+    const overview = await vaultOverview(store, 'default', CFG);
+    expect(overview.matters).toHaveLength(MAX_MATTERS);
+    // The 5 oldest fell off; the newest survived. Output stays oldest-first.
+    expect(overview.matters[0]!.title).toBe('Matter 5');
+    expect(overview.matters.at(-1)!.title).toBe(`Matter ${total - 1}`);
   });
 
   test('a matters entry that is not markdown is skipped', async () => {
