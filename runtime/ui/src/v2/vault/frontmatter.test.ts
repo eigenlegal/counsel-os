@@ -57,4 +57,8 @@ describe('prettifyName', () => {
     expect(prettifyName('2026-06-vendora-worldpay.md')).toBe('Vendora worldpay');
     expect(prettifyName('acme_nda.md')).toBe('Acme nda');
   });
+
+  test('a date-only name stays whole — the lookahead stops the day group backtracking', () => {
+    expect(prettifyName('2026-06-01.md')).toBe('2026 06 01');
+  });
 });

@@ -33,7 +33,7 @@ export function splitFrontmatter(source: string): { rows: FmRow[]; body: string 
  * — copied, not imported: `runtime/ui` must not pull `runtime/src` into a
  * browser bundle. A change there is a change here. */
 export function prettifyName(fileName: string): string {
-  const stem = fileName.replace(/\.[^.]+$/, '').replace(/^\d{4}-\d{2}(-\d{2})?-/, '');
+  const stem = fileName.replace(/\.[^.]+$/, '').replace(/^\d{4}-\d{2}(-\d{2})?-(?=\D)/, '');
   const spaced = stem.replace(/[-_]+/g, ' ').trim();
   return spaced === '' ? fileName : spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }
