@@ -1,22 +1,29 @@
-import { cleanup, render, screen, userEvent } from '../test/dom';
+import { cleanup, render, screen, userEvent, within } from '../test/dom';
 
 import { readFileSync } from 'node:fs';
 
 import { afterEach, describe, expect, test } from 'bun:test';
-import type { Health, ThreadHeader } from '../api/types';
-import { footerLabel, Rail, railLabel, swapNote } from './Rail';
+import type { Health, ProviderInfo } from '../api/types';
+import type { ThreadHeader } from '../api/types';
+import { Rail, railLabel } from './Rail';
+
+const fake: ProviderInfo = {
+  id: 'fake/fake',
+  kind: 'direct',
+  auth: 'local',
+  capabilities: { tools: true, caching: false, thinking: false, contextTokens: 8192, auth: 'local' },
+};
+const claude: ProviderInfo = {
+  id: 'claude-sub/claude-opus-5',
+  kind: 'harness',
+  auth: 'subscription',
+  capabilities: { tools: true, caching: true, thinking: true, contextTokens: 200_000, auth: 'subscription' },
+};
 
 const health: Health = {
   vault: '/tmp/vault',
   tenant: 'default',
-  providers: [
-    {
-      id: 'fake/fake',
-      kind: 'direct',
-      auth: 'local',
-      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 8192, auth: 'local' },
-    },
-  ],
+  providers: [fake],
   default: 'fake/fake',
   stepTimeoutMs: 600_000,
 };
@@ -30,8 +37,8 @@ const acme: ThreadHeader = {
 };
 const untitled: ThreadHeader = { id: 't-2', createdAt: '2026-08-27T10:00:00.000Z', updatedAt: '2026-08-27T10:00:00.000Z', sessions: {} };
 
-function mount(over: Partial<Parameters<typeof Rail>[0]> = {}) {
-  return render(
+function railElement(over: Partial<Parameters<typeof Rail>[0]> = {}) {
+  return (
     <Rail
       route="home"
       threads={[acme, untitled]}
@@ -43,9 +50,14 @@ function mount(over: Partial<Parameters<typeof Rail>[0]> = {}) {
       onNew={() => {}}
       onOpenDraft={() => {}}
       onDelete={() => {}}
+      onSetDefault={() => {}}
       {...over}
-    />,
+    />
   );
+}
+
+function mount(over: Partial<Parameters<typeof Rail>[0]> = {}) {
+  return render(railElement(over));
 }
 
 /**
@@ -88,34 +100,106 @@ describe('Rail', () => {
     expect(railLabel(untitled)).toBe('Untitled');
   });
 
-  test('the footer is the default model + auth, and opens Settings', async () => {
+  test('the footer is the provider plate: vendor on line 1, model · connection on line 2', () => {
     mount();
-    expect(footerLabel(health)).toBe('fake/fake · local');
-    expect(footerLabel(null)).toBe('…');
+    const foot = document.querySelector('.v2-foot') as HTMLElement;
+    expect(foot.querySelector('.v2-plate-vendor')?.textContent).toBe('fake');
+    expect(foot.querySelector('.v2-plate-detail')?.textContent).toBe('fake/fake · local');
+    expect(foot.getAttribute('title')).toBe('fake/fake · local — switch model');
+    // The green dot: the saved default is the one answering.
+    expect(foot.querySelector('.v2-dot')?.classList.contains('v2-dot-amber')).toBe(false);
+  });
+
+  test('a known provider gets its designed lockup', () => {
+    mount({ health: { ...health, providers: [claude], default: claude.id } });
+    const foot = document.querySelector('.v2-foot') as HTMLElement;
+    expect(foot.querySelector('.v2-plate-vendor')?.textContent).toBe('Claude');
+    expect(foot.querySelector('.v2-plate-detail')?.textContent).toBe('Opus 5 · subscription');
+  });
+
+  test('saved-default-not-loaded: AMBER dot, explanation in the title, no label note', () => {
+    // The saved default names a provider this runtime did not load. The
+    // parenthetical swap note the label used to carry moved into the dot +
+    // title (cou-90) — the plate itself stays calm.
+    const swapped: Health = { ...health, default: 'openai/nope' };
+    mount({ health: swapped });
+    const foot = document.querySelector('.v2-foot') as HTMLElement;
+    expect(foot.querySelector('.v2-dot')?.classList.contains('v2-dot-amber')).toBe(true);
+    expect(foot.querySelector('.v2-foot-note')).toBeNull();
+    expect(foot.querySelector('.v2-plate-vendor')?.textContent).toBe('fake');
+    expect(foot.getAttribute('title')).toBe('fake/fake · local — saved default openai/nope not loaded — switch model');
+  });
+
+  test('clicking the footer opens the switcher: one lockup per loaded provider + Open Settings', async () => {
+    mount({ health: { ...health, providers: [fake, claude] } });
+    expect(document.querySelector('.v2-switch-pop')).toBeNull();
+
     await userEvent.click(screen.getByRole('button', { name: /fake\/fake/ }));
+    const menu = screen.getByRole('menu', { name: 'Switch model' });
+    const vendors = Array.from(menu.querySelectorAll('.v2-plate-vendor'), (el: Element) => el.textContent);
+    expect(vendors).toEqual(['fake', 'Claude']);
+    const details = Array.from(menu.querySelectorAll('.v2-plate-detail'), (el: Element) => el.textContent);
+    expect(details).toEqual(['fake/fake · local', 'Opus 5 · subscription']);
+    // The row in use carries the dot's ink; the other keeps the column.
+    const dots = Array.from(menu.querySelectorAll('.v2-dot'), (el: Element) => el.classList.contains('v2-dot-off'));
+    expect(dots).toEqual([false, true]);
+    expect(screen.getByText('Open Settings')).toBeTruthy();
+  });
+
+  test('picking a provider saves it as the default and closes the popover', async () => {
+    const picked: string[] = [];
+    mount({ health: { ...health, providers: [fake, claude] }, onSetDefault: id => picked.push(id) });
+    await userEvent.click(screen.getByRole('button', { name: /fake\/fake/ }));
+    await userEvent.click(screen.getByText('Claude'));
+    expect(picked).toEqual(['claude-sub/claude-opus-5']);
+    expect(document.querySelector('.v2-switch-pop')).toBeNull();
+    expect(location.hash).not.toBe('#/settings');
+  });
+
+  test('re-picking the provider already in use is a no-op, not a save', async () => {
+    const picked: string[] = [];
+    mount({ health: { ...health, providers: [fake, claude] }, onSetDefault: id => picked.push(id) });
+    await userEvent.click(screen.getByRole('button', { name: /fake\/fake/ }));
+    // Scoped to the menu: the footer plate says `fake/fake · local` too.
+    await userEvent.click(within(screen.getByRole('menu', { name: 'Switch model' })).getByText('fake/fake · local'));
+    expect(picked).toEqual([]);
+    expect(document.querySelector('.v2-switch-pop')).toBeNull();
+  });
+
+  test('Open Settings stays, as the final row', async () => {
+    mount();
+    await userEvent.click(screen.getByRole('button', { name: /fake\/fake/ }));
+    const items = Array.from(document.querySelectorAll('.v2-switch-item'), el => el.textContent);
+    expect(items[items.length - 1]).toBe('Open Settings');
+    await userEvent.click(screen.getByText('Open Settings'));
+    expect(location.hash).toBe('#/settings');
+    expect(document.querySelector('.v2-switch-pop')).toBeNull();
+  });
+
+  test('collapsed: the footer is a Settings shortcut, not a popover trigger (cou-92)', async () => {
+    // The 56px icon rail centers its children, so the footer wrapper shrinks
+    // to the dot and a rail-anchored popover would render ~2px wide. There
+    // the plate keeps the icon rail's escape hatch: navigate to Settings.
+    mount({ collapsed: true, route: 'vault' });
+    const foot = screen.getByRole('button', { name: /fake\/fake/ });
+    // No popup promise on the button — a popup never comes in the icon rail.
+    expect(foot.getAttribute('aria-haspopup')).toBeNull();
+    expect(foot.getAttribute('title')).toBe('fake/fake · local — open Settings');
+    await userEvent.click(foot);
+    expect(document.querySelector('.v2-switch-pop')).toBeNull();
+    expect(screen.queryByRole('menu')).toBeNull();
     expect(location.hash).toBe('#/settings');
   });
 
-  test('the footer names the model a send will ACTUALLY use, and says when that is not the saved one', () => {
-    // The saved default names a provider this runtime did not load. The
-    // composer's picker used to say so; the footer is the only place left.
-    const swapped: Health = { ...health, default: 'openai/nope' };
-    expect(footerLabel(swapped)).toBe('fake/fake · local');
-    expect(swapNote(swapped)).toBe('saved default openai/nope not loaded');
-
-    mount({ health: swapped });
-    const foot = document.querySelector('.v2-foot') as HTMLElement;
-    expect(foot.querySelector('.v2-lbl')?.textContent).toBe('fake/fake · local');
-    expect(foot.querySelector('.v2-foot-note')?.textContent).toBe('(saved default openai/nope not loaded)');
-    expect(foot.getAttribute('title')).toBe('fake/fake · local — saved default openai/nope not loaded — open Settings');
-  });
-
-  test('a saved default that IS loaded says nothing extra', () => {
-    expect(swapNote(health)).toBeNull();
-    expect(swapNote(null)).toBeNull();
-    mount();
-    expect(document.querySelector('.v2-foot-note')).toBeNull();
-    expect(document.querySelector('.v2-foot')?.getAttribute('title')).toBe('fake/fake · local — open Settings');
+  test('an open switcher closes when the route collapses the rail (cou-92)', async () => {
+    const view = mount({ collapsed: false });
+    await userEvent.click(screen.getByRole('button', { name: /fake\/fake/ }));
+    expect(document.querySelector('.v2-switch-pop')).toBeTruthy();
+    view.rerender(railElement({ collapsed: true, route: 'vault' }));
+    expect(document.querySelector('.v2-switch-pop')).toBeNull();
+    // Back on an expanded route the menu stays shut — no popover springs back.
+    view.rerender(railElement({ collapsed: false }));
+    expect(document.querySelector('.v2-switch-pop')).toBeNull();
   });
 
   test('collapsed: labels and conversations disappear, the icons stay', () => {
@@ -136,7 +220,7 @@ describe('Rail', () => {
       const link = screen.getByRole('link', { name });
       expect(link.querySelector('.v2-lbl')?.textContent).toBe(name);
     }
-    expect(document.querySelector('.v2-foot .v2-lbl')?.textContent).toBe('fake/fake · local');
+    expect(document.querySelector('.v2-foot .v2-lbl .v2-plate-detail')?.textContent).toBe('fake/fake · local');
 
     // Style contract: clipped to 1px, NOT `display: none`. `display: none`
     // takes the element out of the accessibility tree, which would leave a

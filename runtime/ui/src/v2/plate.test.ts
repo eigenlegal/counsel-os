@@ -1,0 +1,112 @@
+import { describe, expect, test } from 'bun:test';
+import type { Health } from '../api/types';
+import { footerLabel, modelName, plateFor, swapNote } from './plate';
+
+describe('plateFor', () => {
+  // The founder's table (cou-90), row by row.
+  test('claude-sub → Claude on a subscription', () => {
+    expect(plateFor('claude-sub/claude-opus-5', 'subscription')).toEqual({
+      vendor: 'Claude',
+      detail: 'Opus 5 · subscription',
+      known: true,
+    });
+  });
+
+  test('anthropic → Claude over an API key', () => {
+    expect(plateFor('anthropic/claude-opus-5', 'apikey')).toEqual({
+      vendor: 'Claude',
+      detail: 'Opus 5 · API key',
+      known: true,
+    });
+  });
+
+  test('openai → OpenAI over an API key', () => {
+    expect(plateFor('openai/gpt-5', 'apikey')).toEqual({ vendor: 'OpenAI', detail: 'GPT-5 · API key', known: true });
+  });
+
+  test('codex → ChatGPT on a subscription', () => {
+    expect(plateFor('codex-sub/gpt-5.6-terra', 'subscription')).toEqual({
+      vendor: 'ChatGPT',
+      detail: 'GPT-5.6 Terra · subscription',
+      known: true,
+    });
+    expect(plateFor('codex/gpt-5', 'subscription').vendor).toBe('ChatGPT');
+  });
+
+  test('ollama/* → Ollama, local, the model tag verbatim', () => {
+    expect(plateFor('ollama/llama3', 'local')).toEqual({ vendor: 'Ollama', detail: 'llama3 · local', known: true });
+    expect(plateFor('ollama/gemma4:e4b', 'local').detail).toBe('gemma4:e4b · local');
+  });
+
+  test('no auth from /health: the table supplies the connection', () => {
+    expect(plateFor('ollama/llama3').detail).toBe('llama3 · local');
+    expect(plateFor('claude-sub/claude-opus-5').detail).toBe('Opus 5 · subscription');
+  });
+
+  test('/health wins over the table when they disagree', () => {
+    // An operator can wire a `claude-sub/…` id to anything; say what IS.
+    expect(plateFor('claude-sub/claude-opus-5', 'apikey').detail).toBe('Opus 5 · API key');
+  });
+
+  test('unknown id: the raw id on the detail line — never an invented name', () => {
+    expect(plateFor('mistral/large-latest', 'apikey')).toEqual({
+      vendor: 'mistral',
+      detail: 'mistral/large-latest · API key',
+      known: false,
+    });
+    expect(plateFor('fake/fake')).toEqual({ vendor: 'fake', detail: 'fake/fake', known: false });
+  });
+
+  test('an id with no slash falls back whole', () => {
+    expect(plateFor('custom', 'local')).toEqual({ vendor: 'custom', detail: 'custom · local', known: false });
+  });
+});
+
+describe('modelName', () => {
+  test('claude ids restyle to the marketing casing', () => {
+    expect(modelName('claude-opus-5')).toBe('Opus 5');
+    expect(modelName('claude-sonnet-5')).toBe('Sonnet 5');
+    expect(modelName('claude-haiku-4-5')).toBe('Haiku 4.5');
+  });
+
+  test('gpt ids keep the GPT- prefix and cap the codename', () => {
+    expect(modelName('gpt-5')).toBe('GPT-5');
+    expect(modelName('gpt-5.6-terra')).toBe('GPT-5.6 Terra');
+  });
+
+  test('anything else stays verbatim', () => {
+    expect(modelName('llama3')).toBe('llama3');
+    expect(modelName('gemma4:e4b')).toBe('gemma4:e4b');
+    expect(modelName('claude-opus')).toBe('claude-opus');
+  });
+});
+
+const health: Health = {
+  vault: '/tmp/vault',
+  tenant: 'default',
+  providers: [
+    {
+      id: 'fake/fake',
+      kind: 'direct',
+      auth: 'local',
+      capabilities: { tools: true, caching: false, thinking: false, contextTokens: 8192, auth: 'local' },
+    },
+  ],
+  default: 'fake/fake',
+  stepTimeoutMs: 600_000,
+};
+
+describe('footerLabel / swapNote', () => {
+  test('the title line is the raw effective id + auth', () => {
+    expect(footerLabel(health)).toBe('fake/fake · local');
+    expect(footerLabel(null)).toBe('…');
+  });
+
+  test('the swap is named when the saved default did not load', () => {
+    const swapped: Health = { ...health, default: 'openai/nope' };
+    expect(footerLabel(swapped)).toBe('fake/fake · local');
+    expect(swapNote(swapped)).toBe('saved default openai/nope not loaded');
+    expect(swapNote(health)).toBeNull();
+    expect(swapNote(null)).toBeNull();
+  });
+});

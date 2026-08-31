@@ -320,9 +320,35 @@ a { color: var(--accent); }
 .v2-draft { font-style: italic; }
 .v2-thread-open { flex: 1; min-width: 0; text-align: left; background: none; border: none; padding: 6px 10px; color: inherit; }
 .v2-thread-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.v2-foot { margin-top: auto; padding: 10px; display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 12px; color: var(--fg-faint); background: none; border: none; text-align: left; }
+/* The provider plate (cou-90): a designed two-line lockup, not a string.
+ * `.v2-switch` owns the footer slot and anchors the popover; the button is
+ * the plate. The dot pins to line 1 (flex-start + a line-height offset),
+ * because line 2 may be long and the dot marks the vendor, not the block. */
+.v2-switch { margin-top: auto; position: relative; }
+.v2-foot { width: 100%; padding: 10px; display: flex; align-items: flex-start; gap: 8px; min-width: 0; color: var(--fg-faint); background: none; border: none; text-align: left; border-radius: 8px; }
+.v2-foot:hover { background: var(--bg-raised); }
+.v2-foot .v2-dot { margin-top: 5px; }
 .v2-rail-empty { margin: 2px 10px; font-size: 12.5px; font-style: italic; }
 .v2-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); flex-shrink: 0; }
+.v2-dot-amber { background: var(--warn); }
+/* The popover rows keep the dot's column so the vendors align; only the
+ * provider in use gets the ink. */
+.v2-dot-off { background: transparent; }
+.v2-plate { display: flex; flex-direction: column; min-width: 0; }
+/* Line 1 never truncates: set text at 13px, the vendor a lawyer knows. */
+.v2-plate-vendor { font: 13px/1.35 var(--sans); color: var(--fg); white-space: nowrap; display: flex; align-items: center; gap: 8px; }
+.v2-plate-detail { font: 11.5px/1.4 var(--sans); color: var(--fg-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* The switcher popover: above the footer, inside the rail — no portal. */
+.v2-switch-pop { position: absolute; bottom: calc(100% + 4px); left: 6px; right: 6px; z-index: 30; background: var(--bg-raised); border: 1px solid var(--border-strong); border-radius: var(--radius); box-shadow: var(--shadow); max-height: 18rem; overflow-y: auto; }
+.v2-switch-list { list-style: none; margin: 0; padding: 4px; }
+.v2-switch-item { padding: 6px 10px; border-radius: var(--radius); cursor: pointer; }
+/* The rows carry the dot INSIDE line 1, so line 2 needs the same 15px
+ * (7px dot + 8px gap) to sit in the vendor's column. */
+.v2-switch-item .v2-plate-detail { padding-left: 15px; }
+.v2-switch-item[data-focused] { background: var(--bg-hover); }
+.v2-switch-item:hover { background: var(--bg-hover); }
+/* The last row: a plain act, indented into the vendor column. */
+.v2-switch-settings { display: block; padding: 2px 0 2px 15px; font-size: 12px; color: var(--fg-muted); }
 
 /* Icon rail on the vault route (mock-vault.html .rail): 56px, no labels. */
 .v2-rail.v2-rail-icons { width: var(--rail-w-icons); padding: 14px 8px; align-items: center; }
@@ -625,9 +651,6 @@ a { color: var(--accent); }
 .v2-file-chip { font: 11.5px var(--mono); background: var(--bg-raised); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; color: var(--fg-muted); }
 .v2-work-line-wrap .v2-steps { margin-top: 6px; }
 
-/* The rail footer's swap note: quiet, never a banner. */
-.v2-foot-note { font-size: 11px; }
-
 /* Source chips: the derived citations inside the prose. The class is added
    AFTER the sanitizer, by path match — a document cannot mint it. */
 .v2-prose code.v2-cite {
@@ -685,5 +708,6 @@ a { color: var(--accent); }
 /* The transcript column narrows to the mock's 720px measure. */
 .v2-turn { max-width: 720px; }
 
-/* One line, ellipsized: the dot stays on the label line however long the model id. Full text in the title. */
-.v2-foot .v2-lbl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* The plate clips on its detail line only; the full raw id + auth live in
+ * the title. (The old one-line `.v2-foot .v2-lbl` ellipsis moved onto
+ * `.v2-plate-detail` with the cou-90 plate.) */
