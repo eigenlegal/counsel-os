@@ -46,11 +46,27 @@ export interface ReaderModel {
   body: string;
 }
 
+/** The first H1 OUTSIDE a code fence, with where it sits. A `# install`
+ * line inside a fence is an example, not the document's title. */
+function firstH1(body: string): { text: string; start: number; end: number } | null {
+  let at = 0;
+  let fenced = false;
+  for (const line of body.split('\n')) {
+    if (/^```/.test(line.trim())) fenced = !fenced;
+    const m = fenced ? null : /^#\s+(.+)$/.exec(line);
+    if (m !== null) return { text: m[1]!.trim(), start: at, end: at + line.length };
+    at += line.length + 1;
+  }
+  return null;
+}
+
 export function readerModel(source: string, path: string): ReaderModel {
   const { rows, body } = splitFrontmatter(source);
   const fmTitle = rows.find(r => r.key === 'title')?.value;
-  const h1 = /^#\s+(.+)$/m.exec(body);
-  const title = fmTitle ?? h1?.[1]?.trim() ?? prettifyName(path.slice(path.lastIndexOf('/') + 1));
-  const stripped = h1 === null ? body : body.replace(h1[0], '').replace(/^\n+/, '');
+  const h1 = firstH1(body);
+  const title = fmTitle ?? h1?.text ?? prettifyName(path.slice(path.lastIndexOf('/') + 1));
+  // Cut at the match's own offsets: a substring replace would delete an
+  // earlier inline copy of the same text and leave the heading behind.
+  const stripped = h1 === null ? body : (body.slice(0, h1.start) + body.slice(h1.end)).replace(/^\n+/, '');
   return { title, rows: rows.filter(r => r.key !== 'title'), body: stripped };
 }

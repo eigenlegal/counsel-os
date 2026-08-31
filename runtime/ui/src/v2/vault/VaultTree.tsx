@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, fetchJson } from '../../api/client';
 import type { VaultEntry, VaultOverview } from '../../api/types';
-import { baseName, orderEntries } from '../../vault/Tree';
+import { ancestorsOf, baseName, orderEntries, ROOT } from '../../vault/Tree';
 import { groupRoot, monthLabel } from './tree';
 
 export interface VaultTreeProps {
@@ -52,6 +52,24 @@ export function VaultTree({ overview, root, selected, onOpen }: VaultTreeProps):
     for (const entry of groups.practice) ensure(entry.path);
     // A new root listing can add a practice dir; `ensure` dedupes.
   }, [groups.practice, ensure]);
+
+  /** The tree opens to the file the page has open — a pasted `?path=` deep
+   * link, the drawer's "open page", a cleared search. Without it the reader
+   * sees a document with no row anywhere marking where it lives. */
+  useEffect(() => {
+    if (selected === null) return;
+    const dirs = ancestorsOf(selected).filter(dir => dir !== ROOT);
+    setOpen(prev => {
+      if (dirs.every(dir => prev.has(dir))) return prev;
+      const next = new Set(prev);
+      for (const dir of dirs) next.add(dir);
+      return next;
+    });
+    for (const dir of dirs) ensure(dir);
+    // A selection that is not a matter, practice or knowledge lives under the
+    // collapsed "Other files" fold, which has to open too.
+    if (groups.other.some(entry => selected === entry.path || selected.startsWith(`${entry.path}/`))) setOtherOpen(true);
+  }, [selected, groups.other, ensure]);
 
   const toggle = (dir: string): void => {
     setOpen(prev => {

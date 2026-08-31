@@ -31,6 +31,11 @@ export function groupRoot(rootEntries: VaultEntry[], overview: VaultOverview): T
     else if (entry.kind === 'dir' && KNOWLEDGE_DIRS.has(entry.path)) knowledge.push(entry);
     else other.push(entry);
   }
+  // Knowledge reads in the spec's order (memory · law · entities), not the
+  // listing's — callers sort the root, and alphabetical would ship
+  // `entities · law · memory` against the mock.
+  const spec = [...KNOWLEDGE_DIRS];
+  knowledge.sort((a, b) => spec.indexOf(a.path) - spec.indexOf(b.path));
   return { mattersDir, matters: overview.matters, practice, knowledge, other };
 }
 

@@ -56,6 +56,9 @@ export function VaultPage({ path, onOpen, onAsk }: VaultPageProps): JSX.Element 
   }, []);
 
   const runSearch = useCallback(async (): Promise<void> => {
+    // A stale failure must not survive the next attempt — the error branch
+    // replaces the whole tree.
+    setError(null);
     const q = query.trim();
     if (q === '') {
       setHits(null);
@@ -71,6 +74,7 @@ export function VaultPage({ path, onOpen, onAsk }: VaultPageProps): JSX.Element 
   const clear = (): void => {
     setQuery('');
     setHits(null);
+    setError(null);
   };
 
   return (
@@ -92,7 +96,7 @@ export function VaultPage({ path, onOpen, onAsk }: VaultPageProps): JSX.Element 
         </div>
 
         {hits !== null ? (
-          <div className="v2-tlist v2-vresults" aria-label="Search results">
+          <div className="v2-tlist v2-vresults" role="region" aria-label="Search results">
             <div className="v2-vgroup">
               Results{' '}
               <button type="button" className="v2-link" onClick={clear}>

@@ -73,15 +73,6 @@ export function Shell(): JSX.Element {
   }, []);
   const closeDrawer = useCallback((): void => setDrawer(current => ({ ...current, open: false })), []);
 
-  /** The vault's "Ask counsel about this file ↵": prefill the composer with
-   * the path and go to chat (spec §3.4). A prompt-fill, not a flow. */
-  const askAbout = useCallback((path: string): void => {
-    setSeed(current => ({ text: `Regarding \`${path}\`: `, nonce: (current?.nonce ?? 0) + 1 }));
-    setRoute('chat');
-    setVaultPath(null);
-    globalThis.history.replaceState(null, '', '#/chat');
-  }, []);
-
   const drawerRef = useRef(drawer);
   drawerRef.current = drawer;
 
@@ -138,6 +129,27 @@ export function Shell(): JSX.Element {
   selectRef.current = selectThread;
   const stampRef = useRef(stampThread);
   stampRef.current = stampThread;
+
+  /** The vault's "Ask counsel about this file ↵": prefill the composer with
+   * the path and go to chat (spec §3.4). A prompt-fill, not a flow.
+   *
+   * The fragment is re-stamped, never left bare: a URL that stops naming the
+   * open thread reopens a DIFFERENT one on reload (the invariant
+   * `stampThread` exists for). A draft has no thread to name, so `#/chat` is
+   * the whole truth there. */
+  const askAbout = useCallback((path: string): void => {
+    setSeed(current => ({ text: `Regarding \`${path}\`: `, nonce: (current?.nonce ?? 0) + 1 }));
+    setRoute('chat');
+    setVaultPath(null);
+    globalThis.history.replaceState(null, '', '#/chat');
+    stampRef.current();
+  }, []);
+
+  /** The composer took the seed. Dropping it here is what makes a seed fire
+   * ONCE: `Chat` is re-keyed on every thread switch and new draft, and a
+   * seed still in state would refill the fresh box with a path the reader
+   * left long ago. */
+  const seedUsed = useCallback((): void => setSeed(undefined), []);
 
   useEffect(() => {
     const onHashChange = (): void => {
@@ -287,6 +299,7 @@ export function Shell(): JSX.Element {
                 }}
                 onThreadTouched={() => void loadThreads()}
                 seed={seed}
+                onSeedUsed={seedUsed}
                 onFileDecided={fileDecided}
                 onOpenFile={openDrawer}
               />

@@ -76,6 +76,14 @@ describe('VaultTree', () => {
     expect(screen.queryByText('.counsel')).toBeNull();
   });
 
+  test('a deep-linked file opens the levels above it and marks its row', async () => {
+    render(<VaultTree overview={overview} root={root} selected="practice/standards/nda.md" onOpen={() => {}} />);
+    // No click: the page arrived on `#/vault?path=practice/standards/nda.md`.
+    await waitFor(() => expect(screen.getByText('nda.md')).toBeTruthy());
+    expect(screen.getByText('standards').closest('button')?.getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByText('nda.md').closest('button')?.getAttribute('aria-current')).toBe('page');
+  });
+
   test('a dir expands lazily; a file click opens; Other unfolds', async () => {
     const opened: string[] = [];
     render(<VaultTree overview={overview} root={root} selected={null} onOpen={path => opened.push(path)} />);

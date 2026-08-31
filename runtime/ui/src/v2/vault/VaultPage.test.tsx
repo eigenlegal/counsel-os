@@ -18,10 +18,12 @@ function json(body: unknown): Response {
 
 let hits: VaultHit[] = [];
 let searched: string[] = [];
+let failSearch = false;
 
 beforeEach(() => {
   hits = [];
   searched = [];
+  failSearch = false;
   sessionStorage.setItem(TOKEN_KEY, 'test-token');
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = String(input);
@@ -29,6 +31,7 @@ beforeEach(() => {
     if (url === '/vault/list') return json([{ path: 'matters', kind: 'dir' }]);
     if (url.startsWith('/vault/search')) {
       searched.push(new URL(`http://x${url}`).searchParams.get('q') ?? '');
+      if (failSearch) return new Response(JSON.stringify({ error: 'index unavailable' }), { status: 500, headers: { 'content-type': 'application/json' } });
       return json(hits);
     }
     if (url.startsWith('/vault/read')) return json({ path: 'matters/acme.md', content: '# Acme\nBody.\n', version: null, mtimeMs: null });
@@ -76,6 +79,19 @@ describe('VaultPage', () => {
     await userEvent.type(screen.getByLabelText('Search the vault'), 'zzz{Enter}');
     await waitFor(() => expect(screen.getByText(/No results for “zzz”/)).toBeTruthy());
     await userEvent.click(screen.getByRole('button', { name: 'Clear the search' }));
+    await waitFor(() => expect(screen.getByText('Acme Corp — NDA')).toBeTruthy());
+  });
+
+  test('a failed search does not strand the tree behind an error', async () => {
+    render(<VaultPage path={null} onOpen={() => {}} />);
+    await waitFor(() => expect(screen.getByText('Acme Corp — NDA')).toBeTruthy());
+    failSearch = true;
+    await userEvent.type(screen.getByLabelText('Search the vault'), 'boom{Enter}');
+    await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
+
+    // Clearing puts the tree back — the error is the search's, not the vault's.
+    failSearch = false;
+    fireEvent.keyDown(screen.getByLabelText('Search the vault'), { key: 'Escape' });
     await waitFor(() => expect(screen.getByText('Acme Corp — NDA')).toBeTruthy());
   });
 

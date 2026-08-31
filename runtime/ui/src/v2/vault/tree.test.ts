@@ -35,6 +35,11 @@ describe('groupRoot', () => {
     expect(groups.matters).toEqual([]);
     expect(groups.other.map(e => e.path)).toEqual(['config.md', 'scratch']);
   });
+
+  test('knowledge keeps the spec order even when the caller sorts the root', () => {
+    const sorted = [...root].sort((a, b) => a.path.localeCompare(b.path));
+    expect(groupRoot(sorted, overview).knowledge.map(e => e.path)).toEqual(['memory', 'law', 'entities']);
+  });
 });
 
 describe('monthLabel', () => {

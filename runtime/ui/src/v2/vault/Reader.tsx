@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, fetchJson } from '../../api/client';
 import type { VaultFile } from '../../api/types';
 import { isMarkdown, renderMarkdown } from '../../vault/markdown';
@@ -54,6 +54,7 @@ export function Reader({ path, outline = false, onAsk }: ReaderProps): JSX.Eleme
   const [error, setError] = useState<string | null>(null);
   const [missing, setMissing] = useState(false);
   const [current, setCurrent] = useState(0);
+  const article = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -87,7 +88,10 @@ export function Reader({ path, outline = false, onAsk }: ReaderProps): JSX.Eleme
   useEffect(() => {
     setCurrent(0);
     if (sections.length === 0 || typeof IntersectionObserver === 'undefined') return;
-    const headings = Array.from(document.querySelectorAll('.v2-doc-md h2'));
+    // Scoped to THIS reader: the chat workspace stays mounted (merely
+    // hidden) off `#/chat`, so an open drawer puts a second reader in the
+    // document and a page-wide query would index the wrong headings.
+    const headings = Array.from(article.current?.querySelectorAll('.v2-doc-md h2') ?? []);
     const observer = new IntersectionObserver(
       entries => {
         for (const entry of entries) {
@@ -103,7 +107,7 @@ export function Reader({ path, outline = false, onAsk }: ReaderProps): JSX.Eleme
   const crumbs = path.split('/').filter(s => s !== '');
 
   return (
-    <article className="v2-doc">
+    <article className="v2-doc" ref={article}>
       <nav className="v2-doc-crumbs" aria-label="Breadcrumb">
         {crumbs.map((part, i) => (
           <span key={`${i}-${part}`}>
@@ -139,8 +143,8 @@ export function Reader({ path, outline = false, onAsk }: ReaderProps): JSX.Eleme
 
           {model.rows.length === 0 ? null : (
             <dl className="v2-fm">
-              {model.rows.map(row => (
-                <div className="v2-fm-row" key={row.key}>
+              {model.rows.map((row, i) => (
+                <div className="v2-fm-row" key={`${i}-${row.key}`}>
                   <dt>{row.key}</dt>
                   <span className="leader" aria-hidden="true" />
                   <dd>{row.value}</dd>
@@ -154,7 +158,7 @@ export function Reader({ path, outline = false, onAsk }: ReaderProps): JSX.Eleme
           {sections.length === 0 ? null : (
             <aside className="v2-outline" aria-label="Outline">
               {sections.map((section, i) => (
-                <div key={section} className={i === current ? 'on' : undefined}>
+                <div key={`${i}-${section}`} className={i === current ? 'on' : undefined}>
                   {section}
                 </div>
               ))}

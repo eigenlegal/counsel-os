@@ -21,6 +21,8 @@ export interface ChatProps {
   /** A composer prefill from another surface — the vault reader's "Ask
    * counsel about this file" (spec §3.4). */
   seed?: ComposerSeed;
+  /** The seed was applied — the shell drops it so it fires only once. */
+  onSeedUsed?: () => void;
 }
 
 function detail(err: unknown): string {
@@ -37,7 +39,7 @@ function detail(err: unknown): string {
  * paths, so any load that ends up owning a finished stream hands the
  * composer back.
  */
-export function Chat({ threadId: initialThreadId, health, onThreadCreated, onThreadTouched, onFileDecided, onOpenFile, seed }: ChatProps): JSX.Element {
+export function Chat({ threadId: initialThreadId, health, onThreadCreated, onThreadTouched, onFileDecided, onOpenFile, seed, onSeedUsed }: ChatProps): JSX.Element {
   /** The thread this pane is about. A ref, not only state: `load` and
    * `send` read it outside a render, and it changes exactly once — from
    * `null` to the id the first send created. Switching THREADS is the
@@ -295,6 +297,7 @@ export function Chat({ threadId: initialThreadId, health, onThreadCreated, onThr
         defaultProvider={health.default}
         streaming={streaming}
         seed={seed}
+        onSeedUsed={onSeedUsed}
         onSend={(message, provider) => void send(message, provider)}
         onStop={stop}
       />

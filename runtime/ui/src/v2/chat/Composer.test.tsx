@@ -47,6 +47,37 @@ describe('v2 Composer', () => {
     expect(box.value).toBe('Regarding `matters/acme.md`: is the cap mutual?');
   });
 
+  test('a seed never destroys typing: a non-empty box gets it on a new line', async () => {
+    const { rerender } = render(
+      <Composer providers={PROVIDERS} defaultProvider="fake/fake" streaming={false} onSend={noop} onStop={noop} />,
+    );
+    const box = screen.getByRole('textbox', { name: 'Message' }) as HTMLTextAreaElement;
+    await userEvent.type(box, 'Half a thought');
+    rerender(
+      <Composer
+        providers={PROVIDERS}
+        defaultProvider="fake/fake"
+        streaming={false}
+        onSend={noop}
+        onStop={noop}
+        seed={{ text: 'Regarding `matters/acme.md`: ', nonce: 1 }}
+      />,
+    );
+    expect(box.value).toBe('Half a thought\nRegarding `matters/acme.md`: ');
+  });
+
+  test('applying a seed says so, once, so the surface that pushed it can drop it', async () => {
+    let used = 0;
+    const seed = { text: 'Regarding `matters/acme.md`: ', nonce: 1 };
+    const { rerender } = render(
+      <Composer providers={PROVIDERS} defaultProvider="fake/fake" streaming={false} onSend={noop} onStop={noop} seed={seed} onSeedUsed={() => { used += 1; }} />,
+    );
+    rerender(
+      <Composer providers={PROVIDERS} defaultProvider="fake/fake" streaming={false} onSend={noop} onStop={noop} seed={seed} onSeedUsed={() => { used += 1; }} />,
+    );
+    expect(used).toBe(1);
+  });
+
   test('streaming disables the box and offers Stop', async () => {
     let stopped = 0;
     render(<Composer providers={PROVIDERS} defaultProvider="fake/fake" streaming onSend={noop} onStop={() => { stopped += 1; }} />);

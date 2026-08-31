@@ -36,6 +36,20 @@ describe('readerModel', () => {
     const bare = readerModel('no headings\n', 'matters/2026-06-vendora-worldpay.md');
     expect(bare.title).toBe('Vendora worldpay');
   });
+
+  test('a # line inside a fence is an example, not the title — and stays in the body', () => {
+    const model = readerModel('```\n# install\n```\n# Real title\nBody.\n', 'matters/x.md');
+    expect(model.title).toBe('Real title');
+    expect(model.body).toContain('# install');
+    expect(model.body).not.toContain('# Real title');
+  });
+
+  test('the H1 is cut where it sits, not wherever its text first appears', () => {
+    const model = readerModel('Talk about # Acme first.\n\n# Acme\nBody.\n', 'matters/x.md');
+    expect(model.title).toBe('Acme');
+    expect(model.body).toContain('Talk about # Acme first.');
+    expect(model.body).toContain('Body.');
+  });
 });
 
 describe('prettifyName', () => {

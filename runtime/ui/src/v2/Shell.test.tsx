@@ -403,6 +403,84 @@ describe('Shell', () => {
     expect(document.querySelector('.v2-vault')).toBeTruthy();
   });
 
+  /**
+   * What `history.replaceState` was told, WITHOUT letting it move the hash.
+   *
+   * happy-dom fires a `hashchange` on `replaceState`; real browsers do not.
+   * That difference silently repairs a bare `#/chat` here (the shell's own
+   * hashchange listener re-stamps), so a test that only reads
+   * `location.hash` cannot see the bug at all. Recording the calls pins what
+   * the code actually writes.
+   */
+  function recordReplaceState(): { calls: string[]; restore(): void } {
+    const calls: string[] = [];
+    const real = globalThis.history.replaceState;
+    globalThis.history.replaceState = ((_data: unknown, _unused: string, url?: string | URL | null) => {
+      calls.push(String(url));
+    }) as typeof globalThis.history.replaceState;
+    return {
+      calls,
+      restore: () => {
+        globalThis.history.replaceState = real;
+      },
+    };
+  }
+
+  test('the ask bar seeds the composer and keeps the thread in the fragment', async () => {
+    install({ events: proposalEvents });
+    render(<Shell />);
+    await waitFor(() => expect(document.querySelector('[data-testid="proposal-p-1"]')).toBeTruthy());
+    await userEvent.click(screen.getByRole('button', { name: 'open in vault' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /Ask counsel about this file/ })).toBeTruthy());
+
+    const history = recordReplaceState();
+    try {
+      await userEvent.click(screen.getByRole('button', { name: /Ask counsel about this file/ }));
+    } finally {
+      history.restore();
+    }
+
+    expect((screen.getByLabelText('Message') as HTMLTextAreaElement).value).toBe('Regarding `practice/standards/nda.md`: ');
+    // The fragment must end up naming the open thread: a bare `#/chat`
+    // reopens the most-recent thread on reload, not this one.
+    expect(history.calls.at(-1)).toBe('#/chat?thread=t-1');
+  });
+
+  test('the ask bar on a draft leaves a bare #/chat — there is no thread to name', async () => {
+    render(<Shell />);
+    await userEvent.click(await screen.findByRole('button', { name: 'New conversation' }));
+    goTo('#/vault?path=practice/standards/nda.md');
+    await waitFor(() => expect(screen.getByRole('button', { name: /Ask counsel about this file/ })).toBeTruthy());
+
+    const history = recordReplaceState();
+    try {
+      await userEvent.click(screen.getByRole('button', { name: /Ask counsel about this file/ }));
+    } finally {
+      history.restore();
+    }
+
+    await waitFor(() => expect(workNode()?.hasAttribute('hidden')).toBe(false));
+    expect(history.calls).toEqual(['#/chat']);
+    expect((screen.getByLabelText('Message') as HTMLTextAreaElement).value).toBe('Regarding `practice/standards/nda.md`: ');
+  });
+
+  test('a seed fires once: a new draft does not inherit the ask prefill', async () => {
+    install({ events: proposalEvents });
+    render(<Shell />);
+    await waitFor(() => expect(document.querySelector('[data-testid="proposal-p-1"]')).toBeTruthy());
+    await userEvent.click(screen.getByRole('button', { name: 'open in vault' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /Ask counsel about this file/ })).toBeTruthy());
+    await userEvent.click(screen.getByRole('button', { name: /Ask counsel about this file/ }));
+    expect((screen.getByLabelText('Message') as HTMLTextAreaElement).value).toContain('Regarding');
+
+    // `Chat` is re-keyed here, which remounts the composer. A seed left in
+    // the shell's state would refill the fresh box with a path the reader
+    // has walked away from.
+    await userEvent.click(screen.getByRole('button', { name: 'New conversation' }));
+    await waitFor(() => expect(document.querySelector('li.v2-draft[aria-current="true"]')).toBeTruthy());
+    expect((screen.getByLabelText('Message') as HTMLTextAreaElement).value).toBe('');
+  });
+
   test('the drawer is still open after a trip to settings', async () => {
     install({ events: proposalEvents });
     render(<Shell />);

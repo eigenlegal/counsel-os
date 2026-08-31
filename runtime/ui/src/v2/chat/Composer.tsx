@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ProviderInfo } from '../../api/types';
 
 /** A prefill pushed in from outside — the vault's "Ask counsel about this
@@ -20,6 +20,10 @@ export interface ComposerProps {
   /** A prefill from another surface. Applied ONCE per nonce, so what the
    * reader types after it survives every re-render. */
   seed?: ComposerSeed;
+  /** Fired the moment a seed is applied, so the surface that pushed it can
+   * drop it — a seed still in the parent's state would refill the box on the
+   * next remount. */
+  onSeedUsed?: () => void;
 }
 
 /**
@@ -28,7 +32,7 @@ export interface ComposerProps {
  * from the saved default (the step-4 fix): a default naming an unloaded
  * provider falls back to the first loaded one, and the swap is said.
  */
-export function Composer({ providers, defaultProvider, streaming, disabled = false, onSend, onStop, seed }: ComposerProps): JSX.Element {
+export function Composer({ providers, defaultProvider, streaming, disabled = false, onSend, onStop, seed, onSeedUsed }: ComposerProps): JSX.Element {
   const [message, setMessage] = useState('');
   // Derived-from-props during render (React's own pattern), not an effect:
   // an effect would paint the empty box first and steal a keystroke typed
@@ -36,8 +40,15 @@ export function Composer({ providers, defaultProvider, streaming, disabled = fal
   const [seenSeed, setSeenSeed] = useState(0);
   if (seed !== undefined && seed.nonce !== seenSeed) {
     setSeenSeed(seed.nonce);
-    setMessage(seed.text);
+    // A seed never destroys typing: an empty box takes the prefill whole, a
+    // box with something in it gets it on a new line underneath.
+    setMessage(current => (current.trim() === '' ? seed.text : `${current}\n${seed.text}`));
   }
+  const usedRef = useRef(onSeedUsed);
+  usedRef.current = onSeedUsed;
+  useEffect(() => {
+    if (seenSeed !== 0) usedRef.current?.();
+  }, [seenSeed]);
   const fallback = providers[0]?.id ?? '';
   const defaultLoaded = providers.some(p => p.id === defaultProvider);
   const [provider, setProvider] = useState(defaultLoaded ? (defaultProvider as string) : fallback);
