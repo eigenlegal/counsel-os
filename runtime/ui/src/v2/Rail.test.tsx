@@ -1,5 +1,7 @@
 import { cleanup, render, screen, userEvent } from '../test/dom';
 
+import { readFileSync } from 'node:fs';
+
 import { afterEach, describe, expect, test } from 'bun:test';
 import type { Health, ThreadHeader } from '../api/types';
 import { footerLabel, Rail, railLabel } from './Rail';
@@ -45,8 +47,24 @@ function mount(over: Partial<Parameters<typeof Rail>[0]> = {}) {
   );
 }
 
+/**
+ * The real `styles.css`, in the test DOM.
+ *
+ * happy-dom resolves descendant selectors and reports computed styles, so
+ * the icon rail's collapse rule can be asserted for what it is instead of
+ * being taken on trust — `display: none` there would strip the accessible
+ * name off every nav link, and a markup-only test cannot see that.
+ */
+function loadStylesheet(): HTMLStyleElement {
+  const style = document.createElement('style');
+  style.textContent = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
+  document.head.appendChild(style);
+  return style;
+}
+
 afterEach(() => {
   cleanup();
+  for (const style of document.head.querySelectorAll('style')) style.remove();
   history.replaceState(null, '', '/');
 });
 
@@ -82,9 +100,43 @@ describe('Rail', () => {
     expect(document.querySelector('.v2-rail.v2-rail-icons')).toBeTruthy();
     expect(screen.queryByText('Conversations')).toBeNull();
     expect(screen.queryByText('NDA residuals fallback')).toBeNull();
-    // The links are still there for navigation, named by their labels
-    // (visually hidden, not removed — the icon rail is still a nav).
+    // The links are still there for navigation, named by their labels.
     expect(screen.getByRole('link', { name: 'Vault' })).toBeTruthy();
+  });
+
+  test('collapsed: the labels are hidden from the EYE, never from the name', () => {
+    loadStylesheet();
+    mount({ collapsed: true, route: 'vault' });
+
+    // Markup contract: every nav link and the footer still carry their label.
+    for (const name of ['Home', 'Chat', 'Vault', 'Settings']) {
+      const link = screen.getByRole('link', { name });
+      expect(link.querySelector('.v2-lbl')?.textContent).toBe(name);
+    }
+    expect(document.querySelector('.v2-foot .v2-lbl')?.textContent).toBe('fake/fake · local');
+
+    // Style contract: clipped to 1px, NOT `display: none`. `display: none`
+    // takes the element out of the accessibility tree, which would leave a
+    // screen-reader user four unnamed links (WCAG 2.4.4 / 4.1.2).
+    const label = screen.getByRole('link', { name: 'Vault' }).querySelector('.v2-lbl') as HTMLElement;
+    const style = globalThis.getComputedStyle(label);
+    expect(style.display).not.toBe('none');
+    expect(style.position).toBe('absolute');
+    expect(style.width).toBe('1px');
+    expect(style.clipPath).toBe('inset(50%)');
+  });
+
+  test('expanded: the labels are on screen, unclipped', () => {
+    loadStylesheet();
+    mount({ collapsed: false, route: 'home' });
+    const label = screen.getByRole('link', { name: 'Vault' }).querySelector('.v2-lbl') as HTMLElement;
+    expect(globalThis.getComputedStyle(label).position).not.toBe('absolute');
+  });
+
+  test('an empty list with no draft says so rather than heading nothing', () => {
+    mount({ threads: [], draft: false, selected: null });
+    expect(screen.getByText('No threads yet.')).toBeTruthy();
+    expect(document.querySelector('.v2-rail-list')?.children.length).toBe(0);
   });
 
   test('a draft is the current row and New is disabled', () => {

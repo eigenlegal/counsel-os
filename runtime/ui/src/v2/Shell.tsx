@@ -50,10 +50,19 @@ export function Shell(): JSX.Element {
   const [drawer, setDrawer] = useState<DrawerState>({ open: false, path: null });
   const [drawerRevision, setDrawerRevision] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  /** Set when the fragment named a thread the list does not have. The reader
+   * gets a draft AND is told — silently opening a DIFFERENT conversation is
+   * the one thing a pasted link must never do. */
+  const [notFound, setNotFound] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const draftRef = useRef(draft);
   draftRef.current = draft;
+  /** The route as of this render, for the callbacks that must not navigate:
+   * `onThreadCreated` (the send may finish after the reader left chat) and
+   * `deleteThread` (the rail is global now — delete is reachable from Home). */
+  const routeRef = useRef(route);
+  routeRef.current = route;
   const listSeq = useRef(0);
 
   const openDrawer = useCallback((path: string | null): void => {
@@ -70,6 +79,7 @@ export function Shell(): JSX.Element {
   }, []);
 
   const selectThread = (id: string): void => {
+    setNotFound(false);
     if (id === selected && !draft) return;
     setSelected(id);
     setDraft(false);
@@ -87,6 +97,7 @@ export function Shell(): JSX.Element {
   };
 
   const newDraft = (): void => {
+    setNotFound(false);
     setSelected(null);
     setDraft(true);
     setChatKey(k => k + 1);
@@ -99,18 +110,35 @@ export function Shell(): JSX.Element {
     globalThis.history.replaceState(null, '', '#/chat');
   };
 
+  /** Re-stamp `?thread=` onto a bare `#/chat`. The rail's Chat link has no
+   * thread in its href, so following it from `#/chat?thread=t-1` used to
+   * leave t-1 on screen under a URL that no longer named it — copy the link
+   * or reload and the thread was gone. Only `?thread=` ever CHANGES the
+   * selection; a bare `#/chat` keeps it and fixes the URL instead. */
+  const stampThread = (): void => {
+    if (draft || selected === null) return;
+    globalThis.history.replaceState(null, '', `#/chat?thread=${encodeURIComponent(selected)}`);
+  };
+
   /** Kept current for the hashchange listener, which must see this render's
    * `selected`/`draft` without re-subscribing. */
   const selectRef = useRef(selectThread);
   selectRef.current = selectThread;
+  const stampRef = useRef(stampThread);
+  stampRef.current = stampThread;
 
   useEffect(() => {
     const onHashChange = (): void => {
       const hash = globalThis.location.hash;
-      setRoute(parseHash(hash).route);
+      const next = parseHash(hash).route;
+      setRoute(next);
       setVaultPath(vaultPathFromHash(hash));
       const id = threadFromHash(hash);
-      if (id !== null) selectRef.current(id);
+      if (id !== null) {
+        selectRef.current(id);
+        return;
+      }
+      if (next === 'chat') stampRef.current();
     };
     globalThis.addEventListener('hashchange', onHashChange);
     return () => globalThis.removeEventListener('hashchange', onHashChange);
@@ -137,7 +165,17 @@ export function Shell(): JSX.Element {
         // The fragment may already name the thread (a pasted link, the
         // docket's Review). It wins over "most recent" when it exists.
         const wanted = threadFromHash(globalThis.location.hash);
-        const first = wanted !== null && list.some(t => t.id === wanted) ? wanted : (list[0]?.id ?? null);
+        if (wanted !== null && !list.some(t => t.id === wanted)) {
+          // Deleted, or from another vault. Open a draft and SAY so, and drop
+          // the dead `?thread=` so the URL stops claiming otherwise.
+          if (!draftRef.current) {
+            setNotFound(true);
+            setDraft(true);
+            globalThis.history.replaceState(null, '', '#/chat');
+          }
+          return;
+        }
+        const first = wanted ?? list[0]?.id ?? null;
         if (!draftRef.current) setSelected(current => current ?? first);
         if (first === null) setDraft(true);
       } catch (err) {
@@ -158,8 +196,14 @@ export function Shell(): JSX.Element {
       const { threads: list } = await loadThreads();
       if (selected === id) {
         const next = list[0]?.id ?? null;
-        if (next === null) openDraft();
-        else openThread(next);
+        if (next === null) newDraft();
+        else selectThread(next);
+        // The rail is global now, so Delete is reachable from Home and
+        // Settings. Only the chat route follows the new selection into the
+        // fragment — deleting from Home must not navigate away from Home.
+        if (routeRef.current === 'chat') {
+          globalThis.history.replaceState(null, '', next === null ? '#/chat' : `#/chat?thread=${encodeURIComponent(next)}`);
+        }
       }
     } catch (err) {
       if (!(err instanceof ApiError && err.status === 401)) setError(detail(err));
@@ -199,6 +243,11 @@ export function Shell(): JSX.Element {
             {error}
           </p>
         )}
+        {notFound ? (
+          <p className="v2-notfound muted" role="status">
+            that conversation was not found
+          </p>
+        ) : null}
 
         {/* The chat workspace stays MOUNTED on every route and is only
             HIDDEN off `#/chat` — the keep-stream invariant (PR #28). */}
@@ -215,8 +264,13 @@ export function Shell(): JSX.Element {
                   setSelected(header.id);
                   setDraft(false);
                   // The fragment now names the thread — replaceState, so no
-                  // hashchange, so no remount mid-stream.
-                  globalThis.history.replaceState(null, '', `#/chat?thread=${encodeURIComponent(header.id)}`);
+                  // hashchange, so no remount mid-stream. Only while the
+                  // reader is still ON chat: a send that finishes after they
+                  // opened the vault must not rewrite the URL out from under
+                  // the page they are reading.
+                  if (routeRef.current === 'chat') {
+                    globalThis.history.replaceState(null, '', `#/chat?thread=${encodeURIComponent(header.id)}`);
+                  }
                   void loadThreads();
                 }}
                 onThreadTouched={() => void loadThreads()}

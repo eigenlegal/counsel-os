@@ -23,14 +23,14 @@
   --bg-hover: #f1ece3;
   --fg: #241f19;
   --fg-muted: #5f584d;
-  --fg-faint: #8a8071;
+  --fg-faint: #7a7061; /* 4.55:1 on paper — was #8a8071 at 3.63:1 */
   --border: #e6dfd2;
   --border-strong: #d8cfbf;
-  --accent: #a8681f;
+  --accent: #9a5d16; /* 4.97:1 — spec §2 said #a8681f, which measured 4.21:1 */
   --accent-ink: #ffffff;
   --ok: #3f7a4f;
-  --warn: #996d10;
-  --amber: #996d10;
+  --warn: #8a6210; /* 5.12:1 — spec §2 said #996d10, which measured 4.32:1 */
+  --amber: #8a6210;
   --error: #b4483a;
   /* diff/redline tints: opaque, never alpha (spec §2, light row) */
   --ins-bg: #e7f0e4;
@@ -206,7 +206,9 @@ a { color: var(--accent); }
 /* Dotted-leader facts (spec §3.5). */
 .facts { margin: 0 0 0.8rem; }
 .fact { display: flex; align-items: baseline; font-size: 0.85rem; padding: 2px 0; }
-.fact dt { color: var(--fg-faint); }
+/* The leader lives INSIDE the <dt> — `dl > div` may hold only dt/dd — so the
+ * dt is the flex row that lets it stretch. */
+.fact dt { flex: 1; display: flex; align-items: baseline; min-width: 0; color: var(--fg-faint); }
 .fact dd { margin: 0; word-break: break-all; }
 
 .providers-table { border-collapse: collapse; font-size: 0.88rem; }
@@ -246,6 +248,8 @@ a { color: var(--accent); }
 .v2-notice p:last-child { margin-bottom: 0; }
 .v2-notice-error { color: var(--error); }
 .v2-notice-warn { color: var(--warn); }
+/* Quiet, not alarming: a dead `?thread=` is a fact to state, not an error. */
+.v2-notfound { margin: var(--s3) var(--s6) 0; font-style: italic; }
 
 .v2-pill {
   font: italic 600 0.85rem/1 var(--serif);
@@ -305,11 +309,23 @@ a { color: var(--accent); }
 .v2-thread-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .v2-thread-delete { background: none; border: none; color: var(--fg-faint); padding: 0 8px; }
 .v2-foot { margin-top: auto; padding: 10px; display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--fg-faint); background: none; border: none; text-align: left; }
+.v2-rail-empty { margin: 2px 10px; font-size: 12.5px; font-style: italic; }
 .v2-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); flex-shrink: 0; }
 
 /* Icon rail on the vault route (mock-vault.html .rail): 56px, no labels. */
 .v2-rail.v2-rail-icons { width: var(--rail-w-icons); padding: 14px 8px; align-items: center; }
-.v2-rail-icons .v2-lbl { display: none; }
+/* Visually hidden, NOT removed: `display: none` would strip the accessible
+ * name off all four nav links and the footer button, leaving a screen-reader
+ * user four unnamed links on the vault route (WCAG 2.4.4 / 4.1.2). The clip
+ * pattern renders identically to the mock and keeps the name. */
+.v2-rail-icons .v2-lbl {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 .v2-rail-icons .v2-brand { padding: 4px 0 14px; }
 .v2-rail-icons .v2-nav a { justify-content: center; padding: 9px; }
 .v2-rail-icons .v2-foot { justify-content: center; padding: 10px 0; }

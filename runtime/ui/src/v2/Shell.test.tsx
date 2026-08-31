@@ -2,6 +2,7 @@ import { act, cleanup, fireEvent, render, screen, userEvent, waitFor } from '../
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { TOKEN_KEY } from '../api/token';
+import { routeFromHash, vaultPathFromHash } from '../app';
 import type { Health, SettingsView, Thread, ThreadEvent, ThreadHeader } from '../api/types';
 import { Shell } from './Shell';
 
@@ -274,10 +275,131 @@ describe('Shell', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'open in vault' }));
     expect(document.querySelector('aside[aria-label="Vault drawer"]')).toBeTruthy();
-    expect(location.hash).toBe('#/chat');
+    // The drawer is not a route: the fragment still points at chat, never at
+    // the vault. (Whether it carries `?thread=` is F3a's business, not this
+    // test's — happy-dom fires a hashchange on replaceState and browsers do
+    // not, so asserting the exact string here would pin the wrong thing.)
+    expect(routeFromHash(location.hash)).toBe('chat');
+    expect(vaultPathFromHash(location.hash)).toBeNull();
 
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(document.querySelector('aside[aria-label="Vault drawer"]')).toBeNull();
+  });
+
+  test('a bare #/chat keeps the open thread and re-stamps the fragment', async () => {
+    history.replaceState(null, '', '/#/chat?thread=t-2');
+    render(<Shell />);
+    await waitFor(() => expect(chatNode()).toBeTruthy());
+    await waitFor(() => expect(document.querySelector('li.v2-thread[aria-current="true"]')?.textContent).toContain('Beta MSA scope'));
+    const before = chatNode();
+
+    // The rail's Chat link has no `?thread=` in its href.
+    goTo('#/chat');
+
+    // The thread stays open — and the URL says so again, so copying the link
+    // or reloading lands back on it.
+    expect(chatNode()).toBe(before);
+    expect(document.querySelector('li.v2-thread[aria-current="true"]')?.textContent).toContain('Beta MSA scope');
+    expect(location.hash).toBe('#/chat?thread=t-2');
+  });
+
+  test('a #/chat?thread= naming no known thread opens a draft and says so', async () => {
+    history.replaceState(null, '', '/#/chat?thread=t-gone');
+    render(<Shell />);
+
+    await waitFor(() => expect(screen.getByText('that conversation was not found')).toBeTruthy());
+    // A draft — NOT some other conversation opened silently.
+    expect(document.querySelector('li.v2-draft[aria-current="true"]')).toBeTruthy();
+    expect(document.querySelector('li.v2-thread[aria-current="true"]')).toBeNull();
+    // And the fragment stops claiming a thread it cannot show.
+    expect(location.hash).toBe('#/chat');
+
+    // Picking a real thread clears the notice.
+    await userEvent.click(screen.getByText('Acme NDA term'));
+    await waitFor(() => expect(screen.queryByText('that conversation was not found')).toBeNull());
+  });
+
+  test('deleting the open thread from Home stays on Home', async () => {
+    const confirmed = globalThis.confirm;
+    globalThis.confirm = () => true;
+    try {
+      history.replaceState(null, '', '/#/');
+      const base = globalThis.fetch;
+      globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+        if (String(input) === '/threads' && (init?.method ?? 'GET') === 'DELETE') return json(null);
+        if (/^\/threads\/.+$/.test(String(input)) && init?.method === 'DELETE') return json(null);
+        return await (base as unknown as typeof fetch)(input, init);
+      }) as unknown as typeof fetch;
+
+      render(<Shell />);
+      await waitFor(() => expect(document.querySelector('.v2-home')).toBeTruthy());
+      await waitFor(() => expect(screen.getByText('Acme NDA term')).toBeTruthy());
+
+      await userEvent.click(screen.getByRole('button', { name: 'Delete Acme NDA term' }));
+
+      // Home is still the page, and the fragment never became a chat one.
+      await waitFor(() => expect(document.querySelector('.v2-home')).toBeTruthy());
+      expect(routeFromHash(location.hash)).toBe('home');
+      expect(workNode()?.hasAttribute('hidden')).toBe(true);
+    } finally {
+      globalThis.confirm = confirmed;
+    }
+  });
+
+  test('a send that lands after the reader opened the vault does not rewrite the URL', async () => {
+    const fresh: ThreadHeader = {
+      id: 't-9',
+      title: 'Check the cap.',
+      createdAt: '2026-08-29T12:00:00.000Z',
+      updatedAt: '2026-08-29T12:00:00.000Z',
+      sessions: {},
+    };
+    let releaseCreate = (): void => {};
+    const createHeld = new Promise<void>(resolve => {
+      releaseCreate = resolve;
+    });
+
+    let created = false;
+    // `onThreadCreated` calls `loadThreads()`, so a GET that arrives after the
+    // POST resolved proves the callback ran — the only deterministic signal
+    // available here, since the collapsed vault rail renders no thread list.
+    let listsAfterCreate = 0;
+    const base = globalThis.fetch;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if ((init?.method ?? 'GET') === 'POST' && url === '/threads') {
+        await createHeld;
+        created = true;
+        return json(fresh);
+      }
+      if (url === '/threads') {
+        if (created) listsAfterCreate += 1;
+        return json(created ? [fresh, acme, beta] : [acme, beta]);
+      }
+      if (url.endsWith('/steps')) {
+        return new Response('event: done\ndata: {"type":"done","output":null}\n\n', {
+          status: 200,
+          headers: { 'content-type': 'text/event-stream' },
+        });
+      }
+      return await (base as unknown as typeof fetch)(input, init);
+    }) as unknown as typeof fetch;
+
+    render(<Shell />);
+    await userEvent.click(await screen.findByRole('button', { name: 'New conversation' }));
+    await userEvent.type(await screen.findByLabelText('Message'), 'Check the cap.');
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }));
+
+    // The reader walks away mid-send.
+    goTo('#/vault?path=practice/standards/nda.md');
+    await waitFor(() => expect(document.querySelector('.v2-vault')).toBeTruthy());
+
+    releaseCreate();
+    await waitFor(() => expect(listsAfterCreate).toBeGreaterThan(0));
+
+    // The vault page is still the page, and the URL still names its file.
+    expect(location.hash).toBe('#/vault?path=practice/standards/nda.md');
+    expect(document.querySelector('.v2-vault')).toBeTruthy();
   });
 
   test('the drawer is still open after a trip to settings', async () => {

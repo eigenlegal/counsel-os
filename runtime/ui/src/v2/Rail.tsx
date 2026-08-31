@@ -101,6 +101,7 @@ export function Rail({
               </li>
             ))}
           </ul>
+          {threads.length === 0 && !draft ? <p className="muted v2-rail-empty">No threads yet.</p> : null}
         </>
       )}
       <button
