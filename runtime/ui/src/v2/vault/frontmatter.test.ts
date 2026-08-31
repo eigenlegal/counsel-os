@@ -62,3 +62,13 @@ describe('prettifyName', () => {
     expect(prettifyName('2026-06-01.md')).toBe('2026 06 01');
   });
 });
+
+describe('frontmatter cleanup (founder feedback 2026-08-31)', () => {
+  test('plumbing keys are hidden and hyphens humanize like underscores', () => {
+    const { rows } = splitFrontmatter('---\ncounsel-os-type: matter\nmatter-id: 2026-06-acme\nclient: Acme\n---\nBody.\n');
+    expect(rows).toEqual([
+      { key: 'matter id', value: '2026-06-acme' },
+      { key: 'client', value: 'Acme' },
+    ]);
+  });
+});

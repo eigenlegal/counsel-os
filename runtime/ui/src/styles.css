@@ -320,7 +320,7 @@ a { color: var(--accent); }
 .v2-draft { font-style: italic; }
 .v2-thread-open { flex: 1; min-width: 0; text-align: left; background: none; border: none; padding: 6px 10px; color: inherit; }
 .v2-thread-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.v2-foot { margin-top: auto; padding: 10px; display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--fg-faint); background: none; border: none; text-align: left; }
+.v2-foot { margin-top: auto; padding: 10px; display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 12px; color: var(--fg-faint); background: none; border: none; text-align: left; }
 .v2-rail-empty { margin: 2px 10px; font-size: 12.5px; font-style: italic; }
 .v2-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); flex-shrink: 0; }
 
@@ -483,13 +483,14 @@ a { color: var(--accent); }
 .v2-doc-meta { margin-left: auto; font: 12px var(--mono); color: var(--fg-faint); flex-shrink: 0; white-space: nowrap; }
 .v2-fm { columns: 2; gap: 40px; margin: 0 0 26px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
 .v2-fm-row { display: flex; align-items: baseline; font-size: 13px; color: var(--fg-faint); padding: 2px 0; break-inside: avoid; }
-.v2-fm-row dt { color: var(--fg-faint); }
-.v2-fm-row dd { margin: 0; color: var(--fg); font-weight: 600; }
+.v2-fm-row dt { color: var(--fg-faint); white-space: nowrap; }
+.v2-fm-row dd { margin: 0; color: var(--fg); font-weight: 600; text-align: right; overflow-wrap: anywhere; min-width: 0; }
 .v2-doc-md { font: 16.5px/1.7 var(--serif); color: var(--fg); max-width: 68ch; }
 .v2-doc-md h2 { font: 600 18px/1.3 var(--serif); margin: 26px 0 10px; }
 .v2-doc-md code, .v2-doc-md pre { font-family: var(--mono); }
 .v2-outline { position: sticky; float: right; top: 110px; width: 148px; margin-right: -170px; font-size: 11.5px; color: var(--fg-faint); border-left: 1px solid var(--border); padding-left: 10px; }
-.v2-outline div { padding: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.v2-outline button { display: block; width: 100%; background: none; border: none; color: inherit; font: inherit; text-align: left; cursor: pointer; padding: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.v2-outline button:hover { color: var(--fg-muted); }
 .v2-outline .on { color: var(--fg); }
 @media (max-width: 1200px) { .v2-outline { display: none; } }
 .v2-askbar { position: sticky; bottom: 24px; display: flex; justify-content: center; margin-top: 40px; }
@@ -551,7 +552,7 @@ a { color: var(--accent); }
 .v2-sub { color: var(--fg-muted); margin-bottom: 26px; font: italic 15px/1.5 var(--serif); }
 
 .v2-ask { background: var(--bg-raised); border: 1px solid var(--border-strong); border-radius: var(--radius-lg); padding: 16px 18px 12px; box-shadow: var(--shadow); }
-.v2-ask textarea { width: 100%; background: none; border: none; color: var(--fg); font: 15px/1.5 var(--sans); resize: none; outline: none; padding: 0; }
+.v2-ask textarea { width: 100%; background: none; border: none; color: var(--fg); font: 13.5px/1.5 var(--sans); resize: none; outline: none; padding: 0; }
 .v2-ask textarea::placeholder { color: var(--fg-faint); }
 .v2-ask-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
 .v2-ask-chip { font-size: 12px; color: var(--fg-muted); border: 1px solid var(--border-strong); border-radius: 999px; padding: 3px 10px; background: var(--bg); cursor: pointer; }
@@ -676,10 +677,13 @@ a { color: var(--accent); }
 /* The composer: the one strong container on the screen. */
 .v2-composer { border-top: none; padding: 14px 40px 22px; background: none; }
 .v2-composer-box { max-width: 720px; margin: 0 auto; background: var(--bg-raised); border: 1px solid var(--border-strong); border-radius: var(--radius-lg); padding: 12px 14px 10px; box-shadow: var(--shadow); }
-.v2-composer-box textarea { width: 100%; background: none; border: none; color: var(--fg); font: 15px/1.5 var(--sans); resize: none; outline: none; padding: 0; }
+.v2-composer-box textarea { width: 100%; background: none; border: none; color: var(--fg); font: 13.5px/1.5 var(--sans); resize: none; outline: none; padding: 0; }
 .v2-composer-actions { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
 .v2-composer-hint { margin-left: auto; font-size: 12px; }
 .v2-primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 
 /* The transcript column narrows to the mock's 720px measure. */
 .v2-turn { max-width: 720px; }
+
+/* One line, ellipsized: the dot stays on the label line however long the model id. Full text in the title. */
+.v2-foot .v2-lbl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
