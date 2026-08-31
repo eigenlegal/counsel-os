@@ -6,6 +6,12 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.11.1] — 2026-08-31
+
+UI polish + Settings rethink
+
+- Aligned chevrons, styled provider combobox (native datalist gone), config.md hidden from listings, anchored askbar, single empty-state copy, humanized deadlines; Settings reorganized into task-oriented groups with purpose lines, structured task routes, guided add-provider flow.
+
 ## [0.11.0] — 2026-08-31
 
 Comprehensive UI redesign — brief/ledger workbench
