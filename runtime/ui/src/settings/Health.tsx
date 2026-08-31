@@ -24,6 +24,7 @@ export function Health({ health, effective, file }: HealthProps): JSX.Element {
   return (
     <section className="settings-health">
       <h2>Runtime</h2>
+      <p className="muted">What is actually running right now — the file above plus the built-ins. Read-only; when a setting does not seem to take, compare it against this.</p>
       <dl className="facts">
         <div className="fact">
           <dt>

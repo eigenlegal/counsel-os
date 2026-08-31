@@ -9,7 +9,7 @@
  * left empty is OMITTED from the registry rather than written as a default
  * the operator never chose.
  */
-import type { Capabilities, RegistryEntry, RegistryFileData, SettingsIssue } from '../api/types';
+import type { Capabilities, RegistryEntry, RegistryFileData, SettingsIssue, TaskRouteData } from '../api/types';
 
 /** An optional boolean as a control can hold it: unset, on, or off. */
 export type Tri = '' | 'yes' | 'no';
@@ -28,24 +28,44 @@ export interface ProviderRow {
   auth: '' | Capabilities['auth'];
 }
 
+/**
+ * One task route as a row of controls. `TaskRoute` on the server is a small
+ * closed shape — `prefer`, four `require` fields, `allow_remote` — so a row
+ * of controls renders ALL of it and a round trip loses nothing. (This
+ * replaced the raw-JSON textarea the first Settings page shipped with.)
+ */
+export interface RouteRow {
+  /** Stable across edits, like `ProviderRow.key`. Never sent. */
+  key: string;
+  /** The task name — the record's key in the file. */
+  task: string;
+  prefer: string;
+  tools: Tri;
+  caching: Tri;
+  thinking: Tri;
+  contextTokens: string;
+  /** `allow_remote`, whose absence means "allowed". */
+  remote: Tri;
+}
+
 export interface FormState {
   default: string;
   stepTimeoutMs: string;
   providers: ProviderRow[];
-  /** `tasks` as JSON text. The router's task table is a nested map that no
-   * flat form renders honestly, and it is edited rarely; a textarea that
-   * round-trips it exactly beats a form that flattens it wrongly. */
-  tasks: string;
+  routes: RouteRow[];
 }
 
 /**
- * Keyed by field: `default`, `stepTimeoutMs`, `tasks`, or a path into the
- * registry such as `providers.1.baseURL` or
- * `providers.1.capabilities.contextTokens`.
+ * Keyed by field: `default`, `stepTimeoutMs`, or a path into the registry
+ * such as `providers.1.baseURL`, `providers.1.capabilities.contextTokens`,
+ * or `tasks.review.prefer`.
  *
  * The key is deliberately `issue.path.join('.')` — the shape a zod issue
  * from a 400 already has — so a server-side error and a client-side one land
- * on the same input with no translation table between them.
+ * on the same input with no translation table between them. The one
+ * exception is a route row's OWN validation, keyed `route.<row key>.<field>`
+ * instead: a client-side route error can belong to a row whose task name is
+ * empty or duplicated, which no server path could address.
  */
 export type FieldErrors = Record<string, string>;
 
@@ -61,6 +81,59 @@ function tri(value: boolean | undefined): Tri {
 
 export function emptyRow(): ProviderRow {
   return { key: nextKey(), id: '', baseURL: '', apiKeyEnv: '', tools: '', caching: '', thinking: '', contextTokens: '', auth: '' };
+}
+
+/**
+ * The guided starts (cou-84). Each returns a PREFILLED row, not a saved one:
+ * the operator still reads it, finishes it, and presses the one Save — so a
+ * misclick costs nothing and the save semantics stay whole-form.
+ */
+
+/** "I have an OpenAI API key." The id is the vendor's current flagship; the
+ * key is named by environment variable, never typed into the form. */
+export function openaiKeyRow(): ProviderRow {
+  return { ...emptyRow(), id: 'openai/gpt-5.6', apiKeyEnv: 'OPENAI_API_KEY' };
+}
+
+/** "I run a model with Ollama." The id is left for the operator to finish —
+ * only they know which model `ollama list` shows. */
+export function ollamaRow(): ProviderRow {
+  return { ...emptyRow(), id: 'ollama/' };
+}
+
+export function emptyRoute(): RouteRow {
+  return { key: nextKey(), task: '', prefer: '', tools: '', caching: '', thinking: '', contextTokens: '', remote: '' };
+}
+
+export function routeRowFrom(task: string, route: TaskRouteData): RouteRow {
+  const req = route.require ?? {};
+  return {
+    key: nextKey(),
+    task,
+    prefer: route.prefer,
+    tools: tri(req.tools),
+    caching: tri(req.caching),
+    thinking: tri(req.thinking),
+    contextTokens: req.contextTokens === undefined ? '' : String(req.contextTokens),
+    remote: tri(route.allow_remote),
+  };
+}
+
+/**
+ * A millisecond count as a person would say it — "2 minutes", "1 minute 30
+ * seconds" — for the step-timeout field, whose unit the server fixed in
+ * milliseconds long before anyone had to read it. Empty string when there is
+ * nothing sayable (not a positive finite number).
+ */
+export function humanDuration(ms: number): string {
+  if (!Number.isFinite(ms) || ms <= 0) return '';
+  if (ms < 1000) return `${ms} ms`;
+  const minutes = Math.floor(ms / 60000);
+  const seconds = (ms % 60000) / 1000;
+  const parts: string[] = [];
+  if (minutes > 0) parts.push(`${minutes} minute${minutes === 1 ? '' : 's'}`);
+  if (seconds > 0) parts.push(`${seconds} second${seconds === 1 ? '' : 's'}`);
+  return parts.join(' ');
 }
 
 export function rowFromEntry(entry: RegistryEntry): ProviderRow {
@@ -83,10 +156,7 @@ export function formFromRegistry(reg: RegistryFileData): FormState {
     default: reg.default ?? '',
     stepTimeoutMs: reg.stepTimeoutMs === undefined ? '' : String(reg.stepTimeoutMs),
     providers: (reg.providers ?? []).map(rowFromEntry),
-    // Pretty-printed: the operator reads this before they edit it. An empty
-    // string, not `{}`, when there are no tasks — so saving an untouched
-    // form does not write a key that was not there.
-    tasks: reg.tasks === undefined ? '' : JSON.stringify(reg.tasks, null, 2),
+    routes: Object.entries(reg.tasks ?? {}).map(([task, route]) => routeRowFrom(task, route)),
   };
 }
 
@@ -151,23 +221,48 @@ export function registryFromForm(form: FormState): BuildResult {
   });
   if (providers.length > 0) registry.providers = providers;
 
-  const tasks = form.tasks.trim();
-  if (tasks !== '') {
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(tasks);
-    } catch (err) {
-      errors.tasks = `not valid JSON: ${err instanceof Error ? err.message : String(err)}`;
-      parsed = undefined;
+  // Route rows are error-keyed by `route.<row key>.<field>`, NOT by task
+  // name: two rows can hold the same (or an empty) name while being edited,
+  // and each still deserves its own message on its own row.
+  const tasks: Record<string, TaskRouteData> = {};
+  const seen = new Set<string>();
+  for (const row of form.routes) {
+    const name = row.task.trim();
+    if (name === '') {
+      errors[`route.${row.key}.task`] = 'name the kind of work this route matches';
+      continue;
     }
-    if (parsed !== undefined) {
-      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-        errors.tasks = 'must be a JSON object of task name → route';
-      } else {
-        registry.tasks = parsed as Record<string, unknown>;
-      }
+    if (seen.has(name)) {
+      errors[`route.${row.key}.task`] = `there is already a route for "${name}"`;
+      continue;
     }
+    seen.add(name);
+    if (row.prefer.trim() === '') {
+      errors[`route.${row.key}.prefer`] = 'pick the provider this work should go to';
+      continue;
+    }
+
+    const require: NonNullable<TaskRouteData['require']> = {};
+    const tools = boolOf(row.tools);
+    if (tools !== undefined) require.tools = tools;
+    const caching = boolOf(row.caching);
+    if (caching !== undefined) require.caching = caching;
+    const thinking = boolOf(row.thinking);
+    if (thinking !== undefined) require.thinking = thinking;
+    const context = row.contextTokens.trim();
+    if (context !== '') {
+      const tokens = Number(context);
+      if (!Number.isInteger(tokens) || tokens <= 0) errors[`route.${row.key}.contextTokens`] = 'must be a whole number above zero';
+      else require.contextTokens = tokens;
+    }
+
+    tasks[name] = {
+      prefer: row.prefer.trim(),
+      ...(Object.keys(require).length === 0 ? {} : { require }),
+      ...(row.remote === '' ? {} : { allow_remote: row.remote === 'yes' }),
+    };
   }
+  if (Object.keys(tasks).length > 0) registry.tasks = tasks;
 
   return Object.keys(errors).length === 0 ? { ok: true, registry } : { ok: false, errors };
 }
@@ -188,15 +283,35 @@ export function mapIssues(issues: SettingsIssue[]): { fields: FieldErrors; gener
       general.push(issue.message);
       continue;
     }
-    // Everything under `tasks` is one textarea on screen, so the sub-path
-    // goes into the message instead of into the key — otherwise an issue at
-    // `tasks.review.prefer` would have no field to attach to.
-    if (key === 'tasks' || key.startsWith('tasks.')) {
-      const detail = key === 'tasks' ? issue.message : `${key}: ${issue.message}`;
-      fields.tasks = fields.tasks === undefined ? detail : `${fields.tasks}; ${detail}`;
-      continue;
-    }
     fields[key] = issue.message;
   }
   return { fields, general };
+}
+
+/** The server-side error keys one route row's controls look up, given the
+ * row's task name. The form checks these; `unplacedTaskMessages` uses the
+ * same list to find the ones nothing will show. */
+export function routeErrorKeys(name: string): string[] {
+  return [
+    `tasks.${name}`,
+    `tasks.${name}.prefer`,
+    `tasks.${name}.require.tools`,
+    `tasks.${name}.require.caching`,
+    `tasks.${name}.require.thinking`,
+    `tasks.${name}.require.contextTokens`,
+    `tasks.${name}.allow_remote`,
+  ];
+}
+
+/**
+ * The `tasks.*` messages from a 400 that no rendered row will claim — a row
+ * was renamed after the failed save, or the issue names a shape no control
+ * draws. They still have to be READ (the save failed for them), so the form
+ * prints them with the general notices instead of dropping them.
+ */
+export function unplacedTaskMessages(fields: FieldErrors, rows: RouteRow[]): string[] {
+  const placed = new Set(rows.flatMap(row => routeErrorKeys(row.task.trim())));
+  return Object.entries(fields)
+    .filter(([key]) => (key === 'tasks' || key.startsWith('tasks.')) && !placed.has(key))
+    .map(([key, message]) => `${key}: ${message}`);
 }

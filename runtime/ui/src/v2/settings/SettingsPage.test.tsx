@@ -2,18 +2,31 @@ import { cleanup, render, screen, userEvent, waitFor } from '../../test/dom';
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { clearToken, TOKEN_KEY } from '../../api/token';
-import type { Health as HealthData, SettingsView } from '../../api/types';
+import type { Health as HealthData, ProviderInfo, SettingsView } from '../../api/types';
 import { SettingsPage } from './SettingsPage';
 
 const health: HealthData = { vault: '/Users/jack/legal', tenant: 'default', providers: [], default: 'fake/fake', stepTimeoutMs: 120000 };
 
+const fakeProvider: ProviderInfo = {
+  id: 'fake/fake',
+  kind: 'direct',
+  auth: 'local',
+  capabilities: { tools: true, caching: false, thinking: false, contextTokens: 1000, auth: 'local' },
+};
+
 const view: SettingsView = {
   file: '/Users/jack/.counsel-os/providers.yaml',
-  registry: { default: 'fake/fake', providers: [{ id: 'openai-compatible/local', baseURL: 'http://127.0.0.1:11434/v1' }] },
+  registry: {
+    default: 'fake/fake',
+    providers: [{ id: 'openai-compatible/local', baseURL: 'http://127.0.0.1:11434/v1' }],
+    // One of everything a route can hold, so rendering and saving cover the
+    // whole shape.
+    tasks: { review: { prefer: 'fake/fake', require: { contextTokens: 1000 }, allow_remote: false } },
+  },
   effective: {
     default: 'fake/fake',
     stepTimeoutMs: 120000,
-    providers: [{ id: 'fake/fake', kind: 'direct', auth: 'local', capabilities: { tools: true, caching: false, thinking: false, contextTokens: 1000, auth: 'local' } }],
+    providers: [fakeProvider],
   },
 };
 
@@ -24,10 +37,10 @@ function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 }
 
-function install(onPut: (body: unknown) => Response): void {
+function install(onPut: (body: unknown) => Response, getView: SettingsView = view): void {
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
-    if (url === '/settings' && (init?.method ?? 'GET') === 'GET') return json(view);
+    if (url === '/settings' && (init?.method ?? 'GET') === 'GET') return json(getView);
     if (url === '/settings' && init?.method === 'PUT') {
       const body: unknown = JSON.parse(String(init.body));
       puts.push(body);
@@ -50,15 +63,20 @@ afterEach(() => {
 });
 
 describe('SettingsPage', () => {
-  test('is grouped in the spec order', async () => {
+  test('is grouped by what the operator came to do, each group with a purpose line', async () => {
     install(() => json(view));
     render(<SettingsPage health={health} />);
-    // By its LABEL: the group's own heading says "Default provider" too.
     await waitFor(() => expect(screen.getByLabelText('Default provider')).toBeTruthy());
     // Descendant, not child: `Health` draws its own heading inside its own
     // section, one level under the group card.
     const headings = Array.from(document.querySelectorAll('.v2-group h2'), el => el.textContent);
-    expect(headings).toEqual(['Default provider', 'Step timeout', 'Providers', 'Task routes', 'Test', 'Runtime']);
+    expect(headings).toEqual(['Providers', 'Default provider', 'Task routes', 'Step timeout', 'Test', 'Runtime']);
+    // The plain-language purpose lines (cou-84), one under each heading.
+    expect(screen.getByText(/The models this runtime can call/)).toBeTruthy();
+    expect(screen.getByText(/The model that answers when nothing more specific applies/)).toBeTruthy();
+    expect(screen.getByText(/Send one kind of work to a particular model/)).toBeTruthy();
+    expect(screen.getByText(/before the runtime cancels it and reports a timeout/)).toBeTruthy();
+    expect(screen.getByText(/What is actually running right now/)).toBeTruthy();
     // The Test group keeps the step-4 confirm, word for word.
     await userEvent.click(screen.getByRole('button', { name: 'Test' }));
     expect(screen.getByText('This uses one call on fake/fake.')).toBeTruthy();
@@ -101,20 +119,105 @@ describe('SettingsPage', () => {
     await waitFor(() => expect(screen.getByText('must be positive')).toBeTruthy());
   });
 
-  test('one Save, below every card it writes — not inside Task routes', async () => {
+  test('one Save, below every card it writes', async () => {
     install(() => json(view));
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByLabelText('Task routes (JSON)')).toBeTruthy());
+    await waitFor(() => expect(screen.getByLabelText('Task')).toBeTruthy());
 
     const save = screen.getByRole('button', { name: 'Save' });
     // The button belongs to the form's footer, not to any one group.
     expect(save.closest('.v2-group')).toBeNull();
     expect(save.closest('.v2-save')).not.toBeNull();
-    expect(screen.getByText(/Saves Default provider, Step timeout, Providers and Task routes/)).toBeTruthy();
+    expect(screen.getByText(/Saves Providers, Default provider, Task routes and Step timeout/)).toBeTruthy();
 
     await userEvent.click(save);
     await waitFor(() => expect(screen.getByText(/^Saved\./)).toBeTruthy());
     // The confirmation reads beside the button that caused it.
     expect(screen.getByText(/^Saved\./).closest('.v2-save')).not.toBeNull();
+  });
+
+  test('a task route renders as a structured row and round-trips on save', async () => {
+    install(() => json(view));
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByLabelText('Task')).toBeTruthy());
+
+    expect((screen.getByLabelText('Task') as HTMLInputElement).value).toBe('review');
+    expect((screen.getByLabelText('Provider') as HTMLInputElement).value).toBe('fake/fake');
+    expect((screen.getByLabelText('min context (tokens)') as HTMLInputElement).value).toBe('1000');
+    expect((screen.getByLabelText('remote models') as HTMLSelectElement).value).toBe('no');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(puts).toHaveLength(1));
+    expect((puts[0] as { tasks: unknown }).tasks).toEqual({
+      review: { prefer: 'fake/fake', require: { contextTokens: 1000 }, allow_remote: false },
+    });
+  });
+
+  test('an unfinished route is stopped in the page, never sent', async () => {
+    install(() => json(view));
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Add route' })).toBeTruthy());
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add route' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(screen.getByText('name the kind of work this route matches')).toBeTruthy());
+    expect(puts).toHaveLength(0);
+  });
+
+  test('a route naming an unloaded provider warns about the fallback', async () => {
+    install(() => json(view));
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByLabelText('Provider')).toBeTruthy());
+
+    const user = userEvent.setup({ document });
+    const prefer = screen.getByLabelText('Provider') as HTMLInputElement;
+    await user.clear(prefer);
+    await user.type(prefer, 'nobody/loaded');
+    expect(screen.getByText(/This route will fall back to the default/)).toBeTruthy();
+  });
+
+  test('the guided starts prefill a provider row without saving anything', async () => {
+    install(() => json(view));
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Add OpenAI provider' })).toBeTruthy());
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add OpenAI provider' }));
+    const ids = screen.getAllByLabelText('Id') as HTMLInputElement[];
+    expect(ids.map(el => el.value)).toContain('openai/gpt-5.6');
+    const keys = screen.getAllByLabelText('apiKeyEnv') as HTMLInputElement[];
+    expect(keys.map(el => el.value)).toContain('OPENAI_API_KEY');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add Ollama model' }));
+    const afterOllama = screen.getAllByLabelText('Id') as HTMLInputElement[];
+    expect(afterOllama.map(el => el.value)).toContain('ollama/');
+    // Prefilled only: nothing was PUT.
+    expect(puts).toHaveLength(0);
+  });
+
+  test('the Claude start appears when the built-in is loaded, and sets the default', async () => {
+    const claude: ProviderInfo = { ...fakeProvider, id: 'claude-sub/claude-opus-5', kind: 'harness', auth: 'subscription' };
+    install(
+      () => json(view),
+      { ...view, effective: { ...view.effective, providers: [fakeProvider, claude] } },
+    );
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByText(/already loaded as/)).toBeTruthy());
+
+    await userEvent.click(screen.getByRole('button', { name: 'Make it the default' }));
+    expect((screen.getByLabelText('Default provider') as HTMLInputElement).value).toBe('claude-sub/claude-opus-5');
+    // The button disappears once it IS the default — nothing left to do.
+    expect(screen.queryByRole('button', { name: 'Make it the default' })).toBeNull();
+  });
+
+  test('the timeout is echoed in words', async () => {
+    install(() => json(view));
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByLabelText('Step timeout (ms)')).toBeTruthy());
+
+    // Empty: the effective fallback, in ms and in words.
+    expect(screen.getByText(/Not set — the runtime uses .* ms \(2 minutes\)/)).toBeTruthy();
+
+    await userEvent.type(screen.getByLabelText('Step timeout (ms)'), '90000');
+    expect(screen.getByText('That is 1 minute 30 seconds.')).toBeTruthy();
   });
 });
