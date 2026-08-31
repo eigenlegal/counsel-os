@@ -33,20 +33,36 @@ const empty: VaultOverview = { matters: [], groups: { practice: 0, knowledge: 0,
 
 let pending: PendingProposal[] = [];
 let overviewBody: VaultOverview = overview;
+let truncatedHeader = false;
 
-function json(body: unknown): Response {
-  return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+function json(body: unknown, headers: Record<string, string> = {}): Response {
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { 'content-type': 'application/json', ...headers },
+  });
 }
+
+const proposal: PendingProposal = {
+  threadId: 't-1',
+  threadTitle: 'NDA residuals fallback',
+  id: 'p-1',
+  path: 'practice/standards/nda.md',
+  rationale: 'Record the narrow residuals carve-out as your NDA fallback',
+  at: '2026-08-30T06:00:00.000Z',
+};
+
+const TRUNCATION_NOTE = 'Older conversations were not scanned — some proposals may not be shown.';
 
 beforeEach(() => {
   pending = [];
   overviewBody = overview;
+  truncatedHeader = false;
   sessionStorage.setItem(TOKEN_KEY, 'test-token');
   history.replaceState(null, '', '/#/');
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = String(input);
     if (url.startsWith('/vault/overview')) return json(overviewBody);
-    if (url.startsWith('/proposals')) return json(pending);
+    if (url.startsWith('/proposals')) return json(pending, truncatedHeader ? { 'x-counsel-truncated': '1' } : {});
     if (url.startsWith('/vault/list')) return json([]);
     throw new Error(`unexpected fetch: ${url}`);
   }) as unknown as typeof fetch;
@@ -78,16 +94,7 @@ describe('HomePage', () => {
   });
 
   test('the docket lists pending proposals and Review navigates, anchored', async () => {
-    pending = [
-      {
-        threadId: 't-1',
-        threadTitle: 'NDA residuals fallback',
-        id: 'p-1',
-        path: 'practice/standards/nda.md',
-        rationale: 'Record the narrow residuals carve-out as your NDA fallback',
-        at: new Date(Date.now() - 2 * 3_600_000).toISOString(),
-      },
-    ];
+    pending = [{ ...proposal, at: new Date(Date.now() - 2 * 3_600_000).toISOString() }];
     mount();
     await waitFor(() => expect(document.querySelector('.v2-docket')).toBeTruthy());
     expect(document.querySelector('.v2-docket-head')?.textContent).toContain('1 awaiting your decision');
@@ -171,13 +178,70 @@ describe('HomePage', () => {
     expect(screen.getByText('NDA residuals fallback')).toBeTruthy();
   });
 
-  test('a failed read says so instead of pretending the vault is empty', async () => {
+  test('a bounded docket scan says so, under the rows', async () => {
+    pending = [proposal];
+    truncatedHeader = true;
+    mount();
+    await waitFor(() => expect(document.querySelector('.v2-docket')).toBeTruthy());
+    // The count in the head is only what was scanned, so the page must not
+    // leave it standing alone as the whole queue.
+    expect(document.querySelector('.v2-docket-note')?.textContent).toBe(TRUNCATION_NOTE);
+  });
+
+  test('an unbounded scan says nothing extra', async () => {
+    pending = [proposal];
+    mount();
+    await waitFor(() => expect(document.querySelector('.v2-docket')).toBeTruthy());
+    expect(document.querySelector('.v2-docket-note')).toBeNull();
+    expect(screen.queryByText(TRUNCATION_NOTE)).toBeNull();
+  });
+
+  test('a failed docket read leaves the matters column standing', async () => {
     globalThis.fetch = (async (input: RequestInfo | URL) => {
       if (String(input).startsWith('/proposals')) return new Response('nope', { status: 500 });
-      return json(overviewBody);
+      if (String(input).startsWith('/vault/overview')) return json(overviewBody);
+      return json([]);
     }) as unknown as typeof fetch;
     mount();
-    await waitFor(() => expect(document.querySelector('.v2-notice-error')).toBeTruthy());
+
+    // The matters that DID load render, and nothing claims the vault is empty.
+    await waitFor(() => expect(screen.getByText('Vendora × Worldpay — documentation')).toBeTruthy());
+    expect(screen.queryByText('No matters yet.')).toBeNull();
     expect(document.querySelector('.v2-getting-started')).toBeNull();
+    // The docket is gone, and one quiet line says why.
+    expect(document.querySelector('.v2-docket')).toBeNull();
+    expect(document.querySelector('.v2-docket-error')?.textContent).toContain('could not read the docket');
+  });
+
+  test('a failed vault read leaves the docket standing', async () => {
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      if (String(input).startsWith('/vault/overview')) return new Response('nope', { status: 500 });
+      if (String(input).startsWith('/proposals')) return json([proposal]);
+      return json([]);
+    }) as unknown as typeof fetch;
+    mount();
+
+    // The founder gate stays on the page.
+    await waitFor(() => expect(document.querySelector('.v2-docket')).toBeTruthy());
+    expect(screen.getByText('Record the narrow residuals carve-out as your NDA fallback')).toBeTruthy();
+    // And the matters column says what happened instead of "No matters yet."
+    expect(screen.queryByText('No matters yet.')).toBeNull();
+    expect(document.querySelector('.v2-getting-started')).toBeNull();
+    expect(document.querySelector('.v2-home-card .v2-notice-error')?.textContent).toContain('could not read the vault');
+  });
+
+  test('a long docket column stops at eight and points at the vault', async () => {
+    overviewBody = {
+      matters: Array.from({ length: 11 }, (_, i) => ({
+        path: `matters/m-${i}.md`,
+        title: `Matter ${i}`,
+        frontmatter: {},
+        mtimeMs: 1000 - i,
+      })),
+      groups: { practice: 11, knowledge: 0, other: 0 },
+    };
+    mount();
+    await waitFor(() => expect(document.querySelectorAll('.v2-matter')).toHaveLength(8));
+    expect(screen.getByRole('link', { name: '3 more in the vault →' })).toBeTruthy();
   });
 });

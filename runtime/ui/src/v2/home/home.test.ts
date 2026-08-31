@@ -53,6 +53,9 @@ describe('deadlines and next actions', () => {
     expect(nextActionOf({ next_action: 'send document list' })).toBe('send document list');
     expect(nextActionOf({ nextAction: 'draft cover email' })).toBe('draft cover email');
     expect(nextActionOf({})).toBeNull();
+    // The server's frontmatter filter keeps an empty string; the row must not
+    // print a dangling `next:` label for it.
+    expect(nextActionOf({ next_action: '   ' })).toBeNull();
   });
 
   test('dueLabel: date text, hot inside 14 days, quiet otherwise', () => {
@@ -61,8 +64,15 @@ describe('deadlines and next actions', () => {
     expect(dueLabel({}, NOW)).toEqual({ text: 'no deadline', hot: false });
   });
 
-  test('dueLabel: a date already gone by is hot, not quiet', () => {
-    expect(dueLabel({ deadline: '2026-08-01' }, NOW)).toEqual({ text: 'due Aug 1', hot: true });
+  test('dueLabel: a date already gone by says overdue, not due', () => {
+    expect(dueLabel({ deadline: '2026-08-01' }, NOW)).toEqual({ text: 'overdue Aug 1', hot: true });
+  });
+
+  test('dueLabel: the 14-day edge is calendar days, not the hour of the day', () => {
+    // 14 days out, asked at one minute to midnight — still hot.
+    expect(dueLabel({ deadline: '2026-09-13' }, new Date('2026-08-30T23:59:00'))).toEqual({ text: 'due Sep 13', hot: true });
+    // 15 days out, asked at one minute past — still quiet.
+    expect(dueLabel({ deadline: '2026-09-14' }, new Date('2026-08-30T00:01:00'))).toEqual({ text: 'due Sep 14', hot: false });
   });
 
   test('sortMatters: deadline first (soonest up), then recency', () => {

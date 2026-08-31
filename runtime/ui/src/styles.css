@@ -557,13 +557,18 @@ a { color: var(--accent); }
 .v2-ask-picker .vault-tree > h2 { display: none; }
 
 /* The docket — a ruled entry, not a box (mock .queue). */
-.v2-docket { border-top: 3px double var(--border-strong); border-bottom: 1px solid var(--border); margin-top: 22px; margin-bottom: 4px; padding: 12px 2px 14px; }
+.v2-docket { border-top: 3px double var(--border-strong); border-bottom: 1px solid var(--border); margin-top: 22px; margin-bottom: 26px; padding: 12px 2px 14px; }
 .v2-docket-head { margin-bottom: 8px; }
 .v2-docket-row { display: flex; align-items: baseline; gap: 12px; padding: 4px 0; }
 .v2-docket-what { font: 17px/1.4 var(--serif); color: var(--fg); }
 .v2-docket-path { font: 12px var(--mono); color: var(--fg-faint); margin-top: 3px; }
 .v2-docket-go { margin-left: auto; background: none; border: none; color: var(--accent); font: 600 13px var(--sans); flex-shrink: 0; cursor: pointer; }
 .v2-docket-go::after { content: " →"; }
+/* The bounded-scan hedge: set text under the rows, never a banner. */
+.v2-docket-note { font: italic 12.5px/1.5 var(--serif); color: var(--fg-muted); margin-top: 10px; }
+/* A read that failed speaks where its own content would have been. */
+.v2-docket-error { margin: 22px 0 0; }
+.v2-home-card .v2-notice { margin: 10px 0 0; font-size: 13px; }
 
 .v2-starters { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 26px; }
 .v2-starters button { background: none; border: 1px solid var(--border); color: var(--fg-muted); border-radius: 999px; padding: 6px 13px; font-size: 12.5px; cursor: pointer; }

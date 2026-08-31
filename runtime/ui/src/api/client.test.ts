@@ -1,7 +1,7 @@
 import '../test/dom';
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import { ApiError, fetchJson, streamStep } from './client';
+import { ApiError, fetchJson, fetchJsonWithHeaders, streamStep } from './client';
 import { clearToken, readToken, TOKEN_KEY } from './token';
 import { onUnauthorized } from './unauthorized';
 import type { StreamEvent } from './types';
@@ -77,6 +77,28 @@ describe('fetchJson', () => {
     await fetchJson('/health').catch(() => undefined);
     expect(readToken()).toBeNull();
     expect(sessionStorage.getItem(TOKEN_KEY)).toBeNull();
+  });
+});
+
+describe('fetchJsonWithHeaders', () => {
+  test('hands back the body AND the headers, on the same auth and failure path', async () => {
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      seen.push({ url: String(input), init });
+      return new Response(JSON.stringify([{ id: 'p-1' }]), {
+        status: 200,
+        headers: { 'content-type': 'application/json', 'x-counsel-truncated': '1' },
+      });
+    }) as unknown as typeof fetch;
+
+    const { body, headers } = await fetchJsonWithHeaders<{ id: string }[]>('/proposals?status=pending');
+    expect(body).toEqual([{ id: 'p-1' }]);
+    expect(headers.get('x-counsel-truncated')).toBe('1');
+    expect((seen[0]!.init!.headers as Record<string, string>)['authorization']).toBe('Bearer test-token');
+
+    responds(500, { error: 'nope' });
+    const err = await fetchJsonWithHeaders('/proposals?status=pending').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).status).toBe(500);
   });
 });
 

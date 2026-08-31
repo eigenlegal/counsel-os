@@ -46,11 +46,21 @@ export function parseDeadline(fm: Record<string, string>): Date | null {
   return Number.isNaN(t) ? null : new Date(t);
 }
 
+/** The next action, or `null`. An EMPTY string is `null` too: the server's
+ * frontmatter filter keeps `next_action: ""`, and a row that prints a bare
+ * `next:` label with nothing after it reads as a rendering bug. */
 export function nextActionOf(fm: Record<string, string>): string | null {
-  return fm['next_action'] ?? fm['nextAction'] ?? null;
+  const raw = (fm['next_action'] ?? fm['nextAction'] ?? '').trim();
+  return raw === '' ? null : raw;
 }
 
-/** Open matters sorted by deadline then recency (spec §3.2). */
+/**
+ * Matters sorted by deadline then recency (spec §3.2).
+ *
+ * Nothing filters on `stage`: the vault conventions define no closed-matter
+ * marker yet, so a closed matter carrying a stale `next_action` still shows
+ * here and still counts toward the subline. Recorded rather than guessed at.
+ */
 export function sortMatters(matters: MatterOverview[]): MatterOverview[] {
   return [...matters].sort((a, b) => {
     const da = parseDeadline(a.frontmatter)?.getTime() ?? Number.POSITIVE_INFINITY;
@@ -66,14 +76,31 @@ export interface Due {
   hot: boolean;
 }
 
+/**
+ * Whole days from today to the deadline, on the CALENDAR rather than the
+ * clock: the deadline is a UTC midnight (that is how `2026-09-12` parses)
+ * and `now` is local, so subtracting the two instants would move the 14-day
+ * edge by the reader's offset — amber arriving an afternoon early in Tokyo
+ * and an afternoon late in California. Comparing date parts makes "14 days"
+ * mean 14 of the reader's own days.
+ */
+function daysUntil(deadline: Date, now: Date): number {
+  const then = Date.UTC(deadline.getUTCFullYear(), deadline.getUTCMonth(), deadline.getUTCDate());
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((then - today) / 86_400_000);
+}
+
 export function dueLabel(fm: Record<string, string>, now: Date = new Date()): Due {
   const deadline = parseDeadline(fm);
   if (deadline === null) return { text: 'no deadline', hot: false };
   // Read in UTC, because that is how a bare `2026-09-12` was parsed: local
   // formatting would print Sep 11 for every reader west of Greenwich.
-  const text = `due ${deadline.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}`;
-  const days = (deadline.getTime() - now.getTime()) / 86_400_000;
-  return { text, hot: days <= 14 };
+  const date = deadline.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  const days = daysUntil(deadline, now);
+  // A date already gone by says so. Sorted to the top and painted amber, an
+  // overdue matter otherwise reads as the most imminent upcoming one.
+  if (days < 0) return { text: `overdue ${date}`, hot: true };
+  return { text: `due ${date}`, hot: days <= 14 };
 }
 
 /**
