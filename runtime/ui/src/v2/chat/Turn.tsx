@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import type { RunRecord } from '../../api/types';
 import type { ToolCallView, Turn } from '../../chat/turns';
 import { renderMarkdown } from '../../vault/markdown';
-import { linkCitations, readPathsOf } from './cite';
+import { citationMap, markCitations, readPathsOf } from './cite';
 import { ProposalCard } from './ProposalCard';
 import { Strip } from './Strip';
 import { WorkLine } from './WorkLine';
@@ -45,10 +45,12 @@ export function msFromRun(tools: ToolCallView[], run: RunRecord | undefined): Re
  * `vault/sanitize.ts`), which is why it is also the only thing this file
  * feeds to `dangerouslySetInnerHTML`.
  *
- * The citations are a transform on the markdown SOURCE, not on the HTML:
- * `linkCitations` turns a backticked mention of a file the step actually
- * read into a `#/vault` link, so every character still goes through that one
- * sink. A click on a chip opens the drawer instead of navigating.
+ * The source chips are DERIVED and only derived: `citationMap` is built from
+ * the `vault_read` calls this step actually made, and a code span becomes a
+ * chip only when its text is one of those spellings. A model that writes a
+ * `#/vault?path=` link of its own gets an href-less anchor (the sanitizer
+ * drops same-page fragments) with no chip class and no delegation — it can
+ * neither look like a citation nor open the drawer.
  *
  * The streaming branch renders the SAME way. `marked` parses a partial
  * document without complaining — an unclosed `**` is simply not emphasis
@@ -56,21 +58,23 @@ export function msFromRun(tools: ToolCallView[], run: RunRecord | undefined): Re
  * not change typeface at the moment the stream ends.
  */
 function Prose({ text, tools, onOpenFile }: { text: string; tools: ToolCallView[]; onOpenFile?: (path: string) => void }): JSX.Element {
-  // The memo keys on the paths as a STRING, not on the array: `buildTurns`
+  // The memos key on the paths as a STRING, not on the array: `buildTurns`
   // rebuilds every turn on every render of the pane, so an array dep would
   // re-parse the whole transcript's markdown on each frame of a stream.
   const cites = readPathsOf(tools).join('\n');
-  const html = useMemo(() => renderMarkdown(linkCitations(text, cites === '' ? [] : cites.split('\n'))), [text, cites]);
+  const derived = useMemo(() => citationMap(cites === '' ? [] : cites.split('\n')), [cites]);
+  const html = useMemo(() => markCitations(renderMarkdown(text), new Set(derived.keys())), [text, derived]);
   return (
     <div
       className="markdown v2-prose"
       onClick={event => {
         if (onOpenFile === undefined) return;
-        const anchor = (event.target as Element).closest?.('a[href^="#/vault?path="]');
-        if (anchor === null || anchor === undefined) return;
-        const href = anchor.getAttribute('href') ?? '';
-        const path = new URLSearchParams(href.slice(href.indexOf('?') + 1)).get('path');
-        if (path === null || path === '') return;
+        const chip = (event.target as Element).closest?.('code.v2-cite');
+        if (chip === null || chip === undefined) return;
+        // The map is the derivation set, so this is the second gate: a chip
+        // whose text is not a file this step read opens nothing.
+        const path = derived.get(chip.textContent ?? '');
+        if (path === undefined) return;
         event.preventDefault();
         onOpenFile(path);
       }}

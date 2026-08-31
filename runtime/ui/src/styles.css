@@ -361,8 +361,6 @@ a { color: var(--accent); }
 .v2-prose code, .v2-prose pre { font-family: var(--mono); }
 .v2-prose pre { background: var(--bg-sunken); border: 1px solid var(--border); border-radius: var(--radius); }
 .v2-working { color: var(--fg-muted); font-style: italic; margin: 0; }
-/* The turn being written: its timeline rule is live work, not history. */
-.v2-live .v2-steps { border-left-color: var(--accent); }
 .v2-turn-assistant .v2-notice { margin: 0; }
 .v2-chat-error { display: flex; gap: var(--s3); align-items: center; justify-content: space-between; }
 
@@ -585,10 +583,14 @@ a { color: var(--accent); }
 .v2-work-line-wrap { margin: 2px 0 4px; }
 .v2-work-line { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; background: none; border: none; padding: 0; font-size: 12.5px; color: var(--fg-faint); text-align: left; cursor: pointer; }
 .v2-file-chip { font: 11.5px var(--mono); background: var(--bg-raised); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; color: var(--fg-muted); }
-.v2-work-line-wrap .v2-steps { margin-top: 6px; border-left: none; padding-left: 0; }
+.v2-work-line-wrap .v2-steps { margin-top: 6px; }
 
-/* Source chips: the citation links inside the prose. */
-.v2-prose a[href^="#/vault"] {
+/* The rail footer's swap note: quiet, never a banner. */
+.v2-foot-note { font-size: 11px; }
+
+/* Source chips: the derived citations inside the prose. The class is added
+   AFTER the sanitizer, by path match — a document cannot mint it. */
+.v2-prose code.v2-cite {
   font: 11px var(--mono);
   background: var(--bg-raised);
   border: 1px solid var(--border);
@@ -598,8 +600,8 @@ a { color: var(--accent); }
   white-space: nowrap;
   vertical-align: 1px;
   text-decoration: none;
+  cursor: pointer;
 }
-.v2-prose a[href^="#/vault"] code { background: none; border: none; padding: 0; font: inherit; color: inherit; }
 
 /* The document slip: double rule top, hairline bottom — content on the
  * page, never a boxed card, never a left accent (founder amendment 1). */

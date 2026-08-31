@@ -180,14 +180,29 @@ export function Chat({
     void load();
   }, [load]);
 
-  // The docket's Review lands here with `&proposal=<id>` in the fragment:
-  // scroll the slip into view once the transcript holding it has rendered.
+  /**
+   * The docket's Review lands here with `&proposal=<id>` in the fragment:
+   * scroll the slip into view once the transcript holding it has rendered.
+   *
+   * The target is STATE, refreshed on `hashchange`, not read imperatively
+   * inside the scroll effect. The docket can list two pending proposals from
+   * one thread; reviewing the second while already in that thread changes
+   * the fragment and nothing else, so an effect keyed on the thread alone
+   * would never run again and the second Review would do nothing.
+   */
+  const [anchor, setAnchor] = useState<string | null>(() => proposalFromHash(globalThis.location.hash));
   useEffect(() => {
-    if (thread === null) return;
-    const target = proposalFromHash(globalThis.location.hash);
-    if (target === null) return;
-    document.getElementById(`proposal-${target}`)?.scrollIntoView?.({ block: 'start' });
-  }, [thread]);
+    const onHash = (): void => setAnchor(proposalFromHash(globalThis.location.hash));
+    globalThis.addEventListener('hashchange', onHash);
+    return () => globalThis.removeEventListener('hashchange', onHash);
+  }, []);
+
+  useEffect(() => {
+    if (thread === null || anchor === null) return;
+    // happy-dom does not implement scrollIntoView; the optional call keeps
+    // the tests honest rather than mocking the whole element.
+    document.getElementById(`proposal-${anchor}`)?.scrollIntoView?.({ block: 'start' });
+  }, [thread, anchor]);
 
   useEffect(() => () => abort.current?.abort(), []);
 

@@ -76,6 +76,15 @@ describe('workLineOf', () => {
     expect(parts).toEqual({ searched: true, listed: false, read: ['nda.md', 'acme-nda.md'], proposed: 1, other: 1 });
   });
 
+  test('two read files sharing a basename keep their parent, so neither hides', () => {
+    const parts = workLineOf([
+      tool('vault_read', { path: 'practice/standards/nda.md' }),
+      tool('vault_read', { path: 'matters/acme/nda.md' }),
+      tool('vault_read', { path: 'memory/decisions.md' }),
+    ]);
+    expect(parts.read).toEqual(['standards/nda.md', 'acme/nda.md', 'decisions.md']);
+  });
+
   test('nothing ran, nothing to say', () => {
     expect(workLineOf([])).toEqual({ searched: false, listed: false, read: [], proposed: 0, other: 0 });
   });

@@ -35,3 +35,28 @@ describe('redlineBlocks', () => {
     expect(blocks[0]!.changed).toBe(true);
   });
 });
+
+describe('a change diffWords cannot see', () => {
+  // `diffWords` ignores whitespace when it compares, so an edit that moves
+  // NOTHING but whitespace produces no spans at all. Written down because a
+  // reader who trusts the round trip above will otherwise assume a redline
+  // with no marks means a file with no change — which is the one lie the
+  // approval gate must never tell.
+  const rows: [string, string, string][] = [
+    ['a dropped trailing newline', 'Term: 2 years\n', 'Term: 2 years'],
+    ['an added trailing newline', 'Term: 2 years', 'Term: 2 years\n'],
+    ['CRLF normalised to LF', '# NDA\r\nTerm: 2 years\r\n', '# NDA\nTerm: 2 years\n'],
+    ['a reflowed paragraph', 'a b\nc d\n', 'a b c d\n'],
+  ];
+
+  for (const [name, before, after] of rows) {
+    test(`${name} reports no marks, and no changed block`, () => {
+      expect(before).not.toBe(after);
+      expect(wordDiff(before, after).filter(s => s.kind !== 'same')).toEqual([]);
+      expect(redlineBlocks(wordDiff(before, after)).filter(b => b.changed)).toEqual([]);
+      // The round trip the first describe asserts does NOT hold here: the
+      // spans reconstruct the AFTER for both directions.
+      expect(wordDiff(before, after).map(s => s.text).join('')).toBe(after);
+    });
+  }
+});

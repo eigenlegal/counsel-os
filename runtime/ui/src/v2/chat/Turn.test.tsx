@@ -66,18 +66,19 @@ describe('TurnView prose', () => {
 });
 
 describe('TurnView source chips', () => {
-  test('a backticked mention of a read file renders as a vault chip that opens the drawer', async () => {
+  function readNda(): AssistantTurn['tools'] {
+    return [{ id: 'r1', name: 'vault_read', input: { path: 'practice/standards/nda.md' }, hasResult: true, output: { content: 'x' } }];
+  }
+
+  test('a backticked mention of a read file renders as a chip that opens the drawer', async () => {
     const opened: string[] = [];
-    const turn: AssistantTurn = {
-      kind: 'assistant',
-      text: 'Your standard still says so `nda.md`.',
-      tools: [{ id: 'r1', name: 'vault_read', input: { path: 'practice/standards/nda.md' }, hasResult: true, output: { content: 'x' } }],
-      proposals: [],
-      warnings: [],
+    const turn: AssistantTurn = emptyAssistantTurn({
       status: 'done',
-    };
+      text: 'Your standard still says so `nda.md`.',
+      tools: readNda(),
+    });
     render(<TurnView turn={turn} threadId="t-1" onReload={() => {}} onOpenFile={path => opened.push(path)} />);
-    const chip = document.querySelector('.v2-prose a[href^="#/vault"]')!;
+    const chip = document.querySelector('.v2-prose code.v2-cite')!;
     expect(chip.textContent).toBe('nda.md');
     await userEvent.click(chip);
     expect(opened).toEqual(['practice/standards/nda.md']);
@@ -87,9 +88,51 @@ describe('TurnView source chips', () => {
     const opened: string[] = [];
     const turn: AssistantTurn = emptyAssistantTurn({ status: 'done', text: 'See `other.md`.' });
     render(<TurnView turn={turn} threadId="t-1" onReload={() => {}} onOpenFile={path => opened.push(path)} />);
-    expect(document.querySelector('.v2-prose a')).toBeNull();
+    expect(document.querySelector('.v2-prose code.v2-cite')).toBeNull();
     expect(document.querySelector('.v2-prose code')?.textContent).toBe('other.md');
+    await userEvent.click(document.querySelector('.v2-prose code')!);
     expect(opened).toEqual([]);
+  });
+
+  test('a model-authored #/vault link cannot forge a chip or open the drawer', async () => {
+    const opened: string[] = [];
+    // The answer writes the link itself — the shape a prompt-injected vault
+    // document would produce — naming a file this step never read.
+    const turn: AssistantTurn = emptyAssistantTurn({
+      status: 'done',
+      text: 'See [`secret.md`](#/vault?path=practice%2Fsecret.md) and `practice/standards/nda.md`.',
+      tools: readNda(),
+    });
+    render(<TurnView turn={turn} threadId="t-1" onReload={() => {}} onOpenFile={path => opened.push(path)} />);
+
+    const anchor = document.querySelector('.v2-prose a')!;
+    // Inert: the sanitizer dropped the href, and it wears no chip styling.
+    expect(anchor.hasAttribute('href')).toBe(false);
+    expect(anchor.querySelector('code.v2-cite')).toBeNull();
+    await userEvent.click(anchor);
+    expect(opened).toEqual([]);
+
+    // The derived citation beside it still works, so the test is not passing
+    // because chips are broken.
+    await userEvent.click(document.querySelector('.v2-prose code.v2-cite')!);
+    expect(opened).toEqual(['practice/standards/nda.md']);
+  });
+
+  test('a basename two read files share is not a chip; the full paths are', async () => {
+    const opened: string[] = [];
+    const turn: AssistantTurn = emptyAssistantTurn({
+      status: 'done',
+      text: 'Both `nda.md` files agree; see `matters/acme/nda.md`.',
+      tools: [
+        { id: 'r1', name: 'vault_read', input: { path: 'practice/standards/nda.md' }, hasResult: true, output: 'x' },
+        { id: 'r2', name: 'vault_read', input: { path: 'matters/acme/nda.md' }, hasResult: true, output: 'x' },
+      ],
+    });
+    render(<TurnView turn={turn} threadId="t-1" onReload={() => {}} onOpenFile={path => opened.push(path)} />);
+    const chips = Array.from(document.querySelectorAll('.v2-prose code.v2-cite'), el => el.textContent);
+    expect(chips).toEqual(['matters/acme/nda.md']);
+    await userEvent.click(document.querySelector('.v2-prose code.v2-cite')!);
+    expect(opened).toEqual(['matters/acme/nda.md']);
   });
 });
 

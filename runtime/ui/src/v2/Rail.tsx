@@ -1,6 +1,7 @@
 import type { Health, ThreadHeader } from '../api/types';
 import type { Route } from '../app';
 import { ChatIcon, HomeIcon, SettingsIcon, VaultIcon } from './icons';
+import { defaultProviderId } from './threads';
 
 export interface RailProps {
   route: Route;
@@ -26,13 +27,30 @@ export function railLabel(thread: ThreadHeader): string {
   return title !== '' ? title : 'Untitled';
 }
 
-/** The rail footer (spec §3.3: the model picker moved out of the composer
- * and into the rail; clicking it opens Settings). */
+/**
+ * The rail footer (spec §3.3: the model picker moved out of the composer
+ * and into the rail; clicking it opens Settings).
+ *
+ * It names the provider a send will ACTUALLY use — `defaultProviderId`, the
+ * same rule the composer's send follows — not the saved default. The two
+ * differ when the saved default names a provider this runtime did not load,
+ * and the footer is now the only place that could say so.
+ */
 export function footerLabel(health: Health | null): string {
   if (health === null) return '…';
-  const model = health.default ?? 'no default model';
-  const auth = health.providers.find(p => p.id === health.default)?.auth;
+  const effective = defaultProviderId(health);
+  const model = effective === '' ? (health.default ?? 'no default model') : effective;
+  const auth = health.providers.find(p => p.id === effective)?.auth;
   return auth === undefined ? model : `${model} · ${auth}`;
+}
+
+/** The swap, said quietly: the saved default is not loaded, so the footer's
+ * model is not the one Settings has on file. `null` when they agree. */
+export function swapNote(health: Health | null): string | null {
+  if (health === null) return null;
+  const saved = health.default;
+  if (saved === null || saved === '' || health.providers.some(p => p.id === saved)) return null;
+  return `saved default ${saved} not loaded`;
 }
 
 export function Rail({
@@ -107,13 +125,18 @@ export function Rail({
       <button
         type="button"
         className="v2-foot"
-        title={health === null ? undefined : `${footerLabel(health)} — open Settings`}
+        title={
+          health === null
+            ? undefined
+            : `${footerLabel(health)}${swapNote(health) === null ? '' : ` — ${swapNote(health)}`} — open Settings`
+        }
         onClick={() => {
           globalThis.location.hash = '#/settings';
         }}
       >
         <span className="v2-dot" aria-hidden="true" />
         <span className="v2-lbl">{footerLabel(health)}</span>
+        {swapNote(health) === null ? null : <span className="v2-foot-note muted">({swapNote(health)})</span>}
       </button>
     </aside>
   );

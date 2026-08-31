@@ -1,4 +1,4 @@
-import { cleanup, render, screen, userEvent, waitFor } from '../../test/dom';
+import { act, cleanup, render, screen, userEvent, waitFor } from '../../test/dom';
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { clearToken, TOKEN_KEY } from '../../api/token';
@@ -76,6 +76,7 @@ function install(threadFor: (n: number) => Promise<Response>): void {
     const method = init?.method ?? 'GET';
     calls.push({ method, url, body: init?.body === undefined ? undefined : JSON.parse(String(init.body)) });
     if (url.startsWith('/runs')) return json([]);
+    if (url.startsWith('/vault/read')) return json({ path: 'practice/standards/nda.md', content: '# NDA\n', version: 'v1', mtimeMs: 1 });
     if (method === 'POST' && url === '/threads') return json({ id: 't-9', title: QUESTION, createdAt: at, updatedAt: at, sessions: {} });
     if (url.endsWith('/steps')) return stream(SSE);
     if (url.startsWith('/threads/')) {
@@ -313,5 +314,89 @@ describe('v2 Chat, the thread header', () => {
     install(async () => json(answered('t-9')));
     render(<Chat threadId={null} health={health} />);
     expect(document.querySelector('.v2-thread-head')).toBeNull();
+  });
+});
+
+describe('v2 Chat, the docket anchor', () => {
+  /** Two pending proposals in one thread — the docket's Review row shape. */
+  function withProposals(): Thread {
+    return thread('t-1', [
+      { t: 'user', at, content: QUESTION },
+      { t: 'step', at, runId: 'r-1', provider: 'fake/fake' },
+      { type: 'text', at, text: ANSWER },
+      { t: 'proposal', at, id: 'p-1', path: 'practice/standards/nda.md', content: '# NDA\nTerm: 3 years\n', rationale: 'first', status: 'pending', expectedVersion: null },
+      { t: 'proposal', at, id: 'p-2', path: 'practice/standards/msa.md', content: '# MSA\n', rationale: 'second', status: 'pending', expectedVersion: null },
+      { type: 'done', at, output: null, usage: { inputTokens: 1, outputTokens: 2 } },
+    ]);
+  }
+
+  /** Records which element each scroll landed on. happy-dom has no
+   * `scrollIntoView`, so this is the whole implementation under test. */
+  function recordScrolls(): { ids: string[]; restore: () => void } {
+    const ids: string[] = [];
+    const proto = Element.prototype as unknown as Record<string, unknown>;
+    const had = 'scrollIntoView' in proto;
+    const before = proto['scrollIntoView'];
+    proto['scrollIntoView'] = function scrollIntoView(this: Element): void {
+      ids.push(this.id);
+    };
+    return {
+      ids,
+      restore: () => {
+        if (had) proto['scrollIntoView'] = before;
+        else delete proto['scrollIntoView'];
+      },
+    };
+  }
+
+  test('?proposal= scrolls that slip into view once the transcript holds it', async () => {
+    const scrolls = recordScrolls();
+    history.replaceState(null, '', '/#/chat?thread=t-1&proposal=p-2');
+    install(async () => json(withProposals()));
+    try {
+      render(<Chat threadId="t-1" health={health} />);
+      await waitFor(() => expect(document.getElementById('proposal-p-2')).toBeTruthy());
+      await waitFor(() => expect(scrolls.ids).toContain('proposal-p-2'));
+      expect(scrolls.ids).not.toContain('proposal-p-1');
+    } finally {
+      scrolls.restore();
+      history.replaceState(null, '', '/');
+    }
+  });
+
+  test('a second Review in the SAME thread still scrolls', async () => {
+    const scrolls = recordScrolls();
+    history.replaceState(null, '', '/#/chat?thread=t-1&proposal=p-1');
+    install(async () => json(withProposals()));
+    try {
+      render(<Chat threadId="t-1" health={health} />);
+      await waitFor(() => expect(scrolls.ids).toEqual(['proposal-p-1']));
+
+      // The reader is already in this thread; the docket's other row only
+      // changes the fragment. Nothing about `thread` changes.
+      await act(async () => {
+        history.replaceState(null, '', '/#/chat?thread=t-1&proposal=p-2');
+        globalThis.dispatchEvent(new Event('hashchange'));
+      });
+
+      await waitFor(() => expect(scrolls.ids).toEqual(['proposal-p-1', 'proposal-p-2']));
+    } finally {
+      scrolls.restore();
+      history.replaceState(null, '', '/');
+    }
+  });
+
+  test('no ?proposal= scrolls nothing', async () => {
+    const scrolls = recordScrolls();
+    history.replaceState(null, '', '/#/chat?thread=t-1');
+    install(async () => json(withProposals()));
+    try {
+      render(<Chat threadId="t-1" health={health} />);
+      await waitFor(() => expect(document.getElementById('proposal-p-1')).toBeTruthy());
+      expect(scrolls.ids).toEqual([]);
+    } finally {
+      scrolls.restore();
+      history.replaceState(null, '', '/');
+    }
   });
 });

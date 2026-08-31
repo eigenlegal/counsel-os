@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 
 import { afterEach, describe, expect, test } from 'bun:test';
 import type { Health, ThreadHeader } from '../api/types';
-import { footerLabel, Rail, railLabel } from './Rail';
+import { footerLabel, Rail, railLabel, swapNote } from './Rail';
 
 const health: Health = {
   vault: '/tmp/vault',
@@ -93,6 +93,28 @@ describe('Rail', () => {
     expect(footerLabel(null)).toBe('…');
     await userEvent.click(screen.getByRole('button', { name: /fake\/fake/ }));
     expect(location.hash).toBe('#/settings');
+  });
+
+  test('the footer names the model a send will ACTUALLY use, and says when that is not the saved one', () => {
+    // The saved default names a provider this runtime did not load. The
+    // composer's picker used to say so; the footer is the only place left.
+    const swapped: Health = { ...health, default: 'openai/nope' };
+    expect(footerLabel(swapped)).toBe('fake/fake · local');
+    expect(swapNote(swapped)).toBe('saved default openai/nope not loaded');
+
+    mount({ health: swapped });
+    const foot = document.querySelector('.v2-foot') as HTMLElement;
+    expect(foot.querySelector('.v2-lbl')?.textContent).toBe('fake/fake · local');
+    expect(foot.querySelector('.v2-foot-note')?.textContent).toBe('(saved default openai/nope not loaded)');
+    expect(foot.getAttribute('title')).toBe('fake/fake · local — saved default openai/nope not loaded — open Settings');
+  });
+
+  test('a saved default that IS loaded says nothing extra', () => {
+    expect(swapNote(health)).toBeNull();
+    expect(swapNote(null)).toBeNull();
+    mount();
+    expect(document.querySelector('.v2-foot-note')).toBeNull();
+    expect(document.querySelector('.v2-foot')?.getAttribute('title')).toBe('fake/fake · local — open Settings');
   });
 
   test('collapsed: labels and conversations disappear, the icons stay', () => {

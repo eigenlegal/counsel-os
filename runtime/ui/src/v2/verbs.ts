@@ -85,22 +85,35 @@ export interface WorkLineParts {
   other: number;
 }
 
+function baseOf(path: string): string {
+  return path.slice(path.lastIndexOf('/') + 1);
+}
+
+/** Basenames — unless two read files share one, in which case the parent
+ * directory joins in. Folding `practice/standards/nda.md` and
+ * `matters/acme/nda.md` into one `nda.md` chip would say the turn read one
+ * file when it read two. */
+function labelPaths(paths: string[]): string[] {
+  const counts = new Map<string, number>();
+  for (const path of paths) counts.set(baseOf(path), (counts.get(baseOf(path)) ?? 0) + 1);
+  return paths.map(path => (counts.get(baseOf(path)) === 1 ? baseOf(path) : path.split('/').slice(-2).join('/')));
+}
+
 /** The one quiet work line (spec §3.3): "Searched the vault · read nda.md
  * acme-nda.md ⌄". Proposals are not "work" here — they get slips of their
  * own below the prose. */
 export function workLineOf(tools: ToolCallView[]): WorkLineParts {
   const parts: WorkLineParts = { searched: false, listed: false, read: [], proposed: 0, other: 0 };
+  const paths: string[] = [];
   for (const tool of tools) {
     if (tool.name === 'vault_search' || SEARCH_LIKE.test(tool.name)) parts.searched = true;
     else if (tool.name === 'vault_list') parts.listed = true;
     else if (tool.name === 'vault_read') {
       const path = pathOf(tool);
-      if (path !== null) {
-        const base = path.slice(path.lastIndexOf('/') + 1);
-        if (!parts.read.includes(base)) parts.read.push(base);
-      }
+      if (path !== null && !paths.includes(path)) paths.push(path);
     } else if (tool.name === 'propose_update') parts.proposed += 1;
     else parts.other += 1;
   }
+  parts.read = labelPaths(paths);
   return parts;
 }

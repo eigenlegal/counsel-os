@@ -259,4 +259,51 @@ describe('the proposal slip', () => {
     await waitFor(() => expect(screen.getByText('this proposal is no longer pending')).toBeTruthy());
     expect(refused).toEqual([]);
   });
+
+  // Review H1: `diffWords` is blind to whitespace, so these proposals produce
+  // no marks at all — and the gate must not read that as "nothing changes".
+  const WHITESPACE: [string, string, string][] = [
+    ['a dropped trailing newline', '# NDA\n\nTerm: 2 years\n', '# NDA\n\nTerm: 2 years'],
+    ['CRLF normalised to LF', '# NDA\r\n\r\nTerm: 2 years\r\n', '# NDA\n\nTerm: 2 years\n'],
+    ['a reflowed paragraph', '# NDA\n\nTerm:\n2 years\n', '# NDA\n\nTerm: 2 years\n'],
+  ];
+
+  for (const [name, before, after] of WHITESPACE) {
+    test(`${name} says so, opens on the line diff, and never claims the file already says this`, async () => {
+      install({ read: () => json({ ...CURRENT, content: before }) });
+      render(<ProposalCard threadId="t-1" proposal={{ ...proposal, content: after }} onReload={() => {}} />);
+
+      await waitFor(() => expect(screen.getByText(/Only whitespace or line-ending changes/)).toBeTruthy());
+      // The view it opens on is the one that can show the change, and it has
+      // something in it.
+      expect(document.querySelector('.v2-diff .v2-hunk')?.textContent ?? '').not.toBe('');
+      expect((screen.getByRole('button', { name: 'line diff' }) as HTMLElement).getAttribute('aria-pressed')).toBe('true');
+      expect(screen.queryByText(/the file already says this/)).toBeNull();
+      // And Approve is live, which is exactly why the copy had to be honest.
+      expect(screen.getByRole('button', { name: 'Approve' })).toBeTruthy();
+
+      // Back on changes-only there is nothing to mark — and still no lie.
+      await userEvent.click(screen.getByRole('button', { name: 'changes only' }));
+      expect(screen.queryByText(/the file already says this/)).toBeNull();
+      expect(screen.getByText(/Only whitespace or line-ending changes/)).toBeTruthy();
+      cleanup();
+    });
+  }
+
+  test('an approved proposal reloaded against its own result says it was applied, not that nothing changed', async () => {
+    // The page was reloaded: the vault now holds the approved content, so
+    // `wordDiff` finds nothing. The change still happened.
+    install({ read: () => json({ ...CURRENT, content: proposal.content! }) });
+    render(<ProposalCard threadId="t-1" proposal={{ ...proposal, status: 'approved' }} onReload={() => {}} />);
+    await userEvent.click(screen.getByRole('button', { name: /view change/ }));
+    await waitFor(() => expect(screen.getByText(/already applied/)).toBeTruthy());
+    expect(screen.queryByText(/the file already says this/)).toBeNull();
+  });
+
+  test('a proposal that truly matches the file still says the file already says this', async () => {
+    install({ read: () => json({ ...CURRENT, content: proposal.content! }) });
+    render(<ProposalCard threadId="t-1" proposal={proposal} onReload={() => {}} />);
+    await waitFor(() => expect(screen.getByText('No changes — the file already says this.')).toBeTruthy());
+    expect(screen.queryByText(/Only whitespace or line-ending changes/)).toBeNull();
+  });
 });

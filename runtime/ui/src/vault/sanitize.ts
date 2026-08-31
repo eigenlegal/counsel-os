@@ -90,16 +90,14 @@ const SAFE_SCHEME = /^(?:https?:|mailto:)/i;
  * the parsed attribute, not the source text — so `&#106;avascript:` arrives
  * here spelled out.
  *
- * A bare fragment (`#/vault?path=…`) is kept: it names no scheme and no
- * host, so the only thing it can reach is this page's own router.
+ * A same-page fragment (`#/vault?path=…`) is dropped with everything else
+ * that names no allowed scheme. The chat's source chips do NOT come through
+ * here: they are built as elements by the client from the files a step
+ * actually read (`v2/chat/cite.ts`), so a `#/vault` link a MODEL or a vault
+ * document wrote can never become one.
  */
 export function safeHref(raw: string): string | null {
   const stripped = raw.replace(/[\u0000-\u0020\u007f]/g, '');
-  // A same-page fragment has no scheme and no host: nothing to navigate to
-  // but this page's own router. Checked on the STRIPPED string, so a
-  // control-character-prefixed scheme cannot hide in front of it — and the
-  // stripped string is what is returned, for the same reason.
-  if (stripped.startsWith('#')) return stripped;
   return SAFE_SCHEME.test(stripped) ? raw.trim() : null;
 }
 
@@ -126,8 +124,6 @@ function cleanAttributes(el: Element): void {
     return;
   }
   el.setAttribute('href', safe);
-  // A fragment link stays in THIS tab — it is this page's own router.
-  if (safe.startsWith('#')) return;
   // A vault file opens in its own tab, and `noopener` keeps the opened page
   // from reaching back into this one through `window.opener`.
   el.setAttribute('target', '_blank');

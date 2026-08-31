@@ -150,9 +150,46 @@ export function ProposalCard({ threadId, proposal, onReload, onDecided, onOpenFi
     [current, proposal.content],
   );
 
+  /**
+   * The change `diffWords` cannot see (review H1). `diffWords` ignores
+   * whitespace, so an edit that moves nothing but whitespace — a dropped
+   * trailing newline, CRLF normalised to LF, a reflowed paragraph — yields
+   * zero marks and zero changed blocks. Saying "the file already says this"
+   * there would tell the reviewer nothing will be written, and then write a
+   * different file. So the slip says what the change is and opens on the
+   * line diff, which does show it.
+   */
+  const whitespaceOnly =
+    current.state === 'ready' &&
+    proposal.content !== undefined &&
+    current.content !== proposal.content &&
+    blocks !== null &&
+    blocks.every(block => !block.changed);
+
+  // Derived-from-state during render, once per proposal: the default view is
+  // `changes only`, and only a whitespace-only change moves it.
+  const [openedOnLines, setOpenedOnLines] = useState(false);
+  if (whitespaceOnly && !openedOnLines) {
+    setOpenedOnLines(true);
+    setView('lines');
+  }
+
   const settled = status !== 'pending';
   const text = statusText(status, decidedAt);
   const bodyShown = !settled || showChange;
+
+  /**
+   * What an empty redline actually means. After a page reload an APPROVED
+   * proposal reads the current file — which is now the approved content — so
+   * `wordDiff` finds nothing. "The file already says this" is true and
+   * useless there; what happened is that this change is the reason it says
+   * it (review L1). `null` when the whitespace notice above already spoke.
+   */
+  const emptyMeans = whitespaceOnly
+    ? null
+    : status === 'approved' && current.state === 'ready' && current.content === proposal.content
+      ? 'This change is already applied — the file now reads as proposed.'
+      : 'No changes — the file already says this.';
 
   return (
     <section className="v2-proposal" id={`proposal-${proposal.id}`} data-testid={`proposal-${proposal.id}`}>
@@ -199,12 +236,18 @@ export function ProposalCard({ threadId, proposal, onReload, onDecided, onOpenFi
             </p>
           ) : null}
 
+          {!whitespaceOnly ? null : (
+            <p className="v2-notice v2-notice-warn v2-redline-whitespace" role="status">
+              Only whitespace or line-ending changes — see the line diff.
+            </p>
+          )}
+
           {blocks === null || hunks === null ? (
             <pre className="v2-proposal-raw">{proposal.content}</pre>
           ) : view === 'lines' ? (
             <LineDiff hunks={hunks} />
           ) : (
-            <Redline blocks={blocks} changedOnly={view === 'changes'} />
+            <Redline blocks={blocks} changedOnly={view === 'changes'} empty={emptyMeans} />
           )}
 
           {blocks === null ? null : (
@@ -275,14 +318,28 @@ export function ProposalCard({ threadId, proposal, onReload, onDecided, onOpenFi
   );
 }
 
-/** The tracked-changes body: React text nodes inside del/ins — no HTML sink. */
-function Redline({ blocks, changedOnly }: { blocks: RedlineBlock[]; changedOnly: boolean }): JSX.Element {
+/**
+ * The tracked-changes body: React text nodes inside del/ins — no HTML sink.
+ *
+ * `empty` is what nothing-to-mark MEANS here — the caller knows, this does
+ * not. `null` is the whitespace-only case, where the slip's own notice above
+ * has already said it and a second line would only repeat.
+ */
+function Redline({
+  blocks,
+  changedOnly,
+  empty,
+}: {
+  blocks: RedlineBlock[];
+  changedOnly: boolean;
+  empty: string | null;
+}): JSX.Element {
   const shown = changedOnly ? blocks.filter(b => b.changed) : blocks;
   const hidden = blocks.length - shown.length;
   return (
     <div className="v2-redline">
       {shown.length === 0 ? (
-        <p className="muted">No changes — the file already says this.</p>
+        empty === null ? null : <p className="muted">{empty}</p>
       ) : (
         shown.map((block, i) => (
           <p className="v2-redline-block" key={i}>

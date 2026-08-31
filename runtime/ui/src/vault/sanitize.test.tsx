@@ -246,18 +246,28 @@ describe('renderMarkdown', () => {
   });
 });
 
-describe('fragment links (redesign source chips)', () => {
-  test('a same-page #/vault link survives, without target=_blank', () => {
-    const html = sanitizeHtml('<p><a href="#/vault?path=practice%2Fnda.md">nda.md</a></p>');
+describe('same-page fragments (the chat source chips do not come through here)', () => {
+  test('a #/vault link renders as inert text — the href is dropped', () => {
+    const html = sanitizeHtml('<p><a href="#/vault?path=practice%2Fsecret.md">secret.md</a></p>');
     const a = new DOMParser().parseFromString(html, 'text/html').querySelector('a')!;
-    expect(a.getAttribute('href')).toBe('#/vault?path=practice%2Fnda.md');
-    expect(a.getAttribute('target')).toBeNull();
+    expect(a.hasAttribute('href')).toBe(false);
+    // The text survives; only the way to follow it does not.
+    expect(a.textContent).toBe('secret.md');
   });
 
-  test('scheme smuggling still dies; whitespace around a fragment is stripped', () => {
+  test('a scheme hiding in front of a fragment still dies', () => {
+    expect(safeHref('#/vault?path=x')).toBeNull();
     expect(safeHref('javascript:alert(1)#/vault')).toBeNull();
-    expect(safeHref('javascript:alert(1)')).toBeNull();
-    expect(safeHref('#/vault?path=x')).toBe('#/vault?path=x');
-    expect(safeHref('  #/vault')).toBe('#/vault');
+    expect(safeHref('data:text/html,<script>alert(1)</script>#/vault')).toBeNull();
+    expect(safeHref('//evil.example/#/vault')).toBeNull();
+    expect(safeHref('java\tscript:alert(1)#/vault')).toBeNull();
+  });
+
+  test('an external link keeps its pre-existing behaviour: a new tab, noopener', () => {
+    // Unchanged by this work, asserted so a future reader knows it is the
+    // documented markdown-link design and not an oversight.
+    expect(safeHref('https://evil.example/#/vault')).toBe('https://evil.example/#/vault');
+    const html = sanitizeHtml('<a href="https://evil.example/#/vault">x</a>');
+    expect(html).toBe('<a href="https://evil.example/#/vault" target="_blank" rel="noopener noreferrer">x</a>');
   });
 });
