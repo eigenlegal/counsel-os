@@ -6,6 +6,12 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.11.2] — 2026-08-31
+
+UI polish round 2
+
+- Draft conversations survive navigation (rail row + Chat nav return to the live draft); CONVERSATIONS + and row × share one aligned hit target; two-tier type scale — documents stay at reading size, chrome and lists tightened for density.
+
 ## [0.11.1] — 2026-08-31
 
 UI polish + Settings rethink
