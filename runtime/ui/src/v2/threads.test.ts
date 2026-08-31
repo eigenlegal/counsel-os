@@ -2,7 +2,7 @@ import './../test/dom';
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { clearToken, TOKEN_KEY } from '../api/token';
-import { createThread, titleFor } from './threads';
+import { createThread, defaultProviderId, titleFor } from './threads';
 
 const realFetch = globalThis.fetch;
 
@@ -40,5 +40,22 @@ describe('createThread', () => {
     const header = await createThread({ title: 'Hi' });
     expect(sent).toEqual({ title: 'Hi' });
     expect(header.id).toBe('t-9');
+  });
+});
+
+describe('defaultProviderId', () => {
+  const provider = (id: string) => ({
+    id,
+    kind: 'direct' as const,
+    auth: 'local' as const,
+    capabilities: { tools: true, caching: false, thinking: false, contextTokens: 8192, auth: 'local' as const },
+  });
+
+  test('the loaded default, else the first loaded provider, else empty', () => {
+    const base = { vault: '/v', tenant: 'default', stepTimeoutMs: 1 };
+    expect(defaultProviderId({ ...base, providers: [provider('a'), provider('b')], default: 'b' })).toBe('b');
+    expect(defaultProviderId({ ...base, providers: [provider('a')], default: 'ghost' })).toBe('a');
+    expect(defaultProviderId({ ...base, providers: [provider('a')], default: null })).toBe('a');
+    expect(defaultProviderId({ ...base, providers: [], default: null })).toBe('');
   });
 });

@@ -7,6 +7,7 @@ import { parseHash, threadFromHash, TOKEN_MESSAGE, vaultPathFromHash, type Route
 import { Chat } from './chat/Chat';
 import type { ComposerSeed } from './chat/Composer';
 import { Drawer } from './Drawer';
+import { HomePage } from './home/HomePage';
 import { Rail } from './Rail';
 import { SettingsPage } from './settings/SettingsPage';
 import { VaultPage } from './vault/VaultPage';
@@ -58,6 +59,10 @@ export function Shell(): JSX.Element {
   const [busy, setBusy] = useState(false);
   /** A prefill for the composer, pushed from the vault reader's ask bar. */
   const [seed, setSeed] = useState<ComposerSeed | undefined>(undefined);
+  /** A message home's ask box already committed to — the chat pane SENDS
+   * this one rather than parking it in the box. Same one-shot shape as
+   * `seed`, and cleared the same way (`askUsed`). */
+  const [initialAsk, setInitialAsk] = useState<ComposerSeed | undefined>(undefined);
 
   const draftRef = useRef(draft);
   draftRef.current = draft;
@@ -150,6 +155,29 @@ export function Shell(): JSX.Element {
    * seed still in state would refill the fresh box with a path the reader
    * left long ago. */
   const seedUsed = useCallback((): void => setSeed(undefined), []);
+
+  /** Home's ask box: open a fresh draft chat and send the message. The draft
+   * path already creates the thread on send, titled from the first line —
+   * home adds nothing the composer's own send does not do.
+   *
+   * `setChatKey` remounts `Chat`, so the ask arrives at a pane with nothing
+   * of the last conversation in it. */
+  const startAsk = useCallback((message: string): void => {
+    setNotFound(false);
+    setSelected(null);
+    setDraft(true);
+    setChatKey(k => k + 1);
+    setInitialAsk(current => ({ text: message, nonce: (current?.nonce ?? 0) + 1 }));
+    setRoute('chat');
+    setVaultPath(null);
+    globalThis.history.replaceState(null, '', '#/chat');
+  }, []);
+
+  /** The chat pane sent the ask. Dropping it here is what keeps it to ONE
+   * send: `Chat` is re-keyed on every thread switch, and an ask left in
+   * state would be sent again — into whatever thread the reader opened
+   * next. */
+  const askUsed = useCallback((): void => setInitialAsk(undefined), []);
 
   useEffect(() => {
     const onHashChange = (): void => {
@@ -300,6 +328,8 @@ export function Shell(): JSX.Element {
                 onThreadTouched={() => void loadThreads()}
                 seed={seed}
                 onSeedUsed={seedUsed}
+                initialAsk={initialAsk}
+                onAskUsed={askUsed}
                 onFileDecided={fileDecided}
                 onOpenFile={openDrawer}
               />
@@ -316,12 +346,7 @@ export function Shell(): JSX.Element {
           ) : null}
         </div>
 
-        {route === 'home' ? (
-          // Task 4 replaces this stub with <HomePage …/>.
-          <main className="v2-page v2-home" aria-label="Home">
-            <p className="muted v2-empty">Home lands in Task 4.</p>
-          </main>
-        ) : null}
+        {route === 'home' ? <HomePage threads={threads} onAsk={startAsk} onOpenThread={openThread} /> : null}
 
         {route === 'vault' ? (
           <VaultPage

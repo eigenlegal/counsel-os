@@ -12,7 +12,9 @@ const at = '2026-08-30T10:00:00.000Z';
 const health: Health = {
   vault: '/tmp/vault',
   tenant: 'default',
-  providers: [],
+  providers: [
+    { id: 'fake/fake', kind: 'direct', auth: 'local', capabilities: { tools: true, caching: false, thinking: false, contextTokens: 1000, auth: 'local' } },
+  ],
   default: 'fake/fake',
   stepTimeoutMs: 600_000,
 };
@@ -69,6 +71,7 @@ function install(opts: { events?: ThreadEvent[] } = {}): void {
     if (url === '/threads') return json([acme, beta]);
     if (url.startsWith('/vault/read')) return json({ path: 'practice/standards/nda.md', content: '# NDA\nTerm: 2 years\n', version: 'abc1234def0', mtimeMs: 1 });
     if (url.startsWith('/vault/overview')) return json({ matters: [], groups: { practice: 0, knowledge: 0, other: 0 } });
+    if (url.startsWith('/proposals')) return json([]);
     if (url.startsWith('/vault/list')) return json([]);
     if (url.startsWith('/settings')) return json(settings);
     const match = /^\/threads\/(.+)$/.exec(url);
@@ -334,7 +337,8 @@ describe('Shell', () => {
 
       render(<Shell />);
       await waitFor(() => expect(document.querySelector('.v2-home')).toBeTruthy());
-      await waitFor(() => expect(screen.getByText('Acme NDA term')).toBeTruthy());
+      // Twice, from here on: the rail's row and home's conversations column.
+      await waitFor(() => expect(screen.getAllByText('Acme NDA term')).toHaveLength(2));
 
       await userEvent.click(screen.getByRole('button', { name: 'Delete Acme NDA term' }));
 
@@ -479,6 +483,73 @@ describe('Shell', () => {
     await userEvent.click(screen.getByRole('button', { name: 'New conversation' }));
     await waitFor(() => expect(document.querySelector('li.v2-draft[aria-current="true"]')).toBeTruthy());
     expect((screen.getByLabelText('Message') as HTMLTextAreaElement).value).toBe('');
+  });
+
+  /** Home's ask box: `POST /threads` then one step, with the thread listed
+   * afterwards so the rail can show it. */
+  function installAsk(): { steps: unknown[] } {
+    const fresh: ThreadHeader = {
+      id: 't-9',
+      title: 'Review the Acme NDA.',
+      createdAt: '2026-08-30T12:00:00.000Z',
+      updatedAt: '2026-08-30T12:00:00.000Z',
+      sessions: {},
+    };
+    const steps: unknown[] = [];
+    let created = false;
+    const base = globalThis.fetch;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+      if (method === 'POST' && url === '/threads') {
+        created = true;
+        return json(fresh);
+      }
+      if (url === '/threads') return json(created ? [fresh, acme, beta] : [acme, beta]);
+      if (url.endsWith('/steps')) {
+        steps.push(JSON.parse(String(init?.body)));
+        return new Response('event: done\ndata: {"type":"done","output":null}\n\n', {
+          status: 200,
+          headers: { 'content-type': 'text/event-stream' },
+        });
+      }
+      if (/^\/threads\/t-9$/.test(url)) return json({ header: fresh, events: [] } satisfies Thread);
+      return await (base as unknown as typeof fetch)(input, init);
+    }) as unknown as typeof fetch;
+    return { steps };
+  }
+
+  test("home's ask box opens a draft chat and sends the message", async () => {
+    history.replaceState(null, '', '/#/');
+    const { steps } = installAsk();
+    render(<Shell />);
+    await waitFor(() => expect(document.querySelector('.v2-home')).toBeTruthy());
+
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Ask counsel' }), 'Review the Acme NDA.');
+    await userEvent.click(screen.getByRole('button', { name: 'Ask' }));
+
+    // The workspace is the page now, and the message went as typed — on the
+    // default provider, since home has no picker.
+    await waitFor(() => expect(workNode()?.hasAttribute('hidden')).toBe(false));
+    await waitFor(() => expect(steps).toEqual([{ message: 'Review the Acme NDA.', provider: 'fake/fake' }]));
+    // And the fragment names the thread the send created.
+    await waitFor(() => expect(location.hash).toBe('#/chat?thread=t-9'));
+  });
+
+  test('an ask fires once: opening another thread does not send it again', async () => {
+    history.replaceState(null, '', '/#/');
+    const { steps } = installAsk();
+    render(<Shell />);
+    await waitFor(() => expect(document.querySelector('.v2-home')).toBeTruthy());
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Ask counsel' }), 'Review the Acme NDA.');
+    await userEvent.click(screen.getByRole('button', { name: 'Ask' }));
+    await waitFor(() => expect(steps).toHaveLength(1));
+
+    // A different thread re-keys `Chat`. An ask left in the shell's state
+    // would be sent again here — into a conversation that never asked it.
+    await userEvent.click(screen.getByText('Beta MSA scope'));
+    await waitFor(() => expect(document.querySelector('li.v2-thread[aria-current="true"]')?.textContent).toContain('Beta MSA scope'));
+    expect(steps).toHaveLength(1);
   });
 
   test('the drawer is still open after a trip to settings', async () => {

@@ -1,5 +1,5 @@
 import { fetchJson } from '../api/client';
-import type { ThreadHeader } from '../api/types';
+import type { Health, ThreadHeader } from '../api/types';
 
 /** Spec §2, "Thread titles": the first line, trimmed to 60 characters. */
 export const TITLE_MAX = 60;
@@ -36,4 +36,15 @@ export function createThread(init: { title: string }, signal?: AbortSignal): Pro
     body: JSON.stringify(init),
     ...(signal === undefined ? {} : { signal }),
   });
+}
+
+/**
+ * The provider a send with no picker uses (spec §3.3: the model picker moved
+ * to the rail footer; the composer just sends). The same fallback the old
+ * Composer had — the saved default only when it is actually loaded, else the
+ * first loaded provider — so an unloaded default never sends into nothing.
+ */
+export function defaultProviderId(health: Health): string {
+  if (health.default !== null && health.providers.some(p => p.id === health.default)) return health.default;
+  return health.providers[0]?.id ?? '';
 }

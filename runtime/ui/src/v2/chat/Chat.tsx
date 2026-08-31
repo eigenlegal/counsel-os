@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, fetchJson, streamStep } from '../../api/client';
 import type { Health, RunRecord, Thread, ThreadHeader } from '../../api/types';
 import { applyStepEvent, buildTurns, emptyAssistantTurn, type AssistantTurn, type Turn } from '../../chat/turns';
-import { createThread, titleFor } from '../threads';
+import { createThread, defaultProviderId, titleFor } from '../threads';
 import { Composer, type ComposerSeed } from './Composer';
 import { TurnView } from './Turn';
 
@@ -23,6 +23,16 @@ export interface ChatProps {
   seed?: ComposerSeed;
   /** The seed was applied — the shell drops it so it fires only once. */
   onSeedUsed?: () => void;
+  /**
+   * A message to SEND as soon as this pane mounts — home's ask box, which
+   * has already committed to asking (spec §3.2). Same one-shot shape as
+   * `seed`, and the opposite of it: a seed waits in the box, an ask goes.
+   * It runs on the default provider, since home has no picker.
+   */
+  initialAsk?: ComposerSeed;
+  /** The ask was sent — the shell drops it, so a later remount of this pane
+   * cannot send it a second time. */
+  onAskUsed?: () => void;
 }
 
 function detail(err: unknown): string {
@@ -39,7 +49,18 @@ function detail(err: unknown): string {
  * paths, so any load that ends up owning a finished stream hands the
  * composer back.
  */
-export function Chat({ threadId: initialThreadId, health, onThreadCreated, onThreadTouched, onFileDecided, onOpenFile, seed, onSeedUsed }: ChatProps): JSX.Element {
+export function Chat({
+  threadId: initialThreadId,
+  health,
+  onThreadCreated,
+  onThreadTouched,
+  onFileDecided,
+  onOpenFile,
+  seed,
+  onSeedUsed,
+  initialAsk,
+  onAskUsed,
+}: ChatProps): JSX.Element {
   /** The thread this pane is about. A ref, not only state: `load` and
    * `send` read it outside a render, and it changes exactly once — from
    * `null` to the id the first send created. Switching THREADS is the
@@ -219,6 +240,23 @@ export function Chat({ threadId: initialThreadId, health, onThreadCreated, onThr
       onThreadTouched?.();
     }
   };
+
+  /**
+   * Home's ask box, sent (spec §3.2). The nonce is recorded BEFORE the send,
+   * so a re-render cannot send the same ask twice, and `onAskUsed` drops it
+   * from the shell, so a later remount of this pane cannot either.
+   *
+   * `initialAsk` is the only dependency on purpose: the nonce guard is what
+   * decides whether the body runs, whatever identity `send` or `health` has
+   * on a later render.
+   */
+  const askedNonce = useRef(0);
+  useEffect(() => {
+    if (initialAsk === undefined || initialAsk.nonce === askedNonce.current) return;
+    askedNonce.current = initialAsk.nonce;
+    onAskUsed?.();
+    void send(initialAsk.text, defaultProviderId(health));
+  }, [initialAsk]);
 
   const stop = (): void => abort.current?.abort();
   const reload = (): void => void load();

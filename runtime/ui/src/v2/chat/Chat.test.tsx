@@ -235,3 +235,42 @@ describe('v2 Chat, when the end-of-stream refetch fails', () => {
     expect(screen.getAllByText(QUESTION)).toHaveLength(1);
   });
 });
+
+describe("v2 Chat, given home's ask", () => {
+  const ASK = 'Review the Acme NDA.';
+
+  test('initialAsk sends once, on the default provider, creating the thread', async () => {
+    install(async () => json(answered('t-9')));
+    const used: number[] = [];
+    render(<Chat threadId={null} health={health} initialAsk={{ text: ASK, nonce: 1 }} onAskUsed={() => used.push(1)} />);
+
+    await waitFor(() => expect(calls.some(c => c.method === 'POST' && c.url === '/threads')).toBe(true));
+    const step = calls.find(c => c.url.endsWith('/steps'))!;
+    expect(step.body).toEqual({ message: ASK, provider: 'fake/fake' });
+    // The shell is told, so the ask is dropped and cannot fire again.
+    expect(used).toEqual([1]);
+
+    await waitFor(() => expect(screen.getByText(ANSWER)).toBeTruthy());
+    expect(calls.filter(c => c.method === 'POST' && c.url === '/threads')).toHaveLength(1);
+    expect(calls.filter(c => c.url.endsWith('/steps'))).toHaveLength(1);
+    composerIsUsable();
+  });
+
+  test('a re-render with the same ask does not send it again', async () => {
+    install(async () => json(answered('t-9')));
+    const ask = { text: ASK, nonce: 1 };
+    const { rerender } = render(<Chat threadId={null} health={health} initialAsk={ask} />);
+    await waitFor(() => expect(screen.getByText(ANSWER)).toBeTruthy());
+
+    rerender(<Chat threadId={null} health={health} initialAsk={{ ...ask }} />);
+    await waitFor(() => expect(screen.getByText(ANSWER)).toBeTruthy());
+    expect(calls.filter(c => c.url.endsWith('/steps'))).toHaveLength(1);
+  });
+
+  test('no ask sends nothing — a plain draft still waits for the reader', async () => {
+    install(async () => json(answered('t-9')));
+    render(<Chat threadId={null} health={health} />);
+    expect(calls).toEqual([]);
+    composerIsUsable();
+  });
+});
