@@ -1,0 +1,156 @@
+<!doctype html>
+<html data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>counsel-os — chat</title>
+<style>
+  :root {
+    --bg: #171412; --bg2: #1e1a17; --bg3: #262019;
+    --ink: #ece5da; --ink2: #b8ad9e; --ink3: #877c6d;
+    --line: #322b24; --line2: #3e352c;
+    --accent: #d99a4e; --accent-ink: #1a1410;
+    --green: #7fbf8e; --red: #e08a7e;
+    --serif: "Iowan Old Style", Charter, Georgia, serif;
+    --sans: -apple-system, "Inter", "Segoe UI", system-ui, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    --r: 10px; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.18);
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--ink); font: 14px/1.55 var(--sans); height: 100vh; display: flex; }
+  .rail { width: 216px; border-right: 1px solid var(--line); padding: 14px 10px; display: flex; flex-direction: column; gap: 2px; }
+  .brand { font: 600 15px/1 var(--serif); padding: 6px 10px 16px; display:flex; align-items:center; gap:8px; }
+  .brand .mark { width: 20px; height: 20px; border-radius: 6px; background: linear-gradient(135deg, var(--accent), #b3762f); }
+  .nav a { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; color: var(--ink2); text-decoration: none; font-weight: 500; }
+  .nav a.on { background: var(--bg3); color: var(--ink); }
+  .nav svg { width: 16px; height: 16px; opacity: .75; }
+  .section { margin-top: 20px; padding: 0 10px 6px; font: 600 10.5px/1 var(--sans); letter-spacing: .09em; text-transform: uppercase; color: var(--ink3); display:flex; justify-content:space-between; }
+  .thread { padding: 6px 10px; border-radius: 8px; color: var(--ink2); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .thread.on { background: var(--bg3); color: var(--ink); }
+  .foot { margin-top: auto; padding: 10px; display:flex; align-items:center; gap:8px; font-size: 12px; color: var(--ink3); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .thead { display: flex; align-items: baseline; gap: 12px; padding: 14px 40px 12px; border-bottom: 1px solid var(--line); }
+  .thead .in { max-width: 720px; margin: 0 auto; width: 100%; display: flex; align-items: baseline; gap: 12px; }
+  .thead h1 { font: 600 20px/1.3 var(--serif); }
+  .thead .m { font-size: 12px; color: var(--ink2); border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; }
+  .thead .d { margin-left: auto; font-size: 12px; color: var(--ink3); }
+
+  .scroll { flex: 1; overflow-y: auto; padding: 30px 40px 24px; }
+  .col { max-width: 720px; margin: 0 auto; }
+
+  .qq { display: flex; justify-content: flex-end; margin-bottom: 20px; }
+  .qq span { background: var(--bg3); border-radius: 16px 16px 4px 16px; padding: 9px 14px; max-width: 78%; }
+
+  /* one quiet work line */
+  .work { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink3); margin: 2px 0 16px; }
+  .work .fc { font: 11.5px var(--mono); background: var(--bg2); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; color: var(--ink2); }
+  .work .chev { color: var(--ink3); }
+
+  .prose { font: 16.5px/1.68 var(--serif); }
+  .prose p { margin-bottom: 13px; }
+  .prose strong { color: var(--ink); }
+  .cite { font: 11px var(--mono); background: var(--bg2); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; color: var(--ink2); white-space: nowrap; vertical-align: 1px; text-decoration: none; }
+
+  .proposal { border-top: 3px double var(--line2); border-bottom: 1px solid var(--line); margin: 20px 0; }
+  .proposal .head { display: flex; align-items: baseline; gap: 10px; padding: 10px 2px; font-size: 13px; }
+  .proposal .tag { font: 700 10px/1 var(--sans); letter-spacing: .12em; color: var(--ink3); }
+  .proposal .head code { font: 12.5px var(--mono); color: var(--ink); }
+  .proposal .head a { color: var(--ink2); font-size: 12.5px; }
+  .proposal .pend { margin-left: auto; font: italic 600 13px/1 var(--serif); color: var(--accent); }
+  .proposal .why { padding: 0 2px 10px; color: var(--ink2); font: 14.5px/1.5 var(--serif); }
+  /* Word-style tracked changes: the document itself, marked up inline */
+  .redline { border: 1px solid var(--line); border-radius: 6px; background: var(--bg2); padding: 14px 18px; margin: 0 0 2px; font: 15px/1.7 var(--serif); }
+  .redline h4 { font: 600 13px/1 var(--serif); margin: 0 0 8px; color: var(--ink2); }
+  .redline ul { margin: 0 0 0 18px; }
+  .redline li { margin: 2px 0; }
+  .redline ins { color: var(--green); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  .redline del { color: var(--red); text-decoration: line-through; text-decoration-thickness: 1px; }
+  .redline .dim { color: var(--ink3); }
+  .rl-toggle { font-size: 11.5px; color: var(--ink3); margin-top: 6px; }
+  .proposal .acts { display: flex; gap: 8px; align-items:center; padding: 10px 2px; }
+  .btn { border: 1px solid var(--line2); background: none; color: var(--ink); border-radius: 8px; padding: 6px 14px; font-size: 13px; }
+  .btn.pri { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .proposal .base { margin-left: auto; font-size: 12px; color: var(--ink3); }
+
+  /* approved variant */
+  .proposal.ok .okmark { margin-left: auto; font: italic 600 13px/1 var(--serif); color: var(--green); }
+
+  .strip { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink3); margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .strip .ok { color: var(--green); font-weight: 600; font-size: 11px; letter-spacing: .06em; }
+  .strip .chev { margin-left: auto; }
+
+  .composer { padding: 14px 40px 22px; }
+  .composer .box { max-width: 720px; margin: 0 auto; background: var(--bg2); border: 1px solid var(--line2); border-radius: 14px; padding: 12px 14px 10px; box-shadow: var(--shadow); }
+  .composer textarea { width: 100%; background: none; border: none; color: var(--ink); font: 15px/1.5 var(--sans); resize: none; outline: none; }
+  .composer .row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+  .chip { font-size: 12px; color: var(--ink2); border: 1px solid var(--line2); border-radius: 999px; padding: 3px 10px; background: var(--bg); }
+  .hint { margin-left: auto; font-size: 12px; color: var(--ink3); }
+  .send { background: var(--accent); color: var(--accent-ink); border: none; border-radius: 9px; padding: 7px 16px; font-weight: 600; font-size: 13.5px; }
+</style>
+</head>
+<body>
+  <aside class="rail">
+    <div class="brand"><span class="mark"></span> counsel-os</div>
+    <nav class="nav">
+      <a href="#"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 6.8 8 2l6 4.8V14H9.8v-3.8H6.2V14H2z"/></svg> Home</a>
+      <a class="on" href="#"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 3.5h11v7.6H6.6L3.4 14v-2.9H2.5z"/></svg> Chat</a>
+      <a href="#"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 3h4.4L8 4.8h6V13H2z"/></svg> Vault</a>
+      <a href="#"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="2.4"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4"/></svg> Settings</a>
+    </nav>
+    <div class="section">Conversations <a href="#" style="color:var(--ink3);text-decoration:none">＋</a></div>
+    <div class="thread on">NDA residuals fallback</div>
+    <div class="thread">Vendora–Worldpay termination docs</div>
+    <div class="thread">Sinai–Lerner K-12 partnership</div>
+    <div class="thread">Forge drawback agreement review</div>
+    <div class="foot"><span class="dot"></span> claude-opus-5 · subscription</div>
+  </aside>
+
+  <main class="main">
+    <div class="thead"><div class="in">
+      <h1>NDA residuals fallback</h1>
+      <span class="m">matter: Acme NDA</span>
+      <span class="d">today, 2:41 pm</span>
+    </div></div>
+
+    <div class="scroll"><div class="col">
+      <div class="qq"><span>Acme wants a residuals carve-out again. What's our position, and should we make it standard?</span></div>
+
+      <div class="work">Searched the vault · read <span class="fc">nda.md</span> <span class="fc">acme-nda.md</span> <span class="fc">decisions.md</span> <span class="chev">⌄</span></div>
+
+      <div class="prose">
+        <p>Three of your last four counterparties asked for a residuals carve-out, and you conceded a narrow one each time — unaided memory only, no notes, trade secrets excluded <a class="cite" href="#">decisions.md</a>. Your standard still says <strong>“residuals: not offered”</strong> <a class="cite" href="#">nda.md</a>, so every negotiation starts from a position you don't actually hold.</p>
+        <p>I'd record the narrow carve-out as your fallback: open at “not offered,” concede to the narrow form when pressed, never the broad form Acme drafted <a class="cite" href="#">acme-nda.md</a>. I've proposed that change below.</p>
+      </div>
+
+      <div class="proposal ok">
+        <div class="head"><span class="tag">PROPOSAL</span><code>memory/decisions.md</code><a href="#">open in vault</a><span class="okmark">✓ approved · 2:41 pm</span></div>
+        <div class="why">Log today's decision so future reviews cite it.</div>
+        <div class="acts"><a href="#" style="color:var(--ink2);font-size:12.5px;text-decoration:none">view change ⌄</a></div>
+      </div>
+
+      <div class="proposal">
+        <div class="head"><span class="tag">PROPOSAL</span><code>practice/standards/nda.md</code><a href="#">open in vault</a><span class="pend">pending</span></div>
+        <div class="why">Record the fallback so drafts and reviews start from the position you actually take.</div>
+        <div class="redline">
+          <h4>Key terms</h4>
+          <ul>
+            <li class="dim">Term: 2 years</li>
+            <li>Residuals: not offered<del>.</del><ins>; fallback = narrow carve-out (unaided memory only, no notes, excludes trade secrets).</ins></li>
+            <li class="dim">Governing law: Delaware</li>
+          </ul>
+        </div>
+        <div class="rl-toggle">showing changes only · <a href="#" style="color:var(--ink3)">whole document</a> · <a href="#" style="color:var(--ink3)">line diff</a></div>
+        <div class="acts"><button class="btn pri">Approve</button><button class="btn">Reject</button><span class="base">against version 4576a07</span></div>
+      </div>
+
+      <div class="strip"><span class="ok">DONE</span> 3 sources · 1 proposal pending <span class="chev">details ⌄</span></div>
+    </div></div>
+
+    <div class="composer"><div class="box">
+      <textarea rows="1" placeholder="Reply…"></textarea>
+      <div class="row"><span class="hint">⌘⏎ to send</span><button class="send" style="background:var(--bg3);color:var(--ink);border:1px solid var(--line2)">Send</button></div>
+    </div></div>
+  </main>
+</body>
+</html>

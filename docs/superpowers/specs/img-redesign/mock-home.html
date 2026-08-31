@@ -1,0 +1,161 @@
+<!doctype html>
+<html data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>counsel-os — home</title>
+<style>
+  :root {
+    --bg: #171412; --bg2: #1e1a17; --bg3: #262019;
+    --ink: #ece5da; --ink2: #b8ad9e; --ink3: #877c6d;
+    --line: #322b24; --line2: #3e352c;
+    --accent: #d99a4e; --accent-ink: #1a1410;
+    --green: #7fbf8e; --red: #e08a7e; --amber: #d9b04e;
+    --serif: "Iowan Old Style", Charter, Georgia, serif;
+    --sans: -apple-system, "Inter", "Segoe UI", system-ui, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    --r: 10px; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.18);
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--ink); font: 14px/1.55 var(--sans); height: 100vh; display: flex; }
+
+  .rail { width: 216px; border-right: 1px solid var(--line); padding: 14px 10px; display: flex; flex-direction: column; gap: 2px; background: var(--bg); }
+  .brand { font: 600 15px/1 var(--serif); letter-spacing: .01em; padding: 6px 10px 16px; display:flex; align-items:center; gap:8px; }
+  .brand .mark { width: 20px; height: 20px; border-radius: 6px; background: linear-gradient(135deg, var(--accent), #b3762f); display:inline-block; }
+  .nav { display: flex; flex-direction: column; gap: 1px; }
+  .nav a { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; color: var(--ink2); text-decoration: none; font-weight: 500; }
+  .nav a.on { background: var(--bg3); color: var(--ink); }
+  .nav a:hover { background: var(--bg2); }
+  .nav svg { width: 16px; height: 16px; opacity: .75; }
+  .rail .section { margin-top: 20px; padding: 0 10px 6px; font: 600 10.5px/1 var(--sans); letter-spacing: .09em; text-transform: uppercase; color: var(--ink3); display:flex; justify-content:space-between; align-items:center;}
+  .rail .thread { padding: 6px 10px; border-radius: 8px; color: var(--ink2); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rail .thread:hover { background: var(--bg2); }
+  .rail .foot { margin-top: auto; padding: 10px; display:flex; align-items:center; gap:8px; font-size: 12px; color: var(--ink3); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+
+  .main { flex: 1; overflow-y: auto; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 52px 40px 60px; }
+  .hi { font: 400 30px/1.3 var(--serif); margin-bottom: 6px; }
+  .sub { color: var(--ink2); margin-bottom: 26px; font: 15px/1.5 var(--serif); font-style: italic; }
+
+  .ask { background: var(--bg2); border: 1px solid var(--line2); border-radius: 14px; padding: 16px 18px 12px; box-shadow: var(--shadow); }
+  .ask textarea { width: 100%; background: none; border: none; color: var(--ink); font: 16px/1.5 var(--sans); resize: none; outline: none; }
+  .ask textarea::placeholder { color: var(--ink3); }
+  .ask .row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  .chip { font-size: 12px; color: var(--ink2); border: 1px solid var(--line2); border-radius: 999px; padding: 3px 10px; background: var(--bg); }
+  .ask .go { margin-left: auto; background: var(--accent); color: var(--accent-ink); border: none; border-radius: 9px; padding: 7px 16px; font-weight: 600; font-size: 13.5px; }
+  .starters { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 26px; }
+  .starters button { background: none; border: 1px solid var(--line); color: var(--ink2); border-radius: 999px; padding: 6px 13px; font-size: 12.5px; cursor: pointer; }
+
+  /* docket — a ruled entry, not a box */
+  .queue { border-top: 3px double var(--line2); border-bottom: 1px solid var(--line); margin-bottom: 26px; padding: 12px 2px 14px; }
+  .queue .qh { font: 600 11px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--ink3); margin-bottom: 8px; }
+  .queue .qh em { color: var(--accent); font-style: normal; }
+  .qrow { display: flex; align-items: baseline; gap: 12px; }
+  .qrow .what { font: 17px/1.4 var(--serif); }
+  .qrow .path { font: 12px var(--mono); color: var(--ink3); margin-top: 3px; }
+  .qrow .go { margin-left: auto; background: none; border: none; color: var(--accent); font: 600 13px var(--sans); flex-shrink: 0; cursor: pointer; }
+  .qrow .go::after { content: " →"; }
+
+  .cols { display: grid; grid-template-columns: 1.5fr 1fr; gap: 36px; }
+  .card h3 { font: 600 11px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--ink3); margin-bottom: 4px; display:flex; justify-content:space-between; align-items:baseline; border-bottom: 1px solid var(--line2); padding-bottom: 8px; }
+  .card h3 a { color: var(--ink3); font-weight: 500; letter-spacing: 0; text-transform: none; font-size: 12px; text-decoration: none; }
+  .leader { flex: 1; border-bottom: 1px dotted var(--line2); margin: 0 6px; transform: translateY(-4px); }
+
+  .matter { padding: 10px 0; border-top: 1px solid var(--line); }
+  .matter:first-of-type { border-top: none; }
+  .matter .top { display: flex; align-items: baseline; gap: 12px; }
+  .matter .nm { font: 500 15px/1.35 var(--serif); color: var(--ink); flex: 1; min-width: 0; }
+  .matter .due { font-size: 12px; color: var(--ink3); flex-shrink: 0; }
+  .matter .due.hot { color: var(--amber); font-weight: 600; }
+  .matter .na { font-size: 12px; color: var(--ink2); margin-top: 2px; }
+  .matter .na b { font-weight: 600; }
+  .swatches { margin-top: 14px; display: flex; gap: 6px; align-items: center; font-size: 11px; color: var(--ink3); }
+  .sw { width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--line2); }
+
+  .item { display: flex; align-items: baseline; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13.5px; }
+  .item:first-of-type { border-top: none; }
+  .item .t { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item .when { color: var(--ink3); font-size: 12px; flex-shrink: 0; }
+  .mono { font-family: var(--mono); font-size: .92em; }
+</style>
+</head>
+<body>
+  <aside class="rail">
+    <div class="brand"><span class="mark"></span> counsel-os</div>
+    <nav class="nav">
+      <a class="on" href="#"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 6.8 8 2l6 4.8V14H9.8v-3.8H6.2V14H2z"/></svg> Home</a>
+      <a href="#"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 3.5h11v7.6H6.6L3.4 14v-2.9H2.5z"/></svg> Chat</a>
+      <a href="#"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 3h4.4L8 4.8h6V13H2z"/></svg> Vault</a>
+      <a href="#"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="2.4"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4"/></svg> Settings</a>
+    </nav>
+    <div class="section">Conversations</div>
+    <div class="thread">NDA residuals fallback</div>
+    <div class="thread">Vendora–Worldpay termination docs</div>
+    <div class="thread">Sinai–Lerner K-12 partnership</div>
+    <div class="foot"><span class="dot"></span> claude-opus-5 · subscription</div>
+  </aside>
+
+  <main class="main"><div class="wrap">
+    <div class="hi">Good afternoon.</div>
+    <div class="sub">Three matters have open next-actions, and one proposal is waiting on you below.</div>
+
+    <div class="ask">
+      <textarea rows="2" placeholder="Ask counsel — review a contract, research a position, draft a response…"></textarea>
+      <div class="row">
+        <span class="chip">＋ attach from vault</span>
+        <button class="go">Ask</button>
+      </div>
+    </div>
+
+    <div class="queue" style="margin-top:22px">
+      <div class="qh">Docket · <em>1 awaiting your decision</em></div>
+      <div class="qrow">
+        <div>
+          <div class="what">Record the narrow residuals carve-out as your NDA fallback</div>
+          <div class="path">practice/standards/nda.md · proposed 2h ago in “NDA residuals fallback”</div>
+        </div>
+        <button class="go">Review</button>
+      </div>
+    </div>
+    <div class="starters">
+      <button>Review a contract</button>
+      <button>What's our position on…</button>
+      <button>Draft a response</button>
+      <button>What changed this week?</button>
+    </div>
+
+    <div class="cols">
+      <div class="card">
+        <h3>Matters <a href="#">open vault →</a></h3>
+        <div class="matter">
+          <div class="top"><div class="nm" style="flex:initial">Vendora × Worldpay — documentation</div><span class="leader"></span><div class="due hot">due Sep 12</div></div>
+          <div class="na">next: <b>send document list</b> · touched 2h ago</div>
+        </div>
+        <div class="matter">
+          <div class="top"><div class="nm" style="flex:initial">Sinai–Lerner K-12 partnership</div><span class="leader"></span><div class="due">no deadline</div></div>
+          <div class="na">next: <b>draft cover email</b> · touched yesterday</div>
+        </div>
+        <div class="matter">
+          <div class="top"><div class="nm" style="flex:initial">Forge drawback agreement</div><span class="leader"></span><div class="due">due Oct 1</div></div>
+          <div class="na">next: <b>await counterparty redline</b> · touched Aug 27</div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Conversations <a href="#">all →</a></h3>
+        <div class="item"><span class="t" style="flex:initial">NDA residuals fallback</span><span class="leader"></span><span class="when">2h ago</span></div>
+        <div class="item"><span class="t" style="flex:initial">Vendora–Worldpay termination docs</span><span class="leader"></span><span class="when">2h ago</span></div>
+        <div class="item"><span class="t" style="flex:initial">Sinai–Lerner K-12 partnership</span><span class="leader"></span><span class="when">yesterday</span></div>
+        <div class="item"><span class="t" style="flex:initial">Forge drawback agreement review</span><span class="leader"></span><span class="when">Aug 27</span></div>
+        <div class="item"><span class="t" style="flex:initial">Ipor Q2 raise — board consent</span><span class="leader"></span><span class="when">Aug 25</span></div>
+      </div>
+    </div>
+    <div class="swatches">light-mode ramp →
+      <span class="sw" style="background:#faf7f1"></span><span class="sw" style="background:#241f19"></span>
+      <span class="sw" style="background:#a8681f"></span><span class="sw" style="background:#3f7a4f"></span>
+      <span class="sw" style="background:#996d10"></span><span class="sw" style="background:#b4483a"></span>
+      <span class="sw" style="background:#e7f0e4"></span><span class="sw" style="background:#f6e3dd"></span>
+      <span style="margin-left:6px">accent/status at ≥4.5:1 on paper; diff tints opaque</span>
+    </div>
+  </div></main>
+</body>
+</html>
