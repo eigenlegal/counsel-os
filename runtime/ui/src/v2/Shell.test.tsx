@@ -606,4 +606,46 @@ describe('Shell', () => {
     await waitFor(() => expect(workNode()?.hasAttribute('hidden')).toBe(false));
     expect(document.querySelector('aside[aria-label="Vault drawer"]')).toBeTruthy();
   });
+
+  test('the footer switcher saves the picked default through PUT /settings and the plate updates in place (cou-90)', async () => {
+    const claude = {
+      id: 'claude-sub/claude-opus-5',
+      kind: 'harness',
+      auth: 'subscription',
+      capabilities: { tools: true, caching: true, thinking: true, contextTokens: 200_000, auth: 'subscription' },
+    };
+    const two: Health = { ...health, providers: [...health.providers, claude] as Health['providers'] };
+    const puts: unknown[] = [];
+    const base = globalThis.fetch;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+      if (url.startsWith('/health')) return json(two);
+      if (url.startsWith('/settings') && method === 'PUT') {
+        const body = JSON.parse(String(init?.body)) as { default?: string };
+        puts.push(body);
+        return json({
+          ...settings,
+          registry: { ...settings.registry, default: body.default },
+          effective: { default: body.default ?? null, stepTimeoutMs: 600_000, providers: two.providers },
+        } satisfies SettingsView);
+      }
+      return await (base as unknown as typeof fetch)(input, init);
+    }) as unknown as typeof fetch;
+
+    render(<Shell />);
+    await waitFor(() => expect(document.querySelector('.v2-foot .v2-plate-detail')?.textContent).toBe('fake/fake · local'));
+
+    await userEvent.click(document.querySelector('.v2-foot') as HTMLElement);
+    await userEvent.click(screen.getByText('Claude'));
+
+    // The PUT is a read-modify-write of the FILE: only `default` changed;
+    // the registry's own providers list (empty — the built-ins live in no
+    // file) went back untouched.
+    await waitFor(() => expect(puts).toEqual([{ default: 'claude-sub/claude-opus-5', providers: [] }]));
+    // And the plate re-rendered from the PUT's own `effective` — no reload.
+    await waitFor(() => expect(document.querySelector('.v2-foot .v2-plate-vendor')?.textContent).toBe('Claude'));
+    expect(document.querySelector('.v2-foot .v2-plate-detail')?.textContent).toBe('Opus 5 · subscription');
+    expect(document.querySelector('.v2-foot .v2-dot')?.classList.contains('v2-dot-amber')).toBe(false);
+  });
 });

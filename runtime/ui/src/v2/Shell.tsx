@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, fetchJson } from '../api/client';
 import { readToken } from '../api/token';
 import { onUnauthorized } from '../api/unauthorized';
-import type { Health, ThreadHeader } from '../api/types';
+import type { Health, SettingsView, ThreadHeader } from '../api/types';
 import { parseHash, threadFromHash, TOKEN_MESSAGE, vaultPathFromHash, type Route } from '../app';
 import { Chat } from './chat/Chat';
 import type { ComposerSeed } from './chat/Composer';
@@ -250,6 +250,40 @@ export function Shell(): JSX.Element {
     })();
   }, [unauthorized, loadThreads]);
 
+  /**
+   * The rail footer's switcher picked a loaded provider (cou-90): make it
+   * the saved default via the settings API, then fold the PUT's own
+   * `effective` back into `health` so the plate updates in place.
+   *
+   * Read-modify-write on `registry` — the FILE — never on `effective`:
+   * round-tripping `effective` through the PUT would write the built-ins
+   * (and `--fake`) into the operator's `providers.yaml` as if they had
+   * asked for them. Only `default` changes; providers, routes and the
+   * timeout ride along untouched.
+   */
+  const setDefaultProvider = async (id: string): Promise<void> => {
+    setError(null);
+    try {
+      const view = await fetchJson<SettingsView>('/settings');
+      const next = await fetchJson<SettingsView>('/settings', {
+        method: 'PUT',
+        body: JSON.stringify({ ...view.registry, default: id }),
+      });
+      setHealth(current =>
+        current === null
+          ? current
+          : {
+              ...current,
+              default: next.effective.default,
+              providers: next.effective.providers,
+              stepTimeoutMs: next.effective.stepTimeoutMs,
+            },
+      );
+    } catch (err) {
+      if (!(err instanceof ApiError && err.status === 401)) setError(detail(err));
+    }
+  };
+
   const deleteThread = async (id: string): Promise<void> => {
     if (!globalThis.confirm('Delete this thread? Its transcript cannot be recovered from here.')) return;
     setBusy(true);
@@ -300,6 +334,7 @@ export function Shell(): JSX.Element {
         onNew={openDraft}
         onOpenDraft={returnToDraft}
         onDelete={id => void deleteThread(id)}
+        onSetDefault={id => void setDefaultProvider(id)}
       />
       <div className="v2-main-col">
         {error === null ? null : (
