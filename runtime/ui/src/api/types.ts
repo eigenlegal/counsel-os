@@ -215,13 +215,25 @@ export interface RegistryEntry {
   capabilities?: Partial<Capabilities>;
 }
 
+/** One task route, as `TaskRoute` in `runtime/src/providers/registry.ts`
+ * parses it. COPIED from there; a change there is a change here. */
+export interface TaskRouteData {
+  prefer: string;
+  require?: {
+    tools?: boolean;
+    caching?: boolean;
+    thinking?: boolean;
+    contextTokens?: number;
+  };
+  allow_remote?: boolean;
+}
+
 /** `providers.yaml` as data: what `GET /settings` hands out and `PUT
- * /settings` takes back. `tasks` is left opaque — the form edits it as JSON
- * and the server owns its schema. */
+ * /settings` takes back. */
 export interface RegistryFileData {
   default?: string;
   providers?: RegistryEntry[];
-  tasks?: Record<string, unknown>;
+  tasks?: Record<string, TaskRouteData>;
   stepTimeoutMs?: number;
 }
 

@@ -514,9 +514,16 @@ a { color: var(--accent); }
 .v2-combo-item[data-focused] { background: var(--bg-hover); color: var(--fg); }
 .v2-combo-item[aria-selected="true"] { color: var(--fg); font-weight: 600; }
 .v2-save-row { display: flex; gap: var(--s3); align-items: center; flex-wrap: wrap; }
-/* A placeholder is an example, not a value. Left at the browser's default
-   weight, the Task routes example reads as a saved route. */
+/* A placeholder is an example, not a value. Italic and faint so a route's
+   example provider never reads as a saved one. */
 .v2-settings input::placeholder, .v2-settings textarea::placeholder { color: var(--fg-muted); opacity: 0.65; font-style: italic; }
+/* The guided add-provider starts: one line of what you are trying to do,
+   one button that prefills it. Not `.v2-starters` — the home page owns that
+   name for its ask chips, and its pill rules would restyle these buttons. */
+.v2-guided-starts { border-top: 1px dashed var(--border); margin-top: var(--s3); padding-top: var(--s3); display: flex; flex-direction: column; gap: var(--s3); }
+.v2-guided-start { display: flex; gap: var(--s3); align-items: baseline; justify-content: space-between; flex-wrap: wrap; }
+.v2-guided-start p { margin: 0; flex: 1 1 24rem; }
+.v2-guided-start button { flex: none; }
 .v2-provider { border-top: 1px dashed var(--border); padding-top: var(--s3); margin-top: var(--s3); }
 .v2-provider:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
 .v2-provider-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: var(--s2) var(--s3); }

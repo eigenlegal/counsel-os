@@ -12,11 +12,14 @@ export interface ProviderComboProps {
    * may legitimately name a provider that is not loaded right now, the one
    * you are about to add. */
   options: string[];
+  /** Shown when the field is empty — the value the runtime falls back to. */
+  placeholder?: string;
   onChange(value: string): void;
 }
 
 /**
- * The default-provider field: a combobox over the loaded provider ids that
+ * A provider picker (the default-provider field and each task route's
+ * Provider field): a combobox over the loaded provider ids that
  * still takes any typed value (cou-82 — the native `datalist` it replaces
  * could not be styled at all, and its dropdown drew in the platform's own
  * chrome). Headless react-aria hooks under our own markup and tokens — no
@@ -24,7 +27,7 @@ export interface ProviderComboProps {
  * positioned sibling of the input, which keeps it inside the form's DOM for
  * tests and screen readers alike.
  */
-export function ProviderCombo({ id, label, value, options, onChange }: ProviderComboProps): JSX.Element {
+export function ProviderCombo({ id, label, value, options, placeholder, onChange }: ProviderComboProps): JSX.Element {
   const { contains } = useFilter({ sensitivity: 'base' });
   const items = options.map(option => ({ id: option }));
   const children = (item: { id: string }): JSX.Element => <Item textValue={item.id}>{item.id}</Item>;
@@ -55,7 +58,7 @@ export function ProviderCombo({ id, label, value, options, onChange }: ProviderC
     <>
       <label {...labelProps}>{label}</label>
       <div className="v2-combo">
-        <input {...inputProps} ref={inputRef} />
+        <input {...inputProps} ref={inputRef} placeholder={placeholder} />
         {/* Its own name only: react-aria labels the toggle by the field
             label too, which would make it a second `Default provider` for
             anything (or anyone) looking the field up by its label. */}
