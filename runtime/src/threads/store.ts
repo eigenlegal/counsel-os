@@ -53,6 +53,25 @@ export interface ThreadStoreOptions {
   codexHomeRoot?: string;
 }
 
+/**
+ * The title rule, server side: the first non-empty line, cut to 60
+ * characters on a word boundary — the same rule the UI applies at creation
+ * (`titleFor`, runtime/ui/src/v2/threads.ts; keep the two in step). It runs
+ * at READ time for threads that never got a title: threads from before
+ * titling existed (pre-v0.11) and threads other clients created bare, which
+ * otherwise sit in the rail as `Untitled` rows forever (cou-88).
+ */
+const TITLE_MAX = 60;
+
+function titleFrom(message: string): string {
+  const first = message.split('\n').find(line => line.trim() !== '') ?? '';
+  const line = first.trim();
+  if (line.length <= TITLE_MAX) return line;
+  const cut = line.slice(0, TITLE_MAX);
+  const space = cut.lastIndexOf(' ');
+  return (space > TITLE_MAX / 2 ? cut.slice(0, space) : cut).trimEnd();
+}
+
 export class ThreadStore {
   private readonly root: string;
   private readonly codexHomeRoot: string;
@@ -95,6 +114,35 @@ export class ThreadStore {
     writeFileSync(this.headerPath(tenant, header.id), JSON.stringify(header, null, 2), 'utf8');
   }
 
+  /**
+   * The header as a reader should see it: an untitled thread borrows the
+   * first line of its first user message as its title. Derived, never
+   * written back — `append`/`setSession` do synchronous read-modify-writes
+   * of the header, and a write from a `list` in flight could clobber one.
+   * A thread with no user message at all stays untitled.
+   */
+  private presentHeader(tenant: Tenant, header: ThreadHeader): ThreadHeader {
+    if ((header.title ?? '').trim() !== '') return header;
+    let title = '';
+    try {
+      // Line-by-line, stopping at the first user event, so presenting a long
+      // legacy transcript does not parse the whole log.
+      for (const line of readFileSync(this.logPath(tenant, header.id), 'utf8').split('\n')) {
+        if (line === '') continue;
+        const ev = JSON.parse(line) as ThreadEvent;
+        if ('t' in ev && ev.t === 'user') {
+          title = titleFrom(ev.content);
+          break;
+        }
+      }
+    } catch {
+      // A missing or corrupt log must not take the whole list down; the row
+      // shows as Untitled and opening the thread reports the real error.
+      return header;
+    }
+    return title === '' ? header : { ...header, title };
+  }
+
   private readEvents(tenant: Tenant, id: string): ThreadEvent[] {
     const text = readFileSync(this.logPath(tenant, id), 'utf8');
     return text
@@ -124,7 +172,7 @@ export class ThreadStore {
   async get(tenant: Tenant, id: string): Promise<{ header: ThreadHeader; events: ThreadEvent[] }> {
     this.validateTenant(tenant);
     this.validateId(id);
-    return { header: this.readHeader(tenant, id), events: this.readEvents(tenant, id) };
+    return { header: this.presentHeader(tenant, this.readHeader(tenant, id)), events: this.readEvents(tenant, id) };
   }
 
   async list(tenant: Tenant): Promise<ThreadHeader[]> {
@@ -133,7 +181,7 @@ export class ThreadStore {
     if (!existsSync(dir)) return [];
     const headers = readdirSync(dir)
       .filter(name => name.endsWith('.json'))
-      .map(name => this.readHeader(tenant, name.slice(0, -'.json'.length)));
+      .map(name => this.presentHeader(tenant, this.readHeader(tenant, name.slice(0, -'.json'.length))));
     headers.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
     return headers;
   }

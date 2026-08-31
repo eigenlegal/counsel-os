@@ -118,6 +118,17 @@ export function Shell(): JSX.Element {
     globalThis.history.replaceState(null, '', '#/chat');
   };
 
+  /** The rail's draft row: RETURN to the draft already live in the chat
+   * pane. Navigation only — never `newDraft`, which re-keys `Chat` and
+   * would wipe whatever the reader had typed. The pane is mounted-but-hidden
+   * off `#/chat` (the keep-stream invariant), so the draft is simply shown
+   * again (cou-88). */
+  const returnToDraft = (): void => {
+    setRoute('chat');
+    setVaultPath(null);
+    globalThis.history.replaceState(null, '', '#/chat');
+  };
+
   /** Re-stamp `?thread=` onto a bare `#/chat`. The rail's Chat link has no
    * thread in its href, so following it from `#/chat?thread=t-1` used to
    * leave t-1 on screen under a URL that no longer named it — copy the link
@@ -287,6 +298,7 @@ export function Shell(): JSX.Element {
         collapsed={route === 'vault'}
         onSelect={openThread}
         onNew={openDraft}
+        onOpenDraft={returnToDraft}
         onDelete={id => void deleteThread(id)}
       />
       <div className="v2-main-col">

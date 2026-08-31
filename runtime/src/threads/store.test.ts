@@ -1,6 +1,6 @@
 import { describe, expect, test, beforeEach } from 'bun:test';
 import { randomUUID } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ThreadStore } from './store';
@@ -161,6 +161,40 @@ describe('ThreadStore', () => {
   test('a real uuid passes id validation', async () => {
     const header = await store.create('default', {});
     await expect(store.get('default', header.id)).resolves.toBeDefined();
+  });
+
+  // cou-88: threads from before titling existed (or created bare by another
+  // client) must not sit in the rail as `Untitled` rows — list/get derive a
+  // title from the first user message.
+  test('an untitled thread with messages lists and gets under its first line', async () => {
+    const header = await store.create('default', {});
+    await store.append('default', header.id, { t: 'user', at: '2026-01-01T00:00:00.000Z', content: '\nReview the Acme NDA\nplease' });
+
+    const listed = await store.list('default');
+    expect(listed[0]?.title).toBe('Review the Acme NDA');
+    expect((await store.get('default', header.id)).header.title).toBe('Review the Acme NDA');
+  });
+
+  test('a derived title is cut to 60 characters on a word boundary, and never written back', async () => {
+    const header = await store.create('default', {});
+    const long = 'What is our position on liability caps in vendor agreements today?';
+    await store.append('default', header.id, { t: 'user', at: '2026-01-01T00:00:00.000Z', content: long });
+
+    const listed = await store.list('default');
+    expect(listed[0]?.title).toBe('What is our position on liability caps in vendor agreements');
+
+    const onDisk = JSON.parse(readFileSync(join(root, '.counsel', 'threads', 'default', `${header.id}.json`), 'utf8')) as { title?: string };
+    expect(onDisk.title).toBeUndefined();
+  });
+
+  test('a real title always wins over derivation; no messages leaves the thread untitled', async () => {
+    const titled = await store.create('default', { title: 'Named by hand' });
+    await store.append('default', titled.id, { t: 'user', at: '2026-01-01T00:00:00.000Z', content: 'something else' });
+    const empty = await store.create('default', {});
+
+    const byId = new Map((await store.list('default')).map(h => [h.id, h]));
+    expect(byId.get(titled.id)?.title).toBe('Named by hand');
+    expect(byId.get(empty.id)?.title).toBeUndefined();
   });
 
   test('append on an unknown thread throws and creates no orphan .jsonl', async () => {
