@@ -2,9 +2,10 @@ import { useMemo } from 'react';
 import type { RunRecord } from '../../api/types';
 import type { ToolCallView, Turn } from '../../chat/turns';
 import { renderMarkdown } from '../../vault/markdown';
+import { linkCitations, readPathsOf } from './cite';
 import { ProposalCard } from './ProposalCard';
-import { Steps } from './Steps';
 import { Strip } from './Strip';
+import { WorkLine } from './WorkLine';
 
 export interface TurnProps {
   turn: Turn;
@@ -35,7 +36,7 @@ export function msFromRun(tools: ToolCallView[], run: RunRecord | undefined): Re
 }
 
 /**
- * The assistant's answer, as markdown.
+ * The assistant's answer, as markdown, with SOURCE CHIPS (spec §3.3).
  *
  * Models write markdown whether or not they are asked to, and this column is
  * serif prose — the one place the reader looks first — so `**Action:**` and
@@ -44,20 +45,45 @@ export function msFromRun(tools: ToolCallView[], run: RunRecord | undefined): Re
  * `vault/sanitize.ts`), which is why it is also the only thing this file
  * feeds to `dangerouslySetInnerHTML`.
  *
+ * The citations are a transform on the markdown SOURCE, not on the HTML:
+ * `linkCitations` turns a backticked mention of a file the step actually
+ * read into a `#/vault` link, so every character still goes through that one
+ * sink. A click on a chip opens the drawer instead of navigating.
+ *
  * The streaming branch renders the SAME way. `marked` parses a partial
  * document without complaining — an unclosed `**` is simply not emphasis
  * yet — and re-parsing per chunk is memoized on the text, so the answer does
  * not change typeface at the moment the stream ends.
  */
-function Prose({ text }: { text: string }): JSX.Element {
-  const html = useMemo(() => renderMarkdown(text), [text]);
-  return <div className="markdown v2-prose" dangerouslySetInnerHTML={{ __html: html }} />;
+function Prose({ text, tools, onOpenFile }: { text: string; tools: ToolCallView[]; onOpenFile?: (path: string) => void }): JSX.Element {
+  // The memo keys on the paths as a STRING, not on the array: `buildTurns`
+  // rebuilds every turn on every render of the pane, so an array dep would
+  // re-parse the whole transcript's markdown on each frame of a stream.
+  const cites = readPathsOf(tools).join('\n');
+  const html = useMemo(() => renderMarkdown(linkCitations(text, cites === '' ? [] : cites.split('\n'))), [text, cites]);
+  return (
+    <div
+      className="markdown v2-prose"
+      onClick={event => {
+        if (onOpenFile === undefined) return;
+        const anchor = (event.target as Element).closest?.('a[href^="#/vault?path="]');
+        if (anchor === null || anchor === undefined) return;
+        const href = anchor.getAttribute('href') ?? '';
+        const path = new URLSearchParams(href.slice(href.indexOf('?') + 1)).get('path');
+        if (path === null || path === '') return;
+        event.preventDefault();
+        onOpenFile(path);
+      }}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
 }
 
 /**
- * One turn (spec §2): a user bubble, or the assistant's answer FIRST, then
- * its proposals, then the strip. While streaming, the timeline runs above
- * the text so the reader sees the work as it happens.
+ * One turn (spec §3.3): a user bubble, or the quiet work line, the
+ * assistant's answer, its proposal slips, then the strip. The work line runs
+ * above the text on both paths, so the reader sees the work as it happens
+ * and can still find it after the answer lands.
  */
 export function TurnView({ turn, threadId, run, live = false, liveMs = {}, onReload, onDecided, onOpenFile }: TurnProps): JSX.Element {
   if (turn.kind === 'user') {
@@ -81,18 +107,21 @@ export function TurnView({ turn, threadId, run, live = false, liveMs = {}, onRel
 
       {streaming ? (
         <>
-          <Steps tools={turn.tools} ms={ms} onOpenFile={onOpenFile} />
+          <WorkLine tools={turn.tools} ms={ms} onOpenFile={onOpenFile} />
           {turn.text === '' ? (
             <p className="v2-working" role="status">
               working…
             </p>
           ) : (
-            <Prose text={turn.text} />
+            <Prose text={turn.text} tools={turn.tools} onOpenFile={onOpenFile} />
           )}
         </>
       ) : (
         <>
-          {turn.text === '' ? null : <Prose text={turn.text} />}
+          {/* The work line reads ABOVE the answer, finished or not: what was
+              consulted, then what it concluded. */}
+          <WorkLine tools={turn.tools} ms={ms} onOpenFile={onOpenFile} />
+          {turn.text === '' ? null : <Prose text={turn.text} tools={turn.tools} onOpenFile={onOpenFile} />}
 
           {/* The turn owns its error text: it reads here, unfolded, and the
               strip's record leaves out the identical copy it holds. */}

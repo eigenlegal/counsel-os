@@ -245,3 +245,19 @@ describe('renderMarkdown', () => {
     expect(html).toContain('click');
   });
 });
+
+describe('fragment links (redesign source chips)', () => {
+  test('a same-page #/vault link survives, without target=_blank', () => {
+    const html = sanitizeHtml('<p><a href="#/vault?path=practice%2Fnda.md">nda.md</a></p>');
+    const a = new DOMParser().parseFromString(html, 'text/html').querySelector('a')!;
+    expect(a.getAttribute('href')).toBe('#/vault?path=practice%2Fnda.md');
+    expect(a.getAttribute('target')).toBeNull();
+  });
+
+  test('scheme smuggling still dies; whitespace around a fragment is stripped', () => {
+    expect(safeHref('javascript:alert(1)#/vault')).toBeNull();
+    expect(safeHref('javascript:alert(1)')).toBeNull();
+    expect(safeHref('#/vault?path=x')).toBe('#/vault?path=x');
+    expect(safeHref('  #/vault')).toBe('#/vault');
+  });
+});

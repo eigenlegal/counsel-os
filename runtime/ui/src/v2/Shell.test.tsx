@@ -146,7 +146,9 @@ describe('Shell', () => {
     const composer = screen.getByRole('textbox', { name: 'Message' }) as HTMLTextAreaElement;
     await userEvent.type(composer, 'half-written question');
 
-    await userEvent.click(screen.getByText('Acme NDA term'));
+    // Scoped to the rail: the thread's title is also the chat's own heading
+    // now, so the bare text names two elements.
+    await userEvent.click(document.querySelector('li.v2-thread[aria-current="true"] .v2-thread-title') as HTMLElement);
 
     expect(chatNode()).toBe(before);
     expect((screen.getByRole('textbox', { name: 'Message' }) as HTMLTextAreaElement).value).toBe('half-written question');

@@ -89,9 +89,17 @@ const SAFE_SCHEME = /^(?:https?:|mailto:)/i;
  * stripped string sees that. HTML entities are already decoded — this reads
  * the parsed attribute, not the source text — so `&#106;avascript:` arrives
  * here spelled out.
+ *
+ * A bare fragment (`#/vault?path=…`) is kept: it names no scheme and no
+ * host, so the only thing it can reach is this page's own router.
  */
 export function safeHref(raw: string): string | null {
   const stripped = raw.replace(/[\u0000-\u0020\u007f]/g, '');
+  // A same-page fragment has no scheme and no host: nothing to navigate to
+  // but this page's own router. Checked on the STRIPPED string, so a
+  // control-character-prefixed scheme cannot hide in front of it — and the
+  // stripped string is what is returned, for the same reason.
+  if (stripped.startsWith('#')) return stripped;
   return SAFE_SCHEME.test(stripped) ? raw.trim() : null;
 }
 
@@ -118,6 +126,8 @@ function cleanAttributes(el: Element): void {
     return;
   }
   el.setAttribute('href', safe);
+  // A fragment link stays in THIS tab — it is this page's own router.
+  if (safe.startsWith('#')) return;
   // A vault file opens in its own tab, and `noopener` keeps the opened page
   // from reaching back into this one through `window.opener`.
   el.setAttribute('target', '_blank');

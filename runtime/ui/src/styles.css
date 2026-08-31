@@ -382,58 +382,30 @@ a { color: var(--accent); }
    same ink as a hit either. */
 .v2-step-note { margin-left: var(--s2); font-style: italic; color: var(--accent); }
 
-/* Strip */
-.v2-strip { border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-raised); font-size: 0.85rem; }
-.v2-strip > summary { display: flex; gap: var(--s3); align-items: center; padding: var(--s2) var(--s3); cursor: pointer; list-style: none; color: var(--fg-muted); }
-.v2-strip > summary::-webkit-details-marker { display: none; }
-.v2-strip[data-status="error"], .v2-strip[data-status="timeout"] { border-color: var(--error); }
+/* Strip — the collapsed line is styled with the rest of the chat, below. */
 .v2-strip-summary { color: var(--fg); }
 .v2-strip-failed { color: var(--error); }
 .v2-strip-empty { color: var(--accent); }
-.v2-strip-provider { font-family: var(--mono); font-size: 0.78rem; }
-.v2-strip-duration, .v2-strip-tokens { font-variant-numeric: tabular-nums; }
-.v2-chevron { margin-left: auto; transition: transform 120ms; }
-.v2-strip[open] .v2-chevron { transform: rotate(90deg); }
-.v2-strip-body { padding: 0 var(--s3) var(--s3); border-top: 1px solid var(--border); }
 .v2-strip-body h4 { margin-top: var(--s3); }
 .v2-record { display: grid; grid-template-columns: auto 1fr; gap: var(--s1) var(--s3); margin: var(--s3) 0 0; }
 .v2-record dt { color: var(--fg-muted); }
 .v2-record dd { margin: 0; }
 .v2-record-id { margin-right: var(--s2); }
 
-/* Composer */
-.v2-composer { border-top: 1px solid var(--border); padding: var(--s3) var(--s6); display: flex; flex-direction: column; gap: var(--s2); background: var(--bg-raised); }
-.v2-composer textarea { width: 100%; max-width: 56rem; margin: 0 auto; resize: vertical; font-family: inherit; border-radius: var(--radius); padding: var(--s2) var(--s3); }
-.v2-composer-actions { display: flex; gap: var(--s3); align-items: center; justify-content: flex-end; max-width: 56rem; width: 100%; margin: 0 auto; }
-.v2-composer-model { display: flex; gap: var(--s1); align-items: center; margin-right: auto; }
-.v2-composer-hint { font-size: 0.78rem; }
-.v2-composer-note { margin: 0 auto; max-width: 56rem; width: 100%; }
-.v2-label { color: var(--fg-muted); font-size: 0.78rem; }
-.v2-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+/* ── v2 proposal slip ─────────────────────────────────────────────────── */
 
-/* ── v2 proposal card ─────────────────────────────────────────────────── */
-
-.v2-card { border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-raised); box-shadow: var(--shadow); }
-.v2-proposal { padding: var(--s3) var(--s4); border-left: 3px solid var(--accent); display: flex; flex-direction: column; gap: var(--s2); }
-.v2-proposal-head { display: flex; gap: var(--s3); align-items: center; flex-wrap: wrap; }
-.v2-tag { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); font-weight: 700; }
-.v2-proposal-path { word-break: break-all; }
-.v2-proposal-head .v2-pill { margin-left: auto; }
-.v2-proposal-rationale { margin: 0; font-family: var(--serif); }
-.v2-proposal-tools { display: flex; gap: var(--s3); align-items: baseline; font-size: 0.82rem; }
-.v2-proposal-version { margin-left: auto; color: var(--fg-muted); font-family: var(--mono); font-size: 0.75rem; }
-.v2-proposal-actions { display: flex; gap: var(--s2); }
 .v2-proposal .v2-notice { margin: 0; }
 /* Bounded like `.v2-step-detail pre`: a full rewrite of a long file is one
    very tall hunk, and unbounded it would push the rest of the thread off
-   screen. The hunks scroll inside the card; each still scrolls sideways. */
+   screen. The hunks scroll inside the slip; each still scrolls sideways. */
 .v2-diff { display: flex; flex-direction: column; gap: var(--s2); max-height: 24rem; overflow: auto; }
 .v2-hunk { margin: 0; padding: var(--s2) 0; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-sunken); font-size: 0.82rem; line-height: 1.5; white-space: pre; overflow-x: auto; }
 .v2-diff-line { display: block; padding: 0 var(--s3); }
-.v2-diff-add { background: rgba(47, 122, 62, 0.14); color: var(--ok); }
-.v2-diff-del { background: rgba(180, 35, 24, 0.12); color: var(--error); text-decoration: line-through; text-decoration-color: rgba(180, 35, 24, 0.5); }
+/* The redline tints are the theme's own opaque tokens (spec §2), not alpha:
+   an alpha wash over a dark ground reads as mud. */
+.v2-diff-add { background: var(--ins-bg); color: var(--ok); }
+.v2-diff-del { background: var(--del-bg); color: var(--error); text-decoration: line-through; }
 .v2-diff-ctx { color: var(--fg-muted); }
-.v2-preview { padding: var(--s3); border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-sunken); font-family: var(--serif); }
 .v2-proposal-raw { margin: 0; }
 .v2-conflict { display: grid; grid-template-columns: auto 1fr; gap: var(--s1) var(--s3); margin: 0 0 var(--s2); }
 .v2-conflict dt { color: var(--fg-muted); font-size: 0.8rem; }
@@ -601,3 +573,72 @@ a { color: var(--accent); }
   .v2-home-cols { grid-template-columns: 1fr; gap: 24px; }
   .v2-home-wrap { padding: 32px 20px 48px; }
 }
+
+/* ── Chat (mock-chat.html) ───────────────────────────────────────────── */
+
+.v2-thread-head { display: flex; align-items: baseline; gap: 12px; padding: 14px 40px 12px; border-bottom: 1px solid var(--border); }
+.v2-thread-head h1 { font: 600 20px/1.3 var(--serif); margin: 0; }
+.v2-matter-chip { font-size: 12px; color: var(--fg-muted); border: 1px solid var(--border); border-radius: 999px; padding: 2px 9px; }
+.v2-thread-date { margin-left: auto; font-size: 12px; color: var(--fg-faint); }
+
+/* One quiet work line. */
+.v2-work-line-wrap { margin: 2px 0 4px; }
+.v2-work-line { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; background: none; border: none; padding: 0; font-size: 12.5px; color: var(--fg-faint); text-align: left; cursor: pointer; }
+.v2-file-chip { font: 11.5px var(--mono); background: var(--bg-raised); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; color: var(--fg-muted); }
+.v2-work-line-wrap .v2-steps { margin-top: 6px; border-left: none; padding-left: 0; }
+
+/* Source chips: the citation links inside the prose. */
+.v2-prose a[href^="#/vault"] {
+  font: 11px var(--mono);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1px 6px;
+  color: var(--fg-muted);
+  white-space: nowrap;
+  vertical-align: 1px;
+  text-decoration: none;
+}
+.v2-prose a[href^="#/vault"] code { background: none; border: none; padding: 0; font: inherit; color: inherit; }
+
+/* The document slip: double rule top, hairline bottom — content on the
+ * page, never a boxed card, never a left accent (founder amendment 1). */
+.v2-proposal { border: none; border-top: 3px double var(--border-strong); border-bottom: 1px solid var(--border); border-radius: 0; margin: 20px 0; padding: 0; background: none; box-shadow: none; display: flex; flex-direction: column; }
+.v2-slip-head { display: flex; align-items: baseline; gap: 10px; padding: 10px 2px; font-size: 13px; flex-wrap: wrap; }
+.v2-tag { font: 700 10px/1 var(--sans); letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-faint); }
+.v2-proposal-path { font: 12.5px var(--mono); color: var(--fg); word-break: break-all; }
+.v2-slip-head .v2-status { margin-left: auto; }
+.v2-slip-why { padding: 0 2px 10px; margin: 0; color: var(--fg-muted); font: 14.5px/1.5 var(--serif); }
+.v2-slip-acts { display: flex; gap: 8px; align-items: center; padding: 10px 2px; }
+.v2-slip-base { margin-left: auto; font-size: 12px; color: var(--fg-faint); }
+
+/* Word-style tracked changes: the document itself, marked up inline. */
+.v2-redline { border: 1px solid var(--border); border-radius: 6px; background: var(--bg-raised); padding: 14px 18px; margin: 0 0 2px; font: 15px/1.7 var(--serif); max-height: 24rem; overflow: auto; }
+.v2-redline-block { margin: 0 0 12px; white-space: pre-wrap; }
+.v2-redline-block:last-child { margin-bottom: 0; }
+.v2-redline ins { color: var(--ok); background: var(--ins-bg); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.v2-redline del { color: var(--error); background: var(--del-bg); text-decoration: line-through; text-decoration-thickness: 1px; }
+.v2-redline-elided { font-size: 12px; }
+.v2-redline-toggle { font-size: 11.5px; color: var(--fg-faint); margin-top: 6px; }
+.v2-redline-toggle .v2-link { color: var(--fg-faint); }
+.v2-redline-toggle .v2-link[aria-pressed="true"] { color: var(--fg); text-decoration: none; font-weight: 600; }
+
+/* The strip: one hairline line, not a box. */
+.v2-strip { border: none; border-top: 1px solid var(--border); border-radius: 0; background: none; font-size: 12.5px; margin-top: 14px; }
+.v2-strip > summary { display: flex; gap: 8px; align-items: center; padding: 10px 0 0; cursor: pointer; list-style: none; color: var(--fg-faint); }
+.v2-strip > summary::-webkit-details-marker { display: none; }
+.v2-strip-status { font: 600 11px/1 var(--sans); letter-spacing: 0.06em; font-style: normal; }
+.v2-strip[data-status="error"], .v2-strip[data-status="timeout"] { border-top-color: var(--error); }
+.v2-strip .v2-chevron { margin-left: auto; }
+.v2-strip-body { padding: 8px 0 4px; border-top: none; }
+
+/* The composer: the one strong container on the screen. */
+.v2-composer { border-top: none; padding: 14px 40px 22px; background: none; }
+.v2-composer-box { max-width: 720px; margin: 0 auto; background: var(--bg-raised); border: 1px solid var(--border-strong); border-radius: var(--radius-lg); padding: 12px 14px 10px; box-shadow: var(--shadow); }
+.v2-composer-box textarea { width: 100%; background: none; border: none; color: var(--fg); font: 15px/1.5 var(--sans); resize: none; outline: none; padding: 0; }
+.v2-composer-actions { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.v2-composer-hint { margin-left: auto; font-size: 12px; }
+.v2-primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+/* The transcript column narrows to the mock's 720px measure. */
+.v2-turn { max-width: 720px; }

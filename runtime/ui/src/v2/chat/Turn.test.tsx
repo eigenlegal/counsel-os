@@ -1,7 +1,7 @@
-import { cleanup, render, screen } from '../../test/dom';
+import { cleanup, render, screen, userEvent } from '../../test/dom';
 
 import { afterEach, describe, expect, test } from 'bun:test';
-import { emptyAssistantTurn } from '../../chat/turns';
+import { emptyAssistantTurn, type AssistantTurn } from '../../chat/turns';
 import { TurnView } from './Turn';
 
 afterEach(cleanup);
@@ -62,5 +62,69 @@ describe('TurnView prose', () => {
     );
     expect(screen.getByText('the model returned no answer')).toBeTruthy();
     expect(document.querySelector('.v2-notice-error pre')?.textContent).toBe('**not markdown**');
+  });
+});
+
+describe('TurnView source chips', () => {
+  test('a backticked mention of a read file renders as a vault chip that opens the drawer', async () => {
+    const opened: string[] = [];
+    const turn: AssistantTurn = {
+      kind: 'assistant',
+      text: 'Your standard still says so `nda.md`.',
+      tools: [{ id: 'r1', name: 'vault_read', input: { path: 'practice/standards/nda.md' }, hasResult: true, output: { content: 'x' } }],
+      proposals: [],
+      warnings: [],
+      status: 'done',
+    };
+    render(<TurnView turn={turn} threadId="t-1" onReload={() => {}} onOpenFile={path => opened.push(path)} />);
+    const chip = document.querySelector('.v2-prose a[href^="#/vault"]')!;
+    expect(chip.textContent).toBe('nda.md');
+    await userEvent.click(chip);
+    expect(opened).toEqual(['practice/standards/nda.md']);
+  });
+
+  test('a file the step never read is left as plain code, and nothing opens', async () => {
+    const opened: string[] = [];
+    const turn: AssistantTurn = emptyAssistantTurn({ status: 'done', text: 'See `other.md`.' });
+    render(<TurnView turn={turn} threadId="t-1" onReload={() => {}} onOpenFile={path => opened.push(path)} />);
+    expect(document.querySelector('.v2-prose a')).toBeNull();
+    expect(document.querySelector('.v2-prose code')?.textContent).toBe('other.md');
+    expect(opened).toEqual([]);
+  });
+});
+
+describe('TurnView work line', () => {
+  test('the streaming turn folds its work into one line, unfoldable to the steps', async () => {
+    const turn: AssistantTurn = emptyAssistantTurn({
+      status: 'streaming',
+      text: 'Working on it.',
+      tools: [{ id: 'r1', name: 'vault_read', input: { path: 'matters/acme.md' }, hasResult: true, output: 'x' }],
+    });
+    render(<TurnView turn={turn} threadId="t-1" live onReload={() => {}} />);
+    const line = document.querySelector('.v2-work-line') as HTMLElement;
+    expect(line).toBeTruthy();
+    expect(document.querySelector('.v2-file-chip')?.textContent).toBe('acme.md');
+    expect(document.querySelector('.v2-steps')).toBeNull();
+
+    await userEvent.click(line);
+    expect(document.querySelectorAll('.v2-step')).toHaveLength(1);
+  });
+
+  test('a finished turn keeps the work line above the prose', () => {
+    const turn: AssistantTurn = emptyAssistantTurn({
+      status: 'done',
+      text: 'Done.',
+      tools: [{ id: 'r1', name: 'vault_search', input: { query: 'cap' }, hasResult: true, output: [{ path: 'a.md' }] }],
+    });
+    render(<TurnView turn={turn} threadId="t-1" onReload={() => {}} />);
+    const line = document.querySelector('.v2-work-line');
+    expect(line?.textContent).toContain('Searched the vault');
+    // Above, not below: the reader sees what was consulted, then the answer.
+    expect(line!.compareDocumentPosition(document.querySelector('.v2-prose')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  test('a turn that ran no tools shows no work line at all', () => {
+    render(<TurnView turn={emptyAssistantTurn({ status: 'done', text: 'No lookup needed.' })} threadId="t-1" onReload={() => {}} />);
+    expect(document.querySelector('.v2-work-line')).toBeNull();
   });
 });

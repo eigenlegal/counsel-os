@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, fetchJson, streamStep } from '../../api/client';
-import type { Health, RunRecord, Thread, ThreadHeader } from '../../api/types';
+import type { Health, RunRecord, Thread, ThreadEvent, ThreadHeader } from '../../api/types';
+import { proposalFromHash } from '../../app';
 import { applyStepEvent, buildTurns, emptyAssistantTurn, type AssistantTurn, type Turn } from '../../chat/turns';
 import { createThread, defaultProviderId, titleFor } from '../threads';
+import { relTime } from '../time';
+import { prettifyName } from '../vault/frontmatter';
 import { Composer, type ComposerSeed } from './Composer';
 import { TurnView } from './Turn';
 
@@ -37,6 +40,31 @@ export interface ChatProps {
 
 function detail(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
+}
+
+/** The thread's own name, or the honest placeholder. A thread created from
+ * a message whose first line was blank has a title of `''`, which would
+ * render as an empty heading rather than as a thread nobody named. */
+function titleOf(header: ThreadHeader): string {
+  const title = header.title?.trim() ?? '';
+  return title === '' ? 'Untitled' : title;
+}
+
+/** Best-effort, client-side (spec §3.3): the thread's matter chip is the
+ * first matter file the thread read, prettified. `matters/` is the
+ * conventional dir; a vault with a custom `matters_path` just shows no chip
+ * — the chip is a courtesy, not a record. */
+export function matterChipOf(events: ThreadEvent[]): string | null {
+  for (const ev of events) {
+    if ('t' in ev) continue;
+    if (ev.type !== 'tool_call' || ev.name !== 'vault_read') continue;
+    const input = ev.input;
+    if (typeof input !== 'object' || input === null) continue;
+    const path = (input as Record<string, unknown>)['path'];
+    if (typeof path !== 'string' || !path.startsWith('matters/')) continue;
+    return prettifyName(path.slice(path.lastIndexOf('/') + 1));
+  }
+  return null;
 }
 
 /**
@@ -151,6 +179,15 @@ export function Chat({
   useEffect(() => {
     void load();
   }, [load]);
+
+  // The docket's Review lands here with `&proposal=<id>` in the fragment:
+  // scroll the slip into view once the transcript holding it has rendered.
+  useEffect(() => {
+    if (thread === null) return;
+    const target = proposalFromHash(globalThis.location.hash);
+    if (target === null) return;
+    document.getElementById(`proposal-${target}`)?.scrollIntoView?.({ block: 'start' });
+  }, [thread]);
 
   useEffect(() => () => abort.current?.abort(), []);
 
@@ -294,8 +331,18 @@ export function Chat({
   const isDraft = threadId === null && pending === null && frozen.length === 0;
   const empty = !loading && threadId !== null && turns.length === 0 && frozen.length === 0 && pending === null;
 
+  const matter = thread === null ? null : matterChipOf(thread.events);
+
   return (
     <section className="v2-chat">
+      {thread === null ? null : (
+        <header className="v2-thread-head">
+          <h1>{titleOf(thread.header)}</h1>
+          {matter === null ? null : <span className="v2-matter-chip">matter: {matter}</span>}
+          <span className="v2-thread-date">{relTime(thread.header.createdAt)}</span>
+        </header>
+      )}
+
       <div className="v2-transcript" ref={transcript}>
         {loading ? <p className="muted v2-empty">Loading…</p> : null}
         {isDraft ? <p className="muted v2-empty">New conversation. Ask counsel something — the thread is created when you send.</p> : null}
@@ -331,12 +378,10 @@ export function Chat({
       )}
 
       <Composer
-        providers={health.providers}
-        defaultProvider={health.default}
         streaming={streaming}
         seed={seed}
         onSeedUsed={onSeedUsed}
-        onSend={(message, provider) => void send(message, provider)}
+        onSend={message => void send(message, defaultProviderId(health))}
         onStop={stop}
       />
     </section>

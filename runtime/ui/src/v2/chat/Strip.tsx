@@ -1,6 +1,7 @@
 import type { RunRecord, RunStatus } from '../../api/types';
 import type { AssistantTurn } from '../../chat/turns';
-import { stateOf, summarize } from '../verbs';
+import { stateOf } from '../verbs';
+import { readPathsOf } from './cite';
 import { Steps } from './Steps';
 
 export interface StripProps {
@@ -58,18 +59,31 @@ export function formatCost(usd: number): string {
   return usd === 0 ? '$0' : usd < 0.01 ? `$${usd.toFixed(4)}` : `$${usd.toFixed(2)}`;
 }
 
+/** `3 sources · 1 proposal pending` — the collapsed line's middle
+ * (spec §3.3). Empty when there is nothing to count. */
+export function stripLine(turn: AssistantTurn): string {
+  const sources = readPathsOf(turn.tools).length;
+  const pending = turn.proposals.filter(p => p.status === 'pending').length;
+  const parts: string[] = [];
+  if (sources > 0) parts.push(`${sources} source${sources === 1 ? '' : 's'}`);
+  if (pending > 0) parts.push(`${pending} proposal${pending === 1 ? '' : 's'} pending`);
+  return parts.join(' · ');
+}
+
 /**
- * A finished turn's work, folded into one line (spec §2, "Turn when
- * finished"): pill · "read 2 files, ran 1 tool" · provider · duration ·
- * tokens · chevron. Open, it is the full record — the steps with show/hide,
- * primitives read, proposals, usage and cost, the run id.
+ * A finished turn's work, folded into ONE HAIRLINE LINE (spec §3.3):
+ * `DONE · 3 sources · 1 proposal pending · details ⌄`. Not a box and not a
+ * ledger — the model, the duration and the tokens moved INTO the record, so
+ * the collapsed line says only what a reader glancing past it needs.
+ * Open, it is the full record — the steps with show/hide, primitives read,
+ * proposals, usage and cost, the run id.
  */
 export function Strip({ turn, run, ms, onOpenFile }: StripProps): JSX.Element {
   const pill = pillFor(turn, run);
   const provider = run?.provider !== undefined && run.provider !== '' ? run.provider : (turn.provider ?? '');
-  // `summarize` counts by tool NAME, so a failed call is invisible in it.
-  // Carried alongside rather than folded in: the count is the collapsed
-  // strip's only hint that something inside it went wrong.
+  // `stripLine` counts sources and pending proposals, so a failed call is
+  // invisible in it. Carried alongside rather than folded in: the count is
+  // the collapsed strip's only hint that something inside it went wrong.
   const failed = turn.tools.filter(tool => stateOf(tool) === 'error').length;
   // Counted apart from the failures: a tool that answered "nothing" did not
   // fail, and saying it did would send the reader looking for a broken tool
@@ -78,21 +92,14 @@ export function Strip({ turn, run, ms, onOpenFile }: StripProps): JSX.Element {
   return (
     <details className="v2-strip" data-status={pill.kind} data-testid={run === undefined ? undefined : `run-${run.runId}`}>
       <summary>
-        <span className={`v2-pill v2-pill-${pill.kind}`} title={pill.title}>
-          {pill.label}
+        <span className={`v2-pill v2-pill-${pill.kind} v2-strip-status`} title={pill.title}>
+          {pill.label.toUpperCase()}
         </span>
-        <span className="v2-strip-summary">{summarize(turn.tools)}</span>
+        {stripLine(turn) === '' ? null : <span className="v2-strip-summary">{stripLine(turn)}</span>}
         {failed === 0 ? null : <span className="v2-strip-failed">{failed === 1 ? '1 failed' : `${failed} failed`}</span>}
         {empty === 0 ? null : <span className="v2-strip-empty">{empty === 1 ? '1 empty' : `${empty} empty`}</span>}
-        {provider === '' ? null : <span className="v2-strip-provider">{provider}</span>}
-        {run?.durationMs === undefined ? null : <span className="v2-strip-duration">{formatMs(run.durationMs)}</span>}
-        {run?.usage === undefined ? null : (
-          <span className="v2-strip-tokens">
-            {run.usage.inputTokens} in / {run.usage.outputTokens} out
-          </span>
-        )}
         <span className="v2-chevron" aria-hidden="true">
-          ›
+          details ⌄
         </span>
       </summary>
 
@@ -102,16 +109,17 @@ export function Strip({ turn, run, ms, onOpenFile }: StripProps): JSX.Element {
 
         {run === undefined ? null : (
           <dl className="v2-record">
-            {/* The summary line is this record's header: it already carries
-                the model, the duration and the tokens, so the body lists
-                what the header does not — and only names the model when
-                there was none to show up there. */}
-            {provider === '' ? (
+            {/* The collapsed line is a hairline now, not a ledger: the model
+                and the duration live HERE, where a reader who opened the
+                record came looking for them. */}
+            <dt>Model</dt>
+            <dd>{provider === '' ? 'no provider' : <code>{provider}</code>}</dd>
+            {run.durationMs === undefined ? null : (
               <>
-                <dt>Model</dt>
-                <dd>no provider</dd>
+                <dt>Duration</dt>
+                <dd>{formatMs(run.durationMs)}</dd>
               </>
-            ) : null}
+            )}
             {run.task === undefined ? null : (
               <>
                 <dt>Task</dt>

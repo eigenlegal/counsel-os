@@ -3,7 +3,7 @@ import { cleanup, render, screen, userEvent } from '../../test/dom';
 import { afterEach, describe, expect, test } from 'bun:test';
 import type { RunRecord } from '../../api/types';
 import { emptyAssistantTurn, type AssistantTurn } from '../../chat/turns';
-import { pillFor, shortId, Strip } from './Strip';
+import { pillFor, shortId, Strip, stripLine } from './Strip';
 
 const turn: AssistantTurn = emptyAssistantTurn({
   runId: 'r-1',
@@ -15,6 +15,7 @@ const turn: AssistantTurn = emptyAssistantTurn({
     { id: 'c-2', name: 'vault_read', input: { path: 'matters/beta.md' }, output: 'x', isError: false, hasResult: true },
     { id: 'c-3', name: 'propose_update', input: { path: 'practice/x.md' }, output: 'ok', isError: false, hasResult: true },
   ],
+  proposals: [{ id: 'p-1', path: 'practice/x.md', rationale: 'r', status: 'pending' }],
 });
 
 const run: RunRecord = {
@@ -59,22 +60,53 @@ describe('pillFor', () => {
 
     render(<Strip turn={turn} run={{ ...run, status: 'abandoned' }} ms={{}} />);
     const pill = document.querySelector('summary .v2-pill');
-    expect(pill?.textContent).toBe('disconnected');
+    // Set in small caps on the line, so the word itself is uppercase.
+    expect(pill?.textContent).toBe('DISCONNECTED');
     expect(pill?.getAttribute('title')).toBe('the page disconnected mid-step; the answer may still have completed');
     // The class still carries the status the runtime recorded, so the
     // styling — and anything reading the DOM — sees the real thing.
-    expect(pill?.className).toBe('v2-pill v2-pill-abandoned');
+    expect(pill?.className).toBe('v2-pill v2-pill-abandoned v2-strip-status');
   });
 });
 
 describe('Strip', () => {
-  test('collapsed: pill, summary, provider, duration, tokens', () => {
+  test('collapsed: one hairline line — status, what it consulted, details', () => {
     render(<Strip turn={turn} run={run} ms={{}} />);
-    expect(document.querySelector('summary .v2-pill')?.textContent).toBe('done');
-    expect(screen.getByText('read 2 files, ran 1 tool')).toBeTruthy();
-    expect(screen.getByText('fake/fake')).toBeTruthy();
-    expect(screen.getByText('1.6 s')).toBeTruthy();
-    expect(screen.getByText('120 in / 40 out')).toBeTruthy();
+    expect(document.querySelector('summary .v2-pill')?.textContent).toBe('DONE');
+    expect(screen.getByText('2 sources · 1 proposal pending')).toBeTruthy();
+    expect(document.querySelector('summary .v2-chevron')?.textContent).toBe('details ⌄');
+    // The model, the duration and the tokens are NOT on the line any more —
+    // they belong to the record, one click down.
+    expect(document.querySelector('summary')?.textContent).not.toContain('fake/fake');
+    expect(document.querySelector('summary')?.textContent).not.toContain('1.6 s');
+    expect(document.querySelector('summary')?.textContent).not.toContain('120 in');
+  });
+
+  test('the record holds the model, the duration and the tokens', async () => {
+    render(<Strip turn={turn} run={run} ms={{}} />);
+    await userEvent.click(document.querySelector('summary') as HTMLElement);
+    const record = document.querySelector('.v2-record') as HTMLElement;
+    expect(record.textContent).toContain('fake/fake');
+    expect(record.textContent).toContain('1.6 s');
+    expect(record.textContent).toContain('120 in / 40 out');
+  });
+
+  test('a run with no provider still names the model row, and says there was none', async () => {
+    render(<Strip turn={{ ...turn, provider: undefined }} run={{ ...run, provider: '' }} ms={{}} />);
+    await userEvent.click(document.querySelector('summary') as HTMLElement);
+    expect(screen.getByText('no provider')).toBeTruthy();
+  });
+
+  test('stripLine counts sources and pending proposals, and says nothing about nothing', () => {
+    const counted = emptyAssistantTurn({
+      status: 'done',
+      tools: [{ id: 'r1', name: 'vault_read', input: { path: 'matters/acme.md' }, hasResult: true, output: { content: 'x' } }],
+      proposals: [{ id: 'p-1', path: 'practice/x.md', rationale: 'r', status: 'pending' }],
+    });
+    expect(stripLine(counted)).toBe('1 source · 1 proposal pending');
+    // A settled proposal is not pending work; nothing to say about it here.
+    expect(stripLine({ ...counted, proposals: [{ ...counted.proposals[0]!, status: 'approved' }] })).toBe('1 source');
+    expect(stripLine(emptyAssistantTurn({ status: 'done' }))).toBe('');
   });
 
   test('expanded: steps with their ms, primitives, proposals, cost, run id', async () => {
@@ -107,7 +139,9 @@ describe('Strip', () => {
     const uuid = '7d83f020-6a2b-4f7e-9a1e-2b7c3d4e5f60';
     render(<Strip turn={turn} run={{ ...run, runId: uuid, proposals: [uuid] }} ms={{}} />);
     await userEvent.click(document.querySelector('summary') as HTMLElement);
-    const ids = Array.from(document.querySelectorAll('.v2-record code'));
+    // The ids are the codes that carry the full value in a title; the
+    // Model row's code is not one of them.
+    const ids = Array.from(document.querySelectorAll('.v2-record code[title]'));
     expect(ids).toHaveLength(2);
     for (const id of ids) {
       expect(id.textContent).toBe('7d83f02');
@@ -117,7 +151,7 @@ describe('Strip', () => {
 
   test('an error record shows the message and the raw text', async () => {
     render(<Strip turn={{ ...turn, status: 'error' }} run={{ ...run, status: 'error', error: 'schema', errorText: '{"a":1}' }} ms={{}} />);
-    expect(document.querySelector('summary .v2-pill')?.textContent).toBe('error');
+    expect(document.querySelector('summary .v2-pill')?.textContent).toBe('ERROR');
     await userEvent.click(document.querySelector('summary') as HTMLElement);
     expect(screen.getByText('schema')).toBeTruthy();
     expect(screen.getByText('{"a":1}')).toBeTruthy();

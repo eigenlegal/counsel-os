@@ -127,7 +127,7 @@ describe('v2 Chat, from a draft', () => {
     // Trimmed: the prose is rendered markdown now, and `marked` ends a
     // block with a newline.
     expect(document.querySelector('.v2-prose')?.textContent?.trim()).toBe(ANSWER);
-    expect(document.querySelector('.v2-strip .v2-strip-summary')?.textContent).toBe('read 1 file');
+    expect(document.querySelector('.v2-strip .v2-strip-summary')?.textContent).toBe('1 source');
     composerIsUsable();
   });
 
@@ -272,5 +272,46 @@ describe("v2 Chat, given home's ask", () => {
     render(<Chat threadId={null} health={health} />);
     expect(calls).toEqual([]);
     composerIsUsable();
+  });
+});
+
+describe('v2 Chat, the thread header', () => {
+  test('serif title, the matter chip from the first matter read, and the date', async () => {
+    const events: ThreadEvent[] = [
+      { t: 'user', at, content: 'check it' },
+      { t: 'step', at, runId: 'r-1', provider: 'fake/fake' },
+      { type: 'tool_call', at, id: 'c1', name: 'vault_read', input: { path: 'practice/standards/nda.md' } },
+      { type: 'tool_call', at, id: 'c2', name: 'vault_read', input: { path: 'matters/acme-nda.md' } },
+      { type: 'done', at, output: null, usage: { inputTokens: 1, outputTokens: 1 } },
+    ];
+    install(async () =>
+      json({ header: { id: 't-1', title: 'NDA residuals fallback', createdAt: at, updatedAt: at, sessions: {} }, events }),
+    );
+    render(<Chat threadId="t-1" health={health} />);
+    await waitFor(() => expect(document.querySelector('.v2-thread-head h1')?.textContent).toBe('NDA residuals fallback'));
+    // The first MATTER file, not the first file read at all.
+    expect(document.querySelector('.v2-matter-chip')?.textContent).toBe('matter: Acme nda');
+  });
+
+  test('a thread nobody named reads as Untitled, and a thread on no matter shows no chip', async () => {
+    install(async () =>
+      json(
+        thread('t-1', [
+          { t: 'user', at, content: 'check it' },
+          { t: 'step', at, runId: 'r-1', provider: 'fake/fake' },
+          { type: 'tool_call', at, id: 'c1', name: 'vault_read', input: { path: 'practice/standards/nda.md' } },
+          { type: 'done', at, output: null, usage: { inputTokens: 1, outputTokens: 1 } },
+        ]),
+      ),
+    );
+    render(<Chat threadId="t-1" health={health} />);
+    await waitFor(() => expect(document.querySelector('.v2-thread-head h1')?.textContent).toBe('Untitled'));
+    expect(document.querySelector('.v2-matter-chip')).toBeNull();
+  });
+
+  test('a draft has no thread, so it has no header', () => {
+    install(async () => json(answered('t-9')));
+    render(<Chat threadId={null} health={health} />);
+    expect(document.querySelector('.v2-thread-head')).toBeNull();
   });
 });

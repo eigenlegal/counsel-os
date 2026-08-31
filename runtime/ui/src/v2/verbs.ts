@@ -75,24 +75,32 @@ export function stateOf(tool: ToolCallView): 'running' | 'error' | 'empty' | 'ok
   return isEmptyResult(tool.output) ? 'empty' : 'ok';
 }
 
-function plural(n: number, one: string, many: string): string {
-  return `${n} ${n === 1 ? one : many}`;
+
+export interface WorkLineParts {
+  searched: boolean;
+  listed: boolean;
+  /** Unique basenames of the files read, in first-read order. */
+  read: string[];
+  proposed: number;
+  other: number;
 }
 
-/** "read 2 files, ran 1 tool" — the collapsed strip's one line. */
-export function summarize(tools: ToolCallView[]): string {
-  if (tools.length === 0) return 'no tools';
-  let read = 0;
-  let consulted = 0;
-  let ran = 0;
+/** The one quiet work line (spec §3.3): "Searched the vault · read nda.md
+ * acme-nda.md ⌄". Proposals are not "work" here — they get slips of their
+ * own below the prose. */
+export function workLineOf(tools: ToolCallView[]): WorkLineParts {
+  const parts: WorkLineParts = { searched: false, listed: false, read: [], proposed: 0, other: 0 };
   for (const tool of tools) {
-    if (tool.name === 'vault_read') read += 1;
-    else if (tool.name === 'read_primitive') consulted += 1;
-    else ran += 1;
+    if (tool.name === 'vault_search' || SEARCH_LIKE.test(tool.name)) parts.searched = true;
+    else if (tool.name === 'vault_list') parts.listed = true;
+    else if (tool.name === 'vault_read') {
+      const path = pathOf(tool);
+      if (path !== null) {
+        const base = path.slice(path.lastIndexOf('/') + 1);
+        if (!parts.read.includes(base)) parts.read.push(base);
+      }
+    } else if (tool.name === 'propose_update') parts.proposed += 1;
+    else parts.other += 1;
   }
-  const parts: string[] = [];
-  if (read > 0) parts.push(`read ${plural(read, 'file', 'files')}`);
-  if (consulted > 0) parts.push(`consulted ${plural(consulted, 'primitive', 'primitives')}`);
-  if (ran > 0) parts.push(`ran ${plural(ran, 'tool', 'tools')}`);
-  return parts.join(', ');
+  return parts;
 }
