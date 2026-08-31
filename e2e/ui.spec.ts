@@ -4,25 +4,19 @@ import { expect, test, type Page } from '@playwright/test';
 import { RUNTIME_FILE, VAULT_DIR } from './paths';
 
 /**
- * The whole page, end to end, against a real `counsel-os serve --fake`
- * (spec §6): token bootstrap, a thread, a step that runs tools and raises a
- * proposal, approving it, reading the written file in the vault, the run
- * record, and settings — the workbench, which since 2026-08-30 is the only
- * design there is.
- *
- * One test, not seven. The steps are a single story — there is no thread to
- * approve a proposal in until the step before it has run — and splitting it
- * would either re-run the whole prefix per test or leave tests depending on
- * each other's leftovers. `test.step` is what gives the report its sections.
+ * The redesigned workbench, end to end, against a real `counsel-os serve
+ * --fake` (redesign spec §6): token bootstrap onto HOME, an ask from the ask
+ * box that creates and names the thread, the proposal as a tracked-changes
+ * slip, the docket's Review → anchored approve, the vault's ⌘K search and
+ * reading pane, and settings. One test, one story — the docket needs the
+ * pending proposal the ask created, and the vault check reads the file the
+ * approval wrote.
  *
  * Nothing here calls a model: the provider is `fake/fake`, driven by
  * `e2e/fake-script.json`.
  */
 
-/** The bearer token, from the handshake file the server publishes. The
- * server is already listening (Playwright waited on `webServer.url`), so the
- * file is there; the retry is for the sliver between binding and the atomic
- * rename. */
+/** The bearer token, from the handshake file the server publishes. */
 async function token(): Promise<string> {
   let last: unknown;
   for (let attempt = 0; attempt < 50; attempt++) {
@@ -37,111 +31,120 @@ async function token(): Promise<string> {
   throw new Error(`no token in ${RUNTIME_FILE}: ${String(last)}`);
 }
 
-/** The header's surface links. Scoped, because a proposal card also links
- * into the vault ("open in vault") and a bare role query matches both. */
+/** The rail's surface links (the nav kept its aria-label through the
+ * redesign; a proposal slip also links into the vault, so stay scoped). */
 function nav(page: Page, name: string) {
   return page.locator('nav[aria-label="Surfaces"]').getByRole('link', { name, exact: true });
 }
 
-/** Opens a directory in the vault tree by name. The tree is lazy — a level
- * is only fetched when somebody opens it — so this is also the assertion
- * that lazy listing works. */
-async function openDir(page: Page, name: string): Promise<void> {
-  const dir = page.locator('button.vault-dir', { hasText: name }).first();
-  await expect(dir).toBeVisible();
-  await dir.click();
-  await expect(dir).toHaveAttribute('aria-expanded', 'true');
-}
-
-/**
- * `nda.md` is written first: the fixture vault seeds the directory but not
- * the file, and a "before" on disk is what makes the redline show a deletion
- * and an addition rather than nothing at all.
- */
-test('a draft names its thread, the proposal is a redline, the drawer shows the file, the strip says done', async ({ page }) => {
+test('home asks, the slip redlines, the docket reviews, the vault reads', async ({ page }) => {
   writeFileSync(join(VAULT_DIR, 'practice', 'standards', 'nda.md'), '# NDA\nTerm: 2 years\n');
 
-  await test.step('the token in the fragment becomes the tab\'s credential', async () => {
+  await test.step('the token in the fragment becomes the credential, and the landing page is Home', async () => {
     await page.goto(`/#token=${await token()}`);
-    // The top bar only renders once `/health` answered — which it could only
-    // do with the token the fragment carried.
-    await expect(page.locator('.v2-top-model')).toHaveText('fake/fake');
-    // And the credential is not in the URL by the time anything can
-    // screenshot it.
+    await expect(page.locator('.v2-hi')).toHaveText(/Good (morning|afternoon|evening)\./);
+    // The rail footer is the model picker's new home (spec §3.3).
+    await expect(page.locator('.v2-foot')).toContainText('fake/fake');
     await expect.poll(() => page.url()).not.toContain('token=');
+    // The matters column reads the seeded frontmatter.
+    await expect(page.locator('.v2-matter-name')).toContainText('Acme Corp — NDA');
+    // `due` until the seeded deadline passes, `overdue` after it: the fixture
+    // date is fixed, so pinning the verb alone would make this suite fail on
+    // a calendar day rather than on a regression.
+    await expect(page.locator('.v2-due')).toHaveText(/^(due|overdue) Sep 12$/);
+    await expect(page.locator('.v2-na')).toContainText('send document list');
+    // No pending proposals yet: the docket is hidden entirely (spec §3.2).
+    await expect(page.locator('.v2-docket')).toHaveCount(0);
   });
 
-  const threads = page.locator('nav[aria-label="Threads"] li.v2-thread');
+  await test.step('a starter fills the box; the ask creates and names the thread', async () => {
+    await page.getByRole('button', { name: 'Review a contract' }).click();
+    await expect(page.getByRole('textbox', { name: 'Ask counsel' })).toHaveValue('Review this contract: ');
+    await page.getByRole('textbox', { name: 'Ask counsel' }).fill('Check the Acme NDA term.');
+    await page.getByRole('button', { name: 'Ask', exact: true }).click();
 
-  await test.step('an empty vault opens on a draft, and makes no thread', async () => {
-    await expect(page.locator('.v2-transcript')).toContainText('New conversation');
-    await expect(page.locator('nav[aria-label="Threads"] li.v2-draft')).toHaveCount(1);
-    await expect(threads).toHaveCount(0);
-    // Nothing left for "New" to make — the draft on screen IS the new
-    // conversation, and the button says so rather than opening a second one.
-    await expect(page.getByRole('button', { name: 'New', exact: true })).toBeDisabled();
-  });
-
-  await test.step('the first send names the thread; the answer reads first, the work folds into a strip', async () => {
-    await page.getByRole('textbox', { name: 'Message' }).fill('Check the Acme NDA term.');
-    await page.getByRole('textbox', { name: 'Message' }).press('Meta+Enter');
-
+    await expect.poll(() => page.url()).toContain('#/chat?thread=');
     await expect(page.locator('.v2-prose')).toHaveText('Done.');
+    const threads = page.locator('[aria-label="Threads"] li.v2-thread');
     await expect(threads).toHaveCount(1);
     await expect(threads.first()).toContainText('Check the Acme NDA term.');
-    await expect(page.locator('nav[aria-label="Threads"] li.v2-draft')).toHaveCount(0);
+    // The thread header: serif title + the matter chip the read resolved.
+    await expect(page.locator('.v2-thread-head h1')).toHaveText('Check the Acme NDA term.');
+    await expect(page.locator('.v2-matter-chip')).toContainText('Acme');
+    // The work line folds the tools into one quiet line.
+    await expect(page.locator('.v2-work-line')).toContainText('read');
   });
 
-  await test.step('the proposal is a redline of the current file, and approving it settles it', async () => {
-    const card = page.locator('.v2-proposal');
-    await expect(card).toHaveCount(1);
-    await expect(card.locator('.v2-proposal-path')).toHaveText('practice/standards/nda.md');
-    await expect(card.locator('.v2-diff-del')).toContainText('Term: 2 years');
-    await expect(card.locator('.v2-diff-add')).toContainText('Term: 3 years');
-    await expect(card.locator('.v2-pill')).toHaveText('pending');
+  await test.step('the proposal is a tracked-changes slip against the file on disk', async () => {
+    const slip = page.locator('.v2-proposal');
+    await expect(slip).toHaveCount(1);
+    await expect(slip.locator('.v2-proposal-path')).toHaveText('practice/standards/nda.md');
+    await expect(slip.locator('.v2-redline del')).toContainText('2');
+    await expect(slip.locator('.v2-redline ins')).toContainText('3');
+    await expect(slip.locator('.v2-status-pending')).toHaveText('pending');
 
-    await card.getByRole('button', { name: 'Approve' }).click();
-    await expect(card.locator('.v2-pill')).toHaveText('approved');
-    await expect(card.getByRole('button', { name: 'Approve' })).toHaveCount(0);
-    // The redline stays readable after the decision.
-    await expect(card.locator('.v2-diff-add')).toContainText('Term: 3 years');
+    // Whole document and line diff are one click away (spec §3.3).
+    await slip.getByRole('button', { name: 'whole document' }).click();
+    await expect(slip.locator('.v2-redline')).toContainText('# NDA');
+    await slip.getByRole('button', { name: 'line diff' }).click();
+    await expect(slip.locator('.v2-diff-del')).toContainText('Term: 2 years');
+    await slip.getByRole('button', { name: 'changes only' }).click();
+    await expect(slip.locator('.v2-redline')).toBeVisible();
   });
 
-  await test.step('open in vault shows the written file in the drawer; Esc closes it', async () => {
-    await page.locator('.v2-proposal').getByRole('button', { name: 'open in vault' }).click();
-    const drawer = page.locator('aside[aria-label="Vault drawer"]');
-    await expect(drawer).toHaveCount(1);
-    await expect(drawer.locator('.vault-file-path')).toHaveText('practice/standards/nda.md');
-    await expect(drawer.locator('.markdown h1')).toHaveText('NDA');
-    await expect(drawer.locator('.markdown')).toContainText('Term: 3 years');
-    // Still the thread underneath — the drawer did not navigate.
-    await expect(page.locator('.v2-prose')).toHaveText('Done.');
+  await test.step('the docket lists the pending proposal; Review lands anchored; approve settles it', async () => {
+    await nav(page, 'Home').click();
+    await expect(page.locator('.v2-docket-head')).toContainText('1 awaiting your decision');
+    await expect(page.locator('.v2-docket-path')).toContainText('practice/standards/nda.md');
+    await expect(page.locator('.v2-sub')).toContainText('one proposal is waiting on you');
 
-    await page.keyboard.press('Escape');
-    await expect(drawer).toHaveCount(0);
+    // The accessible name carries the motif's arrow (`.v2-docket-go::after`),
+    // and `exact` matters: home's starter chip is called "Review a contract",
+    // so a substring name would match two buttons.
+    await page.getByRole('button', { name: 'Review →', exact: true }).click();
+    await expect.poll(() => page.url()).toContain('proposal=');
+    const slip = page.locator('.v2-proposal');
+    await expect(slip).toBeVisible();
+
+    await slip.getByRole('button', { name: 'Approve' }).click();
+    await expect(slip.locator('.v2-status-approved')).toContainText('✓ approved');
+    await expect(slip.getByRole('button', { name: 'Approve' })).toHaveCount(0);
+    // The strip is one hairline line now.
+    await expect(page.locator('.v2-strip summary')).toContainText('DONE');
+    await expect(page.locator('.v2-strip-summary')).toContainText('1 source');
+
+    await nav(page, 'Home').click();
+    await expect(page.locator('.v2-docket')).toHaveCount(0);
   });
 
-  await test.step('the strip says done, and opens into the record', async () => {
-    const strip = page.locator('.v2-strip');
-    await expect(strip).toHaveCount(1);
-    await expect(strip.locator('summary .v2-pill')).toHaveText('done');
-    await expect(strip.locator('.v2-strip-summary')).toHaveText('read 1 file, ran 1 tool');
-    await expect(strip.locator('.v2-strip-provider')).toHaveText('fake/fake');
+  await test.step('the vault: icon rail, ⌘K search, the reading pane', async () => {
+    await nav(page, 'Vault').click();
+    await expect(page.locator('.v2-rail.v2-rail-icons')).toHaveCount(1);
 
-    await strip.locator('summary').click();
-    await expect(strip.locator('.v2-step-verb')).toHaveText(['Read', 'Proposed']);
-    await expect(strip.locator('.v2-record')).toContainText('Proposals');
+    await page.keyboard.press('ControlOrMeta+k');
+    const search = page.getByLabel('Search the vault');
+    await expect(search).toBeFocused();
+    await search.fill('acme');
+    await search.press('Enter');
+    await page.locator('.v2-vresults .v2-vrow', { hasText: 'matters/acme.md' }).click();
+
+    // The reading pane: doc title (not the filename), fact leaders, body.
+    await expect(page.locator('.v2-doc-head h1')).toHaveText('Acme Corp — NDA');
+    await expect(page.locator('.v2-fm')).toContainText('counterparty');
+    await expect(page.locator('.v2-fm')).toContainText('Acme Corp');
+    await expect(page.locator('.v2-doc-md')).toContainText('Term: 2 years');
+
+    // Clear the search; the grouped tree comes back and reads the approved
+    // file through Practice → standards.
+    await page.getByRole('button', { name: 'clear', exact: true }).click();
+    await expect(page.locator('.v2-vgroup', { hasText: 'Matters' })).toBeVisible();
+    await page.locator('.v2-vrow', { hasText: 'standards' }).click();
+    await page.locator('.v2-vrow', { hasText: 'nda.md' }).click();
+    await expect(page.locator('.v2-doc-md')).toContainText('Term: 3 years');
   });
 
-  await test.step('the vault page and settings are the workbench too', async () => {
+  await test.step('settings still reports the runtime, in the motif', async () => {
     await nav(page, 'Settings').click();
     await expect(page.locator('.settings-health .facts')).toContainText('fake/fake');
-
-    await nav(page, 'Vault').click();
-    await openDir(page, 'practice');
-    await openDir(page, 'standards');
-    await page.locator('button.vault-file', { hasText: 'nda.md' }).click();
-    await expect(page.locator('.v2-crumb-last')).toHaveText('nda.md');
-    await expect(page.locator('.v2-vault-main .markdown')).toContainText('Term: 3 years');
   });
 });

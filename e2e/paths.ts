@@ -40,8 +40,21 @@ export const BASE_URL = `http://127.0.0.1:${PORT}`;
 /** The file the runtime publishes for a client to find it by. */
 export const RUNTIME_FILE = join(HOME_DIR, 'runtime.json');
 
-/** The matter the fake script's `vault_read` asks for. */
-const ACME = `# Acme Corp — NDA\n\nCounterparty: Acme Corp\nTerm: 2 years\n`;
+/** The matter the fake script's `vault_read` asks for — WITH frontmatter,
+ * so the home cards and the reader's fact rows have something honest to
+ * draw (redesign spec §3.2/§3.4). */
+const ACME = `---
+title: Acme Corp — NDA
+counterparty: Acme Corp
+stage: working
+next_action: send document list
+deadline: 2026-09-12
+---
+# Acme Corp — NDA
+
+Counterparty: Acme Corp
+Term: 2 years
+`;
 
 /**
  * A marked Counsel OS legal root: `resolveLegalRoot` accepts a directory only
