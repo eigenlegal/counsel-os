@@ -37,8 +37,8 @@ const acme: ThreadHeader = {
 };
 const untitled: ThreadHeader = { id: 't-2', createdAt: '2026-08-27T10:00:00.000Z', updatedAt: '2026-08-27T10:00:00.000Z', sessions: {} };
 
-function mount(over: Partial<Parameters<typeof Rail>[0]> = {}) {
-  return render(
+function railElement(over: Partial<Parameters<typeof Rail>[0]> = {}) {
+  return (
     <Rail
       route="home"
       threads={[acme, untitled]}
@@ -52,8 +52,12 @@ function mount(over: Partial<Parameters<typeof Rail>[0]> = {}) {
       onDelete={() => {}}
       onSetDefault={() => {}}
       {...over}
-    />,
+    />
   );
+}
+
+function mount(over: Partial<Parameters<typeof Rail>[0]> = {}) {
+  return render(railElement(over));
 }
 
 /**
@@ -169,6 +173,32 @@ describe('Rail', () => {
     expect(items[items.length - 1]).toBe('Open Settings');
     await userEvent.click(screen.getByText('Open Settings'));
     expect(location.hash).toBe('#/settings');
+    expect(document.querySelector('.v2-switch-pop')).toBeNull();
+  });
+
+  test('collapsed: the footer is a Settings shortcut, not a popover trigger (cou-92)', async () => {
+    // The 56px icon rail centers its children, so the footer wrapper shrinks
+    // to the dot and a rail-anchored popover would render ~2px wide. There
+    // the plate keeps the icon rail's escape hatch: navigate to Settings.
+    mount({ collapsed: true, route: 'vault' });
+    const foot = screen.getByRole('button', { name: /fake\/fake/ });
+    // No popup promise on the button — a popup never comes in the icon rail.
+    expect(foot.getAttribute('aria-haspopup')).toBeNull();
+    expect(foot.getAttribute('title')).toBe('fake/fake · local — open Settings');
+    await userEvent.click(foot);
+    expect(document.querySelector('.v2-switch-pop')).toBeNull();
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(location.hash).toBe('#/settings');
+  });
+
+  test('an open switcher closes when the route collapses the rail (cou-92)', async () => {
+    const view = mount({ collapsed: false });
+    await userEvent.click(screen.getByRole('button', { name: /fake\/fake/ }));
+    expect(document.querySelector('.v2-switch-pop')).toBeTruthy();
+    view.rerender(railElement({ collapsed: true, route: 'vault' }));
+    expect(document.querySelector('.v2-switch-pop')).toBeNull();
+    // Back on an expanded route the menu stays shut — no popover springs back.
+    view.rerender(railElement({ collapsed: false }));
     expect(document.querySelector('.v2-switch-pop')).toBeNull();
   });
 

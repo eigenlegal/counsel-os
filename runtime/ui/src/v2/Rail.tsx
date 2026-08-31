@@ -115,7 +115,7 @@ export function Rail({
               empty on its own. */}
         </>
       )}
-      <ModelSwitcher health={health} onSetDefault={onSetDefault} />
+      <ModelSwitcher health={health} collapsed={collapsed} onSetDefault={onSetDefault} />
     </aside>
   );
 }

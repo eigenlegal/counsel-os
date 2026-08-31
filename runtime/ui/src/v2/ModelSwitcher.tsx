@@ -11,6 +11,11 @@ const SETTINGS_KEY = 'open-settings';
 
 export interface ModelSwitcherProps {
   health: Health | null;
+  /** True in the 56px icon rail (vault route). The icon rail centers its
+   * children, so the footer wrapper shrinks to the dot and a rail-anchored
+   * popover would inherit a ~2px box — there the plate stays a plain button
+   * and keeps the icon rail's escape hatch: navigate to Settings. */
+  collapsed: boolean;
   /** Make this loaded provider the saved default (the settings round-trip
    * lives in the Shell — the rail stays presentational). */
   onSetDefault(id: string): void;
@@ -35,7 +40,7 @@ interface Row {
  * AMBER when the saved default did not load and the runtime fell back —
  * the title carries the explanation, the plate itself stays calm.
  */
-export function ModelSwitcher({ health, onSetDefault }: ModelSwitcherProps): JSX.Element {
+export function ModelSwitcher({ health, collapsed, onSetDefault }: ModelSwitcherProps): JSX.Element {
   const state = useMenuTriggerState({});
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
@@ -58,6 +63,12 @@ export function ModelSwitcher({ health, onSetDefault }: ModelSwitcherProps): JSX
     document.addEventListener('pointerdown', onDown);
     return () => document.removeEventListener('pointerdown', onDown);
   }, [state.isOpen]);
+
+  // A menu left open when the route collapses the rail would reappear the
+  // moment the rail expands again.
+  useEffect(() => {
+    if (collapsed) closeRef.current();
+  }, [collapsed]);
 
   const effective = health === null ? '' : defaultProviderId(health);
   const swap = swapNote(health);
@@ -89,10 +100,14 @@ export function ModelSwitcher({ health, onSetDefault }: ModelSwitcherProps): JSX
     );
   };
 
+  const openSettings = (): void => {
+    globalThis.location.hash = '#/settings';
+  };
+
   const act = (key: React.Key): void => {
     state.close();
     if (key === SETTINGS_KEY) {
-      globalThis.location.hash = '#/settings';
+      openSettings();
       return;
     }
     // Re-picking the provider already in use is a no-op, not a save.
@@ -101,7 +116,7 @@ export function ModelSwitcher({ health, onSetDefault }: ModelSwitcherProps): JSX
 
   return (
     <div className="v2-switch" ref={wrapRef}>
-      {state.isOpen ? (
+      {!collapsed && state.isOpen ? (
         <div
           className="v2-switch-pop"
           onKeyDown={event => {
@@ -117,14 +132,17 @@ export function ModelSwitcher({ health, onSetDefault }: ModelSwitcherProps): JSX
         </div>
       ) : null}
       <button
-        {...buttonProps}
+        // Collapsed = plain navigation, so none of the trigger's menu
+        // props (aria-haspopup/expanded would promise a popup that never
+        // comes).
+        {...(collapsed ? { onClick: openSettings } : buttonProps)}
         ref={triggerRef}
         type="button"
         className="v2-foot"
         title={
           health === null
             ? undefined
-            : `${footerLabel(health)}${swap === null ? '' : ` — ${swap}`} — switch model`
+            : `${footerLabel(health)}${swap === null ? '' : ` — ${swap}`} — ${collapsed ? 'open Settings' : 'switch model'}`
         }
       >
         <span className={swap === null ? 'v2-dot' : 'v2-dot v2-dot-amber'} aria-hidden="true" />
