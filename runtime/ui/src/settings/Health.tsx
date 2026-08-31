@@ -25,20 +25,35 @@ export function Health({ health, effective, file }: HealthProps): JSX.Element {
     <section className="settings-health">
       <h2>Runtime</h2>
       <dl className="facts">
-        <dt>Vault</dt>
-        <dd>
-          <code>{health === null ? '…' : health.vault}</code>
-        </dd>
-        <dt>Tenant</dt>
-        <dd>{health === null ? '…' : health.tenant}</dd>
-        <dt>Config file</dt>
-        <dd>
-          <code>{file}</code>
-        </dd>
-        <dt>Default</dt>
-        <dd>{effective.default === null ? <span className="muted">none — no provider resolves</span> : <code>{effective.default}</code>}</dd>
-        <dt>Step timeout</dt>
-        <dd>{effective.stepTimeoutMs} ms</dd>
+        <div className="fact">
+          <dt>Vault</dt>
+          <span className="leader" aria-hidden="true" />
+          <dd>
+            <code>{health === null ? '…' : health.vault}</code>
+          </dd>
+        </div>
+        <div className="fact">
+          <dt>Tenant</dt>
+          <span className="leader" aria-hidden="true" />
+          <dd>{health === null ? '…' : health.tenant}</dd>
+        </div>
+        <div className="fact">
+          <dt>Config file</dt>
+          <span className="leader" aria-hidden="true" />
+          <dd>
+            <code>{file}</code>
+          </dd>
+        </div>
+        <div className="fact">
+          <dt>Default</dt>
+          <span className="leader" aria-hidden="true" />
+          <dd>{effective.default === null ? <span className="muted">none — no provider resolves</span> : <code>{effective.default}</code>}</dd>
+        </div>
+        <div className="fact">
+          <dt>Step timeout</dt>
+          <span className="leader" aria-hidden="true" />
+          <dd>{effective.stepTimeoutMs} ms</dd>
+        </div>
       </dl>
 
       <h3>Providers</h3>

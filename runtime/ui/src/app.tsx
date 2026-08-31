@@ -1,7 +1,7 @@
 import { Shell } from './v2/Shell';
 
-/** The three surfaces the fragment routes between. */
-type Route = 'chat' | 'vault' | 'settings';
+/** The four surfaces the fragment routes between (redesign spec §3.1). */
+export type Route = 'home' | 'chat' | 'vault' | 'settings';
 
 /** Spec §5, word for word: the page cannot fix this itself — the token is
  * printed by the process that owns it. */
@@ -16,13 +16,33 @@ export function parseHash(hash: string): { route: Route; params: URLSearchParams
   const cut = raw.indexOf('?');
   const path = cut === -1 ? raw : raw.slice(0, cut);
   const params = new URLSearchParams(cut === -1 ? '' : raw.slice(cut + 1));
+  if (path === '/chat' || path.startsWith('/chat/')) return { route: 'chat', params };
   if (path === '/vault' || path.startsWith('/vault/')) return { route: 'vault', params };
   if (path === '/settings' || path.startsWith('/settings/')) return { route: 'settings', params };
-  return { route: 'chat', params };
+  // `#/` is Home now (spec §3.1) — and so is anything unknown: the landing
+  // page is the safe place to fall.
+  return { route: 'home', params };
 }
 
 export function routeFromHash(hash: string): Route {
   return parseHash(hash).route;
+}
+
+/** The thread `#/chat?thread=…` names, or `null` for a draft/bare chat. */
+export function threadFromHash(hash: string): string | null {
+  const { route, params } = parseHash(hash);
+  if (route !== 'chat') return null;
+  const id = params.get('thread');
+  return id === null || id === '' ? null : id;
+}
+
+/** The docket's anchor: `#/chat?thread=…&proposal=…` scrolls the thread to
+ * that proposal slip (spec §3.2 "Review →"). */
+export function proposalFromHash(hash: string): string | null {
+  const { route, params } = parseHash(hash);
+  if (route !== 'chat') return null;
+  const id = params.get('proposal');
+  return id === null || id === '' ? null : id;
 }
 
 /** The vault file the fragment names, or `null` for "the tree, nothing
