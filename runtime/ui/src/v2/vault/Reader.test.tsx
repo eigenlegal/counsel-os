@@ -70,7 +70,7 @@ describe('Reader', () => {
     install(() => json({ path: 'matters/x.md', content: SOURCE, version: null, mtimeMs: null }));
     render(<Reader path="matters/x.md" outline />);
     await waitFor(() => expect(document.querySelector('.v2-outline')).toBeTruthy());
-    expect(Array.from(document.querySelectorAll('.v2-outline div'), el => el.textContent)).toEqual([
+    expect(Array.from(document.querySelectorAll('.v2-outline button'), el => el.textContent)).toEqual([
       'Background',
       'Next steps',
     ]);

@@ -185,9 +185,9 @@ export function Reader({ path, outline = false, onAsk }: ReaderProps): JSX.Eleme
           {sections.length === 0 ? null : (
             <aside className="v2-outline" aria-label="Outline">
               {sections.map((section, i) => (
-                <div key={`${i}-${section}`} className={i === current ? 'on' : undefined}>
+                <button key={`${i}-${section}`} type="button" className={i === current ? 'on' : undefined} onClick={() => article.current?.querySelectorAll('.v2-doc-md h2')[i]?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
                   {section}
-                </div>
+                </button>
               ))}
             </aside>
           )}
