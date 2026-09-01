@@ -55,36 +55,36 @@ After applying redlines, scan the output for:
 - **Stray formatting markers** — `**` or `*` left over from struck bold/italic content
 - **Truncated insertions** — proposed text that was cut off mid-sentence
 
-With `--track`, punctuation and spacing defects almost always mean the JSON's `current`/`proposed` pair itself was malformed — fix the pair and re-run rather than hand-editing the output. When using Word Compare (the alternative engine), these also arise from its diff algorithm merging shared structure rather than fully replacing.
+With tracked changes on, punctuation and spacing defects almost always mean the JSON's `current`/`proposed` pair itself was malformed — fix the pair and re-run rather than hand-editing the output. When using Word Compare (the alternative engine), these also arise from its diff algorithm merging shared structure rather than fully replacing.
 
 ## Accept-all baseline — never anchor edits to a phantom document
 
-Internally circulated "template" or "prior deal" .docx files often carry a colleague's pending tracked changes. python-docx's `paragraph.text` silently drops runs inside `w:ins` and never surfaces `w:delText` — producing a phantom baseline where pending insertions are invisible and pending deletions still read as present. Section numbers, cross-references, and `current` strings derived from that phantom are wrong.
+Internally circulated "template" or "prior deal" .docx files often carry a colleague's pending tracked changes. A naive reading that ignores revision markup produces a phantom baseline where pending insertions are invisible and pending deletions still read as present. Section numbers, cross-references, and `current` strings derived from that phantom are wrong.
 
 Before drafting redline JSON against any document that may carry tracked changes:
 
-1. **Detect:** `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/extract_redlines.py" "<source.docx>"` — if it reports pending revisions, the document is not clean.
+1. **Detect:** the `extract_redlines` tool (or `bun runtime/src/cli.ts docx extract "<source.docx>"`) — if it reports pending revisions, the document is not clean.
 2. **Decide the baseline with the user.** Usually the accept-all state (the document as it will read once the colleague's changes land) is the right baseline; occasionally the user wants to work from reject-all.
-3. **Derive text from the XML for that state**, not from `paragraph.text`: accept-all keeps `w:t` inside `w:ins` and drops `w:delText`; reject-all is the inverse. `apply_redlines.py` matches text the same way its `get_runs` does (insertions visible, deletions invisible) — the accept-all view — so `current` strings must come from that view.
+3. **Read the text for that state** with `docx_read` and `changes: "accept"` (or `"reject"`): accept-all keeps text inside `w:ins` and drops `w:delText`; reject-all is the inverse. `apply_redlines` matches text on the accept-all view (insertions visible, deletions invisible), so `current` strings must come from that view.
 
 In one real document the phantom baseline shifted two cross-referenced section numbers and showed an entire block as deleted that the accept-all state retained.
 
 ## Character-set matching when drafting redline JSON
 
 - Source documents typically use Unicode smart quotes (`"` `"` `'` `'` `—`), not ASCII (`"` `'` `-`).
-- **Always extract `current` text from the source** via `python-docx` or `zipfile` + XML parsing. Never type it manually — auto-correct converts ASCII to smart quotes inconsistently.
-- If `apply_redlines.py` reports skipped items with "Text not found in document," the most likely cause is mismatched apostrophes or em-dashes.
+- **Always extract `current` text from the source** with `docx_read` (`changes: "accept"`). Never type it manually — auto-correct converts ASCII to smart quotes inconsistently.
+- If `apply_redlines` reports skipped items with "Text not found in document," the most likely cause is mismatched apostrophes or em-dashes.
 
 ## Block replacement strategies
 
-`apply_redlines.py` replaces text **within a single paragraph only**. For multi-paragraph rewrites:
+`apply_redlines` replaces text **within a single paragraph only**. For multi-paragraph rewrites:
 
 - **Split into per-paragraph entries.** Each JSON entry must match a single paragraph. A "current" string spanning two paragraphs will fail.
-- **`--track` marks only the changed core** of each pair (common prefix/suffix trimmed at word boundaries). To force a wider strike + insert visualization, split the replacement into smaller edits whose pairs share no prefix. When using Word Compare instead, its diff optimization may merge proposed text into original when both share substantial text — change the proposed opening to be obviously different, or split the replacement.
+- **Tracked mode marks only the changed core** of each pair (common prefix/suffix trimmed at word boundaries). To force a wider strike + insert visualization, split the replacement into smaller edits whose pairs share no prefix. When using Word Compare instead, its diff optimization may merge proposed text into original when both share substantial text — change the proposed opening to be obviously different, or split the replacement.
 
 ## Formatting inheritance — start matches in the right run
 
-`apply_redlines.py` puts all replacement text into the **first matched run**, inheriting that run's formatting (bold, italic, color, font size, highlighting, etc.). When a paragraph has a formatted leading portion followed by regular-text body — a very common pattern in legal documents — this causes the entire replacement to inherit the leading run's formatting.
+`apply_redlines` puts all replacement text into the **first matched run**, inheriting that run's formatting (bold, italic, color, font size, highlighting, etc.). When a paragraph has a formatted leading portion followed by regular-text body — a very common pattern in legal documents — this causes the entire replacement to inherit the leading run's formatting.
 
 ### Common patterns where this bites
 
@@ -112,17 +112,7 @@ Effect: bold `Authorized Persons` is left alone; the regular-text run is replace
 
 ### How to detect bold-leading paragraphs when drafting
 
-Before drafting a redline entry that targets a defined term, definition section, or section header, inspect the paragraph's run formatting via python-docx:
-
-```python
-from docx import Document
-doc = Document('source.docx')
-p = doc.paragraphs[INDEX]
-for j, run in enumerate(p.runs):
-    print(f"run[{j}] bold={run.bold} italic={run.italic} text={run.text[:60]!r}")
-```
-
-If `run[0]` is `bold=True` and `run[1]` is `bold=None` (or `False`), the paragraph has a bold-leading pattern. Start the `current` match in `run[1]`.
+Before drafting a redline entry that targets a defined term, definition section, or section header, look at the paragraph as `docx_read` renders it: a bold leading run reads as `**Authorized Persons** means …`. If the paragraph opens with a bold (or italic) run followed by regular text, it has a bold-leading pattern. Start the `current` match in the regular-text run — after the formatted portion.
 
 ### When the entire paragraph is bold
 
@@ -137,11 +127,9 @@ The first-matched-run inheritance applies to all run-level formatting properties
 Before shipping the tracked-changes output:
 
 1. **Run the mechanical QA checker first** — it does the tedious, deterministic part of the scan (cross-references to sections that no longer exist after renumbering, exhibits referenced but not attached, defined-term/party-name drift):
-   ```bash
-   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/check_document.py" "<redline.docx>"
-   ```
+   `check_document` on the produced file (or `bun runtime/src/cli.ts docx check "<redline.docx>"`).
    On a `.docx` it checks the accept-all view — the document as it will read once the changes are accepted. Fix any `error`-severity findings (dangling cross-references especially — renumbering is exactly when these appear) before proceeding. See `read --qa`.
-2. **Extract and re-read the revisions** — `extract_redlines.py` on the output lists every insertion/deletion with its paragraph context; confirm each maps to an intended edit and nothing extra crept in.
+2. **Extract and re-read the revisions** — `extract_redlines` on the output lists every insertion/deletion with its paragraph context; confirm each maps to an intended edit and nothing extra crept in.
 3. **Look at the redline** and confirm:
    - Strike and insert markings render where expected
    - No insertions are merged into adjacent text incorrectly
@@ -161,7 +149,7 @@ When auditing output XML by hand or script:
 
 - The regex `<w:t[^>]*>` also matches `w:tbl`, `w:tc`, `w:tr`, and `w:trPr` — the audit returns garbage. Use `<w:t(?: [^>]*)?>` (and `<w:delText(?: [^>]*)?>` for deletions).
 - Never dedupe lxml elements by `id()` — element proxy objects are recycled, so `id()` values repeat and the audit undercounts. Track elements by position or identity within a single traversal.
-- python-docx `paragraph.text` is not a revision-aware view (see the accept-all baseline section above); compute accept/reject text from the XML.
+- A naive text read is not a revision-aware view (see the accept-all baseline section above); read accept/reject text with `docx_read` `changes: "accept"` / `"reject"`.
 
 ## Comments and rationale
 
