@@ -1,6 +1,6 @@
 ---
 name: doctor
-description: "Health check for a Counsel OS install: legal-root config, vault structure, plugin version vs latest, law-content currency, optional dependencies (pandoc, python-docx, bun, Playwright Chromium, qmd), browse daemon, backups, vault git, search-index freshness, vault consistency (standards ↔ library ↔ law floors), and matter-aware law impact (open matters whose law areas were refreshed after their last update) — one ✅/⚠️/❌ table with a one-line fix per finding. Pass --consistency to run only the consistency + law-impact checks (cheap pre-deal spot-check). Read-only: reports and recommends, never changes anything. Use monthly, after /counsel-os:update, or when something seems off."
+description: "Health check for a Counsel OS install: legal-root config, vault structure, plugin version vs latest, law-content currency, optional dependencies (bun, python-docx, Playwright Chromium, qmd), browse daemon, backups, vault git, search-index freshness, vault consistency (standards ↔ library ↔ law floors), and matter-aware law impact (open matters whose law areas were refreshed after their last update) — one ✅/⚠️/❌ table with a one-line fix per finding. Pass --consistency to run only the consistency + law-impact checks (cheap pre-deal spot-check). Read-only: reports and recommends, never changes anything. Use monthly, after /counsel-os:update, or when something seems off."
 ---
 
 # Doctor — Install Health Check
@@ -118,7 +118,7 @@ Keep the table row to a one-line summary; put per-area staleness in a short list
 ## Step 5: Optional Dependencies (⚠️ only — never ❌)
 
 ```bash
-for tool in pandoc python3 bun qmd; do
+for tool in bun python3 qmd; do
   command -v "$tool" >/dev/null 2>&1 && echo "$tool: ok" || echo "$tool: missing"
 done
 python3 -c "import docx" 2>/dev/null && echo "python-docx: ok" || echo "python-docx: missing"
@@ -129,9 +129,8 @@ One table row per dependency. What each one unlocks, and its install one-liner a
 
 | Dependency | Unlocks | Fix when missing |
 |------------|---------|------------------|
-| pandoc | Tracked-change extraction from .docx | `brew install pandoc` (macOS) / `apt-get install pandoc` (Linux) |
-| python3 + python-docx | Redline pipeline (apply_redlines, clean_format, extract_redlines) | `python3 -m pip install python-docx` |
-| bun | Building browse from source (optional — the prebuilt binary auto-downloads on first use) | `curl -fsSL https://bun.sh/install \| bash` |
+| python3 + python-docx | The Word WRITE path only (apply_redlines, clean_format) until the TypeScript port lands; reading, extraction and checks need nothing | `python3 -m pip install python-docx` |
+| bun | Reading Word documents outside the runtime (`bun runtime/src/cli.ts docx read`), and building browse from source (the prebuilt binary auto-downloads on first use) | `curl -fsSL https://bun.sh/install \| bash` |
 | Playwright Chromium | The browse skill's headless browser | `cd "${CLAUDE_PLUGIN_ROOT}" && bunx playwright install chromium` |
 | qmd CLI | Vault index maintenance (`qmd update`; `qmd embed` is opt-in) | see https://github.com/tobi/qmd (optional — filesystem search is the fallback) |
 
@@ -260,11 +259,10 @@ Runtime: {Claude Code / Cowork / other} · Plugin root: {path} · Legal root: {p
 | 2 | Vault structure | ✅ | law 120 · standards 24 · ... | — |
 | 3 | Plugin version | ⚠️ | loaded 0.9.8, latest 0.9.9 | /counsel-os:update |
 | 4 | Law currency | ⚠️ | 2 user-owned areas stale | /counsel-os:law-refresh |
-| 5a | pandoc | ✅ | found | — |
+| 5a | bun | ⚠️ | missing | curl -fsSL https://bun.sh/install \| bash |
 | 5b | python3 + python-docx | ✅ | found | — |
-| 5c | bun | ⚠️ | missing | curl -fsSL https://bun.sh/install \| bash |
-| 5d | Playwright Chromium | ⚠️ | missing | bunx playwright install chromium |
-| 5e | qmd CLI | ✅ | found | — |
+| 5c | Playwright Chromium | ⚠️ | missing | bunx playwright install chromium |
+| 5d | qmd CLI | ✅ | found | — |
 | 6 | Browse daemon | ✅ | built; not running (on demand) | — |
 | 7 | Backups | ⚠️ | newest 47 days old | bash "${CLAUDE_PLUGIN_ROOT}/backup" |
 | 8 | Vault git | ✅ | repo · remote · 2 uncommitted | — |
