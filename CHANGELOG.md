@@ -6,6 +6,15 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [Unreleased]
+
+Runtime-owned setup, stage 1 (spec `docs/superpowers/specs/2026-09-01-runtime-owned-setup-design.md`)
+
+- The runtime carries the shipped content behind one content source (`runtime/src/content/`): the law areas, the practice seed, the memory template, the primitives, and the counsel skill, with a generated manifest of per-file hashes (`bun run content:manifest`). The prompt and `read_primitive` read through it.
+- `bun runtime/src/cli.ts init` creates and seeds a Counsel OS vault the way `/counsel-os:setup` does (default `~/Documents/Counsel OS`), from flags or four questions; idempotent, adopts an existing vault, never overwrites a file.
+- `serve` no longer exits when no legal root exists: it starts in setup mode, serves the page, and offers `GET /setup/detect`, `GET /setup/providers`, and `POST /setup`; every other API route answers 409 until a vault is set up, then the same server switches to it in place. `/health` reports `setup`.
+- The web UI shows a setup-required page in setup mode (the first-run screen lands next).
+
 ## [0.11.3] — 2026-09-01
 
 UI review batch — readable search, unified docket, session-lost screen, provider notice, conversation rename and matter link
