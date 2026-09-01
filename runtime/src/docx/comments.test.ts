@@ -43,7 +43,7 @@ describe('comments', () => {
     expect(commentsOf(out)).toEqual([{ id: '0', author: 'Jack Wang', date: '2026-09-01T12:00:00Z', initials: 'JW', text: 'Why this changed.' }]);
     // The anchors: start before the first run, end after the last, then the reference run.
     const xml = serialize(modelOf(out).paragraphs[0]!.element);
-    expect(xml).toMatch(/<w:p><w:commentRangeStart w:id="0"\/><w:r>.*<w:r>.*<\/w:r><w:commentRangeEnd w:id="0"\/><w:r><w:rPr><w:rStyle w:val="CommentReference"\/><\/w:rPr><w:commentReference w:id="0"\/><\/w:r><\/w:p>/s);
+    expect(xml).toMatch(/<w:p[^>]*><w:commentRangeStart w:id="0"\/><w:r>.*<w:r>.*<\/w:r><w:commentRangeEnd w:id="0"\/><w:r><w:rPr><w:rStyle w:val="CommentReference"\/><\/w:rPr><w:commentReference w:id="0"\/><\/w:r><\/w:p>/s);
     expect(commentCount(out)).toBe(1);
   });
 

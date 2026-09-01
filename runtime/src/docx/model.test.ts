@@ -168,3 +168,22 @@ describe('simpleDocx', () => {
     expect(model.paragraphs.map(p => textOf(p, 'accept'))).toEqual(['a', 'b']);
   });
 });
+
+describe('cell locations with grid spans', () => {
+  test('a cell spanning two columns takes two indices, as python-docx numbered them', () => {
+    const model = modelOf(
+      openDocx(
+        buildDocx({
+          blocks: [{ table: { rows: [[{ paragraphs: [{ runs: ['wide'] }], gridSpan: 2 }, { paragraphs: [{ runs: ['after'] }] }], [{ paragraphs: [{ runs: ['x'] }] }, { paragraphs: [{ runs: ['y'] }] }, { paragraphs: [{ runs: ['z'] }] }]] } }],
+        }),
+      ),
+    );
+    expect(model.paragraphs.map(p => [p.location, textOf(p, 'accept')])).toEqual([
+      ['table[0].row[0].cell[0].p[0]', 'wide'],
+      ['table[0].row[0].cell[2].p[0]', 'after'],
+      ['table[0].row[1].cell[0].p[0]', 'x'],
+      ['table[0].row[1].cell[1].p[0]', 'y'],
+      ['table[0].row[1].cell[2].p[0]', 'z'],
+    ]);
+  });
+});
