@@ -5,6 +5,8 @@ description: "Health check for a Counsel OS install: legal-root config, vault st
 
 # Doctor — Install Health Check
 
+> The vault checks below (steps 1, 2, 4B, 8, 10, 11) also run in the runtime, read-only: `bun runtime/src/cli.ts doctor`, `GET /doctor`, and **Check the vault** under Settings › Runtime in the web UI (spec 2026-09-01 §7). The environment checks (pandoc, python, the browse binary, qmd) stay here.
+
 You are running a health check on the user's Counsel OS install. Run every check below, collect the results, and present them as ONE table at the end — do not dump raw command output between checks, and do not narrate each step. Doctor is **read-only**: it never writes to the vault, the plugin tree, the config, or the home directory. Every non-healthy row gets a one-line fix command instead.
 
 Status meanings:

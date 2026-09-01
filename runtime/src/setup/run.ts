@@ -91,10 +91,20 @@ export interface ContentState {
 
 export const CONTENT_STATE = join('.counsel', 'content-state.json');
 
+/** `.counsel/received/<vault path>`: a copy of each PRACTICE seed as the
+ * vault received it. The update step (spec §6) diffs a new seed against
+ * this, never against the user's edited copy — the only way to show what
+ * changed upstream once the practice file has diverged by design. Law is
+ * not snapshotted: its baseline is the received hash alone, because a
+ * plugin-managed law file that still matches it is simply replaced. */
+export const RECEIVED_DIR = join('.counsel', 'received');
+
+export type ContentGroup = 'law' | 'standards' | 'methods' | 'library' | 'reference';
+
 /** The 26 law areas plus the practice seed: shipped path prefix → vault
  * path prefix. Shipped paths never carry `..` (the source refuses them), so
  * the rewrite is a prefix swap. */
-const PLACEMENTS: ReadonlyArray<{ group: keyof SetupResult['groups']; from: string; to: string }> = [
+export const PLACEMENTS: ReadonlyArray<{ group: ContentGroup; from: string; to: string }> = [
   { group: 'law', from: 'knowledge/law', to: 'law' },
   { group: 'standards', from: 'knowledge/practice-seed/standards', to: 'practice/standards' },
   { group: 'methods', from: 'knowledge/practice-seed/methods', to: 'practice/methods' },
@@ -163,9 +173,29 @@ function checkVault(vault: string, pluginRoot: string): { adopted: boolean } {
   return { adopted };
 }
 
-function readContentState(vault: string): ContentState | null {
+export function readContentState(vault: string): ContentState | null {
   try {
     return JSON.parse(readFileSync(join(vault, CONTENT_STATE), 'utf8')) as ContentState;
+  } catch {
+    return null;
+  }
+}
+
+export function writeContentState(vault: string, state: ContentState): void {
+  mkdirSync(join(vault, '.counsel'), { recursive: true });
+  writeFileSync(join(vault, CONTENT_STATE), JSON.stringify(state, null, 2) + '\n', 'utf8');
+}
+
+/** The practice seed as received, for the update step's diffs. */
+export function writeReceivedSnapshot(vault: string, rel: string, text: string): void {
+  const target = join(vault, RECEIVED_DIR, rel);
+  mkdirSync(dirname(target), { recursive: true });
+  writeFileSync(target, text, 'utf8');
+}
+
+export function readReceivedSnapshot(vault: string, rel: string): string | null {
+  try {
+    return readFileSync(join(vault, RECEIVED_DIR, rel), 'utf8');
   } catch {
     return null;
   }
@@ -213,11 +243,17 @@ export function runSetup(plan: SetupPlan, deps: SetupDeps): SetupResult {
   mkdirSync(deps.home, { recursive: true, mode: 0o700 });
   writeFileAtomic(join(deps.home, 'legal-root'), vault, { mode: 0o600, dirMode: 0o700 });
 
-  // 3. Law areas and the practice seed, path for path.
+  // 3. Law areas and the practice seed, path for path. A practice seed that
+  //    is placed is also snapshotted, so a later upstream change can be
+  //    shown against what the vault received rather than against the
+  //    user's own edits.
   for (const { group, from, to } of PLACEMENTS) {
     for (const shipped of deps.content.list(from)) {
       const rel = `${to}/${shipped.slice(from.length + 1)}`;
-      place(group, rel, deps.content.read(shipped), shipped);
+      const text = deps.content.read(shipped);
+      const before = groups[group].written;
+      place(group, rel, text, shipped);
+      if (group !== 'law' && groups[group].written > before) writeReceivedSnapshot(vault, rel, text);
     }
   }
 
@@ -270,8 +306,7 @@ export function runSetup(plan: SetupPlan, deps: SetupDeps): SetupResult {
     receivedAt: now().toISOString(),
     files: { ...(previous?.files ?? {}), ...received },
   };
-  mkdirSync(join(vault, '.counsel'), { recursive: true });
-  writeFileSync(join(vault, CONTENT_STATE), JSON.stringify(state, null, 2) + '\n', 'utf8');
+  writeContentState(vault, state);
 
   // 10. The default provider, only when asked for; the file is otherwise
   //    left exactly as it is (a fresh install has none, and that is fine).

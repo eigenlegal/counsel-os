@@ -14,10 +14,14 @@ import { buildProviders } from './providers/index';
 import { DEFAULT_TENANT, isTerminal, type ModelProvider } from './core/types';
 import type { FakeScript } from './core/fake-provider';
 import { DEFAULT_STEP_TIMEOUT_MS, withStepTimeout } from './loop/counsel-loop';
+import { createInterface } from 'node:readline/promises';
 import { repoContentSource } from './content/repo';
+import { applyUpdates, contentStatus, renderContentStatus } from './content/update';
 import { counselHome } from './core/home';
+import { renderReport, runDoctor } from './doctor/index';
 import { runInit } from './setup/init';
 import { defaultPluginRoot, startServer } from './server/serve';
+import { resolveLegalRoot } from './vault/resolve-root';
 
 const { values, positionals } = parseArgs({
   args: Bun.argv.slice(2),
@@ -47,9 +51,10 @@ const { values, positionals } = parseArgs({
     'sample-matter': { type: 'boolean' },
     'no-git': { type: 'boolean' },
     'default-provider': { type: 'string' },
-    yes: { type: 'boolean' },              // `init`: never prompt; fail on a missing answer
+    yes: { type: 'boolean' },              // `init`: never prompt; `update-content`: apply without asking
     changes: { type: 'string' },      // `docx read`: all | accept | reject
     format: { type: 'string' },       // `docx extract|check`: json | markdown | text
+    'dry-run': { type: 'boolean' },        // `update-content`: report only
   },
 });
 
@@ -64,6 +69,10 @@ function usage(): never {
   console.error('       bun runtime/src/cli.ts docx read <file.docx> [--changes all|accept|reject]   (markdown to stdout)');
   console.error('       bun runtime/src/cli.ts docx extract <file.docx> [--format json|markdown]  (tracked changes + comments)');
   console.error('       bun runtime/src/cli.ts docx check <file.docx|.md|.txt> [--format json|text] (mechanical QA)');
+  console.error('       bun runtime/src/cli.ts update-content [--vault <dir>] [--yes] [--dry-run]');
+  console.error('         compares the shipped law and practice content with the vault; applies law updates (never a file you changed)');
+  console.error('       bun runtime/src/cli.ts doctor [--vault <dir>]');
+  console.error('         read-only vault health: root config, structure, law currency, git, standards/library consistency, matter law impact');
   process.exit(2);
 }
 
@@ -97,6 +106,23 @@ async function docxCommand(sub: string | undefined, file: string | undefined): P
     console.error(err instanceof Error ? err.message : String(err));
     process.exit(1);
   }
+}
+
+
+/** The vault for `update-content` / `doctor`: `--vault`, else the resolved
+ * legal root — the same rule `serve` uses, minus setup mode: with no root
+ * there is nothing to update or check. */
+function vaultForMaintenance(): string {
+  if (values.vault) return resolve(values.vault);
+  const found = resolveLegalRoot({ env: process.env });
+  if (found.ok) return found.root;
+  if (found.code === 2) {
+    console.error('Multiple Counsel OS legal roots found. Pass --vault or set COUNSEL_OS_LEGAL_ROOT:');
+    for (const root of found.candidates) console.error(`  ${root}`);
+  } else {
+    console.error('No Counsel OS legal root found. Pass --vault <dir>, or run: bun runtime/src/cli.ts init');
+  }
+  process.exit(1);
 }
 
 /** A millisecond option: a bad one is the caller's mistake, and exits the
@@ -193,6 +219,32 @@ if (cmd === 'serve') {
   process.exit(code);
 } else if (cmd === 'docx') {
   await docxCommand(rest[0], rest[1]);
+} else if (cmd === 'update-content') {
+  const vaultRoot = vaultForMaintenance();
+  const deps = { vaultRoot, content: repoContentSource(defaultPluginRoot()) };
+  const status = contentStatus(deps);
+  console.log(renderContentStatus(status));
+  const pending = status.items.filter(i => i.applicable).map(i => i.path);
+  if (pending.length === 0 || values['dry-run']) process.exit(0);
+  let go = values.yes === true;
+  if (!go && process.stdin.isTTY === true) {
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    const answer = (await rl.question(`Apply ${pending.length} update${pending.length === 1 ? '' : 's'}? [y/N] `)).trim().toLowerCase();
+    rl.close();
+    go = answer === 'y' || answer === 'yes';
+  }
+  if (!go) {
+    console.log('Nothing applied. Rerun with --yes to apply.');
+    process.exit(0);
+  }
+  const result = applyUpdates(deps, pending);
+  console.log(`Applied ${result.applied.length}: ${result.applied.join(', ')}`);
+  process.exit(0);
+} else if (cmd === 'doctor') {
+  const vaultRoot = vaultForMaintenance();
+  const report = runDoctor({ vaultRoot, pluginRoot: defaultPluginRoot() });
+  console.log(renderReport(report));
+  process.exit(report.verdict === 'broken' ? 1 : 0);
 } else {
   await step();
 }

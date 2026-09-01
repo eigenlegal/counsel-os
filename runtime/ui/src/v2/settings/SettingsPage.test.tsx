@@ -41,6 +41,11 @@ function install(onPut: (body: unknown) => Response, getView: SettingsView = vie
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     if (url === '/settings' && (init?.method ?? 'GET') === 'GET') return json(getView);
+    // The Content group reads its own status; an all-current answer keeps
+    // these tests about the registry form.
+    if (url === '/content/status') {
+      return json({ shippedVersion: '0.0.0', vaultVersion: '0.0.0', receivedAt: null, lawManagement: 'plugin', autoApplyLawUpdates: false, items: [], counts: { current: 0, 'update-available': 0, 'user-modified': 0, 'vault-only': 0, missing: 0, 'upstream-changed': 0 } });
+    }
     if (url === '/settings' && init?.method === 'PUT') {
       const body: unknown = JSON.parse(String(init.body));
       puts.push(body);
@@ -70,7 +75,7 @@ describe('SettingsPage', () => {
     // Descendant, not child: `Health` draws its own heading inside its own
     // section, one level under the group card.
     const headings = Array.from(document.querySelectorAll('.v2-group h2'), el => el.textContent);
-    expect(headings).toEqual(['Providers', 'Default provider', 'Task routes', 'Step timeout', 'Test', 'Runtime']);
+    expect(headings).toEqual(['Providers', 'Default provider', 'Task routes', 'Step timeout', 'Test', 'Content', 'Runtime']);
     // The plain-language purpose lines (cou-84), one under each heading.
     expect(screen.getByText(/The models this runtime can call/)).toBeTruthy();
     expect(screen.getByText(/The model that answers when nothing more specific applies/)).toBeTruthy();

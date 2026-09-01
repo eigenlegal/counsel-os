@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -1303,5 +1303,90 @@ describe('POST /vault/upload and /vault/move (docx intake, stage 1 step 3)', () 
     expect((await call(app, 'POST', '/vault/move', { body: { from: 'matters/acme/nda.docx', to: 'practice' } })).status).toBe(400);
     expect((await call(app, 'POST', '/vault/move', { body: { from: 'matters/inbox/none.docx', to: 'matters/acme' } })).status).toBe(404);
     expect((await call(app, 'POST', '/vault/move', { body: { from: '' } })).status).toBe(400);
+  });
+});
+
+describe('content updates and doctor (spec 2026-09-01 §6–§7)', () => {
+  const LAW = '---\ncounsel-os-type: law-area\nlast-reviewed: "2026-06-11"\n---\n# GDPR\n\n72 hours.\n';
+
+  /** A plugin root that ships one law file and one standard, and a vault
+   * seeded from it by hand with the content state `runSetup` would write. */
+  function seed(): { shippedGdpr: string } {
+    const shippedGdpr = join(pluginRoot, 'knowledge', 'law', 'data-privacy', 'gdpr.md');
+    mkdirSync(join(pluginRoot, 'knowledge', 'law', 'data-privacy'), { recursive: true });
+    writeFileSync(shippedGdpr, LAW, 'utf8');
+    mkdirSync(join(pluginRoot, 'knowledge', 'practice-seed', 'standards'), { recursive: true });
+    writeFileSync(join(pluginRoot, 'knowledge', 'practice-seed', 'standards', 'confidentiality.md'), '# Conf\n\n## Our Position\n**Our standard:** 3 years.\n', 'utf8');
+    mkdirSync(join(vaultRoot, 'law', 'data-privacy'), { recursive: true });
+    writeFileSync(join(vaultRoot, 'law', 'data-privacy', 'gdpr.md'), LAW, 'utf8');
+    mkdirSync(join(vaultRoot, 'practice', 'standards'), { recursive: true });
+    writeFileSync(join(vaultRoot, 'practice', 'standards', 'confidentiality.md'), '# Conf\n\n## Our Position\n**Our standard:** 5 years.\n', 'utf8');
+    writeFileSync(join(vaultRoot, 'config.md'), `counsel-os-config: true\nlegal_root: ${vaultRoot}\n`, 'utf8');
+    mkdirSync(join(vaultRoot, '.counsel'), { recursive: true });
+    const hash = (text: string): string => createHash('sha256').update(text.replace(/^---[ \t]*\n[\s\S]*?\n---[ \t]*\n/, ''), 'utf8').digest('hex');
+    writeFileSync(
+      join(vaultRoot, '.counsel', 'content-state.json'),
+      JSON.stringify({ version: '0.0.1', receivedAt: '2026-08-01T00:00:00.000Z', files: { 'law/data-privacy/gdpr.md': { hash: hash(LAW), from: 'knowledge/law/data-privacy/gdpr.md' }, 'practice/standards/confidentiality.md': { hash: hash('# Conf\n\n## Our Position\n**Our standard:** 3 years.\n'), from: 'knowledge/practice-seed/standards/confidentiality.md' } } }),
+      'utf8',
+    );
+    return { shippedGdpr };
+  }
+
+  test('GET /content/status classifies; an upstream law change is update-available, the edited standard is current', async () => {
+    const { shippedGdpr } = seed();
+    const app = appWithFake();
+    let res = await call(app, 'GET', '/content/status');
+    expect(res.status).toBe(200);
+    let status = (await res.json()) as { items: Array<{ path: string; status: string }>; vaultVersion: string; counts: Record<string, number> };
+    expect(status.vaultVersion).toBe('0.0.1');
+    expect(status.items.map(i => [i.path, i.status])).toEqual([
+      ['law/data-privacy/gdpr.md', 'current'],
+      ['practice/standards/confidentiality.md', 'current'],
+    ]);
+
+    writeFileSync(shippedGdpr, LAW + 'Upstream note.\n', 'utf8');
+    res = await call(app, 'GET', '/content/status');
+    status = (await res.json()) as typeof status;
+    expect(status.items[0]).toMatchObject({ path: 'law/data-privacy/gdpr.md', status: 'update-available' });
+    expect(status.counts['update-available']).toBe(1);
+  });
+
+  test('POST /content/apply writes an applicable path and refuses everything else with a 400', async () => {
+    const { shippedGdpr } = seed();
+    writeFileSync(shippedGdpr, LAW + 'Upstream note.\n', 'utf8');
+    const app = appWithFake();
+    const bad = await call(app, 'POST', '/content/apply', { body: { paths: ['practice/standards/confidentiality.md'] } });
+    expect(bad.status).toBe(400);
+    expect(((await bad.json()) as { paths: string[] }).paths).toEqual(['practice/standards/confidentiality.md']);
+    expect((await call(app, 'POST', '/content/apply', { body: { paths: [] } })).status).toBe(400);
+
+    const ok = await call(app, 'POST', '/content/apply', { body: { paths: ['law/data-privacy/gdpr.md'] } });
+    expect(ok.status).toBe(200);
+    expect(((await ok.json()) as { applied: string[] }).applied).toEqual(['law/data-privacy/gdpr.md']);
+    expect(readFileSync(join(vaultRoot, 'law', 'data-privacy', 'gdpr.md'), 'utf8')).toBe(LAW + 'Upstream note.\n');
+    const after = (await (await call(app, 'GET', '/content/status')).json()) as { items: Array<{ status: string }> };
+    expect(after.items[0]!.status).toBe('current');
+  });
+
+  test('GET /doctor runs the vault checks read-only and reports a verdict', async () => {
+    seed();
+    const app = appWith([new FakeModelProvider([{ text: 'x' }])], { git: null });
+    const res = await call(app, 'GET', '/doctor');
+    expect(res.status).toBe(200);
+    const report = (await res.json()) as { findings: Array<{ check: string; severity: string }>; verdict: string; vault: string };
+    expect(report.vault).toBe(vaultRoot);
+    expect(report.findings.map(f => f.check)).toEqual(['root-config', 'structure', 'law-currency', 'git', 'consistency', 'law-impact']);
+    expect(report.findings[0]!.severity).toBe('ok');
+    expect(report.findings.find(f => f.check === 'git')!.severity).toBe('warn');
+    expect(['warnings', 'broken']).toContain(report.verdict);
+    // Nothing was written.
+    expect(readFileSync(join(vaultRoot, 'law', 'data-privacy', 'gdpr.md'), 'utf8')).toBe(LAW);
+  });
+
+  test('both prefixes need the token', async () => {
+    seed();
+    const app = appWithFake();
+    expect((await call(app, 'GET', '/content/status', { token: null })).status).toBe(401);
+    expect((await call(app, 'GET', '/doctor', { token: null })).status).toBe(401);
   });
 });

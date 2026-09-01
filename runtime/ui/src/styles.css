@@ -893,3 +893,33 @@ a { color: var(--accent); }
 .v2-prose h1, .v2-prose h2 { font: 500 17px/1.3 var(--serif); margin: 22px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
 .v2-prose h3 { font: 600 11px/1 var(--sans); letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-faint); margin: 18px 0 6px; }
 .v2-prose strong, .v2-doc-md strong { font-weight: 600; }
+
+/* The setup-required page shares the session-lost page's layout (spec
+   2026-09-01 §4); it only needs its own hook for the coming first-run screen. */
+.v2-setup-required .v2-lost-acts { margin-top: 6px; }
+
+/* ── Settings: Content group + Check the vault (spec 2026-09-01 §6–§7) ── */
+
+/* A ledger row: path in mono, dotted leader, the status set as text. */
+.v2-content-row, .v2-doctor-row { display: flex; align-items: baseline; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.v2-content-row:last-child, .v2-doctor-row:last-child { border-bottom: none; }
+.v2-content-path { font: 12.5px var(--mono); color: var(--fg); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v2-content-state { font: italic 500 13px/1 var(--serif); color: var(--fg-muted); flex-shrink: 0; }
+.v2-content-state-update { color: var(--accent); }
+.v2-content-state-new { color: var(--ok); }
+.v2-content-state-merge { color: var(--warn); }
+.v2-content-acts { display: flex; gap: 10px; flex-shrink: 0; }
+.v2-content-diff { margin: 4px 0 8px; padding: 8px 10px; background: var(--bg-sunken); border: 1px solid var(--border); border-radius: var(--radius); font: 12px/1.5 var(--mono); white-space: pre; overflow-x: auto; max-height: 24rem; }
+.v2-content-summary { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 0 0 8px; }
+.v2-content-line { color: var(--fg-muted); font-size: 13px; }
+.v2-content-line b { font-weight: 600; color: var(--fg); }
+.v2-doctor-check { font: 600 10.5px/1 var(--sans); letter-spacing: 0.09em; text-transform: uppercase; color: var(--fg-faint); width: 9rem; flex-shrink: 0; }
+.v2-doctor-severity { font: italic 500 13px/1 var(--serif); width: 3.2rem; flex-shrink: 0; }
+.v2-doctor-ok { color: var(--ok); }
+.v2-doctor-warn { color: var(--warn); }
+.v2-doctor-error { color: var(--error); }
+.v2-doctor-body { min-width: 0; flex: 1; }
+.v2-doctor-message { color: var(--fg); }
+.v2-doctor-detail { color: var(--fg-muted); font-size: 12.5px; white-space: pre-line; margin-top: 2px; }
+.v2-doctor-fix { color: var(--fg-faint); font: 12px var(--mono); margin-top: 2px; word-break: break-all; }
+.v2-doctor-verdict { margin-top: 8px; font: italic 500 13.5px/1.4 var(--serif); color: var(--fg); }

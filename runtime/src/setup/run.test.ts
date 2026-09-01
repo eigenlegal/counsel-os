@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { repoContentSource } from '../content/repo';
 import { SetupPlan } from './plan';
-import { CONTENT_STATE, runSetup, SetupError, systemGit, type ContentState, type GitRunner } from './run';
+import { CONTENT_STATE, RECEIVED_DIR, readReceivedSnapshot, runSetup, SetupError, systemGit, type ContentState, type GitRunner } from './run';
 
 const REPO = resolve(import.meta.dir, '../../..');
 const content = repoContentSource(REPO);
@@ -264,5 +264,27 @@ describe('the sample matter (spec §4)', () => {
     const again = runSetup(plan(vault), { content, home, pluginRoot: REPO });
     expect(again.groups.sample).toEqual({ written: 2, skipped: 1 });
     expect(readFileSync(join(vault, 'matters', 'sample-mutual-nda', 'matter.md'), 'utf8')).toBe('# Mine\n');
+  });
+});
+
+describe('runSetup practice snapshots (content updates, spec §6)', () => {
+  test('each placed practice seed is copied under .counsel/received; law is not', () => {
+    const { home, vault } = fixture();
+    runSetup(plan(vault), { content, home, pluginRoot: REPO, git: null });
+    const snap = readReceivedSnapshot(vault, 'practice/standards/confidentiality.md');
+    expect(snap).toBe(content.read('knowledge/practice-seed/standards/confidentiality.md'));
+    expect(snap).toBe(readFileSync(join(vault, 'practice', 'standards', 'confidentiality.md'), 'utf8'));
+    expect(existsSync(join(vault, RECEIVED_DIR, 'law'))).toBe(false);
+    expect(readReceivedSnapshot(vault, 'law/data-privacy/gdpr.md')).toBeNull();
+  });
+
+  test('a rerun leaves an existing snapshot and file alone', () => {
+    const { home, vault } = fixture();
+    runSetup(plan(vault), { content, home, pluginRoot: REPO, git: null });
+    const target = join(vault, 'practice', 'standards', 'confidentiality.md');
+    writeFileSync(target, '# mine\n', 'utf8');
+    runSetup(plan(vault), { content, home, pluginRoot: REPO, git: null });
+    expect(readFileSync(target, 'utf8')).toBe('# mine\n');
+    expect(readReceivedSnapshot(vault, 'practice/standards/confidentiality.md')).toBe(content.read('knowledge/practice-seed/standards/confidentiality.md'));
   });
 });

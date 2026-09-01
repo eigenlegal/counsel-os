@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { isKnowledgePath, normalizeVaultPath } from './knowledge-paths';
 import type { VaultConfig } from './resolve-root';
 
-const defaults: VaultConfig = { entitiesPath: 'entities', mattersPath: 'matters' };
+const defaults: VaultConfig = { entitiesPath: 'entities', mattersPath: 'matters', autoApplyLawUpdates: false, lawManagement: 'plugin' };
 
 describe('normalizeVaultPath', () => {
   test('strips a leading ./', () => {
@@ -65,11 +65,11 @@ describe('isKnowledgePath', () => {
   });
 
   test('an overridden entities_path is honored as a knowledge path', () => {
-    expect(isKnowledgePath('clients/acme.md', { entitiesPath: 'clients', mattersPath: 'matters' })).toBe(true);
+    expect(isKnowledgePath('clients/acme.md', { entitiesPath: 'clients', mattersPath: 'matters', autoApplyLawUpdates: false, lawManagement: 'plugin' })).toBe(true);
   });
 
   test('the default entities/ path is not a knowledge path once overridden away', () => {
-    expect(isKnowledgePath('entities/acme.md', { entitiesPath: 'clients', mattersPath: 'matters' })).toBe(false);
+    expect(isKnowledgePath('entities/acme.md', { entitiesPath: 'clients', mattersPath: 'matters', autoApplyLawUpdates: false, lawManagement: 'plugin' })).toBe(false);
   });
 
   test('an unrelated top-level path is not a knowledge path', () => {
@@ -96,7 +96,7 @@ describe('isKnowledgePath — case', () => {
   test('a knowledge path spelled with capitals is still a knowledge path', () => {
     // On APFS `Practice/standards/x.md` IS `practice/standards/x.md`, so a
     // case-sensitive prefix test would be a way around the `remember` gate.
-    const cfg = { entitiesPath: 'entities', mattersPath: 'matters' };
+    const cfg: VaultConfig = { entitiesPath: 'entities', mattersPath: 'matters', autoApplyLawUpdates: false, lawManagement: 'plugin' };
     expect(isKnowledgePath('Practice/standards/x.md', cfg)).toBe(true);
     expect(isKnowledgePath('MEMORY/notes.md', cfg)).toBe(true);
     expect(isKnowledgePath('Entities/acme.md', cfg)).toBe(true);

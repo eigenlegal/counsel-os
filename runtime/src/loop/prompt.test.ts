@@ -8,7 +8,7 @@ import { readPrimitiveTool } from './primitives';
 import { runToolDef } from '../core/fake-provider';
 import type { VaultConfig } from '../vault/resolve-root';
 
-const defaultCfg: VaultConfig = { entitiesPath: 'entities', mattersPath: 'matters' };
+const defaultCfg: VaultConfig = { entitiesPath: 'entities', mattersPath: 'matters', autoApplyLawUpdates: false, lawManagement: 'plugin' };
 
 const allTools: AvailableTools = {
   available: [
@@ -177,7 +177,7 @@ describe('assembleSystemPrompt', () => {
       vaultRoot,
       platform: 'macos',
       tools: { available: ['vault_read', 'vault_write'], unavailable: [] },
-      cfg: { entitiesPath: 'clients', mattersPath: 'cases' },
+      cfg: { entitiesPath: 'clients', mattersPath: 'cases', autoApplyLawUpdates: false, lawManagement: 'plugin' },
     });
 
     expect(prompt).toContain('cases/');
@@ -211,7 +211,7 @@ describe('HOST_PREAMBLE', () => {
   });
 
   test('translates {legal_root}/x/y.md paths and states matters/entities live at the configured dirs', () => {
-    const preamble = HOST_PREAMBLE(allTools, 'macos', { entitiesPath: 'clients', mattersPath: 'cases' });
+    const preamble = HOST_PREAMBLE(allTools, 'macos', { entitiesPath: 'clients', mattersPath: 'cases', autoApplyLawUpdates: false, lawManagement: 'plugin' });
     expect(preamble).toContain('{legal_root}/x/y.md');
     expect(preamble.toLowerCase()).toContain('drop');
     expect(preamble).toContain('cases/');

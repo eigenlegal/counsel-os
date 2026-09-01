@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { FsVaultStore } from './fs-store';
 import { MAX_MATTERS, MAX_MATTER_BYTES, parseFrontmatter, prettifyName, titleOf, vaultOverview } from './overview';
 
-const CFG = { entitiesPath: 'entities', mattersPath: 'matters' };
+const CFG = { entitiesPath: 'entities', mattersPath: 'matters', autoApplyLawUpdates: false, lawManagement: 'plugin' as const };
 
 let root: string;
 let store: FsVaultStore;
@@ -166,7 +166,7 @@ describe('folder matters (spec 2026-09-01 §4)', () => {
     writeFileSync(join(root, 'matters', 'sample-mutual-nda', 'sample-mutual-nda.md'), '# NDA\n');
     writeFileSync(join(root, 'matters', 'sample-mutual-nda', 'drafts', 'matter.md'), '# too deep\n');
     mkdirSync(join(root, 'matters', 'empty-folder'));
-    const overview = await vaultOverview(new FsVaultStore(root), 'default', { entitiesPath: 'entities', mattersPath: 'matters' });
+    const overview = await vaultOverview(new FsVaultStore(root), 'default', { entitiesPath: 'entities', mattersPath: 'matters', autoApplyLawUpdates: false, lawManagement: 'plugin' });
     expect(overview.matters.map(m => [m.path, m.title]).sort()).toEqual([
       ['matters/flat.md', 'Flat'],
       ['matters/sample-mutual-nda/matter.md', 'Acme — Mutual NDA (sample)'],

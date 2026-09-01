@@ -12,6 +12,10 @@ import { vaultDocket } from '../vault/docket';
 import { normalizeVaultPath } from '../vault/knowledge-paths';
 import { vaultOverview } from '../vault/overview';
 import { readVaultConfig } from '../vault/resolve-root';
+import { applyUpdates, contentStatus, UpdateError } from '../content/update';
+import { repoContentSource } from '../content/repo';
+import { runDoctor } from '../doctor/index';
+import { systemGit, type GitRunner } from '../setup/run';
 import { isAuthorized } from './auth';
 import {
   applySettings,
@@ -44,6 +48,9 @@ export interface ServerDeps extends Omit<CounselLoopDeps, 'providers' | 'router'
   /** The built UI's `dist/` (spec §4.2). Omitted → no static serving at all,
    * and a non-API path is the 404 it has always been. */
   distDir?: string;
+  /** The doctor's git runner (spec 2026-09-01 §7). Default: real git when
+   * on PATH; `null` reports "git is not installed". */
+  git?: GitRunner | null;
 }
 
 export type App = (req: Request) => Promise<Response>;
@@ -54,7 +61,7 @@ export type App = (req: Request) => Promise<Response>;
  * static, served with no credential, so a new route whose prefix is missing
  * here would be reachable by anyone who can reach the port.
  */
-export const API_PREFIXES: readonly string[] = ['health', 'threads', 'runs', 'vault', 'settings', 'proposals', 'docket', 'setup'];
+export const API_PREFIXES: readonly string[] = ['health', 'threads', 'runs', 'vault', 'settings', 'proposals', 'docket', 'setup', 'content', 'doctor'];
 
 /** True when `pathname` belongs to the API (and so needs a token). `/` and
  * every client-side route are false. */
@@ -713,6 +720,28 @@ export function createApp(deps: ServerDeps): App {
   /** The deadline docket (roadmap §1, in the runtime): every dated
    * obligation the matter files carry, classified against today. Same
    * matter discovery as the overview, read-only. */
+  /**
+   * Content updates (spec 2026-09-01 §6): what the vault has against what
+   * ships, and the apply that writes only what the rules allow. The content
+   * source is the loop's (`deps.content`) or the repo's over `pluginRoot`.
+   */
+  const updateDeps = () => ({ vaultRoot: deps.vaultRoot, content: deps.content ?? repoContentSource(deps.pluginRoot) });
+  const contentStatusRoute = (): Response => json(contentStatus(updateDeps()));
+  const ContentApplyBody = z.object({ paths: z.array(z.string().min(1)).min(1) });
+  const contentApplyRoute = async (req: Request): Promise<Response> => {
+    const input = await body(req, ContentApplyBody);
+    try {
+      return json(applyUpdates(updateDeps(), input.paths));
+    } catch (err) {
+      if (err instanceof UpdateError) return fail(400, err.message, { paths: err.paths });
+      throw err;
+    }
+  };
+
+  /** The doctor (spec 2026-09-01 §7): read-only vault checks. */
+  const doctorRoute = (): Response =>
+    json(runDoctor({ vaultRoot: deps.vaultRoot, pluginRoot: deps.pluginRoot, git: deps.git === undefined ? systemGit() : deps.git }));
+
   const docketRoute = async (): Promise<Response> =>
     json(await vaultDocket(deps.vault, deps.tenant, readVaultConfig(deps.vaultRoot)));
 
@@ -844,6 +873,13 @@ export function createApp(deps: ServerDeps): App {
       }
 
       if (segments.length === 1 && first === 'docket' && method === 'GET') return await docketRoute();
+
+      if (segments.length === 2 && first === 'content') {
+        if (second === 'status' && method === 'GET') return contentStatusRoute();
+        if (second === 'apply' && method === 'POST') return await contentApplyRoute(req);
+      }
+
+      if (segments.length === 1 && first === 'doctor' && method === 'GET') return doctorRoute();
 
       return fail(404, `no route for ${method} ${url.pathname}`);
     } catch (err) {

@@ -22,6 +22,13 @@ export type ResolveRootResult = { ok: true; root: string } | { ok: false; code: 
 export interface VaultConfig {
   entitiesPath: string;
   mattersPath: string;
+  /** `auto_apply_law_updates: true` — law `update-available` items are
+   * applied at serve start without a person (spec 2026-09-01 §6). Never
+   * touches a user-owned file. */
+  autoApplyLawUpdates: boolean;
+  /** `law_management: user` — the user owns ALL law content; the runtime
+   * never syncs it (the plugin's `law-refresh` maintains it). */
+  lawManagement: 'plugin' | 'user';
 }
 
 const CWD_WALK_MAX_DEPTH = 3;
@@ -221,8 +228,11 @@ export function readVaultConfig(root: string): VaultConfig {
     return undefined;
   };
 
+  const flag = (raw: string | undefined): string => (raw ?? '').trim().replace(/^["']|["']$/g, '').toLowerCase();
   return {
     entitiesPath: findOverride('entities_path') || 'entities',
     mattersPath: findOverride('matters_path') || 'matters',
+    autoApplyLawUpdates: flag(findOverride('auto_apply_law_updates')) === 'true',
+    lawManagement: flag(findOverride('law_management')) === 'user' ? 'user' : 'plugin',
   };
 }
