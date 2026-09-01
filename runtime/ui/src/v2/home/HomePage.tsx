@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ApiError, fetchJson, fetchJsonWithHeaders } from '../../api/client';
-import type { DocketEntry, DocketView, PendingProposal, ThreadHeader, VaultOverview } from '../../api/types';
+import type { DocketEntry, DocketView, Health, PendingProposal, ThreadHeader, VaultOverview } from '../../api/types';
+import { ProviderNotice } from '../ProviderNotice';
 import { Tree } from '../../vault/Tree';
 import { railLabel } from '../Rail';
 import { relTime } from '../time';
@@ -67,6 +68,8 @@ export interface HomePageProps {
    * does).
    */
   onAsk: (message: string) => void;
+  /** For the swap notice above the ask box (cou-95). Absent = no notice. */
+  health?: Health | null;
   onOpenThread: (id: string) => void;
 }
 
@@ -77,7 +80,7 @@ export interface HomePageProps {
  * `/vault/overview` + `/proposals?status=pending`, fetched on mount — the
  * shell mounts this page per visit to Home, so the docket is always current.
  */
-export function HomePage({ threads, onAsk, onOpenThread }: HomePageProps): JSX.Element {
+export function HomePage({ threads, onAsk, onOpenThread, health }: HomePageProps): JSX.Element {
   const [overview, setOverview] = useState<VaultOverview | null>(null);
   const [pending, setPending] = useState<PendingProposal[]>([]);
   /** The proposal scan was bounded — there may be proposals it never saw. */
@@ -168,6 +171,7 @@ export function HomePage({ threads, onAsk, onOpenThread }: HomePageProps): JSX.E
         <div className="v2-hi">{greetingFor()}</div>
         {subline === null ? null : <div className="v2-sub">{subline}</div>}
 
+        <ProviderNotice health={health} />
         <div className="v2-ask">
           <textarea
             ref={box}

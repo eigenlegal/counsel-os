@@ -1,7 +1,17 @@
 import { cleanup, fireEvent, render, screen, userEvent } from '../../test/dom';
 
 import { afterEach, describe, expect, test } from 'bun:test';
+import type { Health } from '../../api/types';
 import { Composer } from './Composer';
+
+const amber: Health = {
+  vault: '/tmp/vault',
+  tenant: 'default',
+  default: 'claude-sub/claude-opus-5',
+  stepTimeoutMs: 600_000,
+  providers: [{ id: 'ollama/gemma4:e4b', kind: 'direct', auth: 'local', capabilities: { tools: true, caching: false, thinking: false, contextTokens: 32_000, auth: 'local' } }],
+};
+const fine: Health = { ...amber, default: 'ollama/gemma4:e4b' };
 
 function noop(): void {}
 
@@ -62,5 +72,23 @@ describe('v2 Composer', () => {
     expect((screen.getByLabelText('Message') as HTMLTextAreaElement).disabled).toBe(true);
     await userEvent.click(screen.getByRole('button', { name: 'Stop' }));
     expect(stopped).toBe(1);
+  });
+});
+
+describe('v2 Composer swap notice (cou-95)', () => {
+  test('says which model will answer when the saved default is not loaded, and links to Settings', () => {
+    render(<Composer streaming={false} onSend={noop} onStop={noop} health={amber} />);
+    const notice = screen.getByRole('status');
+    expect(notice.textContent).toBe('Claude is not available. Counsel will answer on Ollama (gemma4:e4b).change');
+    expect(notice.querySelector('a')?.getAttribute('href')).toBe('#/settings');
+    expect(notice.className).toContain('v2-swap-notice');
+  });
+
+  test('silent when the default is loaded, or health is not in yet', () => {
+    render(<Composer streaming={false} onSend={noop} onStop={noop} health={fine} />);
+    expect(screen.queryByRole('status')).toBeNull();
+    cleanup();
+    render(<Composer streaming={false} onSend={noop} onStop={noop} health={null} />);
+    expect(screen.queryByRole('status')).toBeNull();
   });
 });

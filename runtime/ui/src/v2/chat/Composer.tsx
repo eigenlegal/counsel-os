@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import type { Health } from '../../api/types';
+import { ProviderNotice } from '../ProviderNotice';
 
 /** A prefill pushed in from outside — the vault's "Ask counsel about this
  * file" (spec §3.4). The nonce distinguishes two asks about the same file. */
@@ -19,6 +21,10 @@ export interface ComposerProps {
    * drop it — a seed still in the parent's state would refill the box on the
    * next remount. */
   onSeedUsed?: () => void;
+  /** For the swap notice above the box (cou-95): shown only when the saved
+   * default is not loaded, so the reader learns which model will answer
+   * BEFORE sending. Absent = no notice. */
+  health?: Health | null;
 }
 
 /**
@@ -30,7 +36,7 @@ export interface ComposerProps {
  * picker under every message asked the reader to make a choice they had
  * already made once, in the one place that remembers it.
  */
-export function Composer({ streaming, disabled = false, onSend, onStop, seed, onSeedUsed }: ComposerProps): JSX.Element {
+export function Composer({ streaming, disabled = false, onSend, onStop, seed, onSeedUsed, health }: ComposerProps): JSX.Element {
   const [message, setMessage] = useState('');
   // Derived-from-props during render (React's own pattern), not an effect:
   // an effect would paint the empty box first and steal a keystroke typed
@@ -63,6 +69,7 @@ export function Composer({ streaming, disabled = false, onSend, onStop, seed, on
         send();
       }}
     >
+      <ProviderNotice health={health} />
       <div className="v2-composer-box">
         <textarea
           aria-label="Message"

@@ -250,6 +250,12 @@ a { color: var(--accent); }
 .v2-notice { padding: var(--s2) var(--s3); border-radius: var(--radius); border: 1px solid currentColor; margin: var(--s2) var(--s4); }
 .v2-notice p:last-child { margin-bottom: 0; }
 .v2-notice-error { color: var(--error); }
+/* The swap notice (cou-95): one faint line of set text, no box, no pill. */
+.v2-swap-notice { margin: 0 0 8px; font-size: 12.5px; color: var(--fg-faint); }
+.v2-swap-notice a { margin-left: 8px; color: var(--fg-muted); }
+.v2-step-failure p { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.v2-retry { background: none; border: 1px solid currentColor; border-radius: var(--radius); color: inherit; font: inherit; font-size: 12.5px; padding: 1px 9px; cursor: pointer; }
+.v2-error-raw { font: 12.5px var(--mono); color: var(--fg-muted); margin: 6px 0 0; word-break: break-word; }
 .v2-notice-warn { color: var(--warn); }
 /* Quiet, not alarming: a dead `?thread=` is a fact to state, not an error. */
 .v2-notfound { margin: var(--s3) var(--s6) 0; font-style: italic; }

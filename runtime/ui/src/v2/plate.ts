@@ -100,3 +100,21 @@ export function swapNote(health: Health | null): string | null {
   if (saved === null || saved === '' || health.providers.some(p => p.id === saved)) return null;
   return `saved default ${saved} not loaded`;
 }
+
+/**
+ * The same swap as plates (cou-95), for the notice above the composer: the
+ * saved default's plate, and the plate of what a send will ACTUALLY use —
+ * `null` when nothing at all is loaded. `null` overall when there is no
+ * swap, so callers render nothing. Derived from `swapNote`, never a second
+ * rule.
+ */
+export function swapPlates(health: Health | null): { saved: Plate; effective: (Plate & { model: string }) | null } | null {
+  if (health === null || swapNote(health) === null) return null;
+  const saved = plateFor(health.default ?? '');
+  const effectiveId = defaultProviderId(health);
+  if (effectiveId === '') return { saved, effective: null };
+  const plate = plateFor(effectiveId, health.providers.find(p => p.id === effectiveId)?.auth);
+  // The detail line is `<Model> · <connection>`; the notice wants the model alone.
+  const model = plate.known ? plate.detail.split(' · ')[0]! : effectiveId;
+  return { saved, effective: { ...plate, model } };
+}

@@ -2,10 +2,19 @@ import { cleanup, render, screen, userEvent, waitFor } from '../../test/dom';
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { TOKEN_KEY } from '../../api/token';
-import type { DocketView, PendingProposal, ThreadHeader, VaultOverview } from '../../api/types';
+import type { DocketView, Health, PendingProposal, ThreadHeader, VaultOverview } from '../../api/types';
 import { docketDate, docketHeadParts, HomePage } from './HomePage';
 
 const realFetch = globalThis.fetch;
+
+const amber: Health = {
+  vault: '/tmp/vault',
+  tenant: 'default',
+  default: 'claude-sub/claude-opus-5',
+  stepTimeoutMs: 600_000,
+  providers: [{ id: 'ollama/gemma4:e4b', kind: 'direct', auth: 'local', capabilities: { tools: true, caching: false, thinking: false, contextTokens: 32_000, auth: 'local' } }],
+};
+const fine: Health = { ...amber, default: 'ollama/gemma4:e4b' };
 
 const threads: ThreadHeader[] = [
   {
@@ -373,5 +382,20 @@ describe('HomePage, one docket: deadlines + proposals', () => {
     expect(docketHeadParts(0, 0)).toEqual([]);
     expect(docketHeadParts(1, 0)).toEqual(['1 deadline']);
     expect(docketHeadParts(3, 2)).toEqual(['3 deadlines', '2 awaiting your decision']);
+  });
+});
+
+describe('HomePage swap notice (cou-95)', () => {
+  test('above the ask box only when the saved default is not loaded', async () => {
+    render(<HomePage threads={threads} onAsk={() => {}} onOpenThread={() => {}} health={amber} />);
+    await waitFor(() => expect(screen.getByLabelText('Ask counsel')).toBeTruthy());
+    const notice = document.querySelector('.v2-swap-notice')!;
+    expect(notice.textContent).toContain('Claude is not available. Counsel will answer on Ollama (gemma4:e4b).');
+    // Above the box, in reading order.
+    expect(notice.compareDocumentPosition(document.querySelector('.v2-ask')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    cleanup();
+    render(<HomePage threads={threads} onAsk={() => {}} onOpenThread={() => {}} health={fine} />);
+    await waitFor(() => expect(screen.getByLabelText('Ask counsel')).toBeTruthy());
+    expect(document.querySelector('.v2-swap-notice')).toBeNull();
   });
 });
