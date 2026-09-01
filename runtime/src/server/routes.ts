@@ -487,6 +487,38 @@ export function createApp(deps: ServerDeps): App {
     return json(await deps.vault.search(deps.tenant, q));
   };
 
+  /** How many file paths `GET /vault/index` returns at most. A vault past
+   * this is an archive; the index is a citation gate, not a mirror. */
+  const INDEX_MAX_FILES = 5000;
+
+  /**
+   * Every file path in the vault, flat (cou-93 item 8): the client's
+   * known-path set for turning a path the model wrote in prose into a chip
+   * that opens the reader. Built by walking `vault.list` — the SAME listing
+   * the tree uses, so `.counsel`, dotfiles and symlinks are already gone and
+   * the index can never name a path the tree would not show. Breadth-first
+   * and capped, so a pathological vault bounds the walk instead of the walk
+   * unbounding the response.
+   */
+  const vaultIndexRoute = async (): Promise<Response> => {
+    const files: string[] = [];
+    const queue: string[] = ['.'];
+    while (queue.length > 0 && files.length < INDEX_MAX_FILES) {
+      const dir = queue.shift()!;
+      let entries: Awaited<ReturnType<typeof deps.vault.list>>;
+      try {
+        entries = await deps.vault.list(deps.tenant, dir);
+      } catch {
+        continue; // One unreadable directory never fails the whole index.
+      }
+      for (const entry of entries) {
+        if (entry.kind === 'dir') queue.push(entry.path);
+        else if (files.length < INDEX_MAX_FILES) files.push(entry.path);
+      }
+    }
+    return json(files);
+  };
+
   /** The docket's feed (spec §4). Only the pending listing exists; an
    * explicit other status is a 400 so a future caller cannot read
    * "everything" as "pending".
@@ -560,6 +592,7 @@ export function createApp(deps: ServerDeps): App {
         if (second === 'list') return await vaultList(url);
         if (second === 'overview') return await vaultOverviewRoute();
         if (second === 'search') return await vaultSearchRoute(url);
+        if (second === 'index') return await vaultIndexRoute();
       }
 
       if (segments.length === 1 && first === 'proposals' && method === 'GET') {

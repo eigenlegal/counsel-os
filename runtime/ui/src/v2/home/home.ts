@@ -90,6 +90,24 @@ function daysUntil(deadline: Date, now: Date): number {
   return Math.round((then - today) / 86_400_000);
 }
 
+/** The matter's `stage` (`working`, `signed`, …), or `null`. */
+export function stageOf(fm: Record<string, string>): string | null {
+  const raw = (fm['stage'] ?? '').trim();
+  return raw === '' ? null : raw;
+}
+
+/**
+ * What the Home row's right-hand slot says (cou-93 item 6). A deadline when
+ * there is one — hot when close — else the matter's stage, else nothing:
+ * "no deadline" set on every row of a vault that dates nothing was a column
+ * of noise, and the leader beside it pointed at nothing.
+ */
+export function dueSlot(fm: Record<string, string>, now: Date = new Date()): Due | null {
+  if (parseDeadline(fm) !== null) return dueLabel(fm, now);
+  const stage = stageOf(fm);
+  return stage === null ? null : { text: stage, hot: false };
+}
+
 export function dueLabel(fm: Record<string, string>, now: Date = new Date()): Due {
   const deadline = parseDeadline(fm);
   if (deadline === null) return { text: 'no deadline', hot: false };

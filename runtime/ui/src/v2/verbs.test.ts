@@ -10,15 +10,26 @@ describe('verbFor', () => {
   test('the table', () => {
     expect(verbFor(tool('vault_read', { path: 'matters/acme.md' }))).toEqual({ verb: 'Read', object: 'matters/acme.md' });
     expect(verbFor(tool('vault_list', { dir: 'matters' }))).toEqual({ verb: 'Listed', object: 'matters' });
-    expect(verbFor(tool('vault_search', { query: 'cap' }))).toEqual({ verb: 'Searched', object: 'cap' });
+    expect(verbFor(tool('vault_search', { query: 'cap' }))).toEqual({ verb: 'Searched the vault for', object: 'cap' });
     expect(verbFor(tool('read_primitive', { name: 'evaluate' }))).toEqual({ verb: 'Consulted primitive', object: 'evaluate' });
     expect(verbFor(tool('propose_update', { path: 'practice/x.md', content: '' }))).toEqual({ verb: 'Proposed', object: 'practice/x.md' });
     expect(verbFor(tool('vault_write', { path: 'a.md' }))).toEqual({ verb: 'Wrote', object: 'a.md' });
   });
 
-  test('grep-like names are searches; anything else is Ran <name>', () => {
+  test('grep-like names are searches; scripts are Ran; anything else is Called <name> (cou-93 item 2)', () => {
     expect(verbFor(tool('vault_grep', { pattern: 'x' })).verb).toBe('Searched');
-    expect(verbFor(tool('web_fetch', { url: 'https://x' }))).toEqual({ verb: 'Ran web_fetch' });
+    expect(verbFor(tool('web_fetch', { url: 'https://x' }))).toEqual({ verb: 'Called web_fetch' });
+    expect(verbFor(tool('docket_sweep', { root: '.' })).verb).toBe('Ran docket_sweep');
+  });
+
+  test('the root listing reads as the vault, not as a dot', () => {
+    expect(verbFor(tool('vault_list', { dir: '.' }))).toEqual({ verb: 'Listed the vault' });
+    expect(verbFor(tool('vault_list', {}))).toEqual({ verb: 'Listed the vault' });
+  });
+
+  test('a nameless tool never reads as Ran <argument>', () => {
+    // Threads persisted before the harness named its results (cou-78).
+    expect(verbFor(tool('', { dir: '.' })).verb).toBe('Called a tool');
   });
 
   test('a non-object input has no object', () => {

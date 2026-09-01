@@ -24,7 +24,8 @@ describe('groupRoot', () => {
   test('matters from the overview; practice, knowledge and the rest from the root listing', () => {
     const groups = groupRoot(root, overview);
     expect(groups.mattersDir).toBe('matters');
-    expect(groups.matters.map(m => m.title)).toEqual(['Sinai content license', 'Acme Corp — NDA']);
+    // Newest first (cou-93 item 5), whatever order the overview arrived in.
+    expect(groups.matters.map(m => m.title)).toEqual(['Acme Corp — NDA', 'Sinai content license']);
     expect(groups.practice.map(e => e.path)).toEqual(['practice']);
     expect(groups.knowledge.map(e => e.path)).toEqual(['memory', 'law', 'entities']);
     expect(groups.other.map(e => e.path)).toEqual(['config.md', 'scratch']);

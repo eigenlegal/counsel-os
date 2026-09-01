@@ -103,8 +103,18 @@ const TRI_OPTIONS: { value: Tri; label: string }[] = [
  * `effective` back through `PUT` would write the built-ins into the
  * operator's config as if they had asked for them.
  */
+/** The file may set no default; the field then STARTS on the runtime's
+ * effective (built-in) default rather than blank (cou-93 item 3): a blank
+ * field beside a Runtime panel that names one read as a bug. Save writes
+ * it to the file only once the operator changes it — see `save`. */
+function seedDefault(form: FormState, view: SettingsView): FormState {
+  const effective = view.effective.default ?? '';
+  if (form.default.trim() !== '' || effective === '') return form;
+  return { ...form, default: effective };
+}
+
 function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: SettingsView): void }): JSX.Element {
-  const [form, setForm] = useState<FormState>(() => formFromRegistry(view.registry));
+  const [form, setForm] = useState<FormState>(() => seedDefault(formFromRegistry(view.registry), view));
   const [errors, setErrors] = useState<FieldErrors>({});
   const [general, setGeneral] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
@@ -113,6 +123,12 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
   // The one the runtime is running, which is not always the one in the file.
   const effectiveIds = view.effective.providers.map(p => p.id);
   const defaultIsKnown = form.default.trim() === '' || effectiveIds.includes(form.default.trim());
+  /** The file sets no default and the field still shows the built-in one
+   * it was seeded with. While that holds, Save leaves `default` OUT of the
+   * PUT: the file must not acquire the built-in as if the operator had
+   * asked for it. */
+  const fileHasDefault = (view.registry.default ?? '').trim() !== '';
+  const showingBuiltin = !fileHasDefault && form.default.trim() !== '' && form.default.trim() === (view.effective.default ?? '');
 
   const patch = (change: Partial<FormState>): void => {
     setForm(prev => ({ ...prev, ...change }));
@@ -140,8 +156,10 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
     setGeneral([]);
     setBusy(true);
     try {
-      const next = await fetchJson<SettingsView>('/settings', { method: 'PUT', body: JSON.stringify(built.registry) });
-      setForm(formFromRegistry(next.registry));
+      // `undefined` drops out of the JSON — the file keeps having no default.
+      const body = showingBuiltin ? { ...built.registry, default: undefined } : built.registry;
+      const next = await fetchJson<SettingsView>('/settings', { method: 'PUT', body: JSON.stringify(body) });
+      setForm(seedDefault(formFromRegistry(next.registry), next));
       setSaved(true);
       onSaved(next);
     } catch (err) {
@@ -240,6 +258,8 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
                   — already loaded as <code>{CLAUDE_BUILTIN}</code>. There is nothing to add.
                 </span>
               </p>
+              {/* Hidden when it already IS the effective default — offering
+                  to make the default the default reads as "it is not". */}
               {form.default.trim() === CLAUDE_BUILTIN ? null : (
                 <button type="button" onClick={() => patch({ default: CLAUDE_BUILTIN })}>
                   Make it the default
@@ -288,6 +308,11 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
             options={effectiveIds}
             onChange={value => patch({ default: value })}
           />
+          {showingBuiltin ? (
+            <p className="muted" role="note">
+              Built-in default — nothing is set in <code>{view.file}</code>. Pick a provider to write one.
+            </p>
+          ) : null}
           <FieldError message={errors['default']} />
           {defaultIsKnown ? null : (
             <p className="v2-notice v2-notice-warn" role="status">

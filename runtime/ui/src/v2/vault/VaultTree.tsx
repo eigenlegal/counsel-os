@@ -88,6 +88,7 @@ export function VaultTree({ overview, root, selected, onOpen }: VaultTreeProps):
       type="button"
       className={indent ? 'v2-vrow v2-vrow-ind' : 'v2-vrow'}
       aria-current={selected === path ? 'page' : undefined}
+      title={name}
       onClick={() => onOpen(path)}
     >
       <span className="v2-vname">{name}</span>
@@ -126,6 +127,9 @@ export function VaultTree({ overview, root, selected, onOpen }: VaultTreeProps):
               type="button"
               className="v2-vrow v2-vrow-ind"
               aria-current={selected === matter.path ? 'page' : undefined}
+              // The 300px pane clips most matter titles; the whole title
+              // is one hover away (cou-93 item 5).
+              title={matter.title}
               onClick={() => onOpen(matter.path)}
             >
               <span className="v2-vname">{matter.title}</span>

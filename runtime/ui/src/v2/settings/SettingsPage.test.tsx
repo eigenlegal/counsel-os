@@ -221,3 +221,18 @@ describe('SettingsPage', () => {
     expect(screen.getByText('That is 1 minute 30 seconds.')).toBeTruthy();
   });
 });
+
+describe('SettingsPage, the default provider field (cou-93 item 3)', () => {
+  test('shows the EFFECTIVE default when the file sets none, says so, and offers no button to make the default the default', async () => {
+    const claude: ProviderInfo = { ...fakeProvider, id: 'claude-sub/claude-opus-5', kind: 'harness', auth: 'subscription' };
+    install(
+      () => json(view),
+      { file: view.file, registry: {}, effective: { default: 'claude-sub/claude-opus-5', stepTimeoutMs: 600000, providers: [claude] } },
+    );
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByLabelText('Default provider')).toBeTruthy());
+    expect((screen.getByLabelText('Default provider') as HTMLInputElement).value).toBe('claude-sub/claude-opus-5');
+    expect(screen.getByText(/Built-in default/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Make it the default' })).toBeNull();
+  });
+});

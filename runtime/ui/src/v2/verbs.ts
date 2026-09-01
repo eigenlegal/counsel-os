@@ -14,11 +14,23 @@ export interface Verb {
 const TABLE: Record<string, string> = {
   vault_read: 'Read',
   vault_list: 'Listed',
-  vault_search: 'Searched',
+  vault_search: 'Searched the vault for',
   read_primitive: 'Consulted primitive',
   propose_update: 'Proposed',
   vault_write: 'Wrote',
 };
+
+/** The platform's script tools (`runtime/src/tools/builtin.ts`) — the one
+ * family where "Ran" is the honest verb, because a script is a thing you
+ * run. Everything else unknown reads "Called". */
+const SCRIPT_TOOLS: ReadonlySet<string> = new Set([
+  'docket_sweep',
+  'extract_redlines',
+  'check_document',
+  'clean_format',
+  'apply_redlines',
+  'word_compare',
+]);
 
 const SEARCH_LIKE = /grep|search|find/i;
 
@@ -35,9 +47,21 @@ function objectOf(input: unknown): string | undefined {
   return undefined;
 }
 
+/** The fallback resolves by NAME, never by argument: an unnamed tool must
+ * not read as "Ran ." with the input standing in for the verb's subject
+ * (cou-93 item 2). */
+function fallbackVerb(name: string): string {
+  if (name === '') return 'Called a tool';
+  if (SCRIPT_TOOLS.has(name)) return `Ran ${name}`;
+  if (SEARCH_LIKE.test(name)) return 'Searched';
+  return `Called ${name}`;
+}
+
 export function verbFor(tool: ToolCallView): Verb {
-  const verb = TABLE[tool.name] ?? (SEARCH_LIKE.test(tool.name) ? 'Searched' : `Ran ${tool.name}`);
+  const verb = TABLE[tool.name] ?? fallbackVerb(tool.name);
   const object = objectOf(tool.input);
+  // The root listing's argument is `.` — "Listed ." reads as a typo.
+  if (tool.name === 'vault_list' && (object === undefined || object === '.' || object === '/')) return { verb: 'Listed the vault' };
   return object === undefined ? { verb } : { verb, object };
 }
 

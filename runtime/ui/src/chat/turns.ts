@@ -48,6 +48,13 @@ export interface AssistantTurn {
   runId?: string;
   provider?: string;
   text: string;
+  /** A tool ran since the last text arrived. The next text event is a NEW
+   * segment, not a continuation: the Claude harness emits whole text blocks
+   * split around tool calls, and joining them bare glues `…activity.` onto
+   * `## What changed` so the heading never renders (cou-93 item 1). Streamed
+   * deltas within one segment have no tool between them, so they still join
+   * seamlessly. */
+  toolBreak?: boolean;
   tools: ToolCallView[];
   proposals: ProposalView[];
   warnings: string[];
@@ -77,7 +84,10 @@ function withToolResult(turn: AssistantTurn, ev: Extract<StepEvent, { type: 'too
   const at = tools.findIndex(t => t.id === ev.id && !t.hasResult);
   const filled: ToolCallView = {
     id: ev.id,
-    name: ev.name,
+    // Threads persisted before the harness learned to name its results
+    // (cou-78) carry `name: ''` — the paired call knows the name, so a
+    // nameless result must never overwrite it (cou-93 item 2).
+    name: ev.name !== '' || at === -1 ? ev.name : tools[at]!.name,
     input: at === -1 ? undefined : tools[at]!.input,
     output: ev.output,
     isError: ev.isError ?? false,
@@ -94,12 +104,21 @@ function withToolResult(turn: AssistantTurn, ev: Extract<StepEvent, { type: 'too
  */
 export function applyStepEvent(turn: AssistantTurn, ev: StepEvent): AssistantTurn {
   switch (ev.type) {
-    case 'text':
-      return { ...turn, text: turn.text + ev.text };
+    case 'text': {
+      // A paragraph break between segments split around tool work, and only
+      // there — see `toolBreak`. Never inside a segment a provider streams
+      // as deltas.
+      const sep = turn.toolBreak === true && turn.text !== '' && !turn.text.endsWith('\n\n') ? '\n\n' : '';
+      return { ...turn, text: turn.text + sep + ev.text, toolBreak: false };
+    }
     case 'tool_call':
-      return { ...turn, tools: [...turn.tools, { id: ev.id, name: ev.name, input: ev.input, hasResult: false }] };
+      return {
+        ...turn,
+        toolBreak: turn.toolBreak === true || turn.text !== '',
+        tools: [...turn.tools, { id: ev.id, name: ev.name, input: ev.input, hasResult: false }],
+      };
     case 'tool_result':
-      return withToolResult(turn, ev);
+      return withToolResult({ ...turn, toolBreak: turn.toolBreak === true || turn.text !== '' }, ev);
     case 'proposal':
       return turn.proposals.some(p => p.id === ev.id)
         ? turn

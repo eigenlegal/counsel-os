@@ -81,10 +81,32 @@ export function Shell(): JSX.Element {
   const drawerRef = useRef(drawer);
   drawerRef.current = drawer;
 
-  const fileDecided = useCallback((path: string): void => {
-    const open = drawerRef.current;
-    if (open.open && open.path === path) setDrawerRevision(revision => revision + 1);
+  /**
+   * Every file path the vault holds (`GET /vault/index`), the set behind
+   * clickable paths in answers (cou-93 item 8). Loaded once the token is
+   * good and again after a proposal lands — an approval can create the very
+   * file the answer names. An older runtime without the route answers with
+   * the HTML shell; that parse failure is swallowed and paths stay plain
+   * text, which is exactly what they were before.
+   */
+  const [vaultPaths, setVaultPaths] = useState<ReadonlySet<string>>(() => new Set());
+  const loadIndex = useCallback(async (): Promise<void> => {
+    try {
+      const paths = await fetchJson<unknown>('/vault/index');
+      if (Array.isArray(paths)) setVaultPaths(new Set(paths.filter((p): p is string => typeof p === 'string')));
+    } catch {
+      // Left as it was: a stale or empty index only means fewer chips.
+    }
   }, []);
+
+  const fileDecided = useCallback(
+    (path: string): void => {
+      const open = drawerRef.current;
+      if (open.open && open.path === path) setDrawerRevision(revision => revision + 1);
+      void loadIndex();
+    },
+    [loadIndex],
+  );
 
   const selectThread = (id: string): void => {
     setNotFound(false);
@@ -223,6 +245,7 @@ export function Shell(): JSX.Element {
     void (async () => {
       try {
         setHealth(await fetchJson<Health>('/health'));
+        void loadIndex();
         const { threads: list, fresh } = await loadThreads();
         if (!fresh) return;
         // The fragment may already name the thread (a pasted link, the
@@ -248,7 +271,7 @@ export function Shell(): JSX.Element {
         setListed(true);
       }
     })();
-  }, [unauthorized, loadThreads]);
+  }, [unauthorized, loadThreads, loadIndex]);
 
   /**
    * The rail footer's switcher picked a loaded provider (cou-90): make it
@@ -379,6 +402,7 @@ export function Shell(): JSX.Element {
                 onAskUsed={askUsed}
                 onFileDecided={fileDecided}
                 onOpenFile={openDrawer}
+                vaultPaths={vaultPaths}
               />
             )}
           </main>
