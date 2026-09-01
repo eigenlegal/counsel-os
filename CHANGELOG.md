@@ -14,6 +14,8 @@ Runtime-owned setup, stage 1 (spec `docs/superpowers/specs/2026-09-01-runtime-ow
 - `bun runtime/src/cli.ts init` creates and seeds a Counsel OS vault the way `/counsel-os:setup` does (default `~/Documents/Counsel OS`), from flags or four questions; idempotent, adopts an existing vault, never overwrites a file.
 - `serve` no longer exits when no legal root exists: it starts in setup mode, serves the page, and offers `GET /setup/detect`, `GET /setup/providers`, and `POST /setup`; every other API route answers 409 until a vault is set up, then the same server switches to it in place. `/health` reports `setup`.
 - The web UI shows a setup-required page in setup mode (the first-run screen lands next).
+- **Stay signed in.** The runtime's bearer token is now per install, kept in `~/.counsel-os/token` (owner-only) across restarts (`serve --new-token` mints a fresh one and signs every browser out). The first visit through the printed `#token=` address sets an `HttpOnly`, `SameSite=Strict` cookie carrying the same secret, and the server accepts it only for requests the browser marks as same-origin (or typed into the address bar), so another local tool's page on a different port cannot ride on it. After that first visit, `http://127.0.0.1:7431` just opens — new tabs and restarts included. Settings › Runtime gains "Sign out of this browser" (`POST /session/clear`). The session-lost screen says so.
+
 
 Runtime-owned setup, stage 2 — content updates and doctor (spec §6–§7)
 

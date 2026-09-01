@@ -16,7 +16,7 @@ import { applyUpdates, contentStatus, UpdateError } from '../content/update';
 import { repoContentSource } from '../content/repo';
 import { runDoctor } from '../doctor/index';
 import { systemGit, type GitRunner } from '../setup/run';
-import { isAuthorized } from './auth';
+import { authorize, CLEAR_SESSION_COOKIE, withSessionCookie } from './auth';
 import {
   applySettings,
   effectiveDefault,
@@ -61,7 +61,7 @@ export type App = (req: Request) => Promise<Response>;
  * static, served with no credential, so a new route whose prefix is missing
  * here would be reachable by anyone who can reach the port.
  */
-export const API_PREFIXES: readonly string[] = ['health', 'threads', 'runs', 'vault', 'settings', 'proposals', 'docket', 'setup', 'content', 'doctor'];
+export const API_PREFIXES: readonly string[] = ['health', 'threads', 'runs', 'vault', 'settings', 'proposals', 'docket', 'setup', 'content', 'doctor', 'session'];
 
 /** True when `pathname` belongs to the API (and so needs a token). `/` and
  * every client-side route are false. */
@@ -815,13 +815,44 @@ export function createApp(deps: ServerDeps): App {
         return res ?? fail(404, `no route for ${req.method} ${url.pathname}`);
       }
 
-      if (!isAuthorized(req, deps.token)) return fail(401, 'unauthorized');
+      const via = authorize(req, deps.token);
+      if (via === null) return fail(401, 'unauthorized');
 
+      const res = await dispatch(req, url);
+      // A request that proved itself with the bearer — the page's first call
+      // after reading the printed link — signs this browser in: from here on
+      // the cookie carries the same secret, so a new tab or a restarted
+      // runtime needs no pasted address (auth.ts has the threat model). A
+      // cookie-authenticated request gets no new cookie: nothing changed.
+      // And a route that set a cookie of its own (`/session/clear`, which
+      // clears it) is left alone: appending the sign-in after the sign-out
+      // would make the browser keep the sign-in.
+      return via === 'bearer' && !res.headers.has('set-cookie') ? withSessionCookie(res, deps.token) : res;
+    } catch (err) {
+      if (err instanceof HttpError) return fail(err.status, err.message, err.extra);
+      // An unexpected failure is a bug, and its message can carry absolute
+      // paths and vault contents. The operator gets the detail on stderr;
+      // the client gets a status code.
+      console.error(`counsel-os server: ${req.method} ${req.url} failed:`, err);
+      return fail(500, 'internal error');
+    }
+  };
+
+  /** The authenticated API, one route per branch. Throws `HttpError` for a
+   * status the caller decided on; `app` above turns it into the response. */
+  async function dispatch(req: Request, url: URL): Promise<Response> {
+    {
       const segments = url.pathname.split('/').filter(s => s !== '');
       const [first, second, third] = segments;
       const { method } = req;
 
       if (segments.length === 1 && first === 'health' && method === 'GET') return health();
+
+      // Signs THIS browser out: the cookie is cleared, the token stands. The
+      // page forgets its own copy too (client.ts `signOut`).
+      if (segments.length === 2 && first === 'session' && second === 'clear' && method === 'POST') {
+        return new Response(null, { status: 204, headers: { 'set-cookie': CLEAR_SESSION_COOKIE } });
+      }
 
       if (segments.length === 1 && first === 'threads') {
         if (method === 'GET') return json(await deps.store.list(deps.tenant));
@@ -882,15 +913,8 @@ export function createApp(deps: ServerDeps): App {
       if (segments.length === 1 && first === 'doctor' && method === 'GET') return doctorRoute();
 
       return fail(404, `no route for ${method} ${url.pathname}`);
-    } catch (err) {
-      if (err instanceof HttpError) return fail(err.status, err.message, err.extra);
-      // An unexpected failure is a bug, and its message can carry absolute
-      // paths and vault contents. The operator gets the detail on stderr;
-      // the client gets a status code.
-      console.error(`counsel-os server: ${req.method} ${req.url} failed:`, err);
-      return fail(500, 'internal error');
     }
-  };
+  }
 }
 
 /** The path a proposal targets, for the conflict message. */

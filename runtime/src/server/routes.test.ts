@@ -1390,3 +1390,55 @@ describe('content updates and doctor (spec 2026-09-01 §6–§7)', () => {
     expect((await call(app, 'GET', '/doctor', { token: null })).status).toBe(401);
   });
 });
+
+describe('the session cookie', () => {
+  const cookie = (token: string): string => `counsel_session=${token}`;
+
+  test('a bearer-authenticated response signs the browser in; a cookie-authenticated one sets nothing new', async () => {
+    const app = appWithFake();
+    const first = await call(app, 'GET', '/health');
+    expect(first.status).toBe(200);
+    expect(first.headers.get('set-cookie')).toBe(`counsel_session=${TOKEN}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Strict`);
+
+    const again = await app(new Request('http://127.0.0.1:7431/health', { headers: { cookie: cookie(TOKEN), 'sec-fetch-site': 'same-origin' } }));
+    expect(again.status).toBe(200);
+    expect(again.headers.get('set-cookie')).toBeNull();
+  });
+
+  test('a wrong cookie, or the right one from another site, is 401; a static path never gets a cookie', async () => {
+    const app = appWithFake();
+    const wrong = await app(new Request('http://127.0.0.1:7431/threads', { headers: { cookie: cookie('nope'), 'sec-fetch-site': 'same-origin' } }));
+    expect(wrong.status).toBe(401);
+    // Another local tool's page on 127.0.0.1:8080 — same-site, so a Strict
+    // cookie would ride along; the origin rule is what keeps it out.
+    const elsewhere = await app(new Request('http://127.0.0.1:7431/threads', { headers: { cookie: cookie(TOKEN), 'sec-fetch-site': 'same-site', origin: 'http://127.0.0.1:8080', host: '127.0.0.1:7431' } }));
+    expect(elsewhere.status).toBe(401);
+    const unauth = await call(app, 'GET', '/threads', { token: null });
+    expect(unauth.status).toBe(401);
+    expect(unauth.headers.get('set-cookie')).toBeNull();
+  });
+
+  test('a cookie is good for the whole API, the step stream included', async () => {
+    const app = appWithFake([{ text: 'hello there' }]);
+    const created = await app(new Request('http://127.0.0.1:7431/threads', { method: 'POST', headers: { cookie: cookie(TOKEN), 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' }, body: '{}' }));
+    expect(created.status).toBe(201);
+    const { id } = (await created.json()) as { id: string };
+    const res = await app(new Request(`http://127.0.0.1:7431/threads/${id}/steps`, { method: 'POST', headers: { cookie: cookie(TOKEN), 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' }, body: JSON.stringify({ message: 'hi' }) }));
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toBe('text/event-stream');
+    await res.text();
+  });
+
+  test('POST /session/clear signs this browser out and needs a credential itself', async () => {
+    const app = appWithFake();
+    const res = await app(new Request('http://127.0.0.1:7431/session/clear', { method: 'POST', headers: { cookie: cookie(TOKEN), 'sec-fetch-site': 'same-origin' } }));
+    expect(res.status).toBe(204);
+    expect(res.headers.get('set-cookie')).toBe('counsel_session=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict');
+    expect((await call(app, 'POST', '/session/clear', { token: null })).status).toBe(401);
+    // Signing out from a tab that still holds the bearer must not re-sign
+    // the browser in on the way out: one Set-Cookie, the clearing one.
+    const viaBearer = await call(app, 'POST', '/session/clear');
+    expect(viaBearer.status).toBe(204);
+    expect(viaBearer.headers.getSetCookie()).toEqual(['counsel_session=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict']);
+  });
+});

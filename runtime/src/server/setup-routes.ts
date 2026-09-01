@@ -4,7 +4,7 @@ import { DEFAULT_STEP_TIMEOUT_MS } from '../loop/counsel-loop';
 import { detectLocations, probeProviders, type Location, type ProviderProbe } from '../setup/detect';
 import { SetupPlan } from '../setup/plan';
 import { runSetup, SetupError, type SetupResult } from '../setup/run';
-import { isAuthorized } from './auth';
+import { authorize, CLEAR_SESSION_COOKIE, withSessionCookie } from './auth';
 import { isApiPath, type App } from './routes';
 import { serveStatic } from './static';
 
@@ -97,13 +97,29 @@ export function createSetupApp(deps: SetupAppDeps): App {
         const page = staticHandler === null ? null : await staticHandler(req);
         return page ?? json({ error: `no route for ${req.method} ${url.pathname}` }, 404);
       }
-      if (!isAuthorized(req, deps.token)) return json({ error: 'unauthorized' }, 401);
+      // The same two credentials as the real app (auth.ts): the bearer signs
+      // the browser in with the cookie, so the first-run screen's own calls
+      // and the app that takes over after `POST /setup` share one sign-in.
+      const via = authorize(req, deps.token);
+      if (via === null) return json({ error: 'unauthorized' }, 401);
+      const res = await dispatch(req, url);
+      return via === 'bearer' && !res.headers.has('set-cookie') ? withSessionCookie(res, deps.token) : res;
+    } catch (err) {
+      console.error(`counsel-os server (setup mode): ${req.method} ${req.url} failed:`, err);
+      return json({ error: 'internal error' }, 500);
+    }
+  };
 
+  async function dispatch(req: Request, url: URL): Promise<Response> {
+    {
       const segments = url.pathname.split('/').filter(s => s !== '');
       const [first, second] = segments;
       const { method } = req;
 
       if (segments.length === 1 && first === 'health' && method === 'GET') return health();
+      if (segments.length === 2 && first === 'session' && second === 'clear' && method === 'POST') {
+        return new Response(null, { status: 204, headers: { 'set-cookie': CLEAR_SESSION_COOKIE } });
+      }
       if (first === 'setup') {
         if (segments.length === 2 && second === 'detect' && method === 'GET') return json({ locations: detect() });
         if (segments.length === 2 && second === 'providers' && method === 'GET') return json({ providers: await probe() });
@@ -112,9 +128,6 @@ export function createSetupApp(deps: SetupAppDeps): App {
       }
       // Everything else needs a vault this runtime does not have yet.
       return json(SETUP_REQUIRED, 409);
-    } catch (err) {
-      console.error(`counsel-os server (setup mode): ${req.method} ${req.url} failed:`, err);
-      return json({ error: 'internal error' }, 500);
     }
-  };
+  }
 }

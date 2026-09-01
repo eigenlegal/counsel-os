@@ -92,3 +92,15 @@ describe('SessionLost', () => {
     expect((screen.getByRole('button', { name: 'Open' }) as HTMLButtonElement).disabled).toBe(true);
   });
 });
+
+describe('SessionLost, already signed in by cookie', () => {
+  test('a 2xx probe means the browser holds the session: hand straight back, nothing to paste', async () => {
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      if (String(input).startsWith('/health')) return new Response('{"vault":"/v"}', { status: 200, headers: { 'content-type': 'application/json' } });
+      throw new Error(`unexpected fetch: ${String(input)}`);
+    }) as unknown as typeof fetch;
+    let restored = 0;
+    render(<SessionLost onRestored={() => (restored += 1)} />);
+    await waitFor(() => expect(restored).toBe(1));
+  });
+});

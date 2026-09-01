@@ -7,7 +7,7 @@
  * app can show the spec §5 message instead of each caller inventing its own.
  */
 import { parseSseChunk } from './sse';
-import { clearToken, getToken, TokenMissingError } from './token';
+import { clearToken, readToken } from './token';
 import { reportUnauthorized } from './unauthorized';
 import type { StepBody, StreamEvent } from './types';
 
@@ -36,16 +36,30 @@ function errorMessage(status: number, body: unknown): string {
 }
 
 /**
- * The `Authorization` header, or a reported failure. A missing token is the
- * same user-visible state as a rejected one, so it is announced here rather
- * than surfacing as a bare exception from somewhere deep in a component.
+ * The `Authorization` header when this tab holds the token, else nothing:
+ * the browser may be carrying the sign-in cookie the runtime set on an
+ * earlier visit (same secret, `HttpOnly`, same-origin only — see
+ * `runtime/src/server/auth.ts`), and `fetch` attaches it by itself on a
+ * same-origin request. Whether either credential is good is the server's
+ * call; a 401 is what says neither was.
  */
 function authHeaders(): Record<string, string> {
+  const token = readToken();
+  return token === null || token === '' ? {} : { authorization: `Bearer ${token}` };
+}
+
+/**
+ * Signs THIS browser out: the runtime clears its cookie, the tab forgets
+ * its token, and the app shows the session-lost screen. The runtime's
+ * token stands — other browsers stay signed in; `serve --new-token` is the
+ * way to sign everyone out.
+ */
+export async function signOut(): Promise<void> {
   try {
-    return { authorization: `Bearer ${getToken()}` };
-  } catch (err) {
-    if (err instanceof TokenMissingError) reportUnauthorized();
-    throw err;
+    await request('/session/clear', { method: 'POST' });
+  } finally {
+    clearToken();
+    reportUnauthorized();
   }
 }
 

@@ -121,6 +121,28 @@ describe('the setup app', () => {
   });
 });
 
+describe('the setup app, signed in by cookie', () => {
+  test('a bearer sets the sign-in cookie; the cookie then works for health, setup, and the 409s; sign-out clears it', async () => {
+    const { app: a } = app();
+    const first = await call(a, 'GET', '/health');
+    expect(first.status).toBe(200);
+    expect(first.headers.get('set-cookie')).toContain(`counsel_session=${TOKEN}; Path=/;`);
+    const cookie = { cookie: `counsel_session=${TOKEN}`, 'sec-fetch-site': 'same-origin' };
+    const health = await a(new Request('http://127.0.0.1:7431/health', { headers: cookie }));
+    expect(health.status).toBe(200);
+    expect(((await health.json()) as { setup?: boolean }).setup).toBe(true);
+    expect(health.headers.get('set-cookie')).toBeNull();
+    expect((await a(new Request('http://127.0.0.1:7431/setup/detect', { headers: cookie }))).status).toBe(200);
+    expect((await a(new Request('http://127.0.0.1:7431/threads', { headers: cookie }))).status).toBe(409);
+    // From another 127.0.0.1 port: same-site, not same-origin — refused.
+    const elsewhere = await a(new Request('http://127.0.0.1:7431/health', { headers: { cookie: `counsel_session=${TOKEN}`, 'sec-fetch-site': 'same-site' } }));
+    expect(elsewhere.status).toBe(401);
+    const out = await a(new Request('http://127.0.0.1:7431/session/clear', { method: 'POST', headers: cookie }));
+    expect(out.status).toBe(204);
+    expect(out.headers.get('set-cookie')).toContain('Max-Age=0');
+  });
+});
+
 describe('API_PREFIXES', () => {
   test('reserves setup, so the setup routes are never served as static', () => {
     expect(API_PREFIXES).toContain('setup');
