@@ -6,6 +6,12 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.11.3] — 2026-09-01
+
+UI review batch — readable search, unified docket, session-lost screen, provider notice, conversation rename and matter link
+
+- Eight founder-review fixes (heading glue after tool calls, tool-trace verbs and named tool results, settings default field, search hits as documents, matters newest-first, stage in the Home due slot, MATTER line in the thread header, clickable vault paths). One docket on Home: deadlines swept from matter frontmatter in TypeScript plus pending proposals. Session-lost screen with a paste field. Plain-language notice when the saved model is not available; humanized step failures with Retry. Conversations: rename in place, explicit matter link, in-row delete confirm. Specs and mockups for the standalone tracks (Word documents in TypeScript; runtime-owned setup).
+
 ## [0.11.2] — 2026-08-31
 
 UI polish round 2
