@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ApiError, fetchJson } from '../../api/client';
+import { ApiError, fetchBlob, fetchJson, saveBlob } from '../../api/client';
 import type { VaultFile } from '../../api/types';
-import { isMarkdown, renderMarkdown } from '../../vault/markdown';
+import { isMarkdown, renderDocxMarkdown, renderMarkdown } from '../../vault/markdown';
 import { dueLabel, parseDeadline, type Due } from '../home/home';
 import { relTime } from '../time';
 import { readerModel, type FmRow } from './frontmatter';
@@ -93,9 +93,26 @@ export function Reader({ path, outline = false, onAsk }: ReaderProps): JSX.Eleme
     };
   }, [path]);
 
+  const isWord = file?.kind === 'docx';
   const model = useMemo(() => (file === null ? null : readerModel(file.content, path)), [file, path]);
   const sections = useMemo(() => (model === null || !outline ? [] : outlineOf(model.body)), [model, outline]);
-  const html = useMemo(() => (model === null || !isMarkdown(path) ? null : renderMarkdown(model.body)), [model, path]);
+  const html = useMemo(
+    () => (model === null ? null : isWord ? renderDocxMarkdown(model.body) : isMarkdown(path) ? renderMarkdown(model.body) : null),
+    [model, path, isWord],
+  );
+  const [downloadNote, setDownloadNote] = useState<string | null>(null);
+
+  /** The original file, through the bearer header — never a token in a URL. */
+  const download = async (): Promise<void> => {
+    setDownloadNote(null);
+    try {
+      const blob = await fetchBlob(`/vault/download?path=${encodeURIComponent(path)}`);
+      if (!saveBlob(blob, path.slice(path.lastIndexOf('/') + 1))) setDownloadNote('This browser could not start the download.');
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) return;
+      setDownloadNote(withoutHostPaths(err instanceof Error ? err.message : String(err)));
+    }
+  };
 
   // Which H2 the reader is at, for the outline highlight. Guarded: happy-dom
   // has no IntersectionObserver, and the highlight is a nicety, not layout.
@@ -161,6 +178,31 @@ export function Reader({ path, outline = false, onAsk }: ReaderProps): JSX.Eleme
                 .join(' · ')}
             </span>
           </header>
+
+          {/* A Word document, converted for reading (cou stage 1): the
+              set-text line under the head says what this is and offers the
+              original back — ins/del below are the document's own tracked
+              changes, in the proposal card's tints. */}
+          {!isWord ? null : (
+            <p className="v2-doc-word" role="status">
+              <span className="v2-tag">Word document</span>
+              <span>converted for reading</span>
+              <span aria-hidden="true">·</span>
+              <button type="button" className="v2-link" onClick={() => void download()}>
+                download
+              </button>
+              <span aria-hidden="true">·</span>
+              <button type="button" className="v2-link" onClick={() => void download()}>
+                open the original
+              </button>
+              {file.warnings === undefined || file.warnings.length === 0 ? null : (
+                <span className="v2-doc-word-warn" title={file.warnings.join('\n')}>
+                  {file.warnings.length === 1 ? '1 item could not be shown' : `${file.warnings.length} items could not be shown`}
+                </span>
+              )}
+              {downloadNote === null ? null : <span className="v2-doc-word-warn">{downloadNote}</span>}
+            </p>
+          )}
 
           {model.rows.length === 0 ? null : (
             <dl className="v2-fm">

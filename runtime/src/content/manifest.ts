@@ -860,7 +860,7 @@ export const MANIFEST: ContentManifest = {
       "hash": "2d832826117b04e90197a054aad436389a5e7233fe8061f6f0460dd6564a39a4"
     },
     "primitives/read.md": {
-      "hash": "eaf80eaab010e8e52de9b3ef534e229e1599f4c6e330e29939a01d95ca166eb7"
+      "hash": "b5450cb972146345e732e52ce4a3e31c180059ae65c7485a81a604fac2cc8dfd"
     },
     "primitives/redline-output.md": {
       "hash": "c5dc33723e2fb4d76f2ddac3c76147406a691314c2db0777d39708126ed530d9"

@@ -195,3 +195,59 @@ describe('withoutHostPaths', () => {
     expect(withoutHostPaths("open '/srv/vault/matters/acme/nda.md' failed")).toBe("open 'acme/nda.md' failed");
   });
 });
+
+describe('Reader, a Word document', () => {
+  test('renders the converted markdown with the document\'s tracked changes, the Word line, and a warning count', async () => {
+    install(() =>
+      json({
+        path: 'matters/acme/nda.docx',
+        kind: 'docx',
+        content: '# Mutual NDA\n\n## 2. Term\n\nLasts {--two--}{++one++} year. {>>Reasonable is market. (R. Patel, 2026-08-28)<<}\n',
+        version: 'abc1234',
+        mtimeMs: null,
+        warnings: ['body[4]: a drawing was left out'],
+      }),
+    );
+    render(<Reader path="matters/acme/nda.docx" outline />);
+    await waitFor(() => expect(document.querySelector('.v2-doc-md')).toBeTruthy());
+    expect(document.querySelector('.v2-doc-head h1')?.textContent).toBe('Mutual NDA');
+    expect(document.querySelector('pre.vault-raw')).toBeNull();
+    expect(document.querySelector('.v2-doc-md del')?.textContent).toBe('two');
+    expect(document.querySelector('.v2-doc-md ins')?.textContent).toBe('one');
+    expect(document.querySelector('.v2-doc-md .v2-comment')?.textContent).toContain('Reasonable is market.');
+    const line = document.querySelector('.v2-doc-word')!;
+    expect(line.textContent).toContain('Word document');
+    expect(line.textContent).toContain('converted for reading');
+    expect(screen.getByRole('button', { name: 'download' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'open the original' })).toBeTruthy();
+    expect(line.textContent).toContain('1 item could not be shown');
+    // The outline lists the sections.
+    expect(Array.from(document.querySelectorAll('.v2-outline button'), b => b.textContent)).toEqual(['2. Term']);
+  });
+
+  test('download fetches the bytes with the bearer header and never puts the token in a URL', async () => {
+    const seen: Array<{ url: string; auth: string | undefined }> = [];
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      seen.push({ url, auth: (init?.headers as Record<string, string> | undefined)?.['authorization'] });
+      if (url.startsWith('/vault/read')) return json({ path: 'matters/acme/nda.docx', kind: 'docx', content: '# NDA\n', version: null, mtimeMs: null, warnings: [] });
+      if (url.startsWith('/vault/download')) return new Response(new Uint8Array([80, 75, 3, 4]), { status: 200, headers: { 'content-type': 'application/octet-stream' } });
+      throw new Error(`unexpected fetch: ${url}`);
+    }) as unknown as typeof fetch;
+    render(<Reader path="matters/acme/nda.docx" />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'download' })).toBeTruthy());
+    await userEvent.click(screen.getByRole('button', { name: 'download' }));
+    await waitFor(() => expect(seen.some(s => s.url.startsWith('/vault/download'))).toBe(true));
+    const dl = seen.find(s => s.url.startsWith('/vault/download'))!;
+    expect(dl.url).toBe('/vault/download?path=matters%2Facme%2Fnda.docx');
+    expect(dl.auth).toBe('Bearer test-token');
+    expect(dl.url).not.toContain('test-token');
+  });
+
+  test('a text file is unchanged by the kind field', async () => {
+    install(() => json({ path: 'matters/notes.txt', kind: 'text', content: 'plain', version: null, mtimeMs: null }));
+    render(<Reader path="matters/notes.txt" />);
+    await waitFor(() => expect(document.querySelector('pre.vault-raw')).toBeTruthy());
+    expect(document.querySelector('.v2-doc-word')).toBeNull();
+  });
+});

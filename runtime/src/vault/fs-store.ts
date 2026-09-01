@@ -125,6 +125,11 @@ export class FsVaultStore implements VaultStore {
     return readFile(this.abs(tenant, path), 'utf8');
   }
 
+  async readBytes(tenant: Tenant, path: string): Promise<Uint8Array> {
+    const buf = await readFile(this.abs(tenant, path));
+    return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+  }
+
   async version(tenant: Tenant, path: string): Promise<Version | null> {
     try {
       return hashContent(await this.read(tenant, path));

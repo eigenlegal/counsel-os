@@ -9,6 +9,7 @@ import { Router } from '../router/router';
 import { ThreadStore, type ThreadEvent } from '../threads/store';
 import { FsVaultStore } from '../vault/fs-store';
 import { fsSearch } from '../vault/search';
+import { buildDocx } from '../docx/test/builder';
 import { API_PREFIXES, createApp, TRUNCATED_HEADER, type App, type ServerDeps } from './routes';
 import type { RuntimeState } from './settings';
 
@@ -1144,5 +1145,80 @@ describe('PATCH /threads/:id (rename + matter link)', () => {
     expect((await call(app, 'PATCH', `/threads/${id}`, { body: { matter: '../etc/passwd' } })).status).toBe(400);
     expect((await call(app, 'PATCH', `/threads/${id}`, { body: { matter: '/abs.md' } })).status).toBe(400);
     expect((await call(app, 'PATCH', `/threads/${id}`, { body: { matter: '.counsel/threads/x.json' } })).status).toBe(400);
+  });
+});
+
+describe('Word documents (docx read path, stage 1)', () => {
+  const AT = '2026-08-28T10:00:00Z';
+  function plant(rel: string, bytes: Uint8Array): void {
+    mkdirSync(join(vaultRoot, rel.slice(0, rel.lastIndexOf('/'))), { recursive: true });
+    writeFileSync(join(vaultRoot, rel), bytes);
+  }
+
+  test('GET /vault/read on a .docx converts it — markdown with inline changes, never the bytes', async () => {
+    const app = appWithFake();
+    plant(
+      'matters/acme/nda.docx',
+      buildDocx({
+        blocks: [{ style: 'Title', runs: ['Mutual NDA'] }, { runs: ['Term: ', { text: 'two', del: { author: 'R', date: AT } }, { text: 'one', ins: { author: 'R', date: AT } }, ' year.', { drawing: true }] }],
+      }),
+    );
+    const res = await call(app, 'GET', '/vault/read?path=matters/acme/nda.docx');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { path: string; kind: string; content: string; version: string | null; warnings: string[] };
+    expect(body.kind).toBe('docx');
+    expect(body.content).toBe('# Mutual NDA\n\nTerm: {--two--}{++one++} year.\n');
+    expect(body.content).not.toContain('PK');
+    expect(body.version).toBeTruthy();
+    expect(body.warnings).toEqual(['body[1]: a drawing was left out']);
+  });
+
+  test('a text file now says kind: text (additive)', async () => {
+    const app = appWithFake();
+    await vault.write('default', 'matters/acme/notes.md', 'NOTES\n');
+    const body = (await (await call(app, 'GET', '/vault/read?path=matters/acme/notes.md')).json()) as { kind: string; content: string };
+    expect(body).toMatchObject({ kind: 'text', content: 'NOTES\n' });
+  });
+
+  test('a .docx with a DOCTYPE part is 422 naming the part; a non-zip .docx is 415', async () => {
+    const app = appWithFake();
+    const hostile = '<?xml version="1.0"?><!DOCTYPE d [ <!ENTITY x SYSTEM "file:///etc/hostname"> ]><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>&x;</w:t></w:r></w:p></w:body></w:document>';
+    plant('matters/acme/bad.docx', buildDocx({ blocks: [{ runs: ['x'] }], rawParts: { 'word/document.xml': hostile } }));
+    const res = await call(app, 'GET', '/vault/read?path=matters/acme/bad.docx');
+    expect(res.status).toBe(422);
+    const err = (await res.json()) as { error: string };
+    expect(err.error).toContain('word/document.xml');
+    expect(err.error).not.toContain('hostname');
+
+    plant('matters/acme/fake.docx', new TextEncoder().encode('%PDF-1.4 not a zip'));
+    expect((await call(app, 'GET', '/vault/read?path=matters/acme/fake.docx')).status).toBe(415);
+  });
+
+  test('GET /vault/download streams the bytes with the right headers, under the same path guards', async () => {
+    const app = appWithFake();
+    const bytes = buildDocx({ blocks: [{ runs: ['hello'] }] });
+    plant('matters/acme/Acme × NDA.docx', bytes);
+    const res = await call(app, 'GET', `/vault/download?path=${encodeURIComponent('matters/acme/Acme × NDA.docx')}`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toBe('application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    expect(res.headers.get('content-disposition')).toBe(`attachment; filename="Acme _ NDA.docx"; filename*=UTF-8''${encodeURIComponent('Acme × NDA.docx')}`);
+    expect(res.headers.get('cache-control')).toBe('no-store');
+    expect(Buffer.from(await res.arrayBuffer()).equals(Buffer.from(bytes))).toBe(true);
+
+    await vault.write('default', 'matters/acme/notes.md', 'NOTES\n');
+    const md = await call(app, 'GET', '/vault/download?path=matters/acme/notes.md');
+    expect(md.headers.get('content-type')).toBe('text/markdown; charset=utf-8');
+    expect(await md.text()).toBe('NOTES\n');
+
+    expect((await call(app, 'GET', '/vault/download?path=../x')).status).toBe(400);
+    expect((await call(app, 'GET', '/vault/download?path=.counsel/threads')).status).toBe(400);
+    expect((await call(app, 'GET', '/vault/download?path=matters/none.docx')).status).toBe(404);
+    expect((await call(app, 'GET', '/vault/download')).status).toBe(400);
+  });
+
+  test('download needs the token like every vault route', async () => {
+    const app = appWithFake();
+    expect((await call(app, 'GET', '/vault/download?path=matters/acme/notes.md', { token: null })).status).toBe(401);
+    expect((await call(app, 'GET', '/vault/download?path=matters/acme/notes.md', { token: 'wrong' })).status).toBe(401);
   });
 });

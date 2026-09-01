@@ -21,6 +21,15 @@ UI review batch — readable search, unified docket, session-lost screen, provid
 
 - Eight founder-review fixes (heading glue after tool calls, tool-trace verbs and named tool results, settings default field, search hits as documents, matters newest-first, stage in the Home due slot, MATTER line in the thread header, clickable vault paths). One docket on Home: deadlines swept from matter frontmatter in TypeScript plus pending proposals. Session-lost screen with a paste field. Plain-language notice when the saved model is not available; humanized step failures with Retry. Conversations: rename in place, explicit matter link, in-row delete confirm. Specs and mockups for the standalone tracks (Word documents in TypeScript; runtime-owned setup).
 
+Word documents in TypeScript — stage 1, the read path (spec: docs/superpowers/specs/2026-09-01-docx-in-typescript-design.md). Folded into the next release entry by the releaser.
+
+- `runtime/src/docx/`: a `.docx` is opened, walked and converted inside the runtime — no Python, no pandoc. DOCTYPE parts are refused before parsing (the XXE / billion-laughs guard moved from `xml_safety.py`). Word numbering is rendered as text; tracked changes and comments come through as CriticMarkup.
+- Tools: `docx_read` (new), `extract_redlines` and `check_document` now run in TypeScript with identical JSON (cross-checked against the Python on the demo NDA). `apply_redlines`, `clean_format` and `word_compare` stay on Python until stage 2.
+- CLI: `bun runtime/src/cli.ts docx read|extract|check <file>` for the plugin path and the shell; the `read` primitive no longer prescribes pandoc.
+- API: `GET /vault/read` converts a `.docx` (`kind: "docx"`, markdown, warnings) instead of returning bytes as text; `GET /vault/download` streams any vault file with the right headers.
+- Reader: a Word document renders as a document — converted body, its own tracked changes in the redline tints, comments as quiet notes, a WORD DOCUMENT line with download.
+
+
 ## [0.11.2] — 2026-08-31
 
 UI polish round 2

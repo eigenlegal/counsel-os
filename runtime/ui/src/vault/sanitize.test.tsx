@@ -271,3 +271,23 @@ describe('same-page fragments (the chat source chips do not come through here)',
     expect(html).toBe('<a href="https://evil.example/#/vault" target="_blank" rel="noopener noreferrer">x</a>');
   });
 });
+
+describe('a converted Word document (ins/del/comment)', () => {
+  test('ins and del survive, bare; a span keeps only the comment class', () => {
+    const html = sanitizeHtml('<p>Term: <del onclick="x()">two</del><ins style="color:red">one</ins> <span class="v2-comment" data-x="1">why</span> <span class="evil">plain</span></p>');
+    expect(html).toBe('<p>Term: <del>two</del><ins>one</ins> <span class="v2-comment">why</span> plain</p>');
+  });
+});
+
+describe('criticToHtml / renderDocxMarkdown', () => {
+  test('CriticMarkup becomes the redline elements and a comment note, escaped, not parsed as markdown', async () => {
+    const { criticToHtml, renderDocxMarkdown } = await import('./markdown');
+    expect(criticToHtml('a {++b *c*++} {--<d>--} {>>e (R, 2026-08-28)<<}')).toBe(
+      'a <ins>b *c*</ins> <del>&lt;d&gt;</del> <span class="v2-comment">e (R, 2026-08-28)</span>',
+    );
+    const html = renderDocxMarkdown('## 2. Term\n\nLasts {--two--}{++one++} year. {>>ok<<}\n');
+    expect(html).toContain('<h2>2. Term</h2>');
+    expect(html).toContain('<del>two</del><ins>one</ins>');
+    expect(html).toContain('<span class="v2-comment">ok</span>');
+  });
+});

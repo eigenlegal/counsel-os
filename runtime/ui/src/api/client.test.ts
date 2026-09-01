@@ -143,3 +143,25 @@ describe('streamStep', () => {
     expect((err as ApiError).status).toBe(422);
   });
 });
+
+describe('fetchBlob', () => {
+  test('sends the bearer header and returns the bytes as a blob', async () => {
+    sessionStorage.setItem(TOKEN_KEY, 'tok');
+    const { fetchBlob } = await import('./client');
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      seen.push({ url: String(input), init });
+      return new Response(new Uint8Array([1, 2, 3]), { status: 200, headers: { 'content-type': 'application/octet-stream' } });
+    }) as unknown as typeof fetch;
+    const blob = await fetchBlob('/vault/download?path=a.docx');
+    expect(blob.size).toBe(3);
+    expect((seen[0]!.init?.headers as Record<string, string>)['authorization']).toBe('Bearer tok');
+    expect(seen[0]!.url).not.toContain('tok');
+  });
+
+  test('a failure is an ApiError like every other call', async () => {
+    sessionStorage.setItem(TOKEN_KEY, 'tok');
+    const { fetchBlob } = await import('./client');
+    responds(404, { error: 'no such file' });
+    await expect(fetchBlob('/vault/download?path=none.docx')).rejects.toBeInstanceOf(ApiError);
+  });
+});

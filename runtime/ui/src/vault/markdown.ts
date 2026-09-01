@@ -25,3 +25,30 @@ export function isMarkdown(path: string): boolean {
 export function renderMarkdown(source: string): string {
   return sanitizeHtml(marked.parse(source, { async: false, breaks: true }));
 }
+
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/**
+ * The runtime converts a Word document to markdown with its tracked changes
+ * and comments in CriticMarkup — `{++inserted++}`, `{--deleted--}`,
+ * `{>>comment<<}` — the dialect the model reads. For the page those become
+ * the redline's own elements (`<ins>`, `<del>`) and a quiet comment note,
+ * BEFORE `marked` runs, so the sanitizer still sees every byte on the way
+ * to the DOM. The text inside a mark is HTML-escaped here and is not parsed
+ * as markdown — a change to a clause is prose, and `*` in a deleted price
+ * must not become emphasis.
+ */
+export function criticToHtml(source: string): string {
+  return source
+    .replace(/\{\+\+([\s\S]*?)\+\+\}/g, (_m, t: string) => `<ins>${escapeHtml(t)}</ins>`)
+    .replace(/\{--([\s\S]*?)--\}/g, (_m, t: string) => `<del>${escapeHtml(t)}</del>`)
+    .replace(/\{>>([\s\S]*?)<<\}/g, (_m, t: string) => `<span class="v2-comment">${escapeHtml(t)}</span>`);
+}
+
+/** A converted Word document as HTML: the change marks first, then the
+ * same markdown path — and the same sanitizer — as every vault file. */
+export function renderDocxMarkdown(source: string): string {
+  return renderMarkdown(criticToHtml(source));
+}
