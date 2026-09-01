@@ -1074,3 +1074,40 @@ describe('vault index (cou-93 item 8)', () => {
     expect(paths.some(p => p.toLowerCase().startsWith('.counsel'))).toBe(false);
   });
 });
+
+describe('docket', () => {
+  test('GET /docket sweeps deadlines off the matter files, dated and classified; malformed dates are counted', async () => {
+    const app = appWithFake();
+    const soon = new Date();
+    soon.setDate(soon.getDate() + 3);
+    const soonIso = soon.toISOString().slice(0, 10);
+    await vault.write(
+      'default',
+      'matters/acme.md',
+      `---\ntitle: Acme — NDA\ndeadlines:\n  - date: 2020-01-01\n    action: long gone\n  - date: ${soonIso}\n    action: renewal notice\n    type: renewal\n  - date: nope\n    action: bad\n---\n\nBody.\n`,
+    );
+    await vault.write('default', 'matters/vendora.md', '---\ndeadline: 2099-12-31\nnext_action: send document list\n---\n\n# Vendora\n');
+    await vault.write('default', 'matters/quiet.md', '---\nstage: working\n---\n\n# Quiet\n');
+
+    const res = await call(app, 'GET', '/docket');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { deadlines: Array<Record<string, unknown>>; skipped: number };
+    expect(body.skipped).toBe(1);
+    expect(body.deadlines.map(d => [d['date'], d['status'], (d['matter'] as { title: string }).title])).toEqual([
+      ['2020-01-01', 'overdue', 'Acme — NDA'],
+      [soonIso, 'soon', 'Acme — NDA'],
+      ['2099-12-31', 'later', 'Vendora'],
+    ]);
+    expect(body.deadlines[2]!['action']).toBe('send document list');
+    // API surface: no token, no answer.
+    expect((await call(app, 'GET', '/docket', { token: null })).status).toBe(401);
+    expect(API_PREFIXES).toContain('docket');
+  });
+
+  test('GET /docket on a vault with no matters dir is an empty docket, not an error', async () => {
+    const app = appWithFake();
+    const res = await call(app, 'GET', '/docket');
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ deadlines: [], skipped: 0 });
+  });
+});

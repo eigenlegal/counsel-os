@@ -2,8 +2,8 @@ import { cleanup, render, screen, userEvent, waitFor } from '../../test/dom';
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { TOKEN_KEY } from '../../api/token';
-import type { PendingProposal, ThreadHeader, VaultOverview } from '../../api/types';
-import { HomePage } from './HomePage';
+import type { DocketView, PendingProposal, ThreadHeader, VaultOverview } from '../../api/types';
+import { docketDate, docketHeadParts, HomePage } from './HomePage';
 
 const realFetch = globalThis.fetch;
 
@@ -32,6 +32,7 @@ const overview: VaultOverview = {
 const empty: VaultOverview = { matters: [], groups: { practice: 0, knowledge: 0, other: 0 } };
 
 let pending: PendingProposal[] = [];
+let docketBody: DocketView = { deadlines: [], skipped: 0 };
 let overviewBody: VaultOverview = overview;
 let truncatedHeader = false;
 
@@ -55,6 +56,7 @@ const TRUNCATION_NOTE = 'Older conversations were not scanned — some proposals
 
 beforeEach(() => {
   pending = [];
+  docketBody = { deadlines: [], skipped: 0 };
   overviewBody = overview;
   truncatedHeader = false;
   sessionStorage.setItem(TOKEN_KEY, 'test-token');
@@ -63,6 +65,7 @@ beforeEach(() => {
     const url = String(input);
     if (url.startsWith('/vault/overview')) return json(overviewBody);
     if (url.startsWith('/proposals')) return json(pending, truncatedHeader ? { 'x-counsel-truncated': '1' } : {});
+    if (url.startsWith('/docket')) return json(docketBody);
     if (url.startsWith('/vault/list')) return json([]);
     throw new Error(`unexpected fetch: ${url}`);
   }) as unknown as typeof fetch;
@@ -275,5 +278,100 @@ describe('HomePage matter rows without a deadline (cou-93 item 6)', () => {
     // The row with neither has no slot and no leader pointing at nothing.
     expect(rows[1]!.querySelector('.v2-due')).toBeNull();
     expect(rows[1]!.querySelector('.leader')).toBeNull();
+  });
+});
+
+describe('HomePage, one docket: deadlines + proposals', () => {
+  const iso = (daysFromNow: number): string => {
+    const d = new Date();
+    d.setDate(d.getDate() + daysFromNow);
+    return d.toISOString().slice(0, 10);
+  };
+  const entry = (date: string, action: string, status: DocketView['deadlines'][number]['status'], title = 'Acme — NDA') => ({
+    date,
+    action,
+    matter: { path: `matters/${title.toLowerCase().replace(/[^a-z]+/g, '-')}.md`, title },
+    status,
+  });
+
+  test('deadlines by date, overdue hot, later folded behind one line that unfolds in place', async () => {
+    docketBody = {
+      deadlines: [
+        entry('2020-01-01', 'file the response', 'overdue'),
+        entry(iso(3), 'renewal notice due', 'soon', 'Vendora × Worldpay'),
+        entry(iso(40), 'objection window closes', 'later'),
+        entry(iso(90), 'term ends', 'later', 'Vendora × Worldpay'),
+      ],
+      skipped: 0,
+    };
+    mount();
+    await waitFor(() => expect(document.querySelector('.v2-docket')).toBeTruthy());
+    expect(document.querySelector('.v2-docket-head')?.textContent).toBe('Docket · 4 deadlines');
+    // No proposals, so no group run-ins — one list, no labels to read past.
+    expect(document.querySelector('.v2-docket-sub')).toBeNull();
+
+    const rows = () => Array.from(document.querySelectorAll('.v2-dl'));
+    expect(rows()).toHaveLength(2);
+    expect(rows()[0]!.querySelector('.v2-dl-date')?.className).toContain('v2-due-hot');
+    expect(rows()[0]!.querySelector('.v2-dl-date')?.textContent).toBe('Jan 1, 2020');
+    expect(rows()[0]!.querySelector('.v2-dl-action')?.textContent).toBe('file the response');
+    expect(rows()[0]!.querySelector('a.v2-dl-matter')?.getAttribute('href')).toBe('#/vault?path=matters%2Facme-nda.md');
+    expect(rows()[1]!.querySelector('.v2-dl-date')?.className).not.toContain('v2-due-hot');
+
+    const fold = screen.getByRole('button', { name: '2 later →' });
+    await userEvent.click(fold);
+    expect(rows()).toHaveLength(4);
+    expect(screen.queryByRole('button', { name: '2 later →' })).toBeNull();
+    expect(rows()[3]!.querySelector('.v2-dl-action')?.textContent).toBe('term ends');
+  });
+
+  test('deadlines and proposals share the docket, each under its run-in', async () => {
+    docketBody = { deadlines: [entry(iso(2), 'renewal notice due', 'soon')], skipped: 1 };
+    pending = [proposal];
+    mount();
+    await waitFor(() => expect(document.querySelector('.v2-docket')).toBeTruthy());
+    expect(document.querySelector('.v2-docket-head')?.textContent).toBe('Docket · 1 deadline · 1 awaiting your decision');
+    expect(Array.from(document.querySelectorAll('.v2-docket-sub'), el => el.textContent)).toEqual(['Deadlines', 'Awaiting your decision']);
+    // The proposal row is unchanged, Review still anchors.
+    expect(screen.getByText('Record the narrow residuals carve-out as your NDA fallback')).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: 'Review' }));
+    expect(location.hash).toBe('#/chat?thread=t-1&proposal=p-1');
+    // A malformed date is a number on the page, never a silent absence.
+    expect(document.querySelector('.v2-dl-group .v2-docket-note')?.textContent).toContain('1 deadline could not be read');
+  });
+
+  test('a failed deadline sweep says so and leaves the proposals standing', async () => {
+    pending = [proposal];
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.startsWith('/docket')) return new Response('nope', { status: 500 });
+      if (url.startsWith('/proposals')) return json(pending);
+      if (url.startsWith('/vault/overview')) return json(overviewBody);
+      return json([]);
+    }) as unknown as typeof fetch;
+    mount();
+    await waitFor(() => expect(document.querySelector('.v2-docket')).toBeTruthy());
+    expect(document.querySelector('.v2-docket-head')?.textContent).toBe('Docket · 1 awaiting your decision');
+    expect(screen.getByRole('alert').textContent).toContain('could not read the deadlines');
+    expect(screen.getByText('Record the narrow residuals carve-out as your NDA fallback')).toBeTruthy();
+  });
+
+  test('an older runtime that answers /docket in another shape is no deadlines, not a crash', async () => {
+    docketBody = [] as unknown as DocketView;
+    pending = [proposal];
+    mount();
+    await waitFor(() => expect(document.querySelector('.v2-docket')).toBeTruthy());
+    expect(document.querySelectorAll('.v2-dl')).toHaveLength(0);
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  test('docketDate and docketHeadParts', () => {
+    const now = new Date('2026-09-01T12:00:00');
+    expect(docketDate('2026-09-12', now)).toBe('Sep 12');
+    expect(docketDate('2027-01-05', now)).toBe('Jan 5, 2027');
+    expect(docketDate('garbage', now)).toBe('garbage');
+    expect(docketHeadParts(0, 0)).toEqual([]);
+    expect(docketHeadParts(1, 0)).toEqual(['1 deadline']);
+    expect(docketHeadParts(3, 2)).toEqual(['3 deadlines', '2 awaiting your decision']);
   });
 });

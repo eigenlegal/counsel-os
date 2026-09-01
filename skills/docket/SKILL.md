@@ -74,7 +74,7 @@ deadlines:
     done: false                # optional: true drops it from the sweep, kept for audit
 ```
 
-`read` proposes these entries whenever it extracts key dates from a contract, and `remember --matter` persists them. If a user's matters have no `deadlines:` blocks yet, the sweep comes back empty — tell them the feature captures dates as `read` encounters them, and offer to backfill a matter's known dates now.
+`read` proposes these entries whenever it extracts key dates from a contract, and `remember --matter` persists them. The runtime's web UI (`counsel-os serve`) sweeps the same `deadlines:` blocks itself (`GET /docket`, TypeScript, no Python) and shows them on Home as the Docket, beside the proposals awaiting a decision — one docket, two front ends. If a user's matters have no `deadlines:` blocks yet, the sweep comes back empty — tell them the feature captures dates as `read` encounters them, and offer to backfill a matter's known dates now.
 
 ## Cowork / no-shell runtimes
 

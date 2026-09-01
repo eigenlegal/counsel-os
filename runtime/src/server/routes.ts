@@ -6,6 +6,7 @@ import { applyProposal } from '../loop/proposals';
 import { listRuns, readRun, type RunRecord } from '../loop/run-record';
 import { RegistryFile } from '../providers/registry';
 import type { ThreadEvent, ThreadHeader } from '../threads/store';
+import { vaultDocket } from '../vault/docket';
 import { normalizeVaultPath } from '../vault/knowledge-paths';
 import { vaultOverview } from '../vault/overview';
 import { readVaultConfig } from '../vault/resolve-root';
@@ -51,7 +52,7 @@ export type App = (req: Request) => Promise<Response>;
  * static, served with no credential, so a new route whose prefix is missing
  * here would be reachable by anyone who can reach the port.
  */
-export const API_PREFIXES: readonly string[] = ['health', 'threads', 'runs', 'vault', 'settings', 'proposals'];
+export const API_PREFIXES: readonly string[] = ['health', 'threads', 'runs', 'vault', 'settings', 'proposals', 'docket'];
 
 /** True when `pathname` belongs to the API (and so needs a token). `/` and
  * every client-side route are false. */
@@ -479,6 +480,12 @@ export function createApp(deps: ServerDeps): App {
   const vaultOverviewRoute = async (): Promise<Response> =>
     json(await vaultOverview(deps.vault, deps.tenant, readVaultConfig(deps.vaultRoot)));
 
+  /** The deadline docket (roadmap §1, in the runtime): every dated
+   * obligation the matter files carry, classified against today. Same
+   * matter discovery as the overview, read-only. */
+  const docketRoute = async (): Promise<Response> =>
+    json(await vaultDocket(deps.vault, deps.tenant, readVaultConfig(deps.vaultRoot)));
+
   /** The vault search the ⌘K field runs (spec §3.4) — the same `SearchFn`
    * behind the model's `vault_search` tool, read-only. */
   const vaultSearchRoute = async (url: URL): Promise<Response> => {
@@ -598,6 +605,8 @@ export function createApp(deps: ServerDeps): App {
       if (segments.length === 1 && first === 'proposals' && method === 'GET') {
         return await proposalsRoute(url);
       }
+
+      if (segments.length === 1 && first === 'docket' && method === 'GET') return await docketRoute();
 
       return fail(404, `no route for ${method} ${url.pathname}`);
     } catch (err) {
