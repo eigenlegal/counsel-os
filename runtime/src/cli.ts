@@ -56,6 +56,9 @@ const { values, positionals } = parseArgs({
     changes: { type: 'string' },      // `docx read`: all | accept | reject
     format: { type: 'string' },       // `docx extract|check`: json | markdown | text
     'dry-run': { type: 'boolean' },        // `update-content`: report only
+    out: { type: 'string' },          // `docx apply`: where to write (default <original>-redline-<date>.docx)
+    track: { type: 'boolean' },       // `docx apply`: native tracked changes
+    author: { type: 'string' },       // `docx apply`: fills items with no author
   },
 });
 
@@ -74,6 +77,7 @@ function usage(): never {
   console.error('         compares the shipped law and practice content with the vault; applies law updates (never a file you changed)');
   console.error('       bun runtime/src/cli.ts doctor [--vault <dir>]');
   console.error('         read-only vault health: root config, structure, law currency, git, standards/library consistency, matter law impact');
+  console.error('       bun runtime/src/cli.ts docx apply <file.docx> <redlines.json> [--out <file>] [--track] [--author <name>] (the redline; result JSON to stdout, exit 2 on any skip)');
   process.exit(2);
 }
 
@@ -83,13 +87,27 @@ function usage(): never {
  * runtime's tools run, no Python and no pandoc. Reads the one file it is
  * given, anywhere on disk; the vault guard belongs to the tools, not here.
  */
-async function docxCommand(sub: string | undefined, file: string | undefined): Promise<void> {
-  const { checkDocx, checkText, detectFormat, docxToMarkdown, extractRedlines, extractToMarkdown, openDocx, renderReport } = await import('./docx');
-  if (file === undefined || !['read', 'extract', 'check'].includes(sub ?? '')) usage();
+async function docxCommand(sub: string | undefined, file: string | undefined, second: string | undefined): Promise<void> {
+  const { applyRedlines, checkDocx, checkText, detectFormat, docxToMarkdown, extractRedlines, extractToMarkdown, openDocx, redlineExitCode, redlineOutputName, renderReport } = await import('./docx');
+  if (file === undefined || !['read', 'extract', 'check', 'apply'].includes(sub ?? '')) usage();
   const bytes = new Uint8Array(await Bun.file(file).arrayBuffer());
   const format = values.format ?? 'json';
   try {
-    if (sub === 'read') {
+    if (sub === 'apply') {
+      if (second === undefined) usage();
+      const items: unknown = JSON.parse(await Bun.file(second).text());
+      if (!Array.isArray(items)) throw new Error(`${second}: expected a JSON array of redline items`);
+      const pkg = openDocx(bytes);
+      const result = applyRedlines(pkg, items, { track: values.track === true, ...(values.author === undefined ? {} : { defaultAuthor: values.author }) });
+      const out = values.out ?? redlineOutputName(file, new Date());
+      const { writeFile } = await import('node:fs/promises');
+      await writeFile(out, pkg.save(), { flag: 'wx' });
+      const { stats, notes, ...json } = result;
+      process.stdout.write(`${JSON.stringify({ ...json, output: out }, null, 2)}\n`);
+      for (const n of notes) console.error(`warning: ${n}`);
+      console.error(`Summary: ${result.applied.length} applied, ${result.skipped.length} skipped, ${result.warnings.length} warnings → ${out}`);
+      process.exit(redlineExitCode(result));
+    } else if (sub === 'read') {
       const changes = values.changes ?? 'all';
       if (changes !== 'all' && changes !== 'accept' && changes !== 'reject') usage();
       const { markdown, warnings } = docxToMarkdown(openDocx(bytes), { changes });
@@ -220,7 +238,7 @@ if (cmd === 'serve') {
   );
   process.exit(code);
 } else if (cmd === 'docx') {
-  await docxCommand(rest[0], rest[1]);
+  await docxCommand(rest[0], rest[1], rest[2]);
 } else if (cmd === 'update-content') {
   const vaultRoot = vaultForMaintenance();
   const deps = { vaultRoot, content: repoContentSource(defaultPluginRoot()) };

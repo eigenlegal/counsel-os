@@ -202,6 +202,19 @@ describe('applyRedlines, plain mode', () => {
     expect(r.skipped[0]!.matches).toEqual([{ location: 'header1[0]', occurrence: 0, start: 0, replaceable: false, before: '', after: '' }]);
   });
 
+  test('a hostile header part is skipped with a note, never parsed, and the body edit still applies', () => {
+    const hostile =
+      '<?xml version="1.0"?><!DOCTYPE hdr [ <!ENTITY leak SYSTEM "file:///etc/passwd"> ]>' +
+      '<w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:r><w:t>confidential terms &leak;</w:t></w:r></w:p></w:hdr>';
+    const pkg = openDocx(buildDocx({ blocks: [{ runs: ['The confidential terms apply.'] }], rawParts: { 'word/header1.xml': hostile } }));
+    const r = applyRedlines(pkg, [item('confidential terms', 'public terms', { author: 'Tester' })], { track: false });
+    expect(r.applied).toHaveLength(1);
+    expect(r.notes).toHaveLength(1);
+    expect(r.notes[0]).toContain('skipping word/header1.xml');
+    expect(JSON.stringify(r)).not.toContain('passwd');
+    expect(accept(roundTrip(pkg))).toEqual(['The public terms apply.']);
+  });
+
   test('a long current is truncated in the report, and lists come back sorted by index', () => {
     const long = 'x'.repeat(100);
     const r = applyRedlines(openDocx(simpleDocx('a')), [item('missing', 'x'), item(long, 'y')], { track: false });

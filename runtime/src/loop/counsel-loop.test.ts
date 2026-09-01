@@ -213,6 +213,36 @@ describe('runStep', () => {
     expect(proposalEvent.id).toBe(loggedProposal.id);
   });
 
+  test('(a5) a successful apply_redlines synthesizes an artifact StepEvent after its tool_result; the thread keeps the durable artifact event', async () => {
+    const { buildDocx } = await import('../docx/test/builder');
+    mkdirSync(join(vaultRoot, 'matters'), { recursive: true });
+    writeFileSync(join(vaultRoot, 'matters', 'nda.docx'), buildDocx({ blocks: [{ runs: ['Payment is due within 30 days.'] }] }));
+    const fake = new FakeModelProvider([
+      {
+        toolCalls: [{ name: 'apply_redlines', input: { original: 'matters/nda.docx', items: [{ current: '30 days', proposed: '45 days', comment: 'Market.', author: 'Counsel OS' }], track: true } }],
+        text: 'redlined',
+      },
+    ]);
+    const { id } = await store.create('default', {});
+
+    const events = await collect(runStep(deps([fake]), { threadId: id, message: 'redline it' }));
+
+    expect(events.map(e => e.type)).toEqual(['tool_call', 'tool_result', 'artifact', 'text', 'done']);
+    const artifact = events.find(e => e.type === 'artifact') as Extract<StepEvent, { type: 'artifact' }> & { runId: string };
+    expect(artifact.path).toMatch(/^matters\/nda-redline-\d{4}-\d{2}-\d{2}\.docx$/);
+    expect(artifact.kind).toBe('docx-redline');
+    expect(artifact.summary).toMatchObject({ changes: 1, comments: 1, applied: 1, skipped: 0, clauses: 1 });
+    expect(artifact.runId).toBe(events[0]!.runId);
+
+    // Logged once, by the tool — the synthesized StepEvent is never appended.
+    expect(await logKinds(id)).toEqual(['user', 'step', 'tool_call', 'artifact', 'tool_result', 'text', 'done']);
+    const { events: log } = await store.get('default', id);
+    const logged = log.find((ev): ev is Extract<ThreadEvent, { t: 'artifact' }> => 't' in ev && ev.t === 'artifact')!;
+    expect(logged.id).toBe(artifact.id);
+    expect(logged.source).toBe('matters/nda.docx');
+    expect(logged.tracked).toBe(true);
+  });
+
   test('(a4) an unsuccessful propose_update yields no proposal StepEvent', async () => {
     const fake = new FakeModelProvider([
       { toolCalls: [{ name: 'propose_update', input: { path: 'not/a/knowledge/path.md' } }], text: 'nope' },

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { ZodType } from 'zod';
-import type { Message, ModelProvider, Platform, StepEvent, StepRequest, Tenant, ToolDef, Usage, VaultStore } from '../core/types';
+import type { Message, ModelProvider, Platform, StepEvent, StepRequest, Tenant, ToolDef, Usage, VaultStore, ArtifactSummary } from '../core/types';
 import { currentPlatform } from '../core/types';
 import type { Router } from '../router/router';
 import { ThreadStore, type ThreadEvent, type ThreadHeader } from '../threads/store';
@@ -266,7 +266,12 @@ export async function* runStep(
       const cfg = readVaultConfig(deps.vaultRoot);
       const platform = deps.platform ?? currentPlatform();
       const registry = new ToolRegistry();
-      for (const t of builtinTools({ vaultRoot: deps.vaultRoot, repoRoot: deps.pluginRoot })) registry.register(t);
+      for (const t of builtinTools({
+        vaultRoot: deps.vaultRoot,
+        repoRoot: deps.pluginRoot,
+        vault: deps.vault,
+        thread: { store: deps.store, threadId, tenant },
+      })) registry.register(t);
       const scriptTools = registry.available(platform);
 
       const system = assembleSystemPrompt({
@@ -851,7 +856,7 @@ async function* stream(
         return;
       }
 
-      let proposalToYield: Extract<StepEvent, { type: 'proposal' }> | null = null;
+      let proposalToYield: Extract<StepEvent, { type: 'proposal' | 'artifact' }> | null = null;
       if (ev.type === 'tool_call') {
         pending.set(ev.id, { name: ev.name, at: Date.now(), input: ev.input });
         rememberPrimitive(primitivesRead, ev);
@@ -865,6 +870,10 @@ async function* stream(
         if (ev.name === 'propose_update' && ev.isError !== true && call) {
           proposalToYield = proposalEvent(ev.output, call.input);
           if (proposalToYield) proposals.push(proposalToYield.id);
+        } else if (ev.name === 'apply_redlines' && ev.isError !== true) {
+          // Same shape as a proposal: the tool appended the durable
+          // `artifact` ThreadEvent; this is the live signal for the slip.
+          proposalToYield = artifactEvent(ev.output);
         }
       } else if (ev.type === 'done') {
         sawTerminal = true;
@@ -990,6 +999,28 @@ function proposalEvent(output: unknown, input: unknown): Extract<StepEvent, { ty
   if (typeof path !== 'string' || typeof rationale !== 'string') return null;
 
   return { type: 'proposal', id, path, rationale };
+}
+
+/**
+ * The `artifact` StepEvent for a successful `apply_redlines` result — the
+ * tool's output names the file it wrote, the artifact id it recorded and
+ * the summary; a result without an `artifactId` (no thread in play, or a
+ * run outside the loop) yields nothing. Accepts the object or its
+ * JSON-stringified form, as `proposalEvent` does.
+ */
+function artifactEvent(output: unknown): Extract<StepEvent, { type: 'artifact' }> | null {
+  let parsed = output;
+  if (typeof parsed === 'string') {
+    try {
+      parsed = JSON.parse(parsed);
+    } catch {
+      return null;
+    }
+  }
+  if (typeof parsed !== 'object' || parsed === null) return null;
+  const { artifactId, output: path, summary } = parsed as Record<string, unknown>;
+  if (typeof artifactId !== 'string' || typeof path !== 'string' || typeof summary !== 'object' || summary === null) return null;
+  return { type: 'artifact', id: artifactId, path, kind: 'docx-redline', summary: summary as ArtifactSummary };
 }
 
 /**

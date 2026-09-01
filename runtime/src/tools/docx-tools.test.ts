@@ -97,3 +97,59 @@ describe('extract_redlines and check_document', () => {
     for (const t of docxTools({ vaultRoot: vault })) expect([...t.platforms].sort()).toEqual(['hosted', 'linux', 'macos', 'windows']);
   });
 });
+
+describe('apply_redlines', () => {
+  const items = [{ current: 'Section 9', proposed: 'Section 10', comment: 'Renumbered.', author: 'Jack Wang' }];
+
+  test('writes the redline beside the source, never overwriting; the report and summary come back', async () => {
+    const t = tool('apply_redlines');
+    const first = (await t.execute(t.inputSchema.parse({ original: 'matters/acme/nda.docx', items, track: true }), ctx)) as { output: string; applied: unknown[]; skipped: unknown[]; tracked: boolean; summary: { changes: number; comments: number; applied: number; clauses: number; bytes: number }; artifactId?: string };
+    const date = new Date().toISOString().slice(0, 10);
+    expect(first.output).toBe(`matters/acme/nda-redline-${date}.docx`);
+    expect(first.applied).toHaveLength(1);
+    expect(first.skipped).toEqual([]);
+    expect(first.tracked).toBe(true);
+    expect(first.summary).toMatchObject({ changes: 1, comments: 1, applied: 1, skipped: 0, clauses: 1 });
+    expect(first.summary.bytes).toBeGreaterThan(0);
+    expect(first.artifactId).toBeUndefined();
+    const written = (await tool('docx_read').execute({ path: first.output, changes: 'all' }, ctx)) as { markdown: string };
+    expect(written.markdown).toContain('{--9--}{++10++}');
+
+    const second = (await t.execute({ original: 'matters/acme/nda.docx', items, track: true }, ctx)) as { output: string };
+    expect(second.output).toBe(`matters/acme/nda-redline-${date}-2.docx`);
+  });
+
+  test('takes the items from a JSON file in the vault, and a chosen output name', async () => {
+    writeFileSync(join(vault, 'matters', 'acme', 'edits.json'), JSON.stringify(items));
+    const out = (await tool('apply_redlines').execute({ original: 'matters/acme/nda.docx', edits: 'matters/acme/edits.json', output: 'matters/acme/nda-v2.docx' }, ctx)) as { output: string; tracked: boolean };
+    expect(out.output).toBe('matters/acme/nda-v2.docx');
+    expect(out.tracked).toBe(false);
+    const again = (await tool('apply_redlines').execute({ original: 'matters/acme/nda.docx', edits: 'matters/acme/edits.json', output: 'matters/acme/nda-v2.docx' }, ctx)) as { output: string };
+    expect(again.output).toBe('matters/acme/nda-v2-2.docx');
+  });
+
+  test('refuses a non-docx source, a path outside the vault, and a call with neither items nor edits', async () => {
+    const t = tool('apply_redlines');
+    await expect(t.execute({ original: 'matters/acme/notes.md', items }, ctx)).rejects.toThrow(/\.docx files only/);
+    await expect(t.execute({ original: 'matters/acme/nda.docx', edits: '../edits.json' }, ctx)).rejects.toThrow(/outside vault/);
+    await expect(t.execute({ original: 'matters/acme/nda.docx', output: '../out.docx', items }, ctx)).rejects.toThrow(/outside vault/);
+    await expect(t.execute({ original: 'matters/acme/nda.docx' }, ctx)).rejects.toThrow(/items.*edits/);
+  });
+
+  test('inside a thread, the artifact event is appended and its id returned', async () => {
+    const { ThreadStore } = await import('../threads/store');
+    const threads = new ThreadStore(vault, { codexHomeRoot: mkdtempSync(join(tmpdir(), 'docx-tools-codex-')) });
+    const { id } = await threads.create('default', {});
+    const t = docxTools({ vaultRoot: vault, thread: { store: threads, threadId: id, tenant: 'default' } }).find(x => x.name === 'apply_redlines')!;
+    const out = (await t.execute({ original: 'matters/acme/nda.docx', items, track: true, author: 'Counsel OS' }, ctx)) as { output: string; artifactId?: string };
+    expect(out.artifactId).toBeDefined();
+    const { events } = await threads.get('default', id);
+    const artifact = events.find(ev => 't' in ev && ev.t === 'artifact') as { id: string; path: string; source: string; kind: string; author: string; tracked: boolean; summary: { applied: number } };
+    expect(artifact.id).toBe(out.artifactId!);
+    expect(artifact.path).toBe(out.output);
+    expect(artifact.source).toBe('matters/acme/nda.docx');
+    expect(artifact.kind).toBe('docx-redline');
+    expect(artifact.tracked).toBe(true);
+    expect(artifact.summary.applied).toBe(1);
+  });
+});

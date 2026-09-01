@@ -1,6 +1,7 @@
 import { join, resolve } from 'node:path';
 import { z } from 'zod';
-import type { Tool } from '../core/types';
+import type { Tenant, Tool, VaultStore } from '../core/types';
+import type { ThreadStore } from '../threads/store';
 import { docxTools } from './docx-tools';
 import { pythonScriptTool } from './subprocess';
 
@@ -14,23 +15,34 @@ export function docketSweepArgs(vaultRoot: string, days: number): string[] {
   return [join(vaultRoot, 'matters'), '--window', String(days), '--format', 'json'];
 }
 
-// The write-path scripts still run on Python until stage 2 of the
-// TypeScript port (docs/superpowers/specs/2026-09-01-docx-in-typescript-design.md
-// §9): all four platforms, but they read/write local .docx files, which a
-// `hosted` deployment may not have direct filesystem access to. Recorded in
-// each tool's description rather than the platform set, since the
-// constraint is about file transport, not the script itself.
+// `clean_format` still runs on Python (spec §2: a formatting utility, not the
+// hero path; it goes with stage 2's second PR or a later decision): all four
+// platforms, but it reads/writes local .docx files, which a `hosted`
+// deployment may not have direct filesystem access to.
 const DOCX_SCRIPT_PLATFORMS = ['macos', 'linux', 'windows', 'hosted'] as const;
+
+export interface BuiltinToolOptions {
+  vaultRoot: string;
+  repoRoot: string;
+  /** The vault store, when the caller has one: `apply_redlines` writes the
+   * redlined document through it (history, never-overwrite). Without it the
+   * tool writes the file directly under `vaultRoot`. */
+  vault?: VaultStore;
+  /** The thread a step runs in: `apply_redlines` records its `artifact`
+   * event there. Absent outside a thread (the CLI's one-shot run). */
+  thread?: { store: ThreadStore; threadId: string; tenant: Tenant };
+}
 
 /**
  * Tools shared by every entry point that runs a model against a vault
  * (`cli.ts`'s in-process run, `mcp/stdio.ts`'s server for Codex). Kept in one
  * place so the tool's name/description/schema/args can't drift between them.
  *
- * The read path (`docx_read`, `extract_redlines`, `check_document`) runs in
- * TypeScript inside the runtime — `docxTools` — with no Python or pandoc.
+ * The Word tools (`docx_read`, `extract_redlines`, `check_document`,
+ * `apply_redlines`) run in TypeScript inside the runtime — `docxTools` —
+ * with no Python or pandoc.
  */
-export function builtinTools(opts: { vaultRoot: string; repoRoot: string }): Tool[] {
+export function builtinTools(opts: BuiltinToolOptions): Tool[] {
   return [
     pythonScriptTool({
       name: 'docket_sweep',
@@ -41,7 +53,7 @@ export function builtinTools(opts: { vaultRoot: string; repoRoot: string }): Too
       args: ({ days }) => docketSweepArgs(opts.vaultRoot, days),
       cwd: opts.repoRoot,
     }),
-    ...docxTools({ vaultRoot: opts.vaultRoot }),
+    ...docxTools({ vaultRoot: opts.vaultRoot, ...(opts.vault === undefined ? {} : { vault: opts.vault }), ...(opts.thread === undefined ? {} : { thread: opts.thread }) }),
     pythonScriptTool({
       name: 'clean_format',
       description: 'Clean up a drafted .docx file’s formatting against the house style template. Reads and writes local file paths.',
@@ -52,20 +64,6 @@ export function builtinTools(opts: { vaultRoot: string; repoRoot: string }): Too
         output: z.string().describe('Path to write the cleaned .docx file to.'),
       }),
       args: ({ input, output }) => [input, output],
-      cwd: opts.repoRoot,
-    }),
-    pythonScriptTool({
-      name: 'apply_redlines',
-      description: 'Apply a list of edits (as JSON) to a .docx file, optionally as tracked changes. Reads and writes local file paths.',
-      script: resolve(opts.repoRoot, 'scripts/apply_redlines.py'),
-      platforms: [...DOCX_SCRIPT_PLATFORMS],
-      inputSchema: z.object({
-        original: z.string().describe('Path to the original .docx file.'),
-        edits: z.string().describe('Path to the edits JSON file.'),
-        output: z.string().describe('Path to write the resulting .docx file to.'),
-        track: z.boolean().optional().describe('Apply the edits as tracked changes instead of direct replacements.'),
-      }),
-      args: ({ original, edits, output, track }) => (track ? ['--track', original, edits, output] : [original, edits, output]),
       cwd: opts.repoRoot,
     }),
     pythonScriptTool({

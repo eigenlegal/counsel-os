@@ -68,6 +68,8 @@ export interface RedlineResult {
   tracked: boolean;
   /** Not in the Python's JSON: what the artifact slip reports. */
   stats: { regions: number; comments: number; paragraphs: number };
+  /** What the Python printed to stderr: a part it could not scan. */
+  notes: string[];
 }
 
 export interface ApplyOptions {
@@ -557,7 +559,7 @@ export function applyRedlines(pkg: DocxPackage, items: RedlineItem[], opts: Appl
   const now = opts.now ?? new Date();
   const when = revisionDate(now);
   const alloc = opts.track ? revisionIdAllocator(pkg) : null;
-  const result: RedlineResult = { applied: [], skipped: [], warnings: [], tracked: opts.track, stats: { regions: 0, comments: 0, paragraphs: 0 } };
+  const result: RedlineResult = { applied: [], skipped: [], warnings: [], tracked: opts.track, stats: { regions: 0, comments: 0, paragraphs: 0 }, notes: [] };
   const touchedParagraphs = new Set<Element>();
 
   type Resolved = { index: number; item: RedlineItem; match: TextMatch };
@@ -568,7 +570,9 @@ export function applyRedlines(pkg: DocxPackage, items: RedlineItem[], opts: Appl
       result.skipped.push({ index, current: '', reason: 'current text must not be empty' });
       return;
     }
-    const matches = collectMatches(pkg, current);
+    const matches = collectMatches(pkg, current, note => {
+      if (!result.notes.includes(note)) result.notes.push(note);
+    });
     if (matches.length === 0) {
       if (textInTrackedDeletions(pkg, current)) {
         result.warnings.push({ index, current: truncate(current), warning: 'Text appears only inside tracked deletions (w:del); deleted text is not editable' });
@@ -629,6 +633,17 @@ export function applyRedlines(pkg: DocxPackage, items: RedlineItem[], opts: Appl
   result.stats.paragraphs = touchedParagraphs.size;
   if (result.applied.length > 0) pkg.touch(DOCUMENT_PART);
   return result;
+}
+
+/**
+ * Where a redline is written (spec §10): next to its source as
+ * `<original>-redline-<YYYY-MM-DD>.docx`. Callers add `-2`, `-3` … when
+ * the name is taken; `n` is that suffix (1 = none).
+ */
+export function redlineOutputName(original: string, now: Date, n = 1): string {
+  const stem = original.replace(/\.docx$/i, '');
+  const date = now.toISOString().slice(0, 10);
+  return `${stem}-redline-${date}${n > 1 ? `-${n}` : ''}.docx`;
 }
 
 /** The Python's exit-code rule, for callers that want it: 2 on any skip. */

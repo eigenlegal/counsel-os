@@ -240,3 +240,25 @@ describe('ThreadStore.update (rename + matter link)', () => {
     await expect(store.update('default', '../x', { title: 'x' })).rejects.toThrow('invalid thread id');
   });
 });
+
+describe('artifact events', () => {
+  test('an artifact event round-trips through the log with its summary', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'store-artifact-'));
+    const store = new ThreadStore(root, { codexHomeRoot: mkdtempSync(join(tmpdir(), 'store-artifact-codex-')) });
+    const header = await store.create('default', {});
+    const ev = {
+      t: 'artifact' as const,
+      at: '2026-09-01T12:00:00.000Z',
+      id: 'art-1',
+      kind: 'docx-redline' as const,
+      path: 'matters/acme/nda-redline-2026-09-01.docx',
+      source: 'matters/acme/nda.docx',
+      author: 'Jack Wang',
+      tracked: true,
+      summary: { changes: 14, comments: 3, applied: 5, skipped: 0, clauses: 5, bytes: 42_000 },
+    };
+    await store.append('default', header.id, ev);
+    const got = await store.get('default', header.id);
+    expect(got.events).toEqual([ev]);
+  });
+});
