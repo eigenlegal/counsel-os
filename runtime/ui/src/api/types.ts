@@ -354,6 +354,7 @@ export interface SetupResponse {
     git: 'initialized' | 'present' | 'skipped' | 'unavailable' | 'failed';
     warnings: string[];
   };
+}
 
 /** `GET /content/status` (spec 2026-09-01 §6). COPIED from
  * `runtime/src/content/update.ts`; a change there is a change here. */
