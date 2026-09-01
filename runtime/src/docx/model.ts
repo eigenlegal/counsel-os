@@ -12,7 +12,7 @@
  * reject-all view flips that. `w:moveTo`/`w:moveFrom` are treated as
  * `w:ins`/`w:del`, as `extract_redlines` does.
  */
-import { NUMBERING_PART, type DocxPackage } from './package';
+import { COMMENTS_PART, NUMBERING_PART, type DocxPackage } from './package';
 
 export const W_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 
@@ -392,6 +392,37 @@ export class DocxModel {
 
 export function modelOf(pkg: DocxPackage): DocxModel {
   return new DocxModel(pkg);
+}
+
+export interface DocxComment {
+  id: string;
+  author: string;
+  date: string;
+  initials: string;
+  /** The comment's paragraphs' `w:t` text, joined with single spaces and
+   * trimmed — `extract_redlines` reads it this way. */
+  text: string;
+}
+
+/** The comments part, in file order; empty when the document has none. */
+export function commentsOf(pkg: DocxPackage): DocxComment[] {
+  if (!pkg.hasPart(COMMENTS_PART)) return [];
+  const root = pkg.part(COMMENTS_PART).documentElement;
+  if (root === null) return [];
+  const out: DocxComment[] = [];
+  for (const c of children(root)) {
+    if (!isW(c, 'comment')) continue;
+    const texts: string[] = [];
+    for (const node of descendants(c)) if (isW(node, 't')) texts.push(node.textContent ?? '');
+    out.push({
+      id: attr(c, 'id') ?? '',
+      author: attr(c, 'author') ?? '',
+      date: attr(c, 'date') ?? '',
+      initials: attr(c, 'initials') ?? '',
+      text: texts.join(' ').trim(),
+    });
+  }
+  return out;
 }
 
 export { children, descendants, isW, attr };
