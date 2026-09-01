@@ -399,3 +399,27 @@ describe('startServer in setup mode (spec 2026-09-01 §4)', () => {
     expect(await health.json()).toMatchObject({ setup: false, vault });
   });
 });
+
+describe('auto_apply_law_updates at serve start (spec 2026-09-01 §6)', () => {
+  test('applies a pending law update when the flag is on, and nothing when it is off', async () => {
+    const { vault, pluginRoot, env } = fixture();
+    const law = '---\ncounsel-os-type: law-area\n---\n# GDPR\n\nold\n';
+    mkdirSync(join(pluginRoot, 'knowledge', 'law', 'data-privacy'), { recursive: true });
+    writeFileSync(join(pluginRoot, 'knowledge', 'law', 'data-privacy', 'gdpr.md'), law + 'new\n', 'utf8');
+    mkdirSync(join(vault, 'law', 'data-privacy'), { recursive: true });
+    writeFileSync(join(vault, 'law', 'data-privacy', 'gdpr.md'), law, 'utf8');
+    mkdirSync(join(vault, '.counsel'), { recursive: true });
+    const { createHash } = await import('node:crypto');
+    const hash = createHash('sha256').update('# GDPR\n\nold\n', 'utf8').digest('hex');
+    writeFileSync(join(vault, '.counsel', 'content-state.json'), JSON.stringify({ version: '0.0.1', receivedAt: 'x', files: { 'law/data-privacy/gdpr.md': { hash, from: 'knowledge/law/data-privacy/gdpr.md' } } }), 'utf8');
+
+    writeFileSync(join(vault, 'config.md'), `counsel-os-config: true\nlegal_root: ${vault}\n`, 'utf8');
+    running = await startServer({ vault, pluginRoot, port: 0, env, registryFile: join(vault, 'none.yaml') });
+    expect(readFileSync(join(vault, 'law', 'data-privacy', 'gdpr.md'), 'utf8')).toBe(law);
+    await running.stop();
+
+    writeFileSync(join(vault, 'config.md'), `counsel-os-config: true\nlegal_root: ${vault}\nauto_apply_law_updates: true\n`, 'utf8');
+    running = await startServer({ vault, pluginRoot, port: 0, env, registryFile: join(vault, 'none.yaml') });
+    expect(readFileSync(join(vault, 'law', 'data-privacy', 'gdpr.md'), 'utf8')).toBe(law + 'new\n');
+  });
+});

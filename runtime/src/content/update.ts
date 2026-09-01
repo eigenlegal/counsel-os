@@ -307,3 +307,30 @@ export function autoApplyLawUpdates(deps: UpdateDeps): ApplyResult {
 export function hasContentState(vaultRoot: string): boolean {
   return existsSync(join(vaultRoot, '.counsel', 'content-state.json'));
 }
+
+const STATUS_WORDS: Record<ItemStatus, string> = {
+  current: 'current',
+  'update-available': 'update available',
+  'user-modified': 'yours — left alone',
+  'vault-only': 'yours — not shipped',
+  missing: 'new — can be added',
+  'upstream-changed': 'changed upstream — merge by hand',
+};
+
+/** The status as the CLI prints it: the ledger, then what applies. */
+export function renderContentStatus(status: ContentStatus): string {
+  const lines = [
+    `Shipped ${status.shippedVersion} · vault received ${status.vaultVersion ?? 'unknown (no content state; a vault set up before the runtime kept one)'}`,
+    status.lawManagement === 'user' ? 'law_management: user — law is yours; the runtime never syncs it' : '',
+    '',
+  ].filter(l => l !== undefined);
+  const interesting = status.items.filter(i => i.status !== 'current');
+  if (interesting.length === 0) lines.push('Everything is current.');
+  for (const item of interesting) {
+    lines.push(`${item.path.padEnd(52)} ${STATUS_WORDS[item.status]}${item.reason !== undefined ? ` (${item.reason})` : ''}`);
+    if (item.diff !== undefined) lines.push(...item.diff.split('\n').map(l => `    ${l}`));
+  }
+  const applicable = status.items.filter(i => i.applicable).length;
+  lines.push('', `${status.counts.current} current · ${status.counts['update-available']} updates · ${status.counts.missing} new · ${status.counts['user-modified']} yours · ${status.counts['upstream-changed']} to merge by hand · ${applicable} applicable`);
+  return lines.filter(l => l !== '' || true).join('\n') + '\n';
+}

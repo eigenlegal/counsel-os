@@ -283,16 +283,17 @@ const LIBRARY_FOR: Record<string, string> = {
   'compliance-certifications': 'compliance-regulatory',
 };
 
-const UNIT_RE = /(\d+(?:\.\d+)?)\)?\s*(hours?|hrs?|days?|months?|years?|%|percent|x\b|×)/gi;
+/** Time units only. Percentages and multipliers name different things in
+ * the same file (an uptime, a credit, a cap), and comparing them across a
+ * standard and a library produced divergences that were not. */
+const UNIT_RE = /(\d+(?:\.\d+)?)\)?\s*(hours?|hrs?|days?|months?|years?)\b/gi;
 
 function normalizeUnit(raw: string): string {
   const u = raw.toLowerCase();
   if (u.startsWith('hour') || u.startsWith('hr')) return 'hours';
   if (u.startsWith('day')) return 'days';
   if (u.startsWith('month')) return 'months';
-  if (u.startsWith('year')) return 'years';
-  if (u === '%' || u === 'percent') return '%';
-  return 'x';
+  return 'years';
 }
 
 /** `{ unit → numbers }` mentioned in `text`. */

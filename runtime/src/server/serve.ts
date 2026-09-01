@@ -3,6 +3,7 @@ import { readFileSync, realpathSync, rmSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve, sep } from 'node:path';
 import { repoContentSource } from '../content/repo';
+import { autoApplyLawUpdates } from '../content/update';
 import { writeFileAtomic } from '../core/atomic-write';
 import { counselHome } from '../core/home';
 import { FakeModelProvider, type FakeScript } from '../core/fake-provider';
@@ -358,6 +359,15 @@ export async function startServer(opts: StartServerOptions = {}): Promise<Runnin
     // default is the real `$HOME`, which would ignore `COUNSEL_OS_HOME` and
     // drop a copy of `auth.json` somewhere the operator never pointed at.
     store = new ThreadStore(vault, { codexHomeRoot: codexHomeRoot(env) });
+    // `auto_apply_law_updates: true` (spec 2026-09-01 §6): law updates the
+    // vault has not modified are applied at start, and said so once. A
+    // failure here is logged, never fatal — the vault serves as it is.
+    try {
+      const auto = autoApplyLawUpdates({ vaultRoot: vault, content });
+      if (auto.applied.length > 0) console.log(`counsel-os runtime: applied ${auto.applied.length} law update${auto.applied.length === 1 ? '' : 's'} (auto_apply_law_updates)`);
+    } catch (err) {
+      console.error(`counsel-os runtime: auto-apply of law updates failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
     return createApp({
       token,
       tenant: DEFAULT_TENANT,
