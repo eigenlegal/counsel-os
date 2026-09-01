@@ -53,8 +53,10 @@ test('home asks, the slip redlines, the docket reviews, the vault reads', async 
     // a calendar day rather than on a regression.
     await expect(page.locator('.v2-due')).toHaveText(/^(due|overdue) Sep 12$/);
     await expect(page.locator('.v2-na')).toContainText('send document list');
-    // No pending proposals yet: the docket is hidden entirely (spec §3.2).
-    await expect(page.locator('.v2-docket')).toHaveCount(0);
+    // One docket (PR #39): the seeded `deadline:` shows as a deadline row even
+    // with no proposal pending; the proposals group appears only later.
+    await expect(page.locator('.v2-docket-head')).toContainText('1 deadline');
+    await expect(page.locator('.v2-docket-head')).not.toContainText('awaiting');
   });
 
   await test.step('a starter fills the box; the ask creates and names the thread', async () => {
@@ -68,9 +70,9 @@ test('home asks, the slip redlines, the docket reviews, the vault reads', async 
     const threads = page.locator('[aria-label="Threads"] li.v2-thread');
     await expect(threads).toHaveCount(1);
     await expect(threads.first()).toContainText('Check the Acme NDA term.');
-    // The thread header: serif title + the matter chip the read resolved.
+    // The thread header: serif title + the MATTER line the read resolved (set text, no pill — PR #37).
     await expect(page.locator('.v2-thread-head h1')).toHaveText('Check the Acme NDA term.');
-    await expect(page.locator('.v2-matter-chip')).toContainText('Acme');
+    await expect(page.locator('.v2-thread-matter')).toContainText('Acme');
     // The work line folds the tools into one quiet line.
     await expect(page.locator('.v2-work-line')).toContainText('read');
   });
@@ -126,7 +128,8 @@ test('home asks, the slip redlines, the docket reviews, the vault reads', async 
     await expect(search).toBeFocused();
     await search.fill('acme');
     await search.press('Enter');
-    await page.locator('.v2-vresults .v2-vrow', { hasText: 'matters/acme.md' }).click();
+    // Hits read as documents (PR #37): the title on the row, the path on its tooltip.
+    await page.locator('.v2-vresults .v2-vhit[title="matters/acme.md"]').click();
 
     // The reading pane: doc title (not the filename), fact leaders, body.
     await expect(page.locator('.v2-doc-head h1')).toHaveText('Acme Corp — NDA');
