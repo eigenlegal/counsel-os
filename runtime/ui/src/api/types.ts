@@ -298,3 +298,54 @@ export interface TestResult {
   error?: string;
   ms: number;
 }
+
+/** One row of `GET /setup/detect`. COPIED from `Location` in
+ * `runtime/src/setup/detect.ts`; a change there is a change here. */
+export interface SetupLocation {
+  path: string;
+  kind: 'existing-root' | 'obsidian-vault' | 'new';
+  within?: string;
+  exists: boolean;
+  writable: boolean;
+  suggested: boolean;
+}
+
+/** One row of `GET /setup/providers`. COPIED from `ProviderProbe` in
+ * `runtime/src/setup/detect.ts`; a change there is a change here. */
+export interface SetupProvider {
+  id: string;
+  vendor: 'Claude' | 'ChatGPT' | 'Ollama';
+  model: string;
+  connection: 'subscription' | 'local';
+  installed: boolean;
+  signedIn: boolean | null;
+  models?: string[];
+  usable: boolean;
+  state: string;
+}
+
+/** The body of `POST /setup`. COPIED from `SetupPlan` in
+ * `runtime/src/setup/plan.ts`; a change there is a change here. */
+export interface SetupPlanBody {
+  vault: string;
+  identity: { name: string; organization: string; role: 'in-house' | 'outside' | 'solo'; jurisdiction: string };
+  practice: string;
+  sampleMatter: boolean;
+  defaultProvider?: string;
+  git: boolean;
+}
+
+/** `POST /setup` — 200. `result.groups` mirrors `SetupResult` in
+ * `runtime/src/setup/run.ts`. */
+export interface SetupResponse {
+  vault: string;
+  result: {
+    vault: string;
+    adopted: boolean;
+    groups: Record<'config' | 'law' | 'standards' | 'methods' | 'library' | 'reference' | 'profile' | 'memory' | 'gitignore' | 'sample', { written: number; skipped: number }>;
+    written: number;
+    skipped: number;
+    git: 'initialized' | 'present' | 'skipped' | 'unavailable' | 'failed';
+    warnings: string[];
+  };
+}

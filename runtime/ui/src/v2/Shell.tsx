@@ -10,7 +10,7 @@ import { Drawer } from './Drawer';
 import { HomePage } from './home/HomePage';
 import { Rail } from './Rail';
 import { SessionLost } from './SessionLost';
-import { SetupRequired } from './SetupRequired';
+import { SetupPage } from './SetupPage';
 import { SettingsPage } from './settings/SettingsPage';
 import { VaultPage } from './vault/VaultPage';
 
@@ -261,7 +261,7 @@ export function Shell(): JSX.Element {
     return { threads: sorted, fresh };
   }, []);
 
-  /** Bumped by the setup page's "Check again": re-runs the initial load. */
+  /** Bumped by the setup page once a vault exists: re-runs the initial load. */
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     if (unauthorized) return;
@@ -367,7 +367,7 @@ export function Shell(): JSX.Element {
   // `unauthorized` — so a pasted token picks up exactly where a fresh
   // open would, with no reload and nothing written to the URL.
   if (unauthorized) return <SessionLost onRestored={() => setUnauthorized(false)} />;
-  if (health?.setup === true) return <SetupRequired onCheck={() => setAttempt(n => n + 1)} />;
+  if (health?.setup === true) return <SetupPage onDone={() => setAttempt(n => n + 1)} />;
 
   return (
     <div className="v2-shell">

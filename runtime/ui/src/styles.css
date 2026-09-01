@@ -793,6 +793,60 @@ a { color: var(--accent); }
 .v2-lost-acts .v2-ask-go { margin-left: 0; }
 .v2-lost-error { font-size: 13px; color: var(--error); margin: 0; }
 
-/* The setup-required page shares the session-lost page's layout (spec
-   2026-09-01 §4); it only needs its own hook for the coming first-run screen. */
-.v2-setup-required .v2-lost-acts { margin-top: 6px; }
+/* ── The first-run screen (spec 2026-09-01 §5; img-standalone/mock-setup*.html) ── */
+
+.v2-setup { flex: 1; overflow-y: auto; }
+.v2-setup-wrap { max-width: 640px; margin: 0 auto; padding: 56px 40px 80px; }
+.v2-setup-brand { padding: 0 0 34px; }
+.v2-setup-title { font: 400 30px/1.3 var(--serif); margin: 0 0 6px; }
+.v2-setup-lede { color: var(--fg-muted); font: italic 15px/1.5 var(--serif); margin: 0 0 30px; }
+.v2-setup-lede code { font-style: normal; }
+.v2-setup-group { padding: 14px 2px 22px; }
+.v2-setup-group .runin { display: block; margin-bottom: 6px; }
+.v2-setup-why { color: var(--fg-muted); font-size: 13px; margin: 0 0 12px; }
+.v2-setup-after { margin: 10px 0 0; }
+
+/* detected locations: ledger rows, the chosen one marked by a set-text word */
+.v2-setup-loc { display: flex; width: 100%; align-items: baseline; gap: 10px; padding: 8px 0; border: none; border-top: 1px solid var(--border); background: none; color: inherit; font-size: 13.5px; text-align: left; cursor: pointer; }
+.v2-setup-loc:first-child { border-top: none; }
+.v2-setup-path { font-family: var(--mono); font-size: 12.5px; color: var(--fg); }
+.v2-setup-kind { font: 600 10px/1 var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-faint); }
+.v2-setup-pick { margin-left: auto; font: italic 500 13px/1 var(--serif); color: var(--fg-faint); flex-shrink: 0; }
+.v2-setup-pick-on { color: var(--accent); font-weight: 600; }
+
+.v2-setup-field { display: flex; align-items: baseline; gap: 12px; padding: 7px 0; font-size: 13.5px; }
+.v2-setup-field-gap { margin-top: 8px; }
+.v2-setup-field label, .v2-setup-label { color: var(--fg-faint); width: 120px; flex-shrink: 0; }
+.v2-setup-field input[type="text"] { flex: 1; min-width: 0; background: var(--bg-raised); border: 1px solid var(--border-strong); border-radius: 8px; padding: 6px 10px; font: 13.5px var(--sans); color: var(--fg); }
+.v2-setup-field input::placeholder { color: var(--fg-faint); }
+.v2-setup-field input[aria-invalid="true"] { border-color: var(--error); }
+.v2-setup-choice { display: flex; gap: 18px; flex: 1; font-size: 13.5px; }
+.v2-setup-choice button { background: none; border: none; padding: 0; color: var(--fg-faint); font: inherit; cursor: pointer; border-bottom: 1px solid transparent; }
+.v2-setup-choice button.on { color: var(--fg); font-weight: 600; border-bottom-color: var(--fg); }
+
+.v2-setup-prov { display: flex; width: 100%; align-items: baseline; gap: 10px; padding: 8px 0; border: none; border-top: 1px solid var(--border); background: none; color: inherit; text-align: left; cursor: pointer; }
+.v2-setup-prov:first-child { border-top: none; }
+.v2-setup-prov:disabled { cursor: default; }
+.v2-setup-vendor { font-size: 13.5px; color: var(--fg); }
+.v2-setup-model { font-size: 12px; color: var(--fg-faint); }
+.v2-setup-state { font: italic 500 13px/1 var(--serif); color: var(--fg-faint); }
+.v2-setup-state-in { color: var(--ok); font-weight: 600; }
+
+.v2-setup-sample { display: flex; align-items: baseline; gap: 10px; padding: 16px 2px 8px; font-size: 13.5px; border-top: 1px solid var(--border); cursor: pointer; }
+.v2-setup-sample input { position: relative; top: 2px; margin: 0; width: 13px; height: 13px; accent-color: var(--fg); flex-shrink: 0; }
+.v2-setup-create { margin: 22px 0 0; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.v2-setup-create .v2-ask-go { margin-left: 0; padding: 8px 18px; }
+.v2-setup-quiet { background: none; color: var(--fg); border: 1px solid var(--border-strong); border-radius: 9px; padding: 8px 18px; font: 600 13.5px var(--sans); cursor: pointer; }
+.v2-setup-note { font-size: 12.5px; color: var(--fg-faint); }
+.v2-setup-err { color: var(--error); font-size: 13px; margin: 6px 0 0 132px; }
+.v2-setup-err-general { margin-left: 0; margin-top: 14px; }
+.v2-setup-cli { font-size: 12.5px; margin: 40px 0 0; }
+
+/* progress: a ledger of steps, set text, no bars */
+.v2-setup-steps { padding: 6px 2px 0; }
+.v2-setup-step { display: flex; align-items: baseline; gap: 10px; padding: 5px 0; font-size: 13.5px; }
+.v2-setup-step-what { color: var(--fg); }
+.v2-setup-step-n { color: var(--fg-faint); font-size: 12.5px; }
+.v2-setup-st { font: italic 500 13px/1 var(--serif); color: var(--fg-faint); flex-shrink: 0; }
+.v2-setup-st-done { color: var(--ok); font-weight: 600; }
+.v2-setup-st-now { color: var(--accent); font-weight: 600; }

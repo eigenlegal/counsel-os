@@ -685,14 +685,20 @@ describe('Shell, a tab with no usable key (spec §5)', () => {
 });
 
 describe('Shell in setup mode (spec 2026-09-01 §4)', () => {
-  test('health.setup → the setup page, nothing else is fetched; Check again re-reads health and lands on Home', async () => {
+  test('health.setup → the first-run screen, nothing else is fetched; Create → POST /setup → health re-read → Home', async () => {
     sessionStorage.setItem(TOKEN_KEY, 'test-token');
     let setup = true;
     const fetched: string[] = [];
-    globalThis.fetch = (async (input: RequestInfo | URL) => {
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
-      fetched.push(url);
+      fetched.push(`${init?.method ?? 'GET'} ${url}`);
       if (url.startsWith('/health')) return json(setup ? { setup: true, vault: null, tenant: 'default', providers: [], default: null, stepTimeoutMs: 600_000 } : { ...health, setup: false });
+      if (url.startsWith('/setup/detect')) return json({ locations: [{ path: '/Users/jack/Documents/Counsel OS', kind: 'new', exists: false, writable: true, suggested: true }] });
+      if (url.startsWith('/setup/providers')) return json({ providers: [] });
+      if (url === '/setup' && init?.method === 'POST') {
+        setup = false;
+        return json({ vault: '/Users/jack/Documents/Counsel OS', result: {} });
+      }
       if (url === '/threads') return json([]);
       if (url.startsWith('/vault/overview')) return json({ matters: [], groups: { practice: 0, knowledge: 0, other: 0 } });
       if (url.startsWith('/vault/index')) return json([]);
@@ -704,13 +710,15 @@ describe('Shell in setup mode (spec 2026-09-01 §4)', () => {
 
     render(<Shell />);
     await waitFor(() => expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Set up counsel-os.'));
-    expect(fetched.filter(u => u === '/threads')).toEqual([]);
+    expect(fetched.filter(u => u === 'GET /threads')).toEqual([]);
     expect(document.querySelector('.v2-rail')).toBeNull();
 
-    setup = false;
-    await userEvent.click(screen.getByRole('button', { name: 'Check again' }));
-    await waitFor(() => expect(screen.queryByText('Set up counsel-os.')).toBeNull());
-    await waitFor(() => expect(fetched).toContain('/threads'));
+    await waitFor(() => expect(screen.getByLabelText('Name')).toBeTruthy());
+    await userEvent.type(screen.getByLabelText('Name'), 'Jack');
+    await userEvent.click(screen.getByRole('button', { name: 'Create' }));
+    await waitFor(() => expect(fetched).toContain('POST /setup'));
+    await waitFor(() => expect(screen.queryByText('Set up counsel-os.')).toBeNull(), { timeout: 3000 });
+    await waitFor(() => expect(fetched).toContain('GET /threads'));
     expect(document.querySelector('.v2-rail')).toBeTruthy();
   });
 });
