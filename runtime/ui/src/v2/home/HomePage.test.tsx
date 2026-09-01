@@ -256,3 +256,24 @@ describe('HomePage', () => {
     expect(screen.getByRole('link', { name: '3 more in the vault →' })).toBeTruthy();
   });
 });
+
+describe('HomePage matter rows without a deadline (cou-93 item 6)', () => {
+  test('the due slot shows the stage, and stays empty when there is none — never "no deadline"', async () => {
+    overviewBody = {
+      matters: [
+        { path: 'matters/2026-06-forge.md', title: 'Forge — Duty Refund', frontmatter: { stage: 'working' }, mtimeMs: Date.now() },
+        { path: 'matters/2026-05-twine.md', title: 'Twine — Pilot', frontmatter: {}, mtimeMs: Date.now() - 1000 },
+      ],
+      groups: { practice: 0, knowledge: 0, other: 0 },
+    };
+    render(<HomePage threads={threads} onAsk={() => {}} onOpenThread={() => {}} />);
+    await waitFor(() => expect(screen.getByText('Forge — Duty Refund')).toBeTruthy());
+    expect(screen.getByText('working').className).toContain('v2-due');
+    expect(screen.queryByText('no deadline')).toBeNull();
+    const rows = document.querySelectorAll('.v2-matter');
+    expect(rows).toHaveLength(2);
+    // The row with neither has no slot and no leader pointing at nothing.
+    expect(rows[1]!.querySelector('.v2-due')).toBeNull();
+    expect(rows[1]!.querySelector('.leader')).toBeNull();
+  });
+});

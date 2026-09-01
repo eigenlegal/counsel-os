@@ -2,10 +2,12 @@ import { describe, expect, test } from 'bun:test';
 import type { MatterOverview } from '../../api/types';
 import {
   dueLabel,
+  dueSlot,
   greetingFor,
   nextActionOf,
   parseDeadline,
   sortMatters,
+  stageOf,
   starterFill,
   STARTERS,
   sublineFor,
@@ -102,5 +104,23 @@ describe('the ask box', () => {
     expect(starterFill("What's our position on…")).toBe("What's our position on ");
     expect(starterFill('Draft a response')).toBe('Draft a response to ');
     expect(starterFill('What changed this week?')).toBe('What changed in the vault this week?');
+  });
+});
+
+describe('dueSlot (cou-93 item 6)', () => {
+  test('a deadline wins, hot or not', () => {
+    expect(dueSlot({ deadline: '2026-09-12' }, NOW)).toEqual({ text: 'due Sep 12', hot: true });
+    expect(dueSlot({ deadline: '2026-12-01', stage: 'working' }, NOW)).toEqual({ text: 'due Dec 1', hot: false });
+  });
+
+  test('no deadline shows the stage; no stage shows nothing — never "no deadline"', () => {
+    expect(dueSlot({ stage: 'working' }, NOW)).toEqual({ text: 'working', hot: false });
+    expect(dueSlot({ stage: '  ' }, NOW)).toBeNull();
+    expect(dueSlot({}, NOW)).toBeNull();
+  });
+
+  test('stageOf trims and blanks', () => {
+    expect(stageOf({ stage: ' signed ' })).toBe('signed');
+    expect(stageOf({})).toBeNull();
   });
 });

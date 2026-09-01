@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, fetchJson, streamStep } from '../../api/client';
-import type { Health, RunRecord, Thread, ThreadEvent, ThreadHeader } from '../../api/types';
+import type { Health, RunRecord, Thread, ThreadEvent, ThreadHeader, VaultFile } from '../../api/types';
 import { proposalFromHash } from '../../app';
 import { applyStepEvent, buildTurns, emptyAssistantTurn, type AssistantTurn, type Turn } from '../../chat/turns';
 import { createThread, defaultProviderId, titleFor } from '../threads';
 import { relTime } from '../time';
-import { prettifyName } from '../vault/frontmatter';
+import { prettifyName, readerModel } from '../vault/frontmatter';
 import { Composer, type ComposerSeed } from './Composer';
 import { TurnView } from './Turn';
 
@@ -36,6 +36,9 @@ export interface ChatProps {
   /** The ask was sent — the shell drops it, so a later remount of this pane
    * cannot send it a second time. */
   onAskUsed?: () => void;
+  /** Every file path the vault holds (`GET /vault/index`): a path the model
+   * writes in an answer becomes a click target only when it is in here. */
+  vaultPaths?: ReadonlySet<string>;
 }
 
 function detail(err: unknown): string {
@@ -50,11 +53,11 @@ function titleOf(header: ThreadHeader): string {
   return title === '' ? 'Untitled' : title;
 }
 
-/** Best-effort, client-side (spec §3.3): the thread's matter chip is the
- * first matter file the thread read, prettified. `matters/` is the
- * conventional dir; a vault with a custom `matters_path` just shows no chip
- * — the chip is a courtesy, not a record. */
-export function matterChipOf(events: ThreadEvent[]): string | null {
+/** Best-effort, client-side (spec §3.3): the thread's matter is the first
+ * matter file the thread read. `matters/` is the conventional dir; a vault
+ * with a custom `matters_path` just shows no matter line — it is a
+ * courtesy, not a record. */
+export function matterPathOf(events: ThreadEvent[]): string | null {
   for (const ev of events) {
     if ('t' in ev) continue;
     if (ev.type !== 'tool_call' || ev.name !== 'vault_read') continue;
@@ -62,9 +65,15 @@ export function matterChipOf(events: ThreadEvent[]): string | null {
     if (typeof input !== 'object' || input === null) continue;
     const path = (input as Record<string, unknown>)['path'];
     if (typeof path !== 'string' || !path.startsWith('matters/')) continue;
-    return prettifyName(path.slice(path.lastIndexOf('/') + 1));
+    return path;
   }
   return null;
+}
+
+/** What the header calls the matter before (or without) reading its file:
+ * the filename prettified, as the reader's own dochead would. */
+function matterFallbackTitle(path: string): string {
+  return prettifyName(path.slice(path.lastIndexOf('/') + 1));
 }
 
 /**
@@ -88,6 +97,7 @@ export function Chat({
   onSeedUsed,
   initialAsk,
   onAskUsed,
+  vaultPaths,
 }: ChatProps): JSX.Element {
   /** The thread this pane is about. A ref, not only state: `load` and
    * `send` read it outside a render, and it changes exactly once — from
@@ -346,14 +356,49 @@ export function Chat({
   const isDraft = threadId === null && pending === null && frozen.length === 0;
   const empty = !loading && threadId !== null && turns.length === 0 && frozen.length === 0 && pending === null;
 
-  const matter = thread === null ? null : matterChipOf(thread.events);
+  const matterPath = thread === null ? null : matterPathOf(thread.events);
+
+  /**
+   * The matter's REAL title for the header (cou-93 item 7): a slug
+   * prettified (`Sinai lerner k12 partnership`) is not what the lawyer calls
+   * the matter. One read of the matter file, through the same frontmatter
+   * model the reader uses; until it lands — or if it cannot — the prettified
+   * filename stands in, so the line never flashes empty.
+   */
+  const [matterTitles, setMatterTitles] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (matterPath === null || matterTitles[matterPath] !== undefined) return;
+    let cancelled = false;
+    void (async () => {
+      let title = matterFallbackTitle(matterPath);
+      try {
+        const file = await fetchJson<VaultFile>(`/vault/read?path=${encodeURIComponent(matterPath)}`);
+        if (typeof file.content === 'string') title = readerModel(file.content, matterPath).title;
+      } catch {
+        // A matter file that moved or cannot be read keeps the fallback —
+        // the header is a courtesy, not a record.
+      }
+      if (!cancelled) setMatterTitles(current => ({ ...current, [matterPath]: title }));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [matterPath]);
+  const matterTitle = matterPath === null ? null : (matterTitles[matterPath] ?? matterFallbackTitle(matterPath));
 
   return (
     <section className="v2-chat">
       {thread === null ? null : (
         <header className="v2-thread-head">
           <h1>{titleOf(thread.header)}</h1>
-          {matter === null ? null : <span className="v2-matter-chip">matter: {matter}</span>}
+          {/* Set text with a small-caps run-in, linked to the file — not a
+              pill (the ledger language has none). */}
+          {matterPath === null || matterTitle === null ? null : (
+            <a className="v2-thread-matter" href={`#/vault?path=${encodeURIComponent(matterPath)}`} title={matterPath}>
+              <span className="v2-tag">Matter</span>
+              <span className="v2-thread-matter-name">{matterTitle}</span>
+            </a>
+          )}
           <span className="v2-thread-date">{relTime(thread.header.createdAt)}</span>
         </header>
       )}
@@ -372,14 +417,15 @@ export function Chat({
             onReload={reload}
             onDecided={decided}
             onOpenFile={onOpenFile}
+            vaultPaths={vaultPaths}
           />
         ))}
         {frozen.map((turn, i) => (
-          <TurnView key={`frozen-${i}`} turn={turn} threadId={threadId} onReload={reload} onDecided={decided} onOpenFile={onOpenFile} />
+          <TurnView key={`frozen-${i}`} turn={turn} threadId={threadId} onReload={reload} onDecided={decided} onOpenFile={onOpenFile} vaultPaths={vaultPaths} />
         ))}
         {pending === null ? null : <TurnView turn={{ kind: 'user', content: pending }} threadId={threadId} onReload={reload} />}
         {live === null ? null : (
-          <TurnView turn={live} threadId={threadId} live liveMs={liveMs} onReload={reload} onDecided={decided} onOpenFile={onOpenFile} />
+          <TurnView turn={live} threadId={threadId} live liveMs={liveMs} onReload={reload} onDecided={decided} onOpenFile={onOpenFile} vaultPaths={vaultPaths} />
         )}
       </div>
 

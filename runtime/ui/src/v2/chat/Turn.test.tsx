@@ -171,3 +171,32 @@ describe('TurnView work line', () => {
     expect(document.querySelector('.v2-work-line')).toBeNull();
   });
 });
+
+describe('TurnView vault-index chips (cou-93 item 8)', () => {
+  const index: ReadonlySet<string> = new Set(['matters/acme.md', 'practice/standards/nda.md']);
+
+  test('a full path the vault holds is a chip even when this step never read it', async () => {
+    const opened: string[] = [];
+    const turn: AssistantTurn = emptyAssistantTurn({ status: 'done', text: 'Three files touched: `matters/acme.md`.' });
+    render(<TurnView turn={turn} threadId="t-1" onReload={() => {}} onOpenFile={path => opened.push(path)} vaultPaths={index} />);
+    const chip = document.querySelector('.v2-prose code.v2-cite')!;
+    expect(chip.textContent).toBe('matters/acme.md');
+    await userEvent.click(chip);
+    expect(opened).toEqual(['matters/acme.md']);
+  });
+
+  test('a bare basename or a path the vault does not hold stays plain code', async () => {
+    const opened: string[] = [];
+    const turn: AssistantTurn = emptyAssistantTurn({ status: 'done', text: 'See `nda.md` and `matters/ghost.md`.' });
+    render(<TurnView turn={turn} threadId="t-1" onReload={() => {}} onOpenFile={path => opened.push(path)} vaultPaths={index} />);
+    expect(document.querySelector('.v2-prose code.v2-cite')).toBeNull();
+    for (const code of Array.from(document.querySelectorAll('.v2-prose code'))) await userEvent.click(code);
+    expect(opened).toEqual([]);
+  });
+
+  test('without an index, behaviour is exactly the derived-only rule', () => {
+    const turn: AssistantTurn = emptyAssistantTurn({ status: 'done', text: 'See `matters/acme.md`.' });
+    render(<TurnView turn={turn} threadId="t-1" onReload={() => {}} onOpenFile={() => {}} />);
+    expect(document.querySelector('.v2-prose code.v2-cite')).toBeNull();
+  });
+});

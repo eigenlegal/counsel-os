@@ -21,7 +21,7 @@ describe('WorkLine', () => {
 
     await userEvent.click(line);
     expect(document.querySelector('.v2-steps')).toBeTruthy();
-    expect(screen.getByText('Searched')).toBeTruthy();
+    expect(screen.getByText('Searched the vault for')).toBeTruthy();
   });
 
   test('no tools, no line', () => {

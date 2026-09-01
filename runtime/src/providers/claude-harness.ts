@@ -13,7 +13,7 @@ const BUILTIN_TOOLS = ['Bash', 'Read', 'Write', 'Edit', 'MultiEdit', 'Glob', 'Gr
 
 type AnyMsg = { type: string; [k: string]: unknown };
 
-export function mapClaudeMessage(raw: unknown, outputSchema?: ZodType<unknown>): StepEvent[] {
+export function mapClaudeMessage(raw: unknown, outputSchema?: ZodType<unknown>, toolNames?: Map<string, string>): StepEvent[] {
   const msg = raw as AnyMsg;
   const out: StepEvent[] = [];
   if (msg.type === 'system' && msg.subtype === 'init' && typeof msg.session_id === 'string') {
@@ -25,11 +25,18 @@ export function mapClaudeMessage(raw: unknown, outputSchema?: ZodType<unknown>):
       if (block.type === 'text' && typeof block.text === 'string') out.push({ type: 'text', text: block.text });
       else if (block.type === 'tool_use') {
         const name = String(block.name);
-        out.push({ type: 'tool_call', id: String(block.id), name: name.startsWith(MCP_PREFIX) ? name.slice(MCP_PREFIX.length) : name, input: block.input });
+        const mapped = name.startsWith(MCP_PREFIX) ? name.slice(MCP_PREFIX.length) : name;
+        toolNames?.set(String(block.id), mapped);
+        out.push({ type: 'tool_call', id: String(block.id), name: mapped, input: block.input });
       } else if (block.type === 'tool_result') {
         const parts = Array.isArray(block.content) ? block.content as Array<{ type: string; text?: string }> : [];
         const text = parts.filter(p => p.type === 'text').map(p => p.text ?? '').join('');
-        out.push({ type: 'tool_result', id: String(block.tool_use_id), name: '', output: text || block.content, isError: Boolean(block.is_error) });
+        // The SDK's tool_result block carries no tool name — only the
+        // `tool_use_id`. The paired call's name (recorded above, in an
+        // earlier message of the same run) fills it, so consumers never see
+        // a nameless result (cou-78 / cou-93 item 2).
+        const id = String(block.tool_use_id);
+        out.push({ type: 'tool_result', id, name: toolNames?.get(id) ?? '', output: text || block.content, isError: Boolean(block.is_error) });
       }
     }
     return out;
@@ -203,8 +210,11 @@ export class ClaudeHarnessProvider implements ModelProvider {
       const stream = query({ prompt, options: buildQueryOptions(req, this.opts.model, server, cwd) });
 
       let sessionId: string | undefined;
+      // tool_use → tool_result pairing across messages: results name their
+      // call only by id, so the names live for the run and fill each result.
+      const toolNames = new Map<string, string>();
       for await (const msg of stream) {
-        for (const ev of mapClaudeMessage(msg, req.outputSchema)) {
+        for (const ev of mapClaudeMessage(msg, req.outputSchema, toolNames)) {
           if (ev.type === 'session') { sessionId = ev.id; yield ev; continue; }
           yield ev.type === 'done' && sessionId ? { ...ev, sessionId } : ev;
         }

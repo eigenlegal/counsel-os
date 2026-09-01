@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, userEvent, waitFor } from '../../te
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { TOKEN_KEY } from '../../api/token';
 import type { VaultHit, VaultOverview } from '../../api/types';
-import { VaultPage } from './VaultPage';
+import { cleanSnippet, VaultPage } from './VaultPage';
 
 const realFetch = globalThis.fetch;
 
@@ -54,18 +54,40 @@ describe('VaultPage', () => {
   });
 
   test('Enter runs the search; results replace the tree; clear restores it', async () => {
-    hits = [{ path: 'matters/acme.md', snippet: 'Term: 2 years', score: 1 }];
+    hits = [
+      { path: 'matters/acme.md', snippet: 'Term: 2 years', score: 1 },
+      { path: 'practice/reference/corporate-partnering.md', snippet: 'practice/reference/corporate-partnering.md', score: 0.5 },
+    ];
     const opened: string[] = [];
     render(<VaultPage path={null} onOpen={path => opened.push(path)} />);
     await waitFor(() => expect(screen.getByText('Acme Corp — NDA')).toBeTruthy());
 
-    await userEvent.type(screen.getByLabelText('Search the vault'), 'acme{Enter}');
+    await userEvent.type(screen.getByLabelText('Search the vault'), 'acme');
+    // Typing alone searches nothing, and the pane says so (cou-93 item 4).
+    expect(screen.getByText('Enter to search')).toBeTruthy();
+    await userEvent.type(screen.getByLabelText('Search the vault'), '{Enter}');
     expect(searched).toEqual(['acme']);
-    await waitFor(() => expect(screen.getByText('matters/acme.md')).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('region', { name: 'Search results' })).toBeTruthy());
+    const results = screen.getByRole('region', { name: 'Search results' }) as HTMLElement;
     // The grouped tree is replaced until the search clears (spec §3.4).
-    expect(screen.queryByText('Acme Corp — NDA')).toBeNull();
+    expect(document.querySelector('.v2-vgroup + .v2-vrow-ind')).toBeNull();
+    expect(screen.queryByText('Enter to search')).toBeNull();
 
-    await userEvent.click(screen.getByText('matters/acme.md'));
+    // A hit is a DOCUMENT: the matter's title, its folder as a run-in, the
+    // matched line — never a bare truncated path (cou-93 item 4).
+    const rows = Array.from(results.querySelectorAll<HTMLElement>('.v2-vhit'));
+    expect(rows).toHaveLength(2);
+    expect(results.textContent).toContain('Results · 2');
+    expect(rows[0]!.querySelector('.v2-vhit-title')?.textContent).toBe('Acme Corp — NDA');
+    expect(rows[0]!.querySelector('.v2-vhit-dir')?.textContent).toBe('matters');
+    expect(rows[0]!.querySelector('.v2-vhit-line')?.textContent).toContain('Term: 2 years');
+    expect(rows[0]!.getAttribute('title')).toBe('matters/acme.md');
+    // A filename hit (the server echoes the path as its snippet) prettifies
+    // the filename and does not print the path twice.
+    expect(rows[1]!.querySelector('.v2-vhit-title')?.textContent).toBe('Corporate partnering');
+    expect(rows[1]!.querySelector('.v2-vhit-line')?.textContent).toBe('practice/reference');
+
+    await userEvent.click(rows[0]!);
     expect(opened).toEqual(['matters/acme.md']);
 
     await userEvent.click(screen.getByRole('button', { name: 'clear' }));
@@ -99,5 +121,14 @@ describe('VaultPage', () => {
     render(<VaultPage path="matters/acme.md" onOpen={() => {}} />);
     await waitFor(() => expect(document.querySelector('.v2-doc')).toBeTruthy());
     await waitFor(() => expect(screen.getByText('Acme')).toBeTruthy());
+  });
+});
+
+describe('cleanSnippet', () => {
+  test('strips the markdown a matched line carries', () => {
+    expect(cleanSnippet('## Audit Rights')).toBe('Audit Rights');
+    expect(cleanSnippet('- **Our standard:** Net 30')).toBe('Our standard: Net 30');
+    expect(cleanSnippet('> quoted')).toBe('quoted');
+    expect(cleanSnippet('plain line')).toBe('plain line');
   });
 });

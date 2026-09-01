@@ -1,8 +1,32 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, fetchJson } from '../../api/client';
 import type { VaultEntry, VaultHit, VaultOverview } from '../../api/types';
+import { prettifyName } from './frontmatter';
 import { Reader } from './Reader';
 import { VaultTree } from './VaultTree';
+
+/** Where a hit lives, for the run-in: `practice/reference`, or `''` at the root. */
+function dirOf(path: string): string {
+  const cut = path.lastIndexOf('/');
+  return cut === -1 ? '' : path.slice(0, cut);
+}
+
+/**
+ * A hit is a DOCUMENT, not a path (cou-93 item 4): thirty truncated
+ * `practice/reference/corporate-partnering…` rows told the reader nothing.
+ * A matter shows its overview title; anything else its filename prettified,
+ * the way the reader's own dochead does. The full path stays one hover away.
+ */
+export function hitTitle(path: string, overview: VaultOverview | null): string {
+  const matter = overview?.matters.find(m => m.path === path);
+  return matter?.title ?? prettifyName(path.slice(path.lastIndexOf('/') + 1));
+}
+
+/** The matched line as prose: heading marks, list bullets, quote bars and
+ * bold stars are markdown for the reader's editor, not for a results row. */
+export function cleanSnippet(snippet: string): string {
+  return snippet.replace(/^[\s#>*-]+/, '').replace(/\*\*/g, '').trim();
+}
 
 export interface VaultPageProps {
   /** The file named by `#/vault?path=…`, or `null` for the tree alone. */
@@ -94,11 +118,20 @@ export function VaultPage({ path, onOpen, onAsk }: VaultPageProps): JSX.Element 
           />
           <kbd aria-hidden="true">⌘K</kbd>
         </div>
+        {/* Typing alone searches nothing — said before the reader wonders
+            why the tree did not move (cou-93 item 4). */}
+        {hits === null && query.trim() !== '' ? (
+          <p className="muted v2-vhint" role="status">
+            Enter to search
+          </p>
+        ) : null}
 
         {hits !== null ? (
           <div className="v2-tlist v2-vresults" role="region" aria-label="Search results">
             <div className="v2-vgroup">
-              Results{' '}
+              <span>
+                Results{hits.length === 0 ? null : <span className="v2-vcount"> · {hits.length}</span>}
+              </span>
               <button type="button" className="v2-link" onClick={clear}>
                 clear
               </button>
@@ -111,19 +144,31 @@ export function VaultPage({ path, onOpen, onAsk }: VaultPageProps): JSX.Element 
                 </button>
               </p>
             ) : (
-              hits.map(hit => (
-                <button
-                  key={hit.path}
-                  type="button"
-                  className="v2-vrow"
-                  aria-current={path === hit.path ? 'page' : undefined}
-                  onClick={() => onOpen(hit.path)}
-                >
-                  <span className="v2-vname" title={hit.snippet}>
-                    {hit.path}
-                  </span>
-                </button>
-              ))
+              hits.map(hit => {
+                const dir = dirOf(hit.path);
+                // The server falls back to the path itself when no line
+                // matched (a filename hit); repeating it under the title
+                // would say nothing twice.
+                const snippet = hit.snippet === hit.path ? '' : cleanSnippet(hit.snippet);
+                return (
+                  <button
+                    key={hit.path}
+                    type="button"
+                    className="v2-vrow v2-vhit"
+                    aria-current={path === hit.path ? 'page' : undefined}
+                    title={hit.path}
+                    onClick={() => onOpen(hit.path)}
+                  >
+                    <span className="v2-vhit-title">{hitTitle(hit.path, overview)}</span>
+                    {dir === '' && snippet === '' ? null : (
+                      <span className="v2-vhit-line">
+                        {dir === '' ? null : <span className="v2-vhit-dir">{dir}</span>}
+                        {snippet}
+                      </span>
+                    )}
+                  </button>
+                );
+              })
             )}
           </div>
         ) : error !== null ? (

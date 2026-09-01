@@ -20,6 +20,10 @@ export interface TurnProps {
   /** Passed to every proposal card: a decision landed on this path. */
   onDecided?: (path: string) => void;
   onOpenFile?: (path: string) => void;
+  /** Every file path the vault holds. A backticked FULL path the answer
+   * names becomes a click target when it is one of these (cou-93 item 8) —
+   * the second gate beside the derivation set, never a third source. */
+  vaultPaths?: ReadonlySet<string>;
 }
 
 /** The record's per-call timings, keyed onto this turn's tool ids. The
@@ -56,14 +60,33 @@ export function msFromRun(tools: ToolCallView[], run: RunRecord | undefined): Re
  * document without complaining — an unclosed `**` is simply not emphasis
  * yet — and re-parsing per chunk is memoized on the text, so the answer does
  * not change typeface at the moment the stream ends.
+ *
+ * A second, wider gate (cou-93 item 8): a code span whose text is a FULL
+ * path the vault holds (`vaultPaths`, from `GET /vault/index`) is a chip too
+ * — "see `matters/acme.md`" in an answer that listed the directory rather
+ * than reading the file was dead text. Full paths only: a bare basename
+ * still resolves through the derivation map alone, so an ambiguous `nda.md`
+ * can never open the wrong file. Same minting, same click gate — the model
+ * still cannot name a path into existence.
  */
-function Prose({ text, tools, onOpenFile }: { text: string; tools: ToolCallView[]; onOpenFile?: (path: string) => void }): JSX.Element {
+function Prose({
+  text,
+  tools,
+  vaultPaths,
+  onOpenFile,
+}: {
+  text: string;
+  tools: ToolCallView[];
+  vaultPaths?: ReadonlySet<string>;
+  onOpenFile?: (path: string) => void;
+}): JSX.Element {
   // The memos key on the paths as a STRING, not on the array: `buildTurns`
   // rebuilds every turn on every render of the pane, so an array dep would
   // re-parse the whole transcript's markdown on each frame of a stream.
   const cites = readPathsOf(tools).join('\n');
   const derived = useMemo(() => citationMap(cites === '' ? [] : cites.split('\n')), [cites]);
-  const html = useMemo(() => markCitations(renderMarkdown(text), new Set(derived.keys())), [text, derived]);
+  const spellings = useMemo(() => new Set([...derived.keys(), ...(vaultPaths ?? [])]), [derived, vaultPaths]);
+  const html = useMemo(() => markCitations(renderMarkdown(text), spellings), [text, spellings]);
   return (
     <div
       className="markdown v2-prose"
@@ -71,9 +94,11 @@ function Prose({ text, tools, onOpenFile }: { text: string; tools: ToolCallView[
         if (onOpenFile === undefined) return;
         const chip = (event.target as Element).closest?.('code.v2-cite');
         if (chip === null || chip === undefined) return;
-        // The map is the derivation set, so this is the second gate: a chip
-        // whose text is not a file this step read opens nothing.
-        const path = derived.get(chip.textContent ?? '');
+        // The derivation map, then the vault index, are the second gate: a
+        // chip whose text is neither a file this step read nor a path the
+        // vault holds opens nothing.
+        const spelled = chip.textContent ?? '';
+        const path = derived.get(spelled) ?? (vaultPaths?.has(spelled) === true ? spelled : undefined);
         if (path === undefined) return;
         event.preventDefault();
         onOpenFile(path);
@@ -89,7 +114,7 @@ function Prose({ text, tools, onOpenFile }: { text: string; tools: ToolCallView[
  * above the text on both paths, so the reader sees the work as it happens
  * and can still find it after the answer lands.
  */
-export function TurnView({ turn, threadId, run, live = false, liveMs = {}, onReload, onDecided, onOpenFile }: TurnProps): JSX.Element {
+export function TurnView({ turn, threadId, run, live = false, liveMs = {}, onReload, onDecided, onOpenFile, vaultPaths }: TurnProps): JSX.Element {
   if (turn.kind === 'user') {
     return (
       <article className="v2-turn v2-turn-user">
@@ -117,7 +142,7 @@ export function TurnView({ turn, threadId, run, live = false, liveMs = {}, onRel
               working…
             </p>
           ) : (
-            <Prose text={turn.text} tools={turn.tools} onOpenFile={onOpenFile} />
+            <Prose text={turn.text} tools={turn.tools} vaultPaths={vaultPaths} onOpenFile={onOpenFile} />
           )}
         </>
       ) : (
@@ -125,7 +150,7 @@ export function TurnView({ turn, threadId, run, live = false, liveMs = {}, onRel
           {/* The work line reads ABOVE the answer, finished or not: what was
               consulted, then what it concluded. */}
           <WorkLine tools={turn.tools} ms={ms} onOpenFile={onOpenFile} />
-          {turn.text === '' ? null : <Prose text={turn.text} tools={turn.tools} onOpenFile={onOpenFile} />}
+          {turn.text === '' ? null : <Prose text={turn.text} tools={turn.tools} vaultPaths={vaultPaths} onOpenFile={onOpenFile} />}
 
           {/* The turn owns its error text: it reads here, unfolded, and the
               strip's record leaves out the identical copy it holds. */}

@@ -5,7 +5,7 @@ import { Tree } from '../../vault/Tree';
 import { railLabel } from '../Rail';
 import { relTime } from '../time';
 import {
-  dueLabel,
+  dueSlot,
   greetingFor,
   nextActionOf,
   sortMatters,
@@ -237,7 +237,7 @@ export function HomePage({ threads, onAsk, onOpenThread }: HomePageProps): JSX.E
                 <p className="muted">No matters yet.</p>
               ) : (
                 matters.slice(0, MAX_MATTERS).map(matter => {
-                  const due = dueLabel(matter.frontmatter);
+                  const slot = dueSlot(matter.frontmatter);
                   const next = nextActionOf(matter.frontmatter);
                   return (
                     <div className="v2-matter" key={matter.path}>
@@ -245,8 +245,12 @@ export function HomePage({ threads, onAsk, onOpenThread }: HomePageProps): JSX.E
                         <a className="v2-matter-name" href={`#/vault?path=${encodeURIComponent(matter.path)}`}>
                           {matter.title}
                         </a>
-                        <span className="leader" aria-hidden="true" />
-                        <span className={due.hot ? 'v2-due v2-due-hot' : 'v2-due'}>{due.text}</span>
+                        {slot === null ? null : (
+                          <>
+                            <span className="leader" aria-hidden="true" />
+                            <span className={slot.hot ? 'v2-due v2-due-hot' : 'v2-due'}>{slot.text}</span>
+                          </>
+                        )}
                       </div>
                       <div className="v2-na">
                         {next === null ? null : (

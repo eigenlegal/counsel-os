@@ -20,6 +20,16 @@ describe('mapClaudeMessage', () => {
     expect(ev).toEqual([{ type: 'tool_result', id: 't1', name: '', output: '{"x":1}', isError: false }]);
   });
 
+  test('a tool_result takes the name of the tool_use it pairs with, across messages (cou-78)', () => {
+    const names = new Map<string, string>();
+    mapClaudeMessage({ type: 'assistant', message: { content: [{ type: 'tool_use', id: 't1', name: 'mcp__counsel__vault_list', input: { dir: '.' } }] } }, undefined, names);
+    const ev = mapClaudeMessage({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 't1', content: [{ type: 'text', text: '[]' }], is_error: false }] } }, undefined, names);
+    expect(ev).toEqual([{ type: 'tool_result', id: 't1', name: 'vault_list', output: '[]', isError: false }]);
+    // An id the map never saw stays nameless rather than guessing.
+    const orphan = mapClaudeMessage({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 't9', content: [], is_error: false }] } }, undefined, names);
+    expect(orphan[0]).toMatchObject({ type: 'tool_result', id: 't9', name: '' });
+  });
+
   test('result with valid structured output → done', () => {
     const ev = mapClaudeMessage({ type: 'result', subtype: 'success', output: { a: 1 }, usage: { input_tokens: 10, output_tokens: 5 }, total_cost_usd: 0.01 }, z.object({ a: z.number() }));
     expect(ev).toEqual([{ type: 'done', output: { a: 1 }, usage: { inputTokens: 10, outputTokens: 5, costUsd: 0.01 } }]);

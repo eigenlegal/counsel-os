@@ -36,7 +36,11 @@ export function groupRoot(rootEntries: VaultEntry[], overview: VaultOverview): T
   // `entities · law · memory` against the mock.
   const spec = [...KNOWLEDGE_DIRS];
   knowledge.sort((a, b) => spec.indexOf(a.path) - spec.indexOf(b.path));
-  return { mattersDir, matters: overview.matters, practice, knowledge, other };
+  // Matters read newest first. The overview arrives in the filesystem's
+  // order — no order a reader can follow (cou-93 item 5); recency is the
+  // key Home breaks its ties on, so the two surfaces agree.
+  const matters = [...overview.matters].sort((a, b) => b.mtimeMs - a.mtimeMs);
+  return { mattersDir, matters, practice, knowledge, other };
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;

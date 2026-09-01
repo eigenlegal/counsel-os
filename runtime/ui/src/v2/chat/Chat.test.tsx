@@ -277,7 +277,7 @@ describe("v2 Chat, given home's ask", () => {
 });
 
 describe('v2 Chat, the thread header', () => {
-  test('serif title, the matter chip from the first matter read, and the date', async () => {
+  test('serif title, the matter line from the first matter read, and the date', async () => {
     const events: ThreadEvent[] = [
       { t: 'user', at, content: 'check it' },
       { t: 'step', at, runId: 'r-1', provider: 'fake/fake' },
@@ -290,11 +290,17 @@ describe('v2 Chat, the thread header', () => {
     );
     render(<Chat threadId="t-1" health={health} />);
     await waitFor(() => expect(document.querySelector('.v2-thread-head h1')?.textContent).toBe('NDA residuals fallback'));
-    // The first MATTER file, not the first file read at all.
-    expect(document.querySelector('.v2-matter-chip')?.textContent).toBe('matter: Acme nda');
+    // The first MATTER file, not the first file read at all — set as a
+    // run-in plus the matter's REAL title (its file's H1 here), linked to
+    // the file; no pill (cou-93 item 7).
+    const line = document.querySelector('a.v2-thread-matter')!;
+    expect(line.getAttribute('href')).toBe('#/vault?path=matters%2Facme-nda.md');
+    expect(line.querySelector('.v2-tag')?.textContent).toBe('Matter');
+    await waitFor(() => expect(line.querySelector('.v2-thread-matter-name')?.textContent).toBe('NDA'));
+    expect(document.querySelector('.v2-matter-chip')).toBeNull();
   });
 
-  test('a thread nobody named reads as Untitled, and a thread on no matter shows no chip', async () => {
+  test('a thread nobody named reads as Untitled, and a thread on no matter shows no matter line', async () => {
     install(async () =>
       json(
         thread('t-1', [
@@ -307,7 +313,7 @@ describe('v2 Chat, the thread header', () => {
     );
     render(<Chat threadId="t-1" health={health} />);
     await waitFor(() => expect(document.querySelector('.v2-thread-head h1')?.textContent).toBe('Untitled'));
-    expect(document.querySelector('.v2-matter-chip')).toBeNull();
+    expect(document.querySelector('.v2-thread-matter')).toBeNull();
   });
 
   test('a draft has no thread, so it has no header', () => {

@@ -1056,3 +1056,21 @@ describe('redesign reads (spec §4)', () => {
     expect(typeof body.mtimeMs).toBe('number');
   });
 });
+
+describe('vault index (cou-93 item 8)', () => {
+  test('lists every file path, flat, through the same listing the tree uses', async () => {
+    const app = appWithFake();
+    await vault.write('default', 'matters/acme/notes.md', 'NOTES\n');
+    await vault.write('default', 'practice/standards/nda.md', '# NDA\n');
+    const res = await call(app, 'GET', '/vault/index');
+    expect(res.status).toBe(200);
+    const paths = (await res.json()) as string[];
+    expect(paths).toContain('matters/acme/notes.md');
+    expect(paths).toContain('practice/standards/nda.md');
+    // Files only — a directory is not a thing an answer cites.
+    expect(paths).not.toContain('matters');
+    expect(paths).not.toContain('matters/acme');
+    // The store's own bookkeeping never appears.
+    expect(paths.some(p => p.toLowerCase().startsWith('.counsel'))).toBe(false);
+  });
+});
