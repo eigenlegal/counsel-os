@@ -14,6 +14,7 @@ function fakeSource(files: Record<string, string>): ContentSource & { files: Rec
     files,
     list: prefix => Object.keys(files).filter(p => isShippedPath(p) && (p === prefix || p.startsWith(`${prefix}/`))).sort(),
     has: path => path in files,
+    readBytes: path => new TextEncoder().encode(files[path] ?? ''),
     read: path => {
       const text = files[path];
       if (text === undefined) throw new Error(`not shipped: ${path}`);
