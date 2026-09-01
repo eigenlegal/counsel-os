@@ -354,4 +354,55 @@ export interface SetupResponse {
     git: 'initialized' | 'present' | 'skipped' | 'unavailable' | 'failed';
     warnings: string[];
   };
+
+/** `GET /content/status` (spec 2026-09-01 §6). COPIED from
+ * `runtime/src/content/update.ts`; a change there is a change here. */
+export type ContentItemStatus = 'current' | 'update-available' | 'user-modified' | 'vault-only' | 'missing' | 'upstream-changed';
+
+export interface ContentItem {
+  path: string;
+  shipped: string | null;
+  group: 'law' | 'practice';
+  area: string;
+  status: ContentItemStatus;
+  reason?: 'managed-by' | 'law-management' | 'edited' | 'no-baseline';
+  diff?: string;
+  baseline?: 'received' | 'vault';
+  applicable: boolean;
+}
+
+export interface ContentStatus {
+  shippedVersion: string;
+  vaultVersion: string | null;
+  receivedAt: string | null;
+  lawManagement: 'plugin' | 'user';
+  autoApplyLawUpdates: boolean;
+  items: ContentItem[];
+  counts: Record<ContentItemStatus, number>;
+}
+
+/** `POST /content/apply` — 200. */
+export interface ContentApplyResult {
+  applied: string[];
+  skipped: string[];
+}
+
+/** `GET /doctor` (spec 2026-09-01 §7). COPIED from `runtime/src/doctor/`. */
+export type DoctorSeverity = 'ok' | 'warn' | 'error';
+
+export interface DoctorFinding {
+  check: string;
+  severity: DoctorSeverity;
+  message: string;
+  detail?: string;
+  paths?: string[];
+  fix?: string;
+}
+
+export interface DoctorReport {
+  at: string;
+  vault: string;
+  findings: DoctorFinding[];
+  verdict: 'healthy' | 'warnings' | 'broken';
+  summary: string;
 }

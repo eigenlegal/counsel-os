@@ -4,6 +4,8 @@ import type { Health as HealthData, SettingsErrorBody, SettingsView } from '../.
 import { Health } from '../../settings/Health';
 import { ProviderCombo } from '../../settings/ProviderCombo';
 import { ProviderTest } from '../../settings/ProviderTest';
+import { ContentGroup } from './ContentGroup';
+import { DoctorLedger } from './DoctorLedger';
 import {
   emptyRoute,
   emptyRow,
@@ -80,8 +82,10 @@ export function SettingsPage({ health }: SettingsPageProps): JSX.Element {
               </ul>
             )}
           </section>
+          <ContentGroup />
           <section className="v2-group">
             <Health health={health} effective={view.effective} file={view.file} />
+            <DoctorLedger />
           </section>
         </>
       )}
