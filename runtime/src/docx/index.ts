@@ -11,6 +11,8 @@ export { DocxPackage, NotADocxError, openDocx } from './package';
 export { MalformedXmlError, UnsafeXmlError } from './safety';
 export { applyRedlines, redlineExitCode, redlineOutputName, type ApplyOptions, type MatchSpec, type RedlineItem, type RedlineResult } from './redline';
 export { computeReplacementRegions, type Region } from './diff';
+export { compareDocuments, compareOutputName, type CompareOptions, type CompareResult } from './compare';
+export { diffRounds, roundsToMarkdown, type RoundFinding, type RoundsResult } from './rounds';
 export { addComment, commentCount } from './comments';
 
 /** `.docx`, in any casing. */
