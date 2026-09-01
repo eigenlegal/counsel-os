@@ -16,27 +16,26 @@
 :root {
   color-scheme: light dark;
 
-  /* light — paper (spec §2) */
-  --bg: #faf7f1;
+  /* light — paper, cooled (direction A "Ink & paper") */
+  --bg: #f7f7f5;
   --bg-raised: #ffffff;
-  --bg-sunken: #f4efe7;
-  --bg-hover: #f1ece3;
-  --fg: #241f19;
-  --fg-muted: #5f584d;
-  --fg-faint: #7a7061; /* 4.55:1 on paper — was #8a8071 at 3.63:1 */
-  --border: #e6dfd2;
-  --border-strong: #d8cfbf;
-  --accent: #9a5d16; /* 4.97:1 — spec §2 said #a8681f, which measured 4.21:1 */
+  --bg-sunken: #f0f0ed;
+  --bg-hover: #ebebe7;
+  --fg: #1c1c1e;
+  --fg-muted: #55555a;
+  --fg-faint: #6e6e74;
+  --border: #e3e3df;
+  --border-strong: #cfcfca;
+  --accent: #2f5b9e; /* ink blue */
   --accent-ink: #ffffff;
-  --ok: #3f7a4f;
-  --warn: #8a6210; /* 5.12:1 — spec §2 said #996d10, which measured 4.32:1 */
-  --amber: #8a6210;
-  --error: #b4483a;
-  /* diff/redline tints: opaque, never alpha (spec §2, light row) */
-  --ins-bg: #e7f0e4;
-  --del-bg: #f6e3dd;
+  --ok: #2f7a4a;
+  --warn: #7a5a0f;
+  --amber: #7a5a0f;
+  --error: #b03a2e;
+  --ins-bg: #e3efe6;
+  --del-bg: #f5e2de;
 
-  --serif: "Iowan Old Style", Charter, Georgia, serif;
+  --serif: Charter, "Iowan Old Style", Georgia, serif;
   --sans: -apple-system, "Inter", "Segoe UI", system-ui, sans-serif;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 
@@ -45,7 +44,7 @@
 
   --radius: 10px;
   --radius-lg: 14px;
-  --shadow: 0 1px 2px rgba(36, 31, 25, 0.06), 0 8px 24px rgba(36, 31, 25, 0.08);
+  --shadow: 0 1px 2px rgba(20, 21, 23, 0.06), 0 8px 24px rgba(20, 21, 23, 0.08);
   --rail-w: 216px;
   --rail-w-icons: 56px;
   --drawer-w: 420px;
@@ -53,26 +52,29 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* dark (spec §2, verbatim) */
-    --bg: #171412;
-    --bg-raised: #1e1a17;
-    --bg-sunken: #1e1a17;
-    --bg-hover: #262019;
-    --fg: #ece5da;
-    --fg-muted: #b8ad9e;
-    --fg-faint: #8c8172; /* 4.80:1 on --bg, 4.52:1 on --bg-raised — was #877c6d at 4.48:1 */
-    --border: #322b24;
-    --border-strong: #3e352c;
-    --accent: #d99a4e;
-    --accent-ink: #1a1410;
-    --ok: #7fbf8e;
-    --warn: #d9b04e;
-    --amber: #d9b04e;
-    --error: #e08a7e;
-    --ins-bg: #233227;
-    --del-bg: #362420;
+    /* dark — graphite, cool (direction A) */
+    --bg: #141517;
+    --bg-raised: #1b1c1f;
+    --bg-sunken: #1b1c1f;
+    --bg-hover: #232428;
+    --fg: #e6e6e3;
+    --fg-muted: #adadaa;
+    --fg-faint: #8f8f8c;
+    --border: #2a2b2f;
+    --border-strong: #36373c;
+    --accent: #8fb3ec;
+    --accent-ink: #10131a;
+    --ok: #7fc292;
+    --warn: #d9b45a;
+    --amber: #d9b45a;
+    --error: #e3877c;
+    --ins-bg: #1f2f26;
+    --del-bg: #33241f;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.18);
   }
+  /* Dark ground makes every serif stroke read heavier; grayscale smoothing
+     brings the weight back to where the light theme sits. */
+  body { -webkit-font-smoothing: antialiased; }
 }
 
 * { box-sizing: border-box; }
@@ -787,3 +789,12 @@ a { color: var(--accent); }
 .v2-lost-acts { display: flex; align-items: center; gap: 14px; }
 .v2-lost-acts .v2-ask-go { margin-left: 0; }
 .v2-lost-error { font-size: 13px; color: var(--error); margin: 0; }
+
+/* ── Direction A: Ink & paper — text-first weights ─────────────────────── */
+.v2-prose { font-size: 16px; line-height: 1.68; }
+.v2-doc-md { font: 16px/1.7 var(--serif); }
+.v2-doc-md h2 { font: 500 18px/1.3 var(--serif); }
+.v2-doc-head h1 { font: 500 24px/1.25 var(--serif); letter-spacing: -0.005em; }
+.v2-thread-head h1 { font: 500 18px/1.3 var(--serif); }
+.v2-brand { font: 500 15px/1 var(--serif); }
+.v2-matter-name { font: 400 14.5px/1.35 var(--serif); }
