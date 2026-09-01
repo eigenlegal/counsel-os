@@ -16,35 +16,35 @@
 :root {
   color-scheme: light dark;
 
-  /* light — warm grey (direction B "Editorial sans") */
-  --bg: #f6f5f2;
+  /* light — monochrome graphite (direction C "Quiet legal") */
+  --bg: #f8f8f7;
   --bg-raised: #ffffff;
-  --bg-sunken: #efeeea;
-  --bg-hover: #eae9e4;
-  --fg: #1f1f1d;
-  --fg-muted: #5b5b57;
-  --fg-faint: #6f6f6a;
-  --border: #e2e1dc;
-  --border-strong: #cfcec8;
-  --accent: #1f6b6b; /* deep teal, links + the one button */
+  --bg-sunken: #f1f1ef;
+  --bg-hover: #ececea;
+  --fg: #1a1a1a;
+  --fg-muted: #545454;
+  --fg-faint: #6d6d6b;
+  --border: #e4e4e2;
+  --border-strong: #cfcfcc;
+  --accent: #7a2e2e; /* oxblood — the button and the live dot, nothing else */
   --accent-ink: #ffffff;
-  --ok: #2f7a4a;
-  --warn: #7a5a0f;
-  --amber: #7a5a0f;
-  --error: #b03a2e;
-  --ins-bg: #e3efe6;
-  --del-bg: #f5e2de;
+  --ok: #2f6b45;
+  --warn: #6f5410;
+  --amber: #6f5410;
+  --error: #a83a2e;
+  --ins-bg: #e5eee7;
+  --del-bg: #f3e3df;
 
-  --serif: "Iowan Old Style", Charter, Georgia, serif;
+  --serif: Charter, "Iowan Old Style", Georgia, serif;
   --sans: -apple-system, "Inter", "Segoe UI", system-ui, sans-serif;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 
   /* The spacing scale the whole sheet already measures in. */
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px;
 
-  --radius: 10px;
-  --radius-lg: 14px;
-  --shadow: 0 1px 2px rgba(31, 31, 29, 0.06), 0 8px 24px rgba(31, 31, 29, 0.08);
+  --radius: 8px;
+  --radius-lg: 12px;
+  --shadow: 0 1px 2px rgba(26, 26, 26, 0.05), 0 8px 24px rgba(26, 26, 26, 0.07);
   --rail-w: 216px;
   --rail-w-icons: 56px;
   --drawer-w: 420px;
@@ -52,18 +52,18 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* dark — warm graphite (direction B) */
-    --bg: #161615;
-    --bg-raised: #1d1d1b;
-    --bg-sunken: #1d1d1b;
-    --bg-hover: #262624;
-    --fg: #e8e7e2;
-    --fg-muted: #b0afa9;
-    --fg-faint: #8f8e88;
-    --border: #2b2b29;
-    --border-strong: #383836;
-    --accent: #6fc2bd;
-    --accent-ink: #0f1a1a;
+    /* dark — graphite (direction C) */
+    --bg: #151515;
+    --bg-raised: #1c1c1c;
+    --bg-sunken: #1c1c1c;
+    --bg-hover: #252525;
+    --fg: #e4e4e1;
+    --fg-muted: #acaca8;
+    --fg-faint: #8e8e8a;
+    --border: #2a2a2a;
+    --border-strong: #363636;
+    --accent: #cf8585;
+    --accent-ink: #1a0e0e;
     --ok: #7fc292;
     --warn: #d9b45a;
     --amber: #d9b45a;
@@ -788,14 +788,18 @@ a { color: var(--accent); }
 .v2-lost-acts .v2-ask-go { margin-left: 0; }
 .v2-lost-error { font-size: 13px; color: var(--error); margin: 0; }
 
-/* ── Direction B: Editorial sans — serif only for titles ───────────────── */
-.v2-prose { font-family: var(--sans); font-size: 15.5px; line-height: 1.65; }
-.v2-doc-md { font: 15.5px/1.65 var(--sans); }
-.v2-doc-md h2 { font: 600 15px/1.3 var(--sans); letter-spacing: -0.005em; }
-.v2-doc-head h1 { font: 500 26px/1.2 var(--serif); }
-.v2-thread-head h1 { font: 500 19px/1.3 var(--serif); }
-.v2-hi { font: 400 30px/1.3 var(--serif); }
-.v2-sub { font: 14px/1.5 var(--sans); }
-.v2-matter-name { font: 500 14px/1.35 var(--sans); }
-.v2-user-text { font-family: var(--sans); }
-.v2-status { font: italic 500 13px/1 var(--serif); }
+/* ── Direction C: Quiet legal — hierarchy by hairlines and small caps ───── */
+a, .v2-link { color: var(--fg); text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 2px; }
+.runin em { color: var(--fg); }
+.v2-status-pending { color: var(--fg-muted); }
+.v2-prose { font-size: 15.5px; line-height: 1.65; }
+.v2-doc-md { font: 15.5px/1.65 var(--serif); }
+.v2-doc-md h2 { font: 500 17px/1.3 var(--serif); margin: 30px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.v2-doc-md h3 { font: 600 11px/1 var(--sans); letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-faint); margin: 22px 0 8px; }
+.v2-prose h2 { font: 500 17px/1.3 var(--serif); padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+.v2-doc-head h1 { font: 400 24px/1.25 var(--serif); }
+.v2-thread-head h1 { font: 400 18px/1.3 var(--serif); }
+.v2-hi { font: 300 30px/1.3 var(--serif); }
+.v2-brand { font: 500 15px/1 var(--serif); }
+.v2-matter-name { font: 400 14.5px/1.35 var(--serif); }
+.v2-prose strong, .v2-doc-md strong { font-weight: 600; }
