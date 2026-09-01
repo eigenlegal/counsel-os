@@ -21,8 +21,9 @@ describe('titleFor', () => {
 
   test('cut at 60 characters, no trailing space', () => {
     const long = 'a'.repeat(50) + ' ' + 'b'.repeat(20);
-    expect(titleFor(long)).toBe('a'.repeat(50));
-    expect(titleFor('x'.repeat(61))).toBe('x'.repeat(60));
+    // Cut on the word, and the cut is visible.
+    expect(titleFor(long)).toBe(`${'a'.repeat(50)}…`);
+    expect(titleFor('x'.repeat(61))).toBe(`${'x'.repeat(60)}…`);
   });
 });
 

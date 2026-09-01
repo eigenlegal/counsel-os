@@ -3,7 +3,13 @@ import { ApiError, fetchJson } from '../../api/client';
 import type { VaultEntry, VaultOverview } from '../../api/types';
 import { ancestorsOf, baseName, orderEntries, ROOT } from '../../vault/Tree';
 import { Chevron } from '../icons';
+import { prettifyName } from './frontmatter';
 import { groupRoot, monthLabel } from './tree';
+
+/** A folder matter is `matters/<dir>/matter.md`; its documents live beside it. */
+export function matterFolderOf(path: string): string | null {
+  return path.endsWith('/matter.md') ? path.slice(0, -'/matter.md'.length) : null;
+}
 
 export interface VaultTreeProps {
   overview: VaultOverview;
@@ -72,6 +78,19 @@ export function VaultTree({ overview, root, selected, onOpen }: VaultTreeProps):
     if (groups.other.some(entry => selected === entry.path || selected.startsWith(`${entry.path}/`))) setOtherOpen(true);
   }, [selected, groups.other, ensure]);
 
+  /** A selected document inside a folder matter unfolds that matter, so the
+   * open redline has a row marking where it lives. */
+  useEffect(() => {
+    if (selected === null) return;
+    for (const matter of groups.matters) {
+      const folder = matterFolderOf(matter.path);
+      if (folder !== null && selected !== matter.path && selected.startsWith(`${folder}/`)) {
+        setOpen(prev => (prev.has(folder) ? prev : new Set(prev).add(folder)));
+        ensure(folder);
+      }
+    }
+  }, [selected, groups.matters, ensure]);
+
   const toggle = (dir: string): void => {
     setOpen(prev => {
       const next = new Set(prev);
@@ -82,13 +101,13 @@ export function VaultTree({ overview, root, selected, onOpen }: VaultTreeProps):
     ensure(dir);
   };
 
-  const fileRow = (path: string, name: string, indent: boolean): JSX.Element => (
+  const fileRow = (path: string, name: string, indent: boolean, hover: string = name): JSX.Element => (
     <button
       key={path}
       type="button"
       className={indent ? 'v2-vrow v2-vrow-ind' : 'v2-vrow'}
       aria-current={selected === path ? 'page' : undefined}
-      title={name}
+      title={hover}
       onClick={() => onOpen(path)}
     >
       <span className="v2-vname">{name}</span>
@@ -121,21 +140,55 @@ export function VaultTree({ overview, root, selected, onOpen }: VaultTreeProps):
       {groups.matters.length === 0 ? null : (
         <>
           <div className="v2-vgroup">Matters</div>
-          {groups.matters.map(matter => (
-            <button
-              key={matter.path}
-              type="button"
-              className="v2-vrow v2-vrow-ind"
-              aria-current={selected === matter.path ? 'page' : undefined}
-              // The 300px pane clips most matter titles; the whole title
-              // is one hover away (cou-93 item 5).
-              title={matter.title}
-              onClick={() => onOpen(matter.path)}
-            >
-              <span className="v2-vname">{matter.title}</span>
-              <span className="v2-vmonth">{monthLabel(matter)}</span>
-            </button>
-          ))}
+          {groups.matters.map(matter => {
+            const folder = matterFolderOf(matter.path);
+            const row = (
+              <button
+                key={matter.path}
+                type="button"
+                className={folder === null ? 'v2-vrow v2-vrow-ind' : 'v2-vrow'}
+                aria-current={selected === matter.path ? 'page' : undefined}
+                // The 300px pane clips most matter titles; the whole title
+                // is one hover away (cou-93 item 5).
+                title={matter.title}
+                onClick={() => onOpen(matter.path)}
+              >
+                <span className="v2-vname">{matter.title}</span>
+                <span className="v2-vmonth">{monthLabel(matter)}</span>
+              </button>
+            );
+            if (folder === null) return row;
+            // A folder matter carries its documents (the NDA, its redline):
+            // a chevron unfolds them under the matter, prettified like any
+            // file row, so a lawyer finds the redline where the matter is.
+            const isOpen = open.has(folder);
+            const docs = (levels[folder] ?? []).filter(child => child.path !== matter.path);
+            return (
+              <div key={matter.path} className="v2-vmatter">
+                <div className="v2-vmatter-row">
+                  <button
+                    type="button"
+                    className="v2-vfold"
+                    aria-label={`${isOpen ? 'Hide' : 'Show'} documents in ${matter.title}`}
+                    aria-expanded={isOpen}
+                    onClick={() => toggle(folder)}
+                  >
+                    <span className="v2-tri" aria-hidden="true">
+                      <Chevron open={isOpen} />
+                    </span>
+                  </button>
+                  {row}
+                </div>
+                {isOpen
+                  ? docs.map(child =>
+                      child.kind === 'dir'
+                        ? dirNode(child, true)
+                        : fileRow(child.path, prettifyName(baseName(child.path)), true, baseName(child.path)),
+                    )
+                  : null}
+              </div>
+            );
+          })}
         </>
       )}
 

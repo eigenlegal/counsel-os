@@ -2,7 +2,7 @@ import { cleanup, render, screen, userEvent } from '../../test/dom';
 
 import { afterEach, describe, expect, test } from 'bun:test';
 import { emptyAssistantTurn, type AssistantTurn } from '../../chat/turns';
-import { TurnView } from './Turn';
+import { splitAttachments, TurnView } from './Turn';
 
 afterEach(cleanup);
 
@@ -226,5 +226,27 @@ describe('TurnView step failure (cou-95)', () => {
     expect(document.querySelector('.v2-step-failure p')?.textContent).toBe('Ollama is not running on this machine. Start it, then retry.');
     expect(document.querySelector('details summary')?.textContent).toBe('show answer');
     expect(document.querySelector('details pre')?.textContent).toBe('partial');
+  });
+});
+
+describe('TurnView user bubble attachments', () => {
+  test('the trailing attachment line reads as chips, the text stays plain', () => {
+    render(<TurnView turn={{ kind: 'user', content: 'Review this NDA.\n\n`matters/acme/nda.docx` `practice/standards/nda.md`' }} threadId="t-1" onReload={() => {}} />);
+    expect(document.querySelector('.v2-user-text p')?.textContent).toBe('Review this NDA.');
+    const chips = Array.from(document.querySelectorAll('.v2-user-files .v2-file-chip'), el => el.textContent);
+    expect(chips).toEqual(['matters/acme/nda.docx', 'practice/standards/nda.md']);
+    expect(document.querySelector('.v2-user-text')?.textContent).not.toContain('`');
+  });
+
+  test('a message with no attachment line renders as it was typed, backticks included', () => {
+    render(<TurnView turn={{ kind: 'user', content: 'What does `Effective Date` mean here?' }} threadId="t-1" onReload={() => {}} />);
+    expect(document.querySelector('.v2-user-text p')?.textContent).toBe('What does `Effective Date` mean here?');
+    expect(document.querySelector('.v2-user-files')).toBeNull();
+  });
+
+  test('splitAttachments only recognises the last line, by shape', () => {
+    expect(splitAttachments('`a.md`')).toEqual({ text: '', files: ['a.md'] });
+    expect(splitAttachments('x\n`a.md` `b/c.docx`\n')).toEqual({ text: 'x', files: ['a.md', 'b/c.docx'] });
+    expect(splitAttachments('`a.md` and more')).toEqual({ text: '`a.md` and more', files: [] });
   });
 });

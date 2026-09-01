@@ -21,7 +21,8 @@ export function titleFor(message: string): string {
   const space = cut.lastIndexOf(' ');
   // Only back off to a space in the second half: `'A ' + 'x'.repeat(70)` has
   // one at index 1, and honouring it would title the thread "A".
-  return (space > TITLE_MAX / 2 ? cut.slice(0, space) : cut).trimEnd();
+  // A cut title says it was cut: "…and" read as a sentence that ends there.
+  return `${(space > TITLE_MAX / 2 ? cut.slice(0, space) : cut).trimEnd()}…`;
 }
 
 /**

@@ -54,3 +54,13 @@ describe('Steps', () => {
     expect(screen.getByText('error')).toBeTruthy();
   });
 });
+
+describe('Steps spacing', () => {
+  test('a verb with no object is followed by the time with one separator, no stray space', () => {
+    const tool: ToolCallView = { id: 'c-9', name: 'docket_sweep', input: {}, hasResult: true, output: { deadlines: [] }, isError: false };
+    render(<Steps tools={[tool]} ms={{ 'c-9': 12 }} />);
+    const line = document.querySelector('[data-testid="step-c-9"]')!;
+    expect(line.textContent).toMatch(/^Ran docket_sweep · 12 ms/);
+    expect(line.textContent).not.toContain('  ');
+  });
+});

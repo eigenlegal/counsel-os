@@ -300,7 +300,9 @@ Check what's available:
 
 Tracked changes are generated natively (`apply_redlines.py --track` writes
 `w:ins`/`w:del` revision markup directly), so Microsoft Word is NOT required
-to produce a redline.
+to produce a redline — and in the counsel-os app the reader shows the result
+with its strikes, inserts and comments, so the answer names the redline's
+vault path rather than asking the lawyer to open Word to check it.
 
 | Tier | Requirements | Action |
 |---|---|---|

@@ -44,13 +44,21 @@ function Step({
 
   return (
     <li className={`v2-step v2-step-${state}`} data-testid={`step-${tool.id}`}>
-      <span className="v2-step-verb">{verb}</span>{' '}
+      <span className="v2-step-verb">{verb}</span>
+      {/* The space belongs to the object: a verb with no object read as
+          "Ran check_document  · 12 ms", two spaces before the dot. */}
       {object === undefined ? null : path !== null && onOpenFile !== undefined ? (
-        <button type="button" className="v2-step-path" onClick={() => onOpenFile(path)}>
-          {object}
-        </button>
+        <>
+          {' '}
+          <button type="button" className="v2-step-path" onClick={() => onOpenFile(path)}>
+            {object}
+          </button>
+        </>
       ) : (
-        <code className="v2-step-object">{object}</code>
+        <>
+          {' '}
+          <code className="v2-step-object">{object}</code>
+        </>
       )}
       {ms === undefined ? null : <span className="v2-step-ms"> · {Math.round(ms)} ms</span>}
       {state === 'running' ? (

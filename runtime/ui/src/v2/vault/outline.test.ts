@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { outlineOf } from './outline';
+import { outlineOf, stripCritic } from './outline';
 
 describe('outlineOf', () => {
   test('H2s in order; H1s and H3s are not sections', () => {
@@ -12,5 +12,21 @@ describe('outlineOf', () => {
 
   test('no H2s, no outline', () => {
     expect(outlineOf('just prose\n')).toEqual([]);
+  });
+
+  test('a converted Word document\'s tracked changes do not leak into the outline', () => {
+    expect(outlineOf('## {++No ++}Residuals\n## Term{-- (old)--}\n## Notice{>>why<<}\n## {~~two~>one~~} year\n')).toEqual([
+      'No Residuals',
+      'Term',
+      'Notice',
+      'one year',
+    ]);
+  });
+});
+
+describe('stripCritic', () => {
+  test('keeps insertions, drops deletions and comments, resolves substitutions', () => {
+    expect(stripCritic('{++a++} b {--c--} {>>d<<} {~~e~>f~~}')).toBe('a b f');
+    expect(stripCritic('plain')).toBe('plain');
   });
 });
