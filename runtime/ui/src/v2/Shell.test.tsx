@@ -771,8 +771,6 @@ describe('Shell, a printed link opened into the session-lost tab', () => {
     expect(globalThis.location.hash).not.toContain('token');
   });
 });
-  });
-});
 
 describe('Shell, the vault index refresh', () => {
   test('an upload announcement re-reads /vault/index', async () => {
