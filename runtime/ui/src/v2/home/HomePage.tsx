@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ApiError, fetchJson, fetchJsonWithHeaders } from '../../api/client';
-import type { PendingProposal, ThreadHeader, VaultOverview } from '../../api/types';
+import type { DocketEntry, DocketView, PendingProposal, ThreadHeader, VaultOverview } from '../../api/types';
 import { Tree } from '../../vault/Tree';
 import { railLabel } from '../Rail';
 import { relTime } from '../time';
@@ -23,6 +23,33 @@ const TRUNCATED_HEADER = 'x-counsel-truncated';
  * itself caps at 200 ("a recent docket, not an archive"); a 200-row column
  * under the ask box is an archive. */
 const MAX_MATTERS = 8;
+
+/** `Sep 12`, or `Jan 5, 2027` once the year is not this one. The date is a
+ * bare `YYYY-MM-DD`, read in UTC so it prints as written everywhere. */
+export function docketDate(iso: string, now: Date = new Date()): string {
+  const t = Date.parse(`${iso}T00:00:00Z`);
+  if (Number.isNaN(t)) return iso;
+  const d = new Date(t);
+  const sameYear = d.getUTCFullYear() === now.getFullYear();
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', ...(sameYear ? {} : { year: 'numeric' }), timeZone: 'UTC' });
+}
+
+/** The docket head's run-in: each non-zero part, joined. */
+export function docketHeadParts(deadlines: number, proposals: number): string[] {
+  const parts: string[] = [];
+  if (deadlines > 0) parts.push(`${deadlines} deadline${deadlines === 1 ? '' : 's'}`);
+  if (proposals > 0) parts.push(`${proposals} awaiting your decision`);
+  return parts;
+}
+
+/** The docket body, or nothing usable. A read that came back in another
+ * shape (an older runtime without the route answers with the HTML shell,
+ * a mock answers with `[]`) is treated as no deadlines, not as a crash. */
+function docketOf(value: unknown): DocketView {
+  const view = value as Partial<DocketView> | null;
+  if (typeof view !== 'object' || view === null || !Array.isArray(view.deadlines)) return { deadlines: [], skipped: 0 };
+  return { deadlines: view.deadlines, skipped: typeof view.skipped === 'number' ? view.skipped : 0 };
+}
 
 /** A read that failed, said plainly. A 401 is the shell's message to give,
  * not this page's, so it is silent here. */
@@ -53,38 +80,65 @@ export interface HomePageProps {
 export function HomePage({ threads, onAsk, onOpenThread }: HomePageProps): JSX.Element {
   const [overview, setOverview] = useState<VaultOverview | null>(null);
   const [pending, setPending] = useState<PendingProposal[]>([]);
-  /** The docket scan was bounded — there may be proposals it never saw. */
+  /** The proposal scan was bounded — there may be proposals it never saw. */
   const [truncated, setTruncated] = useState(false);
+  /** The deadline sweep (`GET /docket`): dated obligations off the matters. */
+  const [docket, setDocket] = useState<DocketView>({ deadlines: [], skipped: 0 });
+  /** The "later" group unfolds in place; it starts folded. */
+  const [laterOpen, setLaterOpen] = useState(false);
   const [vaultError, setVaultError] = useState<string | null>(null);
   const [docketError, setDocketError] = useState<string | null>(null);
+  const [deadlinesError, setDeadlinesError] = useState<string | null>(null);
   const [text, setText] = useState('');
   const [attached, setAttached] = useState<string[]>([]);
   const [picking, setPicking] = useState(false);
   const box = useRef<HTMLTextAreaElement | null>(null);
 
   /**
-   * The two reads settle INDEPENDENTLY. They answer different questions and
-   * one failing says nothing about the other: a docket that cannot be read
-   * must not blank the matters column (which would then assert an empty
-   * vault), and a vault that cannot be read must not take a founder gate off
-   * the page.
+   * The three reads settle INDEPENDENTLY. They answer different questions
+   * and one failing says nothing about the others: a docket that cannot be
+   * read must not blank the matters column (which would then assert an
+   * empty vault), a vault that cannot be read must not take a founder gate
+   * off the page, and a deadline sweep that fails must not hide the
+   * proposals that did load.
    */
   useEffect(() => {
     void (async () => {
-      const [ov, docket] = await Promise.allSettled([
+      const [ov, proposals, sweep] = await Promise.allSettled([
         fetchJson<VaultOverview>('/vault/overview'),
         fetchJsonWithHeaders<PendingProposal[]>('/proposals?status=pending'),
+        fetchJson<unknown>('/docket'),
       ]);
       if (ov.status === 'fulfilled') setOverview(ov.value);
       else setVaultError(failureNote(ov.reason, 'could not read the vault'));
-      if (docket.status === 'fulfilled') {
-        setPending(docket.value.body);
-        setTruncated(docket.value.headers.get(TRUNCATED_HEADER) !== null);
+      if (proposals.status === 'fulfilled') {
+        setPending(proposals.value.body);
+        setTruncated(proposals.value.headers.get(TRUNCATED_HEADER) !== null);
       } else {
-        setDocketError(failureNote(docket.reason, 'could not read the docket'));
+        setDocketError(failureNote(proposals.reason, 'could not read the docket'));
       }
+      if (sweep.status === 'fulfilled') setDocket(docketOf(sweep.value));
+      else setDeadlinesError(failureNote(sweep.reason, 'could not read the deadlines'));
     })();
   }, []);
+
+  const overdueOrSoon = docket.deadlines.filter(d => d.status !== 'later');
+  const later = docket.deadlines.filter(d => d.status === 'later');
+  const headParts = docketHeadParts(docket.deadlines.length, pending.length);
+  const bothGroups = docket.deadlines.length > 0 && pending.length > 0;
+
+  const deadlineRow = (entry: DocketEntry): JSX.Element => (
+    <div className="v2-docket-row v2-dl" key={`${entry.matter.path}|${entry.date}|${entry.action}`}>
+      <span className={entry.status === 'overdue' ? 'v2-dl-date v2-due-hot' : 'v2-dl-date'}>{docketDate(entry.date)}</span>
+      <span className="v2-dl-action" title={entry.source === undefined ? undefined : entry.source}>
+        {entry.action === '' ? 'deadline' : entry.action}
+      </span>
+      <span className="leader" aria-hidden="true" />
+      <a className="v2-dl-matter" href={`#/vault?path=${encodeURIComponent(entry.matter.path)}`}>
+        {entry.matter.title}
+      </a>
+    </div>
+  );
 
   const matters = overview === null ? [] : sortMatters(overview.matters);
   const nextActions = matters.filter(m => nextActionOf(m.frontmatter) !== null).length;
@@ -166,12 +220,47 @@ export function HomePage({ threads, onAsk, onOpenThread }: HomePageProps): JSX.E
             {docketError}
           </p>
         )}
+        {deadlinesError === null ? null : (
+          <p className="v2-notice v2-notice-error v2-docket-error" role="alert">
+            {deadlinesError}
+          </p>
+        )}
 
-        {pending.length === 0 ? null : (
+        {/* ONE docket: the dated obligations off the matter files, then the
+            proposals awaiting the founder's decision. Hidden when both are
+            empty. */}
+        {headParts.length === 0 ? null : (
           <section className="v2-docket" aria-label="Docket">
             <div className="v2-docket-head runin">
-              Docket · <em>{pending.length} awaiting your decision</em>
+              Docket
+              {headParts.map(part => (
+                <span key={part}>
+                  {' · '}
+                  <em>{part}</em>
+                </span>
+              ))}
             </div>
+
+            {docket.deadlines.length === 0 ? null : (
+              <div className="v2-dl-group">
+                {bothGroups ? <div className="v2-docket-sub">Deadlines</div> : null}
+                {overdueOrSoon.map(deadlineRow)}
+                {later.length === 0 ? null : laterOpen ? (
+                  later.map(deadlineRow)
+                ) : (
+                  <button type="button" className="v2-link v2-dl-later" aria-expanded={false} onClick={() => setLaterOpen(true)}>
+                    {later.length} later →
+                  </button>
+                )}
+                {docket.skipped === 0 ? null : (
+                  <p className="v2-docket-note">
+                    {docket.skipped} deadline{docket.skipped === 1 ? '' : 's'} could not be read — the date is not YYYY-MM-DD.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {bothGroups ? <div className="v2-docket-sub">Awaiting your decision</div> : null}
             {pending.map(proposal => (
               <div className="v2-docket-row" key={proposal.id}>
                 <div>

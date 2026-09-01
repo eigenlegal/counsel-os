@@ -197,6 +197,27 @@ export interface PendingProposal {
   at: string;
 }
 
+/** `GET /docket`. COPIED from `runtime/src/vault/docket.ts`; a change there
+ * is a change here. */
+export type DocketStatus = 'overdue' | 'soon' | 'later';
+
+export interface DocketEntry {
+  /** `YYYY-MM-DD`, as written on the matter. */
+  date: string;
+  action: string;
+  type?: string;
+  source?: string;
+  matter: { path: string; title: string };
+  status: DocketStatus;
+}
+
+export interface DocketView {
+  /** Sorted by date, then matter title. */
+  deadlines: DocketEntry[];
+  /** Entries whose date could not be read — counted, never silently dropped. */
+  skipped: number;
+}
+
 /** One hit of `GET /vault/search`. COPIED from `Hit` in
  * `runtime/src/core/types.ts`. */
 export interface VaultHit {

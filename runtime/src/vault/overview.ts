@@ -46,29 +46,41 @@ export const MAX_MATTERS = 200;
 export const MAX_MATTER_BYTES = 512 * 1024;
 
 /**
- * Splits `---` frontmatter off a markdown source. `Bun.YAML` (the same
- * parser `providers/registry.ts` trusts) reads the block; anything that is
- * not a flat map of scalars degrades to `{}` rather than failing the
- * listing — a matter with odd frontmatter is still a matter.
+ * The raw text between the `---` fences, and the body after them — `block`
+ * is `null` when the note has no frontmatter. `parseFrontmatter` reads the
+ * block as a flat map; `docket.ts` reads its `deadlines:` list from the
+ * same text, so the two never disagree about where the block ends.
  */
-export function parseFrontmatter(input: string): { frontmatter: Record<string, string>; body: string } {
+export function splitFrontmatterBlock(input: string): { block: string | null; body: string } {
   // A leading BOM would fail the `---` check and hide the whole block.
   // Windows-authored and some Obsidian-exported notes carry one.
   const source = input.charCodeAt(0) === 0xfeff ? input.slice(1) : input;
-  if (!source.startsWith('---\n') && !source.startsWith('---\r\n')) return { frontmatter: {}, body: source };
+  if (!source.startsWith('---\n') && !source.startsWith('---\r\n')) return { block: null, body: source };
   const firstNl = source.indexOf('\n');
   const rest = source.slice(firstNl + 1);
   // The terminator has to BE the line, not just start it: a bare
   // `indexOf('\n---')` let `----` and `--- note` close the block, and would
   // cut a multi-line YAML value short at a `---` in column 0.
   const term = /^---[ \t]*\r?$/m.exec(rest);
-  if (term === null) return { frontmatter: {}, body: source };
+  if (term === null) return { block: null, body: source };
   const afterTerm = term.index + term[0].length;
   const bodyNl = rest.indexOf('\n', afterTerm);
   const body = bodyNl === -1 ? '' : rest.slice(bodyNl + 1);
+  return { block: rest.slice(0, term.index), body };
+}
+
+/**
+ * Splits `---` frontmatter off a markdown source. `Bun.YAML` (the same
+ * parser `providers/registry.ts` trusts) reads the block; anything that is
+ * not a flat map of scalars degrades to `{}` rather than failing the
+ * listing — a matter with odd frontmatter is still a matter.
+ */
+export function parseFrontmatter(input: string): { frontmatter: Record<string, string>; body: string } {
+  const { block, body } = splitFrontmatterBlock(input);
+  if (block === null) return { frontmatter: {}, body };
   let parsed: unknown;
   try {
-    parsed = Bun.YAML.parse(rest.slice(0, term.index));
+    parsed = Bun.YAML.parse(block);
   } catch {
     return { frontmatter: {}, body };
   }

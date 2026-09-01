@@ -612,6 +612,16 @@ a { color: var(--accent); }
 .v2-docket-go::after { content: " →"; }
 /* The bounded-scan hedge: set text under the rows, never a banner. */
 .v2-docket-note { font: italic 12.5px/1.5 var(--serif); color: var(--fg-muted); margin-top: 10px; }
+/* One docket, two groups. The small-caps run-in names a group only when
+   both are present; a deadline row is date · action ···· matter, the date
+   hot when it has passed. "Later" folds behind one set-text line. */
+.v2-docket-sub { margin: 6px 0 2px; font: 600 10.5px/1 var(--sans); letter-spacing: 0.09em; text-transform: uppercase; color: var(--fg-faint); }
+.v2-dl-group { margin-bottom: 6px; }
+.v2-dl-date { font: 600 12.5px var(--sans); color: var(--fg-muted); flex-shrink: 0; min-width: 52px; }
+.v2-dl-action { font: 15px/1.45 var(--serif); color: var(--fg); min-width: 0; }
+.v2-dl-matter { font-size: 12.5px; color: var(--fg-faint); text-decoration: none; flex-shrink: 0; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v2-dl-matter:hover { color: var(--fg); text-decoration: underline; }
+.v2-dl-later { display: block; margin: 4px 0 0 64px; font-size: 12.5px; color: var(--fg-muted); }
 /* A read that failed speaks where its own content would have been. */
 .v2-docket-error { margin: 22px 0 0; }
 .v2-home-card .v2-notice { margin: 10px 0 0; font-size: 13px; }
