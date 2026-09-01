@@ -170,11 +170,17 @@ export interface VaultEntry {
  * it is what a proposal's `expectedVersion` is compared against. */
 export interface VaultFile {
   path: string;
+  /** The file's text — or, for a Word document (`kind: 'docx'`), its
+   * conversion to markdown: the bytes never travel as text. */
   content: string;
   /** `null` if the file went away between the read and the hash. */
   version: string | null;
   /** `null` when the store has no filesystem behind it. */
   mtimeMs?: number | null;
+  /** Absent on an older runtime, which serves text only. */
+  kind?: 'text' | 'docx';
+  /** What the conversion could not carry (`body[3]: a drawing was left out`). */
+  warnings?: string[];
 }
 
 /** `GET /vault/overview` (redesign spec §4). COPIED from

@@ -32,14 +32,19 @@ export interface MarkdownResult {
 
 const HEADING_STYLE = /^heading\s*(\d)$/i;
 
-/** The heading level a paragraph style carries: `Title` → 1, `Heading N`
- * → N (capped at 6); anything else is body text. */
-export function headingLevel(style: string | null): number | null {
+/**
+ * The heading level a paragraph style carries: `Title` → 1, `Heading N` →
+ * N (capped at 6); anything else is body text. When the document HAS a
+ * Title, its headings shift one level down (`Heading 1` → `##`), so the
+ * title is the single H1 and the sections read as sections — which is also
+ * what the reader's outline column lists.
+ */
+export function headingLevel(style: string | null, hasTitle = false): number | null {
   if (style === null) return null;
   if (/^title$/i.test(style)) return 1;
   const m = HEADING_STYLE.exec(style);
   if (m === null) return null;
-  return Math.min(6, Math.max(1, Number(m[1])));
+  return Math.min(6, Math.max(1, Number(m[1]) + (hasTitle ? 1 : 0)));
 }
 
 /** Runs grouped into segments by change kind, in order, dropped content
@@ -116,6 +121,7 @@ export function docxToMarkdown(pkg: DocxPackage, opts: MarkdownOptions = {}): Ma
   const warnings: string[] = [];
   const blocks: string[] = [];
   const renderedTables = new Set<number>();
+  const hasTitle = model.paragraphs.some(p => p.style !== null && /^title$/i.test(p.style));
 
   for (const p of model.paragraphs) {
     for (const r of p.runs) {
@@ -132,7 +138,7 @@ export function docxToMarkdown(pkg: DocxPackage, opts: MarkdownOptions = {}): Ma
     }
     const line = paragraphLine(p, mode, comments, withComments).trim();
     if (line === '') continue;
-    const level = headingLevel(p.style);
+    const level = headingLevel(p.style, hasTitle);
     blocks.push(level === null ? line : `${'#'.repeat(level)} ${line}`);
   }
 

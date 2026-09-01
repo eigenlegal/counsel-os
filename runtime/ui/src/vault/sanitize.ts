@@ -43,7 +43,18 @@ export const ALLOWED_TAGS: ReadonlySet<string> = new Set([
   'td',
   'hr',
   'br',
+  // A Word document's tracked changes, converted for reading
+  // (`vault/markdown.ts` `criticToHtml`): the redline's own two elements,
+  // and a `span` that may carry ONE class from `ALLOWED_CLASSES` below —
+  // the comment note. Nothing else about a span survives.
+  'ins',
+  'del',
+  'span',
 ]);
+
+/** The only `class` values a document may set, on `span` only. A class not
+ * named here is dropped; a span with no surviving class is unwrapped. */
+export const ALLOWED_CLASSES: ReadonlySet<string> = new Set(['v2-comment']);
 
 /**
  * Tags removed WITH their contents, rather than unwrapped.
@@ -105,11 +116,13 @@ function cleanAttributes(el: Element): void {
   const tag = el.tagName.toLowerCase();
   // A snapshot: removing an attribute mutates the live `attributes` list.
   for (const name of Array.from(el.attributes, a => a.name)) {
-    // `href` on an anchor is the ONLY attribute that survives. That covers
-    // `on*` handlers, `style` (which can load remote resources), `srcset`,
-    // `formaction`, and every attribute added to HTML after this was
-    // written — none of them are named here, so none of them get through.
+    // `href` on an anchor and an allowlisted `class` on a span are the ONLY
+    // attributes that survive. That covers `on*` handlers, `style` (which
+    // can load remote resources), `srcset`, `formaction`, and every
+    // attribute added to HTML after this was written — none of them are
+    // named here, so none of them get through.
     if (tag === 'a' && name.toLowerCase() === 'href') continue;
+    if (tag === 'span' && name.toLowerCase() === 'class' && ALLOWED_CLASSES.has(el.getAttribute(name) ?? '')) continue;
     el.removeAttribute(name);
   }
 
@@ -151,7 +164,10 @@ function cleanChildren(node: Node): void {
       continue;
     }
 
-    if (!ALLOWED_TAGS.has(tag)) {
+    // A span is allowed only as the carrier of an allowlisted class; a bare
+    // one is just a wrapper, and is unwrapped like any unknown tag.
+    const bareSpan = tag === 'span' && !ALLOWED_CLASSES.has(el.getAttribute('class') ?? '');
+    if (!ALLOWED_TAGS.has(tag) || bareSpan) {
       // Clean the subtree BEFORE it is lifted out: once the children are in
       // the parent, this loop has already walked past their position.
       cleanChildren(el);

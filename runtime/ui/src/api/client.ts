@@ -95,6 +95,42 @@ export async function fetchJson<T>(path: string, init: RequestInit = {}): Promis
 }
 
 /**
+ * A vault file as bytes (`GET /vault/download`). The bearer rides in the
+ * header, as everywhere else — a plain `<a href>` cannot carry it, and a
+ * token in a URL would land in history, logs and referrers. The caller
+ * hands the blob to `saveBlob`.
+ */
+export async function fetchBlob(path: string): Promise<Blob> {
+  const res = await fetch(path, { headers: authHeaders() });
+  if (!res.ok) throw await failure(res);
+  return res.blob();
+}
+
+/**
+ * Hands `blob` to the browser as a download named `filename`, through a
+ * one-shot object URL that is revoked once the click has been dispatched.
+ * Returns `false` where object URLs are unavailable (a test DOM), so a
+ * caller can say the download did not happen rather than pretend it did.
+ */
+export function saveBlob(blob: Blob, filename: string): boolean {
+  if (typeof URL === 'undefined' || typeof URL.createObjectURL !== 'function') return false;
+  const href = URL.createObjectURL(blob);
+  try {
+    const a = document.createElement('a');
+    a.href = href;
+    a.download = filename;
+    a.rel = 'noopener';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } finally {
+    URL.revokeObjectURL(href);
+  }
+  return true;
+}
+
+/**
  * The same call, with the response's headers.
  *
  * Some routes put a fact about the BODY in a header rather than in the body

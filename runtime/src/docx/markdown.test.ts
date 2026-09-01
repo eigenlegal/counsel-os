@@ -10,8 +10,14 @@ describe('docxToMarkdown', () => {
     const { markdown, warnings } = docxToMarkdown(
       openDocx(buildDocx({ blocks: [{ style: 'Title', runs: ['Mutual NDA'] }, { style: 'Heading2', runs: ['2. Obligations'] }, { runs: ['Each Party shall.'] }] })),
     );
-    expect(markdown).toBe('# Mutual NDA\n\n## 2. Obligations\n\nEach Party shall.\n');
+    // With a Title present the headings shift down one level.
+    expect(markdown).toBe('# Mutual NDA\n\n### 2. Obligations\n\nEach Party shall.\n');
     expect(warnings).toEqual([]);
+  });
+
+  test('without a Title, Heading 1 is the H1', () => {
+    const { markdown } = docxToMarkdown(openDocx(buildDocx({ blocks: [{ style: 'Heading1', runs: ['1. Purpose'] }, { runs: ['Body.'] }] })));
+    expect(markdown).toBe('# 1. Purpose\n\nBody.\n');
   });
 
   test('numbering renders as literal text; bullets as list items', () => {
@@ -100,6 +106,8 @@ describe('docxToMarkdown', () => {
     expect(headingLevel('Heading 3')).toBe(3);
     expect(headingLevel('heading9')).toBe(6);
     expect(headingLevel('Title')).toBe(1);
+    expect(headingLevel('Heading1', true)).toBe(2);
+    expect(headingLevel('Title', true)).toBe(1);
     expect(headingLevel('Normal')).toBeNull();
     expect(headingLevel(null)).toBeNull();
   });

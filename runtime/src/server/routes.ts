@@ -4,6 +4,7 @@ import { DEFAULT_STEP_TIMEOUT_MS, runStep, type CounselLoopDeps } from '../loop/
 import { pendingProposals } from '../loop/pending-proposals';
 import { applyProposal } from '../loop/proposals';
 import { listRuns, readRun, type RunRecord } from '../loop/run-record';
+import { DOCX_CONTENT_TYPE, docxToMarkdown, isDocxPath, NotADocxError, openDocx, UnsafeXmlError } from '../docx';
 import { RegistryFile } from '../providers/registry';
 import type { ThreadEvent, ThreadHeader } from '../threads/store';
 import { vaultDocket } from '../vault/docket';
@@ -188,6 +189,28 @@ function vaultPath(raw: string): string {
   } catch (err) {
     throw new HttpError(400, text(err));
   }
+}
+
+const CONTENT_TYPES: Record<string, string> = {
+  docx: DOCX_CONTENT_TYPE,
+  md: 'text/markdown; charset=utf-8',
+  markdown: 'text/markdown; charset=utf-8',
+  txt: 'text/plain; charset=utf-8',
+  json: 'application/json; charset=utf-8',
+  csv: 'text/csv; charset=utf-8',
+  pdf: 'application/pdf',
+};
+
+export function contentTypeFor(name: string): string {
+  const ext = name.slice(name.lastIndexOf('.') + 1).toLowerCase();
+  return CONTENT_TYPES[ext] ?? 'application/octet-stream';
+}
+
+/** `attachment; filename="…"; filename*=UTF-8''…` — the ASCII fallback for
+ * old agents, the encoded form for everyone else, per RFC 6266. */
+export function contentDisposition(name: string): string {
+  const ascii = name.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_');
+  return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(name)}`;
 }
 
 /** Maps a store failure on a normalized path: `.counsel/` is reserved (400),
@@ -484,13 +507,52 @@ export function createApp(deps: ServerDeps): App {
     return json(record);
   };
 
+  /** The bytes of a vault file, or the failures `read` maps. A store with no
+   * `readBytes` (in-memory, text only) cannot serve one: 501, not a guess. */
+  const vaultBytes = async (path: string): Promise<Uint8Array> => {
+    if (deps.vault.readBytes === undefined) throw new HttpError(501, 'this vault store holds text only');
+    try {
+      return await deps.vault.readBytes(deps.tenant, path);
+    } catch (err) {
+      vaultFailure(err);
+    }
+  };
+
   const vaultRead = async (url: URL): Promise<Response> => {
     const raw = url.searchParams.get('path');
     if (raw === null || raw === '') throw new HttpError(400, 'path is required');
     const path = vaultPath(raw);
+    // A Word document is CONVERTED for reading — never sent as text; a
+    // `.docx` decoded as UTF-8 is the mojibake this branch exists to end.
+    // `kind` is additive: a client that never looks at it sees the old shape.
+    if (isDocxPath(path)) {
+      const bytes = await vaultBytes(path);
+      let markdown: string;
+      let warnings: string[];
+      try {
+        ({ markdown, warnings } = docxToMarkdown(openDocx(bytes)));
+      } catch (err) {
+        if (err instanceof UnsafeXmlError) throw new HttpError(422, `refused: ${err.message}`);
+        if (err instanceof NotADocxError) throw new HttpError(415, err.message);
+        throw err;
+      }
+      try {
+        return json({
+          path,
+          kind: 'docx',
+          content: markdown,
+          version: await deps.vault.version(deps.tenant, path),
+          mtimeMs: (await deps.vault.mtime?.(deps.tenant, path)) ?? null,
+          warnings,
+        });
+      } catch (err) {
+        vaultFailure(err);
+      }
+    }
     try {
       return json({
         path,
+        kind: 'text',
         content: await deps.vault.read(deps.tenant, path),
         version: await deps.vault.version(deps.tenant, path),
         // Optional on the interface so in-memory stores need not fake a
@@ -500,6 +562,25 @@ export function createApp(deps: ServerDeps): App {
     } catch (err) {
       vaultFailure(err);
     }
+  };
+
+  /** A vault file as bytes, for the reader's download link. Same path
+   * guards as `read`; the content type follows the extension. */
+  const vaultDownload = async (url: URL): Promise<Response> => {
+    const raw = url.searchParams.get('path');
+    if (raw === null || raw === '') throw new HttpError(400, 'path is required');
+    const path = vaultPath(raw);
+    const bytes = await vaultBytes(path);
+    const name = path.slice(path.lastIndexOf('/') + 1);
+    return new Response(bytes, {
+      status: 200,
+      headers: {
+        'content-type': contentTypeFor(name),
+        'content-length': String(bytes.byteLength),
+        'content-disposition': contentDisposition(name),
+        'cache-control': 'no-store',
+      },
+    });
   };
 
   const vaultList = async (url: URL): Promise<Response> => {
@@ -633,6 +714,7 @@ export function createApp(deps: ServerDeps): App {
 
       if (segments.length === 2 && first === 'vault' && method === 'GET') {
         if (second === 'read') return await vaultRead(url);
+        if (second === 'download') return await vaultDownload(url);
         if (second === 'list') return await vaultList(url);
         if (second === 'overview') return await vaultOverviewRoute();
         if (second === 'search') return await vaultSearchRoute(url);

@@ -115,6 +115,9 @@ export interface VaultStore {
   /** The path's mtime in ms, or `null` when it does not exist. Optional:
    * only `GET /vault/read` uses it, and only when the store has one. */
   mtime?(tenant: Tenant, path: string): Promise<number | null>;
+  /** The file's raw bytes — a Word document, a PDF — under the same path
+   * guards as `read`. Optional: an in-memory store may hold only text. */
+  readBytes?(tenant: Tenant, path: string): Promise<Uint8Array>;
 }
 
 // ── Tools with platform gating (subprocess scripts, browse, docx) ─────────
