@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { existsSync, realpathSync } from 'node:fs';
-import { mkdir, readdir, readFile, writeFile, appendFile, lstat, stat } from 'node:fs/promises';
+import { mkdir, readdir, readFile, writeFile, appendFile, lstat, stat, link, unlink } from 'node:fs/promises';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import type { Entry, Hit, Tenant, VaultStore, Version } from '../core/types';
 import { VaultConflictError } from '../core/types';
@@ -128,6 +128,30 @@ export class FsVaultStore implements VaultStore {
   async readBytes(tenant: Tenant, path: string): Promise<Uint8Array> {
     const buf = await readFile(this.abs(tenant, path));
     return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+  }
+
+  /** Bytes in, with the same history line a text write leaves — the version
+   * is the SHA-256 of the bytes, so a re-upload of the same file has the
+   * same version. `wx`: the file must not exist; the route picks the name. */
+  async writeBytes(tenant: Tenant, path: string, bytes: Uint8Array): Promise<Version> {
+    const full = this.abs(tenant, path);
+    await mkdir(dirname(full), { recursive: true });
+    await writeFile(full, bytes, { flag: 'wx' });
+    const v = createHash('sha256').update(bytes).digest('hex');
+    const hf = this.historyFile(tenant, path);
+    await mkdir(dirname(hf), { recursive: true });
+    await appendFile(hf, JSON.stringify({ version: v, at: new Date().toISOString() }) + '\n', 'utf8');
+    return v;
+  }
+
+  async rename(tenant: Tenant, from: string, to: string): Promise<void> {
+    const src = this.abs(tenant, from);
+    const dst = this.abs(tenant, to);
+    await mkdir(dirname(dst), { recursive: true });
+    // `link` + `unlink` rather than `rename`: never clobbers an existing
+    // target (EEXIST), where `rename` would silently replace it.
+    await link(src, dst);
+    await unlink(src);
   }
 
   async version(tenant: Tenant, path: string): Promise<Version | null> {

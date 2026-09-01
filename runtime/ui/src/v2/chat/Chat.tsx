@@ -6,6 +6,7 @@ import { applyStepEvent, buildTurns, emptyAssistantTurn, type AssistantTurn, typ
 import { createThread, defaultProviderId, titleFor } from '../threads';
 import { relTime } from '../time';
 import { prettifyName, readerModel } from '../vault/frontmatter';
+import { matterFolderOf } from '../intake';
 import { Composer, type ComposerSeed } from './Composer';
 import { MatterPicker } from './MatterPicker';
 import { TurnView } from './Turn';
@@ -531,6 +532,8 @@ export function Chat({
       <Composer
         streaming={streaming}
         health={health}
+        matter={explicitMatter === null || matterTitle === null ? null : { path: explicitMatter, title: matterTitle }}
+        {...(explicitMatter === null ? {} : { dropDest: matterFolderOf(explicitMatter) })}
         seed={seed}
         onSeedUsed={onSeedUsed}
         onSend={message => void send(message, defaultProviderId(health))}

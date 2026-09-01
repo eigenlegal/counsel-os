@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Health } from '../../api/types';
+import { withAttachments } from '../home/home';
+import { carriesFiles, droppedFiles, intake, type IntakeStatus } from '../intake';
 import { ProviderNotice } from '../ProviderNotice';
 
 /** A prefill pushed in from outside — the vault's "Ask counsel about this
@@ -25,6 +27,12 @@ export interface ComposerProps {
    * default is not loaded, so the reader learns which model will answer
    * BEFORE sending. Absent = no notice. */
   health?: Health | null;
+  /** The thread's EXPLICIT matter, for the line above the box and for where
+   * a dropped document lands. Absent or `null`: drops go to the inbox. */
+  matter?: { path: string; title: string } | null;
+  /** The folder a dropped Word document is uploaded into (the matter's
+   * folder). Undefined = the inbox. */
+  dropDest?: string;
 }
 
 /**
@@ -36,8 +44,13 @@ export interface ComposerProps {
  * picker under every message asked the reader to make a choice they had
  * already made once, in the one place that remembers it.
  */
-export function Composer({ streaming, disabled = false, onSend, onStop, seed, onSeedUsed, health }: ComposerProps): JSX.Element {
+export function Composer({ streaming, disabled = false, onSend, onStop, seed, onSeedUsed, health, matter = null, dropDest }: ComposerProps): JSX.Element {
   const [message, setMessage] = useState('');
+  /** Vault paths riding along with the message — a dropped document lands
+   * here as a chip, the way Home's "attach from vault" chips do. */
+  const [attached, setAttached] = useState<string[]>([]);
+  const [dragDepth, setDragDepth] = useState(0);
+  const [status, setStatus] = useState<IntakeStatus | null>(null);
   // Derived-from-props during render (React's own pattern), not an effect:
   // an effect would paint the empty box first and steal a keystroke typed
   // in between.
@@ -54,12 +67,26 @@ export function Composer({ streaming, disabled = false, onSend, onStop, seed, on
     if (seenSeed !== 0) usedRef.current?.();
   }, [seenSeed]);
 
+  const full = withAttachments(message, attached);
   const send = (): void => {
-    const trimmed = message.trim();
-    if (trimmed === '' || streaming || disabled) return;
-    onSend(trimmed);
+    if (full === '' || streaming || disabled) return;
+    onSend(full);
     setMessage('');
+    setAttached([]);
+    setStatus(null);
   };
+
+  /** A drop: one Word document into the matter's folder (or the inbox),
+   * then its path as a chip. The drag counter survives the enter/leave
+   * pairs a child element fires. */
+  const onDrop = (event: React.DragEvent): void => {
+    event.preventDefault();
+    setDragDepth(0);
+    void intake(droppedFiles(event.dataTransfer), dropDest, setStatus).then(up => {
+      if (up !== null) setAttached(current => (current.includes(up.path) ? current : [...current, up.path]));
+    });
+  };
+  const dragging = dragDepth > 0;
 
   return (
     <form
@@ -70,7 +97,31 @@ export function Composer({ streaming, disabled = false, onSend, onStop, seed, on
       }}
     >
       <ProviderNotice health={health} />
-      <div className="v2-composer-box">
+      {matter === null ? null : (
+        <p className="v2-composer-matter">
+          <span className="v2-tag">Matter</span>
+          <span className="v2-composer-matter-title">{matter.title}</span>
+          <span className="muted">· dropped files go into this matter's folder</span>
+        </p>
+      )}
+      <div
+        className={dragging ? 'v2-composer-box v2-dragging' : 'v2-composer-box'}
+        onDragEnter={event => {
+          if (!carriesFiles(event.dataTransfer)) return;
+          event.preventDefault();
+          setDragDepth(d => d + 1);
+        }}
+        onDragOver={event => {
+          if (carriesFiles(event.dataTransfer)) event.preventDefault();
+        }}
+        onDragLeave={() => setDragDepth(d => Math.max(0, d - 1))}
+        onDrop={onDrop}
+      >
+        {dragging ? (
+          <div className="v2-drop" aria-hidden="true">
+            <em>Drop a Word document to add it to the matter</em>
+          </div>
+        ) : null}
         <textarea
           aria-label="Message"
           placeholder="Ask counsel…"
@@ -86,18 +137,34 @@ export function Composer({ streaming, disabled = false, onSend, onStop, seed, on
           }}
         />
         <div className="v2-composer-actions">
+          {attached.map(path => (
+            <button
+              type="button"
+              key={path}
+              className="v2-ask-chip v2-ask-attached"
+              aria-label={`Remove ${path}`}
+              onClick={() => setAttached(current => current.filter(p => p !== path))}
+            >
+              {path}
+            </button>
+          ))}
           <span className="v2-composer-hint muted">⌘⏎ to send</span>
           {streaming ? (
             <button type="button" onClick={onStop}>
               Stop
             </button>
           ) : (
-            <button type="submit" className="v2-primary" disabled={disabled || message.trim() === ''}>
+            <button type="submit" className="v2-primary" disabled={disabled || full === ''}>
               Send
             </button>
           )}
         </div>
       </div>
+      {status === null ? null : (
+        <p className={status.kind === 'error' ? 'v2-intake v2-intake-error' : 'v2-intake'} role={status.kind === 'error' ? 'alert' : 'status'}>
+          {status.text}
+        </p>
+      )}
     </form>
   );
 }

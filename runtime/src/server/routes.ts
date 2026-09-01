@@ -5,6 +5,7 @@ import { pendingProposals } from '../loop/pending-proposals';
 import { applyProposal } from '../loop/proposals';
 import { listRuns, readRun, type RunRecord } from '../loop/run-record';
 import { DOCX_CONTENT_TYPE, docxToMarkdown, isDocxPath, NotADocxError, openDocx, UnsafeXmlError } from '../docx';
+import { assertSafeXml } from '../docx/safety';
 import { RegistryFile } from '../providers/registry';
 import type { ThreadEvent, ThreadHeader } from '../threads/store';
 import { vaultDocket } from '../vault/docket';
@@ -211,6 +212,36 @@ export function contentTypeFor(name: string): string {
 export function contentDisposition(name: string): string {
   const ascii = name.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_');
   return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(name)}`;
+}
+
+/** How large an upload may be. A contract is tens of kilobytes; a 25 MB
+ * Word file is a scanned exhibit, which the reader cannot show anyway. */
+export const UPLOAD_MAX_BYTES = 25 * 1024 * 1024;
+
+/** The folder a drop lands in when no matter is chosen (spec §10). */
+export const INBOX_DIR = 'inbox';
+
+/**
+ * A safe file name from whatever the browser sent: the basename only (a
+ * path in a filename is an escape attempt or a browser quirk, never a
+ * wish), control characters and the characters no filesystem accepts
+ * replaced, no leading dots (a dotfile would vanish from the tree).
+ */
+export function safeBasename(name: string): string {
+  const base = name.split(/[\\/]/).pop() ?? '';
+  const cleaned = base
+    .replace(/[\x00-\x1f\x7f]/g, '')
+    .replace(/[<>:"|?*]/g, '_')
+    .replace(/^\.+/, '')
+    .trim();
+  return cleaned === '' ? 'document' : cleaned;
+}
+
+/** `name-2.ext`, `name-3.ext`, … for the given ordinal (1 = the name itself). */
+export function suffixed(name: string, n: number): string {
+  if (n <= 1) return name;
+  const dot = name.lastIndexOf('.');
+  return dot <= 0 ? `${name}-${n}` : `${name.slice(0, dot)}-${n}${name.slice(dot)}`;
 }
 
 /** Maps a store failure on a normalized path: `.counsel/` is reserved (400),
@@ -564,6 +595,88 @@ export function createApp(deps: ServerDeps): App {
     }
   };
 
+  /** A directory under the matters directory, normalized, or a 400. `''`
+   * (omitted) is the inbox. */
+  const mattersDest = (raw: string | null): string => {
+    const { mattersPath } = readVaultConfig(deps.vaultRoot);
+    if (raw === null || raw.trim() === '') return `${mattersPath}/${INBOX_DIR}`;
+    const dest = vaultPath(raw).replace(/\/+$/, '');
+    if (dest !== mattersPath && !dest.startsWith(`${mattersPath}/`)) {
+      throw new HttpError(400, `documents go under ${mattersPath}/ — a matter folder, or the inbox`);
+    }
+    return dest;
+  };
+
+  /** `dir/name`, or `dir/name-2`, … — the first path nothing is at. */
+  const freePath = async (dir: string, name: string): Promise<string> => {
+    for (let n = 1; n < 1000; n += 1) {
+      const candidate = `${dir}/${suffixed(name, n)}`;
+      if ((await deps.vault.mtime?.(deps.tenant, candidate)) === null) return candidate;
+    }
+    throw new HttpError(409, `too many files called ${name} in ${dir}`);
+  };
+
+  /**
+   * `POST /vault/upload` (multipart: `file`, optional `dest`): a Word
+   * document into a matter folder or the inbox. The package is opened once
+   * here — not a zip, or not a Word document, is 415; any part with a
+   * DOCTYPE is 422 — so nothing the reader will refuse later gets stored.
+   * The name is never reused: a second `nda.docx` becomes `nda-2.docx`.
+   */
+  const vaultUpload = async (req: Request): Promise<Response> => {
+    if (deps.vault.writeBytes === undefined) throw new HttpError(501, 'this vault store holds text only');
+    let form: Awaited<ReturnType<Request['formData']>>;
+    try {
+      form = await req.formData();
+    } catch {
+      throw new HttpError(400, 'expected multipart form data with a `file` field');
+    }
+    const file = form.get('file');
+    if (!(file instanceof Blob)) throw new HttpError(400, 'a `file` field is required');
+    const name = safeBasename((file as File).name ?? '');
+    if (!isDocxPath(name)) throw new HttpError(415, `only Word documents (.docx) can be added for now: ${name}`);
+    if (file.size > UPLOAD_MAX_BYTES) throw new HttpError(413, `${name} is ${Math.round(file.size / 1024 / 1024)} MB; the limit is ${UPLOAD_MAX_BYTES / 1024 / 1024} MB`);
+    const destRaw = form.get('dest');
+    const dir = mattersDest(typeof destRaw === 'string' ? destRaw : null);
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    try {
+      const pkg = openDocx(bytes);
+      for (const part of pkg.partNames()) {
+        if (/\.(xml|rels)$/i.test(part)) assertSafeXml(pkg.partText(part), part);
+      }
+    } catch (err) {
+      if (err instanceof NotADocxError) throw new HttpError(415, `${name} is not a Word document`);
+      if (err instanceof UnsafeXmlError) throw new HttpError(422, `refused: ${err.message}`);
+      throw err;
+    }
+    const path = await freePath(dir, name);
+    try {
+      await deps.vault.writeBytes(deps.tenant, path, bytes);
+    } catch (err) {
+      vaultFailure(err);
+    }
+    return json({ path, size: bytes.byteLength }, 201);
+  };
+
+  /** `POST /vault/move` `{ from, to }`: a file from one matter folder (or
+   * the inbox) to another, never overwriting. Both under the matters dir. */
+  const vaultMove = async (req: Request): Promise<Response> => {
+    if (deps.vault.rename === undefined) throw new HttpError(501, 'this vault store cannot move files');
+    const body = z.object({ from: z.string().min(1), to: z.string().min(1) }).safeParse(await req.json().catch(() => null));
+    if (!body.success) throw new HttpError(400, 'expected { from, to }');
+    const from = vaultPath(body.data.from);
+    const { mattersPath } = readVaultConfig(deps.vaultRoot);
+    if (!from.startsWith(`${mattersPath}/`)) throw new HttpError(400, `only files under ${mattersPath}/ can be moved`);
+    const dir = mattersDest(body.data.to);
+    const path = await freePath(dir, from.slice(from.lastIndexOf('/') + 1));
+    try {
+      await deps.vault.rename(deps.tenant, from, path);
+    } catch (err) {
+      vaultFailure(err);
+    }
+    return json({ path });
+  };
+
   /** A vault file as bytes, for the reader's download link. Same path
    * guards as `read`; the content type follows the extension. */
   const vaultDownload = async (url: URL): Promise<Response> => {
@@ -710,6 +823,11 @@ export function createApp(deps: ServerDeps): App {
 
       if (segments.length === 2 && first === 'settings' && second === 'test' && method === 'POST') {
         return await runProviderTest(req);
+      }
+
+      if (segments.length === 2 && first === 'vault' && method === 'POST') {
+        if (second === 'upload') return await vaultUpload(req);
+        if (second === 'move') return await vaultMove(req);
       }
 
       if (segments.length === 2 && first === 'vault' && method === 'GET') {

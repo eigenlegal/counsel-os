@@ -65,6 +65,20 @@ For per-file ownership, set `managed-by: user` in an individual law file's
 frontmatter — update skips marked files (even under auto-apply) and law-refresh
 maintains them. Custom law areas the user creates are user-owned automatically.
 
+## Documents in matters
+
+A matter's documents live beside it. A matter that is its own folder
+(`{matters_path}/acme/matter.md`) keeps its Word documents in that folder; a
+flat matter file (`{matters_path}/acme.md`) gets a folder named after it
+(`{matters_path}/acme/`) the first time a document is added.
+
+A document added with no matter chosen — dropped on Home's ask box, say —
+lands in **`{matters_path}/inbox/`**. The inbox is a holding folder, not a
+matter: nothing reads it as one, and the runtime offers "move to a matter"
+right after the drop. Uploaded files are never overwritten; a second
+`nda.docx` in the same folder becomes `nda-2.docx`. Only Word documents
+(`.docx`) can be added this way for now; the size limit is 25 MB.
+
 ## Path resolution
 
 Legal framework (`law/`, `practice/`, `memory/`) reads from `{legal_root}`.

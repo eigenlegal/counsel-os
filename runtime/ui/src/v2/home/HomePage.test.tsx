@@ -1,4 +1,4 @@
-import { cleanup, render, screen, userEvent, waitFor } from '../../test/dom';
+import { cleanup, fireEvent, render, screen, userEvent, waitFor } from '../../test/dom';
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { TOKEN_KEY } from '../../api/token';
@@ -397,5 +397,83 @@ describe('HomePage swap notice (cou-95)', () => {
     render(<HomePage threads={threads} onAsk={() => {}} onOpenThread={() => {}} health={fine} />);
     await waitFor(() => expect(screen.getByLabelText('Ask counsel')).toBeTruthy());
     expect(document.querySelector('.v2-swap-notice')).toBeNull();
+  });
+});
+
+describe('HomePage document intake (docx spec §6)', () => {
+  const NDA = () => new File([new Uint8Array([80, 75, 3, 4])], 'Acme-Mutual-NDA-v3.docx', { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+  function withUpload(status = 201, body: unknown = { path: 'matters/inbox/Acme-Mutual-NDA-v3.docx', size: 41 * 1024 }): string[] {
+    const uploads: string[] = [];
+    const base = globalThis.fetch;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url === '/vault/upload') {
+        const form = init?.body as FormData;
+        uploads.push(`${(form.get('file') as File).name}→${(form.get('dest') as string | null) ?? '(inbox)'}`);
+        return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+      }
+      if (url === '/vault/move') return json({ path: 'matters/acme/Acme-Mutual-NDA-v3.docx' });
+      return base(input, init);
+    }) as unknown as typeof fetch;
+    return uploads;
+  }
+  const dt = (files: File[]) => ({ files, types: ['Files'], items: [] });
+
+  test('dragging a file over the ask box shows the dashed inset with the italic line; leaving hides it', async () => {
+    mount();
+    await waitFor(() => expect(screen.getByLabelText('Ask counsel')).toBeTruthy());
+    const box = document.querySelector('.v2-ask')!;
+    fireEvent.dragEnter(box, { dataTransfer: dt([NDA()]) });
+    expect(box.classList.contains('v2-dragging')).toBe(true);
+    expect(document.querySelector('.v2-drop em')?.textContent).toBe('Drop a Word document to add it to the matter');
+    fireEvent.dragLeave(box);
+    expect(document.querySelector('.v2-drop')).toBeNull();
+    // A dragged text selection does not light the zone.
+    fireEvent.dragEnter(box, { dataTransfer: { files: [], types: ['text/plain'], items: [] } });
+    expect(document.querySelector('.v2-drop')).toBeNull();
+  });
+
+  test('a drop uploads to the inbox, adds the chip, and says where it went — with "move to a matter"', async () => {
+    const uploads = withUpload();
+    mount();
+    await waitFor(() => expect(screen.getByLabelText('Ask counsel')).toBeTruthy());
+    fireEvent.drop(document.querySelector('.v2-ask')!, { dataTransfer: dt([NDA()]) });
+    await waitFor(() => expect(screen.getByRole('status')).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('status').textContent).toContain('Added Acme-Mutual-NDA-v3.docx to matters/inbox · 41 KB'));
+    expect(uploads).toEqual(['Acme-Mutual-NDA-v3.docx→(inbox)']);
+    expect(document.querySelector('.v2-ask-attached')?.textContent).toBe('matters/inbox/Acme-Mutual-NDA-v3.docx');
+    expect(screen.getByRole('button', { name: 'move to a matter' })).toBeTruthy();
+    // The chip rides into the message.
+    const asked: string[] = [];
+    cleanup();
+    withUpload();
+    render(<HomePage threads={threads} onAsk={m => asked.push(m)} onOpenThread={() => {}} />);
+    await waitFor(() => expect(screen.getByLabelText('Ask counsel')).toBeTruthy());
+    fireEvent.drop(document.querySelector('.v2-ask')!, { dataTransfer: dt([NDA()]) });
+    await waitFor(() => expect(document.querySelector('.v2-ask-attached')).toBeTruthy());
+    await userEvent.type(screen.getByLabelText('Ask counsel'), 'Review this.');
+    await userEvent.click(screen.getByRole('button', { name: 'Ask' }));
+    expect(asked).toEqual(['Review this.\n\n`matters/inbox/Acme-Mutual-NDA-v3.docx`']);
+  });
+
+  test('a file that is not a Word document is refused in one line, without a request', async () => {
+    const uploads = withUpload();
+    mount();
+    await waitFor(() => expect(screen.getByLabelText('Ask counsel')).toBeTruthy());
+    fireEvent.drop(document.querySelector('.v2-ask')!, { dataTransfer: dt([new File(['x'], 'Acme-NDA.pages')]) });
+    await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
+    expect(screen.getByRole('alert').textContent).toBe('Could not add Acme-NDA.pages: only Word documents (.docx) can be added for now. Export it from Pages as Word and drop it again.');
+    expect(screen.getByRole('alert').className).toContain('v2-intake-error');
+    expect(uploads).toEqual([]);
+    expect(document.querySelector('.v2-ask-attached')).toBeNull();
+  });
+
+  test('a server refusal reads as a sentence too', async () => {
+    withUpload(413, { error: 'too big' });
+    mount();
+    await waitFor(() => expect(screen.getByLabelText('Ask counsel')).toBeTruthy());
+    fireEvent.drop(document.querySelector('.v2-ask')!, { dataTransfer: dt([NDA()]) });
+    await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
+    expect(screen.getByRole('alert').textContent).toContain('larger than the 25 MB limit');
   });
 });

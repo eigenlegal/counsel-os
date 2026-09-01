@@ -106,6 +106,31 @@ export async function fetchBlob(path: string): Promise<Blob> {
   return res.blob();
 }
 
+export interface Uploaded {
+  path: string;
+  size: number;
+}
+
+/**
+ * A Word document into the vault (`POST /vault/upload`): into `dest` (a
+ * matter folder under the matters directory) or, with no `dest`, the inbox.
+ * Multipart, so the browser sets the boundary; the bearer rides in the
+ * header as everywhere else.
+ */
+export async function uploadFile(file: File, dest?: string): Promise<Uploaded> {
+  const form = new FormData();
+  form.set('file', file, file.name);
+  if (dest !== undefined && dest !== '') form.set('dest', dest);
+  const res = await fetch('/vault/upload', { method: 'POST', headers: authHeaders(), body: form });
+  if (!res.ok) throw await failure(res);
+  return (await res.json()) as Uploaded;
+}
+
+/** Moves a vault file into another matter folder (`POST /vault/move`). */
+export async function moveFile(from: string, to: string): Promise<{ path: string }> {
+  return fetchJson<{ path: string }>('/vault/move', { method: 'POST', body: JSON.stringify({ from, to }) });
+}
+
 /**
  * Hands `blob` to the browser as a download named `filename`, through a
  * one-shot object URL that is revoked once the click has been dispatched.
