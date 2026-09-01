@@ -222,7 +222,7 @@ counsel-os/
     apply_redlines.py            # .docx text replacements + comments
     extract_redlines.py          # Inbound tracked-changes extraction (read --redline)
     clean_format.py              # .docx professional formatting
-    word_compare.sh              # Word Compare via AppleScript
+    (compare + rounds live in runtime/src/docx — TypeScript, no Word)
     legal-template.docx          # Style template
     import_reference.sh          # Third-party material → practice/reference/
     resolve_legal_root.sh        # Canonical legal-root discovery (exit 0/1/2)

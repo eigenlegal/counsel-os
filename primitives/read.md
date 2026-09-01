@@ -132,7 +132,8 @@ Structured ingestion of a **returned markup** — the counterparty (or a colleag
 When the matter file shows a prior round was sent, do not read the incoming markup in isolation — diff it against what we sent:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/diff_rounds.py" --ours "<the version we sent, from the matter's Generated Outputs>" --theirs "<the incoming docx>" --base "<the pre-edit baseline, when the matter has it>" --format json
+bun runtime/src/cli.ts docx rounds --ours "<the version we sent, from the matter's Generated Outputs>" --theirs "<the incoming docx>" --base "<the pre-edit baseline, when the matter has it>" --format json
+# inside the runtime: the `diff_rounds` tool with the same three vault paths
 ```
 
 The report classifies the fate of every counter from our last round: **ACCEPTED** (our language survived), **REVERTED** (back to their text), **MODIFIED** (replaced with something new), **NEW** (fresh asks in paragraphs we never touched). Pass `--base` whenever the round N-1 baseline exists — without it, silent acceptances are invisible and unattributable edits surface as UNMATCHED_CHANGE. Fold the classifications into the delta report (step 4) — a REVERTED counter is a live dispute, not a new change — and log the round outcome per classification to the matter (step 5).

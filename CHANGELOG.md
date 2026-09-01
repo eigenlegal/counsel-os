@@ -8,6 +8,11 @@ reconstructed from git history. New entries are prepended automatically by
 
 ## [Unreleased]
 
+Word documents in TypeScript, stage 2 — compare and rounds (spec §4.9, §9 step 5)
+
+- `docx_compare` replaces Word Compare: two independently edited documents, aligned paragraph by paragraph (whitespace-normalized similarity, fuzzy pairing), written into a copy of the original as native tracked changes — changed paragraphs at word granularity, inserted and deleted paragraphs with their paragraph marks — as `<original>-compare-<date>.docx` beside the original; the slip in the conversation says what was compared against what. Table rows compare in place and are never inserted or deleted (reported as skipped). `scripts/word_compare.sh` and its AppleScript are gone; nothing needs Microsoft Word.
+- `diff_rounds` runs inside the runtime (`runtime/src/docx/rounds.ts`): the same alignment, thresholds, classifications, JSON and markdown as `scripts/diff_rounds.py`, cross-checked identical on generated fixtures; the script is gone. `bun runtime/src/cli.ts docx compare|rounds` for the plugin path.
+
 Word documents in TypeScript, stage 2 — the write path (spec `docs/superpowers/specs/2026-09-01-docx-in-typescript-design.md` §4.7–4.8, §5, §6)
 
 - `apply_redlines` runs inside the runtime (`runtime/src/docx/redline.ts`): the same selectors, two-phase back-to-front apply, plain and native tracked-changes modes, Word comments, result JSON and refusal strings as `scripts/apply_redlines.py` — cross-checked identical on the demo NDA — with no Python. The script and its Python-gated tests are gone.
