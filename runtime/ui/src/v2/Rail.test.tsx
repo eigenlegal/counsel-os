@@ -259,13 +259,48 @@ describe('Rail', () => {
     expect(opened).toBe(1);
   });
 
-  test('select and delete reach their handlers', async () => {
+  test('select reaches its handler; × asks on the row, and Delete is what deletes', async () => {
     const selected: string[] = [];
     const deleted: string[] = [];
     mount({ onSelect: id => selected.push(id), onDelete: id => deleted.push(id) });
     await userEvent.click(screen.getByText('NDA residuals fallback'));
     await userEvent.click(screen.getByRole('button', { name: 'Delete Untitled' }));
+    // Not yet: the row now carries the question in set text, no dialog.
+    expect(deleted).toEqual([]);
+    const row = screen.getByRole('group', { name: 'Delete Untitled?' });
+    expect(row.textContent).toContain('Delete this?');
+    await userEvent.click(within(row).getByRole('button', { name: 'Delete' }));
     expect(selected).toEqual(['t-1']);
     expect(deleted).toEqual(['t-2']);
+    expect(screen.queryByRole('group', { name: 'Delete Untitled?' })).toBeNull();
+  });
+
+  test('Keep and Escape both put the row back without deleting', async () => {
+    const deleted: string[] = [];
+    mount({ onDelete: id => deleted.push(id) });
+    await userEvent.click(screen.getByRole('button', { name: 'Delete Untitled' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Keep' }));
+    expect(screen.queryByText('Delete this?')).toBeNull();
+    expect(screen.getByText('Untitled')).toBeTruthy();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Delete Untitled' }));
+    await userEvent.setup({ document }).keyboard('{Escape}');
+    expect(screen.queryByText('Delete this?')).toBeNull();
+    expect(deleted).toEqual([]);
+  });
+
+  test('an explicit matter link reads as a faint second line; inferred ones do not exist here', () => {
+    const linked: ThreadHeader = { ...acme, id: 't-3', title: 'Term sheet', matter: 'matters/2026-06-acme-nda.md' };
+    mount({ threads: [linked, untitled], matterTitles: { 'matters/2026-06-acme-nda.md': 'Acme Corp — NDA' } });
+    const sub = document.querySelector('.v2-thread-sub');
+    expect(sub?.textContent).toBe('Acme Corp — NDA');
+    expect(sub?.getAttribute('title')).toBe('matters/2026-06-acme-nda.md');
+    expect(document.querySelectorAll('.v2-thread-sub')).toHaveLength(1);
+  });
+
+  test('a linked matter the overview does not know falls back to the prettified filename', () => {
+    const linked: ThreadHeader = { ...acme, matter: 'matters/2026-06-acme-nda.md' };
+    mount({ threads: [linked] });
+    expect(document.querySelector('.v2-thread-sub')?.textContent).toBe('Acme nda');
   });
 });

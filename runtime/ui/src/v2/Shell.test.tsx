@@ -364,8 +364,6 @@ describe('Shell', () => {
   });
 
   test('deleting the open thread from Home stays on Home', async () => {
-    const confirmed = globalThis.confirm;
-    globalThis.confirm = () => true;
     try {
       history.replaceState(null, '', '/#/');
       const base = globalThis.fetch;
@@ -381,13 +379,15 @@ describe('Shell', () => {
       await waitFor(() => expect(screen.getAllByText('Acme NDA term')).toHaveLength(2));
 
       await userEvent.click(screen.getByRole('button', { name: 'Delete Acme NDA term' }));
+      // No window.confirm: the rail row asks, and Delete answers.
+      await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
 
       // Home is still the page, and the fragment never became a chat one.
       await waitFor(() => expect(document.querySelector('.v2-home')).toBeTruthy());
       expect(routeFromHash(location.hash)).toBe('home');
       expect(workNode()?.hasAttribute('hidden')).toBe(true);
     } finally {
-      globalThis.confirm = confirmed;
+      globalThis.fetch = realFetch;
     }
   });
 

@@ -63,6 +63,26 @@ export function isApiPath(pathname: string): boolean {
 
 const CreateThreadBody = z.object({ title: z.string().optional(), matter: z.string().optional() });
 
+/** A vault-relative matter path a thread may link to: no absolute paths, no
+ * `..` segments, no backslashes, never the store's own `.counsel/`. The same
+ * shape the vault tools enforce, checked here so a header can never point
+ * outside the vault. */
+const MATTER_PATH = z
+  .string()
+  .min(1)
+  .max(500)
+  .refine(p => !p.startsWith('/') && !p.includes('\\') && !p.split('/').includes('..') && !p.toLowerCase().startsWith('.counsel'), {
+    message: 'matter must be a vault-relative path',
+  });
+
+/** `PATCH /threads/:id` — housekeeping only: a title (trimmed, `''` clears
+ * it) and/or a matter link (`null` unlinks). Nothing else on the header is
+ * client-writable. */
+const PatchThreadBody = z
+  .object({ title: z.string().max(200).optional(), matter: MATTER_PATH.nullable().optional() })
+  .strict()
+  .refine(b => b.title !== undefined || b.matter !== undefined, { message: 'nothing to change' });
+
 const StepBody = z.object({
   message: z.string().min(1),
   task: z.string().optional(),
@@ -344,6 +364,18 @@ export function createApp(deps: ServerDeps): App {
 
   const getThread = async (id: string): Promise<Response> => json(await loadThread(deps, id));
 
+  const patchThread = async (req: Request, id: string): Promise<Response> => {
+    const patch = await body(req, PatchThreadBody);
+    return withThreadLock(id, async () => {
+      await loadThread(deps, id);
+      return json(
+        await deps.store.update(deps.tenant, id, {
+          ...(patch.title === undefined ? {} : { title: patch.title.trim() }),
+          ...(patch.matter === undefined ? {} : { matter: patch.matter }),
+        }),
+      );
+    });
+  };
   const deleteThread = async (id: string): Promise<Response> =>
     withThreadLock(id, async () => {
       await loadThread(deps, id);
@@ -571,6 +603,7 @@ export function createApp(deps: ServerDeps): App {
 
       if (segments.length === 2 && first === 'threads' && second !== undefined) {
         if (method === 'GET') return await getThread(second);
+        if (method === 'PATCH') return await patchThread(req, second);
         if (method === 'DELETE') return await deleteThread(second);
       }
 
