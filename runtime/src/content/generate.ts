@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { createHash } from 'node:crypto';
 import { bodyHash, groupHash } from './hash';
 import { repoContentSource } from './repo';
 import { SHIPPED_ROOTS, type ContentSource } from './source';
@@ -18,6 +19,11 @@ export interface ContentManifest {
   groups: Record<string, { contentVersion: string; hash: string }>;
 }
 
+/** Shipped files hashed as text (frontmatter-stripped). Everything else is bytes. */
+export function isText(path: string): boolean {
+  return /\.(md|txt|json|yaml|yml)$/.test(path);
+}
+
 export function buildManifest(pluginRoot: string, source: ContentSource = repoContentSource(pluginRoot)): ContentManifest {
   const version = readFileSync(join(pluginRoot, 'VERSION'), 'utf8').trim();
   const versions = JSON.parse(readFileSync(join(pluginRoot, '.content-versions.json'), 'utf8')) as Record<
@@ -26,7 +32,11 @@ export function buildManifest(pluginRoot: string, source: ContentSource = repoCo
   >;
   const files: Record<string, { hash: string }> = {};
   for (const root of SHIPPED_ROOTS) {
-    for (const path of source.list(root)) files[path] = { hash: bodyHash(source.read(path)) };
+    for (const path of source.list(root)) {
+      // Text is hashed like the Python does (frontmatter off); a binary is
+      // hashed whole — there is no frontmatter in a .docx to strip.
+      files[path] = { hash: isText(path) ? bodyHash(source.read(path)) : createHash('sha256').update(source.readBytes(path)).digest('hex') };
+    }
   }
   const groups: Record<string, { contentVersion: string; hash: string }> = {};
   for (const key of Object.keys(versions).sort()) {
@@ -76,6 +86,11 @@ export function embeddedContentSource(): ContentSource {
       const at = FILES[path];
       if (at === undefined) throw new Error(\`not shipped content: \${path}\`);
       return readFileSync(at, 'utf8');
+    },
+    readBytes: path => {
+      const at = FILES[path];
+      if (at === undefined) throw new Error(\`not shipped content: \${path}\`);
+      return new Uint8Array(readFileSync(at));
     },
   };
 }

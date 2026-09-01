@@ -1,5 +1,6 @@
 import type { Entry, Tenant, VaultStore } from '../core/types';
 import { MAX_MATTER_BYTES, MAX_MATTERS, parseFrontmatter, splitFrontmatterBlock, titleOf } from './overview';
+import { listMatterFiles } from './overview';
 import type { VaultConfig } from './resolve-root';
 
 /**
@@ -199,8 +200,7 @@ async function listOr(vault: VaultStore, tenant: Tenant, dir: string): Promise<E
  * about, and the home page lists it too.
  */
 export async function vaultDocket(vault: VaultStore, tenant: Tenant, cfg: VaultConfig, now: Date = new Date()): Promise<DocketView> {
-  const candidates = (await listOr(vault, tenant, cfg.mattersPath))
-    .filter(entry => entry.kind === 'file' && entry.path.endsWith('.md'))
+  const candidates = (await listMatterFiles(vault, tenant, cfg))
     .filter(entry => entry.size === undefined || entry.size <= MAX_MATTER_BYTES)
     .sort((a, b) => (b.mtimeMs ?? 0) - (a.mtimeMs ?? 0))
     .slice(0, MAX_MATTERS);

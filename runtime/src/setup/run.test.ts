@@ -60,7 +60,8 @@ describe('runSetup on a fresh vault', () => {
     expect(result.groups.memory).toEqual({ written: 1, skipped: 0 });
     expect(result.groups.config).toEqual({ written: 1, skipped: 0 });
     expect(result.groups.gitignore).toEqual({ written: 1, skipped: 0 });
-    expect(result.written).toBe(196 + 25 + 36 + 22 + 1 + 1 + 1 + 1 + 1);
+    expect(result.groups.sample).toEqual({ written: 3, skipped: 0 });
+    expect(result.written).toBe(196 + 25 + 36 + 22 + 1 + 1 + 1 + 1 + 1 + 3);
     expect(result.git).toBe('skipped');
     expect(result.warnings).toEqual([]);
 
@@ -97,7 +98,7 @@ describe('runSetup on a fresh vault', () => {
     const again = runSetup(plan(vault, { identity: { name: 'Someone Else', role: 'outside' } }), { content, home, pluginRoot: REPO });
     expect(again.adopted).toBe(true);
     expect(again.written).toBe(0);
-    expect(again.skipped).toBe(196 + 25 + 36 + 22 + 1 + 1 + 1 + 1 + 1);
+    expect(again.skipped).toBe(196 + 25 + 36 + 22 + 1 + 1 + 1 + 1 + 1 + 3);
     expect(statSync(join(vault, 'practice', 'profile.md')).mtimeMs).toBe(profileBefore);
     expect(readFileSync(join(vault, 'practice', 'profile.md'), 'utf8')).toContain('Jack Wang');
   });
@@ -231,5 +232,37 @@ describe('runSetup extras', () => {
     expect(git(['log', '--oneline'], vault).out).toContain('Initial Counsel OS knowledge base');
     // `.counsel/` rides along in the commit — a state file, but a vault's own.
     expect(git(['status', '--porcelain'], vault).out.trim()).toBe('');
+  });
+});
+
+describe('the sample matter (spec §4)', () => {
+  test('on by default: a folder matter with matter.md and the synthetic NDA in both forms', () => {
+    const { home, vault } = fixture();
+    const result = runSetup(plan(vault), { content, home, pluginRoot: REPO });
+    expect(result.groups.sample).toEqual({ written: 3, skipped: 0 });
+    const dir = join(vault, 'matters', 'sample-mutual-nda');
+    expect(readdirSync(dir).sort()).toEqual(['matter.md', 'sample-mutual-nda.docx', 'sample-mutual-nda.md']);
+    const note = readFileSync(join(dir, 'matter.md'), 'utf8');
+    expect(note).toContain('counsel-os-type: matter');
+    expect(note).toContain('title: Acme — Mutual NDA (sample)');
+    expect(note).toContain('sample: true');
+    expect(note).toContain('stage: intake');
+    expect(note).toContain('next_action: Ask counsel to review the NDA against our confidentiality standard');
+    // The .docx is the shipped bytes, untouched (a zip starts with PK).
+    const docx = readFileSync(join(dir, 'sample-mutual-nda.docx'));
+    expect(docx.subarray(0, 2).toString('latin1')).toBe('PK');
+    expect(docx.length).toBe(readFileSync(join(REPO, 'skills', 'demo', 'assets', 'sample-mutual-nda.docx')).length);
+    expect(readFileSync(join(dir, 'sample-mutual-nda.md'), 'utf8')).toContain('MUTUAL NON-DISCLOSURE AGREEMENT');
+  });
+
+  test('off when declined; never re-written when the user already has one', () => {
+    const { home, vault } = fixture();
+    expect(runSetup(plan(vault, { sampleMatter: false }), { content, home, pluginRoot: REPO }).groups.sample).toEqual({ written: 0, skipped: 0 });
+    expect(existsSync(join(vault, 'matters', 'sample-mutual-nda'))).toBe(false);
+    mkdirSync(join(vault, 'matters', 'sample-mutual-nda'), { recursive: true });
+    writeFileSync(join(vault, 'matters', 'sample-mutual-nda', 'matter.md'), '# Mine\n');
+    const again = runSetup(plan(vault), { content, home, pluginRoot: REPO });
+    expect(again.groups.sample).toEqual({ written: 2, skipped: 1 });
+    expect(readFileSync(join(vault, 'matters', 'sample-mutual-nda', 'matter.md'), 'utf8')).toBe('# Mine\n');
   });
 });

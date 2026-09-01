@@ -152,3 +152,25 @@ describe('vaultOverview', () => {
     expect(overview.matters).toEqual([]);
   });
 });
+
+describe('folder matters (spec 2026-09-01 §4)', () => {
+  test('matters/<dir>/matter.md is a matter; other files in the folder and deeper folders are not', async () => {
+    const { mkdtempSync, mkdirSync, writeFileSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    const { FsVaultStore } = await import('./fs-store');
+    const root = mkdtempSync(join(tmpdir(), 'overview-folder-'));
+    mkdirSync(join(root, 'matters', 'sample-mutual-nda', 'drafts'), { recursive: true });
+    writeFileSync(join(root, 'matters', 'flat.md'), '---\ntitle: Flat\n---\n');
+    writeFileSync(join(root, 'matters', 'sample-mutual-nda', 'matter.md'), '---\ntitle: Acme — Mutual NDA (sample)\nstage: intake\n---\n');
+    writeFileSync(join(root, 'matters', 'sample-mutual-nda', 'sample-mutual-nda.md'), '# NDA\n');
+    writeFileSync(join(root, 'matters', 'sample-mutual-nda', 'drafts', 'matter.md'), '# too deep\n');
+    mkdirSync(join(root, 'matters', 'empty-folder'));
+    const overview = await vaultOverview(new FsVaultStore(root), 'default', { entitiesPath: 'entities', mattersPath: 'matters' });
+    expect(overview.matters.map(m => [m.path, m.title]).sort()).toEqual([
+      ['matters/flat.md', 'Flat'],
+      ['matters/sample-mutual-nda/matter.md', 'Acme — Mutual NDA (sample)'],
+    ]);
+    expect(overview.matters.find(m => m.path.endsWith('sample-mutual-nda/matter.md'))!.frontmatter['stage']).toBe('intake');
+  });
+});

@@ -65,5 +65,9 @@ export function repoContentSource(pluginRoot: string, opts: RepoSourceOptions = 
       if (!isShippedPath(path)) throw new Error(`not shipped content: ${path}`);
       return readFile(join(pluginRoot, path));
     },
+    readBytes(path: string): Uint8Array {
+      if (!isShippedPath(path)) throw new Error(`not shipped content: ${path}`);
+      return new Uint8Array(readFileSync(join(pluginRoot, path)));
+    },
   };
 }

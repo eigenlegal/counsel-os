@@ -39,6 +39,8 @@ describe('repoContentSource over the checkout', () => {
     expect(source.list('templates/memory')).toEqual(['templates/memory/patterns.md']);
     expect(source.list('primitives').length).toBeGreaterThanOrEqual(6);
     expect(source.list('skills/counsel')).toContain('skills/counsel/SKILL.md');
+    expect(source.list('skills/demo/assets')).toEqual(['skills/demo/assets/sample-mutual-nda.docx', 'skills/demo/assets/sample-mutual-nda.md']);
+    expect(source.readBytes('skills/demo/assets/sample-mutual-nda.docx').subarray(0, 2)).toEqual(new Uint8Array([0x50, 0x4b]));
   });
 
   test('a prefix outside the roots lists nothing', () => {

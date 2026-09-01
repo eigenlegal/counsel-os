@@ -274,6 +274,7 @@ describe('the content source (spec 2026-09-01 §3)', () => {
     kind: 'embedded' as const,
     list: (prefix: string) => (prefix === 'primitives' ? ['primitives/draft.md', 'primitives/notes.txt'] : []),
     has: (path: string) => path === 'skills/counsel/SKILL.md' || path === 'primitives/draft.md',
+    readBytes: () => new Uint8Array(),
     read: (path: string) => {
       if (path === 'skills/counsel/SKILL.md') return '---\nname: counsel\n---\n\n# From the source\n';
       if (path === 'primitives/draft.md') return 'DRAFT FROM THE SOURCE\n';

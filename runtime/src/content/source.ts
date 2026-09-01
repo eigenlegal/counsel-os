@@ -16,6 +16,8 @@ export const SHIPPED_ROOTS: readonly string[] = [
   'templates/memory',
   'primitives',
   'skills/counsel',
+  // The synthetic NDA the sample matter is made of (spec 2026-09-01 §4).
+  'skills/demo/assets',
 ];
 
 /** Files under a shipped root that are documentation for maintainers, not
@@ -30,6 +32,8 @@ export interface ContentSource {
   has(path: string): boolean;
   /** The file's text. Throws for a path the source does not ship. */
   read(path: string): string;
+  /** The file's bytes — for the one shipped binary, the sample `.docx`. */
+  readBytes(path: string): Uint8Array;
 }
 
 /** A path is shipped only if it sits under a shipped root and is plain:

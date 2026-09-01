@@ -873,6 +873,12 @@ export const MANIFEST: ContentManifest = {
     },
     "skills/counsel/SKILL.md": {
       "hash": "95b9b1011e261549c94c4b1fe2e902cf0d0dd252699a8aaca2ac9ee6e6fa3e79"
+    },
+    "skills/demo/assets/sample-mutual-nda.docx": {
+      "hash": "67025b706197311c96327e35df6401d78135b330567ecde92131067f405bd6e5"
+    },
+    "skills/demo/assets/sample-mutual-nda.md": {
+      "hash": "0072b329826d5ea2297b8c786ba0b54bef092ab1c5c646874bd90569030f9624"
     }
   },
   "groups": {
