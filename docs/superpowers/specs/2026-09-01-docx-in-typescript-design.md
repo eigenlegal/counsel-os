@@ -1,6 +1,6 @@
 # Word documents in TypeScript — design
 
-**Date:** 2026-09-01 · **Status:** draft for founder review · **Decision it implements:** founder ruling 2026-09-01: port the Word (`.docx`) pipeline from Python into the Bun runtime, staged. Reading and conversion first. Native tracked-changes writing second. No bundled Python. No "Python optional" mode.
+**Date:** 2026-09-01 · **Status:** approved by the founder 2026-09-01 (defaults taken on every open question) · **Decision it implements:** founder ruling 2026-09-01: port the Word (`.docx`) pipeline from Python into the Bun runtime, staged. Reading and conversion first. Native tracked-changes writing second. No bundled Python. No "Python optional" mode.
 
 ## 1. Why
 
@@ -152,7 +152,7 @@ Mockups (`docs/superpowers/specs/img-standalone/`): `mock-intake.html` (Home's a
 
 Each step is its own PR with QA. The Python scripts stay in the repo until the step that replaces them lands, so nothing regresses in between.
 
-## 10. Open questions for the founder
+## 10. Decisions (founder, 2026-09-01)
 
-- Produced-document naming: `<original>-redline-<YYYY-MM-DD>.docx` next to the source, or a `redlines/` subfolder in the matter? Default in this spec: next to the source.
-- Inbox for uploads with no matter: `matters/inbox/` (default here) or refuse until a matter is chosen?
+- Produced documents are written next to the source as `<original>-redline-<YYYY-MM-DD>.docx` (a numeric suffix if that name exists).
+- Uploads with no matter linked land in `matters/inbox/`; the result line offers "move to a matter".

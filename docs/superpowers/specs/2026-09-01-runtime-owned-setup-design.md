@@ -1,6 +1,6 @@
 # Runtime-owned setup and content — design
 
-**Date:** 2026-09-01 · **Status:** draft for founder review · **Decision it implements:** founder ruling 2026-09-01: the runtime carries the knowledge content and owns first-run setup. The Claude Code plugin stays as a front end.
+**Date:** 2026-09-01 · **Status:** approved by the founder 2026-09-01 (defaults taken on every open question) · **Decision it implements:** founder ruling 2026-09-01: the runtime carries the knowledge content and owns first-run setup. The Claude Code plugin stays as a front end.
 
 ## 1. Why
 
@@ -101,7 +101,7 @@ Mockups: `docs/superpowers/specs/img-standalone/mock-setup.html` (the form) and 
 
 Each step is its own PR with QA.
 
-## 11. Open questions for the founder
+## 11. Decisions (founder, 2026-09-01)
 
-- Default new vault location: `~/Documents/Counsel OS` (this spec) or `~/Counsel OS`?
-- Should the sample matter be on by default? This spec says yes; it is the fastest way for a new user to see a review.
+- Default new vault location: `~/Documents/Counsel OS`.
+- The sample matter is on by default.
