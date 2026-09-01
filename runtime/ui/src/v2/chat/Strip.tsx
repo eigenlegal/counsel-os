@@ -60,14 +60,16 @@ export function formatCost(usd: number): string {
   return usd === 0 ? '$0' : usd < 0.01 ? `$${usd.toFixed(4)}` : `$${usd.toFixed(2)}`;
 }
 
-/** `3 sources · 1 proposal pending` — the collapsed line's middle
- * (spec §3.3). Empty when there is nothing to count. */
+/** `3 sources · 1 proposal pending · 1 document produced` — the collapsed
+ * line's middle (spec §3.3). Empty when there is nothing to count. */
 export function stripLine(turn: AssistantTurn): string {
   const sources = readPathsOf(turn.tools).length;
   const pending = turn.proposals.filter(p => p.status === 'pending').length;
   const parts: string[] = [];
   if (sources > 0) parts.push(`${sources} source${sources === 1 ? '' : 's'}`);
   if (pending > 0) parts.push(`${pending} proposal${pending === 1 ? '' : 's'} pending`);
+  const produced = turn.artifacts.length;
+  if (produced > 0) parts.push(`${produced} document${produced === 1 ? '' : 's'} produced`);
   return parts.join(' · ');
 }
 

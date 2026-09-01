@@ -180,3 +180,14 @@ describe('shortId', () => {
     expect(shortId('r-1')).toBe('r-1');
   });
 });
+
+describe('stripLine with produced documents', () => {
+  test('counts the documents the step produced', () => {
+    const produced = emptyAssistantTurn({
+      status: 'done',
+      tools: [{ id: 'c-1', name: 'vault_read', input: { path: 'matters/acme.md' }, output: 'x', isError: false, hasResult: true }],
+      artifacts: [{ id: 'a-1', kind: 'docx-redline', path: 'matters/acme/nda-redline.docx', summary: { changes: 1, comments: 0, applied: 1, skipped: 0, clauses: 1, bytes: 10 }, tracked: true }],
+    });
+    expect(stripLine(produced)).toBe('1 source · 1 document produced');
+  });
+});

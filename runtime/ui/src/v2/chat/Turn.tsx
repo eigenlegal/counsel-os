@@ -3,6 +3,7 @@ import type { RunRecord } from '../../api/types';
 import type { ToolCallView, Turn } from '../../chat/turns';
 import { renderMarkdown } from '../../vault/markdown';
 import { humanizeStepError } from '../errors';
+import { ArtifactSlip } from './ArtifactSlip';
 import { citationMap, markCitations, readPathsOf } from './cite';
 import { ProposalCard } from './ProposalCard';
 import { Strip } from './Strip';
@@ -165,7 +166,7 @@ function StepFailure({
 
 /**
  * One turn (spec §3.3): a user bubble, or the quiet work line, the
- * assistant's answer, its proposal slips, then the strip. The work line runs
+ * assistant's answer, its proposal slips, the documents it produced, then the strip. The work line runs
  * above the text on both paths, so the reader sees the work as it happens
  * and can still find it after the answer lands.
  */
@@ -235,6 +236,12 @@ export function TurnView({ turn, threadId, run, live = false, liveMs = {}, onRel
                   onOpenFile={onOpenFile}
                 />
               ))}
+
+          {/* Documents the step produced (spec §6): under the answer and its
+              proposals, above the strip. */}
+          {turn.artifacts.map(artifact => (
+            <ArtifactSlip key={artifact.id} artifact={artifact} onOpenFile={onOpenFile} />
+          ))}
 
           <Strip turn={turn} run={run} ms={ms} onOpenFile={onOpenFile} />
         </>

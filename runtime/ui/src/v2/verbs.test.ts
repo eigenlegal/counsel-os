@@ -108,3 +108,11 @@ describe('workLineOf', () => {
     expect(workLineOf([])).toEqual({ searched: false, listed: false, read: [], proposed: 0, other: 0 });
   });
 });
+
+describe('apply_redlines on the step line', () => {
+  test('reads as Redlined <original>, and the line opens that file', () => {
+    const t = tool('apply_redlines', { original: 'matters/acme/nda.docx', items: [], track: true });
+    expect(verbFor(t)).toEqual({ verb: 'Redlined', object: 'matters/acme/nda.docx' });
+    expect(pathOf(t)).toBe('matters/acme/nda.docx');
+  });
+});

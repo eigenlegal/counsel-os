@@ -15,6 +15,19 @@ export interface Usage {
   costUsd?: number;
 }
 
+/** What a produced document reports about itself. COPIED from
+ * `runtime/src/core/types.ts`; a change there is a change here. */
+export interface ArtifactSummary {
+  changes: number;
+  comments: number;
+  applied: number;
+  skipped: number;
+  clauses: number;
+  bytes: number;
+}
+
+export type ArtifactKind = 'docx-redline';
+
 /** One event of a running step, as the SSE stream delivers it. `runId` is
  * added by the server to every frame. */
 export type StepEvent =
@@ -23,6 +36,9 @@ export type StepEvent =
   | { type: 'tool_result'; id: string; name: string; output: unknown; isError?: boolean }
   | { type: 'session'; id: string }
   | { type: 'proposal'; id: string; path: string; rationale: string }
+  /** A document the step produced (`apply_redlines`); the durable record is
+   * the thread's `artifact` event, this is the live signal for the slip. */
+  | { type: 'artifact'; id: string; path: string; kind: ArtifactKind; summary: ArtifactSummary }
   | { type: 'done'; output: unknown; usage: Usage; sessionId?: string }
   /** `text` is the model's raw answer when a typed step could not honor its
    * schema (spec §4.3) — shown alongside the message, never instead of it. */
@@ -48,6 +64,17 @@ export type ThreadEvent =
       rationale: string;
       status: ProposalStatus;
       expectedVersion: string | null;
+    }
+  | {
+      t: 'artifact';
+      at: string;
+      id: string;
+      kind: ArtifactKind;
+      path: string;
+      source: string;
+      author: string;
+      tracked: boolean;
+      summary: ArtifactSummary;
     };
 
 export interface ThreadHeader {

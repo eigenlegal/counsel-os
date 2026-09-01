@@ -933,3 +933,21 @@ a { color: var(--accent); }
 
 /* The Runtime group's sign-out: one sentence, the action as a quiet link. */
 .settings-signout { margin: 10px 0 18px; font-size: 13px; }
+
+/* The redlined-document slip (spec §6, mock-artifact-slip.html): the
+   proposal slip's family — double rule top, hairline bottom, content on the
+   page, never a card, never a left accent. */
+.v2-artifact { border-top: 3px double var(--border-strong); border-bottom: 1px solid var(--border); margin: 20px 0; }
+.v2-artifact-head { display: flex; align-items: baseline; gap: 10px; padding: 10px 2px; font-size: 13px; flex-wrap: wrap; }
+.v2-artifact-name { font: 12.5px var(--mono); color: var(--fg); word-break: break-all; }
+.v2-artifact-state { margin-left: auto; }
+.v2-artifact-body { padding: 0 2px 10px; margin: 0; color: var(--fg-muted); font: 14.5px/1.5 var(--serif); }
+.v2-artifact-facts { display: flex; align-items: baseline; gap: 8px; padding: 0 2px 10px; margin: 0; font-size: 12.5px; color: var(--fg-faint); flex-wrap: wrap; }
+.v2-artifact-facts b { color: var(--fg); font-weight: 600; }
+.v2-artifact-dot { margin-right: 8px; }
+.v2-artifact-skipped { color: var(--amber); }
+.v2-artifact-acts { display: flex; gap: 16px; align-items: baseline; padding: 10px 2px; font-size: 13px; }
+.v2-artifact-download { background: none; border: none; padding: 0; color: var(--accent); font: 600 13px var(--sans); cursor: pointer; }
+.v2-artifact-acts .v2-artifact-quiet { color: var(--fg-muted); font-weight: 500; border-bottom: 1px solid var(--border-strong); text-decoration: none; }
+.v2-artifact-by { margin-left: auto; font-size: 12px; color: var(--fg-faint); }
+.v2-artifact .v2-notice { margin: 0 0 10px; }

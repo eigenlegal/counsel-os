@@ -250,3 +250,36 @@ describe('TurnView user bubble attachments', () => {
     expect(splitAttachments('`a.md` and more')).toEqual({ text: '`a.md` and more', files: [] });
   });
 });
+
+describe('TurnView artifact slip (spec §6)', () => {
+  const artifact = {
+    id: 'a-1',
+    kind: 'docx-redline' as const,
+    path: 'matters/acme/sample-mutual-nda-redline-2026-09-01.docx',
+    source: 'matters/acme/sample-mutual-nda.docx',
+    author: 'Jack Wang',
+    tracked: true,
+    at: '2026-09-01T14:41:00.000Z',
+    summary: { changes: 14, comments: 3, applied: 5, skipped: 0, clauses: 5, bytes: 42_000 },
+  };
+
+  test('renders under the answer and its proposals, above the strip, with a working Open in reader', async () => {
+    const opened: string[] = [];
+    const turn: AssistantTurn = emptyAssistantTurn({
+      status: 'done',
+      text: 'Redlined all five.',
+      proposals: [{ id: 'p-1', path: 'practice/standards/nda.md', rationale: 'r', status: 'pending' }],
+      artifacts: [artifact],
+    });
+    render(<TurnView turn={turn} threadId="t-1" onReload={() => {}} onOpenFile={path => opened.push(path)} />);
+    const slip = document.querySelector('.v2-artifact')!;
+    expect(slip).toBeTruthy();
+    const proposal = document.querySelector('.v2-proposal')!;
+    const strip = document.querySelector('.v2-strip')!;
+    expect(proposal.compareDocumentPosition(slip) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(slip.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: 'Open in reader' }));
+    expect(opened).toEqual([artifact.path]);
+    expect(strip.textContent).toContain('1 document produced');
+  });
+});
