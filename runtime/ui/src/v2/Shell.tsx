@@ -10,6 +10,7 @@ import { Drawer } from './Drawer';
 import { HomePage } from './home/HomePage';
 import { Rail } from './Rail';
 import { SessionLost } from './SessionLost';
+import { SetupRequired } from './SetupRequired';
 import { SettingsPage } from './settings/SettingsPage';
 import { VaultPage } from './vault/VaultPage';
 
@@ -260,11 +261,18 @@ export function Shell(): JSX.Element {
     return { threads: sorted, fresh };
   }, []);
 
+  /** Bumped by the setup page's "Check again": re-runs the initial load. */
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     if (unauthorized) return;
     void (async () => {
       try {
-        setHealth(await fetchJson<Health>('/health'));
+        const next = await fetchJson<Health>('/health');
+        setHealth(next);
+        // Setup mode (spec 2026-09-01 §4): there is no vault, so every
+        // vault-backed read would be a 409. The setup page is the whole app
+        // until /health says otherwise.
+        if (next.setup === true) return;
         void loadIndex();
         void loadMatterTitles();
         const { threads: list, fresh } = await loadThreads();
@@ -292,7 +300,7 @@ export function Shell(): JSX.Element {
         setListed(true);
       }
     })();
-  }, [unauthorized, loadThreads, loadIndex, loadMatterTitles]);
+  }, [unauthorized, attempt, loadThreads, loadIndex, loadMatterTitles]);
 
   /**
    * The rail footer's switcher picked a loaded provider (cou-90): make it
@@ -359,6 +367,7 @@ export function Shell(): JSX.Element {
   // `unauthorized` — so a pasted token picks up exactly where a fresh
   // open would, with no reload and nothing written to the URL.
   if (unauthorized) return <SessionLost onRestored={() => setUnauthorized(false)} />;
+  if (health?.setup === true) return <SetupRequired onCheck={() => setAttempt(n => n + 1)} />;
 
   return (
     <div className="v2-shell">

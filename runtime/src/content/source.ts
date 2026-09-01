@@ -1,0 +1,54 @@
+/**
+ * The shipped content — the law areas, the practice seed, the memory
+ * template, the primitives, and the counsel skill — behind one interface,
+ * so the prompt, the primitives tool and setup read the same files whether
+ * the runtime runs from a checkout or as a compiled binary (spec §3).
+ *
+ * One flat namespace, keyed by REPO-RELATIVE path (`knowledge/law/corporate/
+ * governance.md`, `primitives/draft.md`, `skills/counsel/SKILL.md`). The
+ * roots below are the whole of what ships; a file outside them is not
+ * content, whatever else the checkout holds.
+ */
+
+export const SHIPPED_ROOTS: readonly string[] = [
+  'knowledge/law',
+  'knowledge/practice-seed',
+  'templates/memory',
+  'primitives',
+  'skills/counsel',
+];
+
+/** Files under a shipped root that are documentation for maintainers, not
+ * content a vault receives. */
+export const NOT_CONTENT: ReadonlySet<string> = new Set(['knowledge/law/FRONTMATTER.md', 'knowledge/law/frontmatter-policy.json']);
+
+export interface ContentSource {
+  readonly kind: 'repo' | 'embedded';
+  /** Every shipped file whose path starts with `prefix` (a root or a
+   * directory under one), sorted. */
+  list(prefix: string): string[];
+  has(path: string): boolean;
+  /** The file's text. Throws for a path the source does not ship. */
+  read(path: string): string;
+}
+
+/** A path is shipped only if it sits under a shipped root and is plain:
+ * no absolute, no `..`, no backslash, no leading `./`. */
+export function isShippedPath(path: string): boolean {
+  if (path === '' || path.startsWith('/') || path.includes('\\')) return false;
+  const segments = path.split('/');
+  if (segments.some(s => s === '' || s === '.' || s === '..')) return false;
+  if (NOT_CONTENT.has(path)) return false;
+  return SHIPPED_ROOTS.some(root => path === root || path.startsWith(`${root}/`));
+}
+
+/**
+ * The seam the binary build wires later: a compiled runtime answers with
+ * the embedded source, a checkout with the repo source. Only the repo half
+ * exists in this stage; `compiled: true` is a loud error rather than a
+ * silent fallback to files that would not be there.
+ */
+export function contentSourceFor(opts: { compiled: boolean; pluginRoot: string; repo: (pluginRoot: string) => ContentSource }): ContentSource {
+  if (opts.compiled) throw new Error('embedded content source is not wired yet (spec §3, §10 step 7)');
+  return opts.repo(opts.pluginRoot);
+}

@@ -683,3 +683,34 @@ describe('Shell, a tab with no usable key (spec §5)', () => {
     expect(sessionStorage.getItem(TOKEN_KEY)).toBe(hex);
   });
 });
+
+describe('Shell in setup mode (spec 2026-09-01 §4)', () => {
+  test('health.setup → the setup page, nothing else is fetched; Check again re-reads health and lands on Home', async () => {
+    sessionStorage.setItem(TOKEN_KEY, 'test-token');
+    let setup = true;
+    const fetched: string[] = [];
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      fetched.push(url);
+      if (url.startsWith('/health')) return json(setup ? { setup: true, vault: null, tenant: 'default', providers: [], default: null, stepTimeoutMs: 600_000 } : { ...health, setup: false });
+      if (url === '/threads') return json([]);
+      if (url.startsWith('/vault/overview')) return json({ matters: [], groups: { practice: 0, knowledge: 0, other: 0 } });
+      if (url.startsWith('/vault/index')) return json([]);
+      if (url.startsWith('/proposals')) return json([]);
+      if (url.startsWith('/docket')) return json({ deadlines: [], skipped: 0 });
+      return new Response('{"error":"setup-required"}', { status: 409, headers: { 'content-type': 'application/json' } });
+    }) as unknown as typeof fetch;
+    globalThis.location.hash = '#/';
+
+    render(<Shell />);
+    await waitFor(() => expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Set up counsel-os.'));
+    expect(fetched.filter(u => u === '/threads')).toEqual([]);
+    expect(document.querySelector('.v2-rail')).toBeNull();
+
+    setup = false;
+    await userEvent.click(screen.getByRole('button', { name: 'Check again' }));
+    await waitFor(() => expect(screen.queryByText('Set up counsel-os.')).toBeNull());
+    await waitFor(() => expect(fetched).toContain('/threads'));
+    expect(document.querySelector('.v2-rail')).toBeTruthy();
+  });
+});

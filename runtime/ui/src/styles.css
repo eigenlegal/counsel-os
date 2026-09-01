@@ -792,3 +792,7 @@ a { color: var(--accent); }
 .v2-lost-acts { display: flex; align-items: center; gap: 14px; }
 .v2-lost-acts .v2-ask-go { margin-left: 0; }
 .v2-lost-error { font-size: 13px; color: var(--error); margin: 0; }
+
+/* The setup-required page shares the session-lost page's layout (spec
+   2026-09-01 §4); it only needs its own hook for the coming first-run screen. */
+.v2-setup-required .v2-lost-acts { margin-top: 6px; }

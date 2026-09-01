@@ -1,6 +1,8 @@
 import { randomBytes } from 'node:crypto';
 import { readFileSync, realpathSync, rmSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { join, resolve, sep } from 'node:path';
+import { repoContentSource } from '../content/repo';
 import { writeFileAtomic } from '../core/atomic-write';
 import { counselHome } from '../core/home';
 import { FakeModelProvider, type FakeScript } from '../core/fake-provider';
@@ -11,8 +13,9 @@ import { ThreadStore } from '../threads/store';
 import { FsVaultStore } from '../vault/fs-store';
 import { fsSearch } from '../vault/search';
 import { resolveLegalRoot } from '../vault/resolve-root';
-import { createApp } from './routes';
+import { createApp, type App } from './routes';
 import type { RuntimeState } from './settings';
+import { createSetupApp } from './setup-routes';
 
 type BunServer = ReturnType<typeof Bun.serve>;
 
@@ -46,20 +49,26 @@ export interface StartServerOptions {
   /** The built UI's `dist/`. Omitted → `defaultDistDir()`. */
   distDir?: string;
   env?: NodeJS.ProcessEnv;
+  /** The user's real home, for setup mode's probes. Omitted → `env.HOME`,
+   * then `os.homedir()` — the same rule the root resolver applies. */
+  osHome?: string;
 }
 
 export interface RunningServer {
   port: number;
   token: string;
-  vault: string;
+  /** `null` while the runtime is in setup mode (spec 2026-09-01 §4): no
+   * legal root existed at start and `POST /setup` has not created one. */
+  vault: string | null;
   url: string;
   /** The URL a human opens: the token rides in the fragment, which the
    * browser keeps to itself. This is the only place the token is printed. */
   tokenUrl: string;
   /** The thread store this server is serving from — exposed so a caller (and
    * the tests) can see where thread state, including each thread's Codex
-   * home, actually lands. */
-  store: ThreadStore;
+   * home, actually lands. Throws in setup mode: there is no vault to store
+   * threads in yet. */
+  readonly store: ThreadStore;
   /** Stops listening and removes `runtime.json`. */
   stop(): Promise<void>;
 }
@@ -86,7 +95,8 @@ export function runtimeFilePath(env: NodeJS.ProcessEnv = process.env): string {
 export interface RuntimeFile {
   port: number;
   token: string;
-  vault: string;
+  /** `null` in setup mode; rewritten with the vault once one is set up. */
+  vault: string | null;
   pid: number;
   startedAt: string;
 }
@@ -183,11 +193,15 @@ export function openUrl(url: string, opts: { platform?: NodeJS.Platform; spawn?:
 }
 
 /**
- * Resolves the vault, or exits the way `scripts/resolve_legal_root.sh` does:
- * the same messages on stderr and the same 1/2 exit codes, so a user who has
- * seen one has seen both. `--vault` skips discovery entirely.
+ * Resolves the vault: `--vault` skips discovery entirely; otherwise the
+ * shared algorithm runs. Two outcomes still exit the way
+ * `scripts/resolve_legal_root.sh` does, because they are configuration
+ * mistakes the user must resolve — several marked roots (2), or a
+ * `COUNSEL_OS_LEGAL_ROOT` that is not a marked root (1). NO root at all is
+ * not an error any more (spec 2026-09-01 §4): it returns `null`, and the
+ * server starts in setup mode so the page can create one.
  */
-export function resolveVaultOrExit(opts: StartServerOptions): string {
+export function resolveVaultOrSetup(opts: StartServerOptions): string | null {
   if (opts.vault) return resolve(opts.vault);
   const env = opts.env ?? process.env;
   const found = resolveLegalRoot({ env });
@@ -199,10 +213,9 @@ export function resolveVaultOrExit(opts: StartServerOptions): string {
   }
   if (env.COUNSEL_OS_LEGAL_ROOT) {
     console.error(`COUNSEL_OS_LEGAL_ROOT is not a marked Counsel OS legal root: ${env.COUNSEL_OS_LEGAL_ROOT}`);
-  } else {
-    console.error('No Counsel OS legal root found. Set COUNSEL_OS_LEGAL_ROOT, or run /counsel-os:setup.');
+    process.exit(1);
   }
-  process.exit(1);
+  return null;
 }
 
 /**
@@ -313,46 +326,79 @@ export function runtimeState(opts: RuntimeStateOptions): RuntimeHandle {
  */
 export async function startServer(opts: StartServerOptions = {}): Promise<RunningServer> {
   const env = opts.env ?? process.env;
-  const vaultRoot = resolveVaultOrExit(opts);
   const pluginRoot = opts.pluginRoot ?? defaultPluginRoot(env);
   const distDir = opts.distDir ?? defaultDistDir();
-  // Before anything binds: a dist that overlaps the vault is a config
-  // mistake that would serve the vault without a token.
-  assertDistOutsideVault(distDir, vaultRoot);
+  const content = repoContentSource(pluginRoot);
   // `--fake` puts the canned provider in front of the registry's own, as an
   // override rather than a config change: nothing is written to
   // `providers.yaml`, so the operator's real setup is untouched.
   const fake = opts.fake === undefined ? undefined : new FakeModelProvider(opts.fake);
   const registryFile = opts.registryFile ?? defaultRegistryFile(env);
-  const runtime = runtimeState({
-    vaultRoot,
-    env,
-    registryFile,
-    ...(fake === undefined ? {} : { extraProviders: [fake], defaultId: fake.id }),
-    ...(opts.stepTimeoutMs === undefined ? {} : { stepTimeoutMs: opts.stepTimeoutMs }),
-  });
-
   const token = randomBytes(32).toString('hex');
-  // The store is given the environment's codex root explicitly: its own
-  // default is the real `$HOME`, which would ignore `COUNSEL_OS_HOME` and
-  // drop a copy of `auth.json` somewhere the operator never pointed at.
-  const store = new ThreadStore(vaultRoot, { codexHomeRoot: codexHomeRoot(env) });
-  const app = createApp({
-    token,
-    tenant: DEFAULT_TENANT,
-    vaultRoot,
-    pluginRoot,
-    vault: new FsVaultStore(vaultRoot, { search: fsSearch() }),
-    store,
-    state: runtime.state,
-    settings: { file: registryFile, reload: runtime.reload },
-    distDir,
-  });
-
-  const server = listen(opts.port, app);
-  const port = server.port ?? opts.port ?? DEFAULT_PORT;
   const file = runtimeFilePath(env);
-  writeRuntimeFile(file, { port, token, vault: vaultRoot, pid: process.pid, startedAt: new Date().toISOString() });
+  const startedAt = new Date().toISOString();
+
+  let vaultRoot: string | null = resolveVaultOrSetup(opts);
+  let store: ThreadStore | null = null;
+
+  /** The app over a vault — what this server has always been. Built once
+   * at start when a root exists, or once from `POST /setup` when not. */
+  const buildApp = (vault: string): App => {
+    // Before anything is served from it: a dist that overlaps the vault is
+    // a config mistake that would serve the vault without a token.
+    assertDistOutsideVault(distDir, vault);
+    const runtime = runtimeState({
+      vaultRoot: vault,
+      env,
+      registryFile,
+      ...(fake === undefined ? {} : { extraProviders: [fake], defaultId: fake.id }),
+      ...(opts.stepTimeoutMs === undefined ? {} : { stepTimeoutMs: opts.stepTimeoutMs }),
+    });
+    // The store is given the environment's codex root explicitly: its own
+    // default is the real `$HOME`, which would ignore `COUNSEL_OS_HOME` and
+    // drop a copy of `auth.json` somewhere the operator never pointed at.
+    store = new ThreadStore(vault, { codexHomeRoot: codexHomeRoot(env) });
+    return createApp({
+      token,
+      tenant: DEFAULT_TENANT,
+      vaultRoot: vault,
+      pluginRoot,
+      content,
+      vault: new FsVaultStore(vault, { search: fsSearch() }),
+      store,
+      state: runtime.state,
+      settings: { file: registryFile, reload: runtime.reload },
+      distDir,
+    });
+  };
+
+  // Setup mode (spec 2026-09-01 §4): the page and the setup API only, until
+  // `POST /setup` seeds a vault — then the real app takes over in place,
+  // same process, same token, and `runtime.json` learns the vault.
+  let handler: App =
+    vaultRoot === null
+      ? createSetupApp({
+          token,
+          tenant: DEFAULT_TENANT,
+          distDir,
+          content,
+          home: counselHome(env),
+          pluginRoot,
+          env,
+          osHome: opts.osHome ?? env.HOME ?? homedir(),
+          ...(opts.stepTimeoutMs === undefined ? {} : { stepTimeoutMs: opts.stepTimeoutMs }),
+          onSetup: vault => {
+            handler = buildApp(vault);
+            vaultRoot = vault;
+            writeRuntimeFile(file, { port: server.port ?? opts.port ?? DEFAULT_PORT, token, vault, pid: process.pid, startedAt });
+            console.log(`counsel-os runtime: vault set up at ${vault}`);
+          },
+        })
+      : buildApp(vaultRoot);
+
+  const server = listen(opts.port, req => handler(req));
+  const port = server.port ?? opts.port ?? DEFAULT_PORT;
+  writeRuntimeFile(file, { port, token, vault: vaultRoot, pid: process.pid, startedAt });
 
   // The handshake file must not outlive the process that owns it: a stale
   // one sends the adapter at a dead port with a dead token.
@@ -386,16 +432,25 @@ export async function startServer(opts: StartServerOptions = {}): Promise<Runnin
   // The one line that carries the token, and the only one: it is what the
   // operator clicks. `runtime.json` (0600) is the other copy; nothing else
   // logs it.
-  console.log(`counsel-os runtime on ${tokenUrl} (vault: ${vaultRoot})`);
+  console.log(
+    vaultRoot === null
+      ? `counsel-os runtime on ${tokenUrl} (no vault yet — the page sets one up, or run \`bun runtime/src/cli.ts init\`)`
+      : `counsel-os runtime on ${tokenUrl} (vault: ${vaultRoot})`,
+  );
   if (opts.open) openUrl(tokenUrl);
 
   return {
     port,
     token,
-    vault: vaultRoot,
+    get vault() {
+      return vaultRoot;
+    },
     url,
     tokenUrl,
-    store,
+    get store() {
+      if (store === null) throw new Error('no vault yet: the runtime is in setup mode');
+      return store;
+    },
     async stop(): Promise<void> {
       process.off('SIGINT', onSignal);
       process.off('SIGTERM', onSignal);

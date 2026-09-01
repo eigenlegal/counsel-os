@@ -110,7 +110,12 @@ export interface ProviderInfo {
 }
 
 export interface Health {
-  vault: string;
+  /** `true` while the runtime has no vault (spec 2026-09-01 §4, setup
+   * mode): the page shows the setup screen and nothing else loads. Absent
+   * on an older runtime, which never lacks a vault. */
+  setup?: boolean;
+  /** `null` only in setup mode. */
+  vault: string | null;
   tenant: string;
   providers: ProviderInfo[];
   /** `null` when no provider resolves — the runtime reports that state

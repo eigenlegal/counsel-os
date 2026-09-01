@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { repoContentSource } from '../content/repo';
+import type { ContentSource } from '../content/source';
 import type { Platform } from '../core/types';
 import type { VaultConfig } from '../vault/resolve-root';
 
@@ -172,6 +174,10 @@ function readIfPresent(readFile: (path: string) => string, path: string): string
 
 export interface AssembleSystemPromptOptions {
   pluginRoot: string;
+  /** Where the counsel skill is read from (spec 2026-09-01 §3). Omitted →
+   * the repo source over `pluginRoot`, through the same `readFile`, which
+   * is exactly what this function did before the source existed. */
+  content?: ContentSource;
   vaultRoot: string;
   matterPath?: string;
   platform: Platform;
@@ -192,8 +198,8 @@ export function assembleSystemPrompt(
   opts: AssembleSystemPromptOptions,
   readFile: (path: string) => string = path => readFileSync(path, 'utf8'),
 ): string {
-  const skillPath = join(opts.pluginRoot, 'skills', 'counsel', 'SKILL.md');
-  const skillBody = stripFrontmatter(readFile(skillPath));
+  const content = opts.content ?? repoContentSource(opts.pluginRoot, { readFile });
+  const skillBody = stripFrontmatter(content.read('skills/counsel/SKILL.md'));
 
   let prompt = HOST_PREAMBLE(opts.tools, opts.platform, opts.cfg) + '\n\n' + skillBody;
 
