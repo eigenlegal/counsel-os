@@ -71,6 +71,8 @@ export interface SetupResult {
     profile: GroupCount;
     memory: GroupCount;
     gitignore: GroupCount;
+    /** The sample matter (spec §4): 3 files when asked for, else zeros. */
+    sample: GroupCount;
   };
   written: number;
   skipped: number;
@@ -185,6 +187,7 @@ export function runSetup(plan: SetupPlan, deps: SetupDeps): SetupResult {
     profile: zero(),
     memory: zero(),
     gitignore: zero(),
+    sample: zero(),
   };
   const warnings: string[] = [];
   const received: ContentState['files'] = {};
@@ -241,7 +244,26 @@ export function runSetup(plan: SetupPlan, deps: SetupDeps): SetupResult {
   //    should not carry Finder droppings.
   place('gitignore', '.gitignore', VAULT_GITIGNORE);
 
-  // 8. What this vault received, merged over what it received before.
+  // 8. The sample matter (spec §4, founder decision: on by default): a
+  //    folder matter — `matter.md` beside the synthetic NDA in both forms —
+  //    so a new user has something to review before their first real file.
+  if (plan.sampleMatter) {
+    const dir = 'matters/sample-mutual-nda';
+    place('sample', `${dir}/matter.md`, sampleMatterNote(now()));
+    for (const shipped of deps.content.list('skills/demo/assets')) {
+      const rel = `${dir}/${shipped.slice(shipped.lastIndexOf('/') + 1)}`;
+      const target = join(vault, rel);
+      if (existsSync(target)) {
+        groups.sample.skipped += 1;
+        continue;
+      }
+      mkdirSync(dirname(target), { recursive: true });
+      writeFileSync(target, deps.content.readBytes(shipped));
+      groups.sample.written += 1;
+    }
+  }
+
+  // 9. What this vault received, merged over what it received before.
   const previous = readContentState(vault);
   const state: ContentState = {
     version: MANIFEST.version,
@@ -251,7 +273,7 @@ export function runSetup(plan: SetupPlan, deps: SetupDeps): SetupResult {
   mkdirSync(join(vault, '.counsel'), { recursive: true });
   writeFileSync(join(vault, CONTENT_STATE), JSON.stringify(state, null, 2) + '\n', 'utf8');
 
-  // 9. The default provider, only when asked for; the file is otherwise
+  // 10. The default provider, only when asked for; the file is otherwise
   //    left exactly as it is (a fresh install has none, and that is fine).
   if (plan.defaultProvider !== undefined) {
     const file = deps.registryFile ?? join(deps.home, 'providers.yaml');
@@ -263,7 +285,7 @@ export function runSetup(plan: SetupPlan, deps: SetupDeps): SetupResult {
     }
   }
 
-  // 10. Version control. Present → left alone (Express phase 5).
+  // 11. Version control. Present → left alone (Express phase 5).
   let git: GitOutcome = 'skipped';
   if (plan.git) {
     const runner = deps.git === undefined ? systemGit() : deps.git;
@@ -275,6 +297,37 @@ export function runSetup(plan: SetupPlan, deps: SetupDeps): SetupResult {
   const written = Object.values(groups).reduce((n, g) => n + g.written, 0);
   const skipped = Object.values(groups).reduce((n, g) => n + g.skipped, 0);
   return { vault, adopted, groups, written, skipped, git, warnings };
+}
+
+/** The sample matter's own note. Home lists it like any matter (title,
+ * stage, next action); the two documents beside it are the synthetic NDA
+ * the demo skill uses — fictional parties, deliberately weak terms. */
+export function sampleMatterNote(now: Date): string {
+  const date = now.toISOString().slice(0, 10);
+  return `---
+counsel-os-type: matter
+title: Acme — Mutual NDA (sample)
+sample: true
+stage: intake
+client: Northwind Robotics, Inc.
+counterparty: Vantage Systems, LLC
+next_action: Ask counsel to review the NDA against our confidentiality standard
+created: ${date}
+updated: ${date}
+---
+# Acme — Mutual NDA (sample)
+
+A synthetic mutual non-disclosure agreement, here so you can try a review before your first real matter. Fictional parties, fictional terms, and a few deliberately weak spots for counsel to catch: a broad residuals clause, a short term with no trade-secret carve-out, a marking-only definition of confidential information, weak return-and-destruction language, and compelled disclosure with no notice.
+
+## The documents
+
+- \`sample-mutual-nda.docx\` — the Word document, as a counterparty would send it.
+- \`sample-mutual-nda.md\` — the same text as markdown.
+
+## Try
+
+Ask counsel: *review the NDA in this matter against our confidentiality standard and redline anything we would not sign.* Delete this folder whenever you like; nothing else refers to it.
+`;
 }
 
 /** `git init` + `Initial Counsel OS knowledge base`, with a local identity

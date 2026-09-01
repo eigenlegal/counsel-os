@@ -131,12 +131,29 @@ async function listOr(vault: VaultStore, tenant: Tenant, dir: string): Promise<E
   }
 }
 
+/**
+ * The matter files: every top-level `*.md` in the matters directory, plus
+ * `<dir>/matter.md` for a matter kept as a FOLDER (a matter with its
+ * documents beside it — the sample matter, spec 2026-09-01 §4). One
+ * listing per folder, never deeper. Shared with the docket so both see the
+ * same matters.
+ */
+export async function listMatterFiles(vault: VaultStore, tenant: Tenant, cfg: VaultConfig): Promise<Entry[]> {
+  const top = await listOr(vault, tenant, cfg.mattersPath);
+  const files = top.filter(entry => entry.kind === 'file' && entry.path.endsWith('.md'));
+  for (const dir of top.filter(entry => entry.kind === 'dir')) {
+    const inside = await listOr(vault, tenant, dir.path);
+    const matter = inside.find(entry => entry.kind === 'file' && entry.path === `${dir.path}/matter.md`);
+    if (matter !== undefined) files.push(matter);
+  }
+  return files;
+}
+
 export async function vaultOverview(vault: VaultStore, tenant: Tenant, cfg: VaultConfig): Promise<VaultOverview> {
   // Newest first, THEN cut: the cap has to keep the most recent matters, so
   // it is applied to the listing (which already carries `mtimeMs`) and not
   // to whatever order the filesystem handed back.
-  const candidates = (await listOr(vault, tenant, cfg.mattersPath))
-    .filter(entry => entry.kind === 'file' && entry.path.endsWith('.md'))
+  const candidates = (await listMatterFiles(vault, tenant, cfg))
     .sort((a, b) => (b.mtimeMs ?? 0) - (a.mtimeMs ?? 0))
     .slice(0, MAX_MATTERS);
 
