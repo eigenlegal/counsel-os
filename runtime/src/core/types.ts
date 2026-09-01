@@ -118,6 +118,11 @@ export interface VaultStore {
   /** The file's raw bytes — a Word document, a PDF — under the same path
    * guards as `read`. Optional: an in-memory store may hold only text. */
   readBytes?(tenant: Tenant, path: string): Promise<Uint8Array>;
+  /** Writes raw bytes (an uploaded Word document) under the same path
+   * guards as `write`. Never overwrites: the caller picks a free name. */
+  writeBytes?(tenant: Tenant, path: string, bytes: Uint8Array): Promise<Version>;
+  /** Moves a file inside the vault. Both paths pass the same guards. */
+  rename?(tenant: Tenant, from: string, to: string): Promise<void>;
 }
 
 // ── Tools with platform gating (subprocess scripts, browse, docx) ─────────

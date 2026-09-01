@@ -28,6 +28,7 @@ Word documents in TypeScript — stage 1, the read path (spec: docs/superpowers/
 - CLI: `bun runtime/src/cli.ts docx read|extract|check <file>` for the plugin path and the shell; the `read` primitive no longer prescribes pandoc.
 - API: `GET /vault/read` converts a `.docx` (`kind: "docx"`, markdown, warnings) instead of returning bytes as text; `GET /vault/download` streams any vault file with the right headers.
 - Reader: a Word document renders as a document — converted body, its own tracked changes in the redline tints, comments as quiet notes, a WORD DOCUMENT line with download.
+- Intake: drop a Word document on Home's ask box or the chat composer — it uploads (`POST /vault/upload`) into the linked matter's folder or `matters/inbox/`, never overwriting (`nda-2.docx`), and lands in the message as a path chip; the result line offers "move to a matter" (`POST /vault/move`). Only `.docx`, 25 MB cap, hostile packages refused before they are stored. `matters/inbox/` is now a documented convention (CONFIGURATION.md).
 
 
 ## [0.11.2] — 2026-08-31

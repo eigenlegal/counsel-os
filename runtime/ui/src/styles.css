@@ -634,6 +634,17 @@ a { color: var(--accent); }
 .v2-ask-chip { font-size: 12px; color: var(--fg-muted); border: 1px solid var(--border-strong); border-radius: 999px; padding: 3px 10px; background: var(--bg); cursor: pointer; }
 .v2-ask-attached { font-family: var(--mono); }
 .v2-ask-attached::after { content: " ×"; color: var(--fg-faint); }
+/* Document intake (docx spec §6): the drop zone is a dashed inset drawn
+   INSIDE the existing box — no new container — with one italic serif line;
+   the result and any refusal are one set-text line under the box. */
+.v2-ask, .v2-composer-box { position: relative; }
+.v2-drop { position: absolute; inset: 8px; border: 1px dashed var(--border-strong); border-radius: 10px; background: var(--bg-raised); display: flex; align-items: center; justify-content: center; font: italic 15px var(--serif); color: var(--fg-muted); pointer-events: none; z-index: 2; }
+.v2-intake { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin: 6px 4px 0; font-size: 12.5px; color: var(--fg-muted); }
+.v2-intake-error { color: var(--error); }
+.v2-composer-matter { max-width: 720px; margin: 0 auto 8px; display: flex; align-items: baseline; gap: 8px; font-size: 12.5px; color: var(--fg-muted); }
+.v2-composer-matter .v2-tag { font-size: 9.5px; }
+.v2-composer-matter-title { color: var(--fg); }
+.v2-composer-actions .v2-ask-chip { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .v2-ask-go { margin-left: auto; background: var(--accent); color: var(--accent-ink); border: none; border-radius: 9px; padding: 7px 16px; font-weight: 600; font-size: 13.5px; cursor: pointer; }
 .v2-ask-go:disabled { opacity: 0.5; cursor: default; }
 .v2-ask-picker { margin-top: 10px; max-height: 16rem; overflow-y: auto; border-top: 1px solid var(--border); }

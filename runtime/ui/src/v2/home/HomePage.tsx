@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { ApiError, fetchJson, fetchJsonWithHeaders } from '../../api/client';
+import { ApiError, fetchJson, fetchJsonWithHeaders, moveFile } from '../../api/client';
 import type { DocketEntry, DocketView, Health, PendingProposal, ThreadHeader, VaultOverview } from '../../api/types';
 import { ProviderNotice } from '../ProviderNotice';
 import { Tree } from '../../vault/Tree';
+import { MatterPicker } from '../chat/MatterPicker';
+import { addedLine, carriesFiles, droppedFiles, intake, matterFolderOf, type IntakeStatus } from '../intake';
 import { railLabel } from '../Rail';
 import { relTime } from '../time';
 import {
@@ -96,6 +98,34 @@ export function HomePage({ threads, onAsk, onOpenThread, health }: HomePageProps
   const [attached, setAttached] = useState<string[]>([]);
   const [picking, setPicking] = useState(false);
   const box = useRef<HTMLTextAreaElement | null>(null);
+  /** Document intake (docx spec §6): a Word file dropped on the box goes to
+   * `matters/inbox/` — Home has no matter — and lands as an attach chip. */
+  const [dragDepth, setDragDepth] = useState(0);
+  const [intakeStatus, setIntakeStatus] = useState<IntakeStatus | null>(null);
+  const dragging = dragDepth > 0;
+
+  const onDrop = (event: React.DragEvent): void => {
+    event.preventDefault();
+    setDragDepth(0);
+    void intake(droppedFiles(event.dataTransfer), undefined, setIntakeStatus).then(up => {
+      if (up !== null) setAttached(current => (current.includes(up.path) ? current : [...current, up.path]));
+    });
+  };
+
+  /** "move to a matter" on the result line: the file leaves the inbox for
+   * the matter's folder, and the chip follows it. */
+  const moveTo = async (from: string, matterPath: string | null): Promise<void> => {
+    if (matterPath === null) return;
+    try {
+      const { path } = await moveFile(from, matterFolderOf(matterPath));
+      setAttached(current => current.map(p => (p === from ? path : p)));
+      const moved = addedLine({ path, size: 0 });
+      setIntakeStatus({ kind: 'done', up: { path, size: 0 }, text: `Moved ${moved.name} to ${moved.folder}` });
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) return;
+      setIntakeStatus({ kind: 'error', text: `Could not move the document: ${err instanceof Error ? err.message : String(err)}` });
+    }
+  };
 
   /**
    * The three reads settle INDEPENDENTLY. They answer different questions
@@ -172,7 +202,24 @@ export function HomePage({ threads, onAsk, onOpenThread, health }: HomePageProps
         {subline === null ? null : <div className="v2-sub">{subline}</div>}
 
         <ProviderNotice health={health} />
-        <div className="v2-ask">
+        <div
+          className={dragging ? 'v2-ask v2-dragging' : 'v2-ask'}
+          onDragEnter={event => {
+            if (!carriesFiles(event.dataTransfer)) return;
+            event.preventDefault();
+            setDragDepth(d => d + 1);
+          }}
+          onDragOver={event => {
+            if (carriesFiles(event.dataTransfer)) event.preventDefault();
+          }}
+          onDragLeave={() => setDragDepth(d => Math.max(0, d - 1))}
+          onDrop={onDrop}
+        >
+          {dragging ? (
+            <div className="v2-drop" aria-hidden="true">
+              <em>Drop a Word document to add it to the matter</em>
+            </div>
+          ) : null}
           <textarea
             ref={box}
             aria-label="Ask counsel"
@@ -218,6 +265,17 @@ export function HomePage({ threads, onAsk, onOpenThread, health }: HomePageProps
             </div>
           ) : null}
         </div>
+        {intakeStatus === null ? null : (
+          <p className={intakeStatus.kind === 'error' ? 'v2-intake v2-intake-error' : 'v2-intake'} role={intakeStatus.kind === 'error' ? 'alert' : 'status'}>
+            <span>{intakeStatus.text}</span>
+            {intakeStatus.kind === 'done' && intakeStatus.up.path.startsWith('matters/inbox/') ? (
+              <>
+                <span aria-hidden="true">·</span>
+                <MatterPicker current={null} label="move to a matter" onPick={path => void moveTo(intakeStatus.up.path, path)} />
+              </>
+            ) : null}
+          </p>
+        )}
 
         {docketError === null ? null : (
           <p className="v2-notice v2-notice-error v2-docket-error" role="alert">

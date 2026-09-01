@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
 import { randomUUID } from 'node:crypto';
-import { mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { FakeModelProvider, runToolDef } from '../core/fake-provider';
@@ -10,7 +10,7 @@ import { ThreadStore, type ThreadEvent } from '../threads/store';
 import { FsVaultStore } from '../vault/fs-store';
 import { fsSearch } from '../vault/search';
 import { buildDocx } from '../docx/test/builder';
-import { API_PREFIXES, createApp, TRUNCATED_HEADER, type App, type ServerDeps } from './routes';
+import { API_PREFIXES, createApp, safeBasename, suffixed, TRUNCATED_HEADER, UPLOAD_MAX_BYTES, type App, type ServerDeps } from './routes';
 import type { RuntimeState } from './settings';
 
 const TOKEN = 'test-token-0123456789';
@@ -1220,5 +1220,88 @@ describe('Word documents (docx read path, stage 1)', () => {
     const app = appWithFake();
     expect((await call(app, 'GET', '/vault/download?path=matters/acme/notes.md', { token: null })).status).toBe(401);
     expect((await call(app, 'GET', '/vault/download?path=matters/acme/notes.md', { token: 'wrong' })).status).toBe(401);
+  });
+});
+
+describe('POST /vault/upload and /vault/move (docx intake, stage 1 step 3)', () => {
+  const AT = '2026-08-28T10:00:00Z';
+  function upload(app: App, name: string, bytes: Uint8Array, dest?: string, token: string | null = TOKEN): Promise<Response> {
+    const form = new FormData();
+    form.set('file', new File([bytes], name, { type: 'application/octet-stream' }));
+    if (dest !== undefined) form.set('dest', dest);
+    const headers: Record<string, string> = {};
+    if (token !== null) headers['authorization'] = `Bearer ${token}`;
+    return app(new Request('http://127.0.0.1:7431/vault/upload', { method: 'POST', headers, body: form }));
+  }
+  const nda = () => buildDocx({ blocks: [{ runs: ['Term: ', { text: 'two', del: { author: 'R', date: AT } }, { text: 'one', ins: { author: 'R', date: AT } }] }] });
+
+  test('lands in matters/inbox by default, never overwrites, and reads back converted', async () => {
+    const app = appWithFake();
+    const first = await upload(app, 'Acme NDA v3.docx', nda());
+    expect(first.status).toBe(201);
+    expect(await first.json()).toEqual({ path: 'matters/inbox/Acme NDA v3.docx', size: nda().byteLength });
+    const second = await upload(app, 'Acme NDA v3.docx', nda());
+    expect((await second.json()) as { path: string }).toMatchObject({ path: 'matters/inbox/Acme NDA v3-2.docx' });
+    const third = await upload(app, 'Acme NDA v3.docx', nda());
+    expect((await third.json()) as { path: string }).toMatchObject({ path: 'matters/inbox/Acme NDA v3-3.docx' });
+    const read = (await (await call(app, 'GET', `/vault/read?path=${encodeURIComponent('matters/inbox/Acme NDA v3.docx')}`)).json()) as { kind: string; content: string };
+    expect(read.kind).toBe('docx');
+    expect(read.content).toContain('{--two--}{++one++}');
+    expect(readFileSync(join(vaultRoot, 'matters/inbox/Acme NDA v3.docx')).byteLength).toBe(nda().byteLength);
+  });
+
+  test('a matter folder as dest; a path outside matters/, an escape, or the runtime dir is 400', async () => {
+    const app = appWithFake();
+    const ok = await upload(app, 'nda.docx', nda(), 'matters/acme');
+    expect(ok.status).toBe(201);
+    expect((await ok.json()) as { path: string }).toMatchObject({ path: 'matters/acme/nda.docx' });
+    for (const dest of ['practice/standards', '../x', 'matters/../practice', '.counsel', 'mattersx']) {
+      const res = await upload(app, 'nda.docx', nda(), dest);
+      expect(res.status).toBe(400);
+    }
+  });
+
+  test('the filename is reduced to a safe basename', async () => {
+    const app = appWithFake();
+    const res = await upload(app, '../../evil/..secret:ver|sion?.docx', nda());
+    expect(res.status).toBe(201);
+    expect((await res.json()) as { path: string }).toMatchObject({ path: 'matters/inbox/secret_ver_sion_.docx' });
+    expect(safeBasename('')).toBe('document');
+    expect(suffixed('a.b.docx', 2)).toBe('a.b-2.docx');
+    expect(suffixed('noext', 3)).toBe('noext-3');
+  });
+
+  test('only .docx (415), a non-Word .docx (415), a DOCTYPE part (422), over the cap (413)', async () => {
+    const app = appWithFake();
+    expect((await upload(app, 'Acme-NDA.pages', nda())).status).toBe(415);
+    const pdf = await upload(app, 'scan.pdf', new TextEncoder().encode('%PDF-1.4'));
+    expect(pdf.status).toBe(415);
+    expect(((await pdf.json()) as { error: string }).error).toContain('only Word documents (.docx)');
+    expect((await upload(app, 'fake.docx', new TextEncoder().encode('not a zip'))).status).toBe(415);
+    const hostile = '<?xml version="1.0"?><!DOCTYPE hdr [ <!ENTITY x SYSTEM "file:///etc/hostname"> ]><w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:r><w:t>&x;</w:t></w:r></w:p></w:hdr>';
+    const bad = await upload(app, 'bad.docx', buildDocx({ blocks: [{ runs: ['x'] }], rawParts: { 'word/header1.xml': hostile } }));
+    expect(bad.status).toBe(422);
+    expect(((await bad.json()) as { error: string }).error).toContain('word/header1.xml');
+    expect(existsSync(join(vaultRoot, 'matters/inbox/bad.docx'))).toBe(false);
+    const big = new Uint8Array(UPLOAD_MAX_BYTES + 1);
+    expect((await upload(app, 'big.docx', big)).status).toBe(413);
+    expect((await upload(app, 'nda.docx', nda(), undefined, null)).status).toBe(401);
+    const noFile = await app(new Request('http://127.0.0.1:7431/vault/upload', { method: 'POST', headers: { authorization: `Bearer ${TOKEN}` }, body: new FormData() }));
+    expect(noFile.status).toBe(400);
+  });
+
+  test('move: inbox → a matter folder, never overwriting; outside matters/ is 400; missing is 404', async () => {
+    const app = appWithFake();
+    await upload(app, 'nda.docx', nda());
+    await upload(app, 'nda.docx', nda(), 'matters/acme');
+    const moved = await call(app, 'POST', '/vault/move', { body: { from: 'matters/inbox/nda.docx', to: 'matters/acme' } });
+    expect(moved.status).toBe(200);
+    expect(await moved.json()).toEqual({ path: 'matters/acme/nda-2.docx' });
+    expect(existsSync(join(vaultRoot, 'matters/inbox/nda.docx'))).toBe(false);
+    expect(existsSync(join(vaultRoot, 'matters/acme/nda-2.docx'))).toBe(true);
+    expect((await call(app, 'POST', '/vault/move', { body: { from: 'practice/standards/nda.md', to: 'matters/acme' } })).status).toBe(400);
+    expect((await call(app, 'POST', '/vault/move', { body: { from: 'matters/acme/nda.docx', to: 'practice' } })).status).toBe(400);
+    expect((await call(app, 'POST', '/vault/move', { body: { from: 'matters/inbox/none.docx', to: 'matters/acme' } })).status).toBe(404);
+    expect((await call(app, 'POST', '/vault/move', { body: { from: '' } })).status).toBe(400);
   });
 });

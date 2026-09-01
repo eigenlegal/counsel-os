@@ -92,3 +92,63 @@ describe('v2 Composer swap notice (cou-95)', () => {
     expect(screen.queryByRole('status')).toBeNull();
   });
 });
+
+describe('v2 Composer document intake (docx spec §6)', () => {
+  const realFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+    sessionStorage.clear();
+  });
+  const dt = (files: File[]) => ({ files, types: ['Files'], items: [] });
+  const NDA = () => new File([new Uint8Array([80, 75])], 'Lerner-draft.docx');
+
+  test('the matter line shows for an explicit matter, and drops go to its folder', async () => {
+    sessionStorage.setItem('counsel-os.token', 'tok');
+    const uploads: string[] = [];
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const form = init?.body as FormData;
+      uploads.push(`${String(input)} ${(form.get('file') as File).name}→${form.get('dest') as string}`);
+      return new Response(JSON.stringify({ path: 'matters/sinai-lerner/Lerner-draft.docx', size: 2048 }), { status: 201, headers: { 'content-type': 'application/json' } });
+    }) as unknown as typeof fetch;
+    const sent: string[] = [];
+    render(
+      <Composer
+        streaming={false}
+        onSend={m => sent.push(m)}
+        onStop={noop}
+        matter={{ path: 'matters/sinai-lerner.md', title: 'Sinai × Lerner — K-12 AI Education Platform Partnership' }}
+        dropDest="matters/sinai-lerner"
+      />,
+    );
+    const line = document.querySelector('.v2-composer-matter')!;
+    expect(line.textContent).toContain('Matter');
+    expect(line.textContent).toContain('Sinai × Lerner — K-12 AI Education Platform Partnership');
+    expect(line.textContent).toContain("dropped files go into this matter's folder");
+
+    const box = document.querySelector('.v2-composer-box')!;
+    fireEvent.dragEnter(box, { dataTransfer: dt([NDA()]) });
+    expect(document.querySelector('.v2-drop em')?.textContent).toBe('Drop a Word document to add it to the matter');
+    fireEvent.drop(box, { dataTransfer: dt([NDA()]) });
+    await screen.findByRole('status');
+    await new Promise(r => setTimeout(r, 0));
+    expect(uploads).toEqual(['/vault/upload Lerner-draft.docx→matters/sinai-lerner']);
+    expect(document.querySelector('.v2-drop')).toBeNull();
+    expect(document.querySelector('.v2-ask-attached')?.textContent).toBe('matters/sinai-lerner/Lerner-draft.docx');
+    expect(screen.getByRole('status').textContent).toBe('Added Lerner-draft.docx to matters/sinai-lerner · 2 KB');
+
+    // The chip alone is a sendable message; it rides as a backticked path.
+    const send = screen.getByRole('button', { name: 'Send' }) as HTMLButtonElement;
+    expect(send.disabled).toBe(false);
+    await userEvent.click(send);
+    expect(sent).toEqual(['`matters/sinai-lerner/Lerner-draft.docx`']);
+    expect(document.querySelector('.v2-ask-attached')).toBeNull();
+  });
+
+  test('no matter: no line, and a non-Word drop is refused in one line', async () => {
+    render(<Composer streaming={false} onSend={noop} onStop={noop} />);
+    expect(document.querySelector('.v2-composer-matter')).toBeNull();
+    fireEvent.drop(document.querySelector('.v2-composer-box')!, { dataTransfer: dt([new File(['x'], 'scan.pdf')]) });
+    await screen.findByRole('alert');
+    expect(screen.getByRole('alert').textContent).toContain('only Word documents (.docx) can be added for now');
+  });
+});
