@@ -295,6 +295,7 @@ export function createApp(deps: ServerDeps): App {
       tenant: deps.tenant,
       vaultRoot: deps.vaultRoot,
       pluginRoot: deps.pluginRoot,
+      ...(deps.content === undefined ? {} : { content: deps.content }),
       vault: deps.vault,
       store: deps.store,
       providers: state.providers,

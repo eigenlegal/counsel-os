@@ -342,3 +342,60 @@ describe('the --dist guard', () => {
     ).rejects.toThrow(/--dist|dist directory/i);
   });
 });
+
+describe('startServer in setup mode (spec 2026-09-01 §4)', () => {
+  /** An environment with NO legal root anywhere the resolver looks: a fresh
+   * HOME (so the conventional roots and the pointer are empty), no
+   * COUNSEL_OS_LEGAL_ROOT, and the runtime's own state dir under it. */
+  function bare(): { env: NodeJS.ProcessEnv; osHome: string; pluginRoot: string } {
+    const osHome = mkdirSync(join(mkdtempSync(join(tmpdir(), 'serve-oshome-')), 'home'), { recursive: true })!;
+    const { COUNSEL_OS_LEGAL_ROOT: _unset, ...rest } = process.env;
+    const pluginRoot = mkdtempSync(join(tmpdir(), 'serve-plugin-'));
+    mkdirSync(join(pluginRoot, 'skills', 'counsel'), { recursive: true });
+    writeFileSync(join(pluginRoot, 'skills', 'counsel', 'SKILL.md'), '---\nname: counsel\n---\n\nBODY.\n', 'utf8');
+    return { env: { ...rest, HOME: osHome, COUNSEL_OS_HOME: join(osHome, '.counsel-os') }, osHome, pluginRoot };
+  }
+
+  test('no root, no --vault: the server starts, says setup, refuses vault routes, and switches in place after POST /setup', async () => {
+    const { env, osHome, pluginRoot } = bare();
+    running = await startServer({ pluginRoot, port: 0, env, osHome, registryFile: join(osHome, 'providers.yaml') });
+    expect(running.vault).toBeNull();
+    expect(() => running!.store).toThrow('setup mode');
+    const auth = { authorization: `Bearer ${running.token}` };
+
+    const file = runtimeFilePath(env);
+    expect((JSON.parse(readFileSync(file, 'utf8')) as RuntimeFile).vault).toBeNull();
+
+    const health = await fetch(`${running.url}/health`, { headers: auth });
+    expect(await health.json()).toMatchObject({ setup: true, vault: null });
+    expect((await fetch(`${running.url}/threads`, { headers: auth })).status).toBe(409);
+    const detect = (await (await fetch(`${running.url}/setup/detect`, { headers: auth })).json()) as { locations: Array<Record<string, unknown>> };
+    expect(detect.locations).toEqual([{ path: join(osHome, 'Documents', 'Counsel OS'), kind: 'new', exists: false, writable: true, suggested: true }]);
+
+    const vault = join(osHome, 'Documents', 'Counsel OS');
+    const setup = await fetch(`${running.url}/setup`, {
+      method: 'POST',
+      headers: { ...auth, 'content-type': 'application/json' },
+      body: JSON.stringify({ vault, identity: { name: 'Jack', role: 'solo' }, git: false }),
+    });
+    expect(setup.status).toBe(200);
+
+    // Same server, same token: now a real runtime over the new vault.
+    expect(running.vault).toBe(vault);
+    expect(running.store).toBeDefined();
+    expect(await (await fetch(`${running.url}/health`, { headers: auth })).json()).toMatchObject({ setup: false, vault });
+    const list = await fetch(`${running.url}/vault/list`, { headers: auth });
+    expect(list.status).toBe(200);
+    expect(((await list.json()) as Array<{ path: string }>).map(e => e.path)).toContain('config.md');
+    expect((JSON.parse(readFileSync(file, 'utf8')) as RuntimeFile).vault).toBe(vault);
+    expect((await fetch(`${running.url}/setup/detect`, { headers: auth })).status).toBe(404);
+  });
+
+  test('an explicit --vault never enters setup mode, and a vault reports setup: false', async () => {
+    const { vault, pluginRoot, env } = fixture();
+    running = await startServer({ vault, pluginRoot, port: 0, env, registryFile: join(vault, 'none.yaml') });
+    expect(running.vault).toBe(vault);
+    const health = await fetch(`${running.url}/health`, { headers: { authorization: `Bearer ${running.token}` } });
+    expect(await health.json()).toMatchObject({ setup: false, vault });
+  });
+});
