@@ -1,0 +1,97 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>counsel-os — set up</title>
+<link rel="stylesheet" href="mock.css">
+<style>
+  /* One page, no rail: there is no vault for the rail to point at yet. */
+  body { display: block; overflow-y: auto; }
+  .page { max-width: 640px; margin: 0 auto; padding: 56px 40px 80px; }
+  .page .brand { padding: 0 0 34px; }
+  h1 { font: 400 30px/1.3 var(--serif); margin-bottom: 6px; }
+  .lede { color: var(--fg-muted); font: italic 15px/1.5 var(--serif); margin-bottom: 30px; }
+
+  .group { border-top: 3px double var(--border-strong); padding: 14px 2px 22px; }
+  .group h2 { font: 600 11px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--fg-faint); margin-bottom: 6px; }
+  .group .why { color: var(--fg-muted); font-size: 13px; margin-bottom: 12px; }
+
+  /* detected locations: ledger rows, the chosen one marked by a set-text word */
+  .loc { display: flex; align-items: baseline; gap: 10px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 13.5px; }
+  .loc:first-of-type { border-top: none; }
+  .loc .path { font-family: var(--mono); font-size: 12.5px; color: var(--fg); }
+  .loc .kind { font: 600 10px/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--fg-faint); }
+  .loc .pick { margin-left: auto; font: italic 600 13px/1 var(--serif); color: var(--accent); }
+  .loc .pick.no { color: var(--fg-faint); font-weight: 500; }
+  .loc .pick.no::before { content: "use this"; }
+  .loc .pick.yes::before { content: "selected"; }
+
+  .field { display: flex; align-items: baseline; gap: 12px; padding: 7px 0; font-size: 13.5px; }
+  .field label { color: var(--fg-faint); width: 120px; flex-shrink: 0; }
+  .field input, .field .in { flex: 1; background: var(--bg-raised); border: 1px solid var(--border-strong); border-radius: 8px; padding: 6px 10px; font: 13.5px var(--sans); color: var(--fg); }
+  .field .in.ph { color: var(--fg-faint); }
+  .choice { display: flex; gap: 18px; flex: 1; font-size: 13.5px; }
+  .choice span { color: var(--fg-faint); }
+  .choice span.on { color: var(--fg); font-weight: 600; border-bottom: 1px solid var(--fg); }
+
+  .prov { display: flex; align-items: baseline; gap: 10px; padding: 8px 0; border-top: 1px solid var(--border); }
+  .prov:first-of-type { border-top: none; }
+  .prov .vendor { font-size: 13.5px; color: var(--fg); }
+  .prov .model { font-size: 12px; color: var(--fg-faint); }
+  .prov .state { font: italic 600 13px/1 var(--serif); }
+  .prov .state.in { color: var(--ok); } .prov .state.off { color: var(--fg-faint); font-weight: 500; }
+  .prov .pick { margin-left: auto; font: italic 600 13px/1 var(--serif); color: var(--accent); }
+  .prov .pick.no { color: var(--fg-faint); font-weight: 500; }
+
+  .sample { display: flex; align-items: baseline; gap: 10px; padding: 16px 2px 8px; font-size: 13.5px; border-top: 1px solid var(--border); }
+  .sample .box { width: 13px; height: 13px; border: 1px solid var(--fg-muted); border-radius: 3px; position: relative; top: 2px; flex-shrink: 0; }
+  .sample .box.on::after { content: ""; position: absolute; inset: 2px; background: var(--fg); border-radius: 1px; }
+  .create { margin: 22px 0 0; display: flex; align-items: baseline; gap: 14px; }
+  .create button { background: var(--accent); color: var(--accent-ink); border: none; border-radius: 9px; padding: 8px 18px; font: 600 13.5px var(--sans); }
+  .create .note { font-size: 12.5px; color: var(--fg-faint); }
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="brand"><span class="mark"></span> counsel-os</div>
+    <h1>Set up counsel-os.</h1>
+    <p class="lede">Four short questions. Your documents stay on this machine; what you type here only shapes the vault counsel works from.</p>
+
+    <section class="group">
+      <h2>Where your documents live</h2>
+      <p class="why">counsel keeps everything as plain files in one folder — matters, your standards, the law it reads. Pick an existing vault or let it make a new folder.</p>
+      <div class="loc"><span class="path">~/Documents/Counsel OS</span><span class="kind">new folder</span><span class="pick yes"></span></div>
+      <div class="loc"><span class="path">~/Library/…/Obsidian/Legal</span><span class="kind">Obsidian vault</span><span class="pick no"></span></div>
+      <div class="loc"><span class="path">~/legal</span><span class="kind">Counsel OS root · already set up</span><span class="pick no"></span></div>
+      <div class="field" style="margin-top:8px"><label>Or another folder</label><span class="in ph">Type a path, for example ~/Dropbox/Firm</span></div>
+    </section>
+
+    <section class="group">
+      <h2>Who you are</h2>
+      <p class="why">Counsel signs redlines and memos in your name and reads the law for your jurisdiction first.</p>
+      <div class="field"><label>Name</label><span class="in">Jack Wang</span></div>
+      <div class="field"><label>Organization</label><span class="in">Eigen Legal</span></div>
+      <div class="field"><label>Role</label><div class="choice"><span>in-house</span><span>outside counsel</span><span class="on">solo</span></div></div>
+      <div class="field"><label>Jurisdiction</label><span class="in">Massachusetts</span></div>
+    </section>
+
+    <section class="group">
+      <h2>What you practice</h2>
+      <p class="why">One sentence. It tunes your practice profile — the positions counsel opens from and when it escalates to you. You can rewrite the profile later.</p>
+      <div class="field"><label>Your practice</label><span class="in">Commercial contracts and data privacy for software companies</span></div>
+    </section>
+
+    <section class="group">
+      <h2>Which model answers</h2>
+      <p class="why">Counsel needs one model to talk to. These are the ones this machine can reach right now.</p>
+      <div class="prov"><span class="vendor">Claude</span><span class="model">Opus 5 · subscription</span><span class="state in">signed in</span><span class="pick">selected</span></div>
+      <div class="prov"><span class="vendor">ChatGPT</span><span class="model">GPT-5.6 Terra · subscription</span><span class="state off">not installed</span><span class="pick no">install</span></div>
+      <div class="prov"><span class="vendor">Ollama</span><span class="model">gemma4:e4b · local</span><span class="state in">running · 3 models</span><span class="pick no">use this</span></div>
+      <p class="why" style="margin:10px 0 0">You can change this any time in Settings.</p>
+    </section>
+
+    <div class="sample"><span class="box on"></span><span>Add a sample matter — a synthetic NDA — so you can try a review right away.</span></div>
+    <div class="create"><button>Create</button><span class="note">Writes 26 law areas, 24 standards, 35 methods, and your profile into the folder above.</span></div>
+  </div>
+</body>
+</html>
