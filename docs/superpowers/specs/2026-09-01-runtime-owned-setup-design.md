@@ -61,7 +61,7 @@ One page, four steps, no wizard chrome. Serif heading "Set up counsel-os." with 
 
 Then a checkbox row "Add a sample matter (a synthetic NDA) so you can try a review right away" (on by default), and one button "Create". Progress in set text ("Writing 26 law areas…"), then Home. Every failure reads as a sentence next to the step it belongs to; the page never resets what was typed.
 
-Mockups (`docs/superpowers/mocks/setup-*.html`, in the redesign's mock style) are made in the design pass and shown to the founder before the UI is built.
+Mockups: `docs/superpowers/specs/img-standalone/mock-setup.html` (the form) and `mock-setup-progress.html` (progress, then a failed step with the typed values intact), rendered as `setup.png` / `setup-progress.png` (and `-dark`) beside them. The screen has no rail: there is no vault for the rail to point at yet. Detected locations read as ledger rows (path in mono, kind in small caps, the chosen one marked by the set-text word "selected", the others by "use this"). Providers read the same way, with the state in set text ("signed in", "not installed", "running · 3 models").
 
 ## 6. Content updates in the runtime
 

@@ -1,0 +1,77 @@
+/* Shared tokens + chrome for the standalone-track mocks. Values mirror
+   runtime/ui/src/styles.css (light default, dark by preference or
+   data-theme="dark") so a mock reads exactly like the shipped app. */
+:root {
+  color-scheme: light dark;
+  --bg: #faf7f1; --bg-raised: #ffffff; --bg-sunken: #f4efe7; --bg-hover: #f1ece3;
+  --fg: #241f19; --fg-muted: #5f584d; --fg-faint: #7a7061;
+  --border: #e6dfd2; --border-strong: #d8cfbf;
+  --accent: #9a5d16; --accent-ink: #ffffff;
+  --ok: #3f7a4f; --warn: #8a6210; --amber: #8a6210; --error: #b4483a;
+  --ins-bg: #e7f0e4; --del-bg: #f6e3dd;
+  --serif: "Iowan Old Style", Charter, Georgia, serif;
+  --sans: -apple-system, "Inter", "Segoe UI", system-ui, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --radius: 10px; --radius-lg: 14px;
+  --shadow: 0 1px 2px rgba(36,31,25,.06), 0 8px 24px rgba(36,31,25,.08);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#171412; --bg-raised:#1e1a17; --bg-sunken:#1e1a17; --bg-hover:#262019; --fg:#ece5da; --fg-muted:#b8ad9e; --fg-faint:#8c8172; --border:#322b24; --border-strong:#3e352c; --accent:#d99a4e; --accent-ink:#1a1410; --ok:#7fbf8e; --warn:#d9b04e; --amber:#d9b04e; --error:#e08a7e; --ins-bg:#233227; --del-bg:#362420; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.18); } }
+:root[data-theme="dark"] { --bg:#171412; --bg-raised:#1e1a17; --bg-sunken:#1e1a17; --bg-hover:#262019; --fg:#ece5da; --fg-muted:#b8ad9e; --fg-faint:#8c8172; --border:#322b24; --border-strong:#3e352c; --accent:#d99a4e; --accent-ink:#1a1410; --ok:#7fbf8e; --warn:#d9b04e; --amber:#d9b04e; --error:#e08a7e; --ins-bg:#233227; --del-bg:#362420; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.18); }
+
+* { box-sizing: border-box; margin: 0; }
+body { background: var(--bg); color: var(--fg); font: 14px/1.55 var(--sans); height: 100vh; display: flex; }
+a { color: inherit; }
+
+/* ── motif ── */
+.rule-double { border-top: 3px double var(--border-strong); }
+.runin { font: 600 11px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--fg-faint); }
+.runin em { color: var(--accent); font-style: normal; }
+.tag { font: 700 10px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--fg-faint); }
+.leader { flex: 1; border-bottom: 1px dotted var(--border-strong); margin: 0 6px; transform: translateY(-4px); min-width: 24px; }
+.status { font: italic 600 13px/1 var(--serif); }
+.status.ok { color: var(--ok); } .status.pend { color: var(--accent); } .status.err { color: var(--error); } .status.faint { color: var(--fg-faint); font-weight: 500; }
+.mono { font-family: var(--mono); font-size: .92em; }
+.faint { color: var(--fg-faint); } .muted { color: var(--fg-muted); }
+
+/* ── rail (216px) ── */
+.rail { width: 216px; border-right: 1px solid var(--border); padding: 14px 10px; display: flex; flex-direction: column; gap: 2px; background: var(--bg); flex-shrink: 0; }
+.brand { font: 600 15px/1 var(--serif); letter-spacing: .01em; padding: 6px 10px 16px; display: flex; align-items: center; gap: 8px; }
+.brand .mark { width: 20px; height: 20px; border-radius: 6px; background: linear-gradient(135deg, var(--accent), #b3762f); display: inline-block; flex-shrink: 0; }
+.nav { display: flex; flex-direction: column; gap: 1px; }
+.nav a { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; color: var(--fg-muted); text-decoration: none; font-weight: 500; font-size: 13px; }
+.nav a.on { background: var(--bg-hover); color: var(--fg); }
+.nav svg { width: 16px; height: 16px; opacity: .75; }
+.rail .section { margin-top: 20px; padding: 0 10px 6px; font: 600 10.5px/1 var(--sans); letter-spacing: .09em; text-transform: uppercase; color: var(--fg-faint); display: flex; justify-content: space-between; align-items: center; }
+.rail .thread { padding: 6px 10px; border-radius: 8px; color: var(--fg-muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rail .thread.on { background: var(--bg-hover); color: var(--fg); }
+/* the provider plate (cou-90) */
+.foot { margin-top: auto; padding: 10px; display: flex; align-items: flex-start; gap: 8px; color: var(--fg-faint); }
+.foot .dot { margin-top: 5px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); flex-shrink: 0; }
+.plate .vendor { font-size: 13px; color: var(--fg); line-height: 1.3; }
+.plate .detail { font-size: 11.5px; color: var(--fg-faint); }
+/* icon rail (vault route) */
+.rail.icons { width: 56px; padding: 14px 8px; align-items: center; }
+.rail.icons .brand { padding: 4px 0 14px; } .rail.icons .brand .word, .rail.icons .nav .lbl, .rail.icons .plate { display: none; }
+.rail.icons .nav a { justify-content: center; padding: 9px; }
+.rail.icons .foot { justify-content: center; padding: 10px 0; }
+
+.main { flex: 1; min-width: 0; overflow-y: auto; }
+.wrap { max-width: 920px; margin: 0 auto; padding: 52px 40px 60px; }
+.hi { font: 400 30px/1.3 var(--serif); margin-bottom: 6px; }
+.sub { color: var(--fg-muted); margin-bottom: 26px; font: italic 15px/1.5 var(--serif); }
+
+/* ask box + composer, as shipped */
+.ask { background: var(--bg-raised); border: 1px solid var(--border-strong); border-radius: var(--radius-lg); padding: 16px 18px 12px; box-shadow: var(--shadow); position: relative; }
+.ask textarea { width: 100%; background: none; border: none; color: var(--fg); font: 13.5px/1.5 var(--sans); resize: none; outline: none; padding: 0; display: block; }
+.ask textarea::placeholder { color: var(--fg-faint); }
+.ask .row { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+.chip { font-size: 12px; color: var(--fg-muted); border: 1px solid var(--border-strong); border-radius: 999px; padding: 3px 10px; background: var(--bg); }
+.chip.doc { font-family: var(--mono); }
+.chip.doc::after { content: " ×"; color: var(--fg-faint); }
+.go { margin-left: auto; background: var(--accent); color: var(--accent-ink); border: none; border-radius: 9px; padding: 7px 16px; font-weight: 600; font-size: 13.5px; }
+.go.dim { opacity: .5; }
+.hint { margin-left: auto; font-size: 12px; color: var(--fg-faint); }
+.under { font-size: 12.5px; margin: 8px 4px 0; }
+.under.err { color: var(--error); }
+.under.prog { color: var(--fg-muted); }

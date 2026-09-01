@@ -120,7 +120,7 @@ Replaces Word Compare for the one job it still had: two independent documents, n
 - **Reader:** `.docx` renders through the same markdown pipeline as vault files, with the "Word document" line and a Download link. Existing tracked changes show as the same inline redline the proposal card uses.
 - **Artifact slip** (stage 2): in the turn, under the answer, above the strip.
 
-Mockups for the intake states and the artifact slip are produced in the design pass before the UI work starts, in the repo's mock HTML style, for founder review.
+Mockups (`docs/superpowers/specs/img-standalone/`): `mock-intake.html` (Home's ask box and the chat composer in the drag-over state, after a drop, and after a failed drop), `mock-reader-docx.html` (a `.docx` in the reader: the Word line under the dochead, tracked changes inline in the proposal card's tints, a comment as a quiet sans note under its paragraph with the author and date as a run-in and the anchored words dotted in amber), `mock-artifact-slip.html` (the produced-document slip in a turn). Rendered as `intake.png`, `reader-docx.png`, `artifact-slip.png` and their `-dark` twins beside them.
 
 ## 7. Error handling
 

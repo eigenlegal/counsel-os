@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>counsel-os — set up · progress and error</title>
+<link rel="stylesheet" href="mock.css">
+<style>
+  body { display: block; overflow-y: auto; }
+  .page { max-width: 640px; margin: 0 auto; padding: 56px 40px 80px; }
+  .page .brand { padding: 0 0 34px; }
+  h1 { font: 400 30px/1.3 var(--serif); margin-bottom: 6px; }
+  .lede { color: var(--fg-muted); font: italic 15px/1.5 var(--serif); margin-bottom: 30px; }
+  .group { border-top: 3px double var(--border-strong); padding: 14px 2px 22px; }
+  .group h2 { font: 600 11px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--fg-faint); margin-bottom: 6px; }
+  .group .why { color: var(--fg-muted); font-size: 13px; margin-bottom: 12px; }
+  .field { display: flex; align-items: baseline; gap: 12px; padding: 7px 0; font-size: 13.5px; }
+  .field label { color: var(--fg-faint); width: 120px; flex-shrink: 0; }
+  .field .in { flex: 1; background: var(--bg-raised); border: 1px solid var(--border-strong); border-radius: 8px; padding: 6px 10px; font: 13.5px var(--sans); color: var(--fg); }
+  .field .in.bad { border-color: var(--error); }
+  .loc { display: flex; align-items: baseline; gap: 10px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 13.5px; }
+  .loc:first-of-type { border-top: none; }
+  .loc .path { font-family: var(--mono); font-size: 12.5px; }
+  .loc .kind { font: 600 10px/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--fg-faint); }
+  .loc .pick { margin-left: auto; font: italic 600 13px/1 var(--serif); color: var(--accent); }
+
+  /* progress: a ledger of steps, set text, no bars */
+  .steps { padding: 6px 2px 0; }
+  .step { display: flex; align-items: baseline; gap: 10px; padding: 5px 0; font-size: 13.5px; }
+  .step .what { color: var(--fg); }
+  .step .st { font: italic 600 13px/1 var(--serif); }
+  .step .st.done { color: var(--ok); } .step .st.now { color: var(--accent); } .step .st.wait { color: var(--fg-faint); font-weight: 500; }
+  .step .st.done::before { content: "written"; } .step .st.now::before { content: "writing…"; } .step .st.wait::before { content: "waiting"; }
+  .step .n { color: var(--fg-faint); font-size: 12.5px; }
+
+  .err { color: var(--error); font-size: 13px; margin: 6px 0 0 132px; }
+  .create { margin: 22px 0 0; display: flex; align-items: baseline; gap: 14px; }
+  .create button { background: var(--accent); color: var(--accent-ink); border: none; border-radius: 9px; padding: 8px 18px; font: 600 13.5px var(--sans); }
+  .create button.quiet { background: none; color: var(--fg); border: 1px solid var(--border-strong); }
+  .create .note { font-size: 12.5px; color: var(--fg-faint); }
+  .divider { margin: 60px 0 40px; border-top: 1px solid var(--border); text-align: center; }
+  .divider span { position: relative; top: -10px; background: var(--bg); padding: 0 10px; font: 600 10px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--fg-faint); }
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="brand"><span class="mark"></span> counsel-os</div>
+    <h1>Setting up.</h1>
+    <p class="lede">Writing your vault into <span class="mono">~/Documents/Counsel OS</span>. This takes a few seconds.</p>
+    <section class="group">
+      <h2>Progress</h2>
+      <div class="steps">
+        <div class="step"><span class="what">Folder and config</span><span class="leader"></span><span class="st done"></span></div>
+        <div class="step"><span class="what">Law areas</span><span class="n">26</span><span class="leader"></span><span class="st now"></span></div>
+        <div class="step"><span class="what">Standards, methods, library</span><span class="n">80 files</span><span class="leader"></span><span class="st wait"></span></div>
+        <div class="step"><span class="what">Your practice profile</span><span class="leader"></span><span class="st wait"></span></div>
+        <div class="step"><span class="what">Sample matter</span><span class="leader"></span><span class="st wait"></span></div>
+        <div class="step"><span class="what">Git repository</span><span class="leader"></span><span class="st wait"></span></div>
+      </div>
+    </section>
+
+    <div class="divider"><span>a step failed</span></div>
+
+    <h1>Set up counsel-os.</h1>
+    <p class="lede">One thing needs your attention below. Everything you typed is still here.</p>
+    <section class="group">
+      <h2>Where your documents live</h2>
+      <p class="why">counsel keeps everything as plain files in one folder — matters, your standards, the law it reads.</p>
+      <div class="loc"><span class="path">/Volumes/Firm/Legal</span><span class="kind">another folder</span><span class="pick">selected</span></div>
+      <div class="field"><label>Or another folder</label><span class="in bad">/Volumes/Firm/Legal</span></div>
+      <p class="err">Cannot write to /Volumes/Firm/Legal — the drive is read-only. Pick another folder, or make this one writable and choose Create again.</p>
+    </section>
+    <section class="group">
+      <h2>Who you are</h2>
+      <div class="field"><label>Name</label><span class="in">Jack Wang</span></div>
+      <div class="field"><label>Organization</label><span class="in">Eigen Legal</span></div>
+      <div class="field"><label>Jurisdiction</label><span class="in">Massachusetts</span></div>
+    </section>
+    <div class="create"><button>Create</button><button class="quiet">Choose another folder</button><span class="note">Nothing was written yet.</span></div>
+  </div>
+</body>
+</html>
