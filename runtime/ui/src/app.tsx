@@ -3,10 +3,6 @@ import { Shell } from './v2/Shell';
 /** The four surfaces the fragment routes between (redesign spec §3.1). */
 export type Route = 'home' | 'chat' | 'vault' | 'settings';
 
-/** Spec §5, word for word: the page cannot fix this itself — the token is
- * printed by the process that owns it. */
-export const TOKEN_MESSAGE = 'token missing or stale — restart `counsel-os serve` and open the printed URL';
-
 /** The fragment split into the part that picks a surface and the part that
  * parameterizes it — `#/vault?path=matters/acme/notes.md`. The query lives
  * in the FRAGMENT, not the URL's own query string: the token lives there

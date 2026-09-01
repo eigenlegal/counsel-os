@@ -711,3 +711,24 @@ a { color: var(--accent); }
 /* The plate clips on its detail line only; the full raw id + auth live in
  * the title. (The old one-line `.v2-foot .v2-lbl` ellipsis moved onto
  * `.v2-plate-detail` with the cou-90 plate.) */
+
+/* ── Session lost (spec §5) ──────────────────────────────────────────── */
+
+/* The one page with no rail: a short serif column, the two things that
+   could have happened in set text, the command, and a paste field. */
+.v2-lost { flex: 1; }
+.v2-lost-wrap { max-width: 560px; margin: 48px auto 0; }
+.v2-lost-title { font: 400 30px/1.3 var(--serif); margin: 0 0 6px; }
+.v2-lost-lede { font: 15px/1.6 var(--serif); color: var(--fg-muted); margin: 0 0 28px; }
+.v2-lost-group { padding: 14px 0 6px; margin-top: 18px; }
+.v2-lost-group .runin { margin-bottom: 8px; }
+.v2-lost-group .muted { font-size: 13px; margin: 0 0 8px; }
+.v2-lost-cmd { display: flex; align-items: baseline; gap: 12px; padding: 8px 12px; margin: 6px 0 10px; background: var(--bg-sunken); border: 1px solid var(--border); border-radius: var(--radius); }
+.v2-lost-cmd code { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 12.5px; }
+.v2-lost-form { display: flex; flex-direction: column; gap: 8px; }
+.v2-lost-form label { font-size: 13px; color: var(--fg-muted); }
+.v2-lost-form input { width: 100%; padding: 8px 10px; font: 13px var(--mono); color: var(--fg); background: var(--bg-raised); border: 1px solid var(--border-strong); border-radius: 8px; }
+.v2-lost-form input[aria-invalid="true"] { border-color: var(--error); }
+.v2-lost-acts { display: flex; align-items: center; gap: 14px; }
+.v2-lost-acts .v2-ask-go { margin-left: 0; }
+.v2-lost-error { font-size: 13px; color: var(--error); margin: 0; }

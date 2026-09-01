@@ -3,12 +3,13 @@ import { ApiError, fetchJson } from '../api/client';
 import { readToken } from '../api/token';
 import { onUnauthorized } from '../api/unauthorized';
 import type { Health, SettingsView, ThreadHeader } from '../api/types';
-import { parseHash, threadFromHash, TOKEN_MESSAGE, vaultPathFromHash, type Route } from '../app';
+import { parseHash, threadFromHash, vaultPathFromHash, type Route } from '../app';
 import { Chat } from './chat/Chat';
 import type { ComposerSeed } from './chat/Composer';
 import { Drawer } from './Drawer';
 import { HomePage } from './home/HomePage';
 import { Rail } from './Rail';
+import { SessionLost } from './SessionLost';
 import { SettingsPage } from './settings/SettingsPage';
 import { VaultPage } from './vault/VaultPage';
 
@@ -309,16 +310,11 @@ export function Shell(): JSX.Element {
     }
   };
 
-  if (unauthorized) {
-    return (
-      <main className="page-message">
-        <h1>counsel-os</h1>
-        <p className="notice notice-error" role="alert">
-          {TOKEN_MESSAGE}
-        </p>
-      </main>
-    );
-  }
+  // No usable key in this tab (never had one, or the runtime refused it).
+  // Flipping the flag back re-runs the initial load above — it keys on
+  // `unauthorized` — so a pasted token picks up exactly where a fresh
+  // open would, with no reload and nothing written to the URL.
+  if (unauthorized) return <SessionLost onRestored={() => setUnauthorized(false)} />;
 
   return (
     <div className="v2-shell">
