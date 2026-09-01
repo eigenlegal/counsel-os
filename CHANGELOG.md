@@ -15,6 +15,11 @@ Runtime-owned setup, stage 1 (spec `docs/superpowers/specs/2026-09-01-runtime-ow
 - `serve` no longer exits when no legal root exists: it starts in setup mode, serves the page, and offers `GET /setup/detect`, `GET /setup/providers`, and `POST /setup`; every other API route answers 409 until a vault is set up, then the same server switches to it in place. `/health` reports `setup`.
 - The web UI shows a setup-required page in setup mode (the first-run screen lands next).
 
+Runtime-owned setup, stage 2 — content updates and doctor (spec §6–§7)
+
+- `bun runtime/src/cli.ts update-content`, `GET /content/status` and `POST /content/apply`, and a **Content** group in Settings: the shipped law and practice content compared with the vault by body hash and by what the vault last received. Law updates apply (never a file you changed — `managed-by: user`, `law_management: user`, or an edited copy); a practice seed that changed upstream shows its diff against the seed as received (`.counsel/received/`) for a merge by hand; missing files can be added. `auto_apply_law_updates: true` in `config.md` applies law updates at serve start.
+- `bun runtime/src/cli.ts doctor`, `GET /doctor`, and **Check the vault** under Settings › Runtime: the read-only vault checks of `/counsel-os:doctor` — config marker, structure and counts, law currency against the policy cadences, git, a standards ↔ library numeric divergence check (time units), and open matters behind a refreshed law area. No environment checks.
+
 ## [0.11.3] — 2026-09-01
 
 UI review batch — readable search, unified docket, session-lost screen, provider notice, conversation rename and matter link

@@ -190,6 +190,8 @@ Skip silently if the user does not use browse.
 
 ## Step 4: Compare Vault Content
 
+> The runtime carries the same rules (spec 2026-09-01 §6): `bun runtime/src/cli.ts update-content [--yes|--dry-run]`, `GET /content/status` + `POST /content/apply`, and the **Content** group in the web UI's Settings. A vault set up by the runtime keeps `.counsel/content-state.json` (what it received) and `.counsel/received/` (the practice seeds as received), which is what the runtime diffs practice against.
+
 Compare the plugin's shipped content to the user's vault.
 
 ### Law areas: plugin-managed by default
