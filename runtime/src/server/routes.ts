@@ -52,7 +52,7 @@ export type App = (req: Request) => Promise<Response>;
  * static, served with no credential, so a new route whose prefix is missing
  * here would be reachable by anyone who can reach the port.
  */
-export const API_PREFIXES: readonly string[] = ['health', 'threads', 'runs', 'vault', 'settings', 'proposals', 'docket'];
+export const API_PREFIXES: readonly string[] = ['health', 'threads', 'runs', 'vault', 'settings', 'proposals', 'docket', 'setup'];
 
 /** True when `pathname` belongs to the API (and so needs a token). `/` and
  * every client-side route are false. */
@@ -319,6 +319,9 @@ export function createApp(deps: ServerDeps): App {
   const health = (): Response => {
     const state = deps.state();
     return json({
+      // A vault is live: the setup app (`setup-routes.ts`) is the one that
+      // says `true`, and the page keys its first-run screen on this.
+      setup: false,
       vault: deps.vaultRoot,
       tenant: deps.tenant,
       providers: state.providers.map(p => ({

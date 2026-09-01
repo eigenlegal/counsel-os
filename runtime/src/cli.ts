@@ -14,7 +14,10 @@ import { buildProviders } from './providers/index';
 import { DEFAULT_TENANT, isTerminal, type ModelProvider } from './core/types';
 import type { FakeScript } from './core/fake-provider';
 import { DEFAULT_STEP_TIMEOUT_MS, withStepTimeout } from './loop/counsel-loop';
-import { startServer } from './server/serve';
+import { repoContentSource } from './content/repo';
+import { counselHome } from './core/home';
+import { runInit } from './setup/init';
+import { defaultPluginRoot, startServer } from './server/serve';
 
 const { values, positionals } = parseArgs({
   args: Bun.argv.slice(2),
@@ -34,6 +37,17 @@ const { values, positionals } = parseArgs({
     'fake-script': { type: 'string' }, // `serve`: a JSON array of FakeScript steps for --fake
     open: { type: 'boolean' },        // `serve`: open the printed token URL in the browser
     dist: { type: 'string' },         // `serve`: the built UI to serve (default runtime/ui/dist)
+    // `init` — the first-run answers as flags (spec 2026-09-01 §4); a
+    // missing one is asked on stdin unless `--yes`.
+    name: { type: 'string' },
+    org: { type: 'string' },
+    role: { type: 'string' },              // in-house | outside | solo
+    jurisdiction: { type: 'string' },
+    practice: { type: 'string' },
+    'sample-matter': { type: 'boolean' },
+    'no-git': { type: 'boolean' },
+    'default-provider': { type: 'string' },
+    yes: { type: 'boolean' },              // `init`: never prompt; fail on a missing answer
   },
 });
 
@@ -43,6 +57,8 @@ function usage(): never {
   console.error('usage: bun runtime/src/cli.ts step --vault <dir> --provider <id> [--task <name>] [--schema <json>] [--session <id>] [--codex-home <dir>] [--cwd <dir>] [--step-timeout <ms>] "<prompt>"');
   console.error('       bun runtime/src/cli.ts serve [--port <n>] [--vault <dir>] [--step-timeout <ms>] [--dist <dir>] [--open] [--fake [--fake-script <file.json>]]');
   console.error('         --dist <dir> is the built UI; everything in it is served WITHOUT a token, so it must not overlap the vault');
+  console.error('       bun runtime/src/cli.ts init [--vault <dir>] [--name <n> --org <o> --role in-house|outside|solo --jurisdiction <j> --practice "<one line>"] [--default-provider <id>] [--no-git] [--yes]');
+  console.error('         creates a Counsel OS vault (default ~/Documents/Counsel OS) and seeds it; asks for anything missing unless --yes');
   process.exit(2);
 }
 
@@ -120,6 +136,24 @@ if (cmd === 'serve') {
     console.error(err instanceof Error ? err.message : String(err));
     process.exit(2);
   }
+} else if (cmd === 'init') {
+  const pluginRoot = defaultPluginRoot();
+  const code = await runInit(
+    {
+      ...(values.vault === undefined ? {} : { vault: values.vault }),
+      ...(values.name === undefined ? {} : { name: values.name }),
+      ...(values.org === undefined ? {} : { org: values.org }),
+      ...(values.role === undefined ? {} : { role: values.role }),
+      ...(values.jurisdiction === undefined ? {} : { jurisdiction: values.jurisdiction }),
+      ...(values.practice === undefined ? {} : { practice: values.practice }),
+      ...(values['sample-matter'] === undefined ? {} : { 'sample-matter': values['sample-matter'] }),
+      ...(values['no-git'] === undefined ? {} : { 'no-git': values['no-git'] }),
+      ...(values['default-provider'] === undefined ? {} : { 'default-provider': values['default-provider'] }),
+      ...(values.yes === undefined ? {} : { yes: values.yes }),
+    },
+    { content: repoContentSource(pluginRoot), home: counselHome(), pluginRoot },
+  );
+  process.exit(code);
 } else {
   await step();
 }

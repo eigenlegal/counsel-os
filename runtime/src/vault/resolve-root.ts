@@ -41,7 +41,7 @@ function defaultConventionalRoots(home: string): string[] {
 
 /** A marked legal root is a directory containing config.md with both
  * `counsel-os-config: true` and a `legal_root:` line — mirrors `is_marked_root`. */
-function isMarkedRoot(root: string): boolean {
+export function isMarkedRoot(root: string): boolean {
   let stat;
   try {
     stat = statSync(root);
@@ -84,6 +84,45 @@ function findConfigFiles(base: string, maxDepth: number): string[] {
   };
   walk(base, 1);
   return results;
+}
+
+/**
+ * Every marked legal root the machine-wide search can see — the env var,
+ * the pointer, and the conventional locations — without the current
+ * working directory (a server's cwd says nothing about a lawyer's vault).
+ * What the first-run screen lists (spec 2026-09-01 §4). Sorted, deduped.
+ */
+export function findMarkedRoots(opts: Omit<ResolveRootOptions, 'cwd'> = {}): string[] {
+  const env = opts.env ?? process.env;
+  const home = opts.home ?? env.HOME ?? homedir();
+  const conventional = opts.conventional ?? defaultConventionalRoots(home);
+  const found = new Set<string>();
+  const envRoot = env.COUNSEL_OS_LEGAL_ROOT;
+  if (envRoot && isMarkedRoot(envRoot)) found.add(envRoot);
+  const pointerPath = join(home, '.counsel-os', 'legal-root');
+  if (existsSync(pointerPath)) {
+    let pointer = '';
+    try {
+      pointer = readFileSync(pointerPath, 'utf8').replace(/\n/g, '');
+    } catch {
+      pointer = '';
+    }
+    if (pointer && isMarkedRoot(pointer)) found.add(pointer);
+  }
+  for (const base of conventional) {
+    let baseStat;
+    try {
+      baseStat = statSync(base);
+    } catch {
+      continue;
+    }
+    if (!baseStat.isDirectory()) continue;
+    for (const configPath of findConfigFiles(base, CONVENTIONAL_SCAN_MAX_DEPTH)) {
+      const root = dirname(configPath);
+      if (isMarkedRoot(root)) found.add(root);
+    }
+  }
+  return [...found].sort();
 }
 
 /**
