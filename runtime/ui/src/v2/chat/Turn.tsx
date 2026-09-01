@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import type { RunRecord } from '../../api/types';
 import type { ToolCallView, Turn } from '../../chat/turns';
 import { renderMarkdown } from '../../vault/markdown';
+import { humanizeStepError } from '../errors';
 import { citationMap, markCitations, readPathsOf } from './cite';
 import { ProposalCard } from './ProposalCard';
 import { Strip } from './Strip';
@@ -24,6 +25,8 @@ export interface TurnProps {
    * names becomes a click target when it is one of these (cou-93 item 8) —
    * the second gate beside the derivation set, never a third source. */
   vaultPaths?: ReadonlySet<string>;
+  /** Offered on a turn whose step FAILED: sends the same message again. */
+  onRetry?: () => void;
 }
 
 /** The record's per-call timings, keyed onto this turn's tool ids. The
@@ -109,12 +112,49 @@ function Prose({
 }
 
 /**
+ * A failed step, said plainly (cou-95): the humanized line, Retry when the
+ * chat offers one, and the provider's original words (and any partial
+ * answer) folded under "show details" — never lost, never leading.
+ */
+function StepFailure({
+  error,
+  providerId,
+  onRetry,
+}: {
+  error: { message: string; text?: string };
+  providerId: string;
+  onRetry?: () => void;
+}): JSX.Element {
+  const human = humanizeStepError(error.message, providerId);
+  const hasDetail = human.detail !== undefined || error.text !== undefined;
+  return (
+    <div className="v2-notice v2-notice-error v2-step-failure" role="alert">
+      <p>
+        {human.line}
+        {onRetry === undefined ? null : (
+          <button type="button" className="v2-retry" onClick={onRetry}>
+            Retry
+          </button>
+        )}
+      </p>
+      {hasDetail ? (
+        <details>
+          <summary>{error.text === undefined ? 'show details' : 'show answer'}</summary>
+          {human.detail === undefined ? null : <p className="v2-error-raw">{human.detail}</p>}
+          {error.text === undefined ? null : <pre>{error.text}</pre>}
+        </details>
+      ) : null}
+    </div>
+  );
+}
+
+/**
  * One turn (spec §3.3): a user bubble, or the quiet work line, the
  * assistant's answer, its proposal slips, then the strip. The work line runs
  * above the text on both paths, so the reader sees the work as it happens
  * and can still find it after the answer lands.
  */
-export function TurnView({ turn, threadId, run, live = false, liveMs = {}, onReload, onDecided, onOpenFile, vaultPaths }: TurnProps): JSX.Element {
+export function TurnView({ turn, threadId, run, live = false, liveMs = {}, onReload, onDecided, onOpenFile, vaultPaths, onRetry }: TurnProps): JSX.Element {
   if (turn.kind === 'user') {
     return (
       <article className="v2-turn v2-turn-user">
@@ -154,17 +194,7 @@ export function TurnView({ turn, threadId, run, live = false, liveMs = {}, onRel
 
           {/* The turn owns its error text: it reads here, unfolded, and the
               strip's record leaves out the identical copy it holds. */}
-          {turn.error === undefined ? null : (
-            <div className="v2-notice v2-notice-error" role="alert">
-              <p>{turn.error.message}</p>
-              {turn.error.text === undefined ? null : (
-                <details>
-                  <summary>show answer</summary>
-                  <pre>{turn.error.text}</pre>
-                </details>
-              )}
-            </div>
-          )}
+          {turn.error === undefined ? null : <StepFailure error={turn.error} providerId={turn.provider ?? ''} onRetry={onRetry} />}
 
           {threadId === null
             ? null

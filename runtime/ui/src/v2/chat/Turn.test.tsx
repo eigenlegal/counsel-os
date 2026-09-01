@@ -60,7 +60,8 @@ describe('TurnView prose', () => {
         onReload={() => {}}
       />,
     );
-    expect(screen.getByText('the model returned no answer')).toBeTruthy();
+    // Humanized in front, the provider's own words kept (cou-95).
+    expect(screen.getByText(/the model returned no answer/)).toBeTruthy();
     expect(document.querySelector('.v2-notice-error pre')?.textContent).toBe('**not markdown**');
   });
 });
@@ -198,5 +199,32 @@ describe('TurnView vault-index chips (cou-93 item 8)', () => {
     const turn: AssistantTurn = emptyAssistantTurn({ status: 'done', text: 'See `matters/acme.md`.' });
     render(<TurnView turn={turn} threadId="t-1" onReload={() => {}} onOpenFile={() => {}} />);
     expect(document.querySelector('.v2-prose code.v2-cite')).toBeNull();
+  });
+});
+
+describe('TurnView step failure (cou-95)', () => {
+  test('the provider\'s words become a plain line; the original stays under details; Retry sends again', async () => {
+    let retried = 0;
+    const turn = emptyAssistantTurn({
+      status: 'error',
+      provider: 'claude-sub/claude-opus-5',
+      error: { message: 'claude harness: Not logged in · Please run /login' },
+    });
+    render(<TurnView turn={turn} threadId="t-1" onReload={() => {}} onRetry={() => { retried += 1; }} />);
+    const notice = document.querySelector('.v2-step-failure')!;
+    expect(notice.querySelector('p')?.textContent).toContain('Claude did not answer: your Claude login has expired. Run `claude login` in a terminal, then retry.');
+    expect(notice.querySelector('details summary')?.textContent).toBe('show details');
+    expect(notice.querySelector('.v2-error-raw')?.textContent).toBe('claude harness: Not logged in · Please run /login');
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(retried).toBe(1);
+  });
+
+  test('no Retry when the chat offers none; a partial answer keeps "show answer"', () => {
+    const turn = emptyAssistantTurn({ status: 'error', provider: 'ollama/gemma4:e4b', error: { message: 'fetch failed', text: 'partial' } });
+    render(<TurnView turn={turn} threadId="t-1" onReload={() => {}} />);
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+    expect(document.querySelector('.v2-step-failure p')?.textContent).toBe('Ollama is not running on this machine. Start it, then retry.');
+    expect(document.querySelector('details summary')?.textContent).toBe('show answer');
+    expect(document.querySelector('details pre')?.textContent).toBe('partial');
   });
 });

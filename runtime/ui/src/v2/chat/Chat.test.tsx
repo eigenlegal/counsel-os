@@ -406,3 +406,24 @@ describe('v2 Chat, the docket anchor', () => {
     }
   });
 });
+
+describe('v2 Chat, retrying a failed step (cou-95)', () => {
+  test('Retry on the last failed turn sends the same message again on the default provider', async () => {
+    install(async () =>
+      json(
+        thread('t-1', [
+          { t: 'user', at, content: QUESTION },
+          { t: 'step', at, runId: 'r-1', provider: 'fake/fake' },
+          { type: 'error', at, message: 'claude harness: Not logged in · Please run /login' },
+        ]),
+      ),
+    );
+    render(<Chat threadId="t-1" health={health} />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy());
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    await waitFor(() => expect(calls.some(c => c.method === 'POST' && c.url.endsWith('/steps'))).toBe(true));
+    const step = calls.find(c => c.method === 'POST' && c.url.endsWith('/steps'))!;
+    expect((step.body as { message: string; provider: string }).message).toBe(QUESTION);
+    expect((step.body as { message: string; provider: string }).provider).toBe('fake/fake');
+  });
+});

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { Health } from '../api/types';
-import { footerLabel, modelName, plateFor, swapNote } from './plate';
+import { footerLabel, modelName, plateFor, swapNote, swapPlates } from './plate';
 
 describe('plateFor', () => {
   // The founder's table (cou-90), row by row.
@@ -108,5 +108,30 @@ describe('footerLabel / swapNote', () => {
     expect(swapNote(swapped)).toBe('saved default openai/nope not loaded');
     expect(swapNote(health)).toBeNull();
     expect(swapNote(null)).toBeNull();
+  });
+});
+
+describe('swapPlates (cou-95)', () => {
+  const ollama = { id: 'ollama/gemma4:e4b', kind: 'direct' as const, auth: 'local' as const, capabilities: { tools: true, caching: false, thinking: false, contextTokens: 32_000, auth: 'local' as const } };
+  const base = { vault: '/v', tenant: 'default', stepTimeoutMs: 1 };
+
+  test('null when the saved default is loaded, or nothing is saved', () => {
+    expect(swapPlates(null)).toBeNull();
+    expect(swapPlates({ ...base, default: 'ollama/gemma4:e4b', providers: [ollama] })).toBeNull();
+    expect(swapPlates({ ...base, default: null, providers: [ollama] })).toBeNull();
+  });
+
+  test('the saved plate and the effective plate with its bare model', () => {
+    const swap = swapPlates({ ...base, default: 'claude-sub/claude-opus-5', providers: [ollama] })!;
+    expect(swap.saved.vendor).toBe('Claude');
+    expect(swap.effective?.vendor).toBe('Ollama');
+    expect(swap.effective?.model).toBe('gemma4:e4b');
+  });
+
+  test('nothing loaded at all: effective is null', () => {
+    expect(swapPlates({ ...base, default: 'claude-sub/claude-opus-5', providers: [] })).toEqual({
+      saved: expect.objectContaining({ vendor: 'Claude' }),
+      effective: null,
+    });
   });
 });

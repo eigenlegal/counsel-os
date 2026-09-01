@@ -413,7 +413,7 @@ export function Shell(): JSX.Element {
           ) : null}
         </div>
 
-        {route === 'home' ? <HomePage threads={threads} onAsk={startAsk} onOpenThread={openThread} /> : null}
+        {route === 'home' ? <HomePage threads={threads} onAsk={startAsk} onOpenThread={openThread} health={health} /> : null}
 
         {route === 'vault' ? (
           <VaultPage

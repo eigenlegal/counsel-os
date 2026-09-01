@@ -358,6 +358,13 @@ export function Chat({
 
   const matterPath = thread === null ? null : matterPathOf(thread.events);
 
+  /** Retry for a step that FAILED (cou-95): send the last user message
+   * again, on the default provider, the way the composer would. Only the
+   * transcript's final assistant turn offers it — an older failure has
+   * been answered since. */
+  const lastUser = [...turns].reverse().find((turn): turn is Extract<Turn, { kind: 'user' }> => turn.kind === 'user');
+  const retryLast = lastUser === undefined ? undefined : (): void => void send(lastUser.content, defaultProviderId(health));
+
   /**
    * The matter's REAL title for the header (cou-93 item 7): a slug
    * prettified (`Sinai lerner k12 partnership`) is not what the lawyer calls
@@ -418,6 +425,7 @@ export function Chat({
             onDecided={decided}
             onOpenFile={onOpenFile}
             vaultPaths={vaultPaths}
+            {...(i === turns.length - 1 && turn.kind === 'assistant' && turn.error !== undefined && !streaming ? { onRetry: retryLast } : {})}
           />
         ))}
         {frozen.map((turn, i) => (
@@ -440,6 +448,7 @@ export function Chat({
 
       <Composer
         streaming={streaming}
+        health={health}
         seed={seed}
         onSeedUsed={onSeedUsed}
         onSend={message => void send(message, defaultProviderId(health))}
