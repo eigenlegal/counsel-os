@@ -16,17 +16,17 @@
 :root {
   color-scheme: light dark;
 
-  /* light — paper, cooled (direction A "Ink & paper") */
-  --bg: #f7f7f5;
+  /* light — warm grey (direction B "Editorial sans") */
+  --bg: #f6f5f2;
   --bg-raised: #ffffff;
-  --bg-sunken: #f0f0ed;
-  --bg-hover: #ebebe7;
-  --fg: #1c1c1e;
-  --fg-muted: #55555a;
-  --fg-faint: #6e6e74;
-  --border: #e3e3df;
-  --border-strong: #cfcfca;
-  --accent: #2f5b9e; /* ink blue */
+  --bg-sunken: #efeeea;
+  --bg-hover: #eae9e4;
+  --fg: #1f1f1d;
+  --fg-muted: #5b5b57;
+  --fg-faint: #6f6f6a;
+  --border: #e2e1dc;
+  --border-strong: #cfcec8;
+  --accent: #1f6b6b; /* deep teal, links + the one button */
   --accent-ink: #ffffff;
   --ok: #2f7a4a;
   --warn: #7a5a0f;
@@ -35,7 +35,7 @@
   --ins-bg: #e3efe6;
   --del-bg: #f5e2de;
 
-  --serif: Charter, "Iowan Old Style", Georgia, serif;
+  --serif: "Iowan Old Style", Charter, Georgia, serif;
   --sans: -apple-system, "Inter", "Segoe UI", system-ui, sans-serif;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 
@@ -44,7 +44,7 @@
 
   --radius: 10px;
   --radius-lg: 14px;
-  --shadow: 0 1px 2px rgba(20, 21, 23, 0.06), 0 8px 24px rgba(20, 21, 23, 0.08);
+  --shadow: 0 1px 2px rgba(31, 31, 29, 0.06), 0 8px 24px rgba(31, 31, 29, 0.08);
   --rail-w: 216px;
   --rail-w-icons: 56px;
   --drawer-w: 420px;
@@ -52,18 +52,18 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* dark — graphite, cool (direction A) */
-    --bg: #141517;
-    --bg-raised: #1b1c1f;
-    --bg-sunken: #1b1c1f;
-    --bg-hover: #232428;
-    --fg: #e6e6e3;
-    --fg-muted: #adadaa;
-    --fg-faint: #8f8f8c;
-    --border: #2a2b2f;
-    --border-strong: #36373c;
-    --accent: #8fb3ec;
-    --accent-ink: #10131a;
+    /* dark — warm graphite (direction B) */
+    --bg: #161615;
+    --bg-raised: #1d1d1b;
+    --bg-sunken: #1d1d1b;
+    --bg-hover: #262624;
+    --fg: #e8e7e2;
+    --fg-muted: #b0afa9;
+    --fg-faint: #8f8e88;
+    --border: #2b2b29;
+    --border-strong: #383836;
+    --accent: #6fc2bd;
+    --accent-ink: #0f1a1a;
     --ok: #7fc292;
     --warn: #d9b45a;
     --amber: #d9b45a;
@@ -72,8 +72,6 @@
     --del-bg: #33241f;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.18);
   }
-  /* Dark ground makes every serif stroke read heavier; grayscale smoothing
-     brings the weight back to where the light theme sits. */
   body { -webkit-font-smoothing: antialiased; }
 }
 
@@ -790,11 +788,14 @@ a { color: var(--accent); }
 .v2-lost-acts .v2-ask-go { margin-left: 0; }
 .v2-lost-error { font-size: 13px; color: var(--error); margin: 0; }
 
-/* ── Direction A: Ink & paper — text-first weights ─────────────────────── */
-.v2-prose { font-size: 16px; line-height: 1.68; }
-.v2-doc-md { font: 16px/1.7 var(--serif); }
-.v2-doc-md h2 { font: 500 18px/1.3 var(--serif); }
-.v2-doc-head h1 { font: 500 24px/1.25 var(--serif); letter-spacing: -0.005em; }
-.v2-thread-head h1 { font: 500 18px/1.3 var(--serif); }
-.v2-brand { font: 500 15px/1 var(--serif); }
-.v2-matter-name { font: 400 14.5px/1.35 var(--serif); }
+/* ── Direction B: Editorial sans — serif only for titles ───────────────── */
+.v2-prose { font-family: var(--sans); font-size: 15.5px; line-height: 1.65; }
+.v2-doc-md { font: 15.5px/1.65 var(--sans); }
+.v2-doc-md h2 { font: 600 15px/1.3 var(--sans); letter-spacing: -0.005em; }
+.v2-doc-head h1 { font: 500 26px/1.2 var(--serif); }
+.v2-thread-head h1 { font: 500 19px/1.3 var(--serif); }
+.v2-hi { font: 400 30px/1.3 var(--serif); }
+.v2-sub { font: 14px/1.5 var(--sans); }
+.v2-matter-name { font: 500 14px/1.35 var(--sans); }
+.v2-user-text { font-family: var(--sans); }
+.v2-status { font: italic 500 13px/1 var(--serif); }
