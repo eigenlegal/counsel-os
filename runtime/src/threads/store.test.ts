@@ -206,3 +206,37 @@ describe('ThreadStore', () => {
     expect(existsSync(join(root, '.counsel', 'threads', 'default', `${unknownId}.jsonl`))).toBe(false);
   });
 });
+
+describe('ThreadStore.update (rename + matter link)', () => {
+  test('renames without touching updatedAt, so the rail order holds', async () => {
+    const header = await store.create('default', { title: 'Acme NDA' });
+    await new Promise(resolve => setTimeout(resolve, 5));
+    const renamed = await store.update('default', header.id, { title: 'Acme — residuals' });
+    expect(renamed.title).toBe('Acme — residuals');
+    expect(renamed.updatedAt).toBe(header.updatedAt);
+    expect((await store.get('default', header.id)).header.title).toBe('Acme — residuals');
+  });
+
+  test('an empty title clears the name; the derived one comes back at read time', async () => {
+    const header = await store.create('default', { title: 'Named' });
+    await store.append('default', header.id, { t: 'user', at: header.createdAt, content: 'What is the cap?' });
+    const cleared = await store.update('default', header.id, { title: '' });
+    expect(cleared.title).toBe('What is the cap?');
+    // On disk the name is gone, not stored as ''.
+    const raw = JSON.parse(readFileSync(join(root, '.counsel', 'threads', 'default', `${header.id}.json`), 'utf8')) as { title?: string };
+    expect('title' in raw).toBe(false);
+  });
+
+  test('links and unlinks a matter; null removes the key', async () => {
+    const header = await store.create('default', {});
+    const linked = await store.update('default', header.id, { matter: 'matters/acme.md' });
+    expect(linked.matter).toBe('matters/acme.md');
+    const unlinked = await store.update('default', header.id, { matter: null });
+    expect(unlinked.matter).toBeUndefined();
+    expect((await store.list('default'))[0]!.matter).toBeUndefined();
+  });
+
+  test('rejects a malformed id before touching disk', async () => {
+    await expect(store.update('default', '../x', { title: 'x' })).rejects.toThrow('invalid thread id');
+  });
+});

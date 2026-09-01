@@ -169,6 +169,29 @@ export class ThreadStore {
     return header;
   }
 
+  /**
+   * Rename or re-link a thread. `updatedAt` is deliberately left alone: it
+   * orders the rail by conversation activity, and housekeeping — a better
+   * name, the right matter — is not a turn and must not jump the row to
+   * the top. A `title` of `''` clears the name, so the thread falls back to
+   * the derived one (`presentHeader`); `matter: null` unlinks.
+   */
+  async update(tenant: Tenant, id: string, patch: { title?: string; matter?: string | null }): Promise<ThreadHeader> {
+    this.validateTenant(tenant);
+    this.validateId(id);
+    const header = this.readHeader(tenant, id);
+    if (patch.title !== undefined) {
+      if (patch.title === '') delete header.title;
+      else header.title = patch.title;
+    }
+    if (patch.matter !== undefined) {
+      if (patch.matter === null) delete header.matter;
+      else header.matter = patch.matter;
+    }
+    this.writeHeader(tenant, header);
+    return this.presentHeader(tenant, header);
+  }
+
   async get(tenant: Tenant, id: string): Promise<{ header: ThreadHeader; events: ThreadEvent[] }> {
     this.validateTenant(tenant);
     this.validateId(id);

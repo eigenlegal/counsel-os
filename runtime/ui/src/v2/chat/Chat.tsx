@@ -7,6 +7,7 @@ import { createThread, defaultProviderId, titleFor } from '../threads';
 import { relTime } from '../time';
 import { prettifyName, readerModel } from '../vault/frontmatter';
 import { Composer, type ComposerSeed } from './Composer';
+import { MatterPicker } from './MatterPicker';
 import { TurnView } from './Turn';
 
 export interface ChatProps {
@@ -356,7 +357,61 @@ export function Chat({
   const isDraft = threadId === null && pending === null && frozen.length === 0;
   const empty = !loading && threadId !== null && turns.length === 0 && frozen.length === 0 && pending === null;
 
-  const matterPath = thread === null ? null : matterPathOf(thread.events);
+  /**
+   * The header's matter: the EXPLICIT link on the thread header when there
+   * is one, else the first matter file the thread read (inferred). An
+   * explicit link is the lawyer's word and inference never overwrites it;
+   * the inferred one is shown as such so it can be confirmed or changed.
+   */
+  const explicitMatter = thread?.header.matter ?? null;
+  const inferredMatter = thread === null ? null : matterPathOf(thread.events);
+  const matterPath = explicitMatter ?? inferredMatter;
+  const matterInferred = explicitMatter === null && inferredMatter !== null;
+
+  /**
+   * Housekeeping on the header — a rename, a matter link — through
+   * `PATCH /threads/:id`, then a refetch so the header reads as the server
+   * has it and the rail hears that this thread's row changed. Neither bumps
+   * `updatedAt`, so the row keeps its place.
+   */
+  const patchThread = async (patch: { title?: string; matter?: string | null }): Promise<void> => {
+    const id = idRef.current;
+    if (id === null) return;
+    setError(null);
+    try {
+      await fetchJson<ThreadHeader>(`/threads/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(patch) });
+      await load();
+      onThreadTouched?.();
+    } catch (err) {
+      if (!(err instanceof ApiError && err.status === 401)) setError(detail(err));
+    }
+  };
+
+  /** Inline rename: the title becomes a text input; Enter or blur saves a
+   * changed name, Escape puts the old one back. `editingRef` makes the
+   * commit idempotent — Enter commits and the input's unmount may still
+   * blur once more. */
+  const [editing, setEditing] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
+  const editingRef = useRef(false);
+  const startRename = (): void => {
+    if (thread === null) return;
+    setTitleDraft(thread.header.title?.trim() ?? '');
+    editingRef.current = true;
+    setEditing(true);
+  };
+  const commitRename = (): void => {
+    if (!editingRef.current || thread === null) return;
+    editingRef.current = false;
+    setEditing(false);
+    const next = titleDraft.trim();
+    if (next === (thread.header.title?.trim() ?? '')) return;
+    void patchThread({ title: next });
+  };
+  const cancelRename = (): void => {
+    editingRef.current = false;
+    setEditing(false);
+  };
 
   /** Retry for a step that FAILED (cou-95): send the last user message
    * again, on the default provider, the way the composer would. Only the
@@ -397,15 +452,42 @@ export function Chat({
     <section className="v2-chat">
       {thread === null ? null : (
         <header className="v2-thread-head">
-          <h1>{titleOf(thread.header)}</h1>
+          <h1>
+            {editing ? (
+              <input
+                className="v2-thread-title-edit"
+                aria-label="Conversation title"
+                value={titleDraft}
+                autoFocus
+                onChange={event => setTitleDraft(event.target.value)}
+                onKeyDown={event => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    commitRename();
+                  } else if (event.key === 'Escape') {
+                    event.preventDefault();
+                    cancelRename();
+                  }
+                }}
+                onBlur={commitRename}
+              />
+            ) : (
+              <button type="button" className="v2-thread-rename" title="Rename this conversation" onClick={startRename}>
+                {titleOf(thread.header)}
+              </button>
+            )}
+          </h1>
           {/* Set text with a small-caps run-in, linked to the file — not a
-              pill (the ledger language has none). */}
+              pill (the ledger language has none). An inferred matter says
+              so; the picker beside it makes the link explicit. */}
           {matterPath === null || matterTitle === null ? null : (
             <a className="v2-thread-matter" href={`#/vault?path=${encodeURIComponent(matterPath)}`} title={matterPath}>
               <span className="v2-tag">Matter</span>
               <span className="v2-thread-matter-name">{matterTitle}</span>
             </a>
           )}
+          {matterInferred ? <span className="v2-thread-inferred">inferred</span> : null}
+          <MatterPicker current={explicitMatter} label={matterPath === null ? 'link a matter' : 'change'} onPick={path => void patchThread({ matter: path })} />
           <span className="v2-thread-date">{relTime(thread.header.createdAt)}</span>
         </header>
       )}

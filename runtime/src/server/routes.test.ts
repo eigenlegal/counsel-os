@@ -1111,3 +1111,38 @@ describe('docket', () => {
     expect(await res.json()).toEqual({ deadlines: [], skipped: 0 });
   });
 });
+
+describe('PATCH /threads/:id (rename + matter link)', () => {
+  test('renames, trims, and returns the presented header; updatedAt is unchanged', async () => {
+    const app = appWithFake();
+    const id = await newThread(app);
+    const before = (await (await call(app, 'GET', `/threads/${id}`)).json()) as { header: { updatedAt: string } };
+    const res = await call(app, 'PATCH', `/threads/${id}`, { body: { title: '  Acme — residuals  ' } });
+    expect(res.status).toBe(200);
+    const header = (await res.json()) as { id: string; title?: string; updatedAt: string };
+    expect(header.title).toBe('Acme — residuals');
+    expect(header.updatedAt).toBe(before.header.updatedAt);
+  });
+
+  test('links a matter, then unlinks it with null', async () => {
+    const app = appWithFake();
+    const id = await newThread(app);
+    const linked = (await (await call(app, 'PATCH', `/threads/${id}`, { body: { matter: 'matters/acme.md' } })).json()) as { matter?: string };
+    expect(linked.matter).toBe('matters/acme.md');
+    const unlinked = (await (await call(app, 'PATCH', `/threads/${id}`, { body: { matter: null } })).json()) as { matter?: string };
+    expect(unlinked.matter).toBeUndefined();
+  });
+
+  test('404 on an unknown thread, 400 on a bad body', async () => {
+    const app = appWithFake();
+    expect((await call(app, 'PATCH', `/threads/${randomUUID()}`, { body: { title: 'x' } })).status).toBe(404);
+    const id = await newThread(app);
+    expect((await call(app, 'PATCH', `/threads/${id}`, { body: { title: 42 } })).status).toBe(400);
+    expect((await call(app, 'PATCH', `/threads/${id}`, { body: {} })).status).toBe(400);
+    expect((await call(app, 'PATCH', `/threads/${id}`, { body: { sessions: {} } })).status).toBe(400);
+    // A matter must be a vault-relative path.
+    expect((await call(app, 'PATCH', `/threads/${id}`, { body: { matter: '../etc/passwd' } })).status).toBe(400);
+    expect((await call(app, 'PATCH', `/threads/${id}`, { body: { matter: '/abs.md' } })).status).toBe(400);
+    expect((await call(app, 'PATCH', `/threads/${id}`, { body: { matter: '.counsel/threads/x.json' } })).status).toBe(400);
+  });
+});

@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen, userEvent, waitFor } from '../../test/dom';
+import { act, cleanup, render, screen, userEvent, waitFor, within } from '../../test/dom';
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { clearToken, TOKEN_KEY } from '../../api/token';
@@ -425,5 +425,142 @@ describe('v2 Chat, retrying a failed step (cou-95)', () => {
     const step = calls.find(c => c.method === 'POST' && c.url.endsWith('/steps'))!;
     expect((step.body as { message: string; provider: string }).message).toBe(QUESTION);
     expect((step.body as { message: string; provider: string }).provider).toBe('fake/fake');
+  });
+});
+
+describe('v2 Chat, rename and matter link', () => {
+  const overview = {
+    matters: [
+      { path: 'matters/acme-nda.md', title: 'Acme Corp — NDA', frontmatter: {}, mtimeMs: 2 },
+      { path: 'matters/beta-msa.md', title: 'Beta — MSA', frontmatter: {}, mtimeMs: 1 },
+    ],
+    groups: { practice: 0, knowledge: 0, other: 0 },
+  };
+
+  /** A thread the tests can PATCH: the mock applies the patch and serves the
+   * updated header on the next GET, the way the runtime does. */
+  function installPatchable(initial: Thread): { patches: Array<Record<string, unknown>> } {
+    let current = initial;
+    const patches: Array<Record<string, unknown>> = [];
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+      if (url.startsWith('/runs')) return json([]);
+      if (url.startsWith('/vault/read')) return json({ path: 'x', content: '# Acme NDA\n', version: 'v1', mtimeMs: 1 });
+      if (url.startsWith('/vault/overview')) return json(overview);
+      if (method === 'PATCH' && url.startsWith('/threads/')) {
+        const patch = JSON.parse(String(init?.body)) as { title?: string; matter?: string | null };
+        patches.push(patch);
+        const header = { ...current.header };
+        if (patch.title !== undefined) header.title = patch.title;
+        if (patch.matter === null) delete header.matter;
+        else if (patch.matter !== undefined) header.matter = patch.matter;
+        current = { ...current, header };
+        return json(header);
+      }
+      if (url.startsWith('/threads/')) return json(current);
+      throw new Error(`unexpected fetch: ${method} ${url}`);
+    }) as unknown as typeof fetch;
+    return { patches };
+  }
+
+  const readsAcme: ThreadEvent[] = [
+    { t: 'user', at, content: 'check it' },
+    { t: 'step', at, runId: 'r-1', provider: 'fake/fake' },
+    { type: 'tool_call', at, id: 'c1', name: 'vault_read', input: { path: 'matters/acme-nda.md' } },
+    { type: 'done', at, output: null, usage: { inputTokens: 1, outputTokens: 1 } },
+  ];
+
+  function named(title: string, extra: Partial<Thread['header']> = {}, events: ThreadEvent[] = readsAcme): Thread {
+    return { header: { id: 't-1', title, createdAt: at, updatedAt: at, sessions: {}, ...extra }, events };
+  }
+
+  test('click the title, type a new one, Enter — PATCH {title}, and the header shows it', async () => {
+    const { patches } = installPatchable(named('Old name'));
+    let touched = 0;
+    render(<Chat threadId="t-1" health={health} onThreadTouched={() => (touched += 1)} />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Old name' })).toBeTruthy());
+
+    await userEvent.click(screen.getByRole('button', { name: 'Old name' }));
+    const input = screen.getByLabelText('Conversation title') as HTMLInputElement;
+    expect(input.value).toBe('Old name');
+    const user = userEvent.setup({ document });
+    await user.clear(input);
+    await user.type(input, 'Acme — residuals{Enter}');
+
+    await waitFor(() => expect(patches).toEqual([{ title: 'Acme — residuals' }]));
+    await waitFor(() => expect(document.querySelector('.v2-thread-head h1')?.textContent).toBe('Acme — residuals'));
+    expect(screen.queryByLabelText('Conversation title')).toBeNull();
+    // The rail is told, so its row re-reads.
+    expect(touched).toBe(1);
+  });
+
+  test('Escape puts the old title back and sends nothing', async () => {
+    const { patches } = installPatchable(named('Old name'));
+    render(<Chat threadId="t-1" health={health} />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Old name' })).toBeTruthy());
+    await userEvent.click(screen.getByRole('button', { name: 'Old name' }));
+    const input = screen.getByLabelText('Conversation title') as HTMLInputElement;
+    await userEvent.type(input, 'zzz{Escape}');
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Old name' })).toBeTruthy());
+    expect(patches).toEqual([]);
+  });
+
+  test('an unchanged title on blur sends nothing', async () => {
+    const { patches } = installPatchable(named('Same'));
+    render(<Chat threadId="t-1" health={health} />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Same' })).toBeTruthy());
+    await userEvent.click(screen.getByRole('button', { name: 'Same' }));
+    (screen.getByLabelText('Conversation title') as HTMLInputElement).blur();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Same' })).toBeTruthy());
+    expect(patches).toEqual([]);
+  });
+
+  test('an inferred matter says so; an explicit link wins over inference', async () => {
+    installPatchable(named('T'));
+    render(<Chat threadId="t-1" health={health} />);
+    await waitFor(() => expect(document.querySelector('a.v2-thread-matter')).toBeTruthy());
+    expect(document.querySelector('a.v2-thread-matter')?.getAttribute('href')).toBe('#/vault?path=matters%2Facme-nda.md');
+    expect(screen.getByText('inferred')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'change' })).toBeTruthy();
+    cleanup();
+
+    installPatchable(named('T', { matter: 'matters/beta-msa.md' }));
+    render(<Chat threadId="t-1" health={health} />);
+    await waitFor(() => expect(document.querySelector('a.v2-thread-matter')).toBeTruthy());
+    expect(document.querySelector('a.v2-thread-matter')?.getAttribute('href')).toBe('#/vault?path=matters%2Fbeta-msa.md');
+    expect(screen.queryByText('inferred')).toBeNull();
+  });
+
+  test('no matter at all offers "link a matter"', async () => {
+    installPatchable(named('T', {}, [{ t: 'user', at, content: 'hi' }]));
+    render(<Chat threadId="t-1" health={health} />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'link a matter' })).toBeTruthy());
+    expect(document.querySelector('a.v2-thread-matter')).toBeNull();
+  });
+
+  test('the picker lists the vault\'s matters; a pick PATCHes {matter}; "No matter" unlinks', async () => {
+    const { patches } = installPatchable(named('T'));
+    render(<Chat threadId="t-1" health={health} />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'change' })).toBeTruthy());
+
+    await userEvent.click(screen.getByRole('button', { name: 'change' }));
+    const menu = await waitFor(() => screen.getByRole('menu', { name: 'Link a matter' }));
+    expect(within(menu).getByText('Beta — MSA')).toBeTruthy();
+    // Nothing explicit yet, so no unlink row.
+    expect(within(menu).queryByText('No matter')).toBeNull();
+
+    await userEvent.click(within(menu).getByText('Beta — MSA'));
+    await waitFor(() => expect(patches).toEqual([{ matter: 'matters/beta-msa.md' }]));
+    await waitFor(() => expect(document.querySelector('a.v2-thread-matter')?.getAttribute('href')).toBe('#/vault?path=matters%2Fbeta-msa.md'));
+    expect(screen.queryByText('inferred')).toBeNull();
+    expect(screen.queryByRole('menu')).toBeNull();
+
+    await userEvent.click(screen.getByRole('button', { name: 'change' }));
+    const again = await waitFor(() => screen.getByRole('menu', { name: 'Link a matter' }));
+    await userEvent.click(within(again).getByText('No matter'));
+    await waitFor(() => expect(patches).toEqual([{ matter: 'matters/beta-msa.md' }, { matter: null }]));
+    // Back to inference.
+    await waitFor(() => expect(screen.getByText('inferred')).toBeTruthy());
   });
 });

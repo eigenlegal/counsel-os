@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, fetchJson } from '../api/client';
 import { readToken } from '../api/token';
 import { onUnauthorized } from '../api/unauthorized';
-import type { Health, SettingsView, ThreadHeader } from '../api/types';
+import type { Health, SettingsView, ThreadHeader, VaultOverview } from '../api/types';
 import { parseHash, threadFromHash, vaultPathFromHash, type Route } from '../app';
 import { Chat } from './chat/Chat';
 import type { ComposerSeed } from './chat/Composer';
@@ -100,13 +100,32 @@ export function Shell(): JSX.Element {
     }
   }, []);
 
+  /**
+   * Matter path → title, for the rail's second line under a thread with an
+   * explicit matter link. One read of `/vault/overview` beside `/health`,
+   * refreshed when a proposal lands (it may have created or renamed a
+   * matter). HomePage keeps its own read — the two are not coupled.
+   */
+  const [matterTitles, setMatterTitles] = useState<Record<string, string>>({});
+  const loadMatterTitles = useCallback(async (): Promise<void> => {
+    try {
+      const overview = await fetchJson<VaultOverview>('/vault/overview');
+      const titles: Record<string, string> = {};
+      for (const matter of overview.matters) titles[matter.path] = matter.title;
+      setMatterTitles(titles);
+    } catch {
+      // The rail falls back to prettified filenames; nothing to say here.
+    }
+  }, []);
+
   const fileDecided = useCallback(
     (path: string): void => {
       const open = drawerRef.current;
       if (open.open && open.path === path) setDrawerRevision(revision => revision + 1);
       void loadIndex();
+      void loadMatterTitles();
     },
-    [loadIndex],
+    [loadIndex, loadMatterTitles],
   );
 
   const selectThread = (id: string): void => {
@@ -247,6 +266,7 @@ export function Shell(): JSX.Element {
       try {
         setHealth(await fetchJson<Health>('/health'));
         void loadIndex();
+        void loadMatterTitles();
         const { threads: list, fresh } = await loadThreads();
         if (!fresh) return;
         // The fragment may already name the thread (a pasted link, the
@@ -272,7 +292,7 @@ export function Shell(): JSX.Element {
         setListed(true);
       }
     })();
-  }, [unauthorized, loadThreads, loadIndex]);
+  }, [unauthorized, loadThreads, loadIndex, loadMatterTitles]);
 
   /**
    * The rail footer's switcher picked a loaded provider (cou-90): make it
@@ -308,8 +328,9 @@ export function Shell(): JSX.Element {
     }
   };
 
+  /** Already confirmed: the rail's row asked "Delete this conversation?"
+   * and the reader answered on the row itself (no `window.confirm`). */
   const deleteThread = async (id: string): Promise<void> => {
-    if (!globalThis.confirm('Delete this thread? Its transcript cannot be recovered from here.')) return;
     setBusy(true);
     setError(null);
     try {
@@ -354,6 +375,7 @@ export function Shell(): JSX.Element {
         onOpenDraft={returnToDraft}
         onDelete={id => void deleteThread(id)}
         onSetDefault={id => void setDefaultProvider(id)}
+        matterTitles={matterTitles}
       />
       <div className="v2-main-col">
         {error === null ? null : (
