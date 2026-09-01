@@ -27,6 +27,14 @@ describe('verbFor', () => {
     expect(verbFor(tool('vault_list', {}))).toEqual({ verb: 'Listed the vault' });
   });
 
+  test('the Word read path reads as file verbs, and their paths open the reader', () => {
+    expect(verbFor(tool('docx_read', { path: 'matters/acme/nda.docx' }))).toEqual({ verb: 'Read', object: 'matters/acme/nda.docx' });
+    expect(verbFor(tool('extract_redlines', { path: 'matters/acme/nda-redline.docx' })).verb).toBe('Extracted changes from');
+    expect(verbFor(tool('check_document', { path: 'matters/acme/nda.docx' })).verb).toBe('Checked');
+    expect(pathOf(tool('docx_read', { path: 'matters/acme/nda.docx' }))).toBe('matters/acme/nda.docx');
+    expect(pathOf(tool('check_document', { path: 'matters/acme/nda.docx' }))).toBe('matters/acme/nda.docx');
+  });
+
   test('a nameless tool never reads as Ran <argument>', () => {
     // Threads persisted before the harness named its results (cou-78).
     expect(verbFor(tool('', { dir: '.' })).verb).toBe('Called a tool');

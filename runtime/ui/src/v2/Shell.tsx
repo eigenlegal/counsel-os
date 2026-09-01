@@ -5,6 +5,7 @@ import { onUnauthorized } from '../api/unauthorized';
 import type { Health, SettingsView, ThreadHeader, VaultOverview } from '../api/types';
 import { parseHash, threadFromHash, vaultPathFromHash, type Route } from '../app';
 import { Chat } from './chat/Chat';
+import { VAULT_CHANGED_EVENT } from './intake';
 import type { ComposerSeed } from './chat/Composer';
 import { Drawer } from './Drawer';
 import { HomePage } from './home/HomePage';
@@ -259,6 +260,14 @@ export function Shell(): JSX.Element {
 
   useEffect(() => onUnauthorized(() => setUnauthorized(true)), []);
 
+  /** An upload landed a file in the vault (`intake.ts` announces it): the
+   * index must know the path before the message that names it is sent. */
+  useEffect(() => {
+    const onChanged = (): void => void loadIndex();
+    globalThis.addEventListener(VAULT_CHANGED_EVENT, onChanged);
+    return () => globalThis.removeEventListener(VAULT_CHANGED_EVENT, onChanged);
+  }, [loadIndex]);
+
   const loadThreads = useCallback(async (): Promise<{ threads: ThreadHeader[]; fresh: boolean }> => {
     const ticket = ++listSeq.current;
     const list = await fetchJson<ThreadHeader[]>('/threads');
@@ -429,7 +438,12 @@ export function Shell(): JSX.Element {
                   }
                   void loadThreads();
                 }}
-                onThreadTouched={() => void loadThreads()}
+                onThreadTouched={() => {
+                  void loadThreads();
+                  // A finished step may have written files (a redline beside
+                  // its source): their paths must become chips in the answer.
+                  void loadIndex();
+                }}
                 seed={seed}
                 onSeedUsed={seedUsed}
                 initialAsk={initialAsk}

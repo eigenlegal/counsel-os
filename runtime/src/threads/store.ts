@@ -69,7 +69,8 @@ function titleFrom(message: string): string {
   if (line.length <= TITLE_MAX) return line;
   const cut = line.slice(0, TITLE_MAX);
   const space = cut.lastIndexOf(' ');
-  return (space > TITLE_MAX / 2 ? cut.slice(0, space) : cut).trimEnd();
+  // A cut title says it was cut: "…and" read as a sentence that ends there.
+  return `${(space > TITLE_MAX / 2 ? cut.slice(0, space) : cut).trimEnd()}…`;
 }
 
 export class ThreadStore {

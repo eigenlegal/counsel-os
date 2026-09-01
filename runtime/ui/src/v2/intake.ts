@@ -55,6 +55,10 @@ export function refusalFor(name: string, err: unknown): string {
   return `Could not add ${name}: ${err instanceof Error ? err.message : String(err)}`;
 }
 
+/** Fired on `globalThis` when an upload lands a file in the vault, so the
+ * Shell refreshes its path index without a prop through every page. */
+export const VAULT_CHANGED_EVENT = 'counsel:vault-changed';
+
 export type IntakeStatus = { kind: 'busy'; text: string } | { kind: 'done'; up: Uploaded; text: string } | { kind: 'error'; text: string };
 
 /** The files a drop carried, Word documents first (so a mixed drop adds
@@ -87,6 +91,7 @@ export async function intake(files: File[], dest: string | undefined, onStatus: 
   try {
     const up = await uploadFile(file, dest);
     onStatus({ kind: 'done', up, text: addedLine(up).text });
+    globalThis.dispatchEvent(new Event(VAULT_CHANGED_EVENT));
     return up;
   } catch (err) {
     if (err instanceof ApiError && err.status === 401) return null;

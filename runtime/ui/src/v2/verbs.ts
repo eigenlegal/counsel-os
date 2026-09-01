@@ -18,6 +18,11 @@ const TABLE: Record<string, string> = {
   read_primitive: 'Consulted primitive',
   propose_update: 'Proposed',
   vault_write: 'Wrote',
+  // The Word read path (docx stage 1): file verbs, so their paths open the
+  // reader like a vault_read does.
+  docx_read: 'Read',
+  extract_redlines: 'Extracted changes from',
+  check_document: 'Checked',
 };
 
 /** The platform's script tools (`runtime/src/tools/builtin.ts`) — the one
@@ -25,8 +30,6 @@ const TABLE: Record<string, string> = {
  * run. Everything else unknown reads "Called". */
 const SCRIPT_TOOLS: ReadonlySet<string> = new Set([
   'docket_sweep',
-  'extract_redlines',
-  'check_document',
   'clean_format',
   'apply_redlines',
   'word_compare',
@@ -35,7 +38,7 @@ const SCRIPT_TOOLS: ReadonlySet<string> = new Set([
 const SEARCH_LIKE = /grep|search|find/i;
 
 /** The verbs whose object is a vault path a drawer can open. */
-const FILE_VERBS: ReadonlySet<string> = new Set(['Read', 'Proposed', 'Wrote']);
+const FILE_VERBS: ReadonlySet<string> = new Set(['Read', 'Proposed', 'Wrote', 'Extracted changes from', 'Checked']);
 
 function objectOf(input: unknown): string | undefined {
   if (typeof input !== 'object' || input === null) return undefined;

@@ -142,10 +142,16 @@ Before shipping the tracked-changes output:
    ```
    On a `.docx` it checks the accept-all view — the document as it will read once the changes are accepted. Fix any `error`-severity findings (dangling cross-references especially — renumbering is exactly when these appear) before proceeding. See `read --qa`.
 2. **Extract and re-read the revisions** — `extract_redlines.py` on the output lists every insertion/deletion with its paragraph context; confirm each maps to an intended edit and nothing extra crept in.
-3. **Open the redline in Word (or ask the user to)** and confirm:
+3. **Look at the redline** and confirm:
    - Strike and insert markings render where expected
    - No insertions are merged into adjacent text incorrectly
    - The flow reads naturally with tracked changes accepted
+
+   In the counsel-os app the reader renders tracked changes and comments
+   directly: point the lawyer at the redline's vault path (and at the
+   "redlined document" slip in the thread when the runtime produced one) —
+   do not tell them to open Word to see whether it worked. Word remains the
+   place to confirm how it will look to the counterparty.
 
 Don't ship without visual verification.
 

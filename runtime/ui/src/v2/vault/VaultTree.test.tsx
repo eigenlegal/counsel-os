@@ -115,3 +115,60 @@ describe('VaultTree', () => {
     expect(opened).toEqual(['practice/standards/nda.md', 'matters/2026-06-vendora.md']);
   });
 });
+
+describe('VaultTree, folder matters', () => {
+  const folderOverview: VaultOverview = {
+    matters: [
+      { path: 'matters/2026-06-vendora.md', title: 'Vendora × Worldpay', frontmatter: {}, mtimeMs: 1 },
+      { path: 'matters/sample-mutual-nda/matter.md', title: 'Acme — Mutual NDA (sample)', frontmatter: {}, mtimeMs: 2 },
+    ],
+    groups: { practice: 0, knowledge: 0, other: 0 },
+  };
+  const docs: VaultEntry[] = [
+    { path: 'matters/sample-mutual-nda/matter.md', kind: 'file' },
+    { path: 'matters/sample-mutual-nda/sample-mutual-nda.docx', kind: 'file' },
+    { path: 'matters/sample-mutual-nda/sample-mutual-nda-redline-2026-09-01.docx', kind: 'file' },
+  ];
+
+  beforeEach(() => {
+    const prev = globalThis.fetch;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url === '/vault/list?dir=matters%2Fsample-mutual-nda') return json(docs);
+      return prev(input, init);
+    }) as unknown as typeof fetch;
+  });
+
+  test('a folder matter unfolds its documents, prettified; a flat matter has no chevron', async () => {
+    const opened: string[] = [];
+    render(<VaultTree overview={folderOverview} root={[{ path: 'matters', kind: 'dir' }]} selected={null} onOpen={path => opened.push(path)} />);
+    expect(screen.queryByRole('button', { name: /documents in Vendora/ })).toBeNull();
+    expect(screen.queryByText('Sample mutual nda')).toBeNull();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Show documents in Acme — Mutual NDA (sample)' }));
+    await waitFor(() => expect(screen.getByText('Sample mutual nda')).toBeTruthy());
+    expect(screen.getByText('Sample mutual nda redline 2026 09 01')).toBeTruthy();
+    // matter.md itself is the matter row, not a document under it.
+    expect(screen.queryByText('Matter')).toBeNull();
+    expect(screen.getByText('Sample mutual nda redline 2026 09 01').closest('button')?.getAttribute('title')).toBe('sample-mutual-nda-redline-2026-09-01.docx');
+
+    await userEvent.click(screen.getByText('Sample mutual nda redline 2026 09 01'));
+    expect(opened).toEqual(['matters/sample-mutual-nda/sample-mutual-nda-redline-2026-09-01.docx']);
+    // The title row still opens the matter file.
+    await userEvent.click(screen.getByText('Acme — Mutual NDA (sample)'));
+    expect(opened.at(-1)).toBe('matters/sample-mutual-nda/matter.md');
+  });
+
+  test('a document open inside a folder matter unfolds that matter', async () => {
+    render(
+      <VaultTree
+        overview={folderOverview}
+        root={[{ path: 'matters', kind: 'dir' }]}
+        selected="matters/sample-mutual-nda/sample-mutual-nda-redline-2026-09-01.docx"
+        onOpen={() => {}}
+      />,
+    );
+    await waitFor(() => expect(screen.getByText('Sample mutual nda redline 2026 09 01')).toBeTruthy());
+    expect(screen.getByText('Sample mutual nda redline 2026 09 01').closest('button')?.getAttribute('aria-current')).toBe('page');
+  });
+});

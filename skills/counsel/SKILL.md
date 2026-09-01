@@ -358,6 +358,7 @@ User's vault (all knowledge — discovered via config + Knowledge Base Search):
 
 ## Output Standards
 
+- **Open with the substance.** Working narration ("I'll start by reading…", "Let me check…") belongs nowhere in the answer; the first line is the finding, the bottom line, or the document — the work line above the answer already shows what was read.
 - Always provide **specific counter-language** for issues that need revision, not just flags
 - Prioritize by tier: **Tier 1** (must-have) → **Tier 2** (strong preference) → **Tier 3** (nice-to-have)
 - All internal memos are **privileged attorney-client communication** unless stated otherwise

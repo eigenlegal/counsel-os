@@ -181,7 +181,7 @@ describe('ThreadStore', () => {
     await store.append('default', header.id, { t: 'user', at: '2026-01-01T00:00:00.000Z', content: long });
 
     const listed = await store.list('default');
-    expect(listed[0]?.title).toBe('What is our position on liability caps in vendor agreements');
+    expect(listed[0]?.title).toBe('What is our position on liability caps in vendor agreements…');
 
     const onDisk = JSON.parse(readFileSync(join(root, '.counsel', 'threads', 'default', `${header.id}.json`), 'utf8')) as { title?: string };
     expect(onDisk.title).toBeUndefined();

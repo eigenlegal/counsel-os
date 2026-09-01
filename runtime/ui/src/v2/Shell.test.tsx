@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { clearToken, TOKEN_KEY } from '../api/token';
 import { routeFromHash, vaultPathFromHash } from '../app';
 import type { Health, SettingsView, Thread, ThreadEvent, ThreadHeader } from '../api/types';
+import { VAULT_CHANGED_EVENT } from './intake';
 import { Shell } from './Shell';
 
 const realFetch = globalThis.fetch;
@@ -768,5 +769,30 @@ describe('Shell, a printed link opened into the session-lost tab', () => {
     expect(screen.queryByLabelText('Session lost')).toBeNull();
     expect(sessionStorage.getItem(TOKEN_KEY)).toBe(hex);
     expect(globalThis.location.hash).not.toContain('token');
+  });
+});
+  });
+});
+
+describe('Shell, the vault index refresh', () => {
+  test('an upload announcement re-reads /vault/index', async () => {
+    sessionStorage.setItem(TOKEN_KEY, 'test-token');
+    const fetched: string[] = [];
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      fetched.push(url);
+      if (url.startsWith('/health')) return json({ ...health, setup: false });
+      if (url === '/threads') return json([]);
+      if (url.startsWith('/vault/overview')) return json({ matters: [], groups: { practice: 0, knowledge: 0, other: 0 } });
+      if (url.startsWith('/vault/index')) return json(['matters/inbox/nda.docx']);
+      if (url.startsWith('/proposals')) return json([]);
+      if (url.startsWith('/docket')) return json({ deadlines: [], skipped: 0 });
+      return json([]);
+    }) as unknown as typeof fetch;
+    globalThis.location.hash = '#/';
+    render(<Shell />);
+    await waitFor(() => expect(fetched.filter(u => u.startsWith('/vault/index'))).toHaveLength(1));
+    globalThis.dispatchEvent(new Event(VAULT_CHANGED_EVENT));
+    await waitFor(() => expect(fetched.filter(u => u.startsWith('/vault/index'))).toHaveLength(2));
   });
 });

@@ -29,6 +29,21 @@ export interface TurnProps {
   onRetry?: () => void;
 }
 
+/**
+ * The attachment line `withAttachments` puts at the end of a message —
+ * backticked vault paths, space-separated — read as chips, the way the
+ * composer showed them. User text is never markdown-rendered; only that one
+ * trailing line is recognised, by shape.
+ */
+export function splitAttachments(content: string): { text: string; files: string[] } {
+  const trimmed = content.replace(/\s+$/, '');
+  const lines = trimmed.split('\n');
+  const last = lines[lines.length - 1] ?? '';
+  if (!/^`[^`\n]+`(\s+`[^`\n]+`)*$/.test(last.trim())) return { text: content, files: [] };
+  const files = Array.from(last.matchAll(/`([^`]+)`/g), m => m[1]!);
+  return { text: lines.slice(0, -1).join('\n').replace(/\s+$/, ''), files };
+}
+
 /** The record's per-call timings, keyed onto this turn's tool ids. The
  * record lists calls in order without ids, so it is paired by position and
  * checked by name; a `null` ms (never paired with a result) is left out. */
@@ -156,9 +171,21 @@ function StepFailure({
  */
 export function TurnView({ turn, threadId, run, live = false, liveMs = {}, onReload, onDecided, onOpenFile, vaultPaths, onRetry }: TurnProps): JSX.Element {
   if (turn.kind === 'user') {
+    const { text, files } = splitAttachments(turn.content);
     return (
       <article className="v2-turn v2-turn-user">
-        <p className="v2-user-text">{turn.content}</p>
+        <div className="v2-user-text">
+          {text === '' ? null : <p>{text}</p>}
+          {files.length === 0 ? null : (
+            <div className="v2-user-files">
+              {files.map(file => (
+                <code key={file} className="v2-file-chip">
+                  {file}
+                </code>
+              ))}
+            </div>
+          )}
+        </div>
       </article>
     );
   }

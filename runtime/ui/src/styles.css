@@ -405,6 +405,8 @@ a { color: var(--accent); }
 .v2-transcript { flex: 1; overflow-y: auto; padding: var(--s5) var(--s6); display: flex; flex-direction: column; gap: var(--s5); }
 .v2-turn { max-width: 56rem; width: 100%; margin: 0 auto; }
 .v2-turn-user { display: flex; justify-content: flex-end; }
+.v2-user-text p { margin: 0; }
+.v2-user-files { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .v2-user-text {
   margin: 0;
   max-width: 44rem;
@@ -507,6 +509,11 @@ a { color: var(--accent); }
 .v2-vrow:hover { background: var(--bg-raised); }
 .v2-vrow[aria-current="page"] { background: var(--bg-hover); color: var(--fg); }
 .v2-vrow-ind { padding-left: 24px; }
+/* A folder matter: chevron beside the title row; its documents indent under it. */
+.v2-vmatter-row { display: flex; align-items: center; }
+.v2-vmatter-row .v2-vrow { flex: 1; min-width: 0; }
+.v2-vfold { background: none; border: none; padding: 4px 4px 4px 8px; cursor: pointer; color: var(--fg-faint); display: flex; align-items: center; flex-shrink: 0; }
+.v2-vmatter .v2-vrow-ind { padding-left: 32px; }
 .v2-vdir { font-weight: 500; }
 .v2-tri { color: var(--fg-faint); font-size: 10px; width: 10px; flex-shrink: 0; }
 .v2-vname { overflow: hidden; text-overflow: ellipsis; }

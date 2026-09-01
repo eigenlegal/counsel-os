@@ -854,7 +854,7 @@ export const MANIFEST: ContentManifest = {
       "hash": "e1fdfa347fd6c588cb80a82cb3f8976bca16230a2c58767ab4ce3ff9c16da987"
     },
     "primitives/draft.md": {
-      "hash": "58169a60ca9dd60315857e1675f9e7aa723b516b08ad98a1d5e245bfc14f53de"
+      "hash": "70ca0c8ef201df8c5bb9f33dc76a65e2cf05e03d142ab31effabe48bef67fc36"
     },
     "primitives/evaluate.md": {
       "hash": "2d832826117b04e90197a054aad436389a5e7233fe8061f6f0460dd6564a39a4"
@@ -863,7 +863,7 @@ export const MANIFEST: ContentManifest = {
       "hash": "b5450cb972146345e732e52ce4a3e31c180059ae65c7485a81a604fac2cc8dfd"
     },
     "primitives/redline-output.md": {
-      "hash": "c5dc33723e2fb4d76f2ddac3c76147406a691314c2db0777d39708126ed530d9"
+      "hash": "3ba8a24311a8410e4075b6b518d2f58af2b20a88940acd8bff1c610fa86b64f8"
     },
     "primitives/remember.md": {
       "hash": "2125beb53f6072aca69a8bb720b7ed5478abc15951f911e6ab36c9ddeaafab66"
@@ -872,7 +872,7 @@ export const MANIFEST: ContentManifest = {
       "hash": "a7aa8f6e808a17e7de8687d4948cdd49c1d094e2fe76283d788c199498c6ad14"
     },
     "skills/counsel/SKILL.md": {
-      "hash": "95b9b1011e261549c94c4b1fe2e902cf0d0dd252699a8aaca2ac9ee6e6fa3e79"
+      "hash": "ed6233198e5ac4d59b8c5ffa3c3e903792eeaeada8e2b8663c40f80efc2838ba"
     },
     "skills/demo/assets/sample-mutual-nda.docx": {
       "hash": "67025b706197311c96327e35df6401d78135b330567ecde92131067f405bd6e5"
