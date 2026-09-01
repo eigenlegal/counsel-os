@@ -52,9 +52,14 @@ const SCRIPT_TOOL_MAPPINGS: ScriptToolMapping[] = [
     fields: '`original` (vault-relative .docx), `items` (the redline JSON array inline) or `edits` (vault path of a JSON file), `track` (true for a redline), `author`, `output` (optional; default `<original>-redline-<date>.docx` beside the source)',
   },
   {
-    name: 'word_compare',
-    invocation: '"${CLAUDE_PLUGIN_ROOT}/scripts/word_compare.sh" <original.docx> <modified.docx> <author> <output.docx>',
-    fields: '`original`, `modified`, `author`, `output`',
+    name: 'docx_compare',
+    invocation: 'bun runtime/src/cli.ts docx compare <original.docx> <revised.docx> [--out <file>] [--author <name>]',
+    fields: '`original`, `revised` (vault-relative .docx), `author`, `output` (optional; default `<original>-compare-<date>.docx` beside the original)',
+  },
+  {
+    name: 'diff_rounds',
+    invocation: 'bun runtime/src/cli.ts docx rounds --ours <sent.docx> --theirs <returned.docx> [--base <round-n-1.docx>] [--format json|markdown]',
+    fields: '`ours`, `theirs` (vault-relative .docx), `base` (optional), `format` (optional)',
   },
 ];
 

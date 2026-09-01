@@ -58,7 +58,11 @@ const { values, positionals } = parseArgs({
     'dry-run': { type: 'boolean' },        // `update-content`: report only
     out: { type: 'string' },          // `docx apply`: where to write (default <original>-redline-<date>.docx)
     track: { type: 'boolean' },       // `docx apply`: native tracked changes
-    author: { type: 'string' },       // `docx apply`: fills items with no author
+    author: { type: 'string' },       // `docx apply|compare`: the revision author
+    ours: { type: 'string' },         // `docx rounds`
+    theirs: { type: 'string' },       // `docx rounds`
+    base: { type: 'string' },         // `docx rounds`: the round N-1 baseline
+    'full-text': { type: 'boolean' }, // `docx rounds --format markdown`: no truncation
   },
 });
 
@@ -78,6 +82,8 @@ function usage(): never {
   console.error('       bun runtime/src/cli.ts doctor [--vault <dir>]');
   console.error('         read-only vault health: root config, structure, law currency, git, standards/library consistency, matter law impact');
   console.error('       bun runtime/src/cli.ts docx apply <file.docx> <redlines.json> [--out <file>] [--track] [--author <name>] (the redline; result JSON to stdout, exit 2 on any skip)');
+  console.error('       bun runtime/src/cli.ts docx compare <original.docx> <revised.docx> [--out <file>] [--author <name>] (tracked changes of revised against original)');
+  console.error('       bun runtime/src/cli.ts docx rounds --ours <sent.docx> --theirs <returned.docx> [--base <round-n-1.docx>] [--format json|markdown] [--full-text]');
   process.exit(2);
 }
 
@@ -88,12 +94,41 @@ function usage(): never {
  * given, anywhere on disk; the vault guard belongs to the tools, not here.
  */
 async function docxCommand(sub: string | undefined, file: string | undefined, second: string | undefined): Promise<void> {
-  const { applyRedlines, checkDocx, checkText, detectFormat, docxToMarkdown, extractRedlines, extractToMarkdown, openDocx, redlineExitCode, redlineOutputName, renderReport } = await import('./docx');
-  if (file === undefined || !['read', 'extract', 'check', 'apply'].includes(sub ?? '')) usage();
-  const bytes = new Uint8Array(await Bun.file(file).arrayBuffer());
+  const { applyRedlines, checkDocx, checkText, compareDocuments, compareOutputName, detectFormat, diffRounds, docxToMarkdown, extractRedlines, extractToMarkdown, openDocx, redlineExitCode, redlineOutputName, renderReport, roundsToMarkdown } = await import('./docx');
   const format = values.format ?? 'json';
+  if (sub === 'rounds') {
+    if (values.ours === undefined || values.theirs === undefined) usage();
+    try {
+      const load = async (p: string) => openDocx(new Uint8Array(await Bun.file(p).arrayBuffer()));
+      const data = diffRounds({
+        ours: await load(values.ours),
+        theirs: await load(values.theirs),
+        base: values.base === undefined ? null : await load(values.base),
+        names: { ours: values.ours, theirs: values.theirs, base: values.base ?? null },
+      });
+      process.stdout.write(format === 'markdown' ? `${roundsToMarkdown(data, values['full-text'] === true)}\n` : `${JSON.stringify(data, null, 2)}\n`);
+    } catch (err) {
+      console.error(err instanceof Error ? err.message : String(err));
+      process.exit(1);
+    }
+    return;
+  }
+  if (file === undefined || !['read', 'extract', 'check', 'apply', 'compare'].includes(sub ?? '')) usage();
+  const bytes = new Uint8Array(await Bun.file(file).arrayBuffer());
   try {
-    if (sub === 'apply') {
+    if (sub === 'compare') {
+      if (second === undefined) usage();
+      const pkg = openDocx(bytes);
+      const result = compareDocuments(pkg, openDocx(new Uint8Array(await Bun.file(second).arrayBuffer())), { author: values.author ?? 'Counsel OS' });
+      const out = values.out ?? compareOutputName(file, new Date());
+      const { writeFile } = await import('node:fs/promises');
+      await writeFile(out, pkg.save(), { flag: 'wx' });
+      const { stats, notes, ...json } = result;
+      process.stdout.write(`${JSON.stringify({ ...json, output: out }, null, 2)}\n`);
+      for (const n of notes) console.error(`warning: ${n}`);
+      console.error(`Summary: ${result.paragraphs.changed} changed, ${result.paragraphs.inserted} inserted, ${result.paragraphs.deleted} deleted, ${result.skipped.length} skipped → ${out}`);
+      process.exit(redlineExitCode(result));
+    } else if (sub === 'apply') {
       if (second === undefined) usage();
       const items: unknown = JSON.parse(await Bun.file(second).text());
       if (!Array.isArray(items)) throw new Error(`${second}: expected a JSON array of redline items`);

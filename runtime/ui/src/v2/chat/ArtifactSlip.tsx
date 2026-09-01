@@ -33,6 +33,11 @@ export function slipDate(at: string | undefined): string {
 
 /** The one sentence under the head (spec §6): what kind of document this is. */
 export function slipSentence(a: ArtifactView): string {
+  if (a.kind === 'docx-compare') {
+    const against = a.source === undefined ? 'the original' : baseName(a.source);
+    const revised = a.compared === undefined ? 'the revised draft' : baseName(a.compared);
+    return `Native Word tracked changes: ${revised} compared against ${against}.`;
+  }
   if (!a.tracked) return 'An edited copy with the replacements applied silently — no revision marks.';
   return a.summary.comments > 0
     ? 'Native Word tracked changes against the source; each change carries a comment with the reason.'
@@ -70,7 +75,7 @@ export function ArtifactSlip({ artifact, onOpenFile }: ArtifactSlipProps): JSX.E
   return (
     <section className="v2-artifact" data-testid={`artifact-${artifact.id}`}>
       <header className="v2-artifact-head">
-        <span className="v2-tag">{artifact.tracked ? 'Redlined document' : 'Edited document'}</span>
+        <span className="v2-tag">{artifact.kind === 'docx-compare' ? 'Compared document' : artifact.tracked ? 'Redlined document' : 'Edited document'}</span>
         <code className="v2-artifact-name" title={artifact.path}>
           {name}
         </code>

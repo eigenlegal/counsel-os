@@ -14,7 +14,7 @@ const allTools: AvailableTools = {
   available: [
     'vault_read', 'vault_write', 'vault_list', 'vault_search',
     'propose_update', 'read_primitive',
-    'docket_sweep', 'extract_redlines', 'check_document', 'clean_format', 'apply_redlines', 'word_compare',
+    'docket_sweep', 'extract_redlines', 'check_document', 'clean_format', 'apply_redlines', 'docx_compare', 'diff_rounds',
   ],
   unavailable: [],
 };
@@ -58,7 +58,7 @@ describe('assembleSystemPrompt', () => {
           { name: 'check_document', needs: ['macos', 'linux', 'windows', 'hosted'] },
           { name: 'clean_format', needs: ['macos', 'linux', 'windows', 'hosted'] },
           { name: 'apply_redlines', needs: ['macos', 'linux', 'windows', 'hosted'] },
-          { name: 'word_compare', needs: ['macos'] },
+          { name: 'clean_format', needs: ['macos'] },
         ],
       },
       cfg: defaultCfg,
@@ -191,11 +191,11 @@ describe('HOST_PREAMBLE', () => {
   test('lists available tools and unavailable tools with what platform they need', () => {
     const tools: AvailableTools = {
       available: ['vault_read', 'read_primitive', 'docket_sweep'],
-      unavailable: [{ name: 'word_compare', needs: ['macos'] }],
+      unavailable: [{ name: 'clean_format', needs: ['macos'] }],
     };
     const preamble = HOST_PREAMBLE(tools, 'linux', defaultCfg);
     expect(preamble).toContain('vault_read');
-    expect(preamble).toContain('word_compare');
+    expect(preamble).toContain('clean_format');
     expect(preamble).toContain('needs macos');
   });
 

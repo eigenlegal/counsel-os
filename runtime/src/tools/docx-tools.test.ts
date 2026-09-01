@@ -153,3 +153,32 @@ describe('apply_redlines', () => {
     expect(artifact.summary.applied).toBe(1);
   });
 });
+
+describe('docx_compare and diff_rounds', () => {
+  test('compare writes the tracked-changes document beside the original and reports the paragraphs', async () => {
+    writeFileSync(join(vault, 'matters', 'acme', 'nda-v2.docx'), buildDocx({ blocks: [{ style: 'Heading1', runs: ['1. Term'] }, { runs: ['Lasts one year. See Section 10.'] }, { style: 'Heading1', runs: ['2. Fees'] }, { runs: ['Fees are net 30.'] }] }));
+    const t = tool('docx_compare');
+    const out = (await t.execute(t.inputSchema.parse({ original: 'matters/acme/nda.docx', revised: 'matters/acme/nda-v2.docx', author: 'Jack Wang' }), ctx)) as { output: string; kind: string; paragraphs: { changed: number; inserted: number; deleted: number }; summary: { changes: number; clauses: number }; skipped: unknown[] };
+    const date = new Date().toISOString().slice(0, 10);
+    expect(out.output).toBe(`matters/acme/nda-compare-${date}.docx`);
+    expect(out.kind).toBe('docx-compare');
+    expect(out.paragraphs).toMatchObject({ inserted: 1 });
+    expect(out.summary.clauses).toBeGreaterThan(0);
+    const read = (await tool('docx_read').execute({ path: out.output, changes: 'all' }, ctx)) as { markdown: string };
+    expect(read.markdown).toContain('{++');
+  });
+
+  test('rounds returns the report, or markdown', async () => {
+    writeFileSync(join(vault, 'matters', 'acme', 'sent.docx'), buildDocx({ blocks: [{ runs: ['Cap is two times fees.'] }] }));
+    writeFileSync(join(vault, 'matters', 'acme', 'returned.docx'), buildDocx({ blocks: [{ runs: ['Cap is ', { text: 'two', del: { author: 'Them', date: AT } }, { text: 'one', ins: { author: 'Them', date: AT } }, ' times fees.'] }] }));
+    const t = tool('diff_rounds');
+    const data = (await t.execute({ ours: 'matters/acme/sent.docx', theirs: 'matters/acme/returned.docx' }, ctx)) as { ours: string; theirs: string; base: string | null; summary: { findings: number; their_authors: string[] }; findings: Array<{ classification: string }> };
+    expect(data.ours).toBe('matters/acme/sent.docx');
+    expect(data.base).toBeNull();
+    expect(data.summary.their_authors).toEqual(['Them']);
+    expect(data.findings.map(f => f.classification)).toEqual(['UNMATCHED_CHANGE']);
+    const md = (await t.execute({ ours: 'matters/acme/sent.docx', theirs: 'matters/acme/returned.docx', format: 'markdown' }, ctx)) as { markdown: string };
+    expect(md.markdown).toContain('# Round comparison — sent.docx → returned.docx');
+    await expect(t.execute({ ours: 'matters/acme/notes.md', theirs: 'matters/acme/returned.docx' }, ctx)).rejects.toThrow(/\.docx files only/);
+  });
+});

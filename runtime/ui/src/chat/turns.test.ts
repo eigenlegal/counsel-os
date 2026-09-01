@@ -83,6 +83,7 @@ describe('artifacts (a document the step produced)', () => {
       { t: 'step', at, runId: 'r-1', provider: 'fake/fake' },
       { type: 'artifact', at, id: 'a-1', path: 'matters/acme/nda-redline-2026-09-01.docx', kind: 'docx-redline', summary },
       { t: 'artifact', at, id: 'a-1', kind: 'docx-redline', path: 'matters/acme/nda-redline-2026-09-01.docx', source: 'matters/acme/nda.docx', author: 'Jack Wang', tracked: true, summary },
+      { t: 'artifact', at, id: 'a-2', kind: 'docx-compare', path: 'matters/acme/nda-compare-2026-09-01.docx', source: 'matters/acme/nda.docx', compared: 'matters/acme/nda-v2.docx', author: 'Jack Wang', tracked: true, summary },
       { type: 'done', at, output: null, usage: { inputTokens: 1, outputTokens: 1 } },
     ]);
     const assistant = turns[1]!;
@@ -90,6 +91,7 @@ describe('artifacts (a document the step produced)', () => {
     if (assistant.kind !== 'assistant') return;
     expect(assistant.artifacts).toEqual([
       { id: 'a-1', kind: 'docx-redline', path: 'matters/acme/nda-redline-2026-09-01.docx', summary, source: 'matters/acme/nda.docx', author: 'Jack Wang', tracked: true, at },
+      { id: 'a-2', kind: 'docx-compare', path: 'matters/acme/nda-compare-2026-09-01.docx', summary, source: 'matters/acme/nda.docx', compared: 'matters/acme/nda-v2.docx', author: 'Jack Wang', tracked: true, at },
     ]);
   });
 });

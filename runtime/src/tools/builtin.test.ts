@@ -10,10 +10,10 @@ describe('builtinTools', () => {
     expect([...sweep!.platforms].sort()).toEqual(['hosted', 'linux', 'macos', 'windows']);
   });
 
-  test('the four TypeScript docx tools plus the two remaining scripts', () => {
+  test('the six TypeScript docx tools plus the two remaining scripts', () => {
     const tools = builtinTools({ vaultRoot: '/tmp/v', repoRoot: '/tmp/repo' });
     const names = tools.map(t => t.name).sort();
-    expect(names).toEqual(['apply_redlines', 'check_document', 'clean_format', 'docket_sweep', 'docx_read', 'extract_redlines', 'word_compare']);
+    expect(names).toEqual(['apply_redlines', 'check_document', 'clean_format', 'diff_rounds', 'docket_sweep', 'docx_compare', 'docx_read', 'extract_redlines']);
   });
 
   test('apply_redlines is the TypeScript tool: vault-relative paths, items or edits, no subprocess', () => {
@@ -31,10 +31,11 @@ describe('builtinTools', () => {
     }
   });
 
-  test('word_compare is macOS only', () => {
+  test('docx_compare and diff_rounds run everywhere — Word Compare is gone', () => {
     const tools = builtinTools({ vaultRoot: '/tmp/v', repoRoot: '/tmp/repo' });
-    const wc = tools.find(t => t.name === 'word_compare')!;
-    expect([...wc.platforms]).toEqual(['macos']);
+    expect(tools.find(t => t.name === 'word_compare')).toBeUndefined();
+    for (const name of ['docx_compare', 'diff_rounds']) expect([...tools.find(t => t.name === name)!.platforms].sort()).toEqual(['hosted', 'linux', 'macos', 'windows']);
+    expect(tools.find(t => t.name === 'diff_rounds')!.inputSchema.parse({ ours: 'a.docx', theirs: 'b.docx' })).toEqual({ ours: 'a.docx', theirs: 'b.docx' });
   });
 
   test('check_document takes a `file` field and accepts non-docx', () => {

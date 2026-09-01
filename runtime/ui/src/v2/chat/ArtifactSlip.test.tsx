@@ -106,3 +106,14 @@ describe('ArtifactSlip', () => {
     expect(slipDate(undefined)).toBe('');
   });
 });
+
+describe('ArtifactSlip for a compare', () => {
+  test('says what was compared against what', () => {
+    const compared: ArtifactView = { ...artifact, kind: 'docx-compare', path: 'matters/acme/nda-compare-2026-09-01.docx', compared: 'matters/acme/nda-v2.docx', summary: { ...artifact.summary, comments: 0 } };
+    render(<ArtifactSlip artifact={compared} onOpenFile={() => {}} />);
+    const slip = document.querySelector('.v2-artifact')!;
+    expect(slip.querySelector('.v2-tag')?.textContent).toBe('Compared document');
+    expect(slip.querySelector('.v2-artifact-body')?.textContent).toBe('Native Word tracked changes: nda-v2.docx compared against sample-mutual-nda.docx.');
+    expect(slip.querySelector('.v2-artifact-by')?.textContent).toBe('revision marks by Jack Wang · Sep 1, 2026');
+  });
+});

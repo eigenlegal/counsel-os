@@ -39,8 +39,8 @@ export interface BuiltinToolOptions {
  * place so the tool's name/description/schema/args can't drift between them.
  *
  * The Word tools (`docx_read`, `extract_redlines`, `check_document`,
- * `apply_redlines`) run in TypeScript inside the runtime — `docxTools` —
- * with no Python or pandoc.
+ * `apply_redlines`, `docx_compare`, `diff_rounds`) run in TypeScript inside
+ * the runtime — `docxTools` — with no Python, no pandoc and no Word.
  */
 export function builtinTools(opts: BuiltinToolOptions): Tool[] {
   return [
@@ -64,22 +64,6 @@ export function builtinTools(opts: BuiltinToolOptions): Tool[] {
         output: z.string().describe('Path to write the cleaned .docx file to.'),
       }),
       args: ({ input, output }) => [input, output],
-      cwd: opts.repoRoot,
-    }),
-    pythonScriptTool({
-      name: 'word_compare',
-      description: 'Use Microsoft Word to compare two .docx files and produce a tracked-changes document, revisions attributed to the given author. macOS only — requires Microsoft Word for Mac.',
-      // `command` only: this is a shell script, so there is no `python3
-      // <script>` default to fall back to and no second path to drift.
-      command: ['bash', resolve(opts.repoRoot, 'scripts/word_compare.sh')],
-      platforms: ['macos'],
-      inputSchema: z.object({
-        original: z.string().describe('Path to the original .docx file.'),
-        modified: z.string().describe('Path to the modified .docx file.'),
-        author: z.string().describe('Author name to attribute the tracked changes to.'),
-        output: z.string().describe('Path to write the resulting tracked-changes .docx file to.'),
-      }),
-      args: ({ original, modified, author, output }) => [original, modified, author, output],
       cwd: opts.repoRoot,
     }),
   ];

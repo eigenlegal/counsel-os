@@ -58,6 +58,8 @@ export type ThreadEvent =
       kind: ArtifactKind;
       path: string;
       source: string;
+      /** `docx-compare`: the revised document the source was compared against. */
+      compared?: string;
       author: string;
       tracked: boolean;
       summary: ArtifactSummary;

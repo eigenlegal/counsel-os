@@ -44,6 +44,8 @@ export interface ArtifactView {
   path: string;
   summary: ArtifactSummary;
   source?: string;
+  /** `docx-compare`: the revised document the source was compared against. */
+  compared?: string;
   author?: string;
   tracked: boolean;
   at?: string;
@@ -195,7 +197,7 @@ export function buildTurns(events: ThreadEvent[]): Turn[] {
           ...open,
           artifacts: [
             ...open.artifacts.filter(a => a.id !== ev.id),
-            { id: ev.id, kind: ev.kind, path: ev.path, summary: ev.summary, source: ev.source, author: ev.author, tracked: ev.tracked, at: ev.at },
+            { id: ev.id, kind: ev.kind, path: ev.path, summary: ev.summary, source: ev.source, ...(ev.compared === undefined ? {} : { compared: ev.compared }), author: ev.author, tracked: ev.tracked, at: ev.at },
           ],
         };
       else

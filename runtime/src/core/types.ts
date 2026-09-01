@@ -56,7 +56,7 @@ export interface ArtifactSummary {
   bytes: number;
 }
 
-export type ArtifactKind = 'docx-redline';
+export type ArtifactKind = 'docx-redline' | 'docx-compare';
 
 export type StepEvent =
   | { type: 'text'; text: string }

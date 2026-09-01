@@ -870,7 +870,7 @@ async function* stream(
         if (ev.name === 'propose_update' && ev.isError !== true && call) {
           proposalToYield = proposalEvent(ev.output, call.input);
           if (proposalToYield) proposals.push(proposalToYield.id);
-        } else if (ev.name === 'apply_redlines' && ev.isError !== true) {
+        } else if ((ev.name === 'apply_redlines' || ev.name === 'docx_compare') && ev.isError !== true) {
           // Same shape as a proposal: the tool appended the durable
           // `artifact` ThreadEvent; this is the live signal for the slip.
           proposalToYield = artifactEvent(ev.output);
@@ -1018,9 +1018,9 @@ function artifactEvent(output: unknown): Extract<StepEvent, { type: 'artifact' }
     }
   }
   if (typeof parsed !== 'object' || parsed === null) return null;
-  const { artifactId, output: path, summary } = parsed as Record<string, unknown>;
+  const { artifactId, output: path, summary, kind } = parsed as Record<string, unknown>;
   if (typeof artifactId !== 'string' || typeof path !== 'string' || typeof summary !== 'object' || summary === null) return null;
-  return { type: 'artifact', id: artifactId, path, kind: 'docx-redline', summary: summary as ArtifactSummary };
+  return { type: 'artifact', id: artifactId, path, kind: kind === 'docx-compare' ? 'docx-compare' : 'docx-redline', summary: summary as ArtifactSummary };
 }
 
 /**
