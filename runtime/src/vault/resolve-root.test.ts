@@ -144,7 +144,7 @@ describe('readVaultConfig', () => {
   test('defaults to entities/ and matters/ when config.md has no overrides', () => {
     const root = tmpDir('root-');
     markRoot(root);
-    expect(readVaultConfig(root)).toEqual({ entitiesPath: 'entities', mattersPath: 'matters' });
+    expect(readVaultConfig(root)).toEqual({ entitiesPath: 'entities', mattersPath: 'matters', autoApplyLawUpdates: false, lawManagement: 'plugin' });
   });
 
   test('honors entities_path and matters_path overrides in config.md', () => {
@@ -155,7 +155,7 @@ describe('readVaultConfig', () => {
       `counsel-os-config: true\nlegal_root: ${root}\nentities_path: clients\nmatters_path: deals\n`,
       'utf8',
     );
-    expect(readVaultConfig(root)).toEqual({ entitiesPath: 'clients', mattersPath: 'deals' });
+    expect(readVaultConfig(root)).toEqual({ entitiesPath: 'clients', mattersPath: 'deals', autoApplyLawUpdates: false, lawManagement: 'plugin' });
   });
 
   test('ignores commented-out override lines', () => {
@@ -166,13 +166,13 @@ describe('readVaultConfig', () => {
       `counsel-os-config: true\nlegal_root: ${root}\n# entities_path: entities\n# matters_path: matters\n`,
       'utf8',
     );
-    expect(readVaultConfig(root)).toEqual({ entitiesPath: 'entities', mattersPath: 'matters' });
+    expect(readVaultConfig(root)).toEqual({ entitiesPath: 'entities', mattersPath: 'matters', autoApplyLawUpdates: false, lawManagement: 'plugin' });
   });
 
   test('defaults when config.md is missing entirely', () => {
     const root = tmpDir('root-');
     mkdirSync(root, { recursive: true });
-    expect(readVaultConfig(root)).toEqual({ entitiesPath: 'entities', mattersPath: 'matters' });
+    expect(readVaultConfig(root)).toEqual({ entitiesPath: 'entities', mattersPath: 'matters', autoApplyLawUpdates: false, lawManagement: 'plugin' });
   });
 
   test('trims a trailing slash from entities_path and matters_path', () => {
@@ -183,6 +183,26 @@ describe('readVaultConfig', () => {
       `counsel-os-config: true\nlegal_root: ${root}\nentities_path: entities/\nmatters_path: cases/\n`,
       'utf8',
     );
-    expect(readVaultConfig(root)).toEqual({ entitiesPath: 'entities', mattersPath: 'cases' });
+    expect(readVaultConfig(root)).toEqual({ entitiesPath: 'entities', mattersPath: 'cases', autoApplyLawUpdates: false, lawManagement: 'plugin' });
+  });
+});
+
+describe('readVaultConfig law flags', () => {
+  test('auto_apply_law_updates and law_management, quoted or bare, any case', () => {
+    const root = tmpDir('root-');
+    mkdirSync(root, { recursive: true });
+    writeFileSync(join(root, 'config.md'), 'counsel-os-config: true\nlegal_root: /x\nauto_apply_law_updates: "TRUE"\nlaw_management: user\n', 'utf8');
+    const cfg = readVaultConfig(root);
+    expect(cfg.autoApplyLawUpdates).toBe(true);
+    expect(cfg.lawManagement).toBe('user');
+  });
+
+  test('anything but true / user is the default', () => {
+    const root = tmpDir('root-');
+    mkdirSync(root, { recursive: true });
+    writeFileSync(join(root, 'config.md'), 'counsel-os-config: true\nlegal_root: /x\nauto_apply_law_updates: yes\nlaw_management: plugin\n', 'utf8');
+    const cfg = readVaultConfig(root);
+    expect(cfg.autoApplyLawUpdates).toBe(false);
+    expect(cfg.lawManagement).toBe('plugin');
   });
 });

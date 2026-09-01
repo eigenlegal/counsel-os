@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { FsVaultStore } from './fs-store';
 import { MAX_MATTERS, MAX_MATTER_BYTES, parseFrontmatter, prettifyName, titleOf, vaultOverview } from './overview';
 
-const CFG = { entitiesPath: 'entities', mattersPath: 'matters' };
+const CFG = { entitiesPath: 'entities', mattersPath: 'matters', autoApplyLawUpdates: false, lawManagement: 'plugin' as const };
 
 let root: string;
 let store: FsVaultStore;

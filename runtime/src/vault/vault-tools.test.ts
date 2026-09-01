@@ -9,7 +9,7 @@ import { runToolDef } from '../core/fake-provider';
 import type { VaultConfig } from './resolve-root';
 import type { Hit } from '../core/types';
 
-const defaultCfg: VaultConfig = { entitiesPath: 'entities', mattersPath: 'matters' };
+const defaultCfg: VaultConfig = { entitiesPath: 'entities', mattersPath: 'matters', autoApplyLawUpdates: false, lawManagement: 'plugin' };
 
 describe('vault tools', () => {
   test('exposes four tools and round-trips through runToolDef', async () => {
@@ -90,7 +90,7 @@ describe('guardedVaultTools', () => {
 
   test('vault_write description states the gate and names the real knowledge-system dirs', () => {
     const store = new FsVaultStore(mkdtempSync(join(tmpdir(), 'gvt-')));
-    const tools = guardedVaultTools(store, { entitiesPath: 'clients', mattersPath: 'deals' });
+    const tools = guardedVaultTools(store, { entitiesPath: 'clients', mattersPath: 'deals', autoApplyLawUpdates: false, lawManagement: 'plugin' });
     const write = tools.find(t => t.name === 'vault_write')!;
     expect(write.description).toMatch(/propose_update/);
     expect(write.description).toContain('practice/');
