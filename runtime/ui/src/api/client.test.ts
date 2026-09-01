@@ -1,7 +1,7 @@
 import '../test/dom';
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import { ApiError, fetchJson, fetchJsonWithHeaders, streamStep } from './client';
+import { ApiError, fetchJson, fetchJsonWithHeaders, signOut, streamStep } from './client';
 import { clearToken, readToken, TOKEN_KEY } from './token';
 import { onUnauthorized } from './unauthorized';
 import type { StreamEvent } from './types';
@@ -163,5 +163,57 @@ describe('fetchBlob', () => {
     const { fetchBlob } = await import('./client');
     responds(404, { error: 'no such file' });
     await expect(fetchBlob('/vault/download?path=none.docx')).rejects.toBeInstanceOf(ApiError);
+  });
+});
+
+describe('without a token in the tab', () => {
+  test('the request goes out with no Authorization header and nothing is reported — the cookie may carry it', async () => {
+    clearToken();
+    sessionStorage.clear();
+    let reported = 0;
+    const off = onUnauthorized(() => (reported += 1));
+    responds(200, { ok: true });
+    try {
+      expect(await fetchJson<{ ok: boolean }>('/health')).toEqual({ ok: true });
+      const headers = seen[0]!.init?.headers as Record<string, string>;
+      expect(headers['authorization']).toBeUndefined();
+      expect(reported).toBe(0);
+    } finally {
+      off();
+    }
+  });
+
+  test('a 401 still reports, so the app shows the session-lost screen', async () => {
+    clearToken();
+    sessionStorage.clear();
+    let reported = 0;
+    const off = onUnauthorized(() => (reported += 1));
+    responds(401, { error: 'unauthorized' });
+    try {
+      await expect(fetchJson('/health')).rejects.toBeInstanceOf(ApiError);
+      expect(reported).toBe(1);
+    } finally {
+      off();
+    }
+  });
+});
+
+describe('signOut', () => {
+  test('clears the cookie server-side, forgets the token, and reports unauthorized', async () => {
+    let reported = 0;
+    const off = onUnauthorized(() => (reported += 1));
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      seen.push({ url: String(input), init });
+      return new Response(null, { status: 204 });
+    }) as unknown as typeof fetch;
+    try {
+      await signOut();
+      expect(seen[0]!.url).toBe('/session/clear');
+      expect(seen[0]!.init?.method).toBe('POST');
+      expect(readToken()).toBeNull();
+      expect(reported).toBe(1);
+    } finally {
+      off();
+    }
   });
 });

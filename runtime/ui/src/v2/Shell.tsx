@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, fetchJson } from '../api/client';
-import { readToken } from '../api/token';
+import { bootstrapToken } from '../api/token';
 import { onUnauthorized } from '../api/unauthorized';
 import type { Health, SettingsView, ThreadHeader, VaultOverview } from '../api/types';
 import { parseHash, threadFromHash, vaultPathFromHash, type Route } from '../app';
@@ -44,7 +44,9 @@ function byRecent(a: ThreadHeader, b: ThreadHeader): number {
 export function Shell(): JSX.Element {
   const [route, setRoute] = useState<Route>(() => parseHash(globalThis.location.hash).route);
   const [vaultPath, setVaultPath] = useState<string | null>(() => vaultPathFromHash(globalThis.location.hash));
-  const [unauthorized, setUnauthorized] = useState(() => readToken() === null);
+  // Not "no token in this tab": the browser may hold the sign-in cookie
+  // from an earlier visit. The first request finds out; a 401 flips this.
+  const [unauthorized, setUnauthorized] = useState(false);
   const [health, setHealth] = useState<Health | null>(null);
   const [threads, setThreads] = useState<ThreadHeader[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
@@ -235,6 +237,11 @@ export function Shell(): JSX.Element {
 
   useEffect(() => {
     const onHashChange = (): void => {
+      // A printed `#token=…` link opened INTO a tab already showing the app
+      // (the session-lost page, say) is a same-document navigation: no
+      // reload, so `main.tsx`'s bootstrap never ran for it. Take the token
+      // here, the same way — stored, fragment rewritten — and let the app in.
+      if (bootstrapToken() !== null) setUnauthorized(false);
       const hash = globalThis.location.hash;
       const next = parseHash(hash).route;
       setRoute(next);

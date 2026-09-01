@@ -49,6 +49,9 @@ export interface StartServerOptions {
   open?: boolean;
   /** The built UI's `dist/`. Omitted → `defaultDistDir()`. */
   distDir?: string;
+  /** Mint a fresh bearer even when `runtime.json` holds one. Every browser
+   * signed in with the old one is signed out. */
+  newToken?: boolean;
   env?: NodeJS.ProcessEnv;
   /** The user's real home, for setup mode's probes. Omitted → `env.HOME`,
    * then `os.homedir()` — the same rule the root resolver applies. */
@@ -257,6 +260,43 @@ function runtimeFileOwner(path: string): number | null {
   }
 }
 
+/** The shape this runtime mints: `randomBytes(32).toString('hex')`. A file
+ * holding anything else is not trusted as a token — it is minted over. */
+const TOKEN_SHAPE = /^[0-9a-f]{64}$/;
+
+/** Where the install's secret lives: `<counselHome>/token`, 0600. Separate
+ * from `runtime.json`, which is a HANDSHAKE (port, pid, vault) and is
+ * removed when the server stops — the secret has to outlive that. */
+export function tokenFilePath(env: NodeJS.ProcessEnv = process.env): string {
+  return join(counselHome(env), 'token');
+}
+
+/**
+ * The token to serve with: the install's, when the token file holds one of
+ * the right shape and `fresh` is not asked for; else a new one, written
+ * there for next time.
+ *
+ * Per INSTALL, not per process (the earlier rule): the browser remembers
+ * the sign-in in a cookie whose value is the token (auth.ts), and a token
+ * that changed on every restart would sign every browser out on every
+ * restart — the "paste the address again" the founder objected to. The
+ * file is 0600 in a 0700 directory, like `runtime.json` always was, so
+ * keeping the secret exposes nothing that publishing it did not.
+ */
+function chooseToken(file: string, fresh: boolean): string {
+  if (!fresh) {
+    try {
+      const held = readFileSync(file, 'utf8').trim();
+      if (TOKEN_SHAPE.test(held)) return held;
+    } catch {
+      /* no file yet: mint */
+    }
+  }
+  const token = randomBytes(32).toString('hex');
+  writeFileAtomic(file, token + '\n', { mode: 0o600, dirMode: 0o700 });
+  return token;
+}
+
 export interface RuntimeStateOptions {
   vaultRoot: string;
   /** Overrides `<counselHome>/providers.yaml`. */
@@ -322,8 +362,8 @@ export function runtimeState(opts: RuntimeStateOptions): RuntimeHandle {
  * Starts the local runtime: resolve the vault, load the provider registry,
  * bind loopback, and publish `runtime.json` for the plugin adapter.
  *
- * The token is fresh per process — it lives only in that file (0600) and in
- * memory, so stopping the server ends every credential it issued.
+ * The token is per install: `runtime.json` (0600) keeps it across restarts
+ * so the browser's cookie stays good, and `newToken` rotates it.
  */
 export async function startServer(opts: StartServerOptions = {}): Promise<RunningServer> {
   const env = opts.env ?? process.env;
@@ -335,8 +375,8 @@ export async function startServer(opts: StartServerOptions = {}): Promise<Runnin
   // `providers.yaml`, so the operator's real setup is untouched.
   const fake = opts.fake === undefined ? undefined : new FakeModelProvider(opts.fake);
   const registryFile = opts.registryFile ?? defaultRegistryFile(env);
-  const token = randomBytes(32).toString('hex');
   const file = runtimeFilePath(env);
+  const token = chooseToken(tokenFilePath(env), opts.newToken === true);
   const startedAt = new Date().toISOString();
 
   let vaultRoot: string | null = resolveVaultOrSetup(opts);

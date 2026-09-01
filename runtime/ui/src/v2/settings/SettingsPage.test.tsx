@@ -2,6 +2,7 @@ import { cleanup, render, screen, userEvent, waitFor } from '../../test/dom';
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { clearToken, TOKEN_KEY } from '../../api/token';
+import { onUnauthorized } from '../../api/unauthorized';
 import type { Health as HealthData, ProviderInfo, SettingsView } from '../../api/types';
 import { SettingsPage } from './SettingsPage';
 
@@ -239,5 +240,31 @@ describe('SettingsPage, the default provider field (cou-93 item 3)', () => {
     expect((screen.getByLabelText('Default provider') as HTMLInputElement).value).toBe('claude-sub/claude-opus-5');
     expect(screen.getByText(/Built-in default/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Make it the default' })).toBeNull();
+  });
+});
+
+describe('SettingsPage, signing out', () => {
+  test('Runtime has "Sign out of this browser": it POSTs /session/clear and the app hears unauthorized', async () => {
+    const calls: { url: string; method: string }[] = [];
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+      calls.push({ url, method });
+      if (url === '/settings' && method === 'GET') return json(view);
+      if (url === '/session/clear' && method === 'POST') return new Response(null, { status: 204 });
+      throw new Error(`unexpected fetch: ${method} ${url}`);
+    }) as unknown as typeof fetch;
+    let reported = 0;
+    const off = onUnauthorized(() => (reported += 1));
+    try {
+      render(<SettingsPage health={health} />);
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Sign out of this browser' })).toBeTruthy());
+      await userEvent.click(screen.getByRole('button', { name: 'Sign out of this browser' }));
+      await waitFor(() => expect(reported).toBe(1));
+      expect(calls.some(c => c.url === '/session/clear' && c.method === 'POST')).toBe(true);
+      expect(sessionStorage.getItem(TOKEN_KEY)).toBeNull();
+    } finally {
+      off();
+    }
   });
 });

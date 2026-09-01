@@ -9,6 +9,7 @@ import {
   openUrl,
   runtimeFilePath,
   startServer,
+  tokenFilePath,
   type RunningServer,
   type RuntimeFile,
 } from './serve';
@@ -160,21 +161,55 @@ describe('startServer', () => {
     expect((JSON.parse(readFileSync(file, 'utf8')) as RuntimeFile).token).toBe(running.token);
   });
 
-  test('a fresh token per process', async () => {
+  test('a token per install: kept across restarts in one home, different across homes, rotated by newToken', async () => {
     const a = fixture();
     const b = fixture();
     const first = await startServer({ vault: a.vault, pluginRoot: a.pluginRoot, port: 0, env: a.env, registryFile: join(a.vault, 'none.yaml') });
-    const second = await startServer({ vault: b.vault, pluginRoot: b.pluginRoot, port: 0, env: b.env, registryFile: join(b.vault, 'none.yaml') });
+    const other = await startServer({ vault: b.vault, pluginRoot: b.pluginRoot, port: 0, env: b.env, registryFile: join(b.vault, 'none.yaml') });
     try {
-      expect(first.token).not.toBe(second.token);
-      expect(first.port).not.toBe(second.port);
-      // One server's token is no good at the other.
-      const crossed = await fetch(`${second.url}/health`, { headers: { authorization: `Bearer ${first.token}` } });
+      expect(first.token).not.toBe(other.token);
+      // One install's token is no good at the other.
+      const crossed = await fetch(`${other.url}/health`, { headers: { authorization: `Bearer ${first.token}` } });
       expect(crossed.status).toBe(401);
+      // The secret is on disk, owner-only, and outlives the handshake file.
+      const tokenFile = tokenFilePath(a.env);
+      expect(readFileSync(tokenFile, 'utf8').trim()).toBe(first.token);
+      expect(statSync(tokenFile).mode & 0o777).toBe(0o600);
     } finally {
       await first.stop();
-      await second.stop();
+      await other.stop();
     }
+    expect(existsSync(runtimeFilePath(a.env))).toBe(false);
+    expect(existsSync(tokenFilePath(a.env))).toBe(true);
+
+    // A restart in the same home serves the SAME token, so a browser that
+    // holds it (in its cookie) stays signed in.
+    const again = await startServer({ vault: a.vault, pluginRoot: a.pluginRoot, port: 0, env: a.env, registryFile: join(a.vault, 'none.yaml') });
+    try {
+      expect(again.token).toBe(first.token);
+    } finally {
+      await again.stop();
+    }
+
+    // `--new-token` rotates it, and the old one is dead.
+    const rotated = await startServer({ vault: a.vault, pluginRoot: a.pluginRoot, port: 0, env: a.env, registryFile: join(a.vault, 'none.yaml'), newToken: true });
+    try {
+      expect(rotated.token).not.toBe(first.token);
+      expect(readFileSync(tokenFilePath(a.env), 'utf8').trim()).toBe(rotated.token);
+      const stale = await fetch(`${rotated.url}/health`, { headers: { authorization: `Bearer ${first.token}` } });
+      expect(stale.status).toBe(401);
+    } finally {
+      await rotated.stop();
+    }
+  });
+
+  test('a token file holding something that is not a token is minted over', async () => {
+    const { vault, pluginRoot, env } = fixture();
+    mkdirSync(counselHome(env), { recursive: true });
+    writeFileSync(tokenFilePath(env), 'not-a-token\n', 'utf8');
+    running = await startServer({ vault, pluginRoot, port: 0, env, registryFile: join(vault, 'none.yaml') });
+    expect(running.token).toMatch(/^[0-9a-f]{64}$/);
+    expect(readFileSync(tokenFilePath(env), 'utf8').trim()).toBe(running.token);
   });
 });
 

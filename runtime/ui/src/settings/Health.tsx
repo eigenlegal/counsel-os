@@ -1,3 +1,4 @@
+import { signOut } from '../api/client';
 import type { Health as HealthData, SettingsView } from '../api/types';
 
 export interface HealthProps {
@@ -66,6 +67,14 @@ export function Health({ health, effective, file }: HealthProps): JSX.Element {
           <dd>{effective.stepTimeoutMs} ms</dd>
         </div>
       </dl>
+
+      <p className="muted settings-signout">
+        This browser is signed in to the runtime and stays so across tabs and restarts.{' '}
+        <button type="button" className="v2-link" onClick={() => void signOut()}>
+          Sign out of this browser
+        </button>
+        {' '}— other browsers keep their sign-in; start the runtime with <code>--new-token</code> to sign everyone out.
+      </p>
 
       <h3 className="runin">Providers</h3>
       {effective.providers.length === 0 ? (

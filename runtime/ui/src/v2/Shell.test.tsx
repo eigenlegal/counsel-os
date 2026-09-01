@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, userEvent, waitFor } from '../test/dom';
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import { TOKEN_KEY } from '../api/token';
+import { clearToken, TOKEN_KEY } from '../api/token';
 import { routeFromHash, vaultPathFromHash } from '../app';
 import type { Health, SettingsView, Thread, ThreadEvent, ThreadHeader } from '../api/types';
 import { Shell } from './Shell';
@@ -722,5 +722,51 @@ describe('Shell in setup mode (spec 2026-09-01 §4)', () => {
     await waitFor(() => expect(screen.queryByText('Set up counsel-os.')).toBeNull(), { timeout: 3000 });
     await waitFor(() => expect(fetched).toContain('GET /threads'));
     expect(document.querySelector('.v2-rail')).toBeTruthy();
+  });
+});
+
+describe('Shell, signed in by cookie', () => {
+  test('no token in the tab but the runtime answers 200 (the cookie): the app renders, no session-lost screen', async () => {
+    // The in-memory copy an earlier test's paste left behind, too.
+    clearToken();
+    sessionStorage.clear();
+    const auths: (string | undefined)[] = [];
+    const base = globalThis.fetch;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input) === '/threads') auths.push((init?.headers as Record<string, string> | undefined)?.['authorization']);
+      return base(input, init);
+    }) as unknown as typeof fetch;
+
+    render(<Shell />);
+    await waitFor(() => expect(screen.getAllByText('Acme NDA term').length).toBeGreaterThan(0));
+    expect(screen.queryByLabelText('Session lost')).toBeNull();
+    expect(document.querySelector('.v2-rail')).toBeTruthy();
+    // The list was fetched with NO bearer — the browser's cookie is the credential.
+    expect(auths).toEqual([undefined]);
+    expect(globalThis.location.hash).not.toContain('token');
+  });
+});
+
+describe('Shell, a printed link opened into the session-lost tab', () => {
+  test('the fragment token is taken on hashchange — no reload — and the app comes back', async () => {
+    clearToken();
+    sessionStorage.clear();
+    const hex = 'fedcba9876543210'.repeat(4);
+    const base = globalThis.fetch;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const auth = (init?.headers as Record<string, string> | undefined)?.['authorization'];
+      // No credential at all: the runtime says who-are-you.
+      if (auth === undefined) return new Response('{"error":"unauthorized"}', { status: 401 });
+      return base(input, init);
+    }) as unknown as typeof fetch;
+
+    render(<Shell />);
+    await waitFor(() => expect(screen.getByLabelText('Session lost')).toBeTruthy());
+
+    goTo(`#token=${hex}`);
+    await waitFor(() => expect(screen.getAllByText('Acme NDA term').length).toBeGreaterThan(0));
+    expect(screen.queryByLabelText('Session lost')).toBeNull();
+    expect(sessionStorage.getItem(TOKEN_KEY)).toBe(hex);
+    expect(globalThis.location.hash).not.toContain('token');
   });
 });

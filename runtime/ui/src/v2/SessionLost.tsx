@@ -9,22 +9,25 @@ import { storeToken, tokenFromPaste } from '../api/token';
  */
 export const SERVE_COMMAND = 'bun runtime/src/cli.ts serve --vault <your vault> --open';
 
-/** What the probe found: the runtime answered (any status — a 401 is the
- * runtime saying "who are you", which is the whole question here), or
- * nothing is listening. `null` while the probe is in flight. */
-export type Probe = 'up' | 'down' | null;
+/** What the probe found: this browser is already signed in (the cookie
+ * worked — a 2xx), the runtime answered but wants a credential (a 401 is
+ * the runtime saying "who are you"), or nothing is listening. `null` while
+ * the probe is in flight. */
+export type Probe = 'in' | 'up' | 'down' | null;
 
 /**
  * Asks the runtime whether it is there, WITHOUT a token: the point is to
  * tell "your key is stale" from "nothing is running", and sending the
  * stale key would not change either answer while giving a log one more
- * copy of it. A plain `fetch`, not `client.ts` — that one reports 401s to
- * the app, and this screen is already the app's answer to one.
+ * copy of it. The browser still attaches its sign-in cookie, so a 2xx here
+ * means this screen is not needed at all. A plain `fetch`, not
+ * `client.ts` — that one reports 401s to the app, and this screen is
+ * already the app's answer to one.
  */
 export async function probeRuntime(): Promise<Probe> {
   try {
-    await fetch('/health', { cache: 'no-store' });
-    return 'up';
+    const res = await fetch('/health', { cache: 'no-store' });
+    return res.ok ? 'in' : 'up';
   } catch {
     return 'down';
   }
@@ -52,8 +55,14 @@ export function SessionLost({ onRestored }: SessionLostProps): JSX.Element {
 
   const check = useCallback(async (): Promise<void> => {
     setProbe(null);
-    setProbe(await probeRuntime());
-  }, []);
+    const found = await probeRuntime();
+    // The cookie let us in: nothing to paste — hand straight back.
+    if (found === 'in') {
+      onRestored();
+      return;
+    }
+    setProbe(found);
+  }, [onRestored]);
 
   useEffect(() => {
     void check();
@@ -91,8 +100,8 @@ export function SessionLost({ onRestored }: SessionLostProps): JSX.Element {
           {probe === null
             ? 'Checking whether counsel-os is running…'
             : probe === 'up'
-              ? 'The runtime is running, but this tab no longer has its key. Paste the address it printed to get back in.'
-              : 'counsel-os is not running. Start it, then paste the address it prints.'}
+              ? 'The runtime is running, but this browser is not signed in. Open the address counsel-os printed once; after that this page remembers you on this machine.'
+              : 'counsel-os is not running. Start it, then open the address it prints once; after that this page remembers you on this machine.'}
         </p>
 
         <section className="v2-lost-group rule-double">
@@ -105,7 +114,7 @@ export function SessionLost({ onRestored }: SessionLostProps): JSX.Element {
             </button>
           </div>
           <p className="muted">
-            It prints an address that starts with <code>http://127.0.0.1</code> and ends in <code>#token=…</code>. The browser it opens is already signed in; any other tab needs that address.
+            It prints an address that starts with <code>http://127.0.0.1</code> and ends in <code>#token=…</code>. Open it once in this browser and it stays signed in — new tabs and restarts included — until you sign out in Settings or start the runtime with <code>--new-token</code>.
           </p>
         </section>
 

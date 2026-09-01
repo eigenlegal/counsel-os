@@ -40,6 +40,7 @@ const { values, positionals } = parseArgs({
     fake: { type: 'boolean' },        // `serve`: register fake/fake as the default — no model is ever called
     'fake-script': { type: 'string' }, // `serve`: a JSON array of FakeScript steps for --fake
     open: { type: 'boolean' },        // `serve`: open the printed token URL in the browser
+    'new-token': { type: 'boolean' }, // `serve`: mint a fresh bearer (signs every browser out)
     dist: { type: 'string' },         // `serve`: the built UI to serve (default runtime/ui/dist)
     // `init` — the first-run answers as flags (spec 2026-09-01 §4); a
     // missing one is asked on stdin unless `--yes`.
@@ -62,7 +63,7 @@ const [cmd, ...rest] = positionals;
 
 function usage(): never {
   console.error('usage: bun runtime/src/cli.ts step --vault <dir> --provider <id> [--task <name>] [--schema <json>] [--session <id>] [--codex-home <dir>] [--cwd <dir>] [--step-timeout <ms>] "<prompt>"');
-  console.error('       bun runtime/src/cli.ts serve [--port <n>] [--vault <dir>] [--step-timeout <ms>] [--dist <dir>] [--open] [--fake [--fake-script <file.json>]]');
+  console.error('       bun runtime/src/cli.ts serve [--port <n>] [--vault <dir>] [--step-timeout <ms>] [--dist <dir>] [--open] [--new-token] [--fake [--fake-script <file.json>]]');
   console.error('         --dist <dir> is the built UI; everything in it is served WITHOUT a token, so it must not overlap the vault');
   console.error('       bun runtime/src/cli.ts init [--vault <dir>] [--name <n> --org <o> --role in-house|outside|solo --jurisdiction <j> --practice "<one line>"] [--default-provider <id>] [--no-git] [--yes]');
   console.error('         creates a Counsel OS vault (default ~/Documents/Counsel OS) and seeds it; asks for anything missing unless --yes');
@@ -191,6 +192,7 @@ if (cmd === 'serve') {
       ...(stepTimeoutMs === undefined ? {} : { stepTimeoutMs }),
       ...(values.dist ? { distDir: resolve(values.dist) } : {}),
       ...(values.open ? { open: true } : {}),
+      ...(values['new-token'] ? { newToken: true } : {}),
       ...(values.fake ? { fake: fakeScript(values['fake-script']) } : {}),
     });
   } catch (err) {
