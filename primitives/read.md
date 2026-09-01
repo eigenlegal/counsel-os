@@ -51,21 +51,23 @@ Determine what you're working with:
 
 Word documents are the primary medium for contract negotiation. Tracked changes contain negotiation history. Comments hold context from counterparty counsel. **Always extract tracked changes and comments — do not extract only the accepted text.**
 
-**Primary method — pandoc:**
-
-```bash
-pandoc --track-changes=all -f docx -t markdown "<file_path>"
-```
-
-This renders tracked changes and comments inline:
+**In the Counsel OS runtime:** call the `docx_read` tool with the vault-relative path. It returns the document as markdown with tracked changes and comments inline, and Word's own numbering rendered as text:
 - Insertions: `{++inserted text++}`
 - Deletions: `{--deleted text--}`
-- Comments: `{>>comment text<<}`
+- Comments: `{>>comment text (author, date)<<}`
 
-If pandoc is not installed:
-> I need `pandoc` to extract tracked changes and comments from Word documents. Install it with `brew install pandoc` (macOS) or `apt-get install pandoc` (Linux), then try again.
+Pass `changes: "accept"` for the clean accepted view when you need to quote final language.
 
-**Fallback — unzip + XML parsing** (if pandoc unavailable and user cannot install it):
+**Outside the runtime (Claude Code):** run the same converter from the repo — no pandoc, no Python:
+
+```bash
+bun "${CLAUDE_PLUGIN_ROOT}/runtime/src/cli.ts" docx read "<file_path>"
+```
+
+If `bun` is not installed:
+> I need `bun` to read Word documents. Install it from https://bun.sh (one command), then try again.
+
+**Last resort — unzip + XML parsing** (no bun, and the user cannot install it):
 
 ```bash
 unzip -o "<file_path>" word/document.xml word/comments.xml -d /tmp/docx-extract 2>/dev/null
@@ -105,9 +107,9 @@ Structured ingestion of a **returned markup** — the counterparty (or a colleag
 
 ### Instructions
 
-1. **Extract structured changes:**
+1. **Extract structured changes.** In the runtime, call the `extract_redlines` tool with the vault-relative path. In Claude Code:
    ```bash
-   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/extract_redlines.py" "<file>" --format json
+   bun "${CLAUDE_PLUGIN_ROOT}/runtime/src/cli.ts" docx extract "<file>" --format json
    ```
    Each change record carries the paragraph's original (reject-all) vs revised (accept-all) text, the inserted/deleted fragments, author and date, section context, and the IDs of comments anchored in that paragraph; the `comments` array carries the comment text. `--format markdown` renders a human-readable review table.
 
@@ -149,11 +151,11 @@ Mechanical document QA — a deterministic linter over a draft that catches the 
 
 ### Instructions
 
-1. **Run the checker** over the draft (`.docx`, `.md`, or `.txt`):
+1. **Run the checker** over the draft (`.docx`, `.md`, or `.txt`). In the runtime, call the `check_document` tool with the vault-relative path. In Claude Code:
    ```bash
-   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/check_document.py" "<file>" --json
+   bun "${CLAUDE_PLUGIN_ROOT}/runtime/src/cli.ts" docx check "<file>"
    ```
-   It emits `{summary, notes, findings}`. Each finding has a `type`, a `severity`, a `message`, and the paragraph/line `locations` where it occurs. Drop `--json` for a human-readable grouped report. On a `.docx` it checks the **accept-all** view (tracked insertions kept, deletions dropped) — the document as it will read once changes are accepted.
+   It emits `{summary, notes, findings}`. Each finding has a `type`, a `severity`, a `message`, and the paragraph/line `locations` where it occurs. Pass `--format text` for a human-readable grouped report. On a `.docx` it checks the **accept-all** view (tracked insertions kept, deletions dropped) — the document as it will read once changes are accepted.
 
 2. **Severity tiers — surface accordingly:**
    - `error` — high-confidence mechanical defect (**undefined_reference** — a cross-ref with no matching section/article; **missing_exhibit** — an exhibit/schedule referenced but not attached). Report these plainly; they are almost always real.

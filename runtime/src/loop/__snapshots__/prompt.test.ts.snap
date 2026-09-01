@@ -31,8 +31,9 @@ yourself. Pass the tool's arguments as named fields, not as a command line.
 | Script call in the methodology | Tool | Fields |
 |---|---|---|
 | \`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/docket_sweep.py" <matters_dir> --window <days> --format json\` | \`docket_sweep\` | \`days\` (optional, default 60) |
-| \`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/extract_redlines.py" <file> --format json\` | \`extract_redlines\` | \`docx\` |
-| \`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/check_document.py" <file> --json\` | \`check_document\` | \`file\` — accepts .docx, .md, or .txt; always run with --json |
+| \`pandoc --track-changes=all -f docx -t markdown <file>  (or bun runtime/src/cli.ts docx read <file>)\` | \`docx_read\` | \`path\` (vault-relative .docx), \`changes\` (optional: all | accept | reject) |
+| \`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/extract_redlines.py" <file> --format json  (or bun runtime/src/cli.ts docx extract <file>)\` | \`extract_redlines\` | \`docx\` (vault-relative .docx) |
+| \`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/check_document.py" <file> --json  (or bun runtime/src/cli.ts docx check <file>)\` | \`check_document\` | \`file\` (vault-relative) — accepts .docx, .md, or .txt; the result is already the JSON report |
 | \`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/clean_format.py" <input.docx> <output.docx>\` | \`clean_format\` | \`input\`, \`output\` |
 | \`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/apply_redlines.py" [--track] <original.docx> <redlines.json> <output.docx>\` | \`apply_redlines\` | \`original\`, \`edits\`, \`output\`, \`track\` (optional) |
 | \`"\${CLAUDE_PLUGIN_ROOT}/scripts/word_compare.sh" <original.docx> <modified.docx> <author> <output.docx>\` | \`word_compare\` | \`original\`, \`modified\`, \`author\`, \`output\` |

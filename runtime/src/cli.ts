@@ -48,6 +48,8 @@ const { values, positionals } = parseArgs({
     'no-git': { type: 'boolean' },
     'default-provider': { type: 'string' },
     yes: { type: 'boolean' },              // `init`: never prompt; fail on a missing answer
+    changes: { type: 'string' },      // `docx read`: all | accept | reject
+    format: { type: 'string' },       // `docx extract|check`: json | markdown | text
   },
 });
 
@@ -59,7 +61,42 @@ function usage(): never {
   console.error('         --dist <dir> is the built UI; everything in it is served WITHOUT a token, so it must not overlap the vault');
   console.error('       bun runtime/src/cli.ts init [--vault <dir>] [--name <n> --org <o> --role in-house|outside|solo --jurisdiction <j> --practice "<one line>"] [--default-provider <id>] [--no-git] [--yes]');
   console.error('         creates a Counsel OS vault (default ~/Documents/Counsel OS) and seeds it; asks for anything missing unless --yes');
+  console.error('       bun runtime/src/cli.ts docx read <file.docx> [--changes all|accept|reject]   (markdown to stdout)');
+  console.error('       bun runtime/src/cli.ts docx extract <file.docx> [--format json|markdown]  (tracked changes + comments)');
+  console.error('       bun runtime/src/cli.ts docx check <file.docx|.md|.txt> [--format json|text] (mechanical QA)');
   process.exit(2);
+}
+
+/**
+ * `docx read|extract|check <file>`: the Word read path as a command, for the
+ * Claude Code plugin and for anyone at a shell — the same TypeScript the
+ * runtime's tools run, no Python and no pandoc. Reads the one file it is
+ * given, anywhere on disk; the vault guard belongs to the tools, not here.
+ */
+async function docxCommand(sub: string | undefined, file: string | undefined): Promise<void> {
+  const { checkDocx, checkText, detectFormat, docxToMarkdown, extractRedlines, extractToMarkdown, openDocx, renderReport } = await import('./docx');
+  if (file === undefined || !['read', 'extract', 'check'].includes(sub ?? '')) usage();
+  const bytes = new Uint8Array(await Bun.file(file).arrayBuffer());
+  const format = values.format ?? 'json';
+  try {
+    if (sub === 'read') {
+      const changes = values.changes ?? 'all';
+      if (changes !== 'all' && changes !== 'accept' && changes !== 'reject') usage();
+      const { markdown, warnings } = docxToMarkdown(openDocx(bytes), { changes });
+      process.stdout.write(markdown);
+      for (const w of warnings) console.error(`warning: ${w}`);
+    } else if (sub === 'extract') {
+      const data = extractRedlines(openDocx(bytes), file);
+      process.stdout.write(format === 'markdown' ? `${extractToMarkdown(data)}\n` : `${JSON.stringify(data, null, 2)}\n`);
+    } else {
+      const fmt = detectFormat(file);
+      const report = fmt === 'docx' ? checkDocx(openDocx(bytes), file) : checkText(new TextDecoder().decode(bytes), fmt, file);
+      process.stdout.write(format === 'text' ? `${renderReport(report)}\n` : `${JSON.stringify(report, null, 2)}\n`);
+    }
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : String(err));
+    process.exit(1);
+  }
 }
 
 /** A millisecond option: a bad one is the caller's mistake, and exits the
@@ -154,6 +191,8 @@ if (cmd === 'serve') {
     { content: repoContentSource(pluginRoot), home: counselHome(), pluginRoot },
   );
   process.exit(code);
+} else if (cmd === 'docx') {
+  await docxCommand(rest[0], rest[1]);
 } else {
   await step();
 }

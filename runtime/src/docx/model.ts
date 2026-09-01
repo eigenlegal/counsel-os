@@ -12,6 +12,7 @@
  * reject-all view flips that. `w:moveTo`/`w:moveFrom` are treated as
  * `w:ins`/`w:del`, as `extract_redlines` does.
  */
+import type { Document, Element, Node } from '@xmldom/xmldom';
 import { COMMENTS_PART, NUMBERING_PART, type DocxPackage } from './package';
 
 export const W_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
@@ -120,8 +121,8 @@ export function changeAncestor(el: Element, stop: Element): ChangeMark | null {
   while (cur !== null && cur !== stop) {
     if (cur.nodeType === 1 && (cur as Element).namespaceURI === W_NS) {
       const e = cur as Element;
-      if (INS_TAGS.has(e.localName)) return { kind: 'ins', author: attr(e, 'author'), date: attr(e, 'date'), element: e };
-      if (DEL_TAGS.has(e.localName)) return { kind: 'del', author: attr(e, 'author'), date: attr(e, 'date'), element: e };
+      if (INS_TAGS.has(e.localName ?? "")) return { kind: 'ins', author: attr(e, 'author'), date: attr(e, 'date'), element: e };
+      if (DEL_TAGS.has(e.localName ?? "")) return { kind: 'del', author: attr(e, 'author'), date: attr(e, 'date'), element: e };
     }
     cur = cur.parentNode;
   }

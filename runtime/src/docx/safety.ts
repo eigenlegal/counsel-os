@@ -13,7 +13,7 @@
  * a `DOMParser`; a second parse site would be a second place to forget the
  * check.
  */
-import { DOMParser } from '@xmldom/xmldom';
+import { DOMParser, type Document } from '@xmldom/xmldom';
 
 export class UnsafeXmlError extends Error {
   readonly partName: string;

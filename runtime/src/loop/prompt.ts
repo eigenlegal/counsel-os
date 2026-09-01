@@ -27,14 +27,19 @@ const SCRIPT_TOOL_MAPPINGS: ScriptToolMapping[] = [
     fields: '`days` (optional, default 60)',
   },
   {
+    name: 'docx_read',
+    invocation: 'pandoc --track-changes=all -f docx -t markdown <file>  (or bun runtime/src/cli.ts docx read <file>)',
+    fields: '`path` (vault-relative .docx), `changes` (optional: all | accept | reject)',
+  },
+  {
     name: 'extract_redlines',
-    invocation: 'python3 "${CLAUDE_PLUGIN_ROOT}/scripts/extract_redlines.py" <file> --format json',
-    fields: '`docx`',
+    invocation: 'python3 "${CLAUDE_PLUGIN_ROOT}/scripts/extract_redlines.py" <file> --format json  (or bun runtime/src/cli.ts docx extract <file>)',
+    fields: '`docx` (vault-relative .docx)',
   },
   {
     name: 'check_document',
-    invocation: 'python3 "${CLAUDE_PLUGIN_ROOT}/scripts/check_document.py" <file> --json',
-    fields: '`file` — accepts .docx, .md, or .txt; always run with --json',
+    invocation: 'python3 "${CLAUDE_PLUGIN_ROOT}/scripts/check_document.py" <file> --json  (or bun runtime/src/cli.ts docx check <file>)',
+    fields: '`file` (vault-relative) — accepts .docx, .md, or .txt; the result is already the JSON report',
   },
   {
     name: 'clean_format',

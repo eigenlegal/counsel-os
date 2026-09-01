@@ -1,6 +1,7 @@
 import { join, resolve } from 'node:path';
 import { z } from 'zod';
 import type { Tool } from '../core/types';
+import { docxTools } from './docx-tools';
 import { pythonScriptTool } from './subprocess';
 
 /**
@@ -13,23 +14,21 @@ export function docketSweepArgs(vaultRoot: string, days: number): string[] {
   return [join(vaultRoot, 'matters'), '--window', String(days), '--format', 'json'];
 }
 
-/** `check_document` always runs `--json` — the `read` primitive's `--qa` mode
- * consumes the machine-readable report, not the human-readable one. */
-export function checkDocumentArgs(file: string): string[] {
-  return [file, '--json'];
-}
-
-// Runs on all four platforms, same as docket_sweep — but reads/writes local
-// .docx files, which a `hosted` deployment may not have direct filesystem
-// access to. Recorded in each tool's description (below) rather than the
-// platform set, since the constraint is about file transport, not the
-// script itself.
+// The write-path scripts still run on Python until stage 2 of the
+// TypeScript port (docs/superpowers/specs/2026-09-01-docx-in-typescript-design.md
+// §9): all four platforms, but they read/write local .docx files, which a
+// `hosted` deployment may not have direct filesystem access to. Recorded in
+// each tool's description rather than the platform set, since the
+// constraint is about file transport, not the script itself.
 const DOCX_SCRIPT_PLATFORMS = ['macos', 'linux', 'windows', 'hosted'] as const;
 
 /**
  * Tools shared by every entry point that runs a model against a vault
  * (`cli.ts`'s in-process run, `mcp/stdio.ts`'s server for Codex). Kept in one
  * place so the tool's name/description/schema/args can't drift between them.
+ *
+ * The read path (`docx_read`, `extract_redlines`, `check_document`) runs in
+ * TypeScript inside the runtime — `docxTools` — with no Python or pandoc.
  */
 export function builtinTools(opts: { vaultRoot: string; repoRoot: string }): Tool[] {
   return [
@@ -42,24 +41,7 @@ export function builtinTools(opts: { vaultRoot: string; repoRoot: string }): Too
       args: ({ days }) => docketSweepArgs(opts.vaultRoot, days),
       cwd: opts.repoRoot,
     }),
-    pythonScriptTool({
-      name: 'extract_redlines',
-      description: 'Extract tracked changes and comments from a .docx file, as JSON. Reads a local file path — the docx must already be on disk.',
-      script: resolve(opts.repoRoot, 'scripts/extract_redlines.py'),
-      platforms: [...DOCX_SCRIPT_PLATFORMS],
-      inputSchema: z.object({ docx: z.string().describe('Path to the .docx file to read tracked changes and comments from.') }),
-      args: ({ docx }) => [docx],
-      cwd: opts.repoRoot,
-    }),
-    pythonScriptTool({
-      name: 'check_document',
-      description: 'Deterministic mechanical QA for a contract draft: cross-references, defined terms, exhibits. Accepts .docx, .md, or .txt. Always run with --json. Reads a local file path — the document must already be on disk.',
-      script: resolve(opts.repoRoot, 'scripts/check_document.py'),
-      platforms: [...DOCX_SCRIPT_PLATFORMS],
-      inputSchema: z.object({ file: z.string().describe('Path to the .docx, .md, or .txt document to check.') }),
-      args: ({ file }) => checkDocumentArgs(file),
-      cwd: opts.repoRoot,
-    }),
+    ...docxTools({ vaultRoot: opts.vaultRoot }),
     pythonScriptTool({
       name: 'clean_format',
       description: 'Clean up a drafted .docx file’s formatting against the house style template. Reads and writes local file paths.',

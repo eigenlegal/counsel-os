@@ -16,6 +16,7 @@
  *   authors, dates    from the w:ins/w:del attributes
  *   comment_ids       comments anchored in this paragraph
  */
+import type { Element } from '@xmldom/xmldom';
 import { attr, children, commentsOf, descendants, modelOf, runText, W_NS, type DocxParagraph } from './model';
 import type { DocxPackage } from './package';
 import { MalformedXmlError, UnsafeXmlError } from './safety';
@@ -110,8 +111,8 @@ function scanNonBody(pkg: DocxPackage): { records: ChangeRecord[]; warnings: str
     for (const wrapper of descendants(root)) {
       if (wrapper.namespaceURI !== W_NS) continue;
       let kind: 'insertion' | 'deletion';
-      if (INS.has(wrapper.localName)) kind = 'insertion';
-      else if (DEL.has(wrapper.localName)) kind = 'deletion';
+      if (INS.has(wrapper.localName ?? "")) kind = 'insertion';
+      else if (DEL.has(wrapper.localName ?? "")) kind = 'deletion';
       else continue;
       const txt = wrapperText(wrapper).trim();
       if (txt === '') continue;

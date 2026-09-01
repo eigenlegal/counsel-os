@@ -6,7 +6,7 @@
  * byte-for-byte round trip for everything but the parts the caller edited.
  */
 import { unzipSync, zipSync } from 'fflate';
-import { XMLSerializer } from '@xmldom/xmldom';
+import { XMLSerializer, type Document, type Node } from '@xmldom/xmldom';
 import { parseXml } from './safety';
 
 export const DOCUMENT_PART = 'word/document.xml';
