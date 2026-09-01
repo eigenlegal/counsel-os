@@ -148,6 +148,11 @@ p.write_text(text, encoding="utf-8")
 print(f"prepended CHANGELOG.md entry for {v}")
 PY
 
+# The shipped-content manifest records the version and per-file hashes
+# (runtime/src/content/manifest.ts); a release that bumps VERSION without
+# regenerating it fails the manifest test on the next checkout.
+bun scripts/gen_content_manifest.ts
+
 # Verify sync + content conventions before committing
 python3 scripts/lint_knowledge.py --check-versions
 
