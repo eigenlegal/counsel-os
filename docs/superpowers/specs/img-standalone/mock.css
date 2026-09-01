@@ -3,20 +3,20 @@
    data-theme="dark") so a mock reads exactly like the shipped app. */
 :root {
   color-scheme: light dark;
-  --bg: #faf7f1; --bg-raised: #ffffff; --bg-sunken: #f4efe7; --bg-hover: #f1ece3;
-  --fg: #241f19; --fg-muted: #5f584d; --fg-faint: #7a7061;
-  --border: #e6dfd2; --border-strong: #d8cfbf;
-  --accent: #9a5d16; --accent-ink: #ffffff;
-  --ok: #3f7a4f; --warn: #8a6210; --amber: #8a6210; --error: #b4483a;
-  --ins-bg: #e7f0e4; --del-bg: #f6e3dd;
-  --serif: "Iowan Old Style", Charter, Georgia, serif;
+  --bg: #f6f5f2; --bg-raised: #ffffff; --bg-sunken: #efeeea; --bg-hover: #eae9e4;
+  --fg: #1f1f1d; --fg-muted: #5b5b57; --fg-faint: #6f6f6a;
+  --border: #e2e1dc; --border-strong: #cfcec8;
+  --accent: #1f6b6b; --accent-2: #3a8a86; --accent-ink: #ffffff;
+  --ok: #2f7a4a; --warn: #7d5f00; --amber: #7d5f00; --error: #b03a2e;
+  --ins-bg: #e1efe8; --del-bg: #f4e4e0;
+  --serif: Charter, "Iowan Old Style", Georgia, serif;
   --sans: -apple-system, "Inter", "Segoe UI", system-ui, sans-serif;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   --radius: 10px; --radius-lg: 14px;
-  --shadow: 0 1px 2px rgba(36,31,25,.06), 0 8px 24px rgba(36,31,25,.08);
+  --shadow: 0 1px 2px rgba(31,31,29,.06), 0 8px 24px rgba(31,31,29,.08);
 }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#171412; --bg-raised:#1e1a17; --bg-sunken:#1e1a17; --bg-hover:#262019; --fg:#ece5da; --fg-muted:#b8ad9e; --fg-faint:#8c8172; --border:#322b24; --border-strong:#3e352c; --accent:#d99a4e; --accent-ink:#1a1410; --ok:#7fbf8e; --warn:#d9b04e; --amber:#d9b04e; --error:#e08a7e; --ins-bg:#233227; --del-bg:#362420; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.18); } }
-:root[data-theme="dark"] { --bg:#171412; --bg-raised:#1e1a17; --bg-sunken:#1e1a17; --bg-hover:#262019; --fg:#ece5da; --fg-muted:#b8ad9e; --fg-faint:#8c8172; --border:#322b24; --border-strong:#3e352c; --accent:#d99a4e; --accent-ink:#1a1410; --ok:#7fbf8e; --warn:#d9b04e; --amber:#d9b04e; --error:#e08a7e; --ins-bg:#233227; --del-bg:#362420; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.18); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#161615; --bg-raised:#1d1d1b; --bg-sunken:#1d1d1b; --bg-hover:#262624; --fg:#e8e7e2; --fg-muted:#b0afa9; --fg-faint:#8f8e88; --border:#2b2b29; --border-strong:#383836; --accent:#6fc2bd; --accent-2:#a6dcd8; --accent-ink:#0f1a1a; --ok:#7fc292; --warn:#e0b84f; --amber:#e0b84f; --error:#e3877c; --ins-bg:#1c2e28; --del-bg:#33241f; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.18); } }
+:root[data-theme="dark"] { --bg:#161615; --bg-raised:#1d1d1b; --bg-sunken:#1d1d1b; --bg-hover:#262624; --fg:#e8e7e2; --fg-muted:#b0afa9; --fg-faint:#8f8e88; --border:#2b2b29; --border-strong:#383836; --accent:#6fc2bd; --accent-2:#a6dcd8; --accent-ink:#0f1a1a; --ok:#7fc292; --warn:#e0b84f; --amber:#e0b84f; --error:#e3877c; --ins-bg:#1c2e28; --del-bg:#33241f; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.18); }
 
 * { box-sizing: border-box; margin: 0; }
 body { background: var(--bg); color: var(--fg); font: 14px/1.55 var(--sans); height: 100vh; display: flex; }
@@ -28,15 +28,15 @@ a { color: inherit; }
 .runin em { color: var(--accent); font-style: normal; }
 .tag { font: 700 10px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--fg-faint); }
 .leader { flex: 1; border-bottom: 1px dotted var(--border-strong); margin: 0 6px; transform: translateY(-4px); min-width: 24px; }
-.status { font: italic 600 13px/1 var(--serif); }
+.status { font: italic 500 13px/1 var(--serif); }
 .status.ok { color: var(--ok); } .status.pend { color: var(--accent); } .status.err { color: var(--error); } .status.faint { color: var(--fg-faint); font-weight: 500; }
 .mono { font-family: var(--mono); font-size: .92em; }
 .faint { color: var(--fg-faint); } .muted { color: var(--fg-muted); }
 
 /* ── rail (216px) ── */
 .rail { width: 216px; border-right: 1px solid var(--border); padding: 14px 10px; display: flex; flex-direction: column; gap: 2px; background: var(--bg); flex-shrink: 0; }
-.brand { font: 600 15px/1 var(--serif); letter-spacing: .01em; padding: 6px 10px 16px; display: flex; align-items: center; gap: 8px; }
-.brand .mark { width: 20px; height: 20px; border-radius: 6px; background: linear-gradient(135deg, var(--accent), #b3762f); display: inline-block; flex-shrink: 0; }
+.brand { font: 500 14.5px/1 var(--sans); letter-spacing: -.005em; padding: 6px 10px 16px; display: flex; align-items: center; gap: 8px; }
+.brand .mark { width: 20px; height: 20px; border-radius: 6px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: inline-block; flex-shrink: 0; }
 .nav { display: flex; flex-direction: column; gap: 1px; }
 .nav a { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; color: var(--fg-muted); text-decoration: none; font-weight: 500; font-size: 13px; }
 .nav a.on { background: var(--bg-hover); color: var(--fg); }
@@ -75,3 +75,6 @@ a { color: inherit; }
 .under { font-size: 12.5px; margin: 8px 4px 0; }
 .under.err { color: var(--error); }
 .under.prog { color: var(--fg-muted); }
+
+@media (prefers-color-scheme: dark) { body { -webkit-font-smoothing: antialiased; } }
+:root[data-theme="dark"] body { -webkit-font-smoothing: antialiased; }
