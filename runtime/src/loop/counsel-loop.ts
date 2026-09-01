@@ -9,6 +9,7 @@ import { readVaultConfig, type VaultConfig } from '../vault/resolve-root';
 import { guardedVaultTools } from '../vault/vault-tools';
 import { builtinTools } from '../tools/builtin';
 import { ToolRegistry } from '../tools/registry';
+import type { ContentSource } from '../content/source';
 import { assembleSystemPrompt } from './prompt';
 import { readPrimitiveTool } from './primitives';
 import { proposeUpdateTool } from './proposals';
@@ -51,6 +52,9 @@ export interface CounselLoopDeps {
   vaultRoot: string;
   /** The Counsel OS plugin/repo root: `skills/`, `primitives/`, `scripts/`. */
   pluginRoot: string;
+  /** The shipped content (the counsel skill, the primitives). Omitted → the
+   * repo source over `pluginRoot`, as it always was. */
+  content?: ContentSource;
   vault: VaultStore;
   store: ThreadStore;
   providers: ModelProvider[];
@@ -129,7 +133,7 @@ function stepTools(deps: CounselLoopDeps, threadId: string, cfg: VaultConfig, sc
   return [
     ...guardedVaultTools(deps.vault, cfg),
     proposeUpdateTool(deps.store, deps.vault, threadId, deps.tenant) as ToolDef,
-    readPrimitiveTool(deps.pluginRoot) as ToolDef,
+    readPrimitiveTool(deps.content ?? deps.pluginRoot) as ToolDef,
     ...scriptTools,
   ];
 }
@@ -267,6 +271,7 @@ export async function* runStep(
 
       const system = assembleSystemPrompt({
         pluginRoot: deps.pluginRoot,
+        ...(deps.content === undefined ? {} : { content: deps.content }),
         vaultRoot: deps.vaultRoot,
         ...(header.matter ? { matterPath: header.matter } : {}),
         platform,

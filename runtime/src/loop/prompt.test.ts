@@ -268,3 +268,37 @@ describe('readPrimitiveTool', () => {
     expect(r.isError).toBe(true);
   });
 });
+
+describe('the content source (spec 2026-09-01 §3)', () => {
+  const fakeSource = {
+    kind: 'embedded' as const,
+    list: (prefix: string) => (prefix === 'primitives' ? ['primitives/draft.md', 'primitives/notes.txt'] : []),
+    has: (path: string) => path === 'skills/counsel/SKILL.md' || path === 'primitives/draft.md',
+    read: (path: string) => {
+      if (path === 'skills/counsel/SKILL.md') return '---\nname: counsel\n---\n\n# From the source\n';
+      if (path === 'primitives/draft.md') return 'DRAFT FROM THE SOURCE\n';
+      throw new Error(`not shipped content: ${path}`);
+    },
+  };
+
+  test('assembleSystemPrompt reads the skill through an injected source, never the plugin root', () => {
+    const prompt = assembleSystemPrompt(
+      { pluginRoot: '/nowhere', content: fakeSource, vaultRoot: '/nowhere-vault', platform: 'linux', tools: { available: [], unavailable: [] }, cfg: defaultCfg },
+      path => {
+        if (path.startsWith('/nowhere-vault')) throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' });
+        throw new Error(`unexpected read: ${path}`);
+      },
+    );
+    expect(prompt).toContain('# From the source');
+    expect(prompt).not.toContain('name: counsel');
+  });
+
+  test('read_primitive lists and reads through the source; only .md files directly under primitives/ count', async () => {
+    const tools = [readPrimitiveTool(fakeSource)];
+    expect(await runToolDef(tools, 'read_primitive', { name: 'draft' }, 'default')).toEqual({ output: 'DRAFT FROM THE SOURCE\n', isError: false });
+    const notes = await runToolDef(tools, 'read_primitive', { name: 'notes' }, 'default');
+    expect(notes.isError).toBe(true);
+    expect(String(notes.output)).toContain('unknown primitive: notes. Available: draft');
+    expect((await runToolDef(tools, 'read_primitive', { name: '../skills/counsel/SKILL' }, 'default')).isError).toBe(true);
+  });
+});
