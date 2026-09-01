@@ -142,3 +142,37 @@ export function clearToken(): void {
     /* nothing to clear */
   }
 }
+
+/** The shape `serve` mints: `randomBytes(32).toString('hex')` — 64 hex
+ * characters, nothing else. A paste that is not this is not a token. */
+const TOKEN_SHAPE = /^[0-9a-f]{64}$/i;
+
+/**
+ * The token inside whatever the reader pasted from the terminal: the whole
+ * printed URL (`http://127.0.0.1:7431/#token=…`), a bare `#token=…` or
+ * `token=…` fragment, or the raw hex. `null` for anything else — a guess
+ * would only be refused by the runtime a request later, with less to say.
+ */
+export function tokenFromPaste(text: string): string | null {
+  const trimmed = text.trim();
+  if (trimmed === '') return null;
+  let candidate = trimmed;
+  const hash = trimmed.indexOf('#');
+  if (hash !== -1) candidate = splitTokenFromHash(trimmed.slice(hash)).token ?? '';
+  else if (trimmed.startsWith('token=')) candidate = decode(trimmed.slice('token='.length));
+  return TOKEN_SHAPE.test(candidate) ? candidate.toLowerCase() : null;
+}
+
+/**
+ * Stores a token the reader pasted — the same two places `bootstrapToken`
+ * writes, and nowhere else: `sessionStorage` (this tab, until it closes) and
+ * the in-memory copy. Never the URL.
+ */
+export function storeToken(token: string): void {
+  memoryToken = token;
+  try {
+    session()?.setItem(TOKEN_KEY, token);
+  } catch {
+    /* private mode, quota, blocked site data — the memory copy stands in */
+  }
+}

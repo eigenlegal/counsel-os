@@ -649,3 +649,36 @@ describe('Shell', () => {
     expect(document.querySelector('.v2-foot .v2-dot')?.classList.contains('v2-dot-amber')).toBe(false);
   });
 });
+
+describe('Shell, a tab with no usable key (spec §5)', () => {
+  const hex = '0123456789abcdef'.repeat(4);
+
+  test('no token → the session-lost screen; a pasted address gets back in without a reload', async () => {
+    sessionStorage.clear();
+    const bearers: string[] = [];
+    const base = globalThis.fetch;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const auth = (init?.headers as Record<string, string> | undefined)?.['authorization'];
+      if (url === '/threads' && auth !== undefined) bearers.push(auth);
+      // The probe carries no token: the runtime says who-are-you.
+      if (url.startsWith('/health') && auth === undefined) return new Response('{"error":"unauthorized"}', { status: 401 });
+      return base(input, init);
+    }) as unknown as typeof fetch;
+
+    render(<Shell />);
+    await waitFor(() => expect(screen.getByLabelText('Session lost')).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('status').textContent).toContain('The runtime is running'));
+    expect(document.querySelector('.v2-rail')).toBeNull();
+
+    await userEvent.type(screen.getByLabelText('Paste the address the runtime printed'), `http://127.0.0.1:7431/#token=${hex}`);
+    await userEvent.click(screen.getByRole('button', { name: 'Open' }));
+
+    // Home renders, the list was fetched with the NEW bearer, and the URL
+    // never carried the token.
+    await waitFor(() => expect(screen.getAllByText('Acme NDA term').length).toBeGreaterThan(0));
+    expect(bearers).toContain(`Bearer ${hex}`);
+    expect(globalThis.location.hash).not.toContain('token');
+    expect(sessionStorage.getItem(TOKEN_KEY)).toBe(hex);
+  });
+});

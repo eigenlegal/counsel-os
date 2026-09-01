@@ -1,7 +1,7 @@
 import '../test/dom';
 
 import { afterEach, describe, expect, test } from 'bun:test';
-import { bootstrapToken, clearToken, getToken, readToken, splitTokenFromHash, TOKEN_KEY, TokenMissingError } from './token';
+import { bootstrapToken, clearToken, getToken, readToken, splitTokenFromHash, storeToken, TOKEN_KEY, tokenFromPaste, TokenMissingError } from './token';
 
 afterEach(() => {
   clearToken();
@@ -67,5 +67,47 @@ describe('bootstrapToken', () => {
 describe('getToken', () => {
   test('throws TokenMissingError when this tab never got one', () => {
     expect(() => getToken()).toThrow(TokenMissingError);
+  });
+});
+
+describe('tokenFromPaste', () => {
+  const hex = 'a'.repeat(32) + '0123456789abcdef'.repeat(2);
+
+  test('the whole printed URL', () => {
+    expect(tokenFromPaste(`http://127.0.0.1:7431/#token=${hex}`)).toBe(hex);
+  });
+
+  test('a bare fragment, with or without the hash, and the raw hex', () => {
+    expect(tokenFromPaste(`#token=${hex}`)).toBe(hex);
+    expect(tokenFromPaste(`token=${hex}`)).toBe(hex);
+    expect(tokenFromPaste(hex)).toBe(hex);
+  });
+
+  test('surrounding whitespace and upper-case hex are tolerated', () => {
+    expect(tokenFromPaste(`  ${hex.toUpperCase()}\n`)).toBe(hex);
+  });
+
+  test('anything that is not a 64-hex token is null', () => {
+    expect(tokenFromPaste('')).toBeNull();
+    expect(tokenFromPaste('   ')).toBeNull();
+    expect(tokenFromPaste('http://127.0.0.1:7431/')).toBeNull();
+    expect(tokenFromPaste('#token=abc123')).toBeNull();
+    expect(tokenFromPaste(hex.slice(0, 63))).toBeNull();
+    expect(tokenFromPaste(`${hex}z`)).toBeNull();
+    expect(tokenFromPaste('#/vault?path=matters%2Facme.md')).toBeNull();
+  });
+
+  test('a route sharing the fragment does not hide the token', () => {
+    expect(tokenFromPaste(`http://127.0.0.1:7431/#/vault&token=${hex}`)).toBe(hex);
+  });
+});
+
+describe('storeToken', () => {
+  test('writes the tab store and memory, never the URL', () => {
+    globalThis.history.replaceState(null, '', '/#/chat');
+    storeToken('f'.repeat(64));
+    expect(readToken()).toBe('f'.repeat(64));
+    expect(sessionStorage.getItem(TOKEN_KEY)).toBe('f'.repeat(64));
+    expect(globalThis.location.hash).toBe('#/chat');
   });
 });
