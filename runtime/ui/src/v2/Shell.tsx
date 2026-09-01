@@ -444,9 +444,11 @@ export function Shell(): JSX.Element {
           ) : null}
         </div>
 
-        {route === 'home' ? <HomePage threads={threads} onAsk={startAsk} onOpenThread={openThread} health={health} /> : null}
+        {/* The pages wait for /health: before it answers, the runtime may be
+            in setup mode, and Home's own reads would be 409s. */}
+        {route === 'home' && health !== null ? <HomePage threads={threads} onAsk={startAsk} onOpenThread={openThread} health={health} /> : null}
 
-        {route === 'vault' ? (
+        {route === 'vault' && health !== null ? (
           <VaultPage
             path={vaultPath}
             onAsk={askAbout}
@@ -456,7 +458,7 @@ export function Shell(): JSX.Element {
           />
         ) : null}
 
-        {route === 'settings' ? (
+        {route === 'settings' && health !== null ? (
           <main className="v2-page">
             <SettingsPage health={health} />
           </main>

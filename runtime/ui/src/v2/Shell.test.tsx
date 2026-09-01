@@ -375,8 +375,10 @@ describe('Shell', () => {
 
       render(<Shell />);
       await waitFor(() => expect(document.querySelector('.v2-home')).toBeTruthy());
-      // Twice, from here on: the rail's row and home's conversations column.
-      await waitFor(() => expect(screen.getAllByText('Acme NDA term')).toHaveLength(2));
+      // Twice on the visible page: the rail's row and home's conversations
+      // column. The hidden chat workspace (mounted for the keep-stream
+      // invariant) shows the same title in its header, so it is left out.
+      await waitFor(() => expect((screen.getAllByText('Acme NDA term') as HTMLElement[]).filter(el => el.closest('.v2-work') === null)).toHaveLength(2));
 
       await userEvent.click(screen.getByRole('button', { name: 'Delete Acme NDA term' }));
       // No window.confirm: the rail row asks, and Delete answers.
