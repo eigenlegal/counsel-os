@@ -38,7 +38,7 @@ import {
   type SettingsDeps, providerView, keyContext, putProviderKey, deleteProviderKey, KeyBody } from './settings';
 import { sseFromEvents, type StreamEvent } from './sse';
 import { confirmationMessage, estimateCost, needsConfirmation, type Pricing } from '../evals/cost';
-import { loadFixtures, sourceKindOf } from '../evals/fixture';
+import { FIXTURE_SETS, loadFixtures, sourceKindOf } from '../evals/fixture';
 import { citationsFor, documentFor, draftFromThread, fixtureFromDraft, NoFixtureHere, pickRun, type FixtureDraft } from '../evals/from-thread';
 import { pickJudge, providerJudge } from '../evals/judge';
 import { appendResult, readResults } from '../evals/results';
@@ -134,6 +134,8 @@ const EvalRunBody = z.object({
   fixtures: z.array(z.string()).optional(),
   task: z.string().optional(),
   all: z.boolean().optional(),
+  /** Narrow to one set (`shipped` · `practice` · `benchmark`). */
+  set: z.enum(FIXTURE_SETS).optional(),
   providerId: z.string().optional(),
   save: z.boolean().optional(),
   /** Accepts a run the cost guard would otherwise refuse (over $1). */
@@ -699,6 +701,7 @@ export function createApp(deps: ServerDeps): App {
         scorer: l.fixture.scorer,
         task: taskOf(l),
         source: l.fixture.source?.kind ?? l.set,
+        set: l.set,
         runnable: runnable(l),
       })),
     });
@@ -978,7 +981,12 @@ export function createApp(deps: ServerDeps): App {
     const providerId = input.providerId ?? effectiveDefault(state);
     if (providerId === null || !state.providers.some(p => p.id === providerId)) throw new HttpError(422, `unknown provider: ${providerId ?? '(none configured)'}`);
     const loaded = evalLoaded();
-    const selected = selectFixtures(loaded, { ...(input.fixtures === undefined ? {} : { fixtures: input.fixtures }), ...(input.task === undefined ? {} : { task: input.task }), ...(input.all === undefined ? {} : { all: input.all }) });
+    const selected = selectFixtures(loaded, {
+      ...(input.fixtures === undefined ? {} : { fixtures: input.fixtures }),
+      ...(input.task === undefined ? {} : { task: input.task }),
+      ...(input.all === undefined ? {} : { all: input.all }),
+      ...(input.set === undefined ? {} : { set: input.set }),
+    });
     if (selected.error !== undefined) throw new HttpError(400, selected.error);
     if (selected.fixtures.length === 0) throw new HttpError(400, 'nothing to run', { skipped: selected.skipped });
     const estimateUsd = estimateCost(selected.fixtures.length, deps.evals?.pricing?.(providerId) ?? null);

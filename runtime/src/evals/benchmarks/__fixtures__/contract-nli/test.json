@@ -1,0 +1,107 @@
+{
+ "documents": [
+  {
+   "id": 1,
+   "file_name": " 064-19 Non Disclosure Agreement 2019.pdf",
+   "text": "NON-DISCLOSURE AGREEMENT\nRequired under JEA's Confidential Information Protection Program\nTHIS NON-DISCLOSURE AGREEMENT (\"Agreement\") is entered into this ______day of\n__________ by and between JEA, located at 21 West Church Street, Jacksonville, Florida 32202 (the \"Discloser\"), and ____________________________________________________________ with an address at ______________________________________________ (the \"Recipient\") (hereafter Discloser and Recipient shall be referred to as the PARTIES}.\nWHEREAS, the Recipient desires to work with the discloser and/or view ______________________________________________________________________documents regarding ____________________________________ (the \"Transaction\"); and\nWHEREAS, the discloser is required by its internal policies, state and federal laws, rules, regulations or standards to ensure that sensitive and confidential information is protected and not disclosed to the public;\nWHEREAS, the Parties have entered into a transaction related to the _______________________. The terms of those agreements are incorporated herein.\nJEA & Florida State Sunshine Application - JEA is a publicly owned utility and all official information sharing is governed by Florida Sunshine Laws. The Florida Sunshine law is a series of laws designed to guarantee that the public has access to the public records of governmental bodies in Florida. However, as per the Florida Sunshine Law, certain information that could impact safe and secure operation is e",
+   "spans": [
+    [
+     0,
+     24
+    ],
+    [
+     25,
+     89
+    ],
+    [
+     90,
+     167
+    ],
+    [
+     168,
+     345
+    ],
+    [
+     345,
+     364
+    ],
+    [
+     364,
+     411
+    ],
+    [
+     411,
+     501
+    ],
+    [
+     502,
+     572
+    ],
+    [
+     572,
+     652
+    ],
+    [
+     652,
+     662
+    ],
+    [
+     662,
+     699
+    ],
+    [
+     699,
+     723
+    ],
+    [
+     724,
+     940
+    ],
+    [
+     941,
+     1034
+    ],
+    [
+     1034,
+     1088
+    ],
+    [
+     1089,
+     1239
+    ],
+    [
+     1239,
+     1390
+    ]
+   ],
+   "annotation_sets": [
+    {
+     "annotations": {
+      "nda-1": {
+       "choice": "Contradiction",
+       "spans": [
+        25
+       ]
+      },
+      "nda-11": {
+       "choice": "NotMentioned",
+       "spans": []
+      }
+     }
+    }
+   ],
+   "document_type": "search-pdf",
+   "url": "https://www.jea.com/About/Procurement/Formal_Procurement_Opportunities/064-19_Non_Disclosure_Agreement_2019.aspx"
+  }
+ ],
+ "labels": {
+  "nda-1": {
+   "short_description": "Explicit identification",
+   "hypothesis": "All Confidential Information shall be expressly identified by the Disclosing Party."
+  },
+  "nda-11": {
+   "short_description": "No reverse engineering",
+   "hypothesis": "Receiving Party shall not reverse engineer any objects which embody Disclosing Party's Confidential Information."
+  }
+ }
+}

@@ -30,7 +30,9 @@ import { startRetro } from './retro/index';
 import { runStep } from './loop/counsel-loop';
 import { loadRegistry } from './providers/registry';
 import { repoContentSource } from './content/repo';
-import { loadFixtures, sourceKindOf } from './evals/fixture';
+import { FIXTURE_SETS, defaultBenchmarksDir, loadFixtures, sourceKindOf, type FixtureSet } from './evals/fixture';
+import { BENCHMARKS, NotRedistributableError, benchmarkById } from './evals/benchmarks/index';
+import { importBenchmark } from './evals/benchmarks/import';
 import { pickJudge, providerJudge } from './evals/judge';
 import { appendResult, readResults } from './evals/results';
 import { runSet, summarize } from './evals/runner';
@@ -81,6 +83,11 @@ const { values, positionals } = parseArgs({
     json: { type: 'boolean' },             // `eval`: one JSON line per result instead of the text table
     repo: { type: 'string' },              // `eval`: the checkout the shipped fixtures live in (default: the plugin root)
     scoreboard: { type: 'boolean' },       // `eval`: print the scoreboard from the saved results instead of running
+    set: { type: 'string' },               // `eval`: shipped | practice | benchmark
+    subset: { type: 'string' },            // `eval import`: keep the first n items of each task
+    tasks: { type: 'string' },             // `eval import`: comma-separated benchmark tasks
+    dest: { type: 'string' },              // `eval import`: where the sets go (default <repo>/evals/benchmarks)
+    refresh: { type: 'boolean' },          // `eval import`: fetch again instead of the cached download
     ours: { type: 'string' },         // `docx rounds`
     theirs: { type: 'string' },       // `docx rounds`
     base: { type: 'string' },         // `docx rounds`: the round N-1 baseline
@@ -111,6 +118,9 @@ function usage(): never {
   console.error('         runs eval fixtures (the shipped set plus <vault>/practice/evals) through the loop on one provider and scores them; --yes accepts a run estimated over $1');
   console.error('       bun runtime/src/cli.ts eval --scoreboard [--vault <dir>] [--json]');
   console.error('         the scoreboard: per task and provider, the latest score per fixture set (practice · shipped · benchmark), from the saved results');
+  console.error('       bun runtime/src/cli.ts eval --set benchmark [--all | --fixture <id> | --task <task>] …   runs an imported public benchmark');
+  console.error('       bun runtime/src/cli.ts eval import <legalbench|cuad|maud|contract-nli|biglaw-bench> [--subset <n>] [--tasks a,b] [--dest <dir>] [--refresh]');
+  console.error('         fetches a public benchmark into <dest>/<set>/ as fixtures + a vault and records its license in <dest>/LICENSES.md; `eval import` alone lists the sets');
   console.error('       bun runtime/src/cli.ts doctor [--vault <dir>]');
   console.error('         read-only vault health: root config, structure, law currency, git, standards/library consistency, matter law impact');
   console.error('       bun runtime/src/cli.ts docx apply <file.docx> <redlines.json> [--out <file>] [--track] [--author <name>] (the redline; result JSON to stdout, exit 2 on any skip)');
@@ -386,19 +396,75 @@ if (cmd === 'serve') {
   // re-exec itself (packaging spec §3.3). The module serves until stdin
   // closes; nothing here returns.
   await import('./mcp/stdio');
+} else if (cmd === 'eval' && rest[0] === 'import') {
+  const pluginRoot = defaultPluginRoot();
+  const repoRoot = values.repo === undefined ? pluginRoot : resolve(values.repo);
+  const dest = values.dest === undefined ? defaultBenchmarksDir(repoRoot) : resolve(values.dest);
+  const id = rest[1];
+  if (id === undefined) {
+    console.log('Public benchmarks `counsel-os eval import <set>` knows:');
+    for (const b of BENCHMARKS) console.log(`  ${b.id.padEnd(14)} ${b.name} · ${b.license ?? 'no license published'} · ${b.tasks.length === 0 ? 'not importable' : `${b.tasks.length} task${b.tasks.length === 1 ? '' : 's'}`}`);
+    console.log(`Sets land under ${dest}; --subset <n> keeps the first n items of each task.`);
+    process.exit(0);
+  }
+  const loader = benchmarkById(id);
+  if (loader === undefined) {
+    console.error(`unknown benchmark: ${id} (one of ${BENCHMARKS.map(b => b.id).join(', ')})`);
+    process.exit(2);
+  }
+  const subset = values.subset === undefined ? undefined : Number.parseInt(values.subset, 10);
+  if (subset !== undefined && (!Number.isInteger(subset) || subset < 1)) {
+    console.error('--subset must be a whole number of at least 1');
+    process.exit(2);
+  }
+  const tasks = values.tasks === undefined ? undefined : values.tasks.split(',').map(t => t.trim()).filter(t => t !== '');
+  try {
+    const report = await importBenchmark({
+      loader,
+      dest,
+      ...(subset === undefined ? {} : { subset }),
+      ...(tasks === undefined ? {} : { tasks }),
+      ...(values.refresh === undefined ? {} : { refresh: values.refresh }),
+      content: shippedContent(pluginRoot),
+      log: line => console.error(line),
+    });
+    console.log(`imported ${loader.name}: ${report.fixtures} fixture${report.fixtures === 1 ? '' : 's'}, ${report.items} item${report.items === 1 ? '' : 's'}${report.vaultDocuments === 0 ? '' : `, ${report.vaultDocuments} document${report.vaultDocuments === 1 ? '' : 's'} in the vault`}`);
+    console.log(`  fixtures  ${report.fixturesDir}`);
+    console.log(`  vault     ${report.vaultDir}`);
+    console.log(`  licenses  ${report.licensesPath}`);
+    console.log(`run it: counsel-os eval --set benchmark --all`);
+  } catch (err) {
+    if (err instanceof NotRedistributableError) {
+      console.error(err.message);
+      process.exit(3);
+    }
+    console.error(`import failed: ${err instanceof Error ? err.message : String(err)}`);
+    process.exit(1);
+  }
 } else if (cmd === 'eval') {
   const vaultRoot = vaultForMaintenance();
   const pluginRoot = defaultPluginRoot();
   // The shipped set comes through the content source — the compiled binary
   // has no `evals/` on disk; `--repo` reads another checkout's instead.
   const content = values.repo === undefined ? shippedContent(pluginRoot) : repoContentSource(resolve(values.repo));
-  const loaded = loadFixtures({ content, vaultRoot });
+  const repoRoot = values.repo === undefined ? pluginRoot : resolve(values.repo);
+  if (values.set !== undefined && !(FIXTURE_SETS as readonly string[]).includes(values.set)) {
+    console.error(`--set must be one of ${FIXTURE_SETS.join(', ')}`);
+    process.exit(2);
+  }
+  const set = values.set as FixtureSet | undefined;
+  const loaded = loadFixtures({ content, vaultRoot, benchmarksDir: values.dest === undefined ? defaultBenchmarksDir(repoRoot) : resolve(values.dest) });
   if (values.scoreboard === true) {
     const board = scoreboard(readResults(vaultRoot, { since: null }), fixtureCounts(loaded.map(l => ({ task: taskOf(l), set: sourceKindOf(l), runnable: runnable(l) }))));
     console.log(values.json === true ? JSON.stringify(board) : renderScoreboard(board));
     process.exit(0);
   }
-  const selected = selectFixtures(loaded, { ...(values.fixture === undefined ? {} : { fixtures: values.fixture }), ...(values.task === undefined ? {} : { task: values.task }), ...(values.all === undefined ? {} : { all: values.all }) });
+  const selected = selectFixtures(loaded, {
+    ...(values.fixture === undefined ? {} : { fixtures: values.fixture }),
+    ...(values.task === undefined ? {} : { task: values.task }),
+    ...(values.all === undefined ? {} : { all: values.all }),
+    ...(set === undefined ? {} : { set }),
+  });
   if (selected.error !== undefined) {
     console.error(selected.error);
     process.exit(2);

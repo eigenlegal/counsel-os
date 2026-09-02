@@ -33,3 +33,7 @@ e2e/.tmp/
 
 # brainstorm/SDD scratch
 .superpowers/
+
+# Imported public benchmarks (`counsel-os eval import`): local copies under
+# their own licenses, never part of the repo (routing-and-evals spec §8).
+evals/benchmarks/

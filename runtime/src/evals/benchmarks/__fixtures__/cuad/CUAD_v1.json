@@ -1,0 +1,59 @@
+{
+ "version": "v1",
+ "data": [
+  {
+   "title": "LIMEENERGYCO_09_09_1999-EX-10-DISTRIBUTOR AGREEMENT",
+   "paragraphs": [
+    {
+     "context": "EXHIBIT 10.6\n\n                              DISTRIBUTOR AGREEMENT\n\n         THIS  DISTRIBUTOR  AGREEMENT (the  \"Agreement\")  is made by and between Electric City Corp.,  a Delaware  corporation  (\"Company\")  and Electric City of Illinois LLC (\"Distributor\") this 7th day of September, 1999.\n\n                                    RECITALS\n\n         A. The  Company's  Business.  The Company is  presently  engaged in the business  of selling an energy  efficiency  device,  which is  referred to as an \"Energy  Saver\"  which may be improved  or  otherwise  changed  from its present composition (the \"Products\").  The Company may engage in the business of selling other  products  or  other  devices  other  than  the  Products,  which  will be considered  Products if Distributor  ex",
+     "qas": [
+      {
+       "answers": [
+        {
+         "text": "DISTRIBUTOR AGREEMENT",
+         "answer_start": 44
+        }
+       ],
+       "id": "LIMEENERGYCO_09_09_1999-EX-10-DISTRIBUTOR AGREEMENT__Document Name",
+       "question": "Highlight the parts (if any) of this contract related to \"Document Name\" that should be reviewed by a lawyer. Details: The name of the contract",
+       "is_impossible": false
+      },
+      {
+       "answers": [
+        {
+         "text": "Distributor",
+         "answer_start": 244
+        },
+        {
+         "text": "Electric City Corp.",
+         "answer_start": 148
+        },
+        {
+         "text": "Electric City of Illinois L.L.C.",
+         "answer_start": 49574
+        },
+        {
+         "text": "Company",
+         "answer_start": 197
+        },
+        {
+         "text": "Electric City of Illinois LLC",
+         "answer_start": 212
+        }
+       ],
+       "id": "LIMEENERGYCO_09_09_1999-EX-10-DISTRIBUTOR AGREEMENT__Parties",
+       "question": "Highlight the parts (if any) of this contract related to \"Parties\" that should be reviewed by a lawyer. Details: The two or more parties who signed the contract",
+       "is_impossible": false
+      },
+      {
+       "answers": [],
+       "id": "LIMEENERGYCO_09_09_1999-EX-10-DISTRIBUTOR AGREEMENT__Notice Period To Terminate Renewal",
+       "question": "Highlight the parts (if any) of this contract related to \"Notice Period To Terminate Renewal\" that should be reviewed by a lawyer. Details: What is the notice period required to terminate renewal?",
+       "is_impossible": true
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

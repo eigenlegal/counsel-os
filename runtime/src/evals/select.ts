@@ -4,7 +4,7 @@
  * vault) are never selected by `all` or a task — they can only be scored
  * from a saved output — and are listed so the caller can say so.
  */
-import { taskForScorer, type LoadedFixture } from './fixture';
+import { taskForScorer, type FixtureSet, type LoadedFixture } from './fixture';
 import type { EvalResult } from './results';
 import type { SetSummary } from './runner';
 
@@ -12,6 +12,8 @@ export interface Selection {
   fixtures?: string[];
   task?: string;
   all?: boolean;
+  /** Narrow to one set first; alone it means every runnable fixture of it. */
+  set?: FixtureSet;
 }
 
 export interface Selected {
@@ -29,8 +31,13 @@ export function runnable(l: LoadedFixture): boolean {
   return l.fixture.vault !== undefined;
 }
 
-export function selectFixtures(loaded: LoadedFixture[], sel: Selection): Selected {
+export function selectFixtures(all: LoadedFixture[], sel: Selection): Selected {
   const skipped: Selected['skipped'] = [];
+  const loaded = sel.set === undefined ? all : all.filter(l => l.set === sel.set);
+  if (sel.set !== undefined && loaded.length === 0) {
+    return { fixtures: [], skipped, error: sel.set === 'benchmark' ? 'no benchmark is imported — run `counsel-os eval import <set>` first' : `no ${sel.set} fixtures` };
+  }
+  if (sel.set !== undefined && sel.fixtures === undefined && sel.task === undefined && sel.all === undefined) sel = { ...sel, all: true };
   if (sel.fixtures !== undefined && sel.fixtures.length > 0) {
     const out: LoadedFixture[] = [];
     for (const id of sel.fixtures) {
