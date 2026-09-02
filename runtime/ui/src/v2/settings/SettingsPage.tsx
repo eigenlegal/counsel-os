@@ -12,6 +12,7 @@ import { KeyControl } from './KeyControl';
 import { ContentGroup } from './ContentGroup';
 import { TASK_IDS } from '../../tasks';
 import { DoctorLedger } from './DoctorLedger';
+import { ModelsGroup } from './ModelsGroup';
 import { RetroAction } from './RetroAction';
 import {
   emptyRoute,
@@ -41,8 +42,9 @@ const CLAUDE_BUILTIN = 'claude-sub/claude-opus-5';
 
 /**
  * Settings, ordered by what the operator came to do (cou-84): the models you
- * have (Providers) → the one that answers (Default provider) → the
- * exceptions (Task routes) → how long an answer may take (Step timeout) —
+ * have (Providers) → the one that answers (Default provider) → how they
+ * score (Models) → the exceptions (Task routes) → how long an answer may
+ * take (Step timeout) —
  * then Test, then Runtime, read-only. Each group opens with a plain line
  * saying what it is for.
  */
@@ -451,6 +453,12 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
             </p>
           )}
         </div>
+      </section>
+
+      <section className="v2-group">
+        <h2>Models</h2>
+        <p className="muted">How each provider scores on each kind of work, from the eval fixtures: the shipped suite, your own practice set, and public benchmarks, kept apart. Scoring runs real steps and costs real calls.</p>
+        <ModelsGroup providerIds={effectiveIds} />
       </section>
 
       <section className="v2-group">

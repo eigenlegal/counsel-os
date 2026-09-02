@@ -535,3 +535,54 @@ export interface RetroStart {
   message: string;
   status: RetroStatus;
 }
+
+/** `GET /evals/scoreboard` (routing-and-evals spec §5). COPIED from
+ * `runtime/src/evals/scoreboard.ts`; a change there is a change here. */
+export type EvalSetKind = 'practice' | 'shipped' | 'benchmark';
+export const EVAL_SET_KINDS: readonly EvalSetKind[] = ['practice', 'shipped', 'benchmark'];
+
+export interface ScoreboardRow {
+  providerId: string;
+  modelVersion: string;
+  /** Mean of the latest scored cells; `null` when nothing scored. */
+  score: number | null;
+  scored: number;
+  sampleSize: number;
+  failed: Array<{ fixtureId: string; reason: string }>;
+  medianMs: number | null;
+  meanCostUsd: number | null;
+  lastAt: string;
+  staleDays: number;
+}
+
+export interface ScoreboardSet {
+  fixtures: number;
+  rows: ScoreboardRow[];
+}
+
+export interface ScoreboardTask {
+  task: string;
+  sets: Record<EvalSetKind, ScoreboardSet>;
+}
+
+export interface Scoreboard {
+  at: string;
+  tasks: ScoreboardTask[];
+}
+
+/** `GET /evals/estimate?task=&providerId=` — the confirmation line. */
+export interface EvalEstimate {
+  task: string;
+  providerId: string;
+  count: number;
+  estimateUsd: number | null;
+  needsConfirm: boolean;
+}
+
+/** The frames `POST /evals/run` streams. */
+export type EvalStreamEvent =
+  | { event: 'plan'; data: { count: number; providerId: string; estimateUsd: number | null } }
+  | { event: 'progress'; data: { index: number; total: number; fixtureId: string } }
+  | { event: 'result'; data: { fixtureId: string; score: number | null; error?: string } }
+  | { event: 'done'; data: { summary: { count: number; scored: number; failed: number; mean: number | null }; saved: boolean } }
+  | { event: 'error'; data: { message: string } };

@@ -23,6 +23,12 @@ Routing and evals, step 2 — the eval runner moves into the runtime (routing-an
 - The app: `POST /evals/run` (an SSE stream of `plan · progress · result · done`; `409 confirm-cost` over $1 without `confirm: true`; `409 eval-busy` while one runs), `GET /evals/fixtures`, `GET /evals/results?since=`.
 - The Python eval harness (`scripts/run_evals.py`, `scripts/eval_runtime_runner.py`, its test) is retired; `evals/baselines/claude-fable-5.json` stays as the parity anchor the TypeScript scorer is tested against. `bun run evals:self-test` and `bun run evals:runner-test` are the CI steps. `evals/README.md` documents the v2 schema and the provenance rule for anything not written here.
 
+Routing and evals, step 3 — the scoreboard (routing-and-evals spec §5, §9, §10, §12)
+
+- The scoreboard: the results record folded per task × provider × model version × fixture set. The latest line per fixture wins (a re-run replaces, never accumulates); `practice`, `shipped` and `benchmark` are never averaged together; a `score: null` line is a failed cell with its reason, never a zero in the mean. Each row carries the fixtures it scored, the sample size, the median latency, the mean cost per run and how many days old it is. `GET /evals/scoreboard` serves it; `counsel-os eval --scoreboard [--json]` prints the ledger without running anything.
+- Settings › Models, between Default provider and Task routes: a task × provider ledger with the three sets as small-caps tabs, scores set as text, a failed cell as `failed · <reason>` with *retry*, staleness as `3d ago`. Each cell's *score* asks once on the same line — `Score <provider> on <task> · 8 fixtures · about $0.60` (or `· cost unknown`) — then runs `POST /evals/run` with the progress in place. `GET /evals/estimate?task=&providerId=` is the line's source.
+- The shipped fixtures and their mini-vaults (`evals/fixtures`, `evals/vaults`) ship through the content source, so the compiled binary lists and runs the same suite as a checkout. Setup and content updates never seed a vault from them.
+
 ## [0.13.0] — 2026-09-02
 
 Providers phase 1, retro, the binary — any model, keys in the Keychain, matters that stay local

@@ -9,7 +9,7 @@
 import { parseSseChunk } from './sse';
 import { clearToken, readToken } from './token';
 import { reportUnauthorized } from './unauthorized';
-import type { RunMark, StepBody, StreamEvent, TaskSource } from './types';
+import type { EvalStreamEvent, RunMark, StepBody, StreamEvent, TaskSource } from './types';
 
 /** A request that came back with a status the caller has to reason about.
  * `body` is the parsed JSON when there was any — 409 on approve carries the
@@ -256,14 +256,34 @@ export async function streamStep(
   onEvent: (ev: StreamEvent) => void,
   signal: AbortSignal,
 ): Promise<void> {
-  const res = await fetch(`/threads/${encodeURIComponent(threadId)}/steps`, {
+  await streamSse(`/threads/${encodeURIComponent(threadId)}/steps`, body, frame => onEvent(frame.data as StreamEvent), signal);
+}
+
+/**
+ * `POST /evals/run` (routing-and-evals spec §4.2): scores a task on a
+ * provider and delivers the plan/progress/result/done frames as they
+ * arrive. The frame's `event` name carries the meaning here, so the caller
+ * gets both. Rejects on a non-200: 409 `confirm-cost` when the run needs
+ * `confirm: true`, 409 `eval-busy` while another run streams.
+ */
+export async function streamEvals(
+  body: { task?: string; fixtures?: string[]; all?: boolean; providerId?: string; save?: boolean; confirm?: boolean },
+  onEvent: (ev: EvalStreamEvent) => void,
+  signal: AbortSignal,
+): Promise<void> {
+  await streamSse('/evals/run', body, frame => onEvent({ event: frame.event, data: frame.data } as EvalStreamEvent), signal);
+}
+
+/** One POST whose answer is an SSE stream, each frame's data parsed as JSON. */
+async function streamSse(path: string, body: unknown, onFrame: (frame: { event: string; data: unknown }) => void, signal: AbortSignal): Promise<void> {
+  const res = await fetch(path, {
     method: 'POST',
     headers: { ...authHeaders(), 'content-type': 'application/json', accept: 'text/event-stream' },
     body: JSON.stringify(body),
     signal,
   });
   if (!res.ok) throw await failure(res);
-  if (res.body === null) throw new ApiError(res.status, null, 'the step stream had no body');
+  if (res.body === null) throw new ApiError(res.status, null, 'the stream had no body');
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
@@ -273,14 +293,14 @@ export async function streamStep(
     const parsed = parseSseChunk(rest, chunk);
     rest = parsed.rest;
     for (const frame of parsed.frames) {
-      let ev: StreamEvent;
+      let data: unknown;
       try {
-        ev = JSON.parse(frame.data) as StreamEvent;
+        data = JSON.parse(frame.data) as unknown;
       } catch {
         console.warn(`counsel-os: unparsable ${frame.event} frame, skipped`);
         continue;
       }
-      onEvent(ev);
+      onFrame({ event: frame.event, data });
     }
   };
 
