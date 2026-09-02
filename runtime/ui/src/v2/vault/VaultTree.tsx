@@ -3,7 +3,6 @@ import { ApiError, fetchJson } from '../../api/client';
 import type { VaultEntry, VaultOverview } from '../../api/types';
 import { ancestorsOf, baseName, orderEntries, ROOT } from '../../vault/Tree';
 import { Chevron } from '../icons';
-import { prettifyName } from './frontmatter';
 import { groupRoot, monthLabel } from './tree';
 
 /** A folder matter is `matters/<dir>/matter.md`; its documents live beside it. */
@@ -183,7 +182,7 @@ export function VaultTree({ overview, root, selected, onOpen }: VaultTreeProps):
                   ? docs.map(child =>
                       child.kind === 'dir'
                         ? dirNode(child, true)
-                        : fileRow(child.path, prettifyName(baseName(child.path)), true, baseName(child.path)),
+                        : fileRow(child.path, baseName(child.path), true),
                     )
                   : null}
               </div>

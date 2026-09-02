@@ -96,7 +96,7 @@ describe('HomePage', () => {
     mount();
     expect(document.querySelector('.v2-hi')?.textContent).toMatch(/^Good (morning|afternoon|evening)\.$/);
     await waitFor(() => expect(screen.getByText('Vendora × Worldpay — documentation')).toBeTruthy());
-    expect(document.querySelector('.v2-sub')?.textContent).toBe('One matter has open next-actions.');
+    expect(document.querySelector('.v2-sub')?.textContent).toBe('One matter has an open next action.');
     expect(screen.getByText('due Sep 12')).toBeTruthy();
     expect(screen.getByText('send document list')).toBeTruthy();
     expect(screen.getByText(/touched 2h ago/)).toBeTruthy();

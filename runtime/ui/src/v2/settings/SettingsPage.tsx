@@ -198,7 +198,7 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
       <section className="v2-group">
         <h2>Providers</h2>
         <p className="muted">
-          The models this runtime can call. Your Claude subscription, your Codex subscription, and a local Ollama model are built in and always loaded. Add one here to use an API key, another local model, or a different endpoint. Edits <code>{view.file}</code>; the built-ins are never written there.
+          The models this runtime can call. Your Claude subscription, your Codex subscription, and a local Ollama model are built in and always loaded. Add one here to use an API key, another local model, or a different endpoint. Saved to your providers file (its path is under Runtime, below); the built-ins are never written there.
         </p>
         {form.providers.length === 0 ? <p className="muted">None added — the built-ins are doing all the work.</p> : null}
         {form.providers.map((row, index) => (
@@ -314,7 +314,7 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
           />
           {showingBuiltin ? (
             <p className="muted" role="note">
-              Built-in default — nothing is set in <code>{view.file}</code>. Pick a provider to write one.
+              Built-in default — nothing saved yet. Pick a provider to save it as yours.
             </p>
           ) : null}
           <FieldError message={errors['default']} />

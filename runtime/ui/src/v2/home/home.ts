@@ -20,7 +20,7 @@ export function sublineFor(counts: { nextActions: number; pending: number }): st
   const parts: string[] = [];
   if (counts.nextActions > 0) {
     parts.push(
-      `${countWord(counts.nextActions)} matter${counts.nextActions === 1 ? ' has' : 's have'} open next-actions`,
+      counts.nextActions === 1 ? 'One matter has an open next action' : `${countWord(counts.nextActions)} matters have open next actions`,
     );
   }
   if (counts.pending > 0) {

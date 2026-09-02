@@ -21,6 +21,13 @@ export interface HealthProps {
  * does not do what an operator expects, the difference between these two
  * blocks is the answer.
  */
+/** `600000` reads as a phone number; a lawyer reads "10 minutes". */
+export function timeoutInWords(ms: number): string {
+  if (ms % 60_000 === 0) { const m = ms / 60_000; return `${m} minute${m === 1 ? '' : 's'}`; }
+  if (ms % 1000 === 0) { const s = ms / 1000; return `${s} second${s === 1 ? '' : 's'}`; }
+  return `${ms} ms`;
+}
+
 export function Health({ health, effective, file }: HealthProps): JSX.Element {
   return (
     <section className="settings-health">
@@ -64,7 +71,7 @@ export function Health({ health, effective, file }: HealthProps): JSX.Element {
             Step timeout
             <span className="leader" aria-hidden="true" />
           </dt>
-          <dd>{effective.stepTimeoutMs} ms</dd>
+          <dd>{timeoutInWords(effective.stepTimeoutMs)}</dd>
         </div>
       </dl>
 
