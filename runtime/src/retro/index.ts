@@ -5,6 +5,7 @@ import { runDoctor } from '../doctor/index';
 import { stripFrontmatter } from '../loop/prompt';
 import type { ThreadHeader, ThreadStore } from '../threads/store';
 import type { VaultConfig } from '../vault/resolve-root';
+import { vaultOverview } from '../vault/overview';
 import { gatherRetroEvidence, renderRetroEvidence } from './evidence';
 import { readRetroState, writeRetroState, type RetroState } from './state';
 
@@ -90,6 +91,18 @@ export function retroStatus(opts: {
       ? `Last retro ${daysSince} day${daysSince === 1 ? '' : 's'} ago`
       : `Last retro ${daysSince} day${daysSince === 1 ? '' : 's'} ago · next due ${dueAt.toISOString().slice(0, 10)}`,
   };
+}
+
+/** `retroStatus` with the counts read from the vault and the thread store —
+ * what `GET /retro`, Home and Settings show. */
+export async function retroStatusFor(deps: { vaultRoot: string; tenant: Tenant; store: ThreadStore; vault: VaultStore; cfg: VaultConfig; now?: Date }): Promise<RetroStatus> {
+  const [headers, overview] = await Promise.all([deps.store.list(deps.tenant), vaultOverview(deps.vault, deps.tenant, deps.cfg)]);
+  return retroStatus({
+    state: readRetroState(deps.vaultRoot),
+    cfg: deps.cfg,
+    counts: { matters: overview.matters.length, threads: headers.length },
+    ...(deps.now === undefined ? {} : { now: deps.now }),
+  });
 }
 
 /** "since 2026-06-01" / "all time" — the period the retro covers, in the
