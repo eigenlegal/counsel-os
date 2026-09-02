@@ -19,7 +19,11 @@ export interface ChatProps {
   health: Health;
   /** The draft became a thread. The shell selects it WITHOUT re-keying this
    * component — a remount here would drop the stream in flight. */
-  onThreadCreated?: (header: ThreadHeader) => void;
+  /** Told with the pane's own token, so a create that lands after the
+   * reader moved on can be recognized as belonging to a pane that is gone. */
+  onThreadCreated?: (header: ThreadHeader, pane: number) => void;
+  /** This pane's identity — the shell's remount key. */
+  pane?: number;
   onThreadTouched?: () => void;
   /** A proposal was approved or rejected, on this vault path. */
   onFileDecided?: (path: string) => void;
@@ -101,6 +105,7 @@ export function Chat({
   threadId: initialThreadId,
   health,
   onThreadCreated,
+  pane = 0,
   onThreadTouched,
   onFileDecided,
   onOpenFile,
@@ -134,8 +139,9 @@ export function Chat({
   /** This pane's own draft slot until its thread exists. Per pane, because
    * Home's ask box remounts the chat on a fresh draft: one shared slot would
    * make the new pane read the old one's stream and swallow the ask. */
-  const draftKey = useRef(streams.draftKey());
-  const keyOf = (): string => idRef.current ?? draftKey.current;
+  const draftKey = useRef<string | null>(null);
+  draftKey.current ??= streams.draftKey();
+  const keyOf = (): string => idRef.current ?? draftKey.current!;
   const stream = useSyncExternalStore(streams.subscribe, () => streams.streamOf(keyOf()));
   const live = stream === null ? null : stream.turn;
   const pending = stream === null ? null : stream.pending;
@@ -251,15 +257,15 @@ export function Chat({
     if (idRef.current === null) {
       try {
         const header = await createThread({ title: titleFor(message) }, signal);
-        streams.rename(draftKey.current, header.id);
+        streams.rename(draftKey.current!, header.id);
         idRef.current = header.id;
         setThreadId(header.id);
-        onThreadCreated?.(header);
+        onThreadCreated?.(header, pane);
       } catch (err) {
         // No step ran and there may be no thread, so there is nothing for
         // `load` to fetch: this is the one path that retires its own turn.
         const aborted = signal?.aborted === true;
-        streams.forget(draftKey.current);
+        streams.forget(draftKey.current!);
         if (aborted) return; // Stop during creation: nothing was created, nothing sent.
         if (!(err instanceof ApiError && err.status === 401)) setError(`could not start the thread: ${detail(err)}`);
         // The message stays on screen (frozen) and the box is free; `retry`

@@ -172,6 +172,22 @@ describe('the edges the UI guards but the module must not assume', () => {
     expect(streams.streamOf('t-1')?.pending).toBe('Second.');
   });
 
+  test('a replaced run cannot stamp its ending on the entry that replaced it', async () => {
+    // `patch` writes by key. A run whose entry was replaced — a second send
+    // on one thread — would otherwise mark the LIVE stream `stopped`, which
+    // in the app unlocks the composer and drops an answer still arriving.
+    streams.open('t-1', 'First.');
+    const first = streams.run('t-1', 'First.', 'fake/fake');
+    streams.open('t-1', 'Second.');
+    const second = streams.run('t-1', 'Second.', 'fake/fake');
+    await first; // the first controller was aborted by the second `open`
+    expect(streams.streamOf('t-1')?.status).toBe('running');
+    expect(streams.running()).toEqual(['t-1']);
+    open();
+    await second;
+    expect(streams.streamOf('t-1')?.status).toBe('done');
+  });
+
   test('cancel stops the step as well as dropping it', async () => {
     streams.open('t-1', 'Ask.');
     const run = streams.run('t-1', 'Ask.', 'fake/fake');

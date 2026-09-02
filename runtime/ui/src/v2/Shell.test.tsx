@@ -365,6 +365,54 @@ describe('Shell', () => {
     expect(document.querySelector('.v2-thread-running')).toBeNull();
   });
 
+  test('a delete that fails leaves the conversation AND its step alone', async () => {
+    render(<Shell />);
+    await waitFor(() => expect(chatNode()).toBeTruthy());
+    streams.open('t-1', 'Review the cap.');
+    await waitFor(() => expect(document.querySelector('.v2-thread-running')).toBeTruthy());
+
+    const base = globalThis.fetch;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      // `json()` here is always 200 — a failure has to be built by hand.
+      if ((init?.method ?? 'GET') === 'DELETE') {
+        return new Response(JSON.stringify({ error: 'the vault went away' }), { status: 500, headers: { 'content-type': 'application/json' } });
+      }
+      return await (base as typeof fetch)(input, init);
+    }) as unknown as typeof fetch;
+
+    await userEvent.click(screen.getByRole('button', { name: 'Delete Acme NDA term' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+
+    // Cancelling BEFORE the delete threw the step away for a conversation
+    // that still exists: the transcript blanked, with nothing left to stop.
+    // The row is still in the rail — the conversation was not deleted.
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Delete Acme NDA term' })).toBeTruthy());
+    expect(streams.streamOf('t-1')?.status).toBe('running');
+    expect(document.querySelector('.v2-thread-running')).toBeTruthy();
+  });
+
+  test('a step that ends while you are elsewhere still moves the rail', async () => {
+    // The ending belongs to the mounted pane, and when none is on that
+    // thread there is nobody to tell the shell — the finished conversation
+    // kept its stale place and the files it wrote never became chips.
+    let lists = 0;
+    const base = globalThis.fetch;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input) === '/threads' && (init?.method ?? 'GET') === 'GET') lists += 1;
+      return await (base as typeof fetch)(input, init);
+    }) as unknown as typeof fetch;
+
+    render(<Shell />);
+    await waitFor(() => expect(chatNode()).toBeTruthy());
+    streams.open('t-1', 'Review the cap.');
+    await waitFor(() => expect(document.querySelector('.v2-thread-running')).toBeTruthy());
+    const before = lists;
+
+    // It ends with the reader on another conversation.
+    streams.forget('t-1');
+    await waitFor(() => expect(lists).toBeGreaterThan(before));
+  });
+
   test('a stale empty list cannot reopen a draft over the thread just created', async () => {
     const fresh: ThreadHeader = {
       id: 't-9',

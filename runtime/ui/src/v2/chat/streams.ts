@@ -162,14 +162,20 @@ export async function run(threadId: string, message: string, provider: string): 
   const entry = entries.get(threadId);
   if (entry === undefined) return;
   const { controller, started } = entry;
+  /**
+   * Still ours? `patch` writes by KEY, so a run whose entry has since been
+   * replaced — a second send on the same thread — would stamp its own
+   * ending onto the new entry, marking a live stream `stopped` and dropping
+   * an answer still arriving.
+   */
+  const mine = (): boolean => entries.get(threadId)?.controller === controller;
 
   try {
     await streamStep(
       threadId,
       { message, provider },
       (event: StreamEvent) => {
-        const live = entries.get(threadId);
-        if (live === undefined) return;
+        if (!mine()) return;
         if (event.type === 'tool_call') started.set(event.id, performance.now());
         if (event.type === 'tool_result') {
           const t0 = started.get(event.id);
@@ -181,8 +187,9 @@ export async function run(threadId: string, message: string, provider: string): 
       },
       controller.signal,
     );
-    patch(threadId, { status: 'done' });
+    if (mine()) patch(threadId, { status: 'done' });
   } catch (err) {
+    if (!mine()) return;
     if (controller.signal.aborted) {
       patch(threadId, { status: 'stopped' });
       return;
