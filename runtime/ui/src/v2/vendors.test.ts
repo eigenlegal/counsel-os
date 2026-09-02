@@ -3,10 +3,21 @@ import { addableVendors, dataLineFor, dataLineOf, GROUP_LABELS, keyedHints, OPEN
 
 describe('the UI vendor mirror (providers spec §3, §6)', () => {
   test('names for every prefix the runtime ships, in three groups', () => {
-    for (const p of ['google', 'mistral', 'groq', 'xai', 'deepseek', 'cohere', 'perplexity', 'togetherai', 'fireworks', 'deepinfra', 'cerebras', 'openrouter', 'anthropic', 'openai', 'ollama', 'openai-compatible', 'claude-sub', 'codex-sub', 'moonshot', 'zhipu', 'dashscope', 'sambanova', 'baseten', 'huggingface', 'cloudflare', 'replicate', 'lmstudio', 'llamacpp', 'vllm', 'mlx', 'jan', 'gpt4all']) {
+    for (const p of ['google', 'mistral', 'groq', 'xai', 'deepseek', 'cohere', 'perplexity', 'togetherai', 'fireworks', 'deepinfra', 'cerebras', 'openrouter', 'anthropic', 'openai', 'ollama', 'openai-compatible', 'claude-sub', 'codex-sub', 'moonshot', 'zhipu', 'dashscope', 'sambanova', 'baseten', 'huggingface', 'cloudflare', 'replicate', 'lmstudio', 'llamacpp', 'vllm', 'mlx', 'jan', 'gpt4all', 'azure', 'bedrock', 'vertex']) {
       expect(VENDORS.some((v: VendorRow) => v.prefix === p)).toBe(true);
     }
-    expect(Object.keys(GROUP_LABELS)).toEqual(['subscription', 'local', 'hosted']);
+    expect(Object.keys(GROUP_LABELS)).toEqual(['subscription', 'local', 'hosted', 'enterprise']);
+    // The enterprise rows (spec §3 step 5): a field set, the company, a setup page.
+    for (const p of ['azure', 'bedrock', 'vertex']) {
+      const v = VENDORS.find(row => row.prefix === p)!;
+      expect(v.group).toBe('enterprise');
+      expect(v.connection).toBe('fields');
+      expect(v.fields!.some(f => f.secret)).toBe(true);
+      expect(v.fields!.some(f => !f.secret)).toBe(true);
+      expect(v.setup?.startsWith('https://')).toBe(true);
+      expect(v.company).toBeTruthy();
+      expect(pickerLabel(v).startsWith('Hosted API · enterprise · ')).toBe(true);
+    }
     expect(addableVendors().every((v: VendorRow) => v.group !== 'subscription')).toBe(true);
   });
 

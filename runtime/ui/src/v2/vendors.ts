@@ -10,7 +10,20 @@
 import type { ProviderInfo } from '../api/types';
 
 export type Locality = 'local' | 'cloud';
-export type VendorGroup = 'subscription' | 'local' | 'hosted';
+export type VendorGroup = 'subscription' | 'local' | 'hosted' | 'enterprise';
+
+/** One field of an enterprise vendor (providers spec §3 step 5). COPIED
+ * from the runtime's `VendorField`. Secret fields are masked and go to the
+ * store; the rest sit on the row as `extra`. */
+export interface VendorFieldRow {
+  name: string;
+  label: string;
+  secret: boolean;
+  required: boolean;
+  placeholder?: string;
+  default?: string;
+  help?: string;
+}
 
 export interface VendorRow {
   prefix: string;
@@ -19,7 +32,12 @@ export interface VendorRow {
   /** What the picker shows when the name alone is ambiguous. */
   label?: string;
   group: VendorGroup;
-  connection: 'subscription' | 'API key' | 'local';
+  /** `fields`: an enterprise credential set instead of one key. */
+  connection: 'subscription' | 'API key' | 'local' | 'fields';
+  /** The enterprise field set; present only when `connection` is `fields`. */
+  fields?: VendorFieldRow[];
+  /** The vendor's setup page (enterprise vendors). */
+  setup?: string;
   locality: Locality | 'by-baseURL';
   /** Who receives the text (cloud vendors only). */
   company?: string;
@@ -41,6 +59,29 @@ export interface VendorRow {
 const S = 'subscription' as const;
 const L = 'local' as const;
 const H = 'hosted' as const;
+const E = 'enterprise' as const;
+
+/** COPIED from the runtime's `AZURE_FIELDS` / `BEDROCK_FIELDS` /
+ * `VERTEX_FIELDS`; a change there is a change here. */
+export const AZURE_FIELDS: VendorFieldRow[] = [
+  { name: 'resourceName', label: 'Resource name', secret: false, required: true, placeholder: 'my-firm-openai', help: 'The Azure OpenAI resource; requests go to https://<resource>.openai.azure.com.' },
+  { name: 'apiVersion', label: 'API version', secret: false, required: false, placeholder: 'v1', help: 'Leave empty for the v1 API; set it only if your resource needs a dated version.' },
+  { name: 'apiKey', label: 'API key', secret: true, required: true },
+];
+export const BEDROCK_FIELDS: VendorFieldRow[] = [
+  { name: 'region', label: 'Region', secret: false, required: true, placeholder: 'us-east-1' },
+  { name: 'profile', label: 'AWS profile (optional)', secret: false, required: false, placeholder: 'default', help: 'A named profile from ~/.aws/credentials, instead of pasting keys.' },
+  { name: 'accessKeyId', label: 'Access key id', secret: true, required: false },
+  { name: 'secretAccessKey', label: 'Secret access key', secret: true, required: false },
+  { name: 'sessionToken', label: 'Session token (optional)', secret: true, required: false },
+  { name: 'apiKey', label: 'Bedrock API key (alternative to AWS keys)', secret: true, required: false },
+];
+export const VERTEX_FIELDS: VendorFieldRow[] = [
+  { name: 'project', label: 'Project', secret: false, required: true, placeholder: 'my-firm-project' },
+  { name: 'location', label: 'Location', secret: false, required: true, default: 'us-central1', placeholder: 'us-central1' },
+  { name: 'serviceAccountJson', label: 'Service account JSON (optional)', secret: true, required: false, help: 'Paste the key file’s contents; leave empty to use gcloud’s Application Default Credentials.' },
+  { name: 'apiKey', label: 'Express-mode API key (optional)', secret: true, required: false },
+];
 
 export const VENDORS: readonly VendorRow[] = [
   // subscriptions
@@ -79,6 +120,10 @@ export const VENDORS: readonly VendorRow[] = [
   { prefix: 'huggingface', name: 'Hugging Face', group: H, connection: 'API key', locality: 'cloud', company: 'Hugging Face (and the inference provider it routes to)', termsUrl: 'https://huggingface.co/terms-of-service', keyEnv: 'HF_TOKEN', keyLabel: 'Access token', getKey: 'https://huggingface.co/settings/tokens', baseURL: 'https://router.huggingface.co/v1', note: 'One token, many open models.' },
   { prefix: 'cloudflare', name: 'Cloudflare Workers AI', group: H, connection: 'API key', locality: 'cloud', company: 'Cloudflare', termsUrl: 'https://www.cloudflare.com/terms/', keyEnv: 'CLOUDFLARE_API_TOKEN', keyLabel: 'API token', getKey: 'https://dash.cloudflare.com/profile/api-tokens', baseURL: 'https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1', baseURLFields: ['account_id'] },
   { prefix: 'replicate', name: 'Replicate', group: H, connection: 'API key', locality: 'cloud', company: 'Replicate', termsUrl: 'https://replicate.com/terms', keyEnv: 'REPLICATE_API_TOKEN', keyLabel: 'API token', getKey: 'https://replicate.com/account/api-tokens', baseURL: 'https://api.replicate.com/v1', unverified: true },
+  // enterprise: credentials that are not one API key (providers spec §3 step 5)
+  { prefix: 'azure', name: 'Azure OpenAI', group: E, connection: 'fields', locality: 'cloud', company: 'Microsoft (Azure OpenAI)', termsUrl: 'https://learn.microsoft.com/legal/cognitive-services/openai/data-privacy', fields: AZURE_FIELDS, setup: 'https://learn.microsoft.com/azure/ai-services/openai/how-to/create-resource', note: 'Your firm’s Azure OpenAI resource: the model id is your deployment name, and the key comes from the Azure portal.' },
+  { prefix: 'bedrock', name: 'Amazon Bedrock', group: E, connection: 'fields', locality: 'cloud', company: 'Amazon Web Services (Bedrock)', termsUrl: 'https://docs.aws.amazon.com/bedrock/latest/userguide/data-protection.html', fields: BEDROCK_FIELDS, setup: 'https://docs.aws.amazon.com/bedrock/latest/userguide/getting-started.html', note: 'Models in your firm’s AWS account: name the region, then paste access keys, name an AWS profile, or leave both empty to use the credentials already on this machine.' },
+  { prefix: 'vertex', name: 'Google Vertex AI', group: E, connection: 'fields', locality: 'cloud', company: 'Google Cloud (Vertex AI)', termsUrl: 'https://cloud.google.com/vertex-ai/generative-ai/docs/data-governance', fields: VERTEX_FIELDS, setup: 'https://cloud.google.com/vertex-ai/generative-ai/docs/start/quickstarts/quickstart', note: 'Gemini and Claude in your firm’s Google Cloud project: name the project and location, then paste a service account key or leave it empty to use gcloud’s own credentials.' },
 ];
 
 /** Good starting points for a local model; the scoreboard (phase 2) will
@@ -92,7 +137,12 @@ export const OPEN_MODELS: ReadonlyArray<{ family: string; why: string }> = [
   { family: 'Mistral Small', why: 'tool use, European vendor' },
 ];
 
-export const GROUP_LABELS: Record<VendorGroup, string> = { subscription: 'Subscriptions', local: 'Local runners', hosted: 'Hosted API' };
+export const GROUP_LABELS: Record<VendorGroup, string> = { subscription: 'Subscriptions', local: 'Local runners', hosted: 'Hosted API', enterprise: 'Hosted API · enterprise' };
+
+/** Whether a vendor takes a field set instead of one key. */
+export function isEnterpriseVendor(v: VendorRow | undefined): v is VendorRow & { fields: VendorFieldRow[] } {
+  return v !== undefined && v.connection === 'fields' && v.fields !== undefined;
+}
 
 const LOOPBACK = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);
 

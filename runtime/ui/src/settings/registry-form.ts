@@ -26,6 +26,10 @@ export interface ProviderRow {
   thinking: Tri;
   contextTokens: string;
   auth: '' | Capabilities['auth'];
+  /** An enterprise vendor's NON-secret fields (providers spec §3 step 5):
+   * resource, region, project, location, profile. Saved as the entry's
+   * `extra`; the secret fields never enter the form. */
+  extra: Record<string, string>;
 }
 
 /**
@@ -80,7 +84,7 @@ function tri(value: boolean | undefined): Tri {
 }
 
 export function emptyRow(): ProviderRow {
-  return { key: nextKey(), id: '', baseURL: '', apiKeyEnv: '', tools: '', caching: '', thinking: '', contextTokens: '', auth: '' };
+  return { key: nextKey(), id: '', baseURL: '', apiKeyEnv: '', tools: '', caching: '', thinking: '', contextTokens: '', auth: '', extra: {} };
 }
 
 /**
@@ -116,8 +120,12 @@ export function presetRow(baseURL: string): ProviderRow {
 /** A row from the catalog picker (providers spec §3): the prefix, the
  * usual key variable, and a preset's base URL when it has one. The id is
  * left for the operator to finish with a model (the picker lands in step 3). */
-export function catalogRow(v: { prefix: string; keyEnv?: string; baseURL?: string }): ProviderRow {
-  return { ...emptyRow(), id: `${v.prefix}/`, apiKeyEnv: v.keyEnv ?? '', baseURL: v.baseURL ?? '' };
+export function catalogRow(v: { prefix: string; keyEnv?: string; baseURL?: string; fields?: Array<{ name: string; secret: boolean; default?: string }> }): ProviderRow {
+  // An enterprise vendor's non-secret fields start at their defaults
+  // (`location: us-central1`); the secret ones are not the form's to hold.
+  const extra: Record<string, string> = {};
+  for (const f of v.fields ?? []) if (!f.secret && f.default !== undefined) extra[f.name] = f.default;
+  return { ...emptyRow(), id: `${v.prefix}/`, apiKeyEnv: v.keyEnv ?? '', baseURL: v.baseURL ?? '', extra };
 }
 
 export function emptyRoute(): RouteRow {
@@ -167,6 +175,7 @@ export function rowFromEntry(entry: RegistryEntry): ProviderRow {
     thinking: tri(caps.thinking),
     contextTokens: caps.contextTokens === undefined ? '' : String(caps.contextTokens),
     auth: caps.auth ?? '',
+    extra: { ...(entry.extra ?? {}) },
   };
 }
 
@@ -231,10 +240,16 @@ export function registryFromForm(form: FormState): BuildResult {
     }
     if (row.auth !== '') capabilities.auth = row.auth;
 
+    // The enterprise fields: trimmed, the empty ones left out, so the file
+    // never carries `region: ''` as if the operator had chosen it.
+    const extra: Record<string, string> = {};
+    for (const [name, value] of Object.entries(row.extra ?? {})) if (value.trim() !== '') extra[name] = value.trim();
+
     providers.push({
       id,
       ...(row.baseURL.trim() === '' ? {} : { baseURL: row.baseURL.trim() }),
       ...(row.apiKeyEnv.trim() === '' ? {} : { apiKeyEnv: row.apiKeyEnv.trim() }),
+      ...(Object.keys(extra).length === 0 ? {} : { extra }),
       ...(Object.keys(capabilities).length === 0 ? {} : { capabilities }),
     });
   });

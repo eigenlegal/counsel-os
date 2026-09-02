@@ -11,9 +11,12 @@ export interface ModelsState {
 
 /** The listing path for a vendor prefix, with the row's base URL when it
  * has one (a local runner, a preset, a proxy). */
-export function modelsPath(prefix: string, baseURL: string | undefined, refresh = false): string {
+export function modelsPath(prefix: string, baseURL: string | undefined, refresh = false, extra: Record<string, string> = {}): string {
   const q = new URLSearchParams();
   if (baseURL !== undefined && baseURL.trim() !== '') q.set('baseURL', baseURL.trim());
+  // An enterprise row's unsaved non-secret fields (`resourceName`,
+  // `region`), so the listing works before the first Save. Never a secret.
+  for (const [name, value] of Object.entries(extra)) if (value.trim() !== '') q.set(name, value.trim());
   if (refresh) q.set('refresh', '1');
   const qs = q.toString();
   return `/providers/${encodeURIComponent(prefix)}/models${qs === '' ? '' : `?${qs}`}`;
@@ -24,10 +27,12 @@ export function modelsPath(prefix: string, baseURL: string | undefined, refresh 
  * when the prefix or base URL changes; a 401 is the shell's to announce and
  * is silent here; any other failure becomes the row's sentence.
  */
-export function useModels(prefix: string | null, baseURL: string | undefined): ModelsState {
+export function useModels(prefix: string | null, baseURL: string | undefined, extra: Record<string, string> = {}): ModelsState {
   const [result, setResult] = useState<DiscoveryResult | null>(null);
   const [loading, setLoading] = useState(false);
   const seq = useRef(0);
+  // Compared by value: a fresh `{}` on every render must not re-list.
+  const extraKey = JSON.stringify(extra);
 
   const load = useCallback(
     (refresh: boolean): void => {
@@ -39,7 +44,7 @@ export function useModels(prefix: string | null, baseURL: string | undefined): M
       setLoading(true);
       void (async () => {
         try {
-          const next = await fetchJson<DiscoveryResult>(modelsPath(prefix, baseURL, refresh));
+          const next = await fetchJson<DiscoveryResult>(modelsPath(prefix, baseURL, refresh, JSON.parse(extraKey) as Record<string, string>));
           if (ticket === seq.current) setResult(next);
         } catch (err) {
           if (err instanceof ApiError && err.status === 401) return;
@@ -49,7 +54,7 @@ export function useModels(prefix: string | null, baseURL: string | undefined): M
         }
       })();
     },
-    [prefix, baseURL],
+    [prefix, baseURL, extraKey],
   );
 
   useEffect(() => load(false), [load]);

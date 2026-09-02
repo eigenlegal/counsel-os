@@ -25,13 +25,18 @@ const CONNECTION: Record<Auth, string> = {
   subscription: 'subscription',
   apikey: 'API key',
   local: 'local',
+  // The enterprise shapes (providers spec §3 step 5): the firm's own cloud
+  // account, whatever signs the request.
+  azure: 'firm account',
+  sigv4: 'firm account',
+  gcp: 'firm account',
 };
 
 /** The vendor table is the catalog mirror (`v2/vendors.ts`); the plate never
  * guesses a name — an unknown prefix falls back to the raw id. */
 function vendorRow(prefix: string): { vendor: string; connection: string } | undefined {
   const row = vendorFor(prefix);
-  return row === undefined ? undefined : { vendor: row.name, connection: row.connection };
+  return row === undefined ? undefined : { vendor: row.name, connection: row.connection === 'fields' ? 'firm account' : row.connection };
 }
 
 /**

@@ -147,3 +147,93 @@ describe('DiscoveryCache', () => {
     expect(cache.key('ollama', 'http://127.0.0.1:11434')).not.toBe(cache.key('ollama', undefined));
   });
 });
+
+describe('the enterprise listings (spec §3 step 5)', () => {
+  const azure = vendorFor('azure')!;
+  const bedrock = vendorFor('bedrock')!;
+  const vertex = vendorFor('vertex')!;
+
+  function capture(body: unknown, status = 200): { fetch: typeof fetch; requests: Request[] } {
+    const requests: Request[] = [];
+    const f = (async (input: string | URL | Request, init?: RequestInit) => {
+      requests.push(input instanceof Request ? input : new Request(String(input), init));
+      return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+    }) as unknown as typeof fetch;
+    return { fetch: f, requests };
+  }
+
+  test('azure: deployments parse to ids; only succeeded ones', () => {
+    expect(parseListing('azure', { data: [{ id: 'gpt-5-prod', model: 'gpt-5', status: 'succeeded' }, { id: 'old', model: 'gpt-4', status: 'deleting' }, { id: 'new-one', model: 'gpt-5.6' }] })).toEqual([{ id: 'gpt-5-prod' }, { id: 'new-one' }]);
+  });
+
+  test('azure: the URL names the resource, the key rides in api-key, no key is a sentence', async () => {
+    expect(listingURL(azure, undefined, { resourceName: 'firm' })).toBe('https://firm.openai.azure.com/openai/deployments?api-version=2023-03-15-preview');
+    expect(listingURL(azure, 'https://proxy.example/azure', { resourceName: 'firm' })).toBe('https://proxy.example/azure/openai/deployments?api-version=2023-03-15-preview');
+    expect(listingURL(azure, undefined, {})).toBeNull();
+    const rec = capture({ data: [{ id: 'dep-1', status: 'succeeded' }] });
+    const r = await discoverModels(azure, { extra: { resourceName: 'firm' }, secrets: { apiKey: 'az-k' }, fetch: rec.fetch });
+    expect(r).toEqual({ models: [{ id: 'dep-1' }], source: 'list' });
+    expect(rec.requests[0]?.url).toBe('https://firm.openai.azure.com/openai/deployments?api-version=2023-03-15-preview');
+    expect(rec.requests[0]?.headers.get('api-key')).toBe('az-k');
+    expect(rec.requests[0]?.headers.get('authorization')).toBeNull();
+    const none = await discoverModels(azure, { extra: { resourceName: 'firm' }, secrets: {}, fetch: rec.fetch });
+    expect(none).toEqual({ models: [], source: 'list', error: 'No key for Azure OpenAI yet.' });
+    expect(await discoverModels(azure, { extra: {}, secrets: { apiKey: 'k' }, fetch: rec.fetch })).toMatchObject({ error: 'Azure OpenAI needs a resource name before its models can be listed.' });
+    const refused = await discoverModels(azure, { extra: { resourceName: 'firm' }, secrets: { apiKey: 'bad' }, fetch: capture({}, 401).fetch });
+    expect(refused.error).toContain('credentials were refused');
+  });
+
+  test('bedrock: ListFoundationModels parses to text-out, on-demand or profile models', () => {
+    const models = parseListing('bedrock', {
+      modelSummaries: [
+        { modelId: 'anthropic.claude-sonnet-5-v1:0', outputModalities: ['TEXT'], inferenceTypesSupported: ['INFERENCE_PROFILE'] },
+        { modelId: 'amazon.nova-pro-v1:0', outputModalities: ['TEXT'], inferenceTypesSupported: ['ON_DEMAND'] },
+        { modelId: 'amazon.titan-image-generator-v1', outputModalities: ['IMAGE'], inferenceTypesSupported: ['ON_DEMAND'] },
+        { modelId: 'meta.llama3-provisioned', outputModalities: ['TEXT'], inferenceTypesSupported: ['PROVISIONED'] },
+      ],
+    });
+    expect(models).toEqual([{ id: 'amazon.nova-pro-v1:0' }, { id: 'anthropic.claude-sonnet-5-v1:0' }]);
+  });
+
+  test('bedrock: the request is SigV4-signed for the region; a bearer key is a bearer; no credentials → the curated list', async () => {
+    expect(listingURL(bedrock, undefined, { region: 'eu-west-1' })).toBe('https://bedrock.eu-west-1.amazonaws.com/foundation-models?byOutputModality=TEXT');
+    expect(listingURL(bedrock, undefined, {})).toBeNull();
+    const rec = capture({ modelSummaries: [{ modelId: 'amazon.nova-pro-v1:0' }] });
+    const signed = await discoverModels(bedrock, { extra: { region: 'eu-west-1' }, secrets: { accessKeyId: 'AKIAEXAMPLE', secretAccessKey: 'secret', sessionToken: 'tok' }, fetch: rec.fetch });
+    expect(signed).toEqual({ models: [{ id: 'amazon.nova-pro-v1:0' }], source: 'list' });
+    const req = rec.requests[0]!;
+    expect(req.url).toBe('https://bedrock.eu-west-1.amazonaws.com/foundation-models?byOutputModality=TEXT');
+    const auth = req.headers.get('authorization') ?? '';
+    expect(auth.startsWith('AWS4-HMAC-SHA256 Credential=AKIAEXAMPLE/')).toBe(true);
+    expect(auth).toContain('/eu-west-1/bedrock/aws4_request');
+    expect(req.headers.get('x-amz-security-token')).toBe('tok');
+    expect(req.headers.get('x-amz-date')).not.toBeNull();
+    // The secret itself is never in a header.
+    expect([...req.headers.values()].join(' ')).not.toContain('secret');
+
+    const bearer = capture({ modelSummaries: [{ modelId: 'x' }] });
+    await discoverModels(bedrock, { extra: { region: 'us-east-1' }, secrets: { apiKey: 'bearer-1' }, fetch: bearer.fetch });
+    expect(bearer.requests[0]?.headers.get('authorization')).toBe('Bearer bearer-1');
+
+    const chain = await discoverModels(bedrock, { extra: { region: 'us-east-1' }, secrets: {}, fetch: rec.fetch });
+    expect(chain.source).toBe('curated');
+    expect(chain.models.length).toBeGreaterThan(0);
+    expect(chain.error).toBeUndefined();
+    // A refusal falls back to the curated list too, and says so.
+    const refused = await discoverModels(bedrock, { extra: { region: 'us-east-1' }, secrets: { apiKey: 'bad' }, fetch: capture({}, 403).fetch });
+    expect(refused.source).toBe('curated');
+    expect(refused.error).toContain('refused');
+    // A transport failure never echoes a secret.
+    const boom = (async () => { throw new Error('connect failed for key bearer-9'); }) as unknown as typeof fetch;
+    const failed = await discoverModels(bedrock, { extra: { region: 'us-east-1' }, secrets: { apiKey: 'bearer-9' }, fetch: boom });
+    expect(failed.error).not.toContain('bearer-9');
+    expect(failed.error).toContain('[redacted]');
+  });
+
+  test('vertex: curated — Gemini and Claude-on-Vertex ids, no request', async () => {
+    const r = await discoverModels(vertex, { extra: { project: 'p', location: 'us-central1' }, fetch: (async () => { throw new Error('never'); }) as unknown as typeof fetch });
+    expect(r.source).toBe('curated');
+    expect(r.models.some(m => m.id.startsWith('gemini-'))).toBe(true);
+    expect(r.models.some(m => m.id.startsWith('claude-'))).toBe(true);
+  });
+});

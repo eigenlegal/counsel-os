@@ -9,6 +9,7 @@ import { assertSafeXml } from '../docx/safety';
 import { BASE_URL_RULE, isAllowedBaseURL, readRegistry, RegistryFile } from '../providers/registry';
 import { DiscoveryCache, discoverModels } from '../providers/discovery';
 import { prefixOf, vendorFor } from '../providers/vendors';
+import { isEnterprise, resolveEnterprise } from '../providers/enterprise';
 import type { ThreadEvent, ThreadHeader } from '../threads/store';
 import { vaultDocket } from '../vault/docket';
 import { normalizeVaultPath } from '../vault/knowledge-paths';
@@ -432,10 +433,10 @@ export function createApp(deps: ServerDeps): App {
    * between the prefix and the trailing `key`. Serialized on the settings
    * lock: both reload the registry. */
   const putKey = async (req: Request, id: string): Promise<Response> => {
-    const { value } = await body(req, KeyBody);
+    const parsed = await body(req, KeyBody);
     const release = await locks.acquire(SETTINGS_LOCK);
     try {
-      return putProviderKey(deps, id, value);
+      return putProviderKey(deps, id, parsed);
     } finally {
       release();
     }
@@ -465,7 +466,7 @@ export function createApp(deps: ServerDeps): App {
     const vendor = vendorFor(prefix);
     if (vendor === undefined) return fail(404, `unknown provider: ${prefix}`);
     const env = deps.discovery?.env ?? process.env;
-    let entry: { id: string; baseURL?: string; apiKeyEnv?: string } | undefined;
+    let entry: { id: string; baseURL?: string; apiKeyEnv?: string; extra?: Record<string, string> } | undefined;
     try {
       const rows = readRegistry(deps.settings.file).providers ?? [];
       entry = rows.find(e => e.id === id) ?? rows.find(e => prefixOf(e.id) === prefix);
@@ -475,6 +476,32 @@ export function createApp(deps: ServerDeps): App {
     const queryBase = url.searchParams.get('baseURL');
     if (queryBase !== null && !isAllowedBaseURL(queryBase)) return fail(400, BASE_URL_RULE);
     const baseURL = queryBase ?? entry?.baseURL;
+    // An enterprise vendor (providers spec §3 step 5): its fields, resolved
+    // the way the registry resolves them, name where to ask and sign it.
+    // The row's unsaved non-secret fields ride in the query (`?resourceName=`,
+    // `?region=`), so the picker works before the first Save.
+    if (isEnterprise(vendor)) {
+      const fromQuery: Record<string, string> = {};
+      for (const f of vendor.fields) {
+        if (f.secret) continue;
+        const q = url.searchParams.get(f.name);
+        if (q !== null && q.trim() !== '') fromQuery[f.name] = q.trim();
+      }
+      const r = resolveEnterprise(vendor, { id: entry?.id ?? id, entry: { extra: { ...entry?.extra, ...fromQuery } }, store: deps.settings.secrets, env, home: deps.settings.home });
+      const cacheKey = discoveryCache.key(prefix, baseURL ?? JSON.stringify(r.extra));
+      if (url.searchParams.get('refresh') !== '1') {
+        const hit = discoveryCache.get(cacheKey);
+        if (hit !== null) return json(hit);
+      }
+      const result = await discoverModels(vendor, {
+        extra: r.extra,
+        secrets: r.secrets,
+        ...(baseURL === undefined ? {} : { baseURL }),
+        ...(deps.discovery?.fetch === undefined ? {} : { fetch: deps.discovery.fetch }),
+      });
+      discoveryCache.set(cacheKey, result);
+      return json(result);
+    }
     // The key, the way the registry resolves it (providers spec §5): the
     // secret store for the entry's id first, then the entry's variable,
     // then the vendor's usual one.

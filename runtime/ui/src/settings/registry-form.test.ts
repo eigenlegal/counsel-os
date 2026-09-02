@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { RegistryFileData } from '../api/types';
 import {
+  catalogRow,
   formFromRegistry,
   humanDuration,
   mapIssues,
@@ -104,5 +105,26 @@ describe('server issues on routes', () => {
       'tasks.renamed.prefer: orphaned by a rename',
       'tasks: a tasks-level issue',
     ]);
+  });
+});
+
+describe('enterprise fields on a row (providers spec §3 step 5)', () => {
+  test('`extra` round-trips through the form; empty fields are left out of the file', () => {
+    const registry: RegistryFileData = { providers: [{ id: 'vertex/gemini-2.5-pro', extra: { project: 'p', location: 'us-central1' } }] };
+    const form = formFromRegistry(registry);
+    expect(form.providers[0]?.extra).toEqual({ project: 'p', location: 'us-central1' });
+    form.providers[0]!.extra = { ...form.providers[0]!.extra, location: ' europe-west1 ', profile: '' };
+    const built = registryFromForm(form);
+    expect(built).toEqual({ ok: true, registry: { providers: [{ id: 'vertex/gemini-2.5-pro', extra: { project: 'p', location: 'europe-west1' } }] } });
+    // A row with no fields at all writes no `extra`.
+    const plain = registryFromForm(formFromRegistry({ providers: [{ id: 'openai/gpt-5.6' }] }));
+    expect(plain.ok && plain.registry.providers?.[0]).toEqual({ id: 'openai/gpt-5.6' });
+  });
+
+  test('a catalog row for an enterprise vendor starts its non-secret fields at their defaults, and never holds a secret', () => {
+    const row = catalogRow({ prefix: 'vertex', fields: [{ name: 'project', secret: false }, { name: 'location', secret: false, default: 'us-central1' }, { name: 'apiKey', secret: true, default: 'never' }] });
+    expect(row.id).toBe('vertex/');
+    expect(row.extra).toEqual({ location: 'us-central1' });
+    expect(row.apiKeyEnv).toBe('');
   });
 });

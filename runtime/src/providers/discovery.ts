@@ -13,9 +13,12 @@
  * the key becomes one sentence in `error`, and the picker still takes a
  * typed id.
  */
+import { AwsClient } from 'aws4fetch';
 import type { Vendor } from './vendors';
 
-export type DiscoveryShape = 'openai' | 'google' | 'openrouter' | 'ollama' | 'cohere' | 'together';
+/** `azure` lists a resource's deployments; `bedrock` is the SigV4-signed
+ * ListFoundationModels (providers spec §3 step 5). */
+export type DiscoveryShape = 'openai' | 'google' | 'openrouter' | 'ollama' | 'cohere' | 'together' | 'azure' | 'bedrock';
 
 export interface Discovery {
   shape: DiscoveryShape;
@@ -46,9 +49,17 @@ export interface DiscoveryOptions {
   baseURL?: string;
   fetch?: typeof fetch;
   timeoutMs?: number;
+  /** An enterprise vendor's resolved fields (`enterprise.ts`): the
+   * non-secret ones name where to ask, the secret ones sign the request. */
+  extra?: Record<string, string>;
+  secrets?: Record<string, string>;
 }
 
 export const DISCOVERY_TIMEOUT_MS = 3_000;
+
+/** The deployments listing is the one data-plane call that names a
+ * resource's deployments; this is the last API version it ships under. */
+export const AZURE_DEPLOYMENTS_API_VERSION = '2023-03-15-preview';
 
 /** The vendor's own API root, for a vendor whose entry names no base URL. */
 export const API_ROOTS: Readonly<Record<string, string>> = {
@@ -71,10 +82,20 @@ function trimSlash(url: string): string {
 
 /** Where to ask. The entry's base URL wins (a local runner, a preset, a
  * proxy); otherwise the vendor's root; the shape adds its path. */
-export function listingURL(vendor: Vendor, baseURL: string | undefined): string | null {
+export function listingURL(vendor: Vendor, baseURL: string | undefined, extra: Record<string, string> = {}): string | null {
   const d = vendor.discovery;
   if (d === undefined) return null;
   if (d.url !== undefined && baseURL === undefined) return d.url;
+  if (d.shape === 'azure') {
+    const resource = extra['resourceName'];
+    const root = baseURL ?? (resource === undefined || resource === '' ? undefined : `https://${resource}.openai.azure.com`);
+    return root === undefined ? null : `${trimSlash(root)}/openai/deployments?api-version=${AZURE_DEPLOYMENTS_API_VERSION}`;
+  }
+  if (d.shape === 'bedrock') {
+    const region = extra['region'];
+    if (region === undefined || region === '') return null;
+    return `https://bedrock.${region}.amazonaws.com/foundation-models?byOutputModality=TEXT`;
+  }
   const root = baseURL ?? vendor.defaultBaseURL ?? API_ROOTS[vendor.prefix];
   if (root === undefined) return d.url ?? null;
   const base = trimSlash(root);
@@ -165,6 +186,32 @@ export function parseListing(shape: DiscoveryShape, body: unknown): DiscoveredMo
       }
       break;
     }
+    case 'azure': {
+      // `{ data: [{ id: <deployment>, model: <underlying model>, status }] }`.
+      // The id is what the provider id names after `azure/`.
+      const data = Array.isArray(obj['data']) ? (obj['data'] as Array<Record<string, unknown>>) : [];
+      for (const m of data) {
+        if (typeof m['id'] !== 'string' || m['id'] === '') continue;
+        if (typeof m['status'] === 'string' && m['status'] !== 'succeeded') continue;
+        out.push(model(m['id']));
+      }
+      break;
+    }
+    case 'bedrock': {
+      // ListFoundationModels: `{ modelSummaries: [{ modelId, outputModalities,
+      // inferenceTypesSupported }] }`. Only text-out, on-demand or profile
+      // models are useful here; a provisioned-only model is left out.
+      const summaries = Array.isArray(obj['modelSummaries']) ? (obj['modelSummaries'] as Array<Record<string, unknown>>) : [];
+      for (const m of summaries) {
+        if (typeof m['modelId'] !== 'string' || m['modelId'] === '') continue;
+        const outputs = Array.isArray(m['outputModalities']) ? (m['outputModalities'] as unknown[]) : ['TEXT'];
+        if (!outputs.includes('TEXT')) continue;
+        const kinds = Array.isArray(m['inferenceTypesSupported']) ? (m['inferenceTypesSupported'] as unknown[]) : ['ON_DEMAND'];
+        if (!kinds.includes('ON_DEMAND') && !kinds.includes('INFERENCE_PROFILE')) continue;
+        out.push(model(m['modelId']));
+      }
+      break;
+    }
   }
   out.sort((a, b) => a.id.localeCompare(b.id));
   return out;
@@ -173,10 +220,46 @@ export function parseListing(shape: DiscoveryShape, body: unknown): DiscoveredMo
 function authHeaders(vendor: Vendor, apiKey: string | undefined, url: string): Record<string, string> {
   if (apiKey === undefined || apiKey === '') return {};
   // Google takes the key as a query parameter (handled by the caller);
-  // everything else is a bearer.
+  // Azure takes an `api-key` header; everything else is a bearer.
   if (vendor.discovery?.shape === 'google') return {};
+  if (vendor.discovery?.shape === 'azure') return { 'api-key': apiKey };
   void url;
   return { authorization: `Bearer ${apiKey}` };
+}
+
+/** The curated list as a result, for a vendor that could not be asked. */
+function curated(vendor: Vendor, error?: string): DiscoveryResult {
+  return { models: (vendor.curated ?? []).map(m => model(m.id, m.contextTokens)), source: 'curated', ...(error === undefined ? {} : { error }) };
+}
+
+/**
+ * The request for an enterprise listing: Azure's key header, Bedrock's
+ * SigV4 signature (or its bearer key). `null` when the credentials do not
+ * allow one — Bedrock then answers from the catalog.
+ */
+async function enterpriseRequest(vendor: Vendor, url: string, secrets: Record<string, string>, extra: Record<string, string>): Promise<Request | null> {
+  const headers = { accept: 'application/json' };
+  if (vendor.discovery?.shape === 'azure') {
+    const key = secrets['apiKey'];
+    if (key === undefined || key === '') return null;
+    return new Request(url, { headers: { ...headers, 'api-key': key } });
+  }
+  if (vendor.discovery?.shape === 'bedrock') {
+    const bearer = secrets['apiKey'];
+    if (bearer !== undefined && bearer !== '') return new Request(url, { headers: { ...headers, authorization: `Bearer ${bearer}` } });
+    const accessKeyId = secrets['accessKeyId'];
+    const secretAccessKey = secrets['secretAccessKey'];
+    if (accessKeyId === undefined || secretAccessKey === undefined) return null;
+    const client = new AwsClient({
+      accessKeyId,
+      secretAccessKey,
+      ...(secrets['sessionToken'] === undefined ? {} : { sessionToken: secrets['sessionToken'] }),
+      service: 'bedrock',
+      region: extra['region'] ?? 'us-east-1',
+    });
+    return client.sign(url, { method: 'GET', headers });
+  }
+  return null;
 }
 
 /**
@@ -195,14 +278,33 @@ export async function discoverModels(vendor: Vendor, opts: DiscoveryOptions = {}
   if (needsKey && (opts.apiKey === undefined || opts.apiKey === '')) {
     return { models: [], source: 'list', error: `No key for ${vendor.name} yet.` };
   }
-  const url0 = listingURL(vendor, opts.baseURL);
-  if (url0 === null) return { models: [], source: 'list', error: `${vendor.name} needs a base URL before its models can be listed.` };
+  const enterprise = vendor.discovery.shape === 'azure' || vendor.discovery.shape === 'bedrock';
+  const extra = opts.extra ?? {};
+  const url0 = listingURL(vendor, opts.baseURL, extra);
+  if (url0 === null) {
+    const need = vendor.discovery.shape === 'azure' ? 'a resource name' : vendor.discovery.shape === 'bedrock' ? 'a region' : 'a base URL';
+    return { models: [], source: 'list', error: `${vendor.name} needs ${need} before its models can be listed.` };
+  }
   const url = vendor.discovery.shape === 'google' && opts.apiKey !== undefined ? `${url0}${url0.includes('?') ? '&' : '?'}key=${encodeURIComponent(opts.apiKey)}` : url0;
   const doFetch = opts.fetch ?? fetch;
+  const signal = AbortSignal.timeout(opts.timeoutMs ?? DISCOVERY_TIMEOUT_MS);
   try {
-    const res = await doFetch(url, { headers: { accept: 'application/json', ...authHeaders(vendor, opts.apiKey, url) }, signal: AbortSignal.timeout(opts.timeoutMs ?? DISCOVERY_TIMEOUT_MS) });
+    let res: Response;
+    if (enterprise) {
+      const req = await enterpriseRequest(vendor, url, opts.secrets ?? {}, extra);
+      if (req === null) {
+        // Bedrock on the SDK's own chain cannot sign a listing from here;
+        // the catalog's list stands in. Azure has nothing to stand in.
+        if (vendor.discovery.shape === 'bedrock') return curated(vendor);
+        return { models: [], source: 'list', error: `No key for ${vendor.name} yet.` };
+      }
+      res = await doFetch(req, { signal });
+    } else {
+      res = await doFetch(url, { headers: { accept: 'application/json', ...authHeaders(vendor, opts.apiKey, url) }, signal });
+    }
     if (!res.ok) {
-      const why = res.status === 401 || res.status === 403 ? `the key was refused by ${vendor.name}` : `${vendor.name} answered ${res.status}`;
+      const why = res.status === 401 || res.status === 403 ? `the ${enterprise ? 'credentials were' : 'key was'} refused by ${vendor.name}` : `${vendor.name} answered ${res.status}`;
+      if (vendor.discovery.shape === 'bedrock') return curated(vendor, `Could not list models: ${why}. Showing the known ones.`);
       return { models: [], source: 'list', error: `Could not list models: ${why}.` };
     }
     const bodyJson: unknown = await res.json();
@@ -211,7 +313,11 @@ export async function discoverModels(vendor: Vendor, opts: DiscoveryOptions = {}
     return { models, source: 'list' };
   } catch (err) {
     const timedOut = err instanceof Error && (err.name === 'TimeoutError' || err.name === 'AbortError');
-    const reason = timedOut ? `${vendor.name} did not answer in time` : err instanceof Error ? err.message : String(err);
+    let reason = timedOut ? `${vendor.name} did not answer in time` : err instanceof Error ? err.message : String(err);
+    // A transport error can echo the request; nothing secret leaves here.
+    for (const v of Object.values(opts.secrets ?? {})) if (v !== '') reason = reason.split(v).join('[redacted]');
+    if (opts.apiKey !== undefined && opts.apiKey !== '') reason = reason.split(opts.apiKey).join('[redacted]');
+    if (vendor.discovery.shape === 'bedrock') return curated(vendor, `Could not list models: ${reason}. Showing the known ones.`);
     return { models: [], source: 'list', error: `Could not list models: ${reason}.` };
   }
 }

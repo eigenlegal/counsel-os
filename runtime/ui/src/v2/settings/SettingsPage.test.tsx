@@ -415,3 +415,26 @@ describe('SettingsPage, the model picker on a provider row (providers spec §4)'
     await waitFor(() => expect(listed).toEqual(['/providers/lmstudio/models?baseURL=http%3A%2F%2F127.0.0.1%3A1234%2Fv1']));
   });
 });
+
+describe('the enterprise vendors in Settings (providers spec §3 step 5)', () => {
+  test('the picker lists them under Hosted API · enterprise; adding one prefills the row with its field set and defaults, no key variable', async () => {
+    install(() => json(view));
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Provider to add' })).toBeTruthy());
+    const user = userEvent.setup({ document });
+    await user.type(screen.getByRole('combobox', { name: 'Provider to add' }), 'Hosted API · enterprise · Google Vertex AI');
+    await user.keyboard('{Escape}');
+    expect(screen.getByRole('link', { name: 'How to set up Google Vertex AI' })).toBeTruthy();
+    expect(screen.getByText(/they go to your Keychain as one item/)).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: 'Add' }));
+    const ids = screen.getAllByLabelText('Id') as HTMLInputElement[];
+    expect(ids.map(el => el.value)).toContain('vertex/');
+    // The field set sits under the row: project empty, location defaulted.
+    expect((screen.getByLabelText('Project') as HTMLInputElement).value).toBe('');
+    expect((screen.getByLabelText('Location') as HTMLInputElement).value).toBe('us-central1');
+    expect(screen.getByText(/save the row, then paste the credentials here/)).toBeTruthy();
+    // No secret input is drawn, and no key-variable field for this row.
+    expect(screen.queryByLabelText('Service account JSON (optional)')).toBeNull();
+    expect(puts).toHaveLength(0);
+  });
+});

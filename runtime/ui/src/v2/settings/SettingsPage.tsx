@@ -6,7 +6,8 @@ import { ModelCombo } from '../../settings/ModelCombo';
 import { ProviderCombo } from '../../settings/ProviderCombo';
 import { useModels } from '../../settings/useModels';
 import { ProviderTest } from '../../settings/ProviderTest';
-import { addableVendors, dataLineFor, pickerLabel, prefixOf, vendorByPickerLabel, vendorFor } from '../vendors';
+import { addableVendors, dataLineFor, isEnterpriseVendor, pickerLabel, prefixOf, vendorByPickerLabel, vendorFor } from '../vendors';
+import { EnterpriseFields } from './EnterpriseFields';
 import { KeyControl } from './KeyControl';
 import { ContentGroup } from './ContentGroup';
 import { DoctorLedger } from './DoctorLedger';
@@ -151,6 +152,11 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
     setForm(prev => ({ ...prev, providers: prev.providers.map((row, i) => (i === index ? { ...row, ...change } : row)) }));
     setSaved(false);
   };
+  /** One of an enterprise row's non-secret fields (providers spec §3 step 5). */
+  const patchRowExtra = (index: number, name: string, value: string): void => {
+    setForm(prev => ({ ...prev, providers: prev.providers.map((row, i) => (i === index ? { ...row, extra: { ...row.extra, [name]: value } } : row)) }));
+    setSaved(false);
+  };
   const patchRoute = (index: number, change: Partial<RouteRow>): void => {
     setForm(prev => ({ ...prev, routes: prev.routes.map((row, i) => (i === index ? { ...row, ...change } : row)) }));
     setSaved(false);
@@ -221,7 +227,10 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
           The models this runtime can call. Your Claude subscription, your Codex subscription, and a local Ollama model are built in and always loaded. Add one here to use a hosted API with a key, another local model, or a different endpoint. Paste a key on its row after you save; it is kept in your Keychain, never in a file in your vault (a key from the environment still works for headless use). The row itself is saved to your providers file (its path is under Runtime, below); the built-ins are never written there.
         </p>
         {form.providers.length === 0 ? <p className="muted">None added — the built-ins are doing all the work.</p> : null}
-        {form.providers.map((row, index) => (
+        {form.providers.map((row, index) => {
+          const rowVendor = vendorFor(prefixOf(row.id.trim()));
+          const enterprise = isEnterpriseVendor(rowVendor);
+          return (
           <div className="v2-provider" key={row.key}>
             <div className="v2-provider-grid">
               <div className="field">
@@ -229,17 +238,21 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
                 <input id={`v2-${row.key}-id`} value={row.id} placeholder="openai/gpt-5.6" onChange={e => patchRow(index, { id: e.target.value })} />
                 <FieldError message={errors[`providers.${index}.id`]} />
               </div>
-              <ModelField rowKey={row.key} id={row.id} baseURL={row.baseURL} onPick={model => patchRow(index, { id: `${prefixOf(row.id.trim())}/${model}` })} />
+              <ModelField rowKey={row.key} id={row.id} baseURL={row.baseURL} extra={enterprise ? row.extra : undefined} onPick={model => patchRow(index, { id: `${prefixOf(row.id.trim())}/${model}` })} />
               <div className="field">
                 <label htmlFor={`v2-${row.key}-baseurl`}>baseURL</label>
-                <input id={`v2-${row.key}-baseurl`} value={row.baseURL} placeholder="https://…" onChange={e => patchRow(index, { baseURL: e.target.value })} />
+                <input id={`v2-${row.key}-baseurl`} value={row.baseURL} placeholder={enterprise ? 'optional — a private endpoint' : 'https://…'} onChange={e => patchRow(index, { baseURL: e.target.value })} />
                 <FieldError message={errors[`providers.${index}.baseURL`]} />
               </div>
-              <div className="field">
-                <label htmlFor={`v2-${row.key}-key`}>key variable (optional)</label>
-                <input id={`v2-${row.key}-key`} value={row.apiKeyEnv} placeholder="only for headless use" onChange={e => patchRow(index, { apiKeyEnv: e.target.value })} />
-                <FieldError message={errors[`providers.${index}.apiKeyEnv`]} />
-              </div>
+              {/* An enterprise vendor's credentials are fields, not one
+                  variable; its field set below names the environment. */}
+              {enterprise ? null : (
+                <div className="field">
+                  <label htmlFor={`v2-${row.key}-key`}>key variable (optional)</label>
+                  <input id={`v2-${row.key}-key`} value={row.apiKeyEnv} placeholder="only for headless use" onChange={e => patchRow(index, { apiKeyEnv: e.target.value })} />
+                  <FieldError message={errors[`providers.${index}.apiKeyEnv`]} />
+                </div>
+              )}
               <TriField id={`v2-${row.key}-tools`} label="tools" value={row.tools} onChange={value => patchRow(index, { tools: value })} />
               <TriField id={`v2-${row.key}-caching`} label="caching" value={row.caching} onChange={value => patchRow(index, { caching: value })} />
               <TriField id={`v2-${row.key}-thinking`} label="thinking" value={row.thinking} onChange={value => patchRow(index, { thinking: value })} />
@@ -276,6 +289,31 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
                 </p>
               );
             })()}
+            {/* An enterprise vendor's field set (providers spec §3 step 5):
+                the non-secret fields save with the row; the secret ones go
+                to the store as one item, never through the form. */}
+            {(() => {
+              if (!isEnterpriseVendor(rowVendor)) return null;
+              const id = row.id.trim();
+              const live = view.effective.providers.find(p => p.id === id);
+              const fieldErrors: Record<string, string | undefined> = {};
+              for (const f of rowVendor.fields) fieldErrors[f.name] = errors[`providers.${index}.extra.${f.name}`];
+              return (
+                <EnterpriseFields
+                  id={id}
+                  rowKey={row.key}
+                  vendorName={rowVendor.name}
+                  fields={rowVendor.fields}
+                  extra={row.extra}
+                  onExtraChange={(name, value) => patchRowExtra(index, name, value)}
+                  errors={fieldErrors}
+                  keySet={live === undefined ? undefined : (live.keySet ?? false)}
+                  {...(rowVendor.setup === undefined ? {} : { setup: rowVendor.setup })}
+                  where={view.secrets === undefined || view.secrets === null ? null : view.secrets.where}
+                  onChanged={() => void refresh()}
+                />
+              );
+            })()}
             {/* The key itself (providers spec §5): set text under the row,
                 for vendors that take one. It is never part of the form —
                 the row saves the endpoint, the key goes to the store. */}
@@ -305,7 +343,8 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
               Remove provider {index + 1}
             </button>
           </div>
-        ))}
+          );
+        })}
         {/* The guided starts (cou-84): each names a thing the operator is
             trying to do and prefills a row for it — nothing is saved until
             the one Save at the bottom. */}
@@ -359,9 +398,15 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
                 <p className="muted v2-add-provider-note" role="note">
                   {v.note === undefined ? null : <>{v.note} </>}
                   {v.connection === 'API key' ? <>Add the row, save, then paste the key on it — it goes to your Keychain. </> : null}
+                  {v.connection === 'fields' ? <>Add the row, fill in its fields, save, then paste the credentials on it — they go to your Keychain as one item. </> : null}
                   {v.getKey === undefined ? null : (
                     <a href={v.getKey} target="_blank" rel="noreferrer">
                       Get a key
+                    </a>
+                  )}
+                  {v.setup === undefined ? null : (
+                    <a href={v.setup} target="_blank" rel="noreferrer">
+                      How to set up {v.name}
                     </a>
                   )}
                   {v.baseURLFields === undefined ? null : <> Fill in {v.baseURLFields.map(f => `{${f}}`).join(', ')} in the base URL.</>}
@@ -580,12 +625,12 @@ function TriField({ id, label, value, error, onChange }: { id: string; label: st
  * field when the list could not be had, and "refresh" as a quiet link.
  * Nothing shows until the id names a vendor that has models to list.
  */
-function ModelField({ rowKey, id, baseURL, onPick }: { rowKey: string; id: string; baseURL: string; onPick(model: string): void }): JSX.Element | null {
+function ModelField({ rowKey, id, baseURL, extra, onPick }: { rowKey: string; id: string; baseURL: string; extra?: Record<string, string> | undefined; onPick(model: string): void }): JSX.Element | null {
   const trimmed = id.trim();
   const prefix = trimmed === '' ? null : prefixOf(trimmed);
   const vendor = prefix === null ? undefined : vendorFor(prefix);
   const listable = vendor !== undefined && vendor.group !== 'subscription';
-  const { result, loading, refresh } = useModels(listable ? prefix : null, baseURL.trim() === '' ? undefined : baseURL);
+  const { result, loading, refresh } = useModels(listable ? prefix : null, baseURL.trim() === '' ? undefined : baseURL, extra ?? {});
   if (!listable || prefix === null) return null;
   const model = trimmed.slice(prefix.length + 1);
   return (

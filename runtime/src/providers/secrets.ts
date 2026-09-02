@@ -205,9 +205,56 @@ export function redact(text: string, value: string | null | undefined): string {
   return text.split(value).join('[redacted]');
 }
 
+/**
+ * A vendor that needs several secrets (Azure's key, AWS's access key and
+ * secret, a Google service account) keeps them as ONE item under the
+ * provider's id — never one keychain item per field — as a JSON envelope.
+ * A value that is not the envelope reads as a plain key, so the two shapes
+ * share the store without ambiguity.
+ */
+export interface SecretFields {
+  v: 1;
+  fields: Record<string, string>;
+}
+
+export function encodeSecretFields(fields: Record<string, string>): string {
+  const clean: Record<string, string> = {};
+  for (const [k, v] of Object.entries(fields)) if (typeof v === 'string' && v !== '') clean[k] = v;
+  return JSON.stringify({ v: 1, fields: clean } satisfies SecretFields);
+}
+
+/** The fields in a stored value, or `null` when it is absent or a plain key. */
+export function decodeSecretFields(value: string | null): Record<string, string> | null {
+  if (value === null || !value.startsWith('{')) return null;
+  try {
+    const parsed = JSON.parse(value) as Partial<SecretFields>;
+    if (parsed.v !== 1 || typeof parsed.fields !== 'object' || parsed.fields === null) return null;
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(parsed.fields)) if (typeof v === 'string') out[k] = v;
+    return out;
+  } catch {
+    return null;
+  }
+}
+
+export function readSecretFields(store: SecretStore | undefined, id: string): Record<string, string> | null {
+  if (store === undefined) return null;
+  try {
+    return decodeSecretFields(store.get(id));
+  } catch {
+    return null;
+  }
+}
+
+export function writeSecretFields(store: SecretStore, id: string, fields: Record<string, string>): void {
+  store.set(id, encodeSecretFields(fields));
+}
+
 /** What `/settings` and `/health` say about a provider's key: set in the
- * store, taken from the environment, or absent. Never the value. */
-export type KeyState = true | false | 'env';
+ * store, taken from the environment, found by the vendor SDK's own default
+ * credential chain (an AWS profile, gcloud's Application Default
+ * Credentials), or absent. Never the value. */
+export type KeyState = true | false | 'env' | 'default-chain';
 
 export function keyStateFor(id: string, keyEnv: string | undefined, store: SecretStore | undefined, env: NodeJS.ProcessEnv): KeyState {
   if (store !== undefined) {

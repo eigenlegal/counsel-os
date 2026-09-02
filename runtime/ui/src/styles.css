@@ -1008,6 +1008,18 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .v2-key-where { font-size: 11.5px; flex-basis: 100%; }
 .v2-key-error { margin: 4px 0 0; font-size: 12.5px; color: var(--error); }
 
+/* An enterprise vendor's field set (providers spec §3 step 5): the plain
+   fields in the row's own grid, the secret ones in a masked form under the
+   credentials line. */
+.v2-enterprise { margin-top: var(--s2); }
+.v2-enterprise .v2-provider-grid { margin-bottom: var(--s2); }
+.v2-field-help { margin: 2px 0 0; font-size: 11.5px; }
+.v2-enterprise-form { display: block; }
+.v2-enterprise-form .v2-provider-grid { margin: 0 0 var(--s2); }
+.v2-enterprise-form input, .v2-enterprise-form textarea.v2-secret { width: 100%; font: 13px var(--mono); padding: 4px 8px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--bg-raised); color: var(--fg); }
+.v2-enterprise-form textarea.v2-secret { resize: vertical; -webkit-text-security: disc; }
+.v2-key-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
 /* The model picker (providers spec §4): the model id, then its context size
    as set text at the right of the row. */
 .v2-combo-item-model { display: flex; align-items: baseline; gap: 10px; }
