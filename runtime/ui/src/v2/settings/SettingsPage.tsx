@@ -6,6 +6,7 @@ import { ProviderCombo } from '../../settings/ProviderCombo';
 import { ProviderTest } from '../../settings/ProviderTest';
 import { ContentGroup } from './ContentGroup';
 import { DoctorLedger } from './DoctorLedger';
+import { RetroAction } from './RetroAction';
 import {
   emptyRoute,
   emptyRow,
@@ -25,6 +26,8 @@ import {
 
 export interface SettingsPageProps {
   health: HealthData | null;
+  /** Runtime › "Run a retro": the shell opens the retro thread. */
+  onStartRetro?: () => void;
 }
 
 /** The subscription provider every install already has. Named here so the
@@ -38,7 +41,7 @@ const CLAUDE_BUILTIN = 'claude-sub/claude-opus-5';
  * then Test, then Runtime, read-only. Each group opens with a plain line
  * saying what it is for.
  */
-export function SettingsPage({ health }: SettingsPageProps): JSX.Element {
+export function SettingsPage({ health, onStartRetro }: SettingsPageProps): JSX.Element {
   const [view, setView] = useState<SettingsView | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -86,6 +89,7 @@ export function SettingsPage({ health }: SettingsPageProps): JSX.Element {
           <section className="v2-group">
             <Health health={health} effective={view.effective} file={view.file} />
             <DoctorLedger />
+            <RetroAction onStart={onStartRetro} />
           </section>
         </>
       )}

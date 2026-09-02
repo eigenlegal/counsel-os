@@ -82,6 +82,8 @@ export interface ThreadHeader {
   id: string;
   title?: string;
   matter?: string;
+  /** Every step of this thread runs as this task — `retro` for a retro. */
+  task?: string;
   createdAt: string;
   updatedAt: string;
   sessions: Record<string, string>;
@@ -434,4 +436,27 @@ export interface DoctorReport {
   findings: DoctorFinding[];
   verdict: 'healthy' | 'warnings' | 'broken';
   summary: string;
+}
+
+/** `GET /retro` (retro in the runtime). COPIED from
+ * `runtime/src/retro/index.ts`; a change there is a change here. */
+export interface RetroStatus {
+  lastRetroAt: string | null;
+  threadId: string | null;
+  cadenceDays: number;
+  daysSince: number | null;
+  dueAt: string | null;
+  due: boolean;
+  /** Why `due` is what it is, as a sentence. */
+  reason: string;
+}
+
+/** `POST /retro` — the retro thread, opened; the page sends `message` as
+ * the thread's first step. COPIED from `runtime/src/retro/index.ts`. */
+export interface RetroStart {
+  threadId: string;
+  title: string;
+  period: { from: string | null; to: string };
+  message: string;
+  status: RetroStatus;
 }
