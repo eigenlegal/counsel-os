@@ -199,12 +199,17 @@ describe('ModelsGroup', () => {
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       if (String(input) === '/evals/run') {
         const bytes = new TextEncoder().encode(frames);
+        // `start` must RETURN before the stream is readable. Awaiting the
+        // gate inside it leaves the response body unstarted until the gate
+        // opens, so the progress this test is about never arrives and the
+        // test times out rather than failing an assertion (it did, on CI).
         const body = new ReadableStream<Uint8Array>({
-          async start(c) {
+          start(c) {
             c.enqueue(bytes.slice(0, frames.indexOf('event: result')));
-            await gate;
-            c.enqueue(bytes.slice(frames.indexOf('event: result')));
-            c.close();
+            void gate.then(() => {
+              c.enqueue(bytes.slice(frames.indexOf('event: result')));
+              c.close();
+            });
           },
         });
         runs.push(JSON.parse(String(init?.body)));
