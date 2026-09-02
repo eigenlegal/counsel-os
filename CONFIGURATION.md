@@ -125,11 +125,17 @@ providers:
   - id: moonshot/kimi-k2               # MOONSHOT_API_KEY; base URL built in
   - id: openai-compatible/myserver
     baseURL: http://127.0.0.1:9000/v1  # loopback = local; anything else must be https://
+  - id: azure/my-gpt-deployment        # enterprise: the model part is the DEPLOYMENT name
+    extra: { resourceName: firm-openai }            # the key goes to the Keychain, never here
+  - id: bedrock/us.anthropic.claude-sonnet-5-v1:0  # a Bedrock model id or inference profile
+    extra: { region: us-east-1, profile: firm }     # profile: a name from ~/.aws/credentials (optional)
+  - id: vertex/gemini-2.5-pro
+    extra: { project: firm-project, location: us-central1 }
 tasks:
   privacy: { prefer: ollama/gemma4:e4b, allow_remote: false }
 ```
 
-Id prefixes the runtime knows — SDK-native: `claude-sub`, `codex-sub`, `anthropic`, `openai`, `google`, `mistral`, `groq`, `xai`, `deepseek`, `cohere`, `perplexity`, `togetherai`, `fireworks`, `deepinfra`, `cerebras`, `openrouter`, `ollama`, `openai-compatible`; OpenAI-compatible presets with a built-in base URL: `moonshot`, `zhipu`, `dashscope`, `sambanova`, `baseten`, `huggingface`, `cloudflare` (fill `{account_id}` in `baseURL`), `replicate`, and the local runners `lmstudio`, `llamacpp`, `vllm`, `mlx`, `jan`, `gpt4all`. A preset entry may override `baseURL`. An unknown prefix is refused with that list. Keys are read from `apiKeyEnv`, else the vendor's usual variable; the file holds variable names, never keys. Each provider's `locality` (local or cloud) is derived from the vendor, or from the base URL for the OpenAI-compatible shape; `allow_remote: false` on a task route keeps that task on local providers.
+Id prefixes the runtime knows — SDK-native: `claude-sub`, `codex-sub`, `anthropic`, `openai`, `google`, `mistral`, `groq`, `xai`, `deepseek`, `cohere`, `perplexity`, `togetherai`, `fireworks`, `deepinfra`, `cerebras`, `openrouter`, `ollama`, `openai-compatible`; enterprise (credentials that are not one key, see below): `azure`, `bedrock`, `vertex`; OpenAI-compatible presets with a built-in base URL: `moonshot`, `zhipu`, `dashscope`, `sambanova`, `baseten`, `huggingface`, `cloudflare` (fill `{account_id}` in `baseURL`), `replicate`, and the local runners `lmstudio`, `llamacpp`, `vllm`, `mlx`, `jan`, `gpt4all`. A preset entry may override `baseURL`. An unknown prefix is refused with that list. Keys are read from `apiKeyEnv`, else the vendor's usual variable; the file holds variable names, never keys. Each provider's `locality` (local or cloud) is derived from the vendor, or from the base URL for the OpenAI-compatible shape; `allow_remote: false` on a task route keeps that task on local providers.
 
 ### Keys (providers spec §5)
 
@@ -141,7 +147,23 @@ An API key is pasted once in Settings, on the provider's row, and kept in the pl
 
 `COUNSEL_OS_SECRETS=file` forces the file store (headless use, CI). A key from the environment still works: the runtime asks the store first, then the entry's `apiKeyEnv`, then the vendor's usual variable (`OPENAI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`, …). An entry may carry `key: keychain` as a note to a reader; it is not read.
 
-The runtime reports only whether a key is set (`keySet: true | false | 'env'` on `/settings` and `/health`), never the value. `PUT /providers/<id>/key` and `DELETE /providers/<id>/key` are the only routes that touch keys.
+The runtime reports only whether a key is set (`keySet: true | false | 'env' | 'default-chain'` on `/settings` and `/health`), never the value. `PUT /providers/<id>/key` and `DELETE /providers/<id>/key` are the only routes that touch keys.
+
+### Enterprise vendors — Azure OpenAI, Amazon Bedrock, Google Vertex AI (providers spec §3, step 5)
+
+Three vendors take a set of fields instead of one key. The non-secret fields live on the entry as `extra`; the secret ones are pasted in Settings and kept as **one** Keychain item under `counsel-os/<provider id>` (never one item per field). Settings lists them under *Hosted API · enterprise*, and each row's second line names the company (Microsoft, Amazon Web Services, Google Cloud) with a link to its data terms.
+
+| Prefix | `extra` (on the entry) | Secret fields (Settings → Keychain) | Environment fallback | Model part of the id |
+|---|---|---|---|---|
+| `azure` | `resourceName` (required), `apiVersion` (optional; empty = the v1 API) | `apiKey` | `AZURE_OPENAI_API_KEY` or `AZURE_API_KEY`; `AZURE_RESOURCE_NAME`, `AZURE_OPENAI_API_VERSION` | the **deployment** name |
+| `bedrock` | `region` (required), `profile` (optional, a name in `~/.aws/credentials`) | `accessKeyId` + `secretAccessKey` (+ `sessionToken`), or `apiKey` (a Bedrock bearer key) | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_SESSION_TOKEN`, `AWS_BEARER_TOKEN_BEDROCK`, `AWS_PROFILE`, `AWS_REGION` | a model id or inference profile, e.g. `us.anthropic.claude-sonnet-5-v1:0` |
+| `vertex` | `project` (required), `location` (default `us-central1`) | `serviceAccountJson` (the key file's contents, as one value), or `apiKey` (express mode) | `GOOGLE_APPLICATION_CREDENTIALS` (read by the SDK, not the runtime), `GOOGLE_VERTEX_API_KEY`, `GOOGLE_VERTEX_PROJECT` / `GOOGLE_CLOUD_PROJECT`, `GOOGLE_VERTEX_LOCATION` | a Gemini model, or a Claude model (`claude-…@…`), which goes through the Anthropic-on-Vertex endpoint |
+
+Resolution order at load: the store → the environment → the vendor SDK's own default chain. On a firm laptop with an AWS profile or `gcloud auth application-default login` already done, a `bedrock` or `vertex` row with only its `extra` just works, and `keySet` reads `default-chain`. Azure has no chain of its own: it needs the key.
+
+`PUT /providers/<id>/key` takes `{ "fields": { … } }` for these vendors, validated per vendor (Azure needs the key; Bedrock the access key pair or a bearer key, a session token only beside the pair; Vertex a service account that parses or an express key). To use the machine's own credentials, save nothing there, or `DELETE` what was saved.
+
+Listing models: Azure lists the resource's deployments (`GET …/openai/deployments`) once the key is set; Bedrock lists `ListFoundationModels` with a SigV4-signed request when it has keys, and answers from a curated list on the default chain; Vertex answers from a curated list (Gemini + Claude on Vertex). Any id can still be typed. Non-secret fields not yet saved ride in the query (`?region=…`), so the picker works before the first Save.
 
 **Picking a model.** The model part of an id (`gpt-5.6` in `openai/gpt-5.6`) can be picked from the vendor's own list in Settings — the runtime asks the vendor (`GET /providers/<prefix>/models`) and shows each model's context size where the vendor reports it; vendors without a listing endpoint (Anthropic, xAI, Perplexity, DeepInfra) offer a curated list, and any id can still be typed. A local runner (Ollama, LM Studio, …) lists from the row's base URL; a keyed vendor is only asked once its key is set.
 

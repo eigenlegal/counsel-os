@@ -21,7 +21,11 @@
  * secret store (step 2) only changes where it comes from.
  */
 import type { LanguageModel } from 'ai';
+import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
 import { createAnthropic } from '@ai-sdk/anthropic';
+import { createAzure } from '@ai-sdk/azure';
+import { createVertex } from '@ai-sdk/google-vertex';
+import { createVertexAnthropic } from '@ai-sdk/google-vertex/anthropic';
 import { createCerebras } from '@ai-sdk/cerebras';
 import { createCohere } from '@ai-sdk/cohere';
 import { createDeepInfra } from '@ai-sdk/deepinfra';
@@ -64,9 +68,33 @@ export interface MakeOptions {
   model: string;
   apiKey?: string;
   baseURL?: string;
+  /** The non-secret fields of an enterprise vendor (`resourceName`,
+   * `region`, `project`, `location`), from the registry entry. */
+  extra?: Record<string, string>;
+  /** The secret fields (`apiKey`, `accessKeyId`, `serviceAccountJson`),
+   * from the store or the environment. Absent → the SDK's own chain. */
+  secrets?: Record<string, string>;
 }
 
-export type VendorGroup = 'subscription' | 'local' | 'hosted';
+export type VendorGroup = 'subscription' | 'local' | 'hosted' | 'enterprise';
+
+/**
+ * One field an enterprise vendor needs instead of a single key (providers
+ * spec §3 step 5). Non-secret fields live on the registry entry (`extra`);
+ * secret ones go to the store as one JSON item per provider.
+ */
+export interface VendorField {
+  name: string;
+  label: string;
+  secret: boolean;
+  required: boolean;
+  placeholder?: string;
+  /** A default the row starts with (`us-central1`). */
+  default?: string;
+  /** The environment variable this field falls back to. */
+  env?: string[];
+  help?: string;
+}
 
 export interface Vendor {
   prefix: string;
@@ -84,7 +112,13 @@ export interface Vendor {
    * none (step 2 adds the secret store in front of it). */
   keyEnv?: string;
   keyLabel?: string;
-  help: { getKey?: string; install?: string; note?: string };
+  help: { getKey?: string; install?: string; note?: string; setup?: string };
+  /** The field set of an enterprise vendor; absent for everything that
+   * takes one key or none. */
+  fields?: VendorField[];
+  /** The vendor's SDK can find credentials on its own (an AWS profile,
+   * gcloud ADC) when none are given: `keySet` then reads `default-chain`. */
+  defaultChain?: boolean;
   /** How models are discovered (step 3): `list` asks the vendor (see
    * `discovery`), `curated` ships a list here, `none` means type the id. */
   models: 'list' | 'curated' | 'none';
@@ -171,6 +205,76 @@ const OPEN_MODELS: OpenModel[] = [
 
 function keyed(apiKey: string | undefined, baseURL: string | undefined): { apiKey?: string; baseURL?: string } {
   return { ...(apiKey === undefined ? {} : { apiKey }), ...(baseURL === undefined ? {} : { baseURL }) };
+}
+
+/** Only the entries that are set: the SDKs treat `undefined` and absent
+ * alike, but an explicit `''` would override their own environment read. */
+function present(o: Record<string, string | undefined>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(o)) if (v !== undefined && v !== '') out[k] = v;
+  return out;
+}
+
+/** Gemini on Vertex and Claude on Vertex are two SDK factories with one
+ * credential shape; the model id says which. */
+export function isVertexAnthropicModel(model: string): boolean {
+  return model.startsWith('claude-') || model.startsWith('anthropic/');
+}
+
+/** Claude models on Vertex; Gemini models, and the express-mode key, both
+ * documented on the Vertex model garden. Curated: Vertex has no listing a
+ * key alone can reach. */
+const VERTEX_MODELS: VendorModel[] = [
+  { id: 'gemini-2.5-pro', contextTokens: 1_000_000 },
+  { id: 'gemini-2.5-flash', contextTokens: 1_000_000 },
+  { id: 'claude-opus-5@20260615', contextTokens: 200_000 },
+  { id: 'claude-sonnet-5@20260615', contextTokens: 200_000 },
+  { id: 'claude-haiku-4-5@20251001', contextTokens: 200_000 },
+];
+
+/** Bedrock's foundation models are listed by a signed control-plane call
+ * (see `discovery.ts`); these are the fallback when no credentials can
+ * sign one. Cross-region inference profiles (`us.`) are what Bedrock
+ * recommends for the Anthropic models. */
+const BEDROCK_MODELS: VendorModel[] = [
+  { id: 'us.anthropic.claude-opus-5-v1:0', contextTokens: 200_000 },
+  { id: 'us.anthropic.claude-sonnet-5-v1:0', contextTokens: 200_000 },
+  { id: 'us.anthropic.claude-haiku-4-5-20251001-v1:0', contextTokens: 200_000 },
+  { id: 'us.amazon.nova-pro-v1:0', contextTokens: 300_000 },
+  { id: 'us.meta.llama4-maverick-17b-instruct-v1:0', contextTokens: 1_000_000 },
+];
+
+/** The enterprise field sets (providers spec §3 step 5). Secret fields go
+ * to the store as one item; the rest sit on the registry entry. `env` is
+ * the fallback for headless use, in the order the SDK itself reads. */
+const AZURE_FIELDS: VendorField[] = [
+  { name: 'resourceName', label: 'Resource name', secret: false, required: true, placeholder: 'my-firm-openai', env: ['AZURE_RESOURCE_NAME'], help: 'The Azure OpenAI resource; requests go to https://<resource>.openai.azure.com.' },
+  { name: 'apiVersion', label: 'API version', secret: false, required: false, placeholder: 'v1', env: ['AZURE_OPENAI_API_VERSION'], help: 'Leave empty for the v1 API; set it only if your resource needs a dated version.' },
+  { name: 'apiKey', label: 'API key', secret: true, required: true, env: ['AZURE_OPENAI_API_KEY', 'AZURE_API_KEY'] },
+];
+const BEDROCK_FIELDS: VendorField[] = [
+  { name: 'region', label: 'Region', secret: false, required: true, placeholder: 'us-east-1', env: ['AWS_REGION', 'AWS_DEFAULT_REGION'] },
+  { name: 'profile', label: 'AWS profile (optional)', secret: false, required: false, placeholder: 'default', env: ['AWS_PROFILE'], help: 'A named profile from ~/.aws/credentials, instead of pasting keys.' },
+  { name: 'accessKeyId', label: 'Access key id', secret: true, required: false, env: ['AWS_ACCESS_KEY_ID'] },
+  { name: 'secretAccessKey', label: 'Secret access key', secret: true, required: false, env: ['AWS_SECRET_ACCESS_KEY'] },
+  { name: 'sessionToken', label: 'Session token (optional)', secret: true, required: false, env: ['AWS_SESSION_TOKEN'] },
+  { name: 'apiKey', label: 'Bedrock API key (alternative to AWS keys)', secret: true, required: false, env: ['AWS_BEARER_TOKEN_BEDROCK'] },
+];
+const VERTEX_FIELDS: VendorField[] = [
+  { name: 'project', label: 'Project', secret: false, required: true, placeholder: 'my-firm-project', env: ['GOOGLE_VERTEX_PROJECT', 'GOOGLE_CLOUD_PROJECT'] },
+  { name: 'location', label: 'Location', secret: false, required: true, default: 'us-central1', placeholder: 'us-central1', env: ['GOOGLE_VERTEX_LOCATION', 'GOOGLE_CLOUD_LOCATION'] },
+  { name: 'serviceAccountJson', label: 'Service account JSON (optional)', secret: true, required: false, env: ['GOOGLE_APPLICATION_CREDENTIALS'], help: 'Paste the key file’s contents; leave empty to use gcloud’s Application Default Credentials.' },
+  { name: 'apiKey', label: 'Express-mode API key (optional)', secret: true, required: false, env: ['GOOGLE_VERTEX_API_KEY'] },
+];
+
+function vertexAuth(secrets: Record<string, string>): { googleAuthOptions?: { credentials: Record<string, unknown> } } {
+  const raw = secrets['serviceAccountJson'];
+  if (raw === undefined || raw === '') return {};
+  try {
+    return { googleAuthOptions: { credentials: JSON.parse(raw) as Record<string, unknown> } };
+  } catch {
+    throw new Error('vertex: the service account JSON does not parse');
+  }
 }
 
 // ── Layer A: SDK-native vendors ────────────────────────────────────────────
@@ -285,6 +389,35 @@ const SDK_VENDORS: Vendor[] = [
     keyEnv: 'OPENROUTER_API_KEY', keyLabel: 'API key', help: { getKey: 'https://openrouter.ai/keys', note: 'One key, many models.' },
     models: 'list', discovery: { shape: 'openrouter' }, capabilities: CLOUD_CAPS_NO_CACHE,
     make: ({ model, apiKey, baseURL }) => createOpenRouter(keyed(apiKey, baseURL))(model),
+  },
+  // ── enterprise: credentials that are not one API key (spec §3 step 5) ──
+  {
+    prefix: 'azure', name: 'Azure OpenAI', kind: 'direct', layer: 'sdk', group: 'enterprise', auth: 'azure', locality: 'cloud',
+    handles: { company: 'Microsoft (Azure OpenAI)', termsUrl: 'https://learn.microsoft.com/legal/cognitive-services/openai/data-privacy' },
+    help: { setup: 'https://learn.microsoft.com/azure/ai-services/openai/how-to/create-resource', note: 'The model id is your deployment name.' },
+    fields: AZURE_FIELDS, models: 'list', discovery: { shape: 'azure', unverified: true }, capabilities: CLOUD_CAPS,
+    make: ({ model, baseURL, extra = {}, secrets = {} }) =>
+      createAzure({ ...present({ resourceName: extra['resourceName'], apiVersion: extra['apiVersion'], apiKey: secrets['apiKey'], baseURL }) })(model),
+  },
+  {
+    prefix: 'bedrock', name: 'Amazon Bedrock', kind: 'direct', layer: 'sdk', group: 'enterprise', auth: 'sigv4', locality: 'cloud',
+    handles: { company: 'Amazon Web Services (Bedrock)', termsUrl: 'https://docs.aws.amazon.com/bedrock/latest/userguide/data-protection.html' },
+    help: { setup: 'https://docs.aws.amazon.com/bedrock/latest/userguide/getting-started.html', note: 'The model id is a Bedrock model id or inference profile, e.g. us.anthropic.claude-sonnet-5-v1:0.' },
+    fields: BEDROCK_FIELDS, defaultChain: true, models: 'list', discovery: { shape: 'bedrock' }, curated: BEDROCK_MODELS, capabilities: CLOUD_CAPS,
+    make: ({ model, baseURL, extra = {}, secrets = {} }) =>
+      createAmazonBedrock({ ...present({ region: extra['region'], apiKey: secrets['apiKey'], accessKeyId: secrets['accessKeyId'], secretAccessKey: secrets['secretAccessKey'], sessionToken: secrets['sessionToken'], baseURL }) })(model),
+  },
+  {
+    prefix: 'vertex', name: 'Google Vertex AI', kind: 'direct', layer: 'sdk', group: 'enterprise', auth: 'gcp', locality: 'cloud',
+    handles: { company: 'Google Cloud (Vertex AI)', termsUrl: 'https://cloud.google.com/vertex-ai/generative-ai/docs/data-governance' },
+    help: { setup: 'https://cloud.google.com/vertex-ai/generative-ai/docs/start/quickstarts/quickstart', note: 'Gemini and Claude models; a Claude id (claude-…) goes through the Anthropic-on-Vertex endpoint.' },
+    fields: VERTEX_FIELDS, defaultChain: true, models: 'curated', curated: VERTEX_MODELS, capabilities: { tools: true, caching: true, thinking: true, contextTokens: 1_000_000 },
+    make: ({ model, baseURL, extra = {}, secrets = {} }) => {
+      const common = present({ project: extra['project'], location: extra['location'], baseURL });
+      const auth = vertexAuth(secrets);
+      if (isVertexAnthropicModel(model)) return createVertexAnthropic({ ...common, ...auth })(model.replace(/^anthropic\//, ''));
+      return createVertex({ ...common, ...present({ apiKey: secrets['apiKey'] }), ...auth })(model);
+    },
   },
   {
     prefix: 'ollama', name: 'Ollama', kind: 'direct', layer: 'sdk', group: 'local', auth: 'local', locality: 'local', handles: null,

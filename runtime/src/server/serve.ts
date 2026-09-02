@@ -328,6 +328,9 @@ export interface RuntimeStateOptions {
   stepTimeoutMs?: number;
   /** The secret store the registry asks for keys (providers spec §5). */
   secrets?: SecretStore;
+  /** The home directory an enterprise vendor's own credential files sit
+   * under (`~/.aws/credentials`, gcloud ADC). Tests inject a temp one. */
+  home?: string;
 }
 
 export interface RuntimeHandle {
@@ -360,6 +363,7 @@ export function runtimeState(opts: RuntimeStateOptions): RuntimeHandle {
       ...(opts.extraProviders === undefined ? {} : { extraProviders: opts.extraProviders }),
       ...(opts.defaultId === undefined ? {} : { defaultId: opts.defaultId }),
       ...(opts.secrets === undefined ? {} : { secrets: opts.secrets }),
+      ...(opts.home === undefined ? {} : { home: opts.home }),
     });
     return {
       providers: loaded.providers,

@@ -93,7 +93,11 @@ export interface Capabilities {
   caching: boolean;
   thinking: boolean;
   contextTokens: number;
-  auth: 'subscription' | 'apikey' | 'local';
+  /** How the provider is authenticated: a subscription harness, one API
+   * key, nothing (local), or an enterprise credential shape (providers
+   * spec §3 step 5) — `azure` (resource + key), `sigv4` (AWS credentials),
+   * `gcp` (a service account or Application Default Credentials). */
+  auth: 'subscription' | 'apikey' | 'local' | 'azure' | 'sigv4' | 'gcp';
   /** Providers built from the catalog carry it; anything older falls back
    * to `auth` through `localityOf` — an API-key provider on a loopback base
    * URL is the case `auth` alone gets wrong. */

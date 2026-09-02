@@ -43,7 +43,7 @@ interface Harness {
  * `fake: true` is `serve --fake`: the canned provider is an override, so it
  * has to survive every reload the settings API does.
  */
-function harness(opts: { fake?: boolean; contents?: string; script?: ConstructorParameters<typeof FakeModelProvider>[0]; secrets?: SecretStore | null; env?: NodeJS.ProcessEnv } = {}): Harness {
+function harness(opts: { fake?: boolean; contents?: string; script?: ConstructorParameters<typeof FakeModelProvider>[0]; secrets?: SecretStore | null; env?: NodeJS.ProcessEnv; home?: string } = {}): Harness {
   const home = mkdtempSync(join(tmpdir(), 'settings-home-'));
   const file = join(home, 'providers.yaml');
   if (opts.contents !== undefined) writeFileSync(file, opts.contents, 'utf8');
@@ -55,7 +55,10 @@ function harness(opts: { fake?: boolean; contents?: string; script?: Constructor
   // no store at all. Never the developer's keychain.
   const secrets = opts.secrets === null ? undefined : (opts.secrets ?? memoryStore());
   const env = opts.env ?? {};
-  const runtime = runtimeState({ vaultRoot, registryFile: file, env, ...overrides, ...(secrets === undefined ? {} : { secrets }) });
+  // An enterprise vendor looks for `~/.aws/credentials` and gcloud's ADC:
+  // always a temp home here, never the developer's.
+  const userHome = opts.home ?? mkdtempSync(join(tmpdir(), 'settings-user-home-'));
+  const runtime = runtimeState({ vaultRoot, registryFile: file, env, home: userHome, ...overrides, ...(secrets === undefined ? {} : { secrets }) });
   const app = createApp({
     token: TOKEN,
     tenant: 'default',
@@ -65,7 +68,7 @@ function harness(opts: { fake?: boolean; contents?: string; script?: Constructor
     store,
     platform: 'macos',
     state: runtime.state,
-    settings: { file, reload: runtime.reload, env, ...(secrets === undefined ? {} : { secrets }) },
+    settings: { file, reload: runtime.reload, env, home: userHome, ...(secrets === undefined ? {} : { secrets }) },
   });
   return { app, file, fake, ...(secrets === undefined ? {} : { secrets }) };
 }
@@ -408,5 +411,118 @@ describe('provider keys (providers spec §5)', () => {
     const h = harness({ contents: GOOGLE });
     const res = await h.app(new Request('http://127.0.0.1:7431/providers/google/gemini-2.5-pro/key', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ value: 'k' }) }));
     expect(res.status).toBe(401);
+  });
+});
+
+describe('enterprise credentials (providers spec §3 step 5)', () => {
+  const BEDROCK = 'providers:\n  - id: bedrock/us.anthropic.claude-sonnet-5-v1:0\n    extra:\n      region: us-east-1\n';
+  const AZURE = 'providers:\n  - id: azure/my-deployment\n    extra:\n      resourceName: firm\n';
+  const VERTEX = 'providers:\n  - id: vertex/gemini-2.5-pro\n    extra:\n      project: p\n      location: us-central1\n';
+
+  test('PUT { fields } stores ONE item, reloads, never echoes; keySet true; DELETE returns it to false', async () => {
+    const h = harness({ contents: BEDROCK });
+    const id = 'bedrock/us.anthropic.claude-sonnet-5-v1:0';
+    const before = await settings(h.app);
+    expect((before.effective.providers.find(p => p.id === id) as { keySet?: unknown }).keySet).toBe(false);
+
+    const put = await call(h.app, 'PUT', `/providers/${id}/key`, { fields: { accessKeyId: 'AKIA-test-1', secretAccessKey: 'wJalr-test-2', sessionToken: '' } });
+    expect(put.status).toBe(204);
+    expect(await put.text()).toBe('');
+    expect(h.secrets?.get(id)).toBe('{"v":1,"fields":{"accessKeyId":"AKIA-test-1","secretAccessKey":"wJalr-test-2"}}');
+    expect(h.secrets?.get(`${id}/accessKeyId`)).toBeNull();
+
+    const after = await settings(h.app);
+    const text = JSON.stringify(after);
+    expect(text).not.toContain('AKIA-test-1');
+    expect(text).not.toContain('wJalr-test-2');
+    const view = after.effective.providers.find(p => p.id === id) as { keySet?: unknown; auth?: string; handles?: { company: string } | null };
+    expect(view.keySet).toBe(true);
+    expect(view.auth).toBe('sigv4');
+    expect(view.handles?.company).toContain('Amazon');
+    // The file carries the region and never the keys.
+    const file = readFileSync(h.file, 'utf8');
+    expect(file).toContain('region: us-east-1');
+    expect(file).not.toContain('AKIA-test-1');
+
+    expect((await call(h.app, 'DELETE', `/providers/${id}/key`)).status).toBe(204);
+    expect((await settings(h.app)).effective.providers.find(p => p.id === id)).toMatchObject({ keySet: false });
+  });
+
+  test('validation is per vendor: 400 with issues, nothing stored', async () => {
+    const h = harness({ contents: BEDROCK + '  - id: azure/my-deployment\n    extra:\n      resourceName: firm\n  - id: vertex/gemini-2.5-pro\n    extra:\n      project: p\n' });
+    const bad = async (id: string, body: unknown): Promise<{ status: number; body: { error: string; issues?: Array<{ path: string[]; message: string }> } }> => {
+      const res = await call(h.app, 'PUT', `/providers/${id}/key`, body);
+      return { status: res.status, body: (await res.json()) as { error: string; issues?: Array<{ path: string[]; message: string }> } };
+    };
+    const half = await bad('bedrock/us.anthropic.claude-sonnet-5-v1:0', { fields: { accessKeyId: 'AKIA-only' } });
+    expect(half.status).toBe(400);
+    expect(half.body.issues?.[0]?.path).toEqual(['fields', 'secretAccessKey']);
+    expect(JSON.stringify(half.body)).not.toContain('AKIA-only');
+    expect(h.secrets?.get('bedrock/us.anthropic.claude-sonnet-5-v1:0')).toBeNull();
+
+    const noKey = await bad('azure/my-deployment', { fields: {} });
+    expect(noKey.status).toBe(400);
+    expect(noKey.body.issues?.[0]?.path).toEqual(['fields', 'apiKey']);
+
+    const notSa = await bad('vertex/gemini-2.5-pro', { fields: { serviceAccountJson: '{"nope":1}' } });
+    expect(notSa.status).toBe(400);
+    expect(notSa.body.issues?.[0]?.message).toContain('client_email');
+
+    // A non-secret field in the body is named, not silently dropped.
+    const wrongPlace = await bad('azure/my-deployment', { fields: { apiKey: 'k', resourceName: 'firm' } });
+    expect(wrongPlace.status).toBe(400);
+    expect(wrongPlace.body.issues?.[0]?.message).toContain('belongs on the provider row');
+
+    // The shapes do not cross: a bare value for an enterprise vendor, fields for a one-key vendor.
+    expect((await bad('azure/my-deployment', { value: 'k' })).status).toBe(400);
+    const h2 = harness({ contents: 'providers:\n  - id: google/gemini-2.5-pro\n' });
+    expect((await call(h2.app, 'PUT', '/providers/google/gemini-2.5-pro/key', { fields: { apiKey: 'k' } })).status).toBe(400);
+    // Neither shape at all is the body schema's 400.
+    expect((await call(h2.app, 'PUT', '/providers/google/gemini-2.5-pro/key', { nope: 1 })).status).toBe(400);
+  });
+
+  test('azure with a key, vertex with a service account: 204 and keySet true; a plain-key store item does not count', async () => {
+    const h = harness({ contents: AZURE });
+    expect((await call(h.app, 'PUT', '/providers/azure/my-deployment/key', { fields: { apiKey: 'az-secret-9' } })).status).toBe(204);
+    const s = await settings(h.app);
+    expect(JSON.stringify(s)).not.toContain('az-secret-9');
+    expect(s.effective.providers.find(p => p.id === 'azure/my-deployment')).toMatchObject({ keySet: true, auth: 'azure' });
+
+    const v = harness({ contents: VERTEX });
+    expect((await call(v.app, 'PUT', '/providers/vertex/gemini-2.5-pro/key', { fields: { serviceAccountJson: '{"client_email":"a@b","private_key":"pk-secret"}' } })).status).toBe(204);
+    const vs = await settings(v.app);
+    expect(JSON.stringify(vs)).not.toContain('pk-secret');
+    expect(vs.effective.providers.find(p => p.id === 'vertex/gemini-2.5-pro')).toMatchObject({ keySet: true, auth: 'gcp' });
+  });
+
+  test('keySet reads env, and default-chain when the machine has an AWS default profile or gcloud ADC', async () => {
+    const env = { AWS_ACCESS_KEY_ID: 'AKIA-env', AWS_SECRET_ACCESS_KEY: 's-env' };
+    const fromEnv = harness({ contents: BEDROCK, env });
+    expect((await settings(fromEnv.app)).effective.providers.find(p => p.id === 'bedrock/us.anthropic.claude-sonnet-5-v1:0')).toMatchObject({ keySet: 'env' });
+
+    const home = mkdtempSync(join(tmpdir(), 'settings-aws-home-'));
+    mkdirSync(join(home, '.aws'), { recursive: true });
+    writeFileSync(join(home, '.aws', 'credentials'), '[default]\naws_access_key_id = A\naws_secret_access_key = B\n', 'utf8');
+    const chain = harness({ contents: BEDROCK, home });
+    expect((await settings(chain.app)).effective.providers.find(p => p.id === 'bedrock/us.anthropic.claude-sonnet-5-v1:0')).toMatchObject({ keySet: 'default-chain' });
+
+    mkdirSync(join(home, '.config', 'gcloud'), { recursive: true });
+    writeFileSync(join(home, '.config', 'gcloud', 'application_default_credentials.json'), '{}', 'utf8');
+    const adc = harness({ contents: VERTEX, home });
+    expect((await settings(adc.app)).effective.providers.find(p => p.id === 'vertex/gemini-2.5-pro')).toMatchObject({ keySet: 'default-chain' });
+    // Azure has no chain of its own.
+    const az = harness({ contents: AZURE, home });
+    expect((await settings(az.app)).effective.providers.find(p => p.id === 'azure/my-deployment')).toMatchObject({ keySet: false });
+  });
+
+  test('PUT /settings accepts `extra` on an entry and refuses an enterprise row missing a required field, in the row’s words', async () => {
+    const h = harness();
+    const ok = await call(h.app, 'PUT', '/settings', { providers: [{ id: 'vertex/gemini-2.5-pro', extra: { project: 'p', location: 'europe-west1' } }] });
+    expect(ok.status).toBe(200);
+    const view = (await ok.json()) as { registry: { providers: Array<{ extra?: Record<string, string> }> } };
+    expect(view.registry.providers[0]?.extra).toEqual({ project: 'p', location: 'europe-west1' });
+    const missing = await call(h.app, 'PUT', '/settings', { providers: [{ id: 'azure/dep' }] });
+    expect(missing.status).toBe(422);
+    expect(((await missing.json()) as { error: string }).error).toContain('resource name is required');
   });
 });

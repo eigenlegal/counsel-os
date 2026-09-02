@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { directProviderFromId } from './direct';
-import { allVendors, baseURLFor, handlesFor, isLoopbackURL, knownPrefixes, localityFor, PRESETS, prefixOf, vendorFor } from './vendors';
+import { allVendors, baseURLFor, handlesFor, isLoopbackURL, isVertexAnthropicModel, knownPrefixes, localityFor, PRESETS, prefixOf, vendorFor } from './vendors';
 
 describe('the vendor catalog (providers spec §3)', () => {
   test('every direct vendor builds a model from a fake key and base URL, with no network', () => {
@@ -8,12 +8,65 @@ describe('the vendor catalog (providers spec §3)', () => {
       if (vendor.kind !== 'direct') continue;
       const id = `${vendor.prefix}/some-model`;
       const baseURL = vendor.prefix === 'openai-compatible' ? 'http://127.0.0.1:1234/v1' : vendor.baseURLFields === undefined ? undefined : vendor.defaultBaseURL!.replace('{account_id}', 'x');
-      const provider = directProviderFromId(id, { apiKey: 'k', ...(baseURL === undefined ? {} : { baseURL }) });
+      // An enterprise vendor builds from fake FIELDS (spec §3 step 5):
+      // every non-secret one filled, every secret one a placeholder.
+      const extra: Record<string, string> = {};
+      const secrets: Record<string, string> = {};
+      for (const f of vendor.fields ?? []) (f.secret ? secrets : extra)[f.name] = f.name === 'serviceAccountJson' ? '{"client_email":"a@b","private_key":"k"}' : `fake-${f.name}`;
+      const provider = directProviderFromId(id, { apiKey: 'k', ...(baseURL === undefined ? {} : { baseURL }), ...(vendor.fields === undefined ? {} : { extra, secrets }) });
       expect(provider.id).toBe(id);
       expect(provider.kind).toBe('direct');
       expect(provider.capabilities.auth).toBe(vendor.auth);
       expect(provider.capabilities.locality).toBe(localityFor(vendor, baseURL));
     }
+  });
+
+  describe('the enterprise vendors (spec §3 step 5)', () => {
+    test('azure, bedrock and vertex are known, grouped as enterprise, cloud, and name the company', () => {
+      for (const [prefix, auth, company] of [['azure', 'azure', 'Microsoft'], ['bedrock', 'sigv4', 'Amazon'], ['vertex', 'gcp', 'Google']] as const) {
+        const v = vendorFor(prefix)!;
+        expect(v.group).toBe('enterprise');
+        expect(v.auth).toBe(auth);
+        expect(v.locality).toBe('cloud');
+        expect(v.handles!.company).toContain(company);
+        expect(v.handles!.termsUrl.startsWith('https://')).toBe(true);
+        expect(v.help.setup?.startsWith('https://')).toBe(true);
+        expect(v.fields!.length).toBeGreaterThan(1);
+        expect(v.fields!.some(f => f.secret)).toBe(true);
+        expect(v.keyEnv).toBeUndefined();
+      }
+    });
+
+    test('each builds from fake fields with no network; the model id after the prefix is the deployment / model id', () => {
+      const azure = directProviderFromId('azure/my-gpt-deployment', { extra: { resourceName: 'firm', apiVersion: '2024-10-21' }, secrets: { apiKey: 'az-k' } });
+      expect(azure.capabilities.auth).toBe('azure');
+      const bedrock = directProviderFromId('bedrock/us.anthropic.claude-sonnet-5-v1:0', { extra: { region: 'us-east-1' }, secrets: { accessKeyId: 'AKIA', secretAccessKey: 's', sessionToken: 't' } });
+      expect(bedrock.capabilities.auth).toBe('sigv4');
+      // Bedrock on the SDK's own chain: no secrets at all still builds.
+      expect(directProviderFromId('bedrock/amazon.nova-pro-v1:0', { extra: { region: 'eu-west-1' } }).id).toBe('bedrock/amazon.nova-pro-v1:0');
+      // Vertex with a service account, with an express key, and on ADC.
+      expect(directProviderFromId('vertex/gemini-2.5-pro', { extra: { project: 'p', location: 'us-central1' }, secrets: { serviceAccountJson: '{"client_email":"a@b","private_key":"k"}' } }).capabilities.auth).toBe('gcp');
+      expect(directProviderFromId('vertex/gemini-2.5-flash', { extra: { project: 'p', location: 'europe-west1' }, secrets: { apiKey: 'x' } }).id).toBe('vertex/gemini-2.5-flash');
+      expect(directProviderFromId('vertex/gemini-2.5-flash', { extra: { project: 'p', location: 'europe-west1' } }).id).toBe('vertex/gemini-2.5-flash');
+    });
+
+    test('a Claude id on Vertex goes through the Anthropic-on-Vertex factory; a Gemini id through Gemini', () => {
+      expect(isVertexAnthropicModel('claude-sonnet-5@20260615')).toBe(true);
+      expect(isVertexAnthropicModel('gemini-2.5-pro')).toBe(false);
+      const claude = directProviderFromId('vertex/claude-sonnet-5@20260615', { extra: { project: 'p', location: 'us-east5' } });
+      const gemini = directProviderFromId('vertex/gemini-2.5-pro', { extra: { project: 'p', location: 'us-central1' } });
+      const providerOf = (p: unknown): string => ((p as { model: { provider: string } }).model.provider);
+      expect(providerOf(claude)).toContain('anthropic');
+      expect(providerOf(gemini)).not.toContain('anthropic');
+    });
+
+    test('a required non-secret field missing is refused in the row’s words, not the SDK’s', () => {
+      expect(() => directProviderFromId('vertex/gemini-2.5-pro', { extra: { location: 'us-central1' } })).toThrow(/project is required on the provider row/);
+      expect(() => directProviderFromId('bedrock/x', {})).toThrow(/region is required/);
+      expect(() => directProviderFromId('azure/x', { secrets: { apiKey: 'k' } })).toThrow(/resource name is required/);
+      // A service account that does not parse is refused before any request.
+      expect(() => directProviderFromId('vertex/gemini-2.5-pro', { extra: { project: 'p', location: 'l' }, secrets: { serviceAccountJson: 'not json' } })).toThrow(/does not parse/);
+    });
   });
 
   test('the new prefixes are known; an unknown one is not', () => {

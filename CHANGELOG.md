@@ -8,6 +8,13 @@ reconstructed from git history. New entries are prepended automatically by
 
 ## [Unreleased]
 
+Enterprise providers — Azure OpenAI, Amazon Bedrock, Google Vertex AI (providers spec §3, step 5)
+
+- Three vendors whose credentials are not one API key join the catalog: `azure/<deployment>` (`@ai-sdk/azure`), `bedrock/<model id or inference profile>` (`@ai-sdk/amazon-bedrock`), `vertex/<model>` (`@ai-sdk/google-vertex`; a `claude-…` id goes through the Anthropic-on-Vertex endpoint). Each carries a field set instead of a key: the non-secret fields (resource, region, project, location, an AWS profile name) sit on the `providers.yaml` entry as `extra`; the secret ones (a key, an access key pair, a service account JSON) are pasted in Settings and kept as ONE Keychain item under the provider id.
+- Resolution at load: the store, then the environment (`AZURE_OPENAI_API_KEY`, `AWS_*` / `AWS_PROFILE` with `~/.aws/credentials`, `GOOGLE_APPLICATION_CREDENTIALS`), then the SDK's own default chain — a firm laptop with an AWS profile or gcloud ADC needs nothing pasted, and `keySet` reads `default-chain`.
+- `PUT /providers/:id/key` takes `{ fields }` for these vendors, validated per vendor with `issues` on a 400; a required non-secret field missing on a row is refused in the row's words. Discovery: Azure lists the resource's deployments, Bedrock lists foundation models over a SigV4-signed request (curated on the default chain), Vertex is curated.
+- Settings: the picker's new group *Hosted API · enterprise*; a field set under the row (secret fields masked, sent once, never echoed; `credentials · set · replace · remove`, or *default credentials on this machine*), the company on the row's second line, and the vendor's setup page.
+
 Model discovery (providers spec §4, step 3)
 
 - `GET /providers/:id/models` lists what a vendor can answer with — from the vendor's own list where one exists (OpenAI, Google, Mistral, Groq, DeepSeek, Cohere, Together AI, Fireworks, Cerebras, OpenRouter, Ollama, and every OpenAI-compatible preset and local runner), from a curated list where none does (Anthropic, xAI, Perplexity, DeepInfra) — with context sizes where the vendor reports them and OpenRouter's per-million prices kept for the scoreboard. A keyed vendor is never called without a key; a failure is one sentence, never an empty picker; listings are remembered for ten minutes (`?refresh=1` asks again).

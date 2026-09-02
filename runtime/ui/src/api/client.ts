@@ -73,6 +73,17 @@ export async function setProviderKey(id: string, value: string): Promise<void> {
 }
 
 /** `DELETE /providers/<id>/key` — idempotent. */
+/** An enterprise vendor's secret fields (providers spec §3 step 5) — one
+ * PUT, one store item. Empty values are dropped before they travel. */
+export async function setProviderFields(id: string, fields: Record<string, string>): Promise<void> {
+  const clean: Record<string, string> = {};
+  for (const [k, v] of Object.entries(fields)) if (v.trim() !== '') clean[k] = v.trim();
+  await fetchJson<void>(`/providers/${id.split('/').map(encodeURIComponent).join('/')}/key`, {
+    method: 'PUT',
+    body: JSON.stringify({ fields: clean }),
+  });
+}
+
 export async function deleteProviderKey(id: string): Promise<void> {
   await fetchJson<void>(`/providers/${id.split('/').map(encodeURIComponent).join('/')}/key`, { method: 'DELETE' });
 }

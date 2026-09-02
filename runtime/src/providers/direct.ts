@@ -104,7 +104,7 @@ export class DirectProvider implements ModelProvider {
  */
 export function directProviderFromId(
   id: string,
-  reg: { baseURL?: string; apiKey?: string; capabilities?: Partial<Capabilities> } = {},
+  reg: { baseURL?: string; apiKey?: string; capabilities?: Partial<Capabilities>; extra?: Record<string, string>; secrets?: Record<string, string> } = {},
 ): DirectProvider {
   const vendor = vendorFor(prefixOf(id));
   const name = id.slice(prefixOf(id).length + 1);
@@ -112,7 +112,20 @@ export function directProviderFromId(
   // The entry's base URL, else the preset's; a template with unfilled
   // fields, or the bare shape with none, is refused here.
   const baseURL = baseURLFor(vendor, reg.baseURL === '' ? undefined : reg.baseURL, id);
-  const model = vendor.make({ model: name, ...(reg.apiKey === undefined ? {} : { apiKey: reg.apiKey }), ...(baseURL === undefined ? {} : { baseURL }) });
+  // An enterprise vendor's required non-secret fields (a Vertex project, a
+  // Bedrock region) are checked here, in words the row can show, rather
+  // than left to the SDK's own message about an environment variable.
+  for (const f of vendor.fields ?? []) {
+    if (f.secret || !f.required) continue;
+    if ((reg.extra?.[f.name] ?? '') === '') throw new Error(`${vendor.name}: ${f.label.toLowerCase()} is required on the provider row (${f.name})`);
+  }
+  const model = vendor.make({
+    model: name,
+    ...(reg.apiKey === undefined ? {} : { apiKey: reg.apiKey }),
+    ...(baseURL === undefined ? {} : { baseURL }),
+    ...(reg.extra === undefined ? {} : { extra: reg.extra }),
+    ...(reg.secrets === undefined ? {} : { secrets: reg.secrets }),
+  });
   const capabilities: Capabilities = { ...vendor.capabilities, auth: vendor.auth, ...reg.capabilities, locality: localityFor(vendor, baseURL) };
   return new DirectProvider({ id, model, capabilities, ...(baseURL === undefined ? {} : { baseURL }) });
 }

@@ -3,9 +3,13 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
+  decodeSecretFields,
   defaultRunner,
+  encodeSecretFields,
   fileStore,
   keyStateFor,
+  readSecretFields,
+  writeSecretFields,
   keychainStore,
   libsecretStore,
   memoryStore,
@@ -202,5 +206,37 @@ describe('redact and keyStateFor', () => {
     store.set('a/b', 'v');
     expect(existsSync(join(dir, 'secrets.json'))).toBe(true);
     rmSync(dir, { recursive: true, force: true });
+  });
+});
+
+describe('secret fields — several secrets as ONE store item (providers spec §3 step 5)', () => {
+  test('round trip through a store: one item under the id, the empty fields dropped', () => {
+    const store = memoryStore();
+    writeSecretFields(store, 'bedrock/m', { accessKeyId: 'A', secretAccessKey: 'B', sessionToken: '' });
+    expect(readSecretFields(store, 'bedrock/m')).toEqual({ accessKeyId: 'A', secretAccessKey: 'B' });
+    // One item, and it is the envelope — never a keychain entry per field.
+    expect(store.get('bedrock/m')).toBe('{"v":1,"fields":{"accessKeyId":"A","secretAccessKey":"B"}}');
+    expect(store.get('bedrock/m/accessKeyId')).toBeNull();
+    store.delete('bedrock/m');
+    expect(readSecretFields(store, 'bedrock/m')).toBeNull();
+  });
+
+  test('a plain key is not fields; a malformed envelope reads as none; no store reads as none', () => {
+    expect(decodeSecretFields('sk-plain')).toBeNull();
+    expect(decodeSecretFields('{"v":2,"fields":{}}')).toBeNull();
+    expect(decodeSecretFields('{not json')).toBeNull();
+    expect(decodeSecretFields(null)).toBeNull();
+    expect(decodeSecretFields(encodeSecretFields({ apiKey: 'k', n: 5 as unknown as string }))).toEqual({ apiKey: 'k' });
+    expect(readSecretFields(undefined, 'x')).toBeNull();
+    const broken = { ...memoryStore(), get: () => { throw new Error('locked'); } };
+    expect(readSecretFields(broken, 'x')).toBeNull();
+  });
+
+  test('redact scrubs every field value out of a message', () => {
+    const msg = 'request to https://x failed with key A and secret B';
+    const fields = { accessKeyId: 'A', secretAccessKey: 'B' };
+    const out = Object.values(fields).reduce((t, v) => redact(t, v), msg);
+    expect(out).not.toContain(' A ');
+    expect(out).toContain('[redacted]');
   });
 });

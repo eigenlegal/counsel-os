@@ -139,7 +139,9 @@ export interface Capabilities {
   caching: boolean;
   thinking: boolean;
   contextTokens: number;
-  auth: 'subscription' | 'apikey' | 'local';
+  /** `azure` / `sigv4` / `gcp` are the enterprise credential shapes
+   * (providers spec §3 step 5). */
+  auth: 'subscription' | 'apikey' | 'local' | 'azure' | 'sigv4' | 'gcp';
   /** Where the text goes; absent on an older runtime. */
   locality?: 'local' | 'cloud';
 }
@@ -166,8 +168,9 @@ export interface ProviderInfo {
 }
 
 /** COPIED from `runtime/src/providers/secrets.ts`; a change there is a
- * change here. */
-export type KeyState = true | false | 'env';
+ * change here. `default-chain`: the vendor's SDK finds credentials on its
+ * own (an AWS profile, gcloud ADC). */
+export type KeyState = true | false | 'env' | 'default-chain';
 export type SecretStoreKind = 'keychain' | 'libsecret' | 'file';
 
 export interface Health {
@@ -305,6 +308,9 @@ export interface RegistryEntry {
   id: string;
   baseURL?: string;
   apiKeyEnv?: string;
+  /** The NON-secret fields of an enterprise vendor (resource, region,
+   * project, location, profile). Secrets never come here. */
+  extra?: Record<string, string>;
   capabilities?: Partial<Capabilities>;
 }
 

@@ -7,6 +7,7 @@ import type { Capabilities, ModelProvider } from '../core/types';
 import { Router, parseRouterConfig, type RouterConfig } from '../router/router';
 import { buildProviders } from './index';
 import { directProviderFromId } from './direct';
+import { isEnterprise, resolveEnterprise } from './enterprise';
 import { withRetry } from './retry';
 import type { SecretStore } from './secrets';
 import { knownPrefixes, prefixOf, vendorFor } from './vendors';
@@ -74,7 +75,12 @@ const Entry = z.object({ id: z.string(), baseURL: BaseURL.optional(), apiKeyEnv:
    * nowhere: the store is asked for every entry regardless. The file never
    * carries key material. */
   key: z.enum(['keychain']).optional(),
-  capabilities: z.object({ tools: z.boolean(), caching: z.boolean(), thinking: z.boolean(), contextTokens: z.number(), auth: z.enum(['subscription','apikey','local']), locality: z.enum(['local','cloud']) }).partial().optional() });
+  /** The NON-secret fields of an enterprise vendor (providers spec §3 step
+   * 5): `resourceName`, `apiVersion`, `region`, `profile`, `project`,
+   * `location`. The secret ones never come here — they are one item in the
+   * store. */
+  extra: z.record(z.string(), z.string()).optional(),
+  capabilities: z.object({ tools: z.boolean(), caching: z.boolean(), thinking: z.boolean(), contextTokens: z.number(), auth: z.enum(['subscription','apikey','local','azure','sigv4','gcp']), locality: z.enum(['local','cloud']) }).partial().optional() });
 export const RegistryFile = z.object({ default: z.string().optional(), providers: z.array(Entry).optional(), tasks: z.record(z.string(), TaskRoute).optional(),
   /** The per-step deadline every step on this runtime gets, in milliseconds
    * (spec §3). Positive: a zero or negative deadline would fail every step
@@ -134,6 +140,9 @@ export function loadRegistry(opts: {
   /** Where app-entered keys live (providers spec §5). Asked before the
    * environment for every direct entry; omitted → environment only. */
   secrets?: SecretStore;
+  /** The home directory an enterprise vendor's own credential files are
+   * looked up under (`~/.aws/credentials`, gcloud's ADC). Tests inject it. */
+  home?: string;
 }) {
   const env = opts.env ?? process.env; const file = opts.file ?? defaultRegistryFile(env);
   /** The store's value for `id`, or `null` — including when the store cannot
@@ -152,6 +161,13 @@ export function loadRegistry(opts: {
     const vendor = vendorFor(prefixOf(e.id));
     if (vendor === undefined) throw new Error(`unknown provider id prefix: ${e.id} (known: ${knownPrefixes().join(', ')})`);
     if (vendor.kind === 'harness') { providers.push(...buildProviders({ ids: [e.id], vaultRoot: opts.vaultRoot })); continue; }
+    // An enterprise vendor: its field set, resolved store → environment →
+    // the SDK's own chain (`enterprise.ts`), instead of one key.
+    if (isEnterprise(vendor)) {
+      const r = resolveEnterprise(vendor, { id: e.id, entry: e, store: opts.secrets, env, home: opts.home });
+      providers.push(directProviderFromId(e.id, { baseURL: e.baseURL, extra: r.extra, secrets: r.secrets, capabilities: e.capabilities as Partial<Capabilities> }));
+      continue;
+    }
     // The key: the store first (what the app saved), then the entry's
     // variable, then the vendor's usual one — so a key pasted in Settings
     // wins, and a headless install with only the environment still works.

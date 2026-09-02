@@ -1659,3 +1659,45 @@ describe('model discovery reads the secret store first (providers spec §5)', ()
     expect(seen.auth).toBe('Bearer sk-from-store');
   });
 });
+
+describe('GET /providers/:id/models for an enterprise vendor (providers spec §3 step 5)', () => {
+  function capture(body: unknown): { fetch: typeof fetch; requests: Request[] } {
+    const requests: Request[] = [];
+    const f = (async (input: string | URL | Request, init?: RequestInit) => {
+      requests.push(input instanceof Request ? input : new Request(String(input), init));
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+    }) as unknown as typeof fetch;
+    return { fetch: f, requests };
+  }
+
+  test('bedrock with no credentials answers the curated list without a request; the row’s region rides in the query', async () => {
+    const rec = capture({ modelSummaries: [] });
+    const app = appWith([new FakeModelProvider([{ text: 'x' }])], { discovery: { fetch: rec.fetch, env: {} }, settings: { file: join(mkdtempSync(join(tmpdir(), 'routes-ent-')), 'providers.yaml'), reload: () => {}, home: mkdtempSync(join(tmpdir(), 'routes-ent-home-')) } });
+    const res = await call(app, 'GET', '/providers/bedrock/models?region=us-west-2');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { source: string; models: unknown[] };
+    expect(body.source).toBe('curated');
+    expect(body.models.length).toBeGreaterThan(0);
+    expect(rec.requests).toEqual([]);
+  });
+
+  test('bedrock with AWS keys in the environment signs a listing for the row’s region; azure lists its deployments with the stored key', async () => {
+    const rec = capture({ modelSummaries: [{ modelId: 'amazon.nova-pro-v1:0', outputModalities: ['TEXT'], inferenceTypesSupported: ['ON_DEMAND'] }] });
+    const home = mkdtempSync(join(tmpdir(), 'routes-ent-home-'));
+    const file = join(mkdtempSync(join(tmpdir(), 'routes-ent-')), 'providers.yaml');
+    const app = appWith([new FakeModelProvider([{ text: 'x' }])], { discovery: { fetch: rec.fetch, env: { AWS_ACCESS_KEY_ID: 'AKIA-r', AWS_SECRET_ACCESS_KEY: 's-r' } }, settings: { file, reload: () => {}, home } });
+    const body = (await (await call(app, 'GET', '/providers/bedrock/models?region=ap-southeast-2')).json()) as { source: string; models: Array<{ id: string }> };
+    expect(body).toEqual({ source: 'list', models: [{ id: 'amazon.nova-pro-v1:0' }] });
+    expect(rec.requests[0]?.url).toBe('https://bedrock.ap-southeast-2.amazonaws.com/foundation-models?byOutputModality=TEXT');
+    expect(rec.requests[0]?.headers.get('authorization')?.startsWith('AWS4-HMAC-SHA256')).toBe(true);
+
+    const az = capture({ data: [{ id: 'gpt-5-prod', status: 'succeeded' }] });
+    writeFileSync(file, 'providers:\n  - id: azure/gpt-5-prod\n    extra:\n      resourceName: firm\n', 'utf8');
+    const store = memoryStore({ 'azure/gpt-5-prod': '{"v":1,"fields":{"apiKey":"az-route-key"}}' });
+    const app2 = appWith([new FakeModelProvider([{ text: 'x' }])], { discovery: { fetch: az.fetch, env: {} }, settings: { file, reload: () => {}, home, secrets: store } });
+    const listed = (await (await call(app2, 'GET', '/providers/azure/gpt-5-prod/models')).json()) as { source: string; models: Array<{ id: string }> };
+    expect(listed).toEqual({ source: 'list', models: [{ id: 'gpt-5-prod' }] });
+    expect(az.requests[0]?.url).toBe('https://firm.openai.azure.com/openai/deployments?api-version=2023-03-15-preview');
+    expect(az.requests[0]?.headers.get('api-key')).toBe('az-route-key');
+  });
+});
