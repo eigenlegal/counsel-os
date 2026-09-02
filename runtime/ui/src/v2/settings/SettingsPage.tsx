@@ -12,7 +12,6 @@ import { KeyControl } from './KeyControl';
 import { ContentGroup } from './ContentGroup';
 import { TASK_IDS } from '../../tasks';
 import { DoctorLedger } from './DoctorLedger';
-
 import { RetroAction } from './RetroAction';
 import {
   emptyRoute,

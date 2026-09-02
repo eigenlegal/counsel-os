@@ -26,6 +26,7 @@ describe('parseHash', () => {
     expect(routeFromHash('#/settings')).toBe('settings');
     expect(routeFromHash('#/models')).toBe('models');
     expect(routeFromHash('#/models?task=review')).toBe('models');
+    expect(routeFromHash('#/models/anything')).toBe('models');
   });
 
   test('a query on the fragment does NOT send the vault to chat', () => {

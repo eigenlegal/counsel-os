@@ -430,6 +430,55 @@ describe('Shell', () => {
     expect(document.querySelector('a[href="#/models"]')?.getAttribute('aria-current')).toBe('page');
   });
 
+  test('#/models waits for /health, so a runtime still in setup shows no failed reads', async () => {
+    // Every page waits: before /health answers the runtime may be in setup
+    // mode, where a vault-backed read is a 409. The ledger reads on mount.
+    let openHealth!: () => void;
+    const gate = new Promise<void>(resolve => (openHealth = resolve));
+    const base = globalThis.fetch;
+    const asked: string[] = [];
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      asked.push(url);
+      if (url.startsWith('/health')) await gate;
+      return await (base as typeof fetch)(input, init);
+    }) as unknown as typeof fetch;
+
+    globalThis.location.hash = '#/models';
+    render(<Shell />);
+    await waitFor(() => expect(asked.some(u => u.startsWith('/health'))).toBe(true));
+    expect(asked.some(u => u.startsWith('/routing/ledger'))).toBe(false);
+    expect(screen.queryByRole('heading', { name: 'How they score' })).toBeNull();
+
+    await act(async () => {
+      openHealth();
+      await new Promise(r => setTimeout(r, 10));
+    });
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'How they score' })).toBeTruthy());
+  });
+
+  test('opening the Models page re-reads the loaded providers', async () => {
+    // /health is otherwise read once per mount, so a provider added in
+    // Settings had no column on the board until a browser reload.
+    let healths = 0;
+    const base = globalThis.fetch;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).startsWith('/health')) healths += 1;
+      return await (base as typeof fetch)(input, init);
+    }) as unknown as typeof fetch;
+
+    render(<Shell />);
+    await waitFor(() => expect(chatNode()).toBeTruthy());
+    const before = healths;
+
+    await act(async () => {
+      globalThis.location.hash = '#/models';
+      globalThis.dispatchEvent(new HashChangeEvent('hashchange'));
+      await Promise.resolve();
+    });
+    await waitFor(() => expect(healths).toBeGreaterThan(before));
+  });
+
   test('a stale empty list cannot reopen a draft over the thread just created', async () => {
     const fresh: ThreadHeader = {
       id: 't-9',

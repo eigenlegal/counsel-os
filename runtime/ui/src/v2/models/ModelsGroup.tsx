@@ -67,7 +67,7 @@ interface Running {
 }
 
 /**
- * Settings › Models (routing-and-evals spec §10): the scoreboard as a
+ * The Models page (routing-and-evals spec §10): the scoreboard as a
  * task × provider ledger — set-text scores, hairlines, the three fixture
  * sets as small-caps tabs and never averaged together. Each cell is a quiet
  * "score" link that asks once (count and cost) and then runs in place, the

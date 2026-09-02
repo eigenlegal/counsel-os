@@ -1,6 +1,6 @@
 import { Shell } from './v2/Shell';
 
-/** The four surfaces the fragment routes between (redesign spec §3.1). */
+/** The surfaces the fragment routes between (redesign spec §3.1). */
 export type Route = 'home' | 'chat' | 'vault' | 'models' | 'settings';
 
 /** The fragment split into the part that picks a surface and the part that

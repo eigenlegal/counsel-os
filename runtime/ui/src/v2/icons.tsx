@@ -1,4 +1,4 @@
-/** The rail's outline icons (mock-{home,chat,vault}.html — same four SVGs
+/** The rail's outline icons (mock-{home,chat,vault}.html — the same SVGs
  * on every page). 16×16, stroked with currentColor so the token ramp colors
  * them. */
 
@@ -48,15 +48,6 @@ export function VaultIcon(): JSX.Element {
   );
 }
 
-/**
- * A gear. The old icon was a ring with eight radiating spokes, which is the
- * glyph every other app uses for BRIGHTNESS — it read as a light/dark
- * toggle, not as settings.
- *
- * Six teeth, not eight: at 16px the teeth have to stay separate, and the
- * rail's other three icons are four-to-six-point outlines that a denser
- * gear would out-weigh.
- */
 /** Bars on a baseline: the scoreboard, which is what the page is. */
 export function ModelsIcon(): JSX.Element {
   return (
@@ -66,6 +57,15 @@ export function ModelsIcon(): JSX.Element {
   );
 }
 
+/**
+ * A gear. The old icon was a ring with eight radiating spokes, which is the
+ * glyph every other app uses for BRIGHTNESS — it read as a light/dark
+ * toggle, not as settings.
+ *
+ * Six teeth, not eight: at 16px the teeth have to stay separate, and the
+ * rail's other three icons are four-to-six-point outlines that a denser
+ * gear would out-weigh.
+ */
 export function SettingsIcon(): JSX.Element {
   return (
     <Icon round>

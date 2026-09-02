@@ -83,7 +83,7 @@ bun runtime/src/cli.ts eval --scoreboard            # the ledger: task, then a l
 bun runtime/src/cli.ts eval --scoreboard --json     # the same board as JSON (GET /evals/scoreboard serves it)
 ```
 
-Three rules hold everywhere the board appears (the CLI, `GET /evals/scoreboard`, Settings › Models): the latest line per fixture wins, so a re-run replaces rather than accumulates; the `practice`, `shipped` and `benchmark` sets are never averaged together; a `score: null` line is a failed cell with its reason, never a zero in the mean. Each row carries how many fixtures it scored, the sample size (every line behind it), the median latency, the mean cost per run and how many days old it is.
+Three rules hold everywhere the board appears (the CLI, `GET /evals/scoreboard`, the app's Models page): the latest line per fixture wins, so a re-run replaces rather than accumulates; the `practice`, `shipped` and `benchmark` sets are never averaged together; a `score: null` line is a failed cell with its reason, never a zero in the mean. Each row carries how many fixtures it scored, the sample size (every line behind it), the median latency, the mean cost per run and how many days old it is.
 
 The shipped fixtures and their mini-vaults (`evals/fixtures`, `evals/vaults`) ship through the content source like the law areas do, so the compiled binary lists and runs the same suite as a checkout. The practice's own fixtures live under `<vault>/practice/evals/` and never ship.
 
@@ -110,4 +110,4 @@ An import writes `<dest>/<set>/fixtures/*.json`, one vault under `<dest>/<set>/v
 
 Benchmarks score under the `benchmark` set, which the scoreboard keeps apart from the practice's own fixtures and never routes on: a public set says how a model does at the benchmark's task, not at yours.
 
-In the app, Settings › Models shows the board with the three sets as tabs. Each cell's *score* (or *retry* / *again*) asks once — how many fixtures, roughly what it costs, or *cost unknown* when the vendor publishes no price the runtime knows — then runs `POST /evals/run` with `save: true` and reports progress on the same line.
+In the app, the **Models** page shows the board with the three sets as tabs, the routing bar under each task, and a ledger of what actually ran. Each cell's *score* (or *retry* / *again*) asks once — how many fixtures, roughly what it costs, or *cost unknown* when the vendor publishes no price the runtime knows — then runs `POST /evals/run` with `save: true` and reports progress on the same line.

@@ -85,9 +85,11 @@ describe('the Models page', () => {
     expect(within(screen.getByRole('table', { name: 'What ran' })).getByText(/review 0.90/)).toBeTruthy();
   });
 
-  test('before the runtime answers, the board waits rather than claiming an empty one', () => {
-    render(<ModelsPage health={null} />);
-    expect(screen.getByText('Reading the runtime…')).toBeTruthy();
-    expect(screen.queryByRole('table', { name: /scores/ })).toBeNull();
+  test('says what a scoring run costs before anyone starts one', async () => {
+    render(<ModelsPage health={health} />);
+    await waitFor(() => expect(screen.getByRole('table', { name: /scores/ })).toBeTruthy());
+    // The warning that moved with the page: this is the one screen in the
+    // app whose buttons spend the window.
+    expect(screen.getByText(/Scoring runs real steps and costs real calls/)).toBeTruthy();
   });
 });

@@ -8,31 +8,37 @@
  * happened. Settings is where you configure the thing; this is where you
  * see how it is doing and change what you expect of it.
  *
- * Three questions, in the order an operator asks them: how do the models
- * score, how does each kind of work route, and what actually ran.
+ * Two questions, in the order an operator asks them: how do the models
+ * score, and what actually ran. How each task routes is the third, and it
+ * reads as a line under the task it belongs to rather than a section of its
+ * own.
  */
 import type { Health } from '../../api/types';
 import { ModelsGroup } from './ModelsGroup';
 import { RoutingLedger } from './RoutingLedger';
 
 export interface ModelsPageProps {
-  health: Health | null;
+  /** Never null: the shell holds this page back until `/health` answers, the
+   * way it does every other page — before that the runtime may be in setup
+   * mode, where every vault-backed read is a 409. */
+  health: Health;
 }
 
 export function ModelsPage({ health }: ModelsPageProps): JSX.Element {
   // The loaded providers are the board's columns: a provider the runtime
   // never loaded has nothing to score and nothing to route to.
-  const providerIds = (health?.providers ?? []).map(p => p.id);
+  const providerIds = health.providers.map(p => p.id);
 
   return (
-    <div className="v2-settings v2-models-page">
+    <div className="v2-settings">
       <section className="v2-group" aria-labelledby="models-board">
         <h2 id="models-board">How they score</h2>
         <p className="muted">
           Every provider against every kind of work, from the eval fixtures: the shipped suite, your own practice set, and public benchmarks, never averaged
-          together. Under each task is the bar a model has to clear, what breaks a tie, and who that picks today.
+          together. Under each task is the bar a model has to clear, what breaks a tie, and who that picks today. Scoring runs real steps and costs real
+          calls.
         </p>
-        {health === null ? <p className="muted">Reading the runtime…</p> : <ModelsGroup providerIds={providerIds} />}
+        <ModelsGroup providerIds={providerIds} />
       </section>
 
       <section className="v2-group" aria-labelledby="models-ran">

@@ -82,7 +82,7 @@ afterEach(() => {
 });
 
 describe('Rail', () => {
-  test('brand, the four surfaces, and the current one marked', () => {
+  test('brand, the surfaces, and the current one marked', () => {
     mount({ route: 'vault', collapsed: false });
     expect(screen.getByText('counsel-os')).toBeTruthy();
     for (const name of ['Home', 'Chat', 'Vault', 'Models', 'Settings']) {
