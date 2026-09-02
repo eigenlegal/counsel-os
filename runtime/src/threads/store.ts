@@ -23,6 +23,10 @@ export interface ThreadHeader {
   id: string;
   title?: string;
   matter?: string;
+  /** A task every step of this thread runs as, when the caller names none —
+   * `retro` for a retro thread, whose system prompt carries the method and
+   * the period's evidence. Absent for an ordinary conversation. */
+  task?: string;
   createdAt: string;
   updatedAt: string;
   sessions: Record<string, string>;
@@ -169,7 +173,7 @@ export class ThreadStore {
       .map(line => JSON.parse(line) as ThreadEvent);
   }
 
-  async create(tenant: Tenant, init: { title?: string; matter?: string } = {}): Promise<ThreadHeader> {
+  async create(tenant: Tenant, init: { title?: string; matter?: string; task?: string } = {}): Promise<ThreadHeader> {
     this.validateTenant(tenant);
     const id = randomUUID();
     const now = new Date().toISOString();
@@ -177,6 +181,7 @@ export class ThreadStore {
       id,
       title: init.title,
       matter: init.matter,
+      ...(init.task === undefined ? {} : { task: init.task }),
       createdAt: now,
       updatedAt: now,
       sessions: {},
@@ -208,6 +213,14 @@ export class ThreadStore {
     }
     this.writeHeader(tenant, header);
     return this.presentHeader(tenant, header);
+  }
+
+  /** The header alone, presented — for a caller that needs the thread's
+   * matter or task before it has any reason to read the log. */
+  async header(tenant: Tenant, id: string): Promise<ThreadHeader> {
+    this.validateTenant(tenant);
+    this.validateId(id);
+    return this.presentHeader(tenant, this.readHeader(tenant, id));
   }
 
   async get(tenant: Tenant, id: string): Promise<{ header: ThreadHeader; events: ThreadEvent[] }> {

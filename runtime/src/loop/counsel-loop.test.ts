@@ -1511,8 +1511,10 @@ describe('runStep — the run record', () => {
     class BrokenStore extends ThreadStore {
       reads = 0;
       override async get(tenant: string, id: string): ReturnType<ThreadStore['get']> {
-        // 1: the existence check. 2: the header read. 3: the window replay.
-        if (++this.reads === 3) throw new Error('log read failed');
+        // The existence check reads the header alone (`store.header`), so
+        // `get` runs twice: 1: the header read for the prompt. 2: the window
+        // replay.
+        if (++this.reads === 2) throw new Error('log read failed');
         return super.get(tenant, id);
       }
     }

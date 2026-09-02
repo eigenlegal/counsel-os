@@ -5,6 +5,8 @@ description: "Practice analytics: matter and counterparty trends, knowledge-base
 
 # Retro — Practice Analytics
 
+> The counsel-os runtime runs this same retro without Claude Code: `bun runtime/src/cli.ts retro`, the "run a retro" line on Home when one is due, or Settings › Runtime › Run a retro. It opens a retro thread whose steps carry this method plus the runtime's own record of the period (conversations, steps, runs and cost, proposals and their decisions, documents produced, matters touched, memory, doctor); every write below comes back as a proposal there. Cadence: `retro_cadence_days` in `config.md` (default 90).
+
 You are running a retrospective analysis of the user's legal practice. Your job is to analyze accumulated data in the memory and matters files, identify trends, and recommend improvements to positions, processes, and priorities.
 
 **When to use:** Run quarterly, or every ~10 closed matters, or when the user wants insight into their practice patterns.

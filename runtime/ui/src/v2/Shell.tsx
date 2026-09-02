@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, fetchJson } from '../api/client';
 import { bootstrapToken } from '../api/token';
 import { onUnauthorized } from '../api/unauthorized';
-import type { Health, SettingsView, ThreadHeader, VaultOverview } from '../api/types';
+import type { Health, RetroStart, SettingsView, ThreadHeader, VaultOverview } from '../api/types';
 import { parseHash, threadFromHash, vaultPathFromHash, type Route } from '../app';
 import { Chat } from './chat/Chat';
 import { VAULT_CHANGED_EVENT } from './intake';
@@ -277,6 +277,32 @@ export function Shell(): JSX.Element {
     return { threads: sorted, fresh };
   }, []);
 
+  /**
+   * A retro (skills/retro, in the runtime): `POST /retro` opens the retro
+   * thread — its header carries `task: retro`, which is what puts the method
+   * and the period's evidence into every step's prompt — and the pane sends
+   * the returned first message as an ordinary step. Same one-shot `initialAsk`
+   * as home's ask box, aimed at an existing thread instead of a draft.
+   */
+  const startRetro = useCallback(async (): Promise<void> => {
+    setError(null);
+    try {
+      const start = await fetchJson<RetroStart>('/retro', { method: 'POST', body: JSON.stringify({}) });
+      setNotFound(false);
+      setSelected(start.threadId);
+      setDraft(false);
+      setChatKey(k => k + 1);
+      setInitialAsk(current => ({ text: start.message, nonce: (current?.nonce ?? 0) + 1 }));
+      setRoute('chat');
+      setVaultPath(null);
+      globalThis.history.replaceState(null, '', `#/chat?thread=${encodeURIComponent(start.threadId)}`);
+      void loadThreads();
+    } catch (err) {
+      if (!(err instanceof ApiError && err.status === 401)) setError(`could not start the retro: ${detail(err)}`);
+    }
+  }, [loadThreads]);
+
+
   /** Bumped by the setup page once a vault exists: re-runs the initial load. */
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
@@ -467,7 +493,7 @@ export function Shell(): JSX.Element {
 
         {/* The pages wait for /health: before it answers, the runtime may be
             in setup mode, and Home's own reads would be 409s. */}
-        {route === 'home' && health !== null ? <HomePage threads={threads} onAsk={startAsk} onOpenThread={openThread} health={health} /> : null}
+        {route === 'home' && health !== null ? <HomePage threads={threads} onAsk={startAsk} onOpenThread={openThread} health={health} onStartRetro={() => void startRetro()} /> : null}
 
         {route === 'vault' && health !== null ? (
           <VaultPage
@@ -481,7 +507,7 @@ export function Shell(): JSX.Element {
 
         {route === 'settings' && health !== null ? (
           <main className="v2-page">
-            <SettingsPage health={health} />
+            <SettingsPage health={health} onStartRetro={() => void startRetro()} />
           </main>
         ) : null}
       </div>

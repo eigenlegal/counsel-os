@@ -6,6 +6,14 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [Unreleased]
+
+Retro in the runtime — the practice's feedback loop without the plugin
+
+- A retro is a thread: `POST /retro` (Home's "run a retro" line when one is due; Settings › Runtime › Run a retro) and `bun runtime/src/cli.ts retro [--since <date>]` open a `Retro · <period>` thread whose header carries `task: retro`. Every step of that thread runs with the retro method (`skills/retro/SKILL.md`, now shipped content) and the runtime's own evidence for the period in its system prompt — conversations and steps by task and provider, runs with cost and errors, proposals by decision, documents produced, matters touched, memory, and the doctor's findings — and every knowledge change the retro suggests comes back as a proposal for the docket.
+- `GET /retro` says when the last retro ran and whether one is due: `retro_cadence_days` in `config.md` (default 90), or for a first retro, a vault with at least 3 matters or 10 conversations. `.counsel/retro.json` records the last retro.
+- A thread header can carry a `task`; the loop runs every step of such a thread as that task when the caller names none.
+
 ## [0.12.0] — 2026-09-01
 
 Standalone foundations — Word documents in TypeScript, runtime-owned setup, drag-in intake, stay signed in, new theme

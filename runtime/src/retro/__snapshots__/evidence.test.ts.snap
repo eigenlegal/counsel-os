@@ -1,0 +1,44 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`gatherRetroEvidence renders the period as plain facts for the system prompt 1`] = `
+"Period: 2026-07-01 to 2026-09-01.
+
+### Conversations
+- 1 of 2 conversations touched in the period; 2 steps answered.
+- Steps by task: counsel 1, review 1.
+- Steps by provider: fake/fake 1, ollama/gemma4:e4b 1.
+- Titles (newest first):
+  - Check the Acme NDA term.
+
+### Runs
+- 3 runs: 1 done, 1 errored, 1 timed out, 0 abandoned; cost about $0.56.
+- Primitives consulted: evaluate 2, draft 1.
+- Tools called: vault_read 2, apply_redlines 1.
+- Errors seen:
+  - step timed out after 600s
+  - claude harness: Not logged in
+
+### Proposals (knowledge changes counsel raised)
+- approved: 1
+  - practice/standards/nda.md — Record the residuals fallback (in “Check the Acme NDA term.”, 2026-08-10)
+- rejected: 1
+  - memory/patterns.md — Log the pattern (in “Check the Acme NDA term.”, 2026-08-10)
+- pending: 1
+  - practice/methods/nda-triage.md — Promote the triage method (in “Check the Acme NDA term.”, 2026-08-10)
+
+### Documents produced
+- 1 documents (docx-redline 1); 5 edits applied, 1 skipped, 3 comments.
+  - matters/acme/acme-nda-redline-2026-08-10.docx
+
+### Matters
+- 1 of 2 matters touched in the period:
+  - matters/acme-nda.md — Acme — NDA · working · updated 2026-08-10
+
+### Memory
+- memory/patterns.md: 4 entries.
+- Previous retro snapshots: retro-2026-05-01.md.
+
+### Vault health (doctor)
+- 1 warning — git first
+  - warn: git — no commits since 2026-06-01"
+`;

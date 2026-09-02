@@ -22,6 +22,10 @@ import { renderReport, runDoctor } from './doctor/index';
 import { runInit } from './setup/init';
 import { defaultPluginRoot, startServer } from './server/serve';
 import { resolveLegalRoot } from './vault/resolve-root';
+import { ThreadStore } from './threads/store';
+import { startRetro } from './retro/index';
+import { runStep } from './loop/counsel-loop';
+import { loadRegistry } from './providers/registry';
 
 const { values, positionals } = parseArgs({
   args: Bun.argv.slice(2),
@@ -56,6 +60,7 @@ const { values, positionals } = parseArgs({
     changes: { type: 'string' },      // `docx read`: all | accept | reject
     format: { type: 'string' },       // `docx extract|check`: json | markdown | text
     'dry-run': { type: 'boolean' },        // `update-content`: report only
+    since: { type: 'string' },             // `retro`: the period start (YYYY-MM-DD); default = the last retro
     out: { type: 'string' },          // `docx apply`: where to write (default <original>-redline-<date>.docx)
     track: { type: 'boolean' },       // `docx apply`: native tracked changes
     author: { type: 'string' },       // `docx apply|compare`: the revision author
@@ -79,6 +84,8 @@ function usage(): never {
   console.error('       bun runtime/src/cli.ts docx check <file.docx|.md|.txt> [--format json|text] (mechanical QA)');
   console.error('       bun runtime/src/cli.ts update-content [--vault <dir>] [--yes] [--dry-run]');
   console.error('         compares the shipped law and practice content with the vault; applies law updates (never a file you changed)');
+  console.error('       bun runtime/src/cli.ts retro [--vault <dir>] [--since <YYYY-MM-DD>] [--provider <id>]');
+  console.error('         opens a retro thread over the runtime\'s record of the period and runs its first step; knowledge changes come back as proposals');
   console.error('       bun runtime/src/cli.ts doctor [--vault <dir>]');
   console.error('         read-only vault health: root config, structure, law currency, git, standards/library consistency, matter law impact');
   console.error('       bun runtime/src/cli.ts docx apply <file.docx> <redlines.json> [--out <file>] [--track] [--author <name>] (the redline; result JSON to stdout, exit 2 on any skip)');
@@ -295,6 +302,46 @@ if (cmd === 'serve') {
   const result = applyUpdates(deps, pending);
   console.log(`Applied ${result.applied.length}: ${result.applied.join(', ')}`);
   process.exit(0);
+} else if (cmd === 'retro') {
+  const vaultRoot = vaultForMaintenance();
+  const pluginRoot = defaultPluginRoot();
+  const store = new ThreadStore(vaultRoot);
+  const start = await startRetro({ vaultRoot, tenant: DEFAULT_TENANT, store }, values.since === undefined ? {} : { since: values.since });
+  console.error(`${start.title} — thread ${start.threadId}`);
+  // The first step runs here when a provider resolves; without one the
+  // thread still exists and the app can run it.
+  let loaded: ReturnType<typeof loadRegistry> | null = null;
+  try {
+    loaded = loadRegistry({ vaultRoot });
+  } catch (err) {
+    console.error(`no provider to run the retro on: ${err instanceof Error ? err.message : String(err)}`);
+  }
+  if (loaded === null) {
+    console.log(start.message);
+    console.error('Open the retro thread in the app to run it.');
+    process.exit(0);
+  }
+  const vault = new FsVaultStore(vaultRoot, { search: fsSearch() });
+  let exit = 1;
+  const events = runStep(
+    {
+      tenant: DEFAULT_TENANT,
+      vaultRoot,
+      pluginRoot,
+      content: repoContentSource(pluginRoot),
+      vault,
+      store,
+      providers: loaded.providers,
+      router: loaded.router,
+      ...(stepTimeoutMs === undefined ? {} : { stepTimeoutMs }),
+    },
+    { threadId: start.threadId, message: start.message, ...(values.provider ? { providerId: values.provider } : {}) },
+  );
+  for await (const ev of events) {
+    console.log(JSON.stringify(ev));
+    if (isTerminal(ev)) exit = ev.type === 'done' ? 0 : 1;
+  }
+  process.exit(exit);
 } else if (cmd === 'doctor') {
   const vaultRoot = vaultForMaintenance();
   const report = runDoctor({ vaultRoot, pluginRoot: defaultPluginRoot() });

@@ -44,6 +44,7 @@ let pending: PendingProposal[] = [];
 let docketBody: DocketView = { deadlines: [], skipped: 0 };
 let overviewBody: VaultOverview = overview;
 let truncatedHeader = false;
+let retroBody: Record<string, unknown> | null = null;
 
 function json(body: unknown, headers: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(body), {
@@ -68,6 +69,7 @@ beforeEach(() => {
   docketBody = { deadlines: [], skipped: 0 };
   overviewBody = overview;
   truncatedHeader = false;
+  retroBody = null;
   sessionStorage.setItem(TOKEN_KEY, 'test-token');
   history.replaceState(null, '', '/#/');
   globalThis.fetch = (async (input: RequestInfo | URL) => {
@@ -75,6 +77,7 @@ beforeEach(() => {
     if (url.startsWith('/vault/overview')) return json(overviewBody);
     if (url.startsWith('/proposals')) return json(pending, truncatedHeader ? { 'x-counsel-truncated': '1' } : {});
     if (url.startsWith('/docket')) return json(docketBody);
+    if (url.startsWith('/retro')) return retroBody === null ? new Response('nope', { status: 404 }) : json(retroBody);
     if (url.startsWith('/vault/list')) return json([]);
     throw new Error(`unexpected fetch: ${url}`);
   }) as unknown as typeof fetch;
@@ -475,5 +478,29 @@ describe('HomePage document intake (docx spec §6)', () => {
     fireEvent.drop(document.querySelector('.v2-ask')!, { dataTransfer: dt([NDA()]) });
     await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
     expect(screen.getByRole('alert').textContent).toContain('larger than the 25 MB limit');
+  });
+});
+
+describe('HomePage, the retro due line (skills/retro in the runtime)', () => {
+  test('due: one line of set text under the greeting; run a retro hands off to the shell', async () => {
+    retroBody = { lastRetroAt: '2026-05-01T00:00:00.000Z', threadId: 't', cadenceDays: 90, daysSince: 123, dueAt: '2026-07-30T00:00:00.000Z', due: true, reason: 'Last retro 123 days ago' };
+    let started = 0;
+    mount({ onStartRetro: () => (started += 1) });
+    const line = await screen.findByText(/Last retro 123 days ago/);
+    expect(line.className).toBe('v2-retro-due');
+    await userEvent.click(screen.getByRole('button', { name: 'run a retro' }));
+    expect(started).toBe(1);
+  });
+
+  test('not due, or unreadable: nothing', async () => {
+    retroBody = { lastRetroAt: '2026-08-20T00:00:00.000Z', threadId: 't', cadenceDays: 90, daysSince: 12, dueAt: '2026-11-18T00:00:00.000Z', due: false, reason: 'Last retro 12 days ago · next due 2026-11-18' };
+    mount();
+    await waitFor(() => expect(screen.getByText('Vendora × Worldpay — documentation')).toBeTruthy());
+    expect(document.querySelector('.v2-retro-due')).toBeNull();
+    cleanup();
+    retroBody = null;
+    mount();
+    await waitFor(() => expect(screen.getByText('Vendora × Worldpay — documentation')).toBeTruthy());
+    expect(document.querySelector('.v2-retro-due')).toBeNull();
   });
 });

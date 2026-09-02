@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ApiError, fetchJson, fetchJsonWithHeaders, moveFile } from '../../api/client';
-import type { DocketEntry, DocketView, Health, PendingProposal, ThreadHeader, VaultOverview } from '../../api/types';
+import type { DocketEntry, DocketView, Health, PendingProposal, RetroStatus, ThreadHeader, VaultOverview } from '../../api/types';
 import { ProviderNotice } from '../ProviderNotice';
 import { Tree } from '../../vault/Tree';
 import { MatterPicker } from '../chat/MatterPicker';
@@ -73,6 +73,8 @@ export interface HomePageProps {
   /** For the swap notice above the ask box (cou-95). Absent = no notice. */
   health?: Health | null;
   onOpenThread: (id: string) => void;
+  /** "run a retro" on the due line: the shell opens the retro thread. */
+  onStartRetro?: () => void;
 }
 
 /**
@@ -82,13 +84,15 @@ export interface HomePageProps {
  * `/vault/overview` + `/proposals?status=pending`, fetched on mount — the
  * shell mounts this page per visit to Home, so the docket is always current.
  */
-export function HomePage({ threads, onAsk, onOpenThread, health }: HomePageProps): JSX.Element {
+export function HomePage({ threads, onAsk, onOpenThread, health, onStartRetro }: HomePageProps): JSX.Element {
   const [overview, setOverview] = useState<VaultOverview | null>(null);
   const [pending, setPending] = useState<PendingProposal[]>([]);
   /** The proposal scan was bounded — there may be proposals it never saw. */
   const [truncated, setTruncated] = useState(false);
   /** The deadline sweep (`GET /docket`): dated obligations off the matters. */
   const [docket, setDocket] = useState<DocketView>({ deadlines: [], skipped: 0 });
+  /** `GET /retro`: shown only when a retro is due; a failed read shows nothing. */
+  const [retro, setRetro] = useState<RetroStatus | null>(null);
   /** The "later" group unfolds in place; it starts folded. */
   const [laterOpen, setLaterOpen] = useState(false);
   const [vaultError, setVaultError] = useState<string | null>(null);
@@ -137,11 +141,15 @@ export function HomePage({ threads, onAsk, onOpenThread, health }: HomePageProps
    */
   useEffect(() => {
     void (async () => {
-      const [ov, proposals, sweep] = await Promise.allSettled([
+      const [ov, proposals, sweep, retroRead] = await Promise.allSettled([
         fetchJson<VaultOverview>('/vault/overview'),
         fetchJsonWithHeaders<PendingProposal[]>('/proposals?status=pending'),
         fetchJson<unknown>('/docket'),
+        fetchJson<RetroStatus>('/retro'),
       ]);
+      // The retro line is a courtesy: an older runtime without /retro, or a
+      // failed read, shows nothing rather than an error.
+      if (retroRead.status === 'fulfilled' && typeof retroRead.value === 'object' && retroRead.value !== null && typeof retroRead.value.due === 'boolean') setRetro(retroRead.value);
       if (ov.status === 'fulfilled') setOverview(ov.value);
       else setVaultError(failureNote(ov.reason, 'could not read the vault'));
       if (proposals.status === 'fulfilled') {
@@ -200,6 +208,15 @@ export function HomePage({ threads, onAsk, onOpenThread, health }: HomePageProps
       <div className="v2-home-wrap">
         <div className="v2-hi">{greetingFor()}</div>
         {subline === null ? null : <div className="v2-sub">{subline}</div>}
+        {retro !== null && retro.due ? (
+          <p className="v2-retro-due" role="status">
+            {retro.reason}
+            {' · '}
+            <button type="button" className="v2-link" onClick={onStartRetro}>
+              run a retro
+            </button>
+          </p>
+        ) : null}
 
         <ProviderNotice health={health} />
         <div

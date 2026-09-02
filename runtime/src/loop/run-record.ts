@@ -147,6 +147,29 @@ export function readRun(vaultRoot: string, tenant: Tenant, runId: string): RunRe
 }
 
 /**
+ * Every run of the tenant, newest first — the retro's evidence needs the
+ * whole period, not one thread. Same file rules as `listRuns`.
+ */
+export function listAllRuns(vaultRoot: string, tenant: Tenant): RunRecord[] {
+  const dir = runsDir(vaultRoot, tenant);
+  let names: string[];
+  try {
+    names = readdirSync(dir);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
+    throw err;
+  }
+  const runs: RunRecord[] = [];
+  for (const name of names) {
+    if (!name.endsWith('.json')) continue;
+    const rec = readRecordAt(join(dir, name));
+    if (rec !== null) runs.push(rec);
+  }
+  runs.sort((a, b) => b.startedAt.localeCompare(a.startedAt) || b.runId.localeCompare(a.runId));
+  return runs;
+}
+
+/**
  * Every run of one thread, newest first. `threadId` is matched against the
  * records' contents, never used as a path segment, so it needs no validation
  * of its own — an id that names no thread simply matches nothing.

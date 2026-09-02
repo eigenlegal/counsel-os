@@ -963,3 +963,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* The retro (skills/retro, in the runtime): one quiet line on Home when it
+   is due, and the Settings › Runtime row. Set text, no pill. */
+.v2-retro-due { margin: 4px 0 0; font: italic 13px/1.5 var(--serif); color: var(--fg-muted); }
+.v2-retro-due .v2-link { font: inherit; }
+.v2-retro { margin-top: 22px; }
+.v2-retro-line { margin: 6px 0 10px; font-size: 13px; color: var(--fg-muted); }
+.v2-retro-due-word { color: var(--warn, var(--accent)); font-style: italic; }

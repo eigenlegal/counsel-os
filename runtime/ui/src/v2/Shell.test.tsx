@@ -794,3 +794,48 @@ describe('Shell, the vault index refresh', () => {
     await waitFor(() => expect(fetched.filter(u => u.startsWith('/vault/index'))).toHaveLength(2));
   });
 });
+
+describe('Shell, running a retro (skills/retro in the runtime)', () => {
+  test('run a retro opens the retro thread and sends its first message as a step', async () => {
+    const retroHeader = { id: 't-r', title: 'Retro · all time · to 2026-09-01', task: 'retro', createdAt: at, updatedAt: at, sessions: {} };
+    const calls: Array<{ method: string; url: string; body?: unknown }> = [];
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+      calls.push({ method, url, body: init?.body === undefined ? undefined : JSON.parse(String(init.body)) });
+      if (url.startsWith('/health')) return json(health);
+      if (url.startsWith('/runs')) return json([]);
+      if (url === '/threads') return json(calls.some(c => c.method === 'POST' && c.url === '/retro') ? [retroHeader, acme] : [acme]);
+      if (url === '/retro' && method === 'GET') {
+        return json({ lastRetroAt: '2026-05-01T00:00:00.000Z', threadId: 't-old', cadenceDays: 90, daysSince: 123, dueAt: '2026-07-30T00:00:00.000Z', due: true, reason: 'Last retro 123 days ago' });
+      }
+      if (url === '/retro' && method === 'POST') {
+        return new Response(JSON.stringify({ threadId: 't-r', title: retroHeader.title, period: { from: null, to: at }, message: 'Run the practice retro for all time.', status: { due: false } }), { status: 201, headers: { 'content-type': 'application/json' } });
+      }
+      if (url === '/threads/t-r/steps') {
+        return new Response('event: done\ndata: {"type":"done","output":null}\n\n', { status: 200, headers: { 'content-type': 'text/event-stream' } });
+      }
+      if (url === '/threads/t-r') return json({ header: retroHeader, events: [] } satisfies Thread);
+      if (url.startsWith('/threads/')) return json({ header: acme, events: [] } satisfies Thread);
+      if (url.startsWith('/vault/overview')) return json({ matters: [], groups: { practice: 0, knowledge: 0, other: 0 } });
+      if (url.startsWith('/proposals')) return json([]);
+      if (url.startsWith('/docket')) return json({ deadlines: [], skipped: 0 });
+      if (url.startsWith('/vault/list') || url.startsWith('/vault/index')) return json([]);
+      if (url.startsWith('/settings')) return json(settings);
+      throw new Error(`unexpected fetch: ${method} ${url}`);
+    }) as unknown as typeof fetch;
+
+    globalThis.history.replaceState(null, '', '#/');
+    render(<Shell />);
+    await userEvent.click(await screen.findByRole('button', { name: 'run a retro' }));
+
+    await waitFor(() => expect(calls.some(c => c.method === 'POST' && c.url === '/threads/t-r/steps')).toBe(true));
+    const step = calls.find(c => c.method === 'POST' && c.url === '/threads/t-r/steps')!;
+    expect((step.body as { message: string }).message).toBe('Run the practice retro for all time.');
+    // The thread is the one open on screen, and the URL names it.
+    expect(globalThis.location.hash).toBe('#/chat?thread=t-r');
+    await waitFor(() => expect(document.querySelector('.v2-thread-head h1')?.textContent).toContain('Retro ·'));
+    // No thread was created by the page: the runtime opened it.
+    expect(calls.some(c => c.method === 'POST' && c.url === '/threads')).toBe(false);
+  });
+});

@@ -15,6 +15,7 @@ import { readVaultConfig } from '../vault/resolve-root';
 import { applyUpdates, contentStatus, UpdateError } from '../content/update';
 import { repoContentSource } from '../content/repo';
 import { runDoctor } from '../doctor/index';
+import { retroStatusFor, startRetro } from '../retro/index';
 import { systemGit, type GitRunner } from '../setup/run';
 import { authorize, CLEAR_SESSION_COOKIE, withSessionCookie } from './auth';
 import {
@@ -61,7 +62,7 @@ export type App = (req: Request) => Promise<Response>;
  * static, served with no credential, so a new route whose prefix is missing
  * here would be reachable by anyone who can reach the port.
  */
-export const API_PREFIXES: readonly string[] = ['health', 'threads', 'runs', 'vault', 'settings', 'proposals', 'docket', 'setup', 'content', 'doctor', 'session'];
+export const API_PREFIXES: readonly string[] = ['health', 'threads', 'runs', 'vault', 'settings', 'proposals', 'docket', 'setup', 'content', 'doctor', 'session', 'retro'];
 
 /** True when `pathname` belongs to the API (and so needs a token). `/` and
  * every client-side route are false. */
@@ -91,6 +92,12 @@ const PatchThreadBody = z
   .object({ title: z.string().max(200).optional(), matter: MATTER_PATH.nullable().optional() })
   .strict()
   .refine(b => b.title !== undefined || b.matter !== undefined, { message: 'nothing to change' });
+
+/** `POST /retro`: an optional period start; a bad date is a 400 like any
+ * other schema failure rather than a silently ignored one. */
+const RetroBody = z.object({
+  since: z.string().refine(v => !Number.isNaN(Date.parse(v)), 'since must be a date').optional(),
+});
 
 const StepBody = z.object({
   message: z.string().min(1),
@@ -742,6 +749,18 @@ export function createApp(deps: ServerDeps): App {
   const doctorRoute = (): Response =>
     json(runDoctor({ vaultRoot: deps.vaultRoot, pluginRoot: deps.pluginRoot, git: deps.git === undefined ? systemGit() : deps.git }));
 
+  /** `GET /retro` — when the practice last ran a retro and whether one is
+   * due (`retro/`); `POST /retro` — open the retro thread. The step itself
+   * is the ordinary `POST /threads/:id/steps` with the returned message:
+   * the thread's `task` is what makes it a retro. */
+  const retroDeps = () => ({ vaultRoot: deps.vaultRoot, tenant: deps.tenant, store: deps.store, vault: deps.vault, cfg: readVaultConfig(deps.vaultRoot) });
+  const retroStatusRoute = async (): Promise<Response> => json(await retroStatusFor(retroDeps()));
+  const retroStartRoute = async (req: Request): Promise<Response> => {
+    const input = await body(req, RetroBody);
+    const start = await startRetro(retroDeps(), input.since === undefined ? {} : { since: input.since });
+    return json({ ...start, status: await retroStatusFor(retroDeps()) }, 201);
+  };
+
   const docketRoute = async (): Promise<Response> =>
     json(await vaultDocket(deps.vault, deps.tenant, readVaultConfig(deps.vaultRoot)));
 
@@ -911,6 +930,11 @@ export function createApp(deps: ServerDeps): App {
       }
 
       if (segments.length === 1 && first === 'doctor' && method === 'GET') return doctorRoute();
+
+      if (segments.length === 1 && first === 'retro') {
+        if (method === 'GET') return await retroStatusRoute();
+        if (method === 'POST') return await retroStartRoute(req);
+      }
 
       return fail(404, `no route for ${method} ${url.pathname}`);
     }

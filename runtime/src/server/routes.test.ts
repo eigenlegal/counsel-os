@@ -24,6 +24,9 @@ beforeEach(() => {
   vaultRoot = mkdtempSync(join(tmpdir(), 'routes-vault-'));
   pluginRoot = mkdtempSync(join(tmpdir(), 'routes-plugin-'));
   mkdirSync(join(pluginRoot, 'skills', 'counsel'), { recursive: true });
+  // The retro method is shipped content too (`retro/`): a retro step reads it.
+  mkdirSync(join(pluginRoot, 'skills', 'retro'), { recursive: true });
+  writeFileSync(join(pluginRoot, 'skills', 'retro', 'SKILL.md'), '---\nname: retro\n---\n# Retro\n\nStep 6: harvest promotable knowledge.\n', 'utf8');
   writeFileSync(join(pluginRoot, 'skills', 'counsel', 'SKILL.md'), '---\nname: counsel\n---\n\nBODY.\n', 'utf8');
   mkdirSync(join(pluginRoot, 'primitives'), { recursive: true });
   writeFileSync(join(pluginRoot, 'primitives', 'draft.md'), 'DRAFT.\n', 'utf8');
@@ -1440,5 +1443,53 @@ describe('the session cookie', () => {
     const viaBearer = await call(app, 'POST', '/session/clear');
     expect(viaBearer.status).toBe(204);
     expect(viaBearer.headers.getSetCookie()).toEqual(['counsel_session=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict']);
+  });
+});
+
+describe('retro (skills/retro in the runtime)', () => {
+  test('GET /retro says whether one is due; POST /retro opens the thread and records it', async () => {
+    const app = appWithFake();
+    expect((await call(app, 'GET', '/retro', { token: null })).status).toBe(401);
+
+    const before = (await (await call(app, 'GET', '/retro')).json()) as { due: boolean; lastRetroAt: string | null; cadenceDays: number };
+    expect(before).toMatchObject({ due: false, lastRetroAt: null, cadenceDays: 90 });
+
+    // Three matters make a first retro worth running.
+    for (const n of ['a', 'b', 'c']) await vault.write('default', `matters/${n}.md`, `---\ncounsel-os-type: matter\n---\n# ${n}\n`);
+    expect(((await (await call(app, 'GET', '/retro')).json()) as { due: boolean }).due).toBe(true);
+
+    expect((await call(app, 'POST', '/retro', { body: { since: 'not a date' } })).status).toBe(400);
+
+    const res = await call(app, 'POST', '/retro', { body: { since: '2026-06-01' } });
+    expect(res.status).toBe(201);
+    const start = (await res.json()) as { threadId: string; title: string; message: string; period: { from: string | null }; status: { due: boolean; threadId: string } };
+    expect(start.title).toMatch(/^Retro · 2026-06-01 to \d{4}-\d{2}-\d{2}$/);
+    expect(start.period.from).toBe('2026-06-01T00:00:00.000Z');
+    expect(start.message).toContain('as a proposal');
+    expect(start.status).toMatchObject({ due: false, threadId: start.threadId });
+
+    const header = (await store.list('default')).find(h => h.id === start.threadId)!;
+    expect(header.task).toBe('retro');
+    expect(header.title).toBe(start.title);
+    expect(existsSync(join(vaultRoot, '.counsel', 'retro.json'))).toBe(true);
+  });
+
+  test('a step on the retro thread runs as the retro task, with the method and the evidence in its prompt', async () => {
+    const provider = new FakeModelProvider([{ text: 'Running in harvest mode.' }]);
+    const app = appWith([provider]);
+    const { threadId, message } = (await (await call(app, 'POST', '/retro', { body: {} })).json()) as { threadId: string; message: string };
+    const res = await call(app, 'POST', `/threads/${threadId}/steps`, { body: { message } });
+    expect(res.status).toBe(200);
+    await res.text();
+    const { events } = await store.get('default', threadId);
+    const step = events.find(ev => 't' in ev && ev.t === 'step') as { task?: string } | undefined;
+    expect(step?.task).toBe('retro');
+    // The caller named no task; the thread did — and the prompt carries the
+    // method and the record, with every write re-stated as a proposal.
+    const system = provider.lastRequest?.system ?? '';
+    expect(system).toContain('## Retro method');
+    expect(system).toContain('propose_update');
+    expect(system).toContain('## Retro evidence (from the runtime)');
+    expect(system).toContain('Period: all time to');
   });
 });
