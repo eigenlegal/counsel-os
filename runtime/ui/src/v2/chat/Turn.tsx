@@ -246,7 +246,7 @@ export function TurnView({ turn, threadId, run, live = false, liveMs = {}, onRel
             <ArtifactSlip key={artifact.id} artifact={artifact} onOpenFile={onOpenFile} />
           ))}
 
-          <Strip turn={turn} run={run} ms={ms} onOpenFile={onOpenFile} />
+          <Strip turn={turn} run={run} ms={ms} threadId={threadId} onOpenFile={onOpenFile} />
         </>
       )}
     </article>

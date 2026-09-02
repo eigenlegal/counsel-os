@@ -14,6 +14,9 @@ export interface ProviderComboProps {
   options: string[];
   /** Shown when the field is empty — the value the runtime falls back to. */
   placeholder?: string;
+  /** The toggle's own accessible name. Default `Show providers`; a field
+   * that lists something else (the task taxonomy) names it itself. */
+  toggleLabel?: string;
   onChange(value: string): void;
 }
 
@@ -27,7 +30,7 @@ export interface ProviderComboProps {
  * positioned sibling of the input, which keeps it inside the form's DOM for
  * tests and screen readers alike.
  */
-export function ProviderCombo({ id, label, value, options, placeholder, onChange }: ProviderComboProps): JSX.Element {
+export function ProviderCombo({ id, label, value, options, placeholder, onChange, toggleLabel }: ProviderComboProps): JSX.Element {
   const { contains } = useFilter({ sensitivity: 'base' });
   const items = options.map(option => ({ id: option }));
   const children = (item: { id: string }): JSX.Element => <Item textValue={item.id}>{item.id}</Item>;
@@ -67,7 +70,7 @@ export function ProviderCombo({ id, label, value, options, placeholder, onChange
           ref={buttonRef}
           type="button"
           className="v2-combo-toggle"
-          aria-label="Show providers"
+          aria-label={toggleLabel ?? 'Show providers'}
           aria-labelledby={undefined}
         >
           {/* Always down: a dropdown trigger points down open or closed —

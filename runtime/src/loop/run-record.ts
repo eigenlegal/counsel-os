@@ -32,6 +32,13 @@ export interface RunRecord {
   /** Empty until the router (or the caller's `providerId`) resolves one. */
   provider: string;
   task?: string;
+  /** Where the task came from (routing-and-evals spec §3): the caller, the
+   * thread, a rule, a model guess, the `chat` default, or a later
+   * correction by the lawyer. */
+  taskSource?: 'caller' | 'rule' | 'model' | 'default' | 'corrected';
+  /** The lawyer's mark on this answer (spec §7), kept here so the strip can
+   * show it on reload; the outcomes record has the full line. */
+  mark?: { mark: 'useful' | 'not-right'; reason?: string; at: string };
   /** Unique `read_primitive` names, in the order the step first read them. */
   primitivesRead: string[];
   toolCalls: ToolCallLog[];

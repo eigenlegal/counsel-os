@@ -80,6 +80,10 @@ export function ProposalCard({ threadId, proposal, onReload, onDecided, onOpenFi
   }, [anchor, proposal.id]);
   const [status, setStatus] = useState<ProposalStatus>(proposal.status);
   const [decidedAt, setDecidedAt] = useState<string | undefined>(undefined);
+  // An optional word on WHY (routing-and-evals spec §7): closed by default,
+  // one set-text link opens the field; the reason rides with the decision.
+  const [askReason, setAskReason] = useState(false);
+  const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [conflict, setConflict] = useState<Conflict | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -125,7 +129,7 @@ export function ProposalCard({ threadId, proposal, onReload, onDecided, onOpenFi
     try {
       const result = await fetchJson<ApproveResult>(`/threads/${encodeURIComponent(threadId)}/approve`, {
         method: 'POST',
-        body: JSON.stringify({ proposalId: proposal.id, decision }),
+        body: JSON.stringify({ proposalId: proposal.id, decision, ...(reason.trim() === '' ? {} : { reason: reason.trim() }) }),
       });
       setStatus(result.proposal?.status ?? (decision === 'approve' ? 'approved' : 'rejected'));
       setDecidedAt(new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).toLowerCase());
@@ -285,6 +289,14 @@ export function ProposalCard({ threadId, proposal, onReload, onDecided, onOpenFi
         </>
       )}
 
+      {status === 'pending' && conflict === null && askReason ? (
+        <div className="v2-slip-reason">
+          <label htmlFor={`v2-reason-${proposal.id}`} className="v2-slip-reason-label">
+            Reason
+          </label>
+          <input id={`v2-reason-${proposal.id}`} value={reason} maxLength={500} placeholder="optional — why you decided this way" onChange={e => setReason(e.target.value)} />
+        </div>
+      ) : null}
       {status === 'pending' && conflict === null ? (
         <div className="v2-slip-acts">
           <button type="button" className="v2-primary" disabled={busy} onClick={() => void decide('approve')}>
@@ -293,6 +305,11 @@ export function ProposalCard({ threadId, proposal, onReload, onDecided, onOpenFi
           <button type="button" disabled={busy} onClick={() => void decide('reject')}>
             Reject
           </button>
+          {askReason ? null : (
+            <button type="button" className="v2-link v2-slip-reason-link" onClick={() => setAskReason(true)}>
+              add a reason
+            </button>
+          )}
           {current.state === 'ready' && current.version !== null ? (
             <span className="v2-slip-base">against version {current.version.slice(0, 7)}</span>
           ) : null}

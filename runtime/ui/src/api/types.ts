@@ -52,7 +52,7 @@ export type ProposalStatus = 'pending' | 'approved' | 'rejected';
  * `t`, the step events embedded in the log use `type`. */
 export type ThreadEvent =
   | { t: 'user'; at: string; content: string }
-  | { t: 'step'; at: string; runId: string; provider: string; task?: string }
+  | { t: 'step'; at: string; runId: string; provider: string; task?: string; taskSource?: TaskSource }
   | { t: 'warning'; at: string; message: string }
   | (StepEvent & { at: string })
   | {
@@ -113,6 +113,17 @@ export interface ToolCallLog {
 
 export type RunStatus = 'running' | 'done' | 'error' | 'timeout' | 'abandoned';
 
+/** Where a step's task came from (routing-and-evals spec §3). COPIED from
+ * `runtime/src/tasks/taxonomy.ts`. */
+export type TaskSource = 'caller' | 'rule' | 'model' | 'default' | 'corrected';
+
+/** The lawyer's mark on an answer (spec §7), kept on the run record. */
+export interface RunMark {
+  mark: 'useful' | 'not-right';
+  reason?: string;
+  at: string;
+}
+
 export interface RunRecord {
   runId: string;
   threadId: string;
@@ -123,6 +134,8 @@ export interface RunRecord {
   message: string;
   provider: string;
   task?: string;
+  taskSource?: TaskSource;
+  mark?: RunMark;
   primitivesRead: string[];
   toolCalls: ToolCallLog[];
   proposals: string[];
@@ -188,6 +201,9 @@ export interface Health {
    * registry accepts a default you have not added yet. */
   default: string | null;
   stepTimeoutMs: number;
+  /** Whether the vault keeps its local record of decisions and marks
+   * (routing-and-evals spec §7). Absent on an older runtime. */
+  outcomes?: boolean;
 }
 
 /** The body of `POST /threads/:id/steps`. */

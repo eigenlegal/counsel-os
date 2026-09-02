@@ -262,3 +262,20 @@ describe('artifact events', () => {
     expect(got.events).toEqual([ev]);
   });
 });
+
+describe('updateStep (routing-and-evals spec §3)', () => {
+  test('rewrites the matching step event with the corrected task and source; a miss is false', async () => {
+    const header = await store.create('default', {});
+    await store.append('default', header.id, { t: 'user', at: '2026-01-01T00:00:00.000Z', content: 'hi' });
+    await store.append('default', header.id, { t: 'step', at: '2026-01-01T00:00:01.000Z', runId: 'run-1', provider: 'fake/fake', task: 'chat', taskSource: 'default' });
+    await store.append('default', header.id, { t: 'step', at: '2026-01-01T00:00:02.000Z', runId: 'run-2', provider: 'fake/fake', task: 'draft', taskSource: 'rule' });
+
+    expect(await store.updateStep('default', header.id, 'run-1', { task: 'review', taskSource: 'corrected' })).toBe(true);
+    const { events } = await store.get('default', header.id);
+    const steps = events.filter((e): e is Extract<ThreadEvent, { t: 'step' }> => 't' in e && e.t === 'step');
+    expect(steps.map(s => [s.runId, s.task, s.taskSource])).toEqual([['run-1', 'review', 'corrected'], ['run-2', 'draft', 'rule']]);
+    expect(events[0]).toEqual({ t: 'user', at: '2026-01-01T00:00:00.000Z', content: 'hi' });
+
+    expect(await store.updateStep('default', header.id, 'run-9', { task: 'review', taskSource: 'corrected' })).toBe(false);
+  });
+});

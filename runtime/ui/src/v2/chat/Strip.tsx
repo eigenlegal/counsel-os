@@ -1,4 +1,8 @@
-import type { RunRecord, RunStatus } from '../../api/types';
+import { useState } from 'react';
+import { ApiError, correctTask, markTurn } from '../../api/client';
+import type { RunMark, RunRecord, RunStatus, TaskSource } from '../../api/types';
+import { sourceWord } from '../../tasks';
+import { TaskPicker } from './TaskPicker';
 import type { AssistantTurn } from '../../chat/turns';
 import { Chevron } from '../icons';
 import { stateOf } from '../verbs';
@@ -11,6 +15,9 @@ export interface StripProps {
   run?: RunRecord;
   /** Milliseconds per tool id (from the record, or measured live). */
   ms: Record<string, number>;
+  /** The thread the run belongs to — the marks and the task picker need it.
+   * `null` (or absent) hides both: nothing to post against. */
+  threadId?: string | null;
   onOpenFile?: (path: string) => void;
 }
 
@@ -81,8 +88,44 @@ export function stripLine(turn: AssistantTurn): string {
  * Open, it is the full record — the steps with show/hide, primitives read,
  * proposals, usage and cost, the run id.
  */
-export function Strip({ turn, run, ms, onOpenFile }: StripProps): JSX.Element {
+export function Strip({ turn, run, ms, threadId = null, onOpenFile }: StripProps): JSX.Element {
   const pill = pillFor(turn, run);
+  // The lawyer's word on the answer and on the task (routing-and-evals spec
+  // §3, §7): the record on disk seeds both; a click posts and the page keeps
+  // the answer without a reload.
+  const [mark, setMark] = useState<RunMark | undefined>(run?.mark);
+  const [task, setTask] = useState<{ task: string; source: TaskSource | undefined } | undefined>(run?.task === undefined ? undefined : { task: run.task, source: run.taskSource });
+  const [busy, setBusy] = useState(false);
+  const [postFailed, setPostFailed] = useState<string | null>(null);
+  const [synced, setSynced] = useState(run);
+  if (run !== synced) {
+    setSynced(run);
+    setMark(run?.mark);
+    setTask(run?.task === undefined ? undefined : { task: run.task, source: run.taskSource });
+  }
+  const canAct = run !== undefined && threadId !== null && run.status === 'done';
+  const post = async (work: () => Promise<void>): Promise<void> => {
+    setBusy(true);
+    setPostFailed(null);
+    try {
+      await work();
+    } catch (err) {
+      if (!(err instanceof ApiError && err.status === 401)) setPostFailed(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const doMark = (value: RunMark['mark']): void => {
+    if (run === undefined || threadId === null) return;
+    void post(async () => setMark(await markTurn(threadId, run.runId, value)));
+  };
+  const doTask = (value: string): void => {
+    if (run === undefined || threadId === null) return;
+    void post(async () => {
+      const next = await correctTask(threadId, run.runId, value);
+      setTask({ task: next.task, source: next.taskSource });
+    });
+  };
   const provider = run?.provider !== undefined && run.provider !== '' ? run.provider : (turn.provider ?? '');
   // `stripLine` counts sources and pending proposals, so a failed call is
   // invisible in it. Carried alongside rather than folded in: the count is
@@ -93,6 +136,7 @@ export function Strip({ turn, run, ms, onOpenFile }: StripProps): JSX.Element {
   // instead of an empty vault.
   const empty = turn.tools.filter(tool => stateOf(tool) === 'empty').length;
   return (
+    <>
     <details className="v2-strip" data-status={pill.kind} data-testid={run === undefined ? undefined : `run-${run.runId}`}>
       <summary>
         <span className={`v2-pill v2-pill-${pill.kind} v2-strip-status`} title={pill.title}>
@@ -123,10 +167,19 @@ export function Strip({ turn, run, ms, onOpenFile }: StripProps): JSX.Element {
                 <dd>{formatMs(run.durationMs)}</dd>
               </>
             )}
-            {run.task === undefined ? null : (
+            {task === undefined ? null : (
               <>
                 <dt>Task</dt>
-                <dd>{run.task}</dd>
+                <dd className="v2-record-task">
+                  {task.task}
+                  {sourceWord(task.source) === '' ? null : <span className="v2-record-source"> · {sourceWord(task.source)}</span>}
+                  {canAct ? (
+                    <>
+                      {' · '}
+                      <TaskPicker current={task.task} onPick={doTask} />
+                    </>
+                  ) : null}
+                </dd>
               </>
             )}
             <dt>Primitives read</dt>
@@ -172,5 +225,26 @@ export function Strip({ turn, run, ms, onOpenFile }: StripProps): JSX.Element {
         )}
       </div>
     </details>
+    {/* The lawyer's mark: two set-text words under the strip, the chosen one
+        set in the text weight (`aria-pressed`), never a thumbs pair of icons.
+        Only a finished run can be marked, and only from inside its thread. */}
+    {canAct ? (
+      <p className="v2-marks">
+        <button type="button" className="v2-link" aria-pressed={mark?.mark === 'useful'} disabled={busy} onClick={() => doMark('useful')}>
+          useful
+        </button>
+        {' · '}
+        <button type="button" className="v2-link" aria-pressed={mark?.mark === 'not-right'} disabled={busy} onClick={() => doMark('not-right')}>
+          not right
+        </button>
+        {postFailed === null ? null : (
+          <span className="v2-marks-failed" role="alert">
+            {' — '}
+            {postFailed}
+          </span>
+        )}
+      </p>
+    ) : null}
+    </>
   );
 }

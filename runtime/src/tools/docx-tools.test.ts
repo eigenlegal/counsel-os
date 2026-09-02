@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { buildDocx } from '../docx/test/builder';
@@ -151,6 +151,28 @@ describe('apply_redlines', () => {
     expect(artifact.kind).toBe('docx-redline');
     expect(artifact.tracked).toBe(true);
     expect(artifact.summary.applied).toBe(1);
+  });
+
+  test('inside a thread, a redline and a compare each report the document produced through the outcome hook (routing-and-evals spec §7)', async () => {
+    const { ThreadStore } = await import('../threads/store');
+    const threads = new ThreadStore(vault, { codexHomeRoot: mkdtempSync(join(tmpdir(), 'docx-tools-codex-')) });
+    const { id } = await threads.create('default', {});
+    const produced: Array<{ kind: string; path: string; detail: Record<string, unknown> }> = [];
+    const tools = docxTools({ vaultRoot: vault, thread: { store: threads, threadId: id, tenant: 'default', outcome: line => produced.push(line) } });
+    const redline = tools.find(x => x.name === 'apply_redlines')!;
+    const out = (await redline.execute({ original: 'matters/acme/nda.docx', items, track: true, author: 'Counsel OS' }, ctx)) as { output: string; artifactId: string };
+    // Its own pair of files: the vault is shared across this file's tests,
+    // and the compare below must not take the name the next test expects.
+    copyFileSync(join(vault, 'matters', 'acme', 'nda.docx'), join(vault, 'matters', 'acme', 'nda-b.docx'));
+    writeFileSync(join(vault, 'matters', 'acme', 'nda-b-v2.docx'), buildDocx({ blocks: [{ style: 'Heading1', runs: ['1. Term'] }, { runs: ['Lasts one year.'] }] }));
+    const compare = tools.find(x => x.name === 'docx_compare')!;
+    const cmp = (await compare.execute(compare.inputSchema.parse({ original: 'matters/acme/nda-b.docx', revised: 'matters/acme/nda-b-v2.docx' }), ctx)) as { output: string; artifactId: string };
+
+    expect(produced.map(p => [p.kind, p.path, p.detail['kind'], p.detail['artifactId']])).toEqual([
+      ['artifact.produced', out.output, 'docx-redline', out.artifactId],
+      ['artifact.produced', cmp.output, 'docx-compare', cmp.artifactId],
+    ]);
+    expect(typeof produced[0]!.detail['summary']).toBe('object');
   });
 });
 

@@ -6,6 +6,7 @@ import { listAllRuns, type RunRecord } from '../loop/run-record';
 import type { ThreadEvent, ThreadHeader, ThreadStore } from '../threads/store';
 import { vaultOverview, type MatterOverview } from '../vault/overview';
 import type { VaultConfig } from '../vault/resolve-root';
+import { countOutcomes, readOutcomes, type OutcomeCounts } from '../outcomes/store';
 
 /**
  * What the runtime knows about the period, gathered for the retro's system
@@ -64,6 +65,8 @@ export interface RetroEvidence {
     patternsEntries: number | null;
     previousRetros: string[];
   };
+  /** What the lawyer did with counsel's work in the period (spec §7). */
+  outcomes: OutcomeCounts;
   doctor: DoctorReport | null;
 }
 
@@ -180,6 +183,7 @@ export async function gatherRetroEvidence(deps: RetroEvidenceDeps): Promise<Retr
     runs,
     proposals,
     artifacts,
+    outcomes: countOutcomes(readOutcomes(deps.vaultRoot, { since }).filter(l => inPeriod(l.at, since, to))),
     matters,
     memory: readMemory(deps.vaultRoot),
     doctor: deps.doctor === undefined ? null : deps.doctor(),
@@ -257,6 +261,10 @@ export function renderRetroEvidence(e: RetroEvidence): string {
   lines.push('### Documents produced');
   lines.push(`- ${e.artifacts.count} documents (${counts(e.artifacts.byKind)}); ${e.artifacts.applied} edits applied, ${e.artifacts.skipped} skipped, ${e.artifacts.comments} comments.`);
   for (const p of e.artifacts.paths) lines.push(`  - ${p}`);
+  lines.push('');
+  lines.push('### Decisions and marks');
+  lines.push(`- Proposals decided: ${e.outcomes.decisions.approved} approved, ${e.outcomes.decisions.rejected} rejected (${e.outcomes.decisions.withReason} with a reason).`);
+  lines.push(`- Answers marked: ${e.outcomes.marks.useful} useful, ${e.outcomes.marks.notRight} not right; ${e.outcomes.corrections} task corrections; ${e.outcomes.deletedThreads} conversations deleted.`);
   lines.push('');
   lines.push('### Matters');
   lines.push(`- ${e.matters.touched.length} of ${e.matters.total} matters touched in the period:`);

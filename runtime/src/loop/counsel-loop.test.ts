@@ -1661,3 +1661,53 @@ describe('the matter privacy policy (providers spec §7)', () => {
     expect((log.find(e => 't' in e && e.t === 'step') as { provider: string }).provider).toBe('ollama/local');
   });
 });
+
+describe('the task on a step (routing-and-evals spec §3)', () => {
+  test('a rule names the task when the caller does not, and the source is stamped on the event and the record', async () => {
+    const fake = new FakeModelProvider([{ text: 'marked up' }]);
+    const { id } = await store.create('default', {});
+    const events = await collect(runStep(deps([fake]), { threadId: id, message: 'Redline this for us.' }));
+    const runId = events[0]!.runId;
+
+    const { events: log } = await store.get('default', id);
+    const stepEv = log.find((e): e is Extract<ThreadEvent, { t: 'step' }> => 't' in e && e.t === 'step')!;
+    expect(stepEv.task).toBe('redline');
+    expect(stepEv.taskSource).toBe('rule');
+    const record = readRun(vaultRoot, 'default', runId)!;
+    expect(record.task).toBe('redline');
+    expect(record.taskSource).toBe('rule');
+  });
+
+  test("the caller's task is kept as given (a custom route name too) and is never re-classified", async () => {
+    const fake = new FakeModelProvider([{ text: 'ok' }]);
+    let asked = 0;
+    const classifier = async (): Promise<'research'> => {
+      asked += 1;
+      return 'research';
+    };
+    const { id } = await store.create('default', {});
+    const events = await collect(runStep({ ...deps([fake]), classifier }, { threadId: id, message: 'redline this', task: 'classify' }));
+    const record = readRun(vaultRoot, 'default', events[0]!.runId)!;
+    expect(record.task).toBe('classify');
+    expect(record.taskSource).toBe('caller');
+    expect(asked).toBe(0);
+  });
+
+  test('no rule → the injected classifier decides, and its failure leaves a chat step', async () => {
+    const fake = new FakeModelProvider([{ text: 'one' }, { text: 'two' }]);
+    const answers: Array<'research' | null> = ['research', null];
+    const classifier = async (): Promise<'research' | null> => {
+      const next = answers.shift();
+      if (next === undefined) throw new Error('classifier down');
+      return next;
+    };
+    const { id } = await store.create('default', {});
+    const first = await collect(runStep({ ...deps([fake]), classifier }, { threadId: id, message: 'hmm, what about Delaware' }));
+    expect(readRun(vaultRoot, 'default', first[0]!.runId)).toMatchObject({ task: 'research', taskSource: 'model' });
+
+    const second = await collect(runStep({ ...deps([fake]), classifier }, { threadId: id, message: 'and then?' }));
+    expect(readRun(vaultRoot, 'default', second[0]!.runId)).toMatchObject({ task: 'chat', taskSource: 'default' });
+    // The provider saw both turns: the classifier never spent a script step.
+    expect(fake.lastRequest!.messages.filter(m => m.role === 'user')).toHaveLength(2);
+  });
+});

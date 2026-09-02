@@ -8,6 +8,7 @@ import { ThreadStore } from '../threads/store';
 import { FsVaultStore } from '../vault/fs-store';
 import { readVaultConfig } from '../vault/resolve-root';
 import { gatherRetroEvidence, renderRetroEvidence } from './evidence';
+import { appendOutcome } from '../outcomes/store';
 
 const NOW = new Date('2026-09-01T12:00:00.000Z');
 const SINCE = '2026-07-01T00:00:00.000Z';
@@ -128,5 +129,28 @@ describe('gatherRetroEvidence', () => {
     const { vaultRoot, store, vault } = await seed();
     const e = await gatherRetroEvidence({ vaultRoot, tenant: 'default', store, vault, cfg: readVaultConfig(vaultRoot), since: SINCE, now: NOW, doctor: () => doctor });
     expect(renderRetroEvidence(e)).toMatchSnapshot();
+  });
+});
+
+describe('gatherRetroEvidence outcomes (routing-and-evals spec §7)', () => {
+  test('counts the period\'s decisions, marks, corrections and deletions, and renders them', async () => {
+    const { vaultRoot, store, vault } = await seed();
+    appendOutcome(vaultRoot, {}, { kind: 'proposal.decided', at: '2026-08-12T00:00:00.000Z', detail: { decision: 'approved' } });
+    appendOutcome(vaultRoot, {}, { kind: 'proposal.decided', at: '2026-08-12T00:00:00.000Z', detail: { decision: 'rejected', reason: 'too broad' } });
+    appendOutcome(vaultRoot, {}, { kind: 'answer.marked', at: '2026-08-13T00:00:00.000Z', detail: { mark: 'useful' } });
+    appendOutcome(vaultRoot, {}, { kind: 'task.corrected', at: '2026-08-13T00:00:00.000Z', detail: { from: 'chat', to: 'review' } });
+    appendOutcome(vaultRoot, {}, { kind: 'thread.deleted', at: '2026-08-14T00:00:00.000Z', detail: {} });
+    // Before the period: not counted.
+    appendOutcome(vaultRoot, {}, { kind: 'answer.marked', at: '2026-05-01T00:00:00.000Z', detail: { mark: 'not-right' } });
+
+    const e = await gatherRetroEvidence({ vaultRoot, tenant: 'default', store, vault, cfg: readVaultConfig(vaultRoot), since: SINCE, now: NOW });
+    expect(e.outcomes).toEqual({ decisions: { approved: 1, rejected: 1, withReason: 1 }, marks: { useful: 1, notRight: 0 }, corrections: 1, documents: 0, deletedThreads: 1 });
+    const text = renderRetroEvidence(e);
+    expect(text).toContain('### Decisions and marks');
+    expect(text).toContain('1 approved, 1 rejected (1 with a reason)');
+    expect(text).toContain('1 useful, 0 not right; 1 task corrections; 1 conversations deleted');
+
+    const all = await gatherRetroEvidence({ vaultRoot, tenant: 'default', store, vault, cfg: readVaultConfig(vaultRoot), since: null, now: NOW });
+    expect(all.outcomes.marks.notRight).toBe(1);
   });
 });

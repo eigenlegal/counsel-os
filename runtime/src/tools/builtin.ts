@@ -24,7 +24,7 @@ export interface BuiltinToolOptions {
   vault?: VaultStore;
   /** The thread a step runs in: `apply_redlines` records its `artifact`
    * event there. Absent outside a thread (the CLI's one-shot run). */
-  thread?: { store: ThreadStore; threadId: string; tenant: Tenant };
+  thread?: { store: ThreadStore; threadId: string; tenant: Tenant; outcome?: (line: { kind: 'artifact.produced'; path: string; detail: Record<string, unknown> }) => void };
   /** Tests: pretend to be (or not be) the compiled binary. */
   compiled?: boolean;
 }
