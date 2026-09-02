@@ -8,6 +8,11 @@ reconstructed from git history. New entries are prepended automatically by
 
 ## [Unreleased]
 
+Routing knobs (routing-and-evals spec §6)
+
+- Each task in Settings › Models carries a line of set text under its name: the score a model must clear, whether ties break on quality, cost or latency, and which model that picks today. `change` reveals the five bars and the three preferences in place, and unpins a task you pinned by hand. No slider, no dialog.
+- The pick is computed by asking the router, so the line shows the model a step would actually get, not the setting alone.
+
 Make this a fixture (routing-and-evals spec §8)
 
 - A review you just read becomes a fixture the scoreboard runs forever. On any finished review, "make this a fixture" opens a review screen under the answer: what the anonymizer replaced, the document as it will be saved (editable), and every finding counsel raised.
