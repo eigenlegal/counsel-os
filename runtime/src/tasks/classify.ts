@@ -29,7 +29,7 @@ export interface Classification {
 }
 
 /** One structured call: the message → a task id, or `null` when it cannot say. */
-export type ModelClassifier = (message: string) => Promise<TaskId | null>;
+export type ModelClassifier = (message: string, opts?: { localOnly?: boolean }) => Promise<TaskId | null>;
 
 const DOCUMENT_EXT = /\.(docx|md|txt|pdf)$/i;
 
@@ -75,14 +75,14 @@ export function classifyByRules(message: string): TaskId | null {
  * from Settings) — the taxonomy is the vocabulary the runtime SPEAKS, not a
  * gate on what it accepts.
  */
-export async function classifyTask(input: ClassifyInput, model?: ModelClassifier): Promise<{ task: string; source: TaskSource }> {
+export async function classifyTask(input: ClassifyInput, model?: ModelClassifier, opts: { localOnly?: boolean } = {}): Promise<{ task: string; source: TaskSource }> {
   if (input.callerTask !== undefined && input.callerTask !== '') return { task: input.callerTask, source: 'caller' };
   if (input.threadTask !== undefined && input.threadTask !== '') return { task: input.threadTask, source: 'caller' };
   const rule = classifyByRules(input.message);
   if (rule !== null) return { task: rule, source: 'rule' };
   if (model !== undefined) {
     try {
-      const guessed = await model(input.message);
+      const guessed = await model(input.message, opts);
       if (guessed !== null && isTask(guessed)) return { task: guessed, source: 'model' };
     } catch {
       // A classifier that fails is a `chat` step, never a failed step.
@@ -99,18 +99,22 @@ const TaskAnswer = z.object({ task: z.enum(TASK_IDS as [TaskId, ...TaskId[]]) })
  * The model-backed classifier (spec §3): the cheapest LOCAL provider when one
  * is loaded, else the router's default; one structured turn with the
  * taxonomy quoted; ten seconds, then `null`. The message is the only content
- * sent — no vault, no tools — so a cloud classifier sees one sentence, and a
- * matter that stays local has already been decided before this runs.
+ * sent — no vault, no tools — so a cloud classifier sees one sentence; under
+ * a matter that stays local (`localOnly`) only a local model may see it.
  */
 export function modelClassifier(providers: readonly ModelProvider[], router: Router, tenant = 'default'): ModelClassifier {
-  return async (message: string): Promise<TaskId | null> => {
+  return async (message: string, opts: { localOnly?: boolean } = {}): Promise<TaskId | null> => {
     const local = providers.filter(p => isLocal(p.capabilities)).sort((a, b) => a.capabilities.contextTokens - b.capabilities.contextTokens);
-    let provider: ModelProvider;
+    let provider: ModelProvider | undefined;
     try {
-      provider = local[0] ?? router.resolve();
+      // A matter that stays on this machine classifies on a local model or
+      // not at all (providers spec §7): the message never reaches the cloud,
+      // not even for one word back.
+      provider = opts.localOnly === true ? local[0] : (local[0] ?? router.resolve());
     } catch {
       return null;
     }
+    if (provider === undefined) return null;
     const cancel = new AbortController();
     const timer = setTimeout(() => cancel.abort(), CLASSIFY_TIMEOUT_MS);
     try {

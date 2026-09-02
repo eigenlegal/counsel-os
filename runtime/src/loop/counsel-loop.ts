@@ -214,16 +214,18 @@ export async function* runStep(
     yield { type: 'error', message: `unknown thread: ${threadId}`, runId };
     return;
   }
-  // The task and where it came from (spec §3): caller, thread, rule, one
-  // small model call, else `chat`. Decided before the run opens so the
-  // record and the step event carry the same answer.
-  const classified = await classifyTask({ message: opts.message, callerTask: opts.task, threadTask: early.task }, deps.classifier);
-  const taskSource: TaskSource = classified.source;
-  opts = { ...opts, task: classified.task };
   // The matter's privacy policy, from the header and the message — before
   // the run opens, before the user turn is appended, before any provider is
-  // looked at (providers spec §7).
+  // looked at (providers spec §7) — and before the task classifier, which
+  // may itself call a model.
   const policy = await policyForOptions(deps, { ...(early.matter === undefined ? {} : { matter: early.matter }), message: opts.message });
+  // The task and where it came from (spec §3): caller, thread, rule, one
+  // small model call (local only under the policy), else `chat`. Decided
+  // before the run opens so the record and the step event carry the same
+  // answer.
+  const classified = await classifyTask({ message: opts.message, callerTask: opts.task, threadTask: early.task }, deps.classifier, { localOnly: policy.localOnly });
+  const taskSource: TaskSource = classified.source;
+  opts = { ...opts, task: classified.task };
 
   // The run record opens here — before the provider is even chosen — so
   // everything that follows is visible to `/runs` while it is happening and

@@ -97,4 +97,21 @@ describe('modelClassifier', () => {
     expect(await classify('x')).toBe('extract');
     expect(cloud.lastRequest).toBeUndefined();
   });
+
+  test('under a matter that stays local, only a local model may classify — with none loaded, nothing is called and the step is chat', async () => {
+    const cloud = new FakeModelProvider([{ output: { task: 'draft' } }]);
+    Object.assign(cloud, { id: 'cloud/big' });
+    (cloud as { capabilities: ModelProvider['capabilities'] }).capabilities = { tools: true, caching: false, thinking: false, contextTokens: 200_000, auth: 'apikey', locality: 'cloud' };
+    const classify = modelClassifier([cloud], new Router({ default: 'cloud/big' }, [cloud]));
+    expect(await classify('x', { localOnly: true })).toBeNull();
+    expect(cloud.lastRequest).toBeUndefined();
+    // And classifyTask carries the option through to the classifier.
+    const seen: Array<{ localOnly?: boolean } | undefined> = [];
+    const spy = async (_m: string, opts?: { localOnly?: boolean }): Promise<null> => {
+      seen.push(opts);
+      return null;
+    };
+    expect(await classifyTask({ message: 'hello there' }, spy, { localOnly: true })).toEqual({ task: 'chat', source: 'default' });
+    expect(seen).toEqual([{ localOnly: true }]);
+  });
 });
