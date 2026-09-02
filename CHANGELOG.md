@@ -6,8 +6,6 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
-## [Unreleased]
-
 Enterprise providers — Azure OpenAI, Amazon Bedrock, Google Vertex AI (providers spec §3, step 5)
 
 - Three vendors whose credentials are not one API key join the catalog: `azure/<deployment>` (`@ai-sdk/azure`), `bedrock/<model id or inference profile>` (`@ai-sdk/amazon-bedrock`), `vertex/<model>` (`@ai-sdk/google-vertex`; a `claude-…` id goes through the Anthropic-on-Vertex endpoint). Each carries a field set instead of a key: the non-secret fields (resource, region, project, location, an AWS profile name) sit on the `providers.yaml` entry as `extra`; the secret ones (a key, an access key pair, a service account JSON) are pasted in Settings and kept as ONE Keychain item under the provider id.
@@ -47,6 +45,12 @@ More providers and models, step 2 — keys in the app (providers spec §5)
 - Paste an API key on a provider's row in Settings; it is kept in the macOS Keychain (`security`), the Linux keyring (`secret-tool`) when present, or `~/.counsel-os/secrets.json` at 0600 — never in `providers.yaml`, the vault, a log, or a response. The registry asks the store before the environment, so a key from the environment still works for headless use (`COUNSEL_OS_SECRETS=file` forces the file store).
 - `PUT`/`DELETE /providers/<id>/key`; `/settings` and `/health` report `keySet` (`true`, `false`, or `env`) per provider and where keys live. Anthropic and OpenAI providers now honour an app-entered key (they read only the environment before).
 - Settings: a `key · set · replace · remove` line under each keyed row with the vendor's "get a key" link; the Runtime ledger's Keys fact; the Providers copy stops sending a lawyer to set environment variables.
+
+## [0.13.0] — 2026-09-02
+
+Providers phase 1, retro, the binary — any model, keys in the Keychain, matters that stay local
+
+- A two-layer vendor catalog: fifteen SDK-native vendors (Anthropic, OpenAI, Google, Mistral, Groq, xAI, DeepSeek, Cohere, Perplexity, Together, Fireworks, DeepInfra, Cerebras, OpenRouter, Ollama), OpenAI-compatible presets for hosted services and the local runners (LM Studio, llama.cpp, vLLM, MLX, Jan, GPT4All), and the enterprise trio (Azure OpenAI, Amazon Bedrock, Google Vertex) with their own credential shapes. API keys are pasted once in Settings and kept in the macOS Keychain (libsecret or a 0600 file elsewhere), never in a config file or the vault. Every provider row says whether text leaves the machine and to whom. Model lists come from the vendor, with context sizes. A matter marked stays_local: true is answered only by a local model, decided before the first call and never silently downgraded. Retro runs inside the app as a thread seeded with the period's evidence, its outputs landing as proposals. A compiled counsel-os binary embeds the UI and the content (packaging step 1). Plus the design-review fixes on the new theme. Details in the bullets below.
 
 ## [0.12.0] — 2026-09-01
 
