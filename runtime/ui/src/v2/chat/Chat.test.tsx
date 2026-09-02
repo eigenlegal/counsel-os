@@ -344,8 +344,10 @@ describe('v2 Chat, the docket anchor', () => {
     const had = 'scrollIntoView' in proto;
     const before = proto['scrollIntoView'];
     proto['scrollIntoView'] = function scrollIntoView(this: Element): void {
+      console.log(`DIAG recorder hit id=${this.id}`);
       ids.push(this.id);
     };
+    console.log(`DIAG recorder installed had=${had} hash=${location.hash} sameElement=${Element === (document.createElement('div').constructor as unknown as typeof Element)} htmlProtoOwn=${Object.prototype.hasOwnProperty.call(HTMLElement.prototype, 'scrollIntoView')}`);
     return {
       ids,
       restore: () => {

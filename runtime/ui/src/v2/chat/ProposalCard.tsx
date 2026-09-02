@@ -75,6 +75,8 @@ export function ProposalCard({ threadId, proposal, onReload, onDecided, onOpenFi
   // slip without a flash of the top of the transcript. happy-dom does not
   // implement scrollIntoView; the optional call keeps the tests honest.
   useLayoutEffect(() => {
+    // DIAG (temporary): what the runner sees when the anchor effect runs.
+    console.log(`DIAG card effect anchor=${String(anchor)} id=${proposal.id} el=${section.current?.id ?? 'none'} fn=${typeof section.current?.scrollIntoView} proto=${typeof Element.prototype.scrollIntoView} own=${section.current !== null && Object.prototype.hasOwnProperty.call(section.current, 'scrollIntoView')}`);
     if (anchor === undefined || anchor === null || anchor !== proposal.id) return;
     section.current?.scrollIntoView?.({ block: 'start' });
   }, [anchor, proposal.id]);
