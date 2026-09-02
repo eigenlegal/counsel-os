@@ -1,6 +1,6 @@
 # More providers and models — design
 
-**Date:** 2026-09-01 · **Status:** draft for founder review · **Phase 1 of two.** Phase 2 (model routing for legal tasks, the eval scoreboard, outcome capture) gets its own spec once this lands; §8 says what this phase leaves in place for it.
+**Date:** 2026-09-01 · **Status:** approved by the founder 2026-09-01 (defaults on every open question) · **Phase 1 of two.** Phase 2 (model routing for legal tasks, the eval scoreboard, outcome capture) gets its own spec once this lands; §8 says what this phase leaves in place for it.
 
 ## 1. Why
 
@@ -104,7 +104,7 @@ The catalog's capability and locality records, the discovery endpoint, and the p
 
 Each step is its own PR with QA.
 
-## 12. Open questions for the founder
-- Ship OpenRouter as the recommended "one key, many models" path for API users on the first-run screen? Default here: yes, listed after the subscriptions and Ollama.
-- Is a 0600 file acceptable as the Linux fallback when libsecret is absent? Default here: yes, labelled in Settings.
-- Azure and Bedrock in this phase (step 5) or deferred until a firm asks? Default here: step 5, last.
+## 12. Decisions (founder, 2026-09-01)
+- OpenRouter is recommended on the first-run screen as the one-key path for API users, listed after the subscriptions and Ollama.
+- A 0600 file is the Linux fallback when libsecret is absent, labelled as such in Settings.
+- Azure OpenAI and AWS Bedrock ship as step 5, last.
