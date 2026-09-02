@@ -902,7 +902,7 @@ export const MANIFEST: ContentManifest = {
       "hash": "404b5e8681fdcce44f77d690b26e3159c4eefe161a30a46e9933114f6dc13edf"
     },
     "evals/fixtures/law-beats-practice.json": {
-      "hash": "42e248d7275414f4c864929c4a5587fe330fb9942e1e99153f7b72f3386cb680"
+      "hash": "1fad58d3b8f0ad0f08b4824ddd992243bb68729026fc4d387e4003b6ebaf9119"
     },
     "evals/fixtures/missing-provision-coverage.json": {
       "hash": "963745a8c4681760077db454c36d8b5fef9ff379e8733fccb2c5087806c4f5da"
@@ -917,7 +917,7 @@ export const MANIFEST: ContentManifest = {
       "hash": "b21494abae937bf7fed4e2e74637a0daf911d9646bdfb75735f8a2d73fb33ccd"
     },
     "evals/fixtures/reference-never-governs.json": {
-      "hash": "0200faf249e1620a1632bc6aff4fdeb5e1f9bc9db95d20d66db870458dd31aa9"
+      "hash": "ac4c10371bb670db12864ba5043efaa7fbbc1ce0f8d79a24b5fc851fe2334860"
     },
     "evals/fixtures/saas-dpa-breach.json": {
       "hash": "35a475bb4d675d2bdab4d912b8d3aefa3454e665bfd134b616b05ff7c5f1259c"
