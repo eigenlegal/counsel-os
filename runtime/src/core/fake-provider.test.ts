@@ -38,3 +38,18 @@ describe('FakeModelProvider', () => {
     expect(String((events[1] as any).output)).toMatch(/invalid input/);
   });
 });
+
+test('a scripted step can be made to take time, so one can be caught in flight', async () => {
+  // `--fake` answers instantly, which makes a streaming UI impossible to
+  // watch: two conversations overlapping, a Stop with something to stop.
+  const provider = new FakeModelProvider([{ text: 'slow', delayMs: 40 }]);
+  const t0 = performance.now();
+  const events: string[] = [];
+  for await (const ev of provider.run({ system: '', messages: [{ role: 'user', content: 'go' }], tools: [], tenant: 'default' } as never)) {
+    events.push(ev.type);
+  }
+  expect(performance.now() - t0).toBeGreaterThanOrEqual(35);
+  expect(events).toContain('text');
+  expect(events.at(-1)).toBe('done');
+});
+

@@ -6,6 +6,7 @@ import { routeFromHash, vaultPathFromHash } from '../app';
 import type { Health, SettingsView, Thread, ThreadEvent, ThreadHeader } from '../api/types';
 import { VAULT_CHANGED_EVENT } from './intake';
 import { Shell } from './Shell';
+import * as streams from './chat/streams';
 
 const realFetch = globalThis.fetch;
 const at = '2026-08-30T10:00:00.000Z';
@@ -166,6 +167,250 @@ describe('Shell', () => {
     await waitFor(() => expect(chatNode()).not.toBe(before));
     expect(document.querySelector('li.v2-thread[aria-current="true"]')?.textContent).toContain('Beta MSA scope');
     expect(location.hash).toBe('#/chat?thread=t-2');
+  });
+
+  test('a conversation keeps working while you read another one, and its answer survives', async () => {
+    // The bug this fixes: switching conversations re-keyed the chat pane,
+    // which aborted the step and recorded the run `abandoned`. A ninety
+    // second review, thrown away because the lawyer looked at something
+    // else while it worked.
+    let openGate!: () => void;
+    const gate = new Promise<void>(resolve => (openGate = resolve));
+    let answered = false;
+    const answeredEvents: ThreadEvent[] = [
+      { t: 'user', at, content: 'Review the cap.' },
+      { t: 'step', at, runId: 'r-9', provider: 'fake/fake' },
+      { type: 'text', at, text: 'the cap is low' },
+      { type: 'done', at, output: null, usage: { inputTokens: 1, outputTokens: 1 } },
+    ];
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/steps')) {
+        const body = new ReadableStream<Uint8Array>({
+          start(c) {
+            void gate.then(() => {
+              c.enqueue(new TextEncoder().encode('event: message\ndata: {"type":"text","text":"the cap is low"}\n\n'));
+              c.close();
+              answered = true;
+            });
+          },
+        });
+        return new Response(body, { status: 200, headers: { 'content-type': 'text/event-stream' } });
+      }
+      if (url.startsWith('/health')) return json(health);
+      if (url.startsWith('/runs')) return json([]);
+      if (url === '/threads') return json([acme, beta]);
+      if (url.startsWith('/vault/overview')) return json({ matters: [], groups: { practice: 0, knowledge: 0, other: 0 } });
+      if (url.startsWith('/proposals')) return json([]);
+      if (url.startsWith('/docket')) return json({ deadlines: [], skipped: 0 });
+      if (url.startsWith('/vault/list')) return json([]);
+      if (url.startsWith('/settings')) return json(settings);
+      const match = /^\/threads\/(.+)$/.exec(url);
+      if (match !== null) {
+        const header = match[1] === 't-2' ? beta : acme;
+        // The server's transcript once the step has finished — which is what
+        // makes the answer survive the walk away.
+        return json({ header, events: match[1] === 't-1' && answered ? answeredEvents : [] } satisfies Thread);
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    }) as unknown as typeof fetch;
+
+    render(<Shell />);
+    await waitFor(() => expect(chatNode()).toBeTruthy());
+    await userEvent.type(screen.getByRole('textbox', { name: 'Message' }), 'Review the cap.');
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy());
+
+    // Walk away mid-step. The rail says that thread is still working, and
+    // THIS conversation's composer is free — it is not the one working.
+    await userEvent.click(screen.getByText('Beta MSA scope'));
+    await waitFor(() => expect(document.querySelector('.v2-thread-running')).toBeTruthy());
+    expect(document.querySelector('li.v2-thread[aria-current="true"]')?.textContent).toContain('Beta MSA scope');
+    expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull();
+
+    // The step finishes while nobody is looking at it.
+    openGate();
+    await waitFor(() => expect(document.querySelector('.v2-thread-running')).toBeNull());
+
+    // Back to the first: the answer is there, not an abandoned run.
+    await userEvent.click(screen.getByText('Acme NDA term'));
+    await waitFor(() => expect(screen.getByText('the cap is low')).toBeTruthy());
+  }, 20_000);
+
+  test('coming back BEFORE it finishes still lands the answer', async () => {
+    // The ending belongs to whoever is mounted. When the pane that sent had
+    // it, its `load` ran on an unmounted instance and dropped the entry from
+    // under the pane the reader was actually looking at — question and
+    // answer both gone, on a transcript that pane had never reloaded.
+    let openGate!: () => void;
+    const gate = new Promise<void>(resolve => (openGate = resolve));
+    let answered = false;
+    const answeredEvents: ThreadEvent[] = [
+      { t: 'user', at, content: 'Review the cap.' },
+      { t: 'step', at, runId: 'r-9', provider: 'fake/fake' },
+      { type: 'text', at, text: 'the cap is low' },
+      { type: 'done', at, output: null, usage: { inputTokens: 1, outputTokens: 1 } },
+    ];
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/steps')) {
+        const body = new ReadableStream<Uint8Array>({
+          start(c) {
+            void gate.then(() => {
+              c.enqueue(new TextEncoder().encode('event: message\ndata: {"type":"text","text":"the cap is low"}\n\n'));
+              c.close();
+              answered = true;
+            });
+          },
+        });
+        return new Response(body, { status: 200, headers: { 'content-type': 'text/event-stream' } });
+      }
+      if (url.startsWith('/health')) return json(health);
+      if (url.startsWith('/runs')) return json([]);
+      if (url === '/threads') return json([acme, beta]);
+      if (url.startsWith('/vault/overview')) return json({ matters: [], groups: { practice: 0, knowledge: 0, other: 0 } });
+      if (url.startsWith('/proposals')) return json([]);
+      if (url.startsWith('/docket')) return json({ deadlines: [], skipped: 0 });
+      if (url.startsWith('/vault/list')) return json([]);
+      if (url.startsWith('/settings')) return json(settings);
+      const match = /^\/threads\/(.+)$/.exec(url);
+      if (match !== null) {
+        const header = match[1] === 't-2' ? beta : acme;
+        return json({ header, events: match[1] === 't-1' && answered ? answeredEvents : [] } satisfies Thread);
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    }) as unknown as typeof fetch;
+
+    render(<Shell />);
+    await waitFor(() => expect(chatNode()).toBeTruthy());
+    await userEvent.type(screen.getByRole('textbox', { name: 'Message' }), 'Review the cap.');
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy());
+
+    // Away and straight back, while it is still working.
+    await userEvent.click(screen.getByText('Beta MSA scope'));
+    await waitFor(() => expect(document.querySelector('.v2-thread-running')).toBeTruthy());
+    await userEvent.click(screen.getByText('Acme NDA term'));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy());
+
+    openGate();
+    await waitFor(() => expect(screen.getByText('the cap is low')).toBeTruthy());
+    // And it stays: the sending pane's own reload must not drop it.
+    await new Promise(r => setTimeout(r, 30));
+    expect(screen.getByText('the cap is low')).toBeTruthy();
+    expect(screen.queryByText('No messages yet. Ask counsel something.')).toBeNull();
+  }, 20_000);
+
+  test('a create that lands after you moved on does not take the screen with it', async () => {
+    // The step is no longer aborted on unmount, so `POST /threads` can
+    // finish for a pane that is gone. Taking the selection then put the
+    // rail, the URL and the pane on three different conversations.
+    let openGate!: () => void;
+    const gate = new Promise<void>(resolve => (openGate = resolve));
+    const fresh: ThreadHeader = { id: 't-9', title: 'A brand new one', createdAt: at, updatedAt: at, sessions: {} };
+    let created = false;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url === '/threads' && init?.method === 'POST') {
+        await gate;
+        created = true;
+        return json(fresh);
+      }
+      if (url.endsWith('/steps')) return new Response('', { status: 200, headers: { 'content-type': 'text/event-stream' } });
+      if (url.startsWith('/health')) return json(health);
+      if (url.startsWith('/runs')) return json([]);
+      if (url === '/threads') return json(created ? [fresh, acme, beta] : [acme, beta]);
+      if (url.startsWith('/vault/overview')) return json({ matters: [], groups: { practice: 0, knowledge: 0, other: 0 } });
+      if (url.startsWith('/proposals')) return json([]);
+      if (url.startsWith('/docket')) return json({ deadlines: [], skipped: 0 });
+      if (url.startsWith('/vault/list')) return json([]);
+      if (url.startsWith('/settings')) return json(settings);
+      const match = /^\/threads\/(.+)$/.exec(url);
+      if (match !== null) return json({ header: match[1] === 't-2' ? beta : acme, events: [] } satisfies Thread);
+      throw new Error(`unexpected fetch: ${url}`);
+    }) as unknown as typeof fetch;
+
+    render(<Shell />);
+    await waitFor(() => expect(chatNode()).toBeTruthy());
+    await userEvent.click(screen.getByRole('button', { name: 'New conversation' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Message' }), 'A brand new one');
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }));
+
+    // Away before the create returns.
+    await userEvent.click(screen.getByText('Beta MSA scope'));
+    await waitFor(() => expect(document.querySelector('li.v2-thread[aria-current="true"]')?.textContent).toContain('Beta MSA scope'));
+
+    openGate();
+    await waitFor(() => expect(screen.getByText('A brand new one')).toBeTruthy());
+
+    // The reader is left where they went, and the URL agrees with the pane.
+    expect(document.querySelector('li.v2-thread[aria-current="true"]')?.textContent).toContain('Beta MSA scope');
+    expect(location.hash).toBe('#/chat?thread=t-2');
+    // And the new conversation opens on a click, rather than being stranded.
+    await userEvent.click(screen.getByText('A brand new one'));
+    await waitFor(() => expect(location.hash).toBe('#/chat?thread=t-9'));
+  }, 20_000);
+
+  test('deleting a conversation stops the step it was running', async () => {
+    render(<Shell />);
+    await waitFor(() => expect(chatNode()).toBeTruthy());
+    streams.open('t-1', 'Review the cap.');
+    await waitFor(() => expect(document.querySelector('.v2-thread-running')).toBeTruthy());
+
+    await userEvent.click(screen.getByRole('button', { name: 'Delete Acme NDA term' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+
+    // Not left running against a conversation that no longer exists.
+    await waitFor(() => expect(streams.streamOf('t-1')).toBeNull());
+    expect(document.querySelector('.v2-thread-running')).toBeNull();
+  });
+
+  test('a delete that fails leaves the conversation AND its step alone', async () => {
+    render(<Shell />);
+    await waitFor(() => expect(chatNode()).toBeTruthy());
+    streams.open('t-1', 'Review the cap.');
+    await waitFor(() => expect(document.querySelector('.v2-thread-running')).toBeTruthy());
+
+    const base = globalThis.fetch;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      // `json()` here is always 200 — a failure has to be built by hand.
+      if ((init?.method ?? 'GET') === 'DELETE') {
+        return new Response(JSON.stringify({ error: 'the vault went away' }), { status: 500, headers: { 'content-type': 'application/json' } });
+      }
+      return await (base as typeof fetch)(input, init);
+    }) as unknown as typeof fetch;
+
+    await userEvent.click(screen.getByRole('button', { name: 'Delete Acme NDA term' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+
+    // Cancelling BEFORE the delete threw the step away for a conversation
+    // that still exists: the transcript blanked, with nothing left to stop.
+    // The row is still in the rail — the conversation was not deleted.
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Delete Acme NDA term' })).toBeTruthy());
+    expect(streams.streamOf('t-1')?.status).toBe('running');
+    expect(document.querySelector('.v2-thread-running')).toBeTruthy();
+  });
+
+  test('a step that ends while you are elsewhere still moves the rail', async () => {
+    // The ending belongs to the mounted pane, and when none is on that
+    // thread there is nobody to tell the shell — the finished conversation
+    // kept its stale place and the files it wrote never became chips.
+    let lists = 0;
+    const base = globalThis.fetch;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input) === '/threads' && (init?.method ?? 'GET') === 'GET') lists += 1;
+      return await (base as typeof fetch)(input, init);
+    }) as unknown as typeof fetch;
+
+    render(<Shell />);
+    await waitFor(() => expect(chatNode()).toBeTruthy());
+    streams.open('t-1', 'Review the cap.');
+    await waitFor(() => expect(document.querySelector('.v2-thread-running')).toBeTruthy());
+    const before = lists;
+
+    // It ends with the reader on another conversation.
+    streams.forget('t-1');
+    await waitFor(() => expect(lists).toBeGreaterThan(before));
   });
 
   test('a stale empty list cannot reopen a draft over the thread just created', async () => {

@@ -12,7 +12,8 @@
  * the globals out from under an already-rendered tree.
  */
 import { GlobalRegistrator } from '@happy-dom/global-registrator';
-import { within } from '@testing-library/react';
+import { cleanup as domCleanup, within } from '@testing-library/react';
+import { reset as resetStreams } from '../v2/chat/streams';
 
 declare global {
   var __counselOsDomRegistered: boolean | undefined;
@@ -57,5 +58,18 @@ export const screen: Queries = new Proxy({} as Queries, {
   },
 });
 
-export { act, cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
+export { act, fireEvent, render, waitFor, within } from '@testing-library/react';
+
+/**
+ * Unmount the tree AND drop any step the stream registry is still holding.
+ *
+ * A running step deliberately outlives the component showing it
+ * (v2/chat/streams.ts) — that is the whole point of it. Module state also
+ * outlives a test FILE, so without this a stream one file left running is
+ * the next file's mystery: its Chat mounts already streaming.
+ */
+export function cleanup(): void {
+  domCleanup();
+  resetStreams();
+}
 export { default as userEvent } from '@testing-library/user-event';

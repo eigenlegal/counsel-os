@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { ApiError, fetchJson } from '../api/client';
 import { bootstrapToken } from '../api/token';
 import { onUnauthorized } from '../api/unauthorized';
 import type { Health, RetroStart, SettingsView, ThreadHeader, ThreadPolicy, VaultOverview } from '../api/types';
 import { parseHash, threadFromHash, vaultPathFromHash, type Route } from '../app';
 import { Chat } from './chat/Chat';
+import * as streams from './chat/streams';
 import { VAULT_CHANGED_EVENT } from './intake';
 import type { ComposerSeed } from './chat/Composer';
 import { Drawer } from './Drawer';
@@ -53,6 +54,25 @@ export function Shell(): JSX.Element {
   const [selected, setSelected] = useState<string | null>(null);
   const [draft, setDraft] = useState(false);
   const [chatKey, setChatKey] = useState(0);
+  /** Which conversations are mid-step. A step outlives the pane that
+   * started it (chat/streams.ts), so this is the only way to see that one
+   * is still working while you read another. */
+  const runningThreads = useSyncExternalStore(streams.subscribe, streams.running, streams.running);
+  /**
+   * A step that ends while the reader is on ANOTHER conversation has no pane
+   * to tell the shell about it, so the finished thread would keep its stale
+   * place in the rail and the files it wrote would never become chips. The
+   * running set shrinking is that signal.
+   */
+  const wasRunning = useRef(runningThreads.length);
+  useEffect(() => {
+    const shrank = runningThreads.length < wasRunning.current;
+    wasRunning.current = runningThreads.length;
+    if (!shrank) return;
+    void loadThreads();
+    void loadIndex();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runningThreads]);
   const [listed, setListed] = useState(false);
   const [drawer, setDrawer] = useState<DrawerState>({ open: false, path: null });
   const [drawerRevision, setDrawerRevision] = useState(0);
@@ -71,6 +91,10 @@ export function Shell(): JSX.Element {
 
   const draftRef = useRef(draft);
   draftRef.current = draft;
+  /** The mounted pane's identity, for a callback that can arrive from one
+   * that is gone. */
+  const chatKeyRef = useRef(chatKey);
+  chatKeyRef.current = chatKey;
   /** The route as of this render, for the callbacks that must not navigate:
    * `onThreadCreated` (the send may finish after the reader left chat) and
    * `deleteThread` (the rail is global now — delete is reachable from Home). */
@@ -388,6 +412,10 @@ export function Shell(): JSX.Element {
     setError(null);
     try {
       await fetchJson<void>(`/threads/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      // Only once it is really gone: a delete that FAILS leaves the
+      // conversation, and cancelling first would have thrown away the step
+      // and blanked the transcript of a thread that still exists.
+      streams.cancel(id);
       const { threads: list } = await loadThreads();
       if (selected === id) {
         const next = list[0]?.id ?? null;
@@ -419,6 +447,7 @@ export function Shell(): JSX.Element {
       <Rail
         route={route}
         threads={threads}
+        running={runningThreads}
         selected={selected}
         draft={draft}
         busy={busy}
@@ -453,9 +482,23 @@ export function Shell(): JSX.Element {
             ) : (
               <Chat
                 key={chatKey}
+                pane={chatKey}
                 threadId={draft ? null : selected}
                 health={health}
-                onThreadCreated={header => {
+                onThreadCreated={(header, pane) => {
+                  // The create can land after the reader moved on: the step
+                  // is no longer aborted on unmount, so this fires for a
+                  // pane that is gone. Taking the selection then would put
+                  // the rail, the URL and the pane on three different
+                  // conversations. The test is the PANE, not whether the
+                  // shell happens to be on a draft — two drafts can be alive
+                  // at once (Home's ask box mounts a fresh one), and the
+                  // first one's create must not steal the second one's
+                  // screen. The row still appears and a click opens it.
+                  if (pane !== chatKeyRef.current) {
+                    void loadThreads();
+                    return;
+                  }
                   setSelected(header.id);
                   setDraft(false);
                   // The fragment now names the thread — replaceState, so no

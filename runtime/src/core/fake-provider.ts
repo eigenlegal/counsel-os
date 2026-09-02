@@ -9,6 +9,10 @@ export interface FakeScript {
   usage?: Usage;
   /** When set, the step ends with this `error` instead of a `done`. */
   error?: string;
+  /** Milliseconds to wait before the answer, so a step can be observed in
+   * flight — two conversations overlapping, a Stop that has something to
+   * stop. Absent (and in every test) the answer is immediate. */
+  delayMs?: number;
 }
 
 export async function runToolDef(tools: ToolDef[], name: string, input: unknown, tenant: string):
@@ -48,6 +52,7 @@ export class FakeModelProvider implements ModelProvider {
       const r = await runToolDef(req.tools, call.name, call.input, req.tenant);
       yield { type: 'tool_result', id, name: call.name, output: r.output, isError: r.isError };
     }
+    if (s.delayMs !== undefined && s.delayMs > 0) await new Promise(resolve => setTimeout(resolve, s.delayMs));
     if (s.text) yield { type: 'text', text: s.text };
     if (s.error) {
       yield { type: 'error', message: s.error };

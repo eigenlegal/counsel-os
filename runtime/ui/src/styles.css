@@ -1129,3 +1129,14 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .v2-ledger-num { color: var(--fg-muted); white-space: nowrap; }
 .v2-ledger-unfinished td { color: var(--fg-faint); }
 .v2-ledger-quiet { font: 12.5px/1.7 var(--sans); color: var(--fg-faint); margin: 0.4rem 0 0; }
+
+/* Said, not shown: for a state whose visual form is a shape. */
+.v2-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+
+/* A conversation still working while you read another one. A dot, set in
+   the accent, sized to the text it sits before. */
+.v2-thread-running { display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--accent); vertical-align: 1px; }
+@media (prefers-reduced-motion: no-preference) {
+  .v2-thread-running { animation: v2-thread-pulse 1.8s ease-in-out infinite; }
+}
+@keyframes v2-thread-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
