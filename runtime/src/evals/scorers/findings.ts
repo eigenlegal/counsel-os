@@ -103,11 +103,18 @@ export function scoreFindings(block: Block | Fixture | FixtureDocument, raw: unk
     if (containsAny(citationText, expected.aliases)) matchedCitations.push(expected.id);
     else missedCitations.push(expected.id);
   }
-  const allowed = (block.allowed_citation_aliases ?? []).map(normalize);
-  const unknown = citations.filter(c => {
-    const n = normalize(c);
-    return n !== '' && !allowed.some(alias => n.includes(alias));
-  });
+  // What a fixture expects to be cited is allowed to be cited: the two lists
+  // are one set. An EMPTY set means the fixture says nothing about sources —
+  // then every citation is unknown and the term would be a standing zero, so
+  // an unconstrained fixture leaves the guard alone instead.
+  const allowed = [...(block.allowed_citation_aliases ?? []), ...(block.expected_citations ?? []).flatMap(c => c.aliases)].map(normalize).filter(a => a !== '');
+  const unknown =
+    allowed.length === 0
+      ? []
+      : citations.filter(c => {
+          const n = normalize(c);
+          return n !== '' && !allowed.some(alias => n.includes(alias));
+        });
 
   const expectedCount = (block.expected_catches ?? []).length;
   const citationCount = (block.expected_citations ?? []).length;

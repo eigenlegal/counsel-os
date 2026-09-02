@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { MatterStaysLocalError, RouterError } from '../core/types';
@@ -39,7 +39,7 @@ import {
 import { sseFromEvents, type StreamEvent } from './sse';
 import { confirmationMessage, estimateCost, needsConfirmation, type Pricing } from '../evals/cost';
 import { loadFixtures, sourceKindOf } from '../evals/fixture';
-import { documentFor, draftFromThread, fixtureFromDraft, NoFixtureHere, pickRun, type FixtureDraft } from '../evals/from-thread';
+import { citationsFor, documentFor, draftFromThread, fixtureFromDraft, NoFixtureHere, pickRun, type FixtureDraft } from '../evals/from-thread';
 import { pickJudge, providerJudge } from '../evals/judge';
 import { appendResult, readResults } from '../evals/results';
 import { runSet, summarize } from '../evals/runner';
@@ -768,25 +768,17 @@ export function createApp(deps: ServerDeps): App {
     id: z.string().min(1).max(80).optional(),
     /** The anonymized text as the lawyer left it. */
     text: z.string().max(1_000_000).optional(),
+    /** The step's message, as the lawyer left it. */
+    message: z.string().max(20_000).optional(),
+    /** Cited practice files the lawyer chose not to carry into the fixture. */
+    dropKnowledge: z.array(z.string()).max(100).optional(),
     /** Replace a fixture of the same id. Absent, a clash is a 409. */
     overwrite: z.boolean().optional(),
   });
 
-  /** A vault file's text, or `null` — a citation to something that has since
-   * moved must not fail the draft. Synchronous because the draft builder is
-   * pure; the store's own reader is async, so this goes to the filesystem
-   * the way the runtime's other bookkeeping does. */
-  const readKnowledgeSync = (path: string): string | null => {
-    try {
-      return readFileSync(join(deps.vaultRoot, vaultPath(path)), 'utf8');
-    } catch {
-      return null;
-    }
-  };
-
   /** Everything the draft builder needs from this thread. */
   const draftFor = async (input: z.infer<typeof DraftBody>): Promise<FixtureDraft> => {
-    const { events } = await loadThread(deps, input.threadId);
+    const { header, events } = await loadThread(deps, input.threadId);
     const records = listRuns(deps.vaultRoot, deps.tenant, input.threadId)
       .map(r => readRun(deps.vaultRoot, deps.tenant, r.runId))
       .filter((r): r is RunRecord => r !== null);
@@ -804,18 +796,34 @@ export function createApp(deps: ServerDeps): App {
         texts.set(path, null);
       }
     }
-    // The cited practice files, read once each: the draft copies them into
-    // the fixture's vault so the fixture keeps measuring against the
-    // standards this review used.
+    // The cited practice files, read HERE and through the vault store: the
+    // paths come from model output, and the store is what refuses `.counsel/`,
+    // a symlink out of the vault, and anything `..` climbs to. The builder
+    // then only looks up what this map holds.
     const knowledge = new Map<string, string | null>();
+    for (const cited of citationsFor(run, events)) {
+      try {
+        knowledge.set(cited, await deps.vault.read(deps.tenant, vaultPath(cited)));
+      } catch {
+        knowledge.set(cited, null);
+      }
+    }
+    // A matter that stays on this machine stays on this machine. A fixture
+    // runs on whatever model the scoreboard picks, so making one out of that
+    // matter would be a way around the policy rather than an exception to it.
+    const policy = await policyForOptions(
+      { tenant: deps.tenant, vaultRoot: deps.vaultRoot, vault: deps.vault },
+      { ...(header.matter === undefined ? {} : { matter: header.matter }), message: run.message },
+    );
+    if (policy.localOnly) {
+      throw new NoFixtureHere('This matter stays on this machine, and a fixture runs on whatever model scores best.');
+    }
+
     return draftFromThread({
       threadId: input.threadId,
       events,
       runs: records,
-      readKnowledge: p => {
-        if (!knowledge.has(p)) knowledge.set(p, readKnowledgeSync(p));
-        return knowledge.get(p) ?? null;
-      },
+      readKnowledge: p => knowledge.get(p) ?? null,
       ...(input.runId === undefined ? {} : { runId: input.runId }),
       ...(input.names === undefined ? {} : { names: input.names }),
       ...(input.title === undefined ? {} : { title: input.title }),
@@ -846,13 +854,17 @@ export function createApp(deps: ServerDeps): App {
     const input = await body(req, SaveBody);
     const release = await locks.acquire(SETTINGS_LOCK);
     try {
-      const draft = await draftFor(input);
+      const built = await draftFor(input);
+      // A file the lawyer left out never reaches the fixture's vault.
+      const dropped = new Set(input.dropKnowledge ?? []);
+      const draft = dropped.size === 0 ? built : { ...built, knowledge: built.knowledge.filter(k => !dropped.has(k.path)) };
       const { fixture, vault, files } = fixtureFromDraft(draft, {
         keep: input.keep,
         ...(input.reject === undefined ? {} : { reject: input.reject }),
         ...(input.id === undefined ? {} : { id: input.id }),
         ...(input.title === undefined ? {} : { title: input.title }),
         ...(input.text === undefined ? {} : { text: input.text }),
+        ...(input.message === undefined ? {} : { message: input.message }),
       });
       const path = `practice/evals/${fixture.id}.json`;
       // Ids must be unique across the whole suite, not just this folder: a
@@ -860,6 +872,10 @@ export function createApp(deps: ServerDeps): App {
       if (input.overwrite !== true && evalLoaded().some(l => l.fixture.id === fixture.id)) {
         throw new HttpError(409, `a fixture named ${fixture.id} is already here`);
       }
+      // A re-save replaces the vault rather than writing into it: keeping a
+      // knowledge file the new fixture no longer cites would leave exactly
+      // what someone re-saving to scrub it meant to remove.
+      rmSync(join(deps.vaultRoot, 'practice', 'evals', 'vaults', vault), { recursive: true, force: true });
       // The mini-vault first: a fixture file whose vault is missing is a
       // fixture that cannot run, and the suite would list it as broken.
       for (const file of files) await deps.vault.write(deps.tenant, `practice/evals/vaults/${vault}/${file.path}`, file.text);

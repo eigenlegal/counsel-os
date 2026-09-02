@@ -108,6 +108,37 @@ describe('anonymize', () => {
     expect(a.text).not.toContain('Delaware Freight Co.');
   });
 
+  test('an article in front of the name does not save the name', () => {
+    // The most common party form there is. Skipping the whole match on a
+    // leading `The` left every mention of the party in the document.
+    const a = anonymize('Entered into by The Acme Corporation ("Acme") and Globex Industries, Inc. Acme shall pay Globex. The Acme Corporation is liable.');
+    expect(a.text).not.toContain('Acme');
+    expect(a.text).not.toContain('Globex');
+    expect(a.text).toContain('The ');
+    expect(a.replacements.find(r => r.from === 'Acme')!.count).toBe(2);
+  });
+
+  test('an ordinary capitalized word is not mistaken for a company suffix', () => {
+    // `Co` inside `Costs`, `AG` inside `AGREEMENT`: without a right-hand
+    // boundary the pass rewrites the contract instead of anonymizing it.
+    const text = 'Delivery Costs shall be borne by Buyer. The Parties acknowledge Total Compensation is fixed.\nSERVICES AGREEMENT follows.';
+    expect(anonymize(text).text).toBe(text);
+  });
+
+  test('a name never runs past the end of a sentence', () => {
+    const a = anonymize('Payment goes to Orbit Freight LLC. The Buyer accepts.', {});
+    expect(a.replacements.map(r => r.from)).toContain('Orbit Freight LLC.');
+    expect(a.text).toContain('. The Buyer accepts.');
+  });
+
+  test('two supplied parties never draw the same fake name', () => {
+    const a = anonymize('Aco5 Group and Bco4 Group are the parties. Aco5 Group pays Bco4 Group.', {
+      names: [{ name: 'Aco5 Group', kind: 'org' }, { name: 'Bco4 Group', kind: 'org' }],
+    });
+    const [first, second] = a.replacements.filter(r => r.kind === 'org');
+    expect(first!.to).not.toBe(second!.to);
+  });
+
   test('a generic first word is not turned into a party everywhere it appears', () => {
     const a = anonymize('Standard Freight Corp. ships goods. Standard terms apply. The Standard is met.');
     expect(a.text).not.toContain('Standard Freight Corp.');

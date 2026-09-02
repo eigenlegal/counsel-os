@@ -101,7 +101,10 @@ function pick(list: string[], seed: number, taken: Set<string>): string {
  * ending in a corporate suffix. The suffix is part of the match so the
  * replacement keeps the same legal form. */
 const ORG_SUFFIX = String.raw`(?:Inc|Incorporated|LLC|L\.L\.C|LLP|L\.L\.P|LP|L\.P|Ltd|Limited|Corp|Corporation|Company|Co|PLC|GmbH|AG|S\.A|SA|N\.V|NV|B\.V|BV|AB|Oy|Pty|PBC)`;
-const ORG_RE = new RegExp(String.raw`\b((?:[A-Z][\w&'’-]*[.,]?[ ]+){1,5})(${ORG_SUFFIX})\.?`, 'g');
+// A comma inside the run is ordinary (`Acme Holdings, Inc.`); a full stop is
+// the end of a sentence, and a run that crosses one swallows the next
+// sentence's first words into the "name".
+const ORG_RE = new RegExp(String.raw`\b((?:[A-Z][\w&'’-]*,?[ ]+){1,5})(${ORG_SUFFIX})\.?(?![A-Za-z])`, 'g');
 
 const EMAIL_RE = /\b[\w.+-]+@[\w-]+(?:\.[\w-]+)+\b/g;
 
@@ -234,27 +237,38 @@ export function anonymize(text: string, options: AnonymizeOptions = {}): Anonymi
     const s = hash32(trimmed);
     if (kind === 'person') add('person', trimmed, `${pick(GIVEN, s, new Set())} ${pick(SURNAMES, s >>> 5, takenPerson)}`);
     else add('org', trimmed, pick(ORG_STEMS, s, takenOrg));
+    // Record what `pick` compares against — the whole stem for an
+    // organization, the surname for a person — or two parties can draw the
+    // same fake name and merge into one in the fixture.
     const last = mapping.get(trimmed);
-    if (last) (kind === 'person' ? takenPerson : takenOrg).add(last.to.split(' ').at(-1) ?? last.to);
+    if (last !== undefined) {
+      if (kind === 'person') takenPerson.add(last.to.split(' ').at(-1) ?? last.to);
+      else takenOrg.add(last.to);
+    }
   }
 
   // 2. Organizations, by their legal suffix.
   for (const m of text.matchAll(ORG_RE)) {
-    const whole = m[0];
-    const lead = (m[1] ?? '').trim().split(/\s+/)[0] ?? '';
-    if (NOT_A_NAME.has(lead)) continue;
+    // `The Acme Corporation` is a party; `The` is not part of its name.
+    // Dropping the leading words that never name anyone leaves the name —
+    // skipping the whole match would leave `Acme` in the document, which is
+    // the one thing this pass exists to remove.
+    const words = (m[1] ?? '').trim().split(/\s+/);
+    while (words.length > 0 && NOT_A_NAME.has((words[0] ?? '').replace(/,$/, ''))) words.shift();
+    if (words.length === 0) continue;
+    const whole = `${words.join(' ')} ${m[2] ?? ''}${m[0].endsWith('.') ? '.' : ''}`;
     const suffix = m[2] ?? '';
     const s = hash32(whole);
     const stem = pick(ORG_STEMS, s, takenOrg);
     takenOrg.add(stem);
     // `Acme Holdings, Inc.` keeps its comma; `Bytecraft Labs LLC` has none.
-    const comma = /,\s+$/.test(m[1] ?? '') ? ',' : '';
+    const comma = /,$/.test(words.at(-1) ?? '') ? ',' : '';
     add('org', whole, `${stem}${comma} ${suffix}${whole.endsWith('.') ? '.' : ''}`);
     // A party is rarely written out in full twice. `Acme Holdings, Inc.`
     // becomes `Acme Holdings` in one clause and plain `Acme` in the next, so
     // both shorter forms map to the same stem — otherwise the name the
     // anonymizer was meant to remove survives in most of the document.
-    const bare = (m[1] ?? '').trim().replace(/,$/, '');
+    const bare = words.join(' ').replace(/,$/, '');
     if (bare !== '' && !NOT_A_NAME.has(bare)) add('org', bare, stem);
     const first = bare.split(/\s+/)[0] ?? '';
     if (first !== bare && first.length >= 4 && !NOT_A_NAME.has(first) && !GENERIC_IN_A_NAME.has(first)) add('org', first, stem);

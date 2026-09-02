@@ -35,7 +35,14 @@ export function FixturePanel({ threadId, runId, onClose }: FixturePanelProps): J
   const [error, setError] = useState<string | null>(null);
   const [verdicts, setVerdicts] = useState<Record<string, Verdict>>({});
   const [text, setText] = useState('');
+  // The prompt travels into the fixture as the step's message, so it is the
+  // lawyer's to read and edit too: the anonymizer's mapping comes from the
+  // document, and a name that appears only here would pass through it.
+  const [message, setMessage] = useState('');
   const [name, setName] = useState('');
+  // Which cited practice files travel with the fixture. All of them, until
+  // the lawyer says otherwise.
+  const [drop, setDrop] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState<SavedFixture | null>(null);
   const [clash, setClash] = useState(false);
@@ -48,7 +55,9 @@ export function FixturePanel({ threadId, runId, onClose }: FixturePanelProps): J
         if (!live) return;
         setDraft(next);
         setText(next.text);
+        setMessage(next.message);
         setName(next.id);
+        setDrop(new Set());
         // Every finding starts kept: counsel raised it and the lawyer read
         // it. Saying "wrong" is the deliberate act.
         setVerdicts(Object.fromEntries(next.catches.map(c => [c.id, 'keep' as Verdict])));
@@ -73,6 +82,8 @@ export function FixturePanel({ threadId, runId, onClose }: FixturePanelProps): J
         reject: draft.catches.filter(c => verdicts[c.id] === 'wrong').map(c => c.id),
         id: name,
         text,
+        message,
+        ...(drop.size === 0 ? {} : { dropKnowledge: [...drop] }),
         ...(overwrite ? { overwrite: true } : {}),
       });
       setSaved(result);
@@ -175,6 +186,43 @@ export function FixturePanel({ threadId, runId, onClose }: FixturePanelProps): J
         onChange={e => setText(e.target.value)}
       />
 
+      <h4 className="v2-fixture-sub">what counsel was asked</h4>
+      <textarea
+        className="v2-fixture-text v2-fixture-message"
+        aria-label="The prompt the fixture runs"
+        rows={3}
+        value={message}
+        onChange={e => setMessage(e.target.value)}
+      />
+
+      {draft.knowledge.length === 0 ? null : (
+        <>
+          <h4 className="v2-fixture-sub">practice files that travel with it</h4>
+          <ul className="v2-fixture-files">
+            {draft.knowledge.map(k => (
+              <li key={k.path} className={drop.has(k.path) ? 'v2-fixture-dropped' : undefined}>
+                {k.path}{' · '}
+                <button
+                  type="button"
+                  className="v2-link"
+                  disabled={busy}
+                  onClick={() =>
+                    setDrop(prev => {
+                      const next = new Set(prev);
+                      if (next.has(k.path)) next.delete(k.path);
+                      else next.add(k.path);
+                      return next;
+                    })
+                  }
+                >
+                  {drop.has(k.path) ? 'put it back' : 'remove'}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
       <h4 className="v2-fixture-sub">what counsel found</h4>
       {draft.catches.length === 0 ? (
         <p className="v2-fixture-quiet">nothing — this fixture would expect no findings at all.</p>
@@ -208,7 +256,18 @@ export function FixturePanel({ threadId, runId, onClose }: FixturePanelProps): J
 
       <p className="v2-fixture-save">
         <label htmlFor={`fixture-name-${runId}`}>name</label>{' '}
-        <input id={`fixture-name-${runId}`} className="v2-fixture-name" value={name} disabled={busy} onChange={e => setName(e.target.value)} />{' '}
+        <input
+          id={`fixture-name-${runId}`}
+          className="v2-fixture-name"
+          value={name}
+          disabled={busy}
+          onChange={e => {
+            // The clash was about the old name; keeping the banner up would
+            // offer to replace a fixture that does not exist.
+            setClash(false);
+            setName(e.target.value);
+          }}
+        />{' '}
         <button type="button" className="v2-link" disabled={busy || name.trim() === ''} onClick={() => void save(false)}>
           {busy ? 'saving…' : 'save the fixture'}
         </button>

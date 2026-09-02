@@ -96,21 +96,16 @@ describe('the review screen behind "make this a fixture"', () => {
     await userEvent.click(within(panel()).getByRole('button', { name: 'save the fixture' }));
 
     await waitFor(() => expect(saves).toHaveLength(1));
-    expect(saves[0]).toMatchObject({ threadId: 't-1', runId: 'r-1', keep: ['liability-cap'], reject: ['indemnity'], id: 'services-2-findings', text: DRAFT.text });
+    expect(saves[0]).toMatchObject({ threadId: 't-1', runId: 'r-1', keep: ['liability-cap'], reject: ['indemnity'], id: 'services-2-findings', text: DRAFT.text, message: DRAFT.message });
     await waitFor(() => expect(within(panel()).getByText(/practice\/evals\/services.json/)).toBeTruthy());
   });
 
   test('an edit to the text is what gets saved', async () => {
     render(<FixturePanel threadId="t-1" runId="r-1" onClose={() => {}} />);
     const box = await waitFor(() => within(panel()).getByRole('textbox', { name: 'The anonymized document' }));
-    // `userEvent.setup({ document })`, not the bare `clear`: the direct API
-    // infers its document from the element it is given, and `clear` is the
-    // one call that is not given one (see SettingsPage.test.tsx).
-    const user = userEvent.setup({ document });
-    await user.clear(box);
-    await user.type(box, 'Shorter.');
+    await userEvent.type(box, ' Nothing else.');
     await userEvent.click(within(panel()).getByRole('button', { name: 'save the fixture' }));
-    await waitFor(() => expect(saves[0]?.text).toBe('Shorter.'));
+    await waitFor(() => expect(saves[0]?.text).toBe(`${DRAFT.text} Nothing else.`));
   });
 
   test('a name already taken offers to replace it, and only then does it overwrite', async () => {
@@ -142,5 +137,35 @@ describe('the review screen behind "make this a fixture"', () => {
     await userEvent.click(within(panel()).getByRole('button', { name: 'save the fixture' }));
     await waitFor(() => expect(within(panel()).getByRole('alert').textContent).toContain('not saved'));
     expect(within(panel()).getByRole('textbox', { name: 'The anonymized document' })).toBeTruthy();
+  });
+});
+
+describe('what else travels with the fixture', () => {
+  test('the prompt is shown and editable, because the mapping came from the document alone', async () => {
+    render(<FixturePanel threadId="t-1" runId="r-1" onClose={() => {}} />);
+    const box = await waitFor(() => within(panel()).getByRole('textbox', { name: 'The prompt the fixture runs' }) as HTMLTextAreaElement);
+    expect(box.value).toBe(DRAFT.message);
+    await userEvent.type(box, ' Please.');
+    await userEvent.click(within(panel()).getByRole('button', { name: 'save the fixture' }));
+    await waitFor(() => expect(saves[0]?.message).toBe(`${DRAFT.message} Please.`));
+  });
+
+  test('a cited practice file can be left out', async () => {
+    render(<FixturePanel threadId="t-1" runId="r-1" onClose={() => {}} />);
+    await waitFor(() => expect(document.querySelector('.v2-fixture-files')!.textContent).toContain('liability.md'));
+    await userEvent.click(within(panel()).getByRole('button', { name: 'remove' }));
+    expect(within(panel()).getByRole('button', { name: 'put it back' })).toBeTruthy();
+    await userEvent.click(within(panel()).getByRole('button', { name: 'save the fixture' }));
+    await waitFor(() => expect(saves[0]?.dropKnowledge).toEqual(['knowledge/practice-seed/standards/liability.md']));
+  });
+
+  test('renaming after a clash drops the stale offer to replace', async () => {
+    saveStatus = 409;
+    render(<FixturePanel threadId="t-1" runId="r-1" onClose={() => {}} />);
+    await waitFor(() => expect(within(panel()).getByRole('button', { name: 'save the fixture' })).toBeTruthy());
+    await userEvent.click(within(panel()).getByRole('button', { name: 'save the fixture' }));
+    await waitFor(() => expect(within(panel()).getByRole('button', { name: 'replace it' })).toBeTruthy());
+    await userEvent.type(within(panel()).getByLabelText('name'), '-2');
+    expect(within(panel()).queryByRole('button', { name: 'replace it' })).toBeNull();
   });
 });

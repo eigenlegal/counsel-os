@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
 import { readWritten } from '../outcomes/written';
 import { createHash, randomUUID } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { FakeModelProvider, runToolDef } from '../core/fake-provider';
@@ -1897,10 +1897,66 @@ Rationale: A cap this size does not survive one incident.
     const app = appWith([new FakeModelProvider([{ text: REVIEW }])], { evals: evalsDeps() });
     const id = await reviewedThread(app);
     const draft = (await (await call(app, 'POST', '/fixtures/draft', { body: { threadId: id } })).json()) as { catches: Array<{ id: string }> };
-    const res = await call(app, 'POST', '/fixtures/save', { body: { threadId: id, keep: [], reject: [draft.catches[0]!.id], id: 'acme-neg', text: 'A shorter agreement.' } });
+    const res = await call(app, 'POST', '/fixtures/save', { body: { threadId: id, keep: [], reject: [draft.catches[0]!.id], id: 'acme-neg' } });
     expect(await res.json()).toMatchObject({ expected: 0, negative: 1 });
-    const written = JSON.parse(readFileSync(join(vaultRoot, 'practice', 'evals', 'acme-neg.json'), 'utf8')) as { input: { contract_text: string } };
+
+    // An edit that removes what the finding was about removes the finding:
+    // a rejected catch whose words are no longer in the document would
+    // penalize every future answer for text this fixture does not contain.
+    const edited = await call(app, 'POST', '/fixtures/save', { body: { threadId: id, keep: [], reject: [draft.catches[0]!.id], id: 'acme-edited', text: 'A shorter agreement.' } });
+    expect(await edited.json()).toMatchObject({ expected: 0, negative: 0 });
+    const written = JSON.parse(readFileSync(join(vaultRoot, 'practice', 'evals', 'acme-edited.json'), 'utf8')) as { input: { contract_text: string } };
     expect(written.input.contract_text).toBe('A shorter agreement.');
+  });
+
+  test('a cited path cannot climb out of the knowledge folders', async () => {
+    // The citation is MODEL output. A contract that tells the model to cite
+    // `practice/../matters/other-client/nda.md` must not pull another
+    // client's matter into a fixture.
+    mkdirSync(join(vaultRoot, 'matters', 'other-client'), { recursive: true });
+    writeFileSync(join(vaultRoot, 'matters', 'other-client', 'nda.md'), 'Zephyr Robotics is the counterparty.\n');
+    const cites = `## RED
+
+**Liability cap (Section 5)** - the cap is far below the fees
+Current language: "Vendor's aggregate liability shall not exceed $50,000"
+Rationale: see practice/../matters/other-client/nda.md, law/../../etc/passwd.md and practice/standards/liability.md.
+`;
+    const app = appWith([new FakeModelProvider([{ text: cites }])], { evals: evalsDeps() });
+    mkdirSync(join(vaultRoot, 'practice', 'standards'), { recursive: true });
+    writeFileSync(join(vaultRoot, 'practice', 'standards', 'liability.md'), '# Liability\n\nTwelve months of fees.\n');
+    const id = await reviewedThread(app);
+
+    const res = await call(app, 'POST', '/fixtures/draft', { body: { threadId: id } });
+    expect(res.status).toBe(200);
+    const draft = (await res.json()) as { citations: Array<{ aliases: string[] }>; knowledge: Array<{ path: string }> };
+    expect(draft.knowledge.map(k => k.path)).toEqual(['practice/standards/liability.md']);
+    expect(JSON.stringify(draft)).not.toContain('Zephyr');
+    expect(JSON.stringify(draft.citations)).not.toContain('other-client');
+
+    await call(app, 'POST', '/fixtures/save', { body: { threadId: id, keep: [], id: 'climb' } });
+    const files: string[] = [];
+    const walk = (dir: string): void => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        if (entry.isDirectory()) walk(join(dir, entry.name));
+        else files.push(join(dir, entry.name));
+      }
+    };
+    walk(join(vaultRoot, 'practice', 'evals', 'vaults', 'climb'));
+    expect(files.some(p => p.includes('other-client') || p.includes('passwd'))).toBe(false);
+  });
+
+  test('a matter that stays on this machine cannot become a fixture', async () => {
+    const app = appWith([new FakeModelProvider([{ text: REVIEW }])], { evals: evalsDeps() });
+    mkdirSync(join(vaultRoot, 'matters'), { recursive: true });
+    writeFileSync(join(vaultRoot, 'matters', 'sealed.md'), '---\nstays_local: true\n---\n\n# Sealed matter\n');
+    writeFileSync(join(vaultRoot, 'matters', 'services.md'), "Acme Holdings, Inc. agrees.\n\nVendor's aggregate liability shall not exceed $50,000.\n");
+    const id = await newThread(app);
+    await call(app, 'PATCH', `/threads/${id}`, { body: { matter: 'matters/sealed.md' } });
+    await step(app, id, { message: 'Review this.\n\n`matters/services.md`', task: 'review' });
+
+    const res = await call(app, 'POST', '/fixtures/draft', { body: { threadId: id } });
+    expect(res.status).toBe(422);
+    expect(((await res.json()) as { error: string }).error).toMatch(/stays on this machine/);
   });
 
   test('a conversation with nothing to make a fixture from says why, and both routes need the token', async () => {

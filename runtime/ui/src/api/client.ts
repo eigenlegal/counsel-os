@@ -348,6 +348,8 @@ export async function saveFixture(input: {
   id?: string;
   title?: string;
   text?: string;
+  message?: string;
+  dropKnowledge?: string[];
   overwrite?: boolean;
 }): Promise<SavedFixture> {
   return fetchJson<SavedFixture>('/fixtures/save', { method: 'POST', body: JSON.stringify(input) });

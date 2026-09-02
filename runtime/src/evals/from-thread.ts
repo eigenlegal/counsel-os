@@ -141,7 +141,10 @@ export function documentFor(events: ThreadEvent[], runId: string): string | null
     // The union also holds live step events, which carry `type`, not `t`.
     if (!('t' in e)) continue;
     if (e.t === 'user') {
-      const paths = pathsInMessage(e.content);
+      // The document under review, not a standard the message also names:
+      // "compare `matters/a.md` against `practice/standards/x.md`" is about
+      // the matter's file.
+      const paths = pathsInMessage(e.content).filter(p => !isKnowledgePath(p));
       if (paths.length > 0) found = paths.at(-1) ?? found;
     }
     if (e.t === 'step' && e.runId === runId) return found;
@@ -166,7 +169,11 @@ export function answerText(events: ThreadEvent[], runId: string): string {
 }
 
 const SEVERITY_LINE = /\b(RED|YELLOW|GREEN)\b/;
-const FINDING_HEAD = /^\s*(?:[-*]\s*)?\*\*(.+?)\*\*\s*(?:[—–-]\s*(.*))?$/;
+// `**Title** — summary`, `**Title**: summary`, `- **Title**`, and a markdown
+// heading (`### Title`). A finding counsel wrote as a heading is still a
+// finding, and dropping it silently would show the lawyer a short list that
+// looks complete.
+const FINDING_HEAD = /^\s*(?:[-*]\s*)?\*\*(.+?)\*\*\s*(?:[—–:-]\s*(.*))?$|^\s*#{2,6}\s+(?!RED\b|YELLOW\b|GREEN\b)(.+?)\s*$/;
 const QUOTED = /^\s*(?:Current language|Language|Clause)\s*:\s*(.*)$/i;
 const RATIONALE = /^\s*(?:Rationale|Why|Gap)\s*:\s*(.*)$/i;
 const TIER = /^\s*Priority\s*:\s*Tier\s*([123])/i;
@@ -200,8 +207,9 @@ export function findingsFromText(text: string): { title: string; severity: 'red'
         continue;
       }
     }
-    if (head !== null && (head[1] ?? '').length > 2) {
-      current = { title: (head[1] ?? '').trim(), severity, clause: '', rationale: (head[2] ?? '').trim() };
+    const title = (head?.[1] ?? head?.[3] ?? '').trim();
+    if (head !== null && title.length > 2) {
+      current = { title, severity, clause: '', rationale: (head[2] ?? '').trim() };
       out.push(current);
       continue;
     }
@@ -223,17 +231,39 @@ export function findingsFromText(text: string): { title: string; severity: 'red'
   return out.filter(f => f.clause !== '' || f.rationale !== '');
 }
 
+/**
+ * A knowledge file a fixture may carry: the practice's own standards and the
+ * law it keeps, by a plain relative path.
+ *
+ * The paths come from MODEL OUTPUT — a citation list, or a path written into
+ * an answer about a document the counterparty wrote. So this is a
+ * whitelist, not a filter: no `..`, no absolute path, no backslash, and
+ * never `memory/`, which in this vault is matter-derived and carries other
+ * clients' work.
+ */
+export function isKnowledgePath(path: string): boolean {
+  if (!/^(?:practice|law|knowledge)\/[A-Za-z0-9._/-]+\.md$/.test(path)) return false;
+  return !path.split('/').some(seg => seg === '..' || seg === '.' || seg === '');
+}
+
 /** Vault paths a written answer names: `practice/standards/liability.md`,
  * with or without backticks. The same knowledge files a structured answer
  * would have listed as citations. */
 export function citedPaths(text: string): string[] {
   const out = new Set<string>();
-  for (const m of text.matchAll(/\b(?:practice|law|knowledge|memory)\/[\w./-]+\.md\b/g)) out.add(m[0]);
+  for (const m of text.matchAll(/\b(?:practice|law|knowledge)\/[\w./-]+\.md\b/g)) out.add(m[0]);
   return [...out];
 }
 
-/** Terms a scorer can match this finding by: the words of its title that
- * carry meaning, plus the shortest telling piece of the quote. */
+/**
+ * The terms a scorer matches this finding by — PHRASES, never bare words.
+ *
+ * A single word is both too generous and too dangerous here. `containsAny`
+ * is an `or` over the list, so `["liability"]` marks the catch found in any
+ * answer that says "liability"; and on a REJECTED finding, one bare word
+ * that a later answer happens to use zeroes a quarter of the score for
+ * good. The hand-written fixtures use phrases for exactly this reason.
+ */
 function matchTerms(title: string, clause: string): string[] {
   // Ordinary words, plus the ones every contract heading carries: a scorer
   // that matches on "section" matches on anything.
@@ -245,8 +275,26 @@ function matchTerms(title: string, clause: string): string[] {
     .toLowerCase()
     .split(/[^\da-z]+/)
     .filter(w => w.length > 2 && !stop.has(w));
-  const phrase = clause.trim().split(/\s+/).slice(0, 6).join(' ').toLowerCase();
-  return [...new Set([...words.slice(0, 5), ...(phrase === '' ? [] : [phrase])])];
+  const terms: string[] = [];
+  const quote = clause.trim().split(/\s+/).filter(w => w !== '');
+  // The quote, as much of it as reads as one phrase.
+  if (quote.length > 0) terms.push(quote.slice(0, 8).join(' ').toLowerCase());
+  // And the title's own words as ONE phrase, so the fixture matches a
+  // finding about this clause rather than any finding that shares a word.
+  if (words.length >= 2) terms.push(words.slice(0, 4).join(' '));
+  else if (words.length === 1 && quote.length === 0) terms.push(words[0]!);
+  return [...new Set(terms)];
+}
+
+/**
+ * The knowledge files a run's answer cited, whatever shape the answer took.
+ * The caller reads them (through the vault store, which is where the guards
+ * live) and hands the text back through `readKnowledge`.
+ */
+export function citationsFor(run: RunRecord, events: ThreadEvent[]): string[] {
+  const typed = FindingsAnswer.safeParse(run.output);
+  const cited = typed.success ? typed.data.citations : citedPaths(answerText(events, run.runId));
+  return [...new Set(cited)].filter(isKnowledgePath);
 }
 
 export interface DraftOptions {
@@ -309,29 +357,38 @@ export function draftFromThread(opts: DraftOptions): FixtureDraft {
   });
   if (catches.length === 0) notes.push('The review raised no findings, so this fixture would expect none. That is a fair thing to measure, but say so deliberately.');
 
-  const citations = [...new Set(answered)].map(c => ({
+  // A citation the fixture keeps names a knowledge file. Anything else the
+  // answer listed — a matter path, a URL, a phrase — would put the
+  // practice's own filing into a file meant to carry none of it.
+  const citations = [...new Set(answered)].filter(isKnowledgePath).map(c => ({
     id: slugify(c.split('/').at(-1) ?? c, 'citation'),
     // The path and its own name: a model that cites either is citing this.
     aliases: [...new Set([c, (c.split('/').at(-1) ?? c).replace(/\.md$/, '')])],
   }));
 
-  // The document sits at one fixed path inside the fixture vault: a real
-  // matter's path names a client, and the fixture must not.
-  const message = a.apply(run.message).replaceAll(path, FIXTURE_DOCUMENT);
+  // The prompt travels into the fixture as the step's message, so it gets
+  // the same pass as the document. Every path it names is rewritten, not
+  // just this run's: a message that chips two files would otherwise carry
+  // the other matter's real path.
+  let message = a.apply(run.message);
+  for (const p of new Set([path, ...pathsInMessage(run.message)])) message = message.replaceAll(p, FIXTURE_DOCUMENT);
 
   const knowledge: { path: string; text: string }[] = [];
-  for (const c of citations) {
-    const from = c.aliases[0] ?? '';
-    if (!/^(practice|law|memory|knowledge)\//.test(from)) continue;
+  for (const from of citations.map(c => c.aliases[0] ?? '').filter(isKnowledgePath)) {
     const text = opts.readKnowledge?.(from) ?? null;
     if (text === null) notes.push(`The answer cited ${from}, which could not be read; the fixture will run without it.`);
     else knowledge.push({ path: from, text: a.apply(text) });
   }
 
-  const name = (path.split('/').at(-1) ?? path).replace(/\.[^.]+$/, '');
+  // NOT the document's filename: a matter's file is named after the client,
+  // and the id becomes a filename and a folder in the practice's evals. The
+  // default says what the fixture is; the lawyer names it on the review
+  // screen.
+  const stamp = run.startedAt.slice(0, 10);
+  const label = opts.title ?? `review ${stamp}`;
   return {
-    id: slugify(opts.title ?? name, 'practice-fixture'),
-    title: opts.title ?? `${name} — ${catches.length} finding${catches.length === 1 ? '' : 's'}`,
+    id: slugify(label, 'review'),
+    title: label,
     scorer: 'findings',
     task: 'review',
     text: a.text,
@@ -359,6 +416,8 @@ export interface SaveDecisions {
   /** The anonymized text as the lawyer left it — they may have edited it on
    * the review screen. Defaults to the draft's own text. */
   text?: string;
+  /** The step's message, as the lawyer left it. Defaults to the draft's. */
+  message?: string;
 }
 
 /** What a save writes: the fixture file, and the mini-vault the runner
@@ -390,20 +449,31 @@ export function fixtureFromDraft(draft: FixtureDraft, decisions: SaveDecisions):
   if (text.trim() === '') throw new NoFixtureHere('The fixture has no document text.');
   const id = decisions.id === undefined ? draft.id : slugify(decisions.id, draft.id);
 
+  // The lawyer's edit to the document is the screen's one remediation: if
+  // they scrubbed something the pass missed, it must not survive in a
+  // quote or a match term. A catch is carried only in the words that are
+  // still in the text being saved.
+  const inText = (s: string): boolean => s.trim() !== '' && text.toLowerCase().includes(s.trim().toLowerCase());
+  const scrub = (c: DraftCatch): DraftCatch | null => {
+    const terms = c.match_any.filter(inText);
+    const clause = inText(c.clause) ? c.clause : '';
+    // Nothing left to match on: the finding was about text the lawyer
+    // removed, so the fixture cannot expect it.
+    if (terms.length === 0 && clause === '') return null;
+    return { ...c, clause, match_any: terms };
+  };
+  const decided = (ids: Set<string>): DraftCatch[] => draft.catches.filter(c => ids.has(c.id)).map(scrub).filter((c): c is DraftCatch => c !== null);
+
   const fixture = {
     id,
     title: decisions.title ?? draft.title,
     scorer: 'findings',
     vault: id,
-    task: draft.message,
+    task: decisions.message ?? draft.message,
     source: { kind: 'practice', name: `thread ${draft.from.threadId}` },
     input: { contract_text: text },
-    expected_catches: draft.catches
-      .filter(c => kept.has(c.id))
-      .map(c => ({ id: c.id, severity: c.severity, clause: c.clause, why: c.why, match_any: c.match_any })),
-    negative_checks: draft.catches
-      .filter(c => rejected.has(c.id))
-      .map(c => ({ id: c.id, description: `Counsel raised this and the lawyer rejected it: ${c.title}`, match_any: c.match_any })),
+    expected_catches: decided(kept).map(c => ({ id: c.id, severity: c.severity, clause: c.clause, why: c.why, match_any: c.match_any })),
+    negative_checks: decided(rejected).map(c => ({ id: c.id, description: `Counsel raised this and the lawyer rejected it: ${c.title}`, match_any: c.match_any })),
     expected_citations: draft.citations,
     // What the review cited IS the allowed set: the scorer counts a citation
     // outside it as a hallucinated source, and every one of these came from

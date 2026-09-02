@@ -71,6 +71,14 @@ describe('reading the thread', () => {
     expect(pathsInMessage('`/etc/passwd`')).toEqual([]);
   });
 
+  test('a standard named in the message is not mistaken for the document', () => {
+    const events: ThreadEvent[] = [
+      { t: 'user', at: '2026-09-01T09:59:00.000Z', content: 'Compare `matters/acme/services.md` against `practice/standards/liability.md`.' },
+      EVENTS[1]!,
+    ];
+    expect(documentFor(events, '11111111-1111-4111-8111-111111111111')).toBe('matters/acme/services.md');
+  });
+
   test('a run is attributed to the last document named before it', () => {
     const second = '22222222-2222-4222-8222-222222222222';
     const events: ThreadEvent[] = [
@@ -117,18 +125,25 @@ describe('the draft', () => {
     expect(cap.severity).toBe('red');
     expect(cap.id).toBe('liability-cap-is-too-low-for-the-contract-value');
     expect(cap.match_any.length).toBeGreaterThan(0);
+    expect(cap.match_any.every(t => t.includes(' '))).toBe(true);
     expect(draft.notes).toEqual([]);
   });
 
-  test('the words a scorer matches on skip the ones every contract carries', () => {
+  test('a scorer matches on phrases, never on a bare word', () => {
+    // `containsAny` is an `or`: one bare word marks a catch found in any
+    // answer that happens to use it, and on a rejected finding it zeroes a
+    // quarter of the score for good.
     const events: ThreadEvent[] = [
       EVENTS[0]!,
       EVENTS[1]!,
       { type: 'text', text: '**Liability cap (Section 5)** — too low\nRationale: it is.\n', at: '2026-09-01T10:00:05.000Z' },
     ];
     const draft = draftFromThread({ ...deps, events, runs: [run({ output: undefined })] });
-    expect(draft.catches[0]!.match_any).toContain('liability');
-    expect(draft.catches[0]!.match_any).not.toContain('section');
+    const terms = draft.catches[0]!.match_any;
+    expect(terms).toContain('liability cap');
+    expect(terms.every(t => t.includes(' '))).toBe(true);
+    // And a word every contract heading carries is not a term at all.
+    expect(terms.join(' ')).not.toContain('section');
   });
 
   test('the money in a finding rationale is anonymized too', () => {
@@ -190,6 +205,16 @@ That is everything I found.`;
     expect(draft.text).toContain(draft.catches[0]!.clause);
     // And the lawyer is told these were read from prose.
     expect(draft.notes.join(' ')).toContain('read from what counsel wrote');
+  });
+
+  test('a citation that is not a knowledge file is not carried into the fixture', () => {
+    // A structured answer can cite anything; a matter path would put the
+    // practice's own filing into a file meant to carry none of it.
+    const answer = { ...ANSWER, citations: ['memory/matters/acme-globex.md', 'practice/standards/liability.md', 'https://example.com/x'] };
+    const draft = draftFromThread({ ...deps, runs: [run({ output: answer })] });
+    expect(draft.citations.map(c => c.aliases[0])).toEqual(['practice/standards/liability.md']);
+    expect(draft.knowledge.map(k => k.path)).toEqual(['practice/standards/liability.md']);
+    expect(JSON.stringify(draft.citations)).not.toContain('acme');
   });
 
   test('a written answer cites by naming the file, and those files travel with the fixture', () => {
@@ -287,6 +312,64 @@ describe('the fixture the lawyer saves', () => {
     expect(parsed.title).toBe('Services agreement');
     expect(parsed.scorer).toBe('findings');
     expect(parsed.expected_catches).toHaveLength(2);
+  });
+
+  test('what the lawyer scrubs from the text is scrubbed from the quotes and the terms too', () => {
+    // The textarea is the screen's one remediation. If deleting a leftover
+    // name left it standing in an expected catch, the edit would look like
+    // it worked and not have.
+    const draft = draftFromThread(deps);
+    const cap = draft.catches[0]!;
+    expect(cap.clause).not.toBe('');
+    const withoutTheClause = draft.text.replace(cap.clause, 'the cap is agreed');
+    const { fixture } = fixtureFromDraft(draft, { keep: draft.catches.map(c => c.id), text: withoutTheClause });
+
+    const saved = fixture.expected_catches.find(c => c.id === cap.id);
+    // Either it is gone, or nothing it matches on is missing from the text.
+    if (saved !== undefined) {
+      expect(saved.clause === undefined || saved.clause === '' || withoutTheClause.includes(saved.clause)).toBe(true);
+      for (const t of saved.match_any) expect(withoutTheClause.toLowerCase()).toContain(t.toLowerCase());
+    }
+  });
+
+  test('a rejected finding the lawyer edited away cannot penalize a model for ever', () => {
+    const draft = draftFromThread(deps);
+    const [cap] = draft.catches;
+    const { fixture } = fixtureFromDraft(draft, { keep: [], reject: [cap!.id], text: 'A short agreement with nothing in it.' });
+    expect(fixture.negative_checks).toEqual([]);
+  });
+
+  test('the prompt is the lawyer’s to edit, and every path it names points at the fixture', () => {
+    const draft = draftFromThread({
+      ...deps,
+      runs: [run({ message: 'Review this for Initech.\n\n`matters/acme/services.md` and `matters/initech/side-letter.md`' })],
+    });
+    expect(draft.message).not.toContain('matters/acme/services.md');
+    expect(draft.message).not.toContain('matters/initech/side-letter.md');
+    const { fixture } = fixtureFromDraft(draft, { keep: [], message: 'Review this contract.' });
+    expect(fixture.task).toBe('Review this contract.');
+  });
+
+  test('a finding written as a heading or with a colon is still a finding', () => {
+    const events: ThreadEvent[] = [
+      EVENTS[0]!,
+      EVENTS[1]!,
+      {
+        type: 'text',
+        at: '2026-09-01T10:00:05.000Z',
+        text: '### Liability cap\nCurrent language: "Vendor\'s aggregate liability shall not exceed $50,000"\n\n**Indemnity**: one-way\nRationale: it runs one way.\n',
+      },
+    ];
+    const draft = draftFromThread({ ...deps, events, runs: [run({ output: undefined })] });
+    expect(draft.catches.map(c => c.title)).toEqual(['Liability cap', 'Indemnity']);
+  });
+
+  test('the fixture is not named after the client’s document', () => {
+    const named: ThreadEvent = { t: 'user', at: '2026-09-01T09:59:00.000Z', content: 'Review this.\n\n`matters/acme-globex-msa-2026.md`' };
+    const draft = draftFromThread({ ...deps, events: [named, EVENTS[1]!] });
+    expect(draft.id).not.toContain('acme');
+    expect(draft.title).not.toContain('acme');
+    expect(draft.id).toBe('review-2026-09-01');
   });
 
   test('the lawyer’s own edit of the anonymized text is what gets saved', () => {

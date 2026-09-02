@@ -1109,3 +1109,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .v2-fixture-on { color: var(--fg); font-weight: 600; text-decoration: none; }
 .v2-fixture-save { margin: 0.8rem 0 0; display: flex; align-items: baseline; gap: 0.4rem; }
 .v2-fixture-name { font: 13px/1.6 var(--sans); color: var(--fg); background: var(--bg); border: 0; border-bottom: 1px solid var(--rule); padding: 1px 2px; min-width: 16ch; }
+.v2-fixture-message { font: 12px/1.6 var(--sans); }
+.v2-fixture-files { list-style: none; margin: 0; padding: 0; color: var(--fg-muted); }
+.v2-fixture-files > li { padding: 1px 0; }
+.v2-fixture-dropped { text-decoration: line-through; color: var(--fg-faint); }
