@@ -24,6 +24,20 @@ if (globalThis.__counselOsDomRegistered !== true) {
   // `about:blank` resolves to nothing at all.
   GlobalRegistrator.register({ url: 'http://127.0.0.1:7431/' });
   globalThis.__counselOsDomRegistered = true;
+
+  // A click on `<a download href="blob:…">` (the reader's and the slip's
+  // Download) is a NAVIGATION to happy-dom, which then parks the one window
+  // every test file shares on a blob URL: `history.replaceState` and
+  // `location.hash` stop working for whichever files run after it. Real
+  // browsers do not navigate on a download click, and the runner's file
+  // order is not macOS's, so this bit CI and not laptops (the docket-anchor
+  // tests in Chat.test.tsx). Download clicks record and stop here; a test
+  // that wants the record installs its own stub on top.
+  const anchorClick = HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click = function click(this: HTMLAnchorElement): void {
+    if (this.download !== '') return;
+    anchorClick.call(this);
+  };
 }
 
 /**
