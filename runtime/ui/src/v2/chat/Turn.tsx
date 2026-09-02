@@ -28,6 +28,8 @@ export interface TurnProps {
   vaultPaths?: ReadonlySet<string>;
   /** Offered on a turn whose step FAILED: sends the same message again. */
   onRetry?: () => void;
+  /** The `?proposal=` id the URL names; the matching card scrolls itself into view. */
+  anchor?: string | null;
 }
 
 /**
@@ -170,7 +172,7 @@ function StepFailure({
  * above the text on both paths, so the reader sees the work as it happens
  * and can still find it after the answer lands.
  */
-export function TurnView({ turn, threadId, run, live = false, liveMs = {}, onReload, onDecided, onOpenFile, vaultPaths, onRetry }: TurnProps): JSX.Element {
+export function TurnView({ turn, threadId, run, live = false, liveMs = {}, onReload, onDecided, onOpenFile, vaultPaths, onRetry, anchor }: TurnProps): JSX.Element {
   if (turn.kind === 'user') {
     const { text, files } = splitAttachments(turn.content);
     return (
@@ -234,6 +236,7 @@ export function TurnView({ turn, threadId, run, live = false, liveMs = {}, onRel
                   onReload={onReload}
                   onDecided={onDecided}
                   onOpenFile={onOpenFile}
+                  anchor={anchor}
                 />
               ))}
 

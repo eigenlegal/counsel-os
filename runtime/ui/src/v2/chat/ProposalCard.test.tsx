@@ -307,3 +307,28 @@ describe('the proposal slip', () => {
     expect(screen.queryByText(/Only whitespace or line-ending changes/)).toBeNull();
   });
 });
+
+describe('ProposalCard as the docket anchor', () => {
+  test('the card whose id the anchor names scrolls itself into view on mount, and again when the anchor moves to it', () => {
+    const proto = Element.prototype as unknown as Record<string, unknown>;
+    const had = 'scrollIntoView' in proto;
+    const before = proto['scrollIntoView'];
+    const scrolled: string[] = [];
+    proto['scrollIntoView'] = function scrollIntoView(this: Element): void {
+      scrolled.push(this.id);
+    };
+    try {
+      const proposal = { id: 'p-9', path: 'practice/standards/nda.md', rationale: 'r', status: 'pending' as const };
+      const { rerender } = render(<ProposalCard threadId="t-1" proposal={proposal} onReload={() => {}} anchor="p-9" />);
+      expect(scrolled).toEqual(['proposal-p-9']);
+      // Not the anchor any more: no scroll. The anchor comes back: one more.
+      rerender(<ProposalCard threadId="t-1" proposal={proposal} onReload={() => {}} anchor="p-other" />);
+      expect(scrolled).toEqual(['proposal-p-9']);
+      rerender(<ProposalCard threadId="t-1" proposal={proposal} onReload={() => {}} anchor="p-9" />);
+      expect(scrolled).toEqual(['proposal-p-9', 'proposal-p-9']);
+    } finally {
+      if (had) proto['scrollIntoView'] = before;
+      else delete proto['scrollIntoView'];
+    }
+  });
+});

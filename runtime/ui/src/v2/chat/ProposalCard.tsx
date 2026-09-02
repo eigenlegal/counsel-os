@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, fetchJson } from '../../api/client';
 import type { ApproveResult, ConflictBody, ProposalStatus, VaultFile } from '../../api/types';
 import type { ProposalView } from '../../chat/turns';
@@ -9,6 +9,12 @@ import { redlineBlocks, wordDiff, type RedlineBlock } from '../redline';
 export interface ProposalCardProps {
   threadId: string;
   proposal: ProposalView;
+  /** The proposal id the URL's `?proposal=` names (the docket's Review).
+   * The card whose id this is scrolls itself into view when it MOUNTS and
+   * whenever the anchor changes to it — so the scroll cannot run before the
+   * slip is in the DOM, whatever order the transcript and the hash arrive
+   * in. */
+  anchor?: string | null;
   /** Refetches the thread. Offered after a conflict. */
   onReload: () => void;
   /** A decision landed on this path. The shell uses it to refetch a drawer
@@ -62,7 +68,16 @@ export function statusText(status: ProposalStatus, decidedAt?: string): { classN
  * not again after a decision — so a settled slip keeps showing what
  * changed. The 409 handling is unchanged from the step-5 card.
  */
-export function ProposalCard({ threadId, proposal, onReload, onDecided, onOpenFile }: ProposalCardProps): JSX.Element {
+export function ProposalCard({ threadId, proposal, onReload, onDecided, onOpenFile, anchor }: ProposalCardProps): JSX.Element {
+  const section = useRef<HTMLElement | null>(null);
+  // Layout effect, not a plain one: it runs after this card's DOM is
+  // committed and before paint, so a `?proposal=` deep link lands on the
+  // slip without a flash of the top of the transcript. happy-dom does not
+  // implement scrollIntoView; the optional call keeps the tests honest.
+  useLayoutEffect(() => {
+    if (anchor === undefined || anchor === null || anchor !== proposal.id) return;
+    section.current?.scrollIntoView?.({ block: 'start' });
+  }, [anchor, proposal.id]);
   const [status, setStatus] = useState<ProposalStatus>(proposal.status);
   const [decidedAt, setDecidedAt] = useState<string | undefined>(undefined);
   const [busy, setBusy] = useState(false);
@@ -193,7 +208,7 @@ export function ProposalCard({ threadId, proposal, onReload, onDecided, onOpenFi
       : 'No changes — the file already says this.';
 
   return (
-    <section className="v2-proposal" id={`proposal-${proposal.id}`} data-testid={`proposal-${proposal.id}`}>
+    <section ref={section} className="v2-proposal" id={`proposal-${proposal.id}`} data-testid={`proposal-${proposal.id}`}>
       <header className="v2-slip-head">
         <span className="v2-tag">proposal</span>
         <code className="v2-proposal-path">{proposal.path}</code>
