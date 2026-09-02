@@ -658,4 +658,7 @@ export interface SavedFixture {
   negative: number;
   /** How many files the fixture's own mini-vault holds. */
   files: number;
+  /** Findings the save left out because the lawyer's edit removed what they
+   * were about. */
+  dropped: string[];
 }

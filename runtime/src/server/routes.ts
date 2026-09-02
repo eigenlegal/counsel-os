@@ -856,9 +856,20 @@ export function createApp(deps: ServerDeps): App {
     try {
       const built = await draftFor(input);
       // A file the lawyer left out never reaches the fixture's vault.
-      const dropped = new Set(input.dropKnowledge ?? []);
-      const draft = dropped.size === 0 ? built : { ...built, knowledge: built.knowledge.filter(k => !dropped.has(k.path)) };
-      const { fixture, vault, files } = fixtureFromDraft(draft, {
+      const left = new Set(input.dropKnowledge ?? []);
+      // A file the lawyer removed is removed from the CITATIONS too: its
+      // path is what leaks (a standard is often named after a client), and
+      // a fixture that expects a citation to a file its vault does not hold
+      // could never score it.
+      const draft =
+        left.size === 0
+          ? built
+          : {
+              ...built,
+              knowledge: built.knowledge.filter(k => !left.has(k.path)),
+              citations: built.citations.filter(c => !left.has(c.aliases[0] ?? '')),
+            };
+      const saved = fixtureFromDraft(draft, {
         keep: input.keep,
         ...(input.reject === undefined ? {} : { reject: input.reject }),
         ...(input.id === undefined ? {} : { id: input.id }),
@@ -866,6 +877,7 @@ export function createApp(deps: ServerDeps): App {
         ...(input.text === undefined ? {} : { text: input.text }),
         ...(input.message === undefined ? {} : { message: input.message }),
       });
+      const { fixture, vault, files } = saved;
       const path = `practice/evals/${fixture.id}.json`;
       // Ids must be unique across the whole suite, not just this folder: a
       // result line names its fixture by id and nothing else.
@@ -883,7 +895,14 @@ export function createApp(deps: ServerDeps): App {
       // The scoreboard counts fixtures per task, and the router reads those
       // counts: a new fixture changes both.
       forgetRouting();
-      return json({ path, id: fixture.id, expected: fixture.expected_catches.length, negative: fixture.negative_checks.length, files: files.length });
+      return json({
+        path,
+        id: fixture.id,
+        expected: fixture.expected_catches.length,
+        negative: fixture.negative_checks.length,
+        files: files.length,
+        dropped: saved.dropped,
+      });
     } catch (err) {
       if (err instanceof NoFixtureHere) throw new HttpError(422, err.message);
       throw err;

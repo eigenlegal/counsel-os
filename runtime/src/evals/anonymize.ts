@@ -253,10 +253,18 @@ export function anonymize(text: string, options: AnonymizeOptions = {}): Anonymi
     // Dropping the leading words that never name anyone leaves the name —
     // skipping the whole match would leave `Acme` in the document, which is
     // the one thing this pass exists to remove.
-    const words = (m[1] ?? '').trim().split(/\s+/);
-    while (words.length > 0 && NOT_A_NAME.has((words[0] ?? '').replace(/,$/, ''))) words.shift();
+    const lead = m[1] ?? '';
+    const words = lead.trim().split(/\s+/);
+    let cut = 0;
+    while (words.length > 0 && NOT_A_NAME.has((words[0] ?? '').replace(/,$/, ''))) {
+      // Advance past this word IN THE MATCH, not in a rejoined copy: a name
+      // written with two spaces has to be replaced as it is written, or the
+      // substitution never fires and nothing says so.
+      cut = lead.indexOf(words[0]!, cut) + words[0]!.length;
+      words.shift();
+    }
     if (words.length === 0) continue;
-    const whole = `${words.join(' ')} ${m[2] ?? ''}${m[0].endsWith('.') ? '.' : ''}`;
+    const whole = m[0].slice(lead.indexOf(words[0]!, cut));
     const suffix = m[2] ?? '';
     const s = hash32(whole);
     const stem = pick(ORG_STEMS, s, takenOrg);

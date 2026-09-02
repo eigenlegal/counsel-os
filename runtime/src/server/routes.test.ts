@@ -1945,6 +1945,28 @@ Rationale: see practice/../matters/other-client/nda.md, law/../../etc/passwd.md 
     expect(files.some(p => p.includes('other-client') || p.includes('passwd'))).toBe(false);
   });
 
+  test('a practice file the lawyer removes takes its citation with it', async () => {
+    const cites = `## RED
+
+**Liability cap (Section 5)** - too low
+Current language: "Vendor's aggregate liability shall not exceed $50,000"
+Rationale: see practice/standards/acme-special-terms.md.
+`;
+    const app = appWith([new FakeModelProvider([{ text: cites }])], { evals: evalsDeps() });
+    mkdirSync(join(vaultRoot, 'practice', 'standards'), { recursive: true });
+    writeFileSync(join(vaultRoot, 'practice', 'standards', 'acme-special-terms.md'), '# Special terms\n\nTwelve months.\n');
+    const id = await reviewedThread(app);
+
+    await call(app, 'POST', '/fixtures/save', {
+      body: { threadId: id, keep: [], id: 'no-files', dropKnowledge: ['practice/standards/acme-special-terms.md'] },
+    });
+    const written = readFileSync(join(vaultRoot, 'practice', 'evals', 'no-files.json'), 'utf8');
+    // The path is the leak — a standard is often named after a client — and
+    // a citation the fixture's own vault cannot serve could never score.
+    expect(written).not.toContain('acme-special-terms');
+    expect(existsSync(join(vaultRoot, 'practice', 'evals', 'vaults', 'no-files', 'practice'))).toBe(false);
+  });
+
   test('a matter that stays on this machine cannot become a fixture', async () => {
     const app = appWith([new FakeModelProvider([{ text: REVIEW }])], { evals: evalsDeps() });
     mkdirSync(join(vaultRoot, 'matters'), { recursive: true });

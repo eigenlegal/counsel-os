@@ -32,6 +32,7 @@ const realFetch = globalThis.fetch;
 let draft: FixtureDraft | { status: number; error: string } = DRAFT;
 let saves: Array<Record<string, unknown>> = [];
 let saveStatus = 200;
+let droppedOnSave: string[] = [];
 
 function json(bodyValue: unknown, status = 200): Response {
   return new Response(JSON.stringify(bodyValue), { status, headers: { 'content-type': 'application/json' } });
@@ -42,6 +43,7 @@ beforeEach(() => {
   draft = DRAFT;
   saves = [];
   saveStatus = 200;
+  droppedOnSave = [];
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     if (url === '/fixtures/draft') {
@@ -51,7 +53,7 @@ beforeEach(() => {
       saves.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
       if (saveStatus === 409) return json({ error: 'a fixture named x is already here' }, 409);
       if (saveStatus !== 200) return json({ error: 'the vault is read-only' }, saveStatus);
-      return json({ path: 'practice/evals/services.json', id: 'services', expected: 1, negative: 1, files: 3 });
+      return json({ path: 'practice/evals/services.json', id: 'services', expected: 1, negative: 1, files: 3, dropped: droppedOnSave });
     }
     throw new Error(`unexpected fetch: ${url}`);
   }) as unknown as typeof fetch;
@@ -168,4 +170,12 @@ describe('what else travels with the fixture', () => {
     await userEvent.type(within(panel()).getByLabelText('name'), '-2');
     expect(within(panel()).queryByRole('button', { name: 'replace it' })).toBeNull();
   });
+});
+
+test('a finding the save left out is named, not quietly gone', async () => {
+  droppedOnSave = ['Indemnity is one-way'];
+  render(<FixturePanel threadId="t-1" runId="r-1" onClose={() => {}} />);
+  await waitFor(() => expect(within(panel()).getByRole('button', { name: 'save the fixture' })).toBeTruthy());
+  await userEvent.click(within(panel()).getByRole('button', { name: 'save the fixture' }));
+  await waitFor(() => expect(within(panel()).getByText(/Left out, because your edit removed what it was about: Indemnity is one-way/)).toBeTruthy());
 });

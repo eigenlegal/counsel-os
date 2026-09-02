@@ -133,6 +133,11 @@ export function FixturePanel({ threadId, runId, onClose }: FixturePanelProps): J
         <p>
           {saved.path} · {saved.expected} expected · {saved.negative} penalized. It runs with the practice set from now on.
         </p>
+        {saved.dropped.length === 0 ? null : (
+          <p className="v2-fixture-note">
+            Left out, because your edit removed what {saved.dropped.length === 1 ? 'it was' : 'they were'} about: {saved.dropped.join('; ')}.
+          </p>
+        )}
       </section>
     );
   }
@@ -181,7 +186,7 @@ export function FixturePanel({ threadId, runId, onClose }: FixturePanelProps): J
       <textarea
         className="v2-fixture-text"
         aria-label="The anonymized document"
-        rows={14}
+        rows={10}
         value={text}
         onChange={e => setText(e.target.value)}
       />

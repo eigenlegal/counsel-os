@@ -76,6 +76,27 @@ export interface FixtureDraft {
 
 export class NoFixtureHere extends Error {}
 
+/** The words of a string, lowercased — what "the lawyer deleted this" is
+ * measured in. Short words are ignored: they carry no name. */
+function words(s: string): Set<string> {
+  return new Set(
+    s
+      .toLowerCase()
+      .split(/[^\da-z']+/)
+      .filter(w => w.length > 2),
+  );
+}
+
+/** FNV-1a, for a short stable mark on a fixture's default name. */
+function hash(s: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
 /** Where the document lives inside a fixture's own mini-vault. One fixed
  * path: a matter's real path names a client. */
 export const FIXTURE_DOCUMENT = 'matters/document.md';
@@ -271,19 +292,26 @@ function matchTerms(title: string, clause: string): string[] {
     'the', 'a', 'an', 'and', 'or', 'of', 'to', 'in', 'is', 'are', 'for', 'with', 'no', 'not', 'too', 'by', 'on', 'at', 'this', 'that', 'its',
     'section', 'clause', 'article', 'provision', 'agreement', 'exhibit', 'schedule', 'paragraph', 'part',
   ]);
-  const words = title
-    .toLowerCase()
-    .split(/[^\da-z]+/)
-    .filter(w => w.length > 2 && !stop.has(w));
   const terms: string[] = [];
   const quote = clause.trim().split(/\s+/).filter(w => w !== '');
   // The quote, as much of it as reads as one phrase.
   if (quote.length > 0) terms.push(quote.slice(0, 8).join(' ').toLowerCase());
-  // And the title's own words as ONE phrase, so the fixture matches a
-  // finding about this clause rather than any finding that shares a word.
-  if (words.length >= 2) terms.push(words.slice(0, 4).join(' '));
-  else if (words.length === 1 && quote.length === 0) terms.push(words[0]!);
-  return [...new Set(terms)];
+
+  // And a CONTIGUOUS phrase from the title. Joining the surviving words of a
+  // stop-word filter makes a string no answer can contain ("liability cap
+  // low"); the words have to stay in the order and company they were
+  // written in, starting at the first one that carries meaning.
+  const words = title
+    .replace(/\([^)]*\)/g, ' ')
+    .toLowerCase()
+    .split(/[^\da-z']+/)
+    .filter(w => w !== '');
+  const from = words.findIndex(w => w.length > 2 && !stop.has(w));
+  if (from !== -1) {
+    const phrase = words.slice(from, from + 4).join(' ').trim();
+    if (phrase !== '' && !terms.includes(phrase)) terms.push(phrase);
+  }
+  return terms;
 }
 
 /**
@@ -385,7 +413,12 @@ export function draftFromThread(opts: DraftOptions): FixtureDraft {
   // default says what the fixture is; the lawyer names it on the review
   // screen.
   const stamp = run.startedAt.slice(0, 10);
-  const label = opts.title ?? `review ${stamp}`;
+  // The date alone collides on the second fixture of a day, and the only
+  // way out the screen offers is "replace it" — which would delete the
+  // first one. The suffix is the document's own fingerprint: stable for the
+  // same document, different for another, and it names nothing.
+  const mark = hash(a.text).toString(16).padStart(8, '0').slice(0, 4);
+  const label = opts.title ?? `review ${stamp} ${mark}`;
   return {
     id: slugify(label, 'review'),
     title: label,
@@ -424,6 +457,10 @@ export interface SaveDecisions {
  * copies for each run. */
 export interface SavedFixtureFiles {
   fixture: Fixture;
+  /** Findings the save left out because the lawyer's edit removed what they
+   * were about. Named so the screen can say it rather than quietly drop
+   * them. */
+  dropped: string[];
   /** The vault's name — the fixture's `vault` key, and the folder under
    * `practice/evals/vaults/`. */
   vault: string;
@@ -449,18 +486,27 @@ export function fixtureFromDraft(draft: FixtureDraft, decisions: SaveDecisions):
   if (text.trim() === '') throw new NoFixtureHere('The fixture has no document text.');
   const id = decisions.id === undefined ? draft.id : slugify(decisions.id, draft.id);
 
-  // The lawyer's edit to the document is the screen's one remediation: if
-  // they scrubbed something the pass missed, it must not survive in a
-  // quote or a match term. A catch is carried only in the words that are
-  // still in the text being saved.
-  const inText = (s: string): boolean => s.trim() !== '' && text.toLowerCase().includes(s.trim().toLowerCase());
+  // The lawyer's edit to the document is the screen's one remediation: a
+  // word they took out of the document must not survive in a quote, a
+  // rationale, a title or a match term.
+  //
+  // The rule is about what they REMOVED, not about what the document
+  // happens to contain. A finding can be about a missing provision and
+  // quote nothing at all; requiring every term to appear in the text would
+  // delete exactly those findings, and would delete every negative check
+  // too, since a hallucinated finding quotes text that was never there.
+  const removed = new Set([...words(draft.text)].filter(w => !words(text).has(w)));
+  const carries = (s: string): boolean => [...words(s)].some(w => removed.has(w));
+  const dropped: string[] = [];
   const scrub = (c: DraftCatch): DraftCatch | null => {
-    const terms = c.match_any.filter(inText);
-    const clause = inText(c.clause) ? c.clause : '';
-    // Nothing left to match on: the finding was about text the lawyer
-    // removed, so the fixture cannot expect it.
-    if (terms.length === 0 && clause === '') return null;
-    return { ...c, clause, match_any: terms };
+    // A quote is a quote OF the document: one the text no longer contains
+    // is not something to match on.
+    const clause = c.clause.trim() !== '' && text.toLowerCase().includes(c.clause.trim().toLowerCase()) ? c.clause : '';
+    if (carries(c.id) || carries(c.title) || carries(c.why) || carries(c.clause) || c.match_any.some(carries)) {
+      dropped.push(c.title);
+      return null;
+    }
+    return { ...c, clause };
   };
   const decided = (ids: Set<string>): DraftCatch[] => draft.catches.filter(c => ids.has(c.id)).map(scrub).filter((c): c is DraftCatch => c !== null);
 
@@ -483,6 +529,7 @@ export function fixtureFromDraft(draft: FixtureDraft, decisions: SaveDecisions):
 
   return {
     fixture,
+    dropped,
     vault: id,
     files: [
       { path: 'config.md', text: FIXTURE_CONFIG },

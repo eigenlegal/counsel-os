@@ -325,6 +325,7 @@ describe('the fixture the lawyer saves', () => {
     const { fixture } = fixtureFromDraft(draft, { keep: draft.catches.map(c => c.id), text: withoutTheClause });
 
     const saved = fixture.expected_catches.find(c => c.id === cap.id);
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     // Either it is gone, or nothing it matches on is missing from the text.
     if (saved !== undefined) {
       expect(saved.clause === undefined || saved.clause === '' || withoutTheClause.includes(saved.clause)).toBe(true);
@@ -332,11 +333,59 @@ describe('the fixture the lawyer saves', () => {
     }
   });
 
-  test('a rejected finding the lawyer edited away cannot penalize a model for ever', () => {
+  test('a finding about a missing provision survives, quote or no quote', () => {
+    // The commonest review finding of all: something the contract does NOT
+    // say. It quotes nothing, so a rule that required every term to appear
+    // in the document would delete it and leave a fixture that expects
+    // nothing and scores 1.00 against any answer for ever.
+    const missing = {
+      findings: [{ title: 'No limitation of liability at all', severity: 'red', clause: '', rationale: 'Nothing caps it.', citations: [] }],
+      citations: [],
+    };
+    const draft = draftFromThread({ ...deps, runs: [run({ output: missing })] });
+    const { fixture, dropped } = fixtureFromDraft(draft, { keep: draft.catches.map(c => c.id) });
+    expect(dropped).toEqual([]);
+    expect(fixture.expected_catches).toHaveLength(1);
+    expect(fixture.expected_catches[0]!.match_any).toEqual(['limitation of liability at']);
+  });
+
+  test('a rejected finding counsel invented still penalizes it, though nothing in the document says it', () => {
+    const invented = {
+      findings: [{ title: 'Arbitration clause is one-sided', severity: 'yellow', clause: 'all disputes go to arbitration in Zurich', rationale: 'It is.', citations: [] }],
+      citations: [],
+    };
+    const draft = draftFromThread({ ...deps, runs: [run({ output: invented })] });
+    const { fixture } = fixtureFromDraft(draft, { keep: [], reject: draft.catches.map(c => c.id) });
+    expect(fixture.negative_checks).toHaveLength(1);
+    expect(fixture.negative_checks[0]!.match_any.length).toBeGreaterThan(0);
+  });
+
+  test('a finding about words the lawyer deleted is dropped, and the save says which', () => {
     const draft = draftFromThread(deps);
-    const [cap] = draft.catches;
-    const { fixture } = fixtureFromDraft(draft, { keep: [], reject: [cap!.id], text: 'A short agreement with nothing in it.' });
-    expect(fixture.negative_checks).toEqual([]);
+    const cap = draft.catches[0]!;
+    // The lawyer takes the whole liability clause out of the document.
+    const shorter = draft.text.replace(cap.clause, 'liability is agreed separately');
+    const { fixture, dropped } = fixtureFromDraft(draft, { keep: draft.catches.map(c => c.id), text: shorter });
+    expect(dropped).toContain(cap.title);
+    expect(fixture.expected_catches.map(c => c.id)).not.toContain(cap.id);
+  });
+
+  test('a name the lawyer scrubs from the document is scrubbed from the findings too', () => {
+    // The pass misses a party with no legal suffix; the lawyer deletes it
+    // from the text. It must not survive in a title, a rationale or an id.
+    const named = {
+      findings: [{ title: 'Zephyr Robotics carries the whole risk', severity: 'red', clause: '', rationale: 'Zephyr Robotics carries it.', citations: [] }],
+      citations: [],
+    };
+    const draft = draftFromThread({ ...deps, readDocument: () => `${DOC}\n9. Zephyr Robotics carries the risk.\n`, runs: [run({ output: named })] });
+    // The pass has no pattern for a name with no legal suffix, so it stands.
+    expect(draft.text).toContain('Zephyr Robotics');
+    expect(draft.catches[0]!.id).toContain('zephyr');
+
+    const scrubbed = draft.text.replace(/Zephyr Robotics/g, 'the vendor');
+    const { fixture, dropped } = fixtureFromDraft(draft, { keep: draft.catches.map(c => c.id), text: scrubbed });
+    expect(dropped).toHaveLength(1);
+    expect(JSON.stringify(fixture)).not.toContain('Zephyr');
   });
 
   test('the prompt is the lawyer’s to edit, and every path it names points at the fixture', () => {
@@ -369,7 +418,14 @@ describe('the fixture the lawyer saves', () => {
     const draft = draftFromThread({ ...deps, events: [named, EVENTS[1]!] });
     expect(draft.id).not.toContain('acme');
     expect(draft.title).not.toContain('acme');
-    expect(draft.id).toBe('review-2026-09-01');
+    expect(draft.id).toMatch(/^review-2026-09-01-[0-9a-f]{4}$/);
+
+    // Two documents on one day are two fixtures, not a name clash whose
+    // only offered remedy is replacing the first.
+    const other = draftFromThread({ ...deps, readDocument: () => `${DOC}\n8. Assignment. Neither party may assign.\n` });
+    expect(other.id).not.toBe(draft.id);
+    // And the same document twice is the same name.
+    expect(draftFromThread(deps).id).toBe(draftFromThread(deps).id);
   });
 
   test('the lawyer’s own edit of the anonymized text is what gets saved', () => {
