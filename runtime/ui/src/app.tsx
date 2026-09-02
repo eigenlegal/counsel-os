@@ -1,7 +1,7 @@
 import { Shell } from './v2/Shell';
 
-/** The four surfaces the fragment routes between (redesign spec §3.1). */
-export type Route = 'home' | 'chat' | 'vault' | 'settings';
+/** The surfaces the fragment routes between (redesign spec §3.1). */
+export type Route = 'home' | 'chat' | 'vault' | 'models' | 'settings';
 
 /** The fragment split into the part that picks a surface and the part that
  * parameterizes it — `#/vault?path=matters/acme/notes.md`. The query lives
@@ -14,6 +14,7 @@ export function parseHash(hash: string): { route: Route; params: URLSearchParams
   const params = new URLSearchParams(cut === -1 ? '' : raw.slice(cut + 1));
   if (path === '/chat' || path.startsWith('/chat/')) return { route: 'chat', params };
   if (path === '/vault' || path.startsWith('/vault/')) return { route: 'vault', params };
+  if (path === '/models' || path.startsWith('/models/')) return { route: 'models', params };
   if (path === '/settings' || path.startsWith('/settings/')) return { route: 'settings', params };
   // `#/` is Home now (spec §3.1) — and so is anything unknown: the landing
   // page is the safe place to fall.

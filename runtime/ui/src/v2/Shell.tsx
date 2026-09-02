@@ -10,6 +10,7 @@ import { VAULT_CHANGED_EVENT } from './intake';
 import type { ComposerSeed } from './chat/Composer';
 import { Drawer } from './Drawer';
 import { HomePage } from './home/HomePage';
+import { ModelsPage } from './models/ModelsPage';
 import { Rail } from './Rail';
 import { SessionLost } from './SessionLost';
 import { SetupPage } from './SetupPage';
@@ -32,8 +33,8 @@ function byRecent(a: ThreadHeader, b: ThreadHeader): number {
 /**
  * The workbench (redesign spec §3.1): the rail on the left of EVERYTHING
  * (216px; a 56px icon rail on the vault route), then the main column —
- * Home at `#/`, the chat workspace at `#/chat?thread=<id>`, the vault and
- * settings pages.
+ * Home at `#/`, the chat workspace at `#/chat?thread=<id>`, the vault, the
+ * models page and settings.
  *
  * The keep-stream invariant (PR #28) still holds: the chat workspace is
  * HIDDEN off `#/chat`, never unmounted — unmounting aborts the step stream
@@ -330,6 +331,24 @@ export function Shell(): JSX.Element {
   }, [loadThreads]);
 
 
+  /**
+   * The loaded providers, re-read when the Models page opens. `/health` is
+   * otherwise fetched once per mount, so a provider added in Settings had
+   * no column on the board — and no way to be scored — until the browser
+   * was reloaded.
+   */
+  useEffect(() => {
+    if (route !== 'models' || unauthorized) return;
+    void (async () => {
+      try {
+        setHealth(await fetchJson<Health>('/health'));
+      } catch (err) {
+        // The page reads without it; the board simply has the columns it had.
+        if (!(err instanceof ApiError && err.status === 401)) setError(detail(err));
+      }
+    })();
+  }, [route, unauthorized]);
+
   /** Bumped by the setup page once a vault exists: re-runs the initial load. */
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
@@ -551,6 +570,12 @@ export function Shell(): JSX.Element {
               globalThis.location.hash = `#/vault?path=${encodeURIComponent(path)}`;
             }}
           />
+        ) : null}
+
+        {route === 'models' && health !== null ? (
+          <main className="v2-page">
+            <ModelsPage health={health} />
+          </main>
         ) : null}
 
         {route === 'settings' && health !== null ? (

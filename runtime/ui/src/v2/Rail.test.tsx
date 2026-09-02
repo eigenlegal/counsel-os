@@ -82,10 +82,10 @@ afterEach(() => {
 });
 
 describe('Rail', () => {
-  test('brand, the four surfaces, and the current one marked', () => {
+  test('brand, the surfaces, and the current one marked', () => {
     mount({ route: 'vault', collapsed: false });
     expect(screen.getByText('counsel-os')).toBeTruthy();
-    for (const name of ['Home', 'Chat', 'Vault', 'Settings']) {
+    for (const name of ['Home', 'Chat', 'Vault', 'Models', 'Settings']) {
       expect(screen.getByRole('link', { name })).toBeTruthy();
     }
     expect(screen.getByRole('link', { name: 'Vault' }).getAttribute('aria-current')).toBe('page');
@@ -216,7 +216,7 @@ describe('Rail', () => {
     mount({ collapsed: true, route: 'vault' });
 
     // Markup contract: every nav link and the footer still carry their label.
-    for (const name of ['Home', 'Chat', 'Vault', 'Settings']) {
+    for (const name of ['Home', 'Chat', 'Vault', 'Models', 'Settings']) {
       const link = screen.getByRole('link', { name });
       expect(link.querySelector('.v2-lbl')?.textContent).toBe(name);
     }

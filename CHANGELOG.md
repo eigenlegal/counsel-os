@@ -8,6 +8,10 @@ reconstructed from git history. New entries are prepended automatically by
 
 ## [Unreleased]
 
+Models, its own page (routing-and-evals spec §6, §10)
+
+- The scoreboard, the routing bar for each task, and the ledger of what ran have left the bottom of Settings for a **Models** page in the rail. None of them were settings: a scoreboard is a measurement, a bar is a standing decision about quality, and a ledger is a record. Settings is where you configure the runtime; this is where you see how it is doing.
+- Two questions in the order you ask them: how the models score, and what actually ran. Task routes stays in Settings, where it saves with the providers form.
 - Settings › Providers: the empty half-screen between "Add a provider" and the picker is gone. The guided-start rows lay a paragraph beside a button, and the paragraph's 24rem was being read as a HEIGHT in the one row that stacks — a 384px hole in the middle of the page.
 
 Conversations that keep working (web-ui spec §3.1)
@@ -18,7 +22,7 @@ Conversations that keep working (web-ui spec §3.1)
 
 The routing ledger (routing-and-evals spec §6)
 
-- Settings › Models now ends with **what ran**: the last hundred steps, newest first, with the conversation it belongs to, the task, the model it got, why it got it, what it took and cost, and your mark. The scoreboard says how models do on fixtures and the line under each task says how that task is meant to route; this is the only place that says what actually happened.
+- The Models page ends with **what ran**: the last hundred steps, newest first, with the conversation it belongs to, the task, the model it got, why it got it, what it took and cost, and your mark. The scoreboard says how models do on fixtures and the line under each task says how that task is meant to route; this is the only place that says what actually happened.
 - `GET /routing/ledger?limit=` serves it, reading the run records the runtime already keeps. A run from before routing recorded a reason shows none rather than a guess.
 
 ## [0.14.0] — 2026-09-02

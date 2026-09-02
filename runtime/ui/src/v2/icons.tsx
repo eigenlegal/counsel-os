@@ -1,10 +1,10 @@
-/** The rail's outline icons (mock-{home,chat,vault}.html — same four SVGs
+/** The rail's outline icons (mock-{home,chat,vault}.html — the same SVGs
  * on every page). 16×16, stroked with currentColor so the token ramp colors
  * them. */
 
 import type { ReactNode } from 'react';
 
-function Icon({ children, round = false }: { children: ReactNode; round?: boolean }): JSX.Element {
+function Icon({ children, round = false, cap = false }: { children: ReactNode; round?: boolean; cap?: boolean }): JSX.Element {
   return (
     <svg
       className="v2-nav-icon"
@@ -15,6 +15,8 @@ function Icon({ children, round = false }: { children: ReactNode; round?: boolea
       // A many-cornered outline needs its joins rounded, or every tooth
       // grows a spike where two strokes meet at an acute angle.
       {...(round ? { strokeLinejoin: 'round' as const } : {})}
+      // Bars want rounded ends; a square cap on a 1.4 stroke reads as a nick.
+      {...(cap ? { strokeLinecap: 'round' as const } : {})}
       aria-hidden="true"
     >
       {children}
@@ -42,6 +44,15 @@ export function VaultIcon(): JSX.Element {
   return (
     <Icon>
       <path d="M2 3h4.4L8 4.8h6V13H2z" />
+    </Icon>
+  );
+}
+
+/** Bars on a baseline: the scoreboard, which is what the page is. */
+export function ModelsIcon(): JSX.Element {
+  return (
+    <Icon cap>
+      <path d="M2.4 13.6h11.2M4.8 13.6V9.4M8 13.6V5.6M11.2 13.6V7.8" />
     </Icon>
   );
 }

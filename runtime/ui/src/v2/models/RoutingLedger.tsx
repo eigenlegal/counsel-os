@@ -16,7 +16,7 @@ import type { LedgerRun } from '../../api/types';
 
 const SHOW = 20;
 /** How far back the ledger reads. Enough to answer "what happened lately"
- * without turning a settings visit into a scan of the whole vault. */
+ * without turning a visit to this page into a scan of the whole vault. */
 const PAGE = 100;
 
 /** "just now" · "14:05" today · "Sep 1" before that. */

@@ -1,6 +1,5 @@
 import { readRouting, setRouting } from '../../api/client';
 import type { RoutingView } from '../../api/types';
-import { RoutingLedger } from './RoutingLedger';
 import { RoutingLine } from './RoutingLine';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, fetchJson, streamEvals } from '../../api/client';
@@ -68,7 +67,7 @@ interface Running {
 }
 
 /**
- * Settings › Models (routing-and-evals spec §10): the scoreboard as a
+ * The Models page (routing-and-evals spec §10): the scoreboard as a
  * task × provider ledger — set-text scores, hairlines, the three fixture
  * sets as small-caps tabs and never averaged together. Each cell is a quiet
  * "score" link that asks once (count and cost) and then runs in place, the
@@ -306,10 +305,6 @@ export function ModelsGroup({ providerIds }: ModelsGroupProps): JSX.Element {
           </table>
         </div>
       )}
-      {/* What actually ran. The board above is how models do on
-          fixtures; this is what the practice got. */}
-      <h3 className="runin v2-models-sub">what ran</h3>
-      <RoutingLedger />
     </div>
   );
 }

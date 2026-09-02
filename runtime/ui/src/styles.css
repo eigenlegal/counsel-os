@@ -1122,8 +1122,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 
 /* The routing ledger: what actually ran (routing-and-evals spec §6). Set
    text and hairlines, like the scoreboard above it. */
-/* `.runin` already sets the small-caps run-in; this only spaces it. */
-.v2-models-sub { margin: 1.2rem 0 0.4rem; }
 .v2-ledger { width: 100%; border-collapse: collapse; font: 12.5px/1.7 var(--sans); }
 .v2-ledger th { text-align: left; font: 600 10.5px/1.6 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-faint); padding: 0 0.8rem 2px 0; border-bottom: 1px solid var(--rule); }
 .v2-ledger td { padding: 2px 0.8rem 2px 0; border-bottom: 1px solid var(--rule-faint, var(--rule)); vertical-align: baseline; }
