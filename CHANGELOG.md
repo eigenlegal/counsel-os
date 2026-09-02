@@ -6,6 +6,12 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [0.12.0] — 2026-09-01
+
+Standalone foundations — Word documents in TypeScript, runtime-owned setup, drag-in intake, stay signed in, new theme
+
+- The runtime now does everything the Word pipeline did in Python: read and convert .docx, extract and check, apply native tracked changes with comments, compare two documents, and diff rounds; the redline appears in the thread as a document slip with Download. Drag a Word file onto the ask box or the composer. The runtime carries the knowledge content and owns first-run setup (counsel-os init, setup mode with the first-run screen, the sample matter, content updates and doctor in Settings). One printed link signs the browser in; after that http://127.0.0.1:7431 just works. Palette and type revised (system-sans chrome, warm grey and teal, Charter reading surface); the reader's head and facts block stack on a narrow pane; folder matters list their documents; hero-flow polish from an end-to-end test on a fresh vault. Details in the bullets below.
+
 Word documents in TypeScript, stage 2 — compare and rounds (spec §4.9, §9 step 5)
 
 - `docx_compare` replaces Word Compare: two independently edited documents, aligned paragraph by paragraph (whitespace-normalized similarity, fuzzy pairing), written into a copy of the original as native tracked changes — changed paragraphs at word granularity, inserted and deleted paragraphs with their paragraph marks — as `<original>-compare-<date>.docx` beside the original; the slip in the conversation says what was compared against what. Table rows compare in place and are never inserted or deleted (reported as skipped). `scripts/word_compare.sh` and its AppleScript are gone; nothing needs Microsoft Word.
@@ -31,12 +37,6 @@ Runtime-owned setup, stage 2 — content updates and doctor (spec §6–§7)
 
 - `bun runtime/src/cli.ts update-content`, `GET /content/status` and `POST /content/apply`, and a **Content** group in Settings: the shipped law and practice content compared with the vault by body hash and by what the vault last received. Law updates apply (never a file you changed — `managed-by: user`, `law_management: user`, or an edited copy); a practice seed that changed upstream shows its diff against the seed as received (`.counsel/received/`) for a merge by hand; missing files can be added. `auto_apply_law_updates: true` in `config.md` applies law updates at serve start.
 - `bun runtime/src/cli.ts doctor`, `GET /doctor`, and **Check the vault** under Settings › Runtime: the read-only vault checks of `/counsel-os:doctor` — config marker, structure and counts, law currency against the policy cadences, git, a standards ↔ library numeric divergence check (time units), and open matters behind a refreshed law area. No environment checks.
-
-## [0.12.0] — 2026-09-01
-
-Standalone foundations — Word documents in TypeScript, runtime-owned setup, drag-in intake, stay signed in, new theme
-
-- The runtime now does everything the Word pipeline did in Python: read and convert .docx, extract and check, apply native tracked changes with comments, compare two documents, and diff rounds; the redline appears in the thread as a document slip with Download. Drag a Word file onto the ask box or the composer. The runtime carries the knowledge content and owns first-run setup (counsel-os init, setup mode with the first-run screen, the sample matter, content updates and doctor in Settings). One printed link signs the browser in; after that http://127.0.0.1:7431 just works. Palette and type revised (system-sans chrome, warm grey and teal, Charter reading surface); the reader's head and facts block stack on a narrow pane; folder matters list their documents; hero-flow polish from an end-to-end test on a fresh vault. Details in the bullets below.
 
 ## [0.11.3] — 2026-09-01
 
