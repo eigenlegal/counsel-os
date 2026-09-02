@@ -268,3 +268,35 @@ describe('SettingsPage, signing out', () => {
     }
   });
 });
+
+describe('SettingsPage, the vendor catalog (providers spec §3, §6)', () => {
+  test('the guided starts cover the catalog and prefill the prefix and the key variable', async () => {
+    install(() => json(view));
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Add Google Gemini' })).toBeTruthy());
+    for (const name of ['Add Mistral', 'Add Groq', 'Add xAI', 'Add OpenRouter', 'Add LM Studio']) {
+      expect(screen.getByRole('button', { name })).toBeTruthy();
+    }
+    await userEvent.click(screen.getByRole('button', { name: 'Add Google Gemini' }));
+    const ids = screen.getAllByLabelText('Id') as HTMLInputElement[];
+    expect(ids.map(el => el.value)).toContain('google/');
+    const keys = screen.getAllByLabelText('apiKeyEnv') as HTMLInputElement[];
+    expect(keys.map(el => el.value)).toContain('GOOGLE_GENERATIVE_AI_API_KEY');
+    await userEvent.click(screen.getByRole('button', { name: 'Add LM Studio' }));
+    const urls = screen.getAllByLabelText('baseURL') as HTMLInputElement[];
+    expect(urls.map(el => el.value)).toContain('http://127.0.0.1:1234/v1');
+    expect(puts).toHaveLength(0);
+  });
+
+  test('each provider row says where its text goes, from its id and base URL', async () => {
+    install(() => json(view));
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Add Google Gemini' })).toBeTruthy());
+    // The fixture's row is an OpenAI-compatible loopback server: local.
+    expect(screen.getAllByRole('note').some((el: Element) => el.textContent?.includes('local · nothing leaves this machine'))).toBe(true);
+    await userEvent.click(screen.getByRole('button', { name: 'Add Google Gemini' }));
+    expect(screen.getAllByRole('note').some((el: Element) => el.textContent?.includes('cloud · text goes to Google'))).toBe(true);
+    // The copy never sends a lawyer to set an environment variable.
+    expect(document.body.textContent).not.toMatch(/environment variable before you start/);
+  });
+});

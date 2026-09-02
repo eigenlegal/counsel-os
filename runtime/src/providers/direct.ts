@@ -1,21 +1,22 @@
 import { Output, stepCountIs, streamText, tool, type LanguageModel } from 'ai';
-import { anthropic } from '@ai-sdk/anthropic';
-import { openai } from '@ai-sdk/openai';
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { ollama } from 'ai-sdk-ollama';
 import type { Capabilities, ModelProvider, StepEvent, StepRequest } from '../core/types';
 import { runToolDef } from '../core/fake-provider';
+import { localityFor, prefixOf, vendorFor } from './vendors';
 
 export class DirectProvider implements ModelProvider {
   readonly id: string;
   readonly kind = 'direct' as const;
   readonly capabilities: Capabilities;
+  /** Where the requests go — the entry's base URL, or the vendor's own
+   * endpoint when absent. `/settings` reads it for the data-handling line. */
+  readonly baseURL: string | undefined;
   private readonly model: LanguageModel;
 
-  constructor(opts: { id: string; model: LanguageModel; capabilities: Capabilities }) {
+  constructor(opts: { id: string; model: LanguageModel; capabilities: Capabilities; baseURL?: string }) {
     this.id = opts.id;
     this.model = opts.model;
     this.capabilities = opts.capabilities;
+    this.baseURL = opts.baseURL;
   }
 
   async *run(req: StepRequest): AsyncIterable<StepEvent> {
@@ -93,32 +94,23 @@ export class DirectProvider implements ModelProvider {
   }
 }
 
-const CAPS: Record<string, Capabilities> = {
-  anthropic: { tools: true, caching: true, thinking: true, contextTokens: 200_000, auth: 'apikey' },
-  openai:    { tools: true, caching: true, thinking: true, contextTokens: 200_000, auth: 'apikey' },
-  ollama:    { tools: true, caching: false, thinking: false, contextTokens: 32_000, auth: 'local' },
-  'openai-compatible': { tools: true, caching: false, thinking: false, contextTokens: 32_000, auth: 'apikey' },
-};
-
+/**
+ * A direct provider from its id, built through the vendor catalog (spec §3):
+ * the vendor's `make` gets the model name, the key the caller resolved, and
+ * the base URL, so nothing here reads the environment and nothing names a
+ * vendor by hand. The capabilities are the vendor's defaults, refined by the
+ * entry, with the locality derived last — an entry cannot claim a cloud
+ * endpoint is local.
+ */
 export function directProviderFromId(
   id: string,
   reg: { baseURL?: string; apiKey?: string; capabilities?: Partial<Capabilities> } = {},
 ): DirectProvider {
-  const [vendor, ...rest] = id.split('/');
-  const name = rest.join('/');
-  const caps = CAPS[vendor ?? ''];
-  if (!caps || !name) throw new Error(`unknown provider: ${id}`);
-  let model: LanguageModel;
-  if (vendor === 'anthropic') {
-    model = anthropic(name);
-  } else if (vendor === 'openai') {
-    model = openai(name);
-  } else if (vendor === 'openai-compatible') {
-    if (!reg.baseURL) throw new Error(`unknown provider: openai-compatible requires baseURL for ${id}`);
-    model = createOpenAICompatible({ name, baseURL: reg.baseURL, apiKey: reg.apiKey })(name);
-  } else {
-    model = ollama(name);
-  }
-  const capabilities = { ...caps, ...reg.capabilities };
-  return new DirectProvider({ id, model, capabilities });
+  const vendor = vendorFor(prefixOf(id));
+  const name = id.slice(prefixOf(id).length + 1);
+  if (vendor === undefined || vendor.kind !== 'direct' || vendor.make === undefined || name === '') throw new Error(`unknown provider: ${id}`);
+  if (vendor.requiresBaseURL === true && !reg.baseURL) throw new Error(`unknown provider: ${vendor.prefix} requires baseURL for ${id}`);
+  const model = vendor.make({ model: name, ...(reg.apiKey === undefined ? {} : { apiKey: reg.apiKey }), ...(reg.baseURL === undefined ? {} : { baseURL: reg.baseURL }) });
+  const capabilities: Capabilities = { ...vendor.capabilities, auth: vendor.auth, ...reg.capabilities, locality: localityFor(vendor, reg.baseURL) };
+  return new DirectProvider({ id, model, capabilities, ...(reg.baseURL === undefined ? {} : { baseURL: reg.baseURL }) });
 }

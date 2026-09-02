@@ -140,6 +140,15 @@ export interface Capabilities {
   thinking: boolean;
   contextTokens: number;
   auth: 'subscription' | 'apikey' | 'local';
+  /** Where the text goes; absent on an older runtime. */
+  locality?: 'local' | 'cloud';
+}
+
+/** Who receives the text when a provider is cloud. COPIED from
+ * `runtime/src/providers/vendors.ts`; a change there is a change here. */
+export interface VendorHandles {
+  company: string;
+  termsUrl: string;
 }
 
 export interface ProviderInfo {
@@ -147,6 +156,9 @@ export interface ProviderInfo {
   kind: 'direct' | 'harness';
   auth: Capabilities['auth'];
   capabilities: Capabilities;
+  /** Providers spec §6; absent on an older runtime. */
+  locality?: 'local' | 'cloud';
+  handles?: VendorHandles | null;
 }
 
 export interface Health {

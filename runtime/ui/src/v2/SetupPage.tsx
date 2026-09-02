@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { keyedVendors } from './vendors';
 import { ApiError, fetchJson } from '../api/client';
 import type { SetupLocation, SetupPlanBody, SetupProvider, SetupResponse } from '../api/types';
 
@@ -361,6 +362,12 @@ export function SetupPage({ onDone }: SetupPageProps): JSX.Element {
                 })}
               </div>
             )}
+            {/* The vendors that need a key are not probed; they are named so
+                the reader knows they exist (providers spec §12: OpenRouter
+                after Ollama, one sentence). */}
+            <p className="v2-setup-more" role="note">
+              Also available once you add a key in Settings: {keyedVendors().filter(v => v.hint !== undefined).map(v => v.hint).join(' · ')}.
+            </p>
             <p className="v2-setup-why v2-setup-after">You can change this any time in Settings.</p>
           </section>
 

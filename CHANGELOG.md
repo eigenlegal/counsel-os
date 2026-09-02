@@ -8,6 +8,13 @@ reconstructed from git history. New entries are prepended automatically by
 
 ## [Unreleased]
 
+More providers and models, step 1 — the vendor catalog (providers spec §3, §6)
+
+- One vendor catalog (`runtime/src/providers/vendors.ts`) replaces the hand-kept allowlist: Google Gemini (`google/…`), Mistral (`mistral/…`), Groq (`groq/…`), xAI (`xai/…`) and OpenRouter (`openrouter/…`) join Anthropic, OpenAI, Ollama and the OpenAI-compatible shape; an LM Studio preset fills a local row. An unknown prefix in `providers.yaml` now names the known ones.
+- Every direct provider is built through its SDK factory with an explicit key — the entry's `apiKeyEnv`, else the vendor's usual variable — so `anthropic/…` and `openai/…` honour a configured key (they silently used only the process environment before). Entering the key in the app comes next.
+- Capabilities carry a `locality`: an OpenAI-compatible server on a loopback address is local, and the router's "never remote" routes go by that, not by the credential type.
+- `/health` and `GET /settings` say where each provider's text goes (`locality`) and who receives it (`handles`); the rail footer's switcher, each provider row in Settings, and the Runtime table show it as one line — `local · nothing leaves this machine` or `cloud · text goes to <Company>` with the vendor's terms. The first-run screen names the vendors a key unlocks.
+
 Retro in the runtime — the practice's feedback loop without the plugin
 
 - A retro is a thread: `POST /retro` (Home's "run a retro" line when one is due; Settings › Runtime › Run a retro) and `bun runtime/src/cli.ts retro [--since <date>]` open a `Retro · <period>` thread whose header carries `task: retro`. Every step of that thread runs with the retro method (`skills/retro/SKILL.md`, now shipped content) and the runtime's own evidence for the period in its system prompt — conversations and steps by task and provider, runs with cost and errors, proposals by decision, documents produced, matters touched, memory, and the doctor's findings — and every knowledge change the retro suggests comes back as a proposal for the docket.

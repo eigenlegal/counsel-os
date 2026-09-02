@@ -8,6 +8,7 @@ import { Router, parseRouterConfig, type RouterConfig } from '../router/router';
 import { buildProviders } from './index';
 import { directProviderFromId } from './direct';
 import { withRetry } from './retry';
+import { knownPrefixes, prefixOf, vendorFor } from './vendors';
 
 export const BUILTIN_DEFAULT = 'claude-sub/claude-opus-5';
 export const BUILTIN_IDS = ['claude-sub/claude-opus-5', 'codex-sub/gpt-5.6-terra', 'ollama/gemma4:e4b'];
@@ -68,7 +69,7 @@ const TaskRoute = z.object({
 });
 
 const Entry = z.object({ id: z.string(), baseURL: BaseURL.optional(), apiKeyEnv: z.string().optional(),
-  capabilities: z.object({ tools: z.boolean(), caching: z.boolean(), thinking: z.boolean(), contextTokens: z.number(), auth: z.enum(['subscription','apikey','local']) }).partial().optional() });
+  capabilities: z.object({ tools: z.boolean(), caching: z.boolean(), thinking: z.boolean(), contextTokens: z.number(), auth: z.enum(['subscription','apikey','local']), locality: z.enum(['local','cloud']) }).partial().optional() });
 export const RegistryFile = z.object({ default: z.string().optional(), providers: z.array(Entry).optional(), tasks: z.record(z.string(), TaskRoute).optional(),
   /** The per-step deadline every step on this runtime gets, in milliseconds
    * (spec §3). Positive: a zero or negative deadline would fail every step
@@ -130,10 +131,13 @@ export function loadRegistry(opts: {
   const raw = readRegistry(file);
   const providers: ModelProvider[] = buildProviders({ ids: BUILTIN_IDS, vaultRoot: opts.vaultRoot });
   for (const e of raw.providers ?? []) {
-    const [vendor] = e.id.split('/');
-    if (vendor === 'claude-sub' || vendor === 'codex-sub') { providers.push(...buildProviders({ ids: [e.id], vaultRoot: opts.vaultRoot })); continue; }
-    if (!['anthropic','openai','ollama','openai-compatible'].includes(vendor ?? '')) throw new Error(`unknown provider id prefix: ${e.id}`);
-    providers.push(directProviderFromId(e.id, { baseURL: e.baseURL, apiKey: e.apiKeyEnv ? env[e.apiKeyEnv] : undefined, capabilities: e.capabilities as Partial<Capabilities> }));
+    const vendor = vendorFor(prefixOf(e.id));
+    if (vendor === undefined) throw new Error(`unknown provider id prefix: ${e.id} (known: ${knownPrefixes().join(', ')})`);
+    if (vendor.kind === 'harness') { providers.push(...buildProviders({ ids: [e.id], vaultRoot: opts.vaultRoot })); continue; }
+    // The key: the entry's variable, else the vendor's usual one. Step 2
+    // puts the secret store in front of both.
+    const keyEnv = e.apiKeyEnv ?? vendor.keyEnv;
+    providers.push(directProviderFromId(e.id, { baseURL: e.baseURL, apiKey: keyEnv === undefined ? undefined : env[keyEnv], capabilities: e.capabilities as Partial<Capabilities> }));
   }
   const wrapped = [...providers.map(p => (p.kind === 'direct' ? withRetry(p) : p)), ...(opts.extraProviders ?? [])];
   const defaultId = opts.defaultId ?? raw.default ?? BUILTIN_DEFAULT;

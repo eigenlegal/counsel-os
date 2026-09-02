@@ -4,6 +4,7 @@ import type { Health as HealthData, SettingsErrorBody, SettingsView } from '../.
 import { Health } from '../../settings/Health';
 import { ProviderCombo } from '../../settings/ProviderCombo';
 import { ProviderTest } from '../../settings/ProviderTest';
+import { dataLineFor, keyedVendors, PRESETS } from '../vendors';
 import { ContentGroup } from './ContentGroup';
 import { DoctorLedger } from './DoctorLedger';
 import { RetroAction } from './RetroAction';
@@ -15,6 +16,8 @@ import {
   mapIssues,
   ollamaRow,
   openaiKeyRow,
+  presetRow,
+  vendorKeyRow,
   registryFromForm,
   unplacedTaskMessages,
   type FieldErrors,
@@ -241,6 +244,24 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
                 </select>
               </div>
             </div>
+            {/* Where this row's text goes (providers spec §6): from the id's
+                prefix and, for an OpenAI-compatible server, its base URL. */}
+            {(() => {
+              const line = dataLineFor(row.id.trim(), row.baseURL.trim() === '' ? undefined : row.baseURL.trim());
+              return line === null ? null : (
+                <p className={line.locality === 'local' ? 'v2-provider-data v2-provider-data-local' : 'v2-provider-data'} role="note">
+                  {line.text}
+                  {line.termsUrl === null ? null : (
+                    <>
+                      {' · '}
+                      <a href={line.termsUrl} target="_blank" rel="noreferrer">
+                        their terms
+                      </a>
+                    </>
+                  )}
+                </p>
+              );
+            })()}
             <button
               type="button"
               className="v2-link v2-remove"
@@ -278,12 +299,39 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
           <div className="v2-guided-start">
             <p>
               <strong>OpenAI API key</strong>
-              <span className="muted"> — starts a row for <code>openai/gpt-5.6</code>. Put the key in the <code>OPENAI_API_KEY</code> environment variable before you start the runtime; the file stores the variable name, never the key.</span>
+              <span className="muted"> — starts a row for <code>openai/gpt-5.6</code>. The key is read from <code>OPENAI_API_KEY</code> for now; entering it in the app comes with the next update.</span>
             </p>
             <button type="button" onClick={() => patch({ providers: [...form.providers, openaiKeyRow()] })}>
               Add OpenAI provider
             </button>
           </div>
+          {/* The other vendors in the catalog (providers spec §3): one row each,
+              the id left for the operator to finish with a model. */}
+          {keyedVendors()
+            .filter(v => v.prefix !== 'openai')
+            .map(v => (
+              <div className="v2-guided-start" key={v.prefix}>
+                <p>
+                  <strong>{v.name}</strong>
+                  <span className="muted">
+                    {' '}
+                    — starts a row for <code>{v.prefix}/…</code>; text goes to {v.company}. The key is read from <code>{v.keyEnv}</code> for now.
+                    {v.getKey === undefined ? null : (
+                      <>
+                        {' '}
+                        <a href={v.getKey} target="_blank" rel="noreferrer">
+                          Get a key
+                        </a>
+                        .
+                      </>
+                    )}
+                  </span>
+                </p>
+                <button type="button" onClick={() => patch({ providers: [...form.providers, vendorKeyRow(v.prefix, v.keyEnv ?? '')] })}>
+                  {v.addLabel}
+                </button>
+              </div>
+            ))}
           <div className="v2-guided-start">
             <p>
               <strong>Local Ollama model</strong>
@@ -293,6 +341,20 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
               Add Ollama model
             </button>
           </div>
+          {PRESETS.map(preset => (
+            <div className="v2-guided-start" key={preset.key}>
+              <p>
+                <strong>{preset.name}</strong>
+                <span className="muted">
+                  {' '}
+                  — a local OpenAI-compatible server at <code>{preset.baseURL}</code>; nothing leaves this machine. Finish the id with the model it serves.
+                </span>
+              </p>
+              <button type="button" onClick={() => patch({ providers: [...form.providers, presetRow(preset.baseURL)] })}>
+                {preset.addLabel}
+              </button>
+            </div>
+          ))}
           <div className="v2-guided-start">
             <p>
               <strong>Something else</strong>

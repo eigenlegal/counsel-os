@@ -85,12 +85,24 @@ export function isTerminal(e: StepEvent): boolean {
 }
 
 // ── ModelProvider ─────────────────────────────────────────────────────────
+/** Where the text goes: this machine, or a company's servers. */
+export type Locality = 'local' | 'cloud';
+
 export interface Capabilities {
   tools: boolean;
   caching: boolean;
   thinking: boolean;
   contextTokens: number;
   auth: 'subscription' | 'apikey' | 'local';
+  /** Providers built from the catalog carry it; anything older falls back
+   * to `auth` through `localityOf` — an API-key provider on a loopback base
+   * URL is the case `auth` alone gets wrong. */
+  locality?: Locality;
+}
+
+/** The locality a set of capabilities means, with the `auth` fallback. */
+export function localityOf(caps: Capabilities): Locality {
+  return caps.locality ?? (caps.auth === 'local' ? 'local' : 'cloud');
 }
 
 export interface ModelProvider {

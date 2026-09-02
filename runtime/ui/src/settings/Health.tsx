@@ -1,4 +1,5 @@
 import { signOut } from '../api/client';
+import { dataLineOf } from '../v2/vendors';
 import type { Health as HealthData, SettingsView } from '../api/types';
 
 export interface HealthProps {
@@ -93,6 +94,7 @@ export function Health({ health, effective, file }: HealthProps): JSX.Element {
               <th scope="col">Id</th>
               <th scope="col">Kind</th>
               <th scope="col">Auth</th>
+              <th scope="col">Data</th>
               <th scope="col">Context</th>
             </tr>
           </thead>
@@ -104,6 +106,7 @@ export function Health({ health, effective, file }: HealthProps): JSX.Element {
                 </td>
                 <td>{p.kind}</td>
                 <td>{p.auth}</td>
+                <td className="providers-data">{dataLineOf(p, p.id)?.text ?? '—'}</td>
                 <td>{p.capabilities.contextTokens.toLocaleString()}</td>
               </tr>
             ))}
