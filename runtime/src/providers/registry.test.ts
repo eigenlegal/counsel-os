@@ -168,3 +168,31 @@ describe('the registry reads the vendor catalog (providers spec §3)', () => {
     expect(() => loadRegistry({ file: f, vaultRoot: dir })).toThrow(/unknown provider id prefix: nope\/model \(known: .*google.*openrouter.*\)/);
   });
 });
+
+describe('loadRegistry and the secret store (providers spec §5)', () => {
+  test('a stored key wins over the environment; the environment still works alone; `key: keychain` is a hint the file may carry', async () => {
+    const { memoryStore } = await import('./secrets');
+    const dir = mkdtempSync(join(tmpdir(), 'reg-keys-'));
+    const f = join(dir, 'providers.yaml');
+    writeFileSync(f, ['providers:', '  - id: google/gemini-2.5-pro', '    key: keychain', '  - id: mistral/mistral-large', '    apiKeyEnv: MY_MISTRAL', ''].join('\n'));
+    const store = memoryStore({ 'google/gemini-2.5-pro': 'AIza-from-store' });
+    const r = loadRegistry({ file: f, vaultRoot: dir, env: { GOOGLE_GENERATIVE_AI_API_KEY: 'AIza-from-env', MY_MISTRAL: 'm-env' }, secrets: store });
+    expect(r.providers.map(p => p.id)).toContain('google/gemini-2.5-pro');
+    expect(r.providers.map(p => p.id)).toContain('mistral/mistral-large');
+    // The file parsed with the hint, and the hint is not key material.
+    expect(readRegistry(f).providers?.[0]).toEqual({ id: 'google/gemini-2.5-pro', key: 'keychain' });
+    // Without a store the environment alone still builds the same set.
+    const env = loadRegistry({ file: f, vaultRoot: dir, env: { GOOGLE_GENERATIVE_AI_API_KEY: 'AIza-from-env', MY_MISTRAL: 'm-env' } });
+    expect(env.providers.map(p => p.id)).toEqual(r.providers.map(p => p.id));
+  });
+
+  test('a store that cannot be read does not stop the runtime from starting', async () => {
+    const { memoryStore } = await import('./secrets');
+    const dir = mkdtempSync(join(tmpdir(), 'reg-keys-'));
+    const f = join(dir, 'providers.yaml');
+    writeFileSync(f, 'providers:\n  - id: openai/gpt-5.6\n');
+    const broken = { ...memoryStore(), get: () => { throw new Error('keychain locked'); } };
+    const r = loadRegistry({ file: f, vaultRoot: dir, env: { OPENAI_API_KEY: 'sk-env' }, secrets: broken });
+    expect(r.providers.map(p => p.id)).toContain('openai/gpt-5.6');
+  });
+});

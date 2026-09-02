@@ -6,6 +6,7 @@ import { FakeModelProvider } from '../core/fake-provider';
 import type { ModelProvider } from '../core/types';
 import { DEFAULT_STEP_TIMEOUT_MS } from '../loop/counsel-loop';
 import { readRegistry, type RegistryFileData } from '../providers/registry';
+import { memoryStore, type SecretStore } from '../providers/secrets';
 import { ThreadStore } from '../threads/store';
 import { FsVaultStore } from '../vault/fs-store';
 import { createApp, type App } from './routes';
@@ -34,6 +35,7 @@ interface Harness {
   /** The registry file the app reads and writes. */
   file: string;
   fake: FakeModelProvider;
+  secrets?: SecretStore;
 }
 
 /**
@@ -41,7 +43,7 @@ interface Harness {
  * `fake: true` is `serve --fake`: the canned provider is an override, so it
  * has to survive every reload the settings API does.
  */
-function harness(opts: { fake?: boolean; contents?: string; script?: ConstructorParameters<typeof FakeModelProvider>[0] } = {}): Harness {
+function harness(opts: { fake?: boolean; contents?: string; script?: ConstructorParameters<typeof FakeModelProvider>[0]; secrets?: SecretStore | null; env?: NodeJS.ProcessEnv } = {}): Harness {
   const home = mkdtempSync(join(tmpdir(), 'settings-home-'));
   const file = join(home, 'providers.yaml');
   if (opts.contents !== undefined) writeFileSync(file, opts.contents, 'utf8');
@@ -49,7 +51,11 @@ function harness(opts: { fake?: boolean; contents?: string; script?: Constructor
   const overrides: { extraProviders?: ModelProvider[]; defaultId?: string } = opts.fake
     ? { extraProviders: [fake], defaultId: fake.id }
     : {};
-  const runtime = runtimeState({ vaultRoot, registryFile: file, env: {}, ...overrides });
+  // A memory store by default (providers spec §5); `null` = a runtime with
+  // no store at all. Never the developer's keychain.
+  const secrets = opts.secrets === null ? undefined : (opts.secrets ?? memoryStore());
+  const env = opts.env ?? {};
+  const runtime = runtimeState({ vaultRoot, registryFile: file, env, ...overrides, ...(secrets === undefined ? {} : { secrets }) });
   const app = createApp({
     token: TOKEN,
     tenant: 'default',
@@ -59,9 +65,9 @@ function harness(opts: { fake?: boolean; contents?: string; script?: Constructor
     store,
     platform: 'macos',
     state: runtime.state,
-    settings: { file, reload: runtime.reload },
+    settings: { file, reload: runtime.reload, env, ...(secrets === undefined ? {} : { secrets }) },
   });
-  return { app, file, fake };
+  return { app, file, fake, ...(secrets === undefined ? {} : { secrets }) };
 }
 
 function call(app: App, method: string, path: string, body?: unknown): Promise<Response> {
@@ -338,5 +344,69 @@ describe('runtimeState', () => {
     writeFileSync(file, 'stepTimeoutMs: 45000\n', 'utf8');
     runtime.reload();
     expect(runtime.state().stepTimeoutMs).toBe(11_000);
+  });
+});
+
+describe('provider keys (providers spec §5)', () => {
+  const GOOGLE = 'providers:\n  - id: google/gemini-2.5-pro\n';
+
+  test('PUT stores the key, reloads, and never echoes it; GET /settings and /health report keySet and where', async () => {
+    const h = harness({ contents: GOOGLE });
+    const before = await settings(h.app);
+    const g = before.effective.providers.find(p => p.id === 'google/gemini-2.5-pro') as { keySet?: unknown } | undefined;
+    expect(g?.keySet).toBe(false);
+    expect((before as unknown as { secrets: { where: string } }).secrets).toEqual({ where: 'file' });
+
+    const put = await call(h.app, 'PUT', '/providers/google/gemini-2.5-pro/key', { value: '  AIza-test-value-1  ' });
+    expect(put.status).toBe(204);
+    expect(await put.text()).toBe('');
+    expect(h.secrets?.get('google/gemini-2.5-pro')).toBe('AIza-test-value-1');
+
+    const after = await settings(h.app);
+    const text = JSON.stringify(after);
+    expect(text).not.toContain('AIza-test-value-1');
+    expect((after.effective.providers.find(p => p.id === 'google/gemini-2.5-pro') as { keySet?: unknown }).keySet).toBe(true);
+    const hp = (await (await call(h.app, 'GET', '/health')).json()) as { providers: Array<{ id: string; keySet?: unknown }> };
+    expect(JSON.stringify(hp)).not.toContain('AIza-test-value-1');
+    expect(hp.providers.find(p => p.id === 'google/gemini-2.5-pro')?.keySet).toBe(true);
+    // A provider that takes no key carries no keySet at all.
+    expect('keySet' in (hp.providers.find(p => p.id === 'claude-sub/claude-opus-5') ?? {})).toBe(false);
+
+    const del = await call(h.app, 'DELETE', '/providers/google/gemini-2.5-pro/key');
+    expect(del.status).toBe(204);
+    expect((await call(h.app, 'DELETE', '/providers/google/gemini-2.5-pro/key')).status).toBe(204);
+    expect((await settings(h.app)).effective.providers.find(p => p.id === 'google/gemini-2.5-pro')).toMatchObject({ keySet: false });
+  });
+
+  test('a key from the environment reads as env; a stored one beats it', async () => {
+    const h = harness({ contents: GOOGLE, env: { GOOGLE_GENERATIVE_AI_API_KEY: 'AIza-env' } });
+    expect((await settings(h.app)).effective.providers.find(p => p.id === 'google/gemini-2.5-pro')).toMatchObject({ keySet: 'env' });
+    expect((await call(h.app, 'PUT', '/providers/google/gemini-2.5-pro/key', { value: 'AIza-app' })).status).toBe(204);
+    expect((await settings(h.app)).effective.providers.find(p => p.id === 'google/gemini-2.5-pro')).toMatchObject({ keySet: true });
+  });
+
+  test('validation: empty and oversized values are 400; a keyless or unknown provider is 404; a slashed id resolves', async () => {
+    const h = harness({ contents: GOOGLE });
+    expect((await call(h.app, 'PUT', '/providers/google/gemini-2.5-pro/key', { value: '   ' })).status).toBe(400);
+    expect((await call(h.app, 'PUT', '/providers/google/gemini-2.5-pro/key', { value: 'x'.repeat(5000) })).status).toBe(400);
+    expect((await call(h.app, 'PUT', '/providers/google/gemini-2.5-pro/key', {})).status).toBe(400);
+    expect((await call(h.app, 'PUT', '/providers/claude-sub/claude-opus-5/key', { value: 'k' })).status).toBe(404);
+    expect((await call(h.app, 'PUT', '/providers/ollama/gemma4:e4b/key', { value: 'k' })).status).toBe(404);
+    expect((await call(h.app, 'PUT', '/providers/nope/x/key', { value: 'k' })).status).toBe(404);
+    expect((await call(h.app, 'PUT', '/providers/openrouter/anthropic/claude-x/key', { value: 'or-key' })).status).toBe(204);
+    expect(h.secrets?.get('openrouter/anthropic/claude-x')).toBe('or-key');
+  });
+
+  test('a runtime with no store answers 503 and reports secrets: null', async () => {
+    const h = harness({ contents: GOOGLE, secrets: null });
+    expect((await call(h.app, 'PUT', '/providers/google/gemini-2.5-pro/key', { value: 'k' })).status).toBe(503);
+    expect((await call(h.app, 'DELETE', '/providers/google/gemini-2.5-pro/key')).status).toBe(503);
+    expect((await settings(h.app) as unknown as { secrets: unknown }).secrets).toBeNull();
+  });
+
+  test('the key routes need the bearer token', async () => {
+    const h = harness({ contents: GOOGLE });
+    const res = await h.app(new Request('http://127.0.0.1:7431/providers/google/gemini-2.5-pro/key', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ value: 'k' }) }));
+    expect(res.status).toBe(401);
   });
 });

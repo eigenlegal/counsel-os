@@ -5,6 +5,7 @@ import { localityOf, type Capabilities, type Locality, type ModelProvider, type 
 import { handlesFor, prefixOf, vendorFor, type VendorHandles } from '../providers/vendors';
 import { DEFAULT_STEP_TIMEOUT_MS, runStep, type CounselLoopDeps } from '../loop/counsel-loop';
 import { readRegistry, writeRegistry, REGISTRY_WRITE, type RegistryFileData } from '../providers/registry';
+import { keyStateFor, redact, type KeyState, type SecretStore, type SecretStoreKind } from '../providers/secrets';
 import type { Router } from '../router/router';
 
 /**
@@ -33,6 +34,81 @@ export interface RuntimeState {
 export interface SettingsDeps {
   file: string;
   reload(): void;
+  /** Where app-entered keys live (providers spec §5). Omitted → keys come
+   * from the environment only and the key routes answer 503. */
+  secrets?: SecretStore;
+  /** The environment the registry reads `apiKeyEnv` from, for `keySet`. */
+  env?: NodeJS.ProcessEnv;
+}
+
+/** The registry entry's key variable for a provider: the entry's own, else
+ * the vendor's usual one. `undefined` for the subscription and local tiers. */
+function keyEnvFor(id: string, registry: RegistryFileData | null): string | undefined {
+  const vendor = vendorFor(prefixOf(id));
+  if (vendor === undefined || vendor.auth !== 'apikey') return undefined;
+  const entry = registry?.providers?.find(e => e.id === id);
+  return entry?.apiKeyEnv ?? vendor.keyEnv;
+}
+
+/** Whether `id` names a provider that takes an API key at all — the only
+ * ones the key routes accept. */
+export function takesKey(id: string): boolean {
+  const vendor = vendorFor(prefixOf(id));
+  return vendor !== undefined && vendor.kind === 'direct' && vendor.auth === 'apikey';
+}
+
+/** A hard cap on a pasted key: every real one is well under it, and a
+ * multi-kilobyte body is a paste of the wrong thing. */
+export const KEY_MAX_BYTES = 4096;
+export const KeyBody = z.object({ value: z.string() });
+
+/**
+ * `PUT /providers/:id/key` — the one place a key travels. The store gets it,
+ * the registry reloads so the provider builds with it, and the answer is
+ * 204: nothing about the value comes back. Unknown or keyless providers are
+ * 404; an empty or oversized value 400; no store 503.
+ *
+ * A reload that fails after the store took the key is reported as 422 with
+ * the message scrubbed of the value — the key IS saved (the next reload
+ * will pick it up), and the operator learns what else is wrong.
+ */
+export function putProviderKey(ctx: SettingsContext, id: string, value: string): Response {
+  const store = ctx.settings.secrets;
+  if (store === undefined) return Response.json({ error: 'this runtime has no secret store; set the key in the environment' }, { status: 503 });
+  if (!takesKey(id)) return Response.json({ error: `${id} does not take an API key` }, { status: 404 });
+  const trimmed = value.trim();
+  if (trimmed === '') return Response.json({ error: 'the key is empty' }, { status: 400 });
+  if (Buffer.byteLength(trimmed, 'utf8') > KEY_MAX_BYTES) return Response.json({ error: 'that is not an API key (too long)' }, { status: 400 });
+  try {
+    store.set(id, trimmed);
+  } catch (err) {
+    return Response.json({ error: redact(message(err), trimmed) }, { status: 500 });
+  }
+  try {
+    ctx.settings.reload();
+  } catch (err) {
+    return Response.json({ error: redact(message(err), trimmed) }, { status: 422 });
+  }
+  return new Response(null, { status: 204 });
+}
+
+/** `DELETE /providers/:id/key` — idempotent; the registry reloads so the
+ * provider falls back to the environment or to no key. */
+export function deleteProviderKey(ctx: SettingsContext, id: string): Response {
+  const store = ctx.settings.secrets;
+  if (store === undefined) return Response.json({ error: 'this runtime has no secret store' }, { status: 503 });
+  if (!takesKey(id)) return Response.json({ error: `${id} does not take an API key` }, { status: 404 });
+  try {
+    store.delete(id);
+  } catch (err) {
+    return Response.json({ error: message(err) }, { status: 500 });
+  }
+  try {
+    ctx.settings.reload();
+  } catch (err) {
+    return Response.json({ error: message(err) }, { status: 422 });
+  }
+  return new Response(null, { status: 204 });
 }
 
 /** What the settings routes need from the server: the file plus the live
@@ -69,17 +145,43 @@ export interface ProviderView {
   locality: Locality;
   /** Who receives it, or `null` when it stays on this machine. */
   handles: VendorHandles | null;
+  /** Whether a key is set for an API-key provider (providers spec §5):
+   * saved in the app, taken from the environment, or absent. Never the
+   * value. Absent on providers that take no key. */
+  keySet?: KeyState;
+}
+
+/** What `providerView` needs to answer `keySet`. */
+export interface KeyContext {
+  store: SecretStore | undefined;
+  env: NodeJS.ProcessEnv;
+  registry: RegistryFileData | null;
 }
 
 /** The view of one loaded provider — the one shape `/health` and
  * `GET /settings` both hand out. */
-export function providerView(p: ModelProvider): ProviderView {
+export function providerView(p: ModelProvider, keys?: KeyContext): ProviderView {
   const vendor = vendorFor(prefixOf(p.id));
   // A direct provider remembers its base URL; the harness tiers have none.
   const baseURL = (p as { baseURL?: string }).baseURL;
   const locality = localityOf(p.capabilities);
   const handles = vendor === undefined ? null : handlesFor(vendor, baseURL);
-  return { id: p.id, kind: p.kind, auth: p.capabilities.auth, capabilities: p.capabilities, locality, handles: locality === 'local' ? null : handles };
+  const view: ProviderView = { id: p.id, kind: p.kind, auth: p.capabilities.auth, capabilities: p.capabilities, locality, handles: locality === 'local' ? null : handles };
+  if (keys !== undefined && takesKey(p.id)) view.keySet = keyStateFor(p.id, keyEnvFor(p.id, keys.registry), keys.store, keys.env);
+  return view;
+}
+
+/** The key context for a running server: the store, the environment the
+ * registry reads, and the file (for per-entry `apiKeyEnv`). */
+export function keyContext(ctx: SettingsContext): KeyContext {
+  let registry: RegistryFileData | null = null;
+  try {
+    registry = readRegistry(ctx.settings.file);
+  } catch {
+    // A file that does not parse is `PUT /settings`'s problem; `keySet`
+    // then falls back to the vendors' usual variables.
+  }
+  return { store: ctx.settings.secrets, env: ctx.settings.env ?? process.env, registry };
 }
 
 export interface SettingsView {
@@ -91,6 +193,9 @@ export interface SettingsView {
     stepTimeoutMs: number;
     providers: ProviderView[];
   };
+  /** Where app-entered keys are kept (providers spec §5), so the page can
+   * say "Keychain" or "a file". `null` when this runtime has no store. */
+  secrets: { where: SecretStoreKind } | null;
 }
 
 /**
@@ -114,14 +219,16 @@ export function effectiveDefault(state: RuntimeState): string | null {
  * appear in no file. */
 export function settingsView(ctx: SettingsContext): SettingsView {
   const state = ctx.state();
+  const keys = keyContext(ctx);
   return {
     file: ctx.settings.file,
     registry: readRegistry(ctx.settings.file),
     effective: {
       default: effectiveDefault(state),
       stepTimeoutMs: state.stepTimeoutMs ?? DEFAULT_STEP_TIMEOUT_MS,
-      providers: state.providers.map(p => providerView(p)),
+      providers: state.providers.map(p => providerView(p, keys)),
     },
+    secrets: ctx.settings.secrets === undefined ? null : { where: ctx.settings.secrets.where() },
   };
 }
 

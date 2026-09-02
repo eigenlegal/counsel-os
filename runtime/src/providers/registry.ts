@@ -8,6 +8,7 @@ import { Router, parseRouterConfig, type RouterConfig } from '../router/router';
 import { buildProviders } from './index';
 import { directProviderFromId } from './direct';
 import { withRetry } from './retry';
+import type { SecretStore } from './secrets';
 import { knownPrefixes, prefixOf, vendorFor } from './vendors';
 
 export const BUILTIN_DEFAULT = 'claude-sub/claude-opus-5';
@@ -69,6 +70,10 @@ const TaskRoute = z.object({
 });
 
 const Entry = z.object({ id: z.string(), baseURL: BaseURL.optional(), apiKeyEnv: z.string().optional(),
+  /** A hint that a key lives in the secret store (providers spec §5). Read
+   * nowhere: the store is asked for every entry regardless. The file never
+   * carries key material. */
+  key: z.enum(['keychain']).optional(),
   capabilities: z.object({ tools: z.boolean(), caching: z.boolean(), thinking: z.boolean(), contextTokens: z.number(), auth: z.enum(['subscription','apikey','local']), locality: z.enum(['local','cloud']) }).partial().optional() });
 export const RegistryFile = z.object({ default: z.string().optional(), providers: z.array(Entry).optional(), tasks: z.record(z.string(), TaskRoute).optional(),
   /** The per-step deadline every step on this runtime gets, in milliseconds
@@ -126,18 +131,33 @@ export function loadRegistry(opts: {
   env?: NodeJS.ProcessEnv;
   extraProviders?: ModelProvider[];
   defaultId?: string;
+  /** Where app-entered keys live (providers spec §5). Asked before the
+   * environment for every direct entry; omitted → environment only. */
+  secrets?: SecretStore;
 }) {
   const env = opts.env ?? process.env; const file = opts.file ?? defaultRegistryFile(env);
+  /** The store's value for `id`, or `null` — including when the store cannot
+   * be read: a locked keychain must not stop the runtime from starting, and
+   * the page's `keySet: false` is how the operator finds out. */
+  const stored = (id: string): string | null => {
+    try {
+      return opts.secrets?.get(id) ?? null;
+    } catch {
+      return null;
+    }
+  };
   const raw = readRegistry(file);
   const providers: ModelProvider[] = buildProviders({ ids: BUILTIN_IDS, vaultRoot: opts.vaultRoot });
   for (const e of raw.providers ?? []) {
     const vendor = vendorFor(prefixOf(e.id));
     if (vendor === undefined) throw new Error(`unknown provider id prefix: ${e.id} (known: ${knownPrefixes().join(', ')})`);
     if (vendor.kind === 'harness') { providers.push(...buildProviders({ ids: [e.id], vaultRoot: opts.vaultRoot })); continue; }
-    // The key: the entry's variable, else the vendor's usual one. Step 2
-    // puts the secret store in front of both.
+    // The key: the store first (what the app saved), then the entry's
+    // variable, then the vendor's usual one — so a key pasted in Settings
+    // wins, and a headless install with only the environment still works.
     const keyEnv = e.apiKeyEnv ?? vendor.keyEnv;
-    providers.push(directProviderFromId(e.id, { baseURL: e.baseURL, apiKey: keyEnv === undefined ? undefined : env[keyEnv], capabilities: e.capabilities as Partial<Capabilities> }));
+    const apiKey = stored(e.id) ?? (keyEnv === undefined ? undefined : env[keyEnv]);
+    providers.push(directProviderFromId(e.id, { baseURL: e.baseURL, apiKey, capabilities: e.capabilities as Partial<Capabilities> }));
   }
   const wrapped = [...providers.map(p => (p.kind === 'direct' ? withRetry(p) : p)), ...(opts.extraProviders ?? [])];
   const defaultId = opts.defaultId ?? raw.default ?? BUILTIN_DEFAULT;

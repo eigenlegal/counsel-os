@@ -25,7 +25,7 @@ import {
   testProvider,
   TestBody,
   type RuntimeState,
-  type SettingsDeps, providerView } from './settings';
+  type SettingsDeps, providerView, keyContext, putProviderKey, deleteProviderKey, KeyBody } from './settings';
 import { sseFromEvents, type StreamEvent } from './sse';
 import { serveStatic, type StaticSource } from './static';
 
@@ -62,7 +62,7 @@ export type App = (req: Request) => Promise<Response>;
  * static, served with no credential, so a new route whose prefix is missing
  * here would be reachable by anyone who can reach the port.
  */
-export const API_PREFIXES: readonly string[] = ['health', 'threads', 'runs', 'vault', 'settings', 'proposals', 'docket', 'setup', 'content', 'doctor', 'session', 'retro'];
+export const API_PREFIXES: readonly string[] = ['health', 'threads', 'runs', 'vault', 'settings', 'proposals', 'docket', 'setup', 'content', 'doctor', 'session', 'retro', 'providers'];
 
 /** True when `pathname` belongs to the API (and so needs a token). `/` and
  * every client-side route are false. */
@@ -393,7 +393,7 @@ export function createApp(deps: ServerDeps): App {
       setup: false,
       vault: deps.vaultRoot,
       tenant: deps.tenant,
-      providers: state.providers.map(p => providerView(p)),
+      providers: state.providers.map(p => providerView(p, keyContext(deps))),
       default: effectiveDefault(state),
       // What a step on this runtime actually gets, not what was configured:
       // an operator reading /health wants the effective number.
@@ -416,6 +416,28 @@ export function createApp(deps: ServerDeps): App {
     const release = await locks.acquire(SETTINGS_LOCK);
     try {
       return applySettings(deps, next);
+    } finally {
+      release();
+    }
+  };
+
+  /** `PUT`/`DELETE /providers/<id>/key` (providers spec §5). The id may
+   * carry slashes (`openrouter/anthropic/claude-x`), so it is everything
+   * between the prefix and the trailing `key`. Serialized on the settings
+   * lock: both reload the registry. */
+  const putKey = async (req: Request, id: string): Promise<Response> => {
+    const { value } = await body(req, KeyBody);
+    const release = await locks.acquire(SETTINGS_LOCK);
+    try {
+      return putProviderKey(deps, id, value);
+    } finally {
+      release();
+    }
+  };
+  const deleteKey = async (id: string): Promise<Response> => {
+    const release = await locks.acquire(SETTINGS_LOCK);
+    try {
+      return deleteProviderKey(deps, id);
     } finally {
       release();
     }
@@ -910,6 +932,12 @@ export function createApp(deps: ServerDeps): App {
       if (segments.length === 1 && first === 'settings') {
         if (method === 'GET') return json(settingsView(deps));
         if (method === 'PUT') return await putSettings(req);
+      }
+
+      if (segments.length >= 3 && first === 'providers' && segments[segments.length - 1] === 'key') {
+        const id = segments.slice(1, -1).map(s => decodeURIComponent(s)).join('/');
+        if (method === 'PUT') return await putKey(req, id);
+        if (method === 'DELETE') return await deleteKey(id);
       }
 
       if (segments.length === 2 && first === 'settings' && second === 'test' && method === 'POST') {
