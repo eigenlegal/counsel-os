@@ -16,6 +16,8 @@ export const SHIPPED_ROOTS: readonly string[] = [
   'templates/memory',
   'primitives',
   'skills/counsel',
+  // The retro method, read into a retro thread's system prompt (`retro/`).
+  'skills/retro',
   // The synthetic NDA the sample matter is made of (spec 2026-09-01 §4).
   'skills/demo/assets',
 ];

@@ -29,6 +29,10 @@ export interface VaultConfig {
   /** `law_management: user` — the user owns ALL law content; the runtime
    * never syncs it (the plugin's `law-refresh` maintains it). */
   lawManagement: 'plugin' | 'user';
+  /** `retro_cadence_days: 60` — how often the practice retro is due. Absent
+   * → the retro module's default (quarterly). Optional so the many literal
+   * `VaultConfig`s in tests stay as they are. */
+  retroCadenceDays?: number;
 }
 
 const CWD_WALK_MAX_DEPTH = 3;
@@ -229,10 +233,14 @@ export function readVaultConfig(root: string): VaultConfig {
   };
 
   const flag = (raw: string | undefined): string => (raw ?? '').trim().replace(/^["']|["']$/g, '').toLowerCase();
+  // A cadence must be a positive whole number of days; anything else is
+  // ignored rather than turned into a surprising schedule.
+  const cadence = Number(flag(findOverride('retro_cadence_days')));
   return {
     entitiesPath: findOverride('entities_path') || 'entities',
     mattersPath: findOverride('matters_path') || 'matters',
     autoApplyLawUpdates: flag(findOverride('auto_apply_law_updates')) === 'true',
     lawManagement: flag(findOverride('law_management')) === 'user' ? 'user' : 'plugin',
+    ...(Number.isInteger(cadence) && cadence > 0 ? { retroCadenceDays: cadence } : {}),
   };
 }

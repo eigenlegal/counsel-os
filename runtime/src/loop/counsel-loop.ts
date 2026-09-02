@@ -15,6 +15,7 @@ import { readPrimitiveTool } from './primitives';
 import { proposeUpdateTool } from './proposals';
 import { writeRunLog, type RunLogEntry, type ToolCallLog } from './run-log';
 import { finishRun, startRun, type RunPatch, type RunRecord } from './run-record';
+import { RETRO_TASK, retroSections } from '../retro/index';
 
 /**
  * Headroom left in the context window for the model's own reply and for the
@@ -173,12 +174,16 @@ export async function* runStep(
   const { tenant, store } = deps;
   const { threadId } = opts;
 
+  // The header alone: it decides the task (a retro thread runs every step
+  // as `retro` unless the caller names one) before the run is recorded.
+  let early: ThreadHeader;
   try {
-    await store.get(tenant, threadId);
+    early = await store.header(tenant, threadId);
   } catch {
     yield { type: 'error', message: `unknown thread: ${threadId}`, runId };
     return;
   }
+  if (opts.task === undefined && early.task !== undefined) opts = { ...opts, task: early.task };
 
   // The run record opens here — before the provider is even chosen — so
   // everything that follows is visible to `/runs` while it is happening and
@@ -285,6 +290,10 @@ export async function* runStep(
           available: scriptTools.map(t => t.name),
           unavailable: registry.unavailable(platform),
         },
+        // A retro step carries the retro method and the period's evidence
+        // (`retro/`): read fresh on every step of the thread, so a retro
+        // that runs over several turns keeps seeing the record.
+        ...(opts.task === RETRO_TASK ? { sections: await retroSections({ deps, cfg }) } : {}),
       });
 
       // An oversize system prompt is not a windowing problem — no amount of

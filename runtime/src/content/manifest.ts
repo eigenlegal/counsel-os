@@ -874,6 +874,9 @@ export const MANIFEST: ContentManifest = {
     "skills/counsel/SKILL.md": {
       "hash": "7e8cb06ea00596bd3be5f768f4529a198ebbe3b654b9b639f51607eb023c0cbd"
     },
+    "skills/retro/SKILL.md": {
+      "hash": "4975a92a57f7a4f6c9c1c81495f3b92a462a04e60fa197d7278b29bcd0675eff"
+    },
     "skills/demo/assets/sample-mutual-nda.docx": {
       "hash": "67025b706197311c96327e35df6401d78135b330567ecde92131067f405bd6e5"
     },

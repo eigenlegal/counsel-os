@@ -158,7 +158,7 @@ Unavailable: ${unavailableList}`;
 }
 
 /** Strips a leading `--- ... ---` YAML frontmatter block, if present. */
-function stripFrontmatter(text: string): string {
+export function stripFrontmatter(text: string): string {
   if (!text.startsWith('---')) return text;
   const closeIdx = text.indexOf('\n---', 3);
   if (closeIdx === -1) return text;
@@ -193,6 +193,9 @@ export interface AssembleSystemPromptOptions {
   platform: Platform;
   tools: AvailableTools;
   cfg: VaultConfig;
+  /** Extra sections appended after the matter, in order — the retro's
+   * method and evidence (`retro/`). Each becomes `## <heading>` + body. */
+  sections?: Array<{ heading: string; body: string }>;
 }
 
 /**
@@ -223,6 +226,10 @@ export function assembleSystemPrompt(
     if (matter !== null) {
       prompt += '\n\n## Current matter\n' + matter;
     }
+  }
+
+  for (const section of opts.sections ?? []) {
+    prompt += `\n\n## ${section.heading}\n` + section.body;
   }
 
   return prompt;
