@@ -15,7 +15,10 @@ import { DEFAULT_TENANT, isTerminal, type ModelProvider } from './core/types';
 import type { FakeScript } from './core/fake-provider';
 import { DEFAULT_STEP_TIMEOUT_MS, withStepTimeout } from './loop/counsel-loop';
 import { createInterface } from 'node:readline/promises';
-import { repoContentSource } from './content/repo';
+import { shippedContent } from './content/shipped';
+import { MANIFEST } from './content/manifest';
+import { isCompiled } from './core/embedded';
+import { ShippedContentError } from './content/guard';
 import { applyUpdates, contentStatus, renderContentStatus } from './content/update';
 import { counselHome } from './core/home';
 import { renderReport, runDoctor } from './doctor/index';
@@ -73,6 +76,10 @@ const { values, positionals } = parseArgs({
 
 const [cmd, ...rest] = positionals;
 
+/** The CLI as the user typed it: the binary's own name when compiled, the
+ * checkout invocation otherwise — so every usage line is copy-pasteable. */
+const SELF = isCompiled() ? 'counsel-os' : 'bun runtime/src/cli.ts';
+
 function usage(): never {
   console.error('usage: bun runtime/src/cli.ts step --vault <dir> --provider <id> [--task <name>] [--schema <json>] [--session <id>] [--codex-home <dir>] [--cwd <dir>] [--step-timeout <ms>] "<prompt>"');
   console.error('       bun runtime/src/cli.ts serve [--port <n>] [--vault <dir>] [--step-timeout <ms>] [--dist <dir>] [--open] [--new-token] [--fake [--fake-script <file.json>]]');
@@ -91,6 +98,8 @@ function usage(): never {
   console.error('       bun runtime/src/cli.ts docx apply <file.docx> <redlines.json> [--out <file>] [--track] [--author <name>] (the redline; result JSON to stdout, exit 2 on any skip)');
   console.error('       bun runtime/src/cli.ts docx compare <original.docx> <revised.docx> [--out <file>] [--author <name>] (tracked changes of revised against original)');
   console.error('       bun runtime/src/cli.ts docx rounds --ours <sent.docx> --theirs <returned.docx> [--base <round-n-1.docx>] [--format json|markdown] [--full-text]');
+  console.error(`       ${SELF} version                      (the runtime and its shipped content version)`);
+  console.error(`       ${SELF} mcp-stdio                    (the tools over MCP stdio — what the Codex tier spawns)`);
   process.exit(2);
 }
 
@@ -276,15 +285,24 @@ if (cmd === 'serve') {
       ...(values['default-provider'] === undefined ? {} : { 'default-provider': values['default-provider'] }),
       ...(values.yes === undefined ? {} : { yes: values.yes }),
     },
-    { content: repoContentSource(pluginRoot), home: counselHome(), pluginRoot },
+    { content: shippedContent(pluginRoot), home: counselHome(), pluginRoot },
   );
   process.exit(code);
 } else if (cmd === 'docx') {
   await docxCommand(rest[0], rest[1], rest[2]);
 } else if (cmd === 'update-content') {
   const vaultRoot = vaultForMaintenance();
-  const deps = { vaultRoot, content: repoContentSource(defaultPluginRoot()) };
-  const status = contentStatus(deps);
+  const deps = { vaultRoot, content: shippedContent(defaultPluginRoot()) };
+  let status: ReturnType<typeof contentStatus>;
+  try {
+    status = contentStatus(deps);
+  } catch (err) {
+    if (err instanceof ShippedContentError) {
+      console.error(err.message);
+      process.exit(1);
+    }
+    throw err;
+  }
   console.log(renderContentStatus(status));
   const pending = status.items.filter(i => i.applicable).map(i => i.path);
   if (pending.length === 0 || values['dry-run']) process.exit(0);
@@ -328,7 +346,7 @@ if (cmd === 'serve') {
       tenant: DEFAULT_TENANT,
       vaultRoot,
       pluginRoot,
-      content: repoContentSource(pluginRoot),
+      content: shippedContent(pluginRoot),
       vault,
       store,
       providers: loaded.providers,
@@ -342,6 +360,14 @@ if (cmd === 'serve') {
     if (isTerminal(ev)) exit = ev.type === 'done' ? 0 : 1;
   }
   process.exit(exit);
+} else if (cmd === 'version') {
+  console.log(`counsel-os ${MANIFEST.version} (content ${MANIFEST.version}, ${Object.keys(MANIFEST.files).length} shipped files${isCompiled() ? ', compiled' : ', from a checkout'})`);
+  process.exit(0);
+} else if (cmd === 'mcp-stdio') {
+  // The Codex tier's MCP bridge, as a subcommand so the compiled binary can
+  // re-exec itself (packaging spec §3.3). The module serves until stdin
+  // closes; nothing here returns.
+  await import('./mcp/stdio');
 } else if (cmd === 'doctor') {
   const vaultRoot = vaultForMaintenance();
   const report = runDoctor({ vaultRoot, pluginRoot: defaultPluginRoot() });
@@ -355,7 +381,9 @@ async function step(): Promise<void> {
   if (cmd !== 'step' || !values.vault || !values.provider || rest.length === 0) usage();
 
   const vaultRoot = resolve(values.vault);
-  const repoRoot = resolve(import.meta.dir, '../..');
+  // In the compiled binary there is no repo beside the executable; the
+  // scripts-based tools are not registered there (`builtinTools`).
+  const repoRoot = isCompiled() ? process.cwd() : resolve(import.meta.dir, '../..');
   const store = new FsVaultStore(vaultRoot, { search: fsSearch() });
   const registry = new ToolRegistry();
   for (const t of builtinTools({ vaultRoot, repoRoot })) registry.register(t);

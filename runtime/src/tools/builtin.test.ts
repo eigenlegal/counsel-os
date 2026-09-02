@@ -1,19 +1,21 @@
 import { describe, expect, test } from 'bun:test';
-import { join } from 'node:path';
-import { builtinTools, docketSweepArgs } from './builtin';
+import { builtinTools } from './builtin';
 
 describe('builtinTools', () => {
-  test('returns docket_sweep, available on all four platforms', () => {
+  test('returns docket_sweep, in TypeScript, available on all four platforms', () => {
     const tools = builtinTools({ vaultRoot: '/tmp/v', repoRoot: '/tmp/repo' });
     const sweep = tools.find(t => t.name === 'docket_sweep');
     expect(sweep).toBeDefined();
     expect([...sweep!.platforms].sort()).toEqual(['hosted', 'linux', 'macos', 'windows']);
+    expect(sweep!.inputSchema.parse({})).toEqual({ days: 60 });
+    expect(sweep!.description).toContain('deadlines');
   });
 
-  test('the six TypeScript docx tools plus the two remaining scripts', () => {
-    const tools = builtinTools({ vaultRoot: '/tmp/v', repoRoot: '/tmp/repo' });
-    const names = tools.map(t => t.name).sort();
-    expect(names).toEqual(['apply_redlines', 'check_document', 'clean_format', 'diff_rounds', 'docket_sweep', 'docx_compare', 'docx_read', 'extract_redlines']);
+  test('the six TypeScript docx tools plus clean_format in a checkout; no clean_format in the binary', () => {
+    const checkout = builtinTools({ vaultRoot: '/tmp/v', repoRoot: '/tmp/repo', compiled: false }).map(t => t.name).sort();
+    expect(checkout).toEqual(['apply_redlines', 'check_document', 'clean_format', 'diff_rounds', 'docket_sweep', 'docx_compare', 'docx_read', 'extract_redlines']);
+    const binary = builtinTools({ vaultRoot: '/tmp/v', repoRoot: '/tmp/repo', compiled: true }).map(t => t.name).sort();
+    expect(binary).toEqual(['apply_redlines', 'check_document', 'diff_rounds', 'docket_sweep', 'docx_compare', 'docx_read', 'extract_redlines']);
   });
 
   test('apply_redlines is the TypeScript tool: vault-relative paths, items or edits, no subprocess', () => {
@@ -53,8 +55,24 @@ describe('builtinTools', () => {
   });
 });
 
-describe('docketSweepArgs', () => {
-  test('builds the subprocess args from vaultRoot and days', () => {
-    expect(docketSweepArgs('/tmp/v', 30)).toEqual([join('/tmp/v', 'matters'), '--window', '30', '--format', 'json']);
+describe('docket_sweep over a vault', () => {
+  test('classifies the deadlines inside the window and counts the rest', async () => {
+    const { mkdtempSync, mkdirSync, writeFileSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    const vault = mkdtempSync(join(tmpdir(), 'docket-tool-'));
+    mkdirSync(join(vault, 'matters'), { recursive: true });
+    writeFileSync(join(vault, 'config.md'), 'counsel-os-config: true\nlegal_root: .\n', 'utf8');
+    writeFileSync(
+      join(vault, 'matters', 'acme.md'),
+      '---\ncounsel-os-type: matter\ntitle: Acme\ndeadlines:\n  - date: 2020-01-01\n    action: overdue thing\n  - date: 2999-01-01\n    action: far away\n  - date: not-a-date\n    action: broken\n---\n# Acme\n',
+      'utf8',
+    );
+    const sweep = builtinTools({ vaultRoot: vault, repoRoot: '/tmp/repo' }).find(t => t.name === 'docket_sweep')!;
+    const out = (await sweep.execute({ days: 60 }, { tenant: 'default', platform: 'macos' } as never)) as { deadlines: Array<{ action: string; status: string; daysUntil: number }>; later: number; skipped: number };
+    expect(out.deadlines.map(d => [d.action, d.status])).toEqual([['overdue thing', 'overdue']]);
+    expect(out.deadlines[0]!.daysUntil).toBeLessThan(0);
+    expect(out.later).toBe(1);
+    expect(out.skipped).toBe(1);
   });
 });

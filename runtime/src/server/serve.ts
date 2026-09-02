@@ -2,7 +2,9 @@ import { randomBytes } from 'node:crypto';
 import { readFileSync, realpathSync, rmSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve, sep } from 'node:path';
-import { repoContentSource } from '../content/repo';
+import { shippedContent } from '../content/shipped';
+import { embeddedUi, isCompiled } from '../core/embedded';
+import type { StaticSource } from './static';
 import { autoApplyLawUpdates } from '../content/update';
 import { writeFileAtomic } from '../core/atomic-write';
 import { counselHome } from '../core/home';
@@ -47,8 +49,8 @@ export interface StartServerOptions {
   fake?: FakeScript[];
   /** Launch the token URL in the operator's browser once the server is up. */
   open?: boolean;
-  /** The built UI's `dist/`. Omitted → `defaultDistDir()`. */
-  distDir?: string;
+  /** The built UI: a `dist/` directory (or the embedded set). Omitted → `defaultUi()`. */
+  distDir?: string | StaticSource;
   /** Mint a fresh bearer even when `runtime.json` holds one. Every browser
    * signed in with the old one is signed out. */
   newToken?: boolean;
@@ -122,6 +124,18 @@ export function defaultPluginRoot(env: NodeJS.ProcessEnv = process.env): string 
  */
 export function defaultDistDir(): string {
   return resolve(import.meta.dir, '../../..', 'runtime', 'ui', 'dist');
+}
+
+/**
+ * The UI this runtime serves (packaging spec §3.2): the embedded set in the
+ * compiled binary, the built `dist/` directory in a checkout. `--dist` still
+ * overrides either — a developer pointing the binary at a fresh build.
+ */
+export function defaultUi(): string | StaticSource {
+  const ui = embeddedUi();
+  if (ui !== null) return { kind: 'embedded', files: ui.files };
+  if (isCompiled()) throw new Error('this counsel-os binary has no embedded UI — a build error; rebuild with `bun run build:runtime`');
+  return defaultDistDir();
 }
 
 /**
@@ -368,8 +382,8 @@ export function runtimeState(opts: RuntimeStateOptions): RuntimeHandle {
 export async function startServer(opts: StartServerOptions = {}): Promise<RunningServer> {
   const env = opts.env ?? process.env;
   const pluginRoot = opts.pluginRoot ?? defaultPluginRoot(env);
-  const distDir = opts.distDir ?? defaultDistDir();
-  const content = repoContentSource(pluginRoot);
+  const distDir: string | StaticSource = opts.distDir ?? defaultUi();
+  const content = shippedContent(pluginRoot);
   // `--fake` puts the canned provider in front of the registry's own, as an
   // override rather than a config change: nothing is written to
   // `providers.yaml`, so the operator's real setup is untouched.
@@ -387,7 +401,7 @@ export async function startServer(opts: StartServerOptions = {}): Promise<Runnin
   const buildApp = (vault: string): App => {
     // Before anything is served from it: a dist that overlaps the vault is
     // a config mistake that would serve the vault without a token.
-    assertDistOutsideVault(distDir, vault);
+    if (typeof distDir === 'string') assertDistOutsideVault(distDir, vault);
     const runtime = runtimeState({
       vaultRoot: vault,
       env,

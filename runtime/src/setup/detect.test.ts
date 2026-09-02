@@ -129,3 +129,19 @@ describe('probeProviders', () => {
     expect(rows[2]!.state).toBe('not installed');
   });
 });
+
+
+describe('probeProviders — the located CLI path (packaging spec §3.4)', () => {
+  test('a found CLI is reported with its path; a missing one has none', async () => {
+    const { mkdtempSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const home = mkdtempSync(join(tmpdir(), 'probe-home-'));
+    const probes = await probeProviders({ home, env: { HOME: home, PATH: '/nowhere' }, which: name => (name === 'claude' ? '/opt/homebrew/bin/claude' : null), exists: () => false, readText: () => null, fetch: (async () => { throw new Error('refused'); }) as unknown as typeof fetch });
+    const claude = probes.find(p => p.vendor === 'Claude')!;
+    const codex = probes.find(p => p.vendor === 'ChatGPT')!;
+    expect(claude.installed).toBe(true);
+    expect(claude.path).toBe('/opt/homebrew/bin/claude');
+    expect(codex.installed).toBe(false);
+    expect(codex.path).toBeUndefined();
+  });
+});

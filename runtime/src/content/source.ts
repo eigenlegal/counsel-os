@@ -49,12 +49,17 @@ export function isShippedPath(path: string): boolean {
 }
 
 /**
- * The seam the binary build wires later: a compiled runtime answers with
- * the embedded source, a checkout with the repo source. Only the repo half
- * exists in this stage; `compiled: true` is a loud error rather than a
- * silent fallback to files that would not be there.
+ * The seam the binary build wires (packaging spec §3.2): a compiled runtime
+ * answers with the embedded source the generated entry registered, a
+ * checkout with the repo source. A compiled binary whose entry registered
+ * nothing is a build error and says so — never a silent fallback to a disk
+ * that has nothing at the checkout's paths.
  */
-export function contentSourceFor(opts: { compiled: boolean; pluginRoot: string; repo: (pluginRoot: string) => ContentSource }): ContentSource {
-  if (opts.compiled) throw new Error('embedded content source is not wired yet (spec §3, §10 step 7)');
+export function contentSourceFor(opts: { compiled: boolean; pluginRoot: string; repo: (pluginRoot: string) => ContentSource; embedded?: () => ContentSource | null }): ContentSource {
+  if (opts.compiled) {
+    const embedded = opts.embedded?.() ?? null;
+    if (embedded === null) throw new Error('this counsel-os binary has no embedded content — a build error; rebuild with `bun run build:runtime`');
+    return embedded;
+  }
   return opts.repo(opts.pluginRoot);
 }

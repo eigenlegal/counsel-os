@@ -1,4 +1,5 @@
 import { mkdtempSync, rmSync } from 'node:fs';
+import { locatedCli } from './cli-locate';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { z, type ZodType } from 'zod';
@@ -101,10 +102,15 @@ export function abortControllerFor(signal: AbortSignal | undefined): AbortContro
  * `createSdkMcpServer`'s call site); it's cast to `McpServerConfig` because
  * that's the shape `Options.mcpServers` actually wants.
  */
-export function buildQueryOptions(req: StepRequest, model: string, server: unknown, cwd: string, base: NodeJS.ProcessEnv = process.env): Options {
+export function buildQueryOptions(req: StepRequest, model: string, server: unknown, cwd: string, base: NodeJS.ProcessEnv = process.env, claudePath: string | undefined = locatedCli('claude')): Options {
   const abortController = abortControllerFor(req.signal);
   return {
     model,
+    // The user's own `claude` CLI (packaging spec §3.4). Without this the
+    // SDK resolves its bundled binary through `node_modules`, which the
+    // compiled counsel-os binary does not carry; with it, the SDK spawns the
+    // path it is given and never looks.
+    ...(claudePath === undefined ? {} : { pathToClaudeCodeExecutable: claudePath }),
     // The step's cancellation: an aborted query stops the CLI child process
     // rather than leaving it running with nobody reading it.
     ...(abortController ? { abortController } : {}),

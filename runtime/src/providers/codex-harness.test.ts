@@ -427,3 +427,17 @@ describe('CodexHarnessProvider.run — resume precondition', () => {
     expect(events).toEqual([{ type: 'error', message: 'codex harness: resuming a thread requires a persistent homeDir' }]);
   });
 });
+
+
+describe('buildCodexConfig — the located CLI and the bridge command (packaging spec §3.3–3.4)', () => {
+  test('a located codex becomes codexPathOverride; none leaves the SDK to its own resolution', () => {
+    const cfg = buildCodexConfig({ vaultRoot: '/v', tenant: 'default', codexPath: '/opt/homebrew/bin/codex', mcp: { command: 'bun', args: ['/x/stdio.ts'] } });
+    expect((cfg as { codexPathOverride?: string }).codexPathOverride).toBe('/opt/homebrew/bin/codex');
+    expect(cfg.config?.mcp_servers).toMatchObject({ counsel: { command: 'bun', args: ['/x/stdio.ts'] } });
+  });
+
+  test('the compiled bridge is the binary re-exec', () => {
+    const cfg = buildCodexConfig({ vaultRoot: '/v', tenant: 'default', mcp: { command: '/Applications/counsel-os', args: ['mcp-stdio'] } });
+    expect(cfg.config?.mcp_servers).toMatchObject({ counsel: { command: '/Applications/counsel-os', args: ['mcp-stdio'] } });
+  });
+});
