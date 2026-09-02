@@ -22,30 +22,32 @@ The runtime speaks to two subscriptions (Claude, ChatGPT) and three API shapes (
 
 ## 3. The vendor catalog
 
-`runtime/src/providers/vendors.ts` replaces the allowlist in `registry.ts`. One record per id prefix:
+`runtime/src/providers/vendors.ts` replaces the allowlist in `registry.ts`. Two layers, so that adding a host is a data row, not code:
+
+**Layer A — SDK-native vendors.** One record per id prefix with a `make` factory from the vendor's official AI SDK package: `claude-sub`, `codex-sub` (harness tiers), `anthropic`, `openai`, `google`, `mistral`, `groq`, `xai`, `deepseek`, `cohere`, `perplexity`, `togetherai`, `fireworks`, `deepinfra`, `cerebras`, `openrouter`, `ollama`, and the bare `openai-compatible` shape. `google-vertex` is deferred with Azure and Bedrock (its auth is a cloud credential, not a key).
+
+**Layer B — OpenAI-compatible presets.** Data rows over the `openai-compatible` provider: prefix, name, base URL, key label, where to get a key, terms URL, locality. Hosted: `moonshot` (Kimi, `https://api.moonshot.ai/v1`), `zhipu` (GLM, `https://api.z.ai/api/paas/v4/`; China keys use `https://open.bigmodel.cn/api/paas/v4`), `dashscope` (Qwen, `https://dashscope-us.aliyuncs.com/compatible-mode/v1`, per-region keys), `sambanova` (`https://api.sambanova.ai/v1`, unverified), `baseten` (`https://inference.baseten.co/v1`), `huggingface` (`https://router.huggingface.co/v1`), `cloudflare` (`https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1`, a template the user completes), `replicate` (unverified: no OpenAI-compatible chat endpoint was found in its docs). Local: `lmstudio` (`:1234`), `llamacpp` (`:8080`), `vllm` (`:8000`), `mlx` (`:8080`, `mlx_lm.server`), `jan` (`:1337`), `gpt4all` (`:4891`), all `/v1` on `127.0.0.1` and local regardless of URL form. A preset id such as `moonshot/kimi-k2` resolves to an OpenAI-compatible provider at the preset's base URL unless the entry names its own; a bare `openai-compatible/<name>` with its own base URL still works. A row the author could not verify against the vendor's docs carries `unverified: true` and the UI says so.
 
 ```ts
 interface Vendor {
-  prefix: string;                   // 'google', 'openrouter', …
-  name: string;                     // 'Google', 'OpenRouter'
-  kind: 'direct' | 'harness';
+  prefix: string; name: string; kind: 'direct' | 'harness'; layer: 'sdk' | 'preset';
+  group: 'subscription' | 'local' | 'hosted';
   auth: 'apikey' | 'local' | 'subscription' | 'azure' | 'sigv4';
-  locality: 'local' | 'cloud';      // openai-compatible: derived from baseURL (loopback = local)
+  locality: 'local' | 'cloud' | 'by-baseURL';      // the bare shape follows its base URL (loopback = local)
   handles: { company: string; termsUrl: string } | null;   // who receives the text
-  keyLabel?: string;                // 'API key', 'Bearer token'
-  help: { getKey?: string; install?: string };             // the vendor's own page / command
-  models: 'list' | 'curated';       // discovery method
-  curated?: Array<{ id: string; contextTokens: number }>;  // Anthropic
-  capabilities: Capabilities;       // defaults; a listed model may refine contextTokens
-  make(creds, entry): LanguageModel; // the AI SDK factory: createGoogleGenerativeAI({ apiKey }) …
-  list?(creds, entry): Promise<Array<{ id: string; contextTokens?: number }>>;
+  keyEnv?: string; keyLabel?: string; help: { getKey?: string; install?: string; note?: string };
+  models: 'list' | 'curated' | 'none'; curated?: Array<{ id: string; contextTokens: number }>;
+  openModels?: Array<{ family: string; why: string }>;     // Ollama: starting points, not a ranking
+  capabilities: Capabilities;
+  make?(opts): LanguageModel;                              // the AI SDK factory with an explicit key
+  defaultBaseURL?: string; baseURLFields?: string[]; requiresBaseURL?: boolean; unverified?: boolean;
 }
 ```
 
-- Packages: `@ai-sdk/google`, `@ai-sdk/mistral`, `@ai-sdk/groq`, `@ai-sdk/xai`, `@openrouter/ai-sdk-provider` (step 1); `@ai-sdk/azure`, `@ai-sdk/amazon-bedrock` (step 5). All compatible with the installed `ai` 7 line.
 - `direct.ts` stops using the SDKs' module-level providers: every vendor is built through its `create…({ apiKey, baseURL })` with the key the runtime resolved (§5). `anthropic/*` and `openai/*` therefore honour app-entered keys, which they silently do not today.
-- `Capabilities` gains `locality`. The router's "is this remote" test uses it, not `auth`. An OpenAI-compatible provider whose base URL is loopback is local.
-- The plate humanizer (`plate.ts`) and the UI's vendor names come from the catalog, so the rail footer, the switcher, Settings, and the first-run screen agree on every name.
+- `Capabilities` gains `locality`. The router's "is this remote" test uses it, not `auth`. An OpenAI-compatible provider whose base URL is loopback is local; a local preset is local by construction.
+- The Ollama row carries a short `openModels` shortlist (Qwen3, Llama 4, gpt-oss, Gemma, DeepSeek-R1 distills, Mistral Small: tool use and long context) for the first-run hint and Settings, phrased as good starting points; the scoreboard (phase 2) ranks them for the practice's work.
+- The plate humanizer (`plate.ts`) and the UI's vendor names come from a mirrored catalog, so the rail footer, the switcher, Settings, and the first-run screen agree on every name. Settings adds providers through one grouped picker (Subscriptions · Local runners · Hosted API) driven by the catalog, not one button per vendor.
 
 ## 4. Discovery
 

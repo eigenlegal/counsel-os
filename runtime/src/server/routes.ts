@@ -25,8 +25,7 @@ import {
   testProvider,
   TestBody,
   type RuntimeState,
-  type SettingsDeps,
-} from './settings';
+  type SettingsDeps, providerView } from './settings';
 import { sseFromEvents, type StreamEvent } from './sse';
 import { serveStatic, type StaticSource } from './static';
 
@@ -394,12 +393,7 @@ export function createApp(deps: ServerDeps): App {
       setup: false,
       vault: deps.vaultRoot,
       tenant: deps.tenant,
-      providers: state.providers.map(p => ({
-        id: p.id,
-        kind: p.kind,
-        auth: p.capabilities.auth,
-        capabilities: p.capabilities,
-      })),
+      providers: state.providers.map(p => providerView(p)),
       default: effectiveDefault(state),
       // What a step on this runtime actually gets, not what was configured:
       // an operator reading /health wants the effective number.

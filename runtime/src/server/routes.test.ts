@@ -1549,3 +1549,22 @@ describe('matter privacy policy over HTTP (providers spec §7)', () => {
     expect(events.find(e => e['t'] === 'step')?.['provider']).toBe('ollama/l');
   });
 });
+
+describe('providers carry their locality and handles (providers spec §6)', () => {
+  test('/health and /settings say where the text goes and who receives it', async () => {
+    const app = appWithFake();
+    const health = (await (await call(app, 'GET', '/health')).json()) as { providers: Array<{ id: string; locality: string; handles: { company: string; termsUrl: string } | null }> };
+    const fake = health.providers.find(p => p.id === 'fake/fake')!;
+    // The fake provider runs in this process: local, nobody receives the text.
+    expect(fake.locality).toBe('local');
+    expect(fake.handles).toBeNull();
+    const claude = health.providers.find(p => p.id.startsWith('claude-sub/'));
+    if (claude !== undefined) {
+      expect(claude.locality).toBe('cloud');
+      expect(claude.handles?.company).toBe('Anthropic');
+      expect(claude.handles?.termsUrl.startsWith('https://')).toBe(true);
+    }
+    const settings = (await (await call(app, 'GET', '/settings')).json()) as { effective: { providers: Array<{ id: string; locality: string }> } };
+    expect(settings.effective.providers.find(p => p.id === 'fake/fake')?.locality).toBe('local');
+  });
+});

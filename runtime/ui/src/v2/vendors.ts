@@ -1,0 +1,178 @@
+/**
+ * The vendor catalog, as the UI knows it. COPIED from
+ * `runtime/src/providers/vendors.ts` (two layers: SDK-native vendors and
+ * OpenAI-compatible presets; names, connections, localities, who receives
+ * the text, key variables, groups); a change there is a change here. The
+ * plate, the switcher, Settings' rows and picker, and the first-run screen
+ * all read this one table, and `/health`'s `locality`/`handles` win over it
+ * when present.
+ */
+import type { ProviderInfo } from '../api/types';
+
+export type Locality = 'local' | 'cloud';
+export type VendorGroup = 'subscription' | 'local' | 'hosted';
+
+export interface VendorRow {
+  prefix: string;
+  /** The vendor's name on the plate. */
+  name: string;
+  /** What the picker shows when the name alone is ambiguous. */
+  label?: string;
+  group: VendorGroup;
+  connection: 'subscription' | 'API key' | 'local';
+  locality: Locality | 'by-baseURL';
+  /** Who receives the text (cloud vendors only). */
+  company?: string;
+  termsUrl?: string;
+  /** The usual environment variable for the key (until the Keychain, step 2). */
+  keyEnv?: string;
+  keyLabel?: string;
+  getKey?: string;
+  /** A preset's base URL, prefilled on the row. */
+  baseURL?: string;
+  /** Fields the user must fill in the base URL. */
+  baseURLFields?: string[];
+  /** One sentence for the picker and the first-run hints. */
+  note?: string;
+  /** The base URL was not confirmed against the vendor's docs. */
+  unverified?: boolean;
+}
+
+const S = 'subscription' as const;
+const L = 'local' as const;
+const H = 'hosted' as const;
+
+export const VENDORS: readonly VendorRow[] = [
+  // subscriptions
+  { prefix: 'claude-sub', name: 'Claude', group: S, connection: 'subscription', locality: 'cloud', company: 'Anthropic', termsUrl: 'https://www.anthropic.com/legal/consumer-terms' },
+  { prefix: 'codex-sub', name: 'ChatGPT', group: S, connection: 'subscription', locality: 'cloud', company: 'OpenAI', termsUrl: 'https://openai.com/policies/terms-of-use' },
+  { prefix: 'codex', name: 'ChatGPT', group: S, connection: 'subscription', locality: 'cloud', company: 'OpenAI', termsUrl: 'https://openai.com/policies/terms-of-use' },
+  // local runners
+  { prefix: 'ollama', name: 'Ollama', group: L, connection: 'local', locality: 'local', note: 'Finish the id with a model from `ollama list`.' },
+  { prefix: 'lmstudio', name: 'LM Studio', group: L, connection: 'local', locality: 'local', baseURL: 'http://127.0.0.1:1234/v1' },
+  { prefix: 'llamacpp', name: 'llama.cpp server', group: L, connection: 'local', locality: 'local', baseURL: 'http://127.0.0.1:8080/v1' },
+  { prefix: 'vllm', name: 'vLLM', group: L, connection: 'local', locality: 'local', baseURL: 'http://127.0.0.1:8000/v1' },
+  { prefix: 'mlx', name: 'MLX (mlx_lm.server)', group: L, connection: 'local', locality: 'local', baseURL: 'http://127.0.0.1:8080/v1' },
+  { prefix: 'jan', name: 'Jan', group: L, connection: 'local', locality: 'local', baseURL: 'http://127.0.0.1:1337/v1' },
+  { prefix: 'gpt4all', name: 'GPT4All', group: L, connection: 'local', locality: 'local', baseURL: 'http://127.0.0.1:4891/v1' },
+  { prefix: 'openai-compatible', name: 'OpenAI-compatible', label: 'Other OpenAI-compatible server', group: L, connection: 'API key', locality: 'by-baseURL', note: 'Any server that speaks the OpenAI API; give its base URL.' },
+  // hosted API
+  { prefix: 'anthropic', name: 'Claude', label: 'Claude (API key)', group: H, connection: 'API key', locality: 'cloud', company: 'Anthropic', termsUrl: 'https://www.anthropic.com/legal/commercial-terms', keyEnv: 'ANTHROPIC_API_KEY', getKey: 'https://console.anthropic.com/settings/keys' },
+  { prefix: 'openai', name: 'OpenAI', group: H, connection: 'API key', locality: 'cloud', company: 'OpenAI', termsUrl: 'https://openai.com/policies/business-terms', keyEnv: 'OPENAI_API_KEY', getKey: 'https://platform.openai.com/api-keys' },
+  { prefix: 'google', name: 'Google', label: 'Google Gemini', group: H, connection: 'API key', locality: 'cloud', company: 'Google', termsUrl: 'https://ai.google.dev/gemini-api/terms', keyEnv: 'GOOGLE_GENERATIVE_AI_API_KEY', getKey: 'https://aistudio.google.com/apikey' },
+  { prefix: 'mistral', name: 'Mistral', group: H, connection: 'API key', locality: 'cloud', company: 'Mistral AI', termsUrl: 'https://mistral.ai/terms', keyEnv: 'MISTRAL_API_KEY', getKey: 'https://console.mistral.ai/api-keys' },
+  { prefix: 'groq', name: 'Groq', group: H, connection: 'API key', locality: 'cloud', company: 'Groq', termsUrl: 'https://groq.com/terms-of-use', keyEnv: 'GROQ_API_KEY', getKey: 'https://console.groq.com/keys' },
+  { prefix: 'xai', name: 'xAI', group: H, connection: 'API key', locality: 'cloud', company: 'xAI', termsUrl: 'https://x.ai/legal/terms-of-service-enterprise', keyEnv: 'XAI_API_KEY', getKey: 'https://console.x.ai' },
+  { prefix: 'deepseek', name: 'DeepSeek', group: H, connection: 'API key', locality: 'cloud', company: 'DeepSeek', termsUrl: 'https://platform.deepseek.com/', keyEnv: 'DEEPSEEK_API_KEY', getKey: 'https://platform.deepseek.com/api_keys' },
+  { prefix: 'cohere', name: 'Cohere', group: H, connection: 'API key', locality: 'cloud', company: 'Cohere', termsUrl: 'https://cohere.com/terms-of-use', keyEnv: 'COHERE_API_KEY', getKey: 'https://dashboard.cohere.com/api-keys' },
+  { prefix: 'perplexity', name: 'Perplexity', group: H, connection: 'API key', locality: 'cloud', company: 'Perplexity', termsUrl: 'https://www.perplexity.ai/hub/legal/terms-of-service', keyEnv: 'PERPLEXITY_API_KEY', getKey: 'https://www.perplexity.ai/settings/api' },
+  { prefix: 'togetherai', name: 'Together AI', group: H, connection: 'API key', locality: 'cloud', company: 'Together AI', termsUrl: 'https://www.together.ai/terms-of-service', keyEnv: 'TOGETHER_AI_API_KEY', getKey: 'https://api.together.ai/settings/api-keys' },
+  { prefix: 'fireworks', name: 'Fireworks', group: H, connection: 'API key', locality: 'cloud', company: 'Fireworks AI', termsUrl: 'https://fireworks.ai/terms-of-service', keyEnv: 'FIREWORKS_API_KEY', getKey: 'https://fireworks.ai/account/api-keys' },
+  { prefix: 'deepinfra', name: 'DeepInfra', group: H, connection: 'API key', locality: 'cloud', company: 'DeepInfra', termsUrl: 'https://deepinfra.com/terms', keyEnv: 'DEEPINFRA_API_KEY', getKey: 'https://deepinfra.com/dash/api_keys' },
+  { prefix: 'cerebras', name: 'Cerebras', group: H, connection: 'API key', locality: 'cloud', company: 'Cerebras', termsUrl: 'https://www.cerebras.ai/terms-of-service', keyEnv: 'CEREBRAS_API_KEY', getKey: 'https://cloud.cerebras.ai/platform' },
+  { prefix: 'openrouter', name: 'OpenRouter', group: H, connection: 'API key', locality: 'cloud', company: 'OpenRouter (and the model’s vendor)', termsUrl: 'https://openrouter.ai/terms', keyEnv: 'OPENROUTER_API_KEY', getKey: 'https://openrouter.ai/keys', note: 'One key, many models.' },
+  { prefix: 'moonshot', name: 'Kimi (Moonshot)', group: H, connection: 'API key', locality: 'cloud', company: 'Moonshot AI', termsUrl: 'https://platform.kimi.ai/', keyEnv: 'MOONSHOT_API_KEY', getKey: 'https://platform.kimi.ai/console/api-keys', baseURL: 'https://api.moonshot.ai/v1' },
+  { prefix: 'zhipu', name: 'GLM (Z.ai / Zhipu)', group: H, connection: 'API key', locality: 'cloud', company: 'Z.ai (Zhipu)', termsUrl: 'https://docs.z.ai/', keyEnv: 'ZAI_API_KEY', getKey: 'https://z.ai/manage-apikey/apikey-list', baseURL: 'https://api.z.ai/api/paas/v4/', note: 'International endpoint; China keys use https://open.bigmodel.cn/api/paas/v4.' },
+  { prefix: 'dashscope', name: 'Qwen (Alibaba Model Studio)', group: H, connection: 'API key', locality: 'cloud', company: 'Alibaba Cloud', termsUrl: 'https://www.alibabacloud.com/help/en/model-studio/', keyEnv: 'DASHSCOPE_API_KEY', getKey: 'https://modelstudio.console.alibabacloud.com/', baseURL: 'https://dashscope-us.aliyuncs.com/compatible-mode/v1', note: 'US region; keys are per region.' },
+  { prefix: 'sambanova', name: 'SambaNova', group: H, connection: 'API key', locality: 'cloud', company: 'SambaNova', termsUrl: 'https://sambanova.ai/terms', keyEnv: 'SAMBANOVA_API_KEY', getKey: 'https://cloud.sambanova.ai/', baseURL: 'https://api.sambanova.ai/v1', unverified: true },
+  { prefix: 'baseten', name: 'Baseten', group: H, connection: 'API key', locality: 'cloud', company: 'Baseten', termsUrl: 'https://www.baseten.co/terms-of-service', keyEnv: 'BASETEN_API_KEY', getKey: 'https://app.baseten.co/settings/api_keys', baseURL: 'https://inference.baseten.co/v1' },
+  { prefix: 'huggingface', name: 'Hugging Face', group: H, connection: 'API key', locality: 'cloud', company: 'Hugging Face (and the inference provider it routes to)', termsUrl: 'https://huggingface.co/terms-of-service', keyEnv: 'HF_TOKEN', keyLabel: 'Access token', getKey: 'https://huggingface.co/settings/tokens', baseURL: 'https://router.huggingface.co/v1', note: 'One token, many open models.' },
+  { prefix: 'cloudflare', name: 'Cloudflare Workers AI', group: H, connection: 'API key', locality: 'cloud', company: 'Cloudflare', termsUrl: 'https://www.cloudflare.com/terms/', keyEnv: 'CLOUDFLARE_API_TOKEN', keyLabel: 'API token', getKey: 'https://dash.cloudflare.com/profile/api-tokens', baseURL: 'https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1', baseURLFields: ['account_id'] },
+  { prefix: 'replicate', name: 'Replicate', group: H, connection: 'API key', locality: 'cloud', company: 'Replicate', termsUrl: 'https://replicate.com/terms', keyEnv: 'REPLICATE_API_TOKEN', keyLabel: 'API token', getKey: 'https://replicate.com/account/api-tokens', baseURL: 'https://api.replicate.com/v1', unverified: true },
+];
+
+/** Good starting points for a local model; the scoreboard (phase 2) will
+ * rank them for your work. COPIED from the runtime's `OPEN_MODELS`. */
+export const OPEN_MODELS: ReadonlyArray<{ family: string; why: string }> = [
+  { family: 'Qwen3', why: 'tool use, long context, strong on structured drafting' },
+  { family: 'Llama 4', why: 'tool use, very long context' },
+  { family: 'gpt-oss', why: 'tool use, reasoning, permissive licence' },
+  { family: 'Gemma', why: 'small and quick; fine for search and summaries' },
+  { family: 'DeepSeek-R1 distills', why: 'reasoning on modest hardware' },
+  { family: 'Mistral Small', why: 'tool use, European vendor' },
+];
+
+export const GROUP_LABELS: Record<VendorGroup, string> = { subscription: 'Subscriptions', local: 'Local runners', hosted: 'Hosted API' };
+
+const LOOPBACK = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);
+
+export function isLoopbackURL(raw: string | undefined): boolean {
+  if (raw === undefined || raw === '') return false;
+  try {
+    return LOOPBACK.has(new URL(raw).hostname);
+  } catch {
+    return false;
+  }
+}
+
+export function prefixOf(id: string): string {
+  const slash = id.indexOf('/');
+  return slash === -1 ? id : id.slice(0, slash);
+}
+
+export function vendorFor(prefix: string): VendorRow | undefined {
+  return VENDORS.find(v => v.prefix === prefix);
+}
+
+/** The rows a lawyer can ADD from Settings (the subscriptions are built in
+ * and never added; `codex` is a legacy spelling). */
+export function addableVendors(): VendorRow[] {
+  return VENDORS.filter(v => v.group !== 'subscription');
+}
+
+/** The picker's option text: `<Group> · <Name>`, so typing either finds it. */
+export function pickerLabel(v: VendorRow): string {
+  return `${GROUP_LABELS[v.group]} · ${v.label ?? v.name}`;
+}
+
+export function vendorByPickerLabel(label: string): VendorRow | undefined {
+  const wanted = label.trim().toLowerCase();
+  return addableVendors().find(v => pickerLabel(v).toLowerCase() === wanted || (v.label ?? v.name).toLowerCase() === wanted || v.name.toLowerCase() === wanted || v.prefix === wanted);
+}
+
+/** The hosted vendors a key unlocks, for the first-run sentence — OpenRouter
+ * last (spec §12), the ones with base URLs still unverified left out. */
+export function keyedHints(): string[] {
+  const hosted = addableVendors().filter(v => v.group === 'hosted' && v.unverified !== true && v.prefix !== 'openai' && v.prefix !== 'anthropic');
+  const names = hosted.filter(v => v.prefix !== 'openrouter').map(v => v.label ?? v.name);
+  names.push('OpenRouter — one key, many models');
+  return names;
+}
+
+export interface DataLine {
+  locality: Locality;
+  /** `local · nothing leaves this machine` or `cloud · text goes to <Company>`. */
+  text: string;
+  /** The vendor's terms, when there is a company to read them from. */
+  termsUrl: string | null;
+}
+
+/**
+ * The data-handling line (providers spec §6) for a provider id and base URL,
+ * from the table alone. `/health` carries the runtime's own answer; prefer
+ * `dataLineOf` with it when it is in hand.
+ */
+export function dataLineFor(id: string, baseURL?: string): DataLine | null {
+  const vendor = vendorFor(prefixOf(id));
+  if (vendor === undefined) return null;
+  const locality: Locality = vendor.locality === 'by-baseURL' ? (isLoopbackURL(baseURL) ? 'local' : 'cloud') : vendor.locality;
+  if (locality === 'local') return { locality, text: 'local · nothing leaves this machine', termsUrl: null };
+  let company = vendor.company;
+  if (company === undefined) {
+    try {
+      company = new URL(baseURL ?? '').host;
+    } catch {
+      company = undefined;
+    }
+  }
+  return { locality, text: `cloud · text goes to ${company ?? 'the server you named'}`, termsUrl: vendor.termsUrl ?? null };
+}
+
+/** The same line from `/health`'s word, falling back to the table. */
+export function dataLineOf(info: ProviderInfo | undefined, id: string): DataLine | null {
+  if (info === undefined || info.locality === undefined) return dataLineFor(id);
+  if (info.locality === 'local') return { locality: 'local', text: 'local · nothing leaves this machine', termsUrl: null };
+  const company = info.handles?.company ?? vendorFor(prefixOf(id))?.company ?? 'the server you named';
+  const termsUrl = info.handles?.termsUrl ?? vendorFor(prefixOf(id))?.termsUrl ?? null;
+  return { locality: 'cloud', text: `cloud · text goes to ${company}`, termsUrl: termsUrl === '' ? null : termsUrl };
+}

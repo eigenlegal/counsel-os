@@ -1,5 +1,6 @@
 import type { Capabilities, Health } from '../api/types';
 import { defaultProviderId } from './threads';
+import { vendorFor } from './vendors';
 
 export type Auth = Capabilities['auth'];
 
@@ -26,16 +27,12 @@ const CONNECTION: Record<Auth, string> = {
   local: 'local',
 };
 
-/** The id prefixes the runtime actually ships, by hand. Anything else falls
- * back to the raw id — the table never guesses. */
-const VENDORS: Record<string, { vendor: string; connection: string }> = {
-  'claude-sub': { vendor: 'Claude', connection: 'subscription' },
-  anthropic: { vendor: 'Claude', connection: 'API key' },
-  openai: { vendor: 'OpenAI', connection: 'API key' },
-  codex: { vendor: 'ChatGPT', connection: 'subscription' },
-  'codex-sub': { vendor: 'ChatGPT', connection: 'subscription' },
-  ollama: { vendor: 'Ollama', connection: 'local' },
-};
+/** The vendor table is the catalog mirror (`v2/vendors.ts`); the plate never
+ * guesses a name — an unknown prefix falls back to the raw id. */
+function vendorRow(prefix: string): { vendor: string; connection: string } | undefined {
+  const row = vendorFor(prefix);
+  return row === undefined ? undefined : { vendor: row.name, connection: row.connection };
+}
 
 /**
  * The model's marketing casing, derived from the id — a restyle, never a
@@ -66,7 +63,7 @@ export function modelName(model: string): string {
 export function plateFor(id: string, auth?: Auth): Plate {
   const slash = id.indexOf('/');
   const prefix = slash === -1 ? id : id.slice(0, slash);
-  const row = VENDORS[prefix];
+  const row = vendorRow(prefix);
   const connection = auth === undefined ? row?.connection : CONNECTION[auth];
   if (row === undefined || slash === -1) {
     return { vendor: prefix, detail: connection === undefined ? id : `${id} · ${connection}`, known: false };

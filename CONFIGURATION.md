@@ -106,6 +106,31 @@ is runtime-detected:
 The choice is per-session, not per-install. See `skills/counsel/SKILL.md`
 ("Knowledge Base Search") for the full procedure.
 
+## Providers (`~/.counsel-os/providers.yaml`)
+
+The runtime's model providers. The built-ins — your Claude subscription (`claude-sub/…`), your ChatGPT subscription (`codex-sub/…`) and a local Ollama model — load without a file; the file adds providers and picks a default.
+
+```yaml
+default: anthropic/claude-opus-5
+providers:
+  - id: anthropic/claude-opus-5        # apiKeyEnv defaults to ANTHROPIC_API_KEY
+  - id: google/gemini-2.5-pro          # GOOGLE_GENERATIVE_AI_API_KEY
+  - id: mistral/mistral-large-latest   # MISTRAL_API_KEY
+  - id: groq/llama-3.3-70b-versatile   # GROQ_API_KEY
+  - id: xai/grok-4                     # XAI_API_KEY
+  - id: openrouter/anthropic/claude-sonnet-5   # OPENROUTER_API_KEY
+  - id: openai/gpt-5.6
+    apiKeyEnv: MY_OPENAI_KEY           # any variable name; the value is never in this file
+  - id: lmstudio/qwen3                # a preset: base URL built in (http://127.0.0.1:1234/v1)
+  - id: moonshot/kimi-k2               # MOONSHOT_API_KEY; base URL built in
+  - id: openai-compatible/myserver
+    baseURL: http://127.0.0.1:9000/v1  # loopback = local; anything else must be https://
+tasks:
+  privacy: { prefer: ollama/gemma4:e4b, allow_remote: false }
+```
+
+Id prefixes the runtime knows — SDK-native: `claude-sub`, `codex-sub`, `anthropic`, `openai`, `google`, `mistral`, `groq`, `xai`, `deepseek`, `cohere`, `perplexity`, `togetherai`, `fireworks`, `deepinfra`, `cerebras`, `openrouter`, `ollama`, `openai-compatible`; OpenAI-compatible presets with a built-in base URL: `moonshot`, `zhipu`, `dashscope`, `sambanova`, `baseten`, `huggingface`, `cloudflare` (fill `{account_id}` in `baseURL`), `replicate`, and the local runners `lmstudio`, `llamacpp`, `vllm`, `mlx`, `jan`, `gpt4all`. A preset entry may override `baseURL`. An unknown prefix is refused with that list. Keys are read from `apiKeyEnv`, else the vendor's usual variable; the file holds variable names, never keys. Each provider's `locality` (local or cloud) is derived from the vendor, or from the base URL for the OpenAI-compatible shape; `allow_remote: false` on a task route keeps that task on local providers.
+
 ## Plugin-internal constants
 
 These aren't user-configurable; they're baked into the plugin:

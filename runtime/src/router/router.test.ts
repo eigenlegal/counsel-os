@@ -74,3 +74,14 @@ describe('Router, a matter that stays local (providers spec §7)', () => {
     expect(router.resolve().id).toBe(cloud.id);
   });
 });
+
+describe('locality (providers spec §3)', () => {
+  test('an OpenAI-compatible server on this machine satisfies a local-only route; a cloud one does not', () => {
+    const local: ModelProvider = { id: 'openai-compatible/lmstudio', kind: 'direct', capabilities: { tools: true, caching: false, thinking: false, contextTokens: 32_000, auth: 'apikey', locality: 'local' }, run: async function* () {} };
+    const cloud: ModelProvider = { id: 'google/gemini', kind: 'direct', capabilities: { tools: true, caching: true, thinking: true, contextTokens: 1_000_000, auth: 'apikey', locality: 'cloud' }, run: async function* () {} };
+    const r = new Router({ default: 'google/gemini', tasks: { privacy: { prefer: 'openai-compatible/lmstudio', allow_remote: false } } }, [local, cloud]);
+    expect(r.resolve('privacy').id).toBe('openai-compatible/lmstudio');
+    const r2 = new Router({ default: 'google/gemini', tasks: { privacy: { prefer: 'google/gemini', allow_remote: false } } }, [local, cloud]);
+    expect(() => r2.resolve('privacy')).toThrow(/local model/);
+  });
+});

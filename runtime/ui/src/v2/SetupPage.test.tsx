@@ -226,3 +226,17 @@ describe('SetupPage, keep every matter on this machine (providers spec §7)', ()
     expect(posts[0]!.staysLocalDefault).toBe(true);
   });
 });
+
+describe('SetupPage, the keyed vendors (providers spec §12)', () => {
+  test('after the probes, one sentence names the vendors a key unlocks, OpenRouter last', async () => {
+    await mounted();
+    await waitFor(() => expect(screen.getByRole('radiogroup', { name: 'Which model answers' })).toBeTruthy());
+    const note = screen.getAllByRole('note').find((el: Element) => el.textContent?.startsWith('Also available once you add a key in Settings'))!;
+    expect(note.textContent).toContain('Google Gemini');
+    expect(note.textContent).toContain('Kimi (Moonshot)');
+    expect(note.textContent).toMatch(/OpenRouter — one key, many models\.$/);
+    const models = screen.getAllByRole('note').find((el: Element) => el.textContent?.startsWith('Open models worth starting with'))!;
+    expect(models.textContent).toContain('Qwen3');
+    expect(models.textContent).toContain('good starting points');
+  });
+});

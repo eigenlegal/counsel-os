@@ -1,5 +1,5 @@
 import type { Capabilities, ModelProvider } from '../core/types';
-import { MatterStaysLocalError, RouterError } from '../core/types';
+import { localityOf, MatterStaysLocalError, RouterError } from '../core/types';
 
 export type Require = Partial<Pick<Capabilities, 'tools' | 'caching' | 'thinking' | 'contextTokens'>>;
 
@@ -23,13 +23,12 @@ export function parseRouterConfig(yamlText: string): RouterConfig {
 }
 
 /**
- * Whether a provider keeps the text on this machine. Today the credential
- * type stands in for locality; providers step 1 adds `Capabilities.locality`
- * (an OpenAI-compatible server on loopback is local too) and this becomes
- * `caps.locality === 'local'`. One helper so that change is one line.
+ * Whether a provider keeps the text on this machine: its locality (an
+ * OpenAI-compatible server on loopback is local too), derived from the
+ * credential type when the provider does not say.
  */
 export function isLocal(caps: Capabilities): boolean {
-  return caps.auth === 'local';
+  return localityOf(caps) === 'local';
 }
 
 export interface ResolveOptions {

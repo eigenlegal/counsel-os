@@ -49,9 +49,9 @@ describe('plateFor', () => {
   });
 
   test('unknown id: the raw id on the detail line — never an invented name', () => {
-    expect(plateFor('mistral/large-latest', 'apikey')).toEqual({
-      vendor: 'mistral',
-      detail: 'mistral/large-latest · API key',
+    expect(plateFor('acme-llm/large-latest', 'apikey')).toEqual({
+      vendor: 'acme-llm',
+      detail: 'acme-llm/large-latest · API key',
       known: false,
     });
     expect(plateFor('fake/fake')).toEqual({ vendor: 'fake', detail: 'fake/fake', known: false });
@@ -154,5 +154,16 @@ describe('localPlate (providers spec §7)', () => {
   test('nothing local → null', () => {
     expect(localPlate({ ...base, providers: [cloud] })).toBeNull();
     expect(localPlate(null)).toBeNull();
+  });
+});
+
+describe('plateFor reads the catalog (providers spec §3)', () => {
+  test('the new vendors have names; the model stays verbatim', () => {
+    expect(plateFor('google/gemini-2.5-pro')).toEqual({ vendor: 'Google', detail: 'gemini-2.5-pro · API key', known: true });
+    expect(plateFor('mistral/mistral-large-latest').vendor).toBe('Mistral');
+    expect(plateFor('groq/llama-3.3-70b-versatile').vendor).toBe('Groq');
+    expect(plateFor('xai/grok-4').vendor).toBe('xAI');
+    expect(plateFor('openrouter/anthropic/claude-sonnet-5').vendor).toBe('OpenRouter');
+    expect(plateFor('openai-compatible/lmstudio').vendor).toBe('OpenAI-compatible');
   });
 });

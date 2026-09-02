@@ -4,6 +4,7 @@ import { Item, useMenuTriggerState, useTreeState, type TreeState } from 'react-s
 import type { Node } from '@react-types/shared';
 import type { Health } from '../api/types';
 import { plateFor, footerLabel, swapNote } from './plate';
+import { dataLineOf } from './vendors';
 import { defaultProviderId } from './threads';
 
 /** The final row's key. `/` never appears in it, so no provider id collides. */
@@ -101,6 +102,12 @@ export function ModelSwitcher({ health, collapsed, onSetDefault, localOnly = fal
             {rowPlate.vendor}
           </span>
           <span className="v2-plate-detail">{rowPlate.detail}</span>
+          {/* Where the text goes (providers spec §6): the runtime's word from
+              /health, else the catalog's. Set text, one quiet line. */}
+          {(() => {
+            const line = dataLineOf(health?.providers.find(p => p.id === row.id), row.id);
+            return line === null ? null : <span className={line.locality === 'local' ? 'v2-plate-data v2-plate-data-local' : 'v2-plate-data'}>{line.text}</span>;
+          })()}
         </span>
       </Item>
     );

@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { writeFileAtomic } from '../core/atomic-write';
-import type { Capabilities, ModelProvider, Usage } from '../core/types';
+import { localityOf, type Capabilities, type Locality, type ModelProvider, type Usage } from '../core/types';
+import { handlesFor, prefixOf, vendorFor, type VendorHandles } from '../providers/vendors';
 import { DEFAULT_STEP_TIMEOUT_MS, runStep, type CounselLoopDeps } from '../loop/counsel-loop';
 import { readRegistry, writeRegistry, REGISTRY_WRITE, type RegistryFileData } from '../providers/registry';
 import type { Router } from '../router/router';
@@ -64,6 +65,21 @@ export interface ProviderView {
   kind: ModelProvider['kind'];
   auth: Capabilities['auth'];
   capabilities: Capabilities;
+  /** Where the text goes (providers spec §6). */
+  locality: Locality;
+  /** Who receives it, or `null` when it stays on this machine. */
+  handles: VendorHandles | null;
+}
+
+/** The view of one loaded provider — the one shape `/health` and
+ * `GET /settings` both hand out. */
+export function providerView(p: ModelProvider): ProviderView {
+  const vendor = vendorFor(prefixOf(p.id));
+  // A direct provider remembers its base URL; the harness tiers have none.
+  const baseURL = (p as { baseURL?: string }).baseURL;
+  const locality = localityOf(p.capabilities);
+  const handles = vendor === undefined ? null : handlesFor(vendor, baseURL);
+  return { id: p.id, kind: p.kind, auth: p.capabilities.auth, capabilities: p.capabilities, locality, handles: locality === 'local' ? null : handles };
 }
 
 export interface SettingsView {
@@ -104,12 +120,7 @@ export function settingsView(ctx: SettingsContext): SettingsView {
     effective: {
       default: effectiveDefault(state),
       stepTimeoutMs: state.stepTimeoutMs ?? DEFAULT_STEP_TIMEOUT_MS,
-      providers: state.providers.map(p => ({
-        id: p.id,
-        kind: p.kind,
-        auth: p.capabilities.auth,
-        capabilities: p.capabilities,
-      })),
+      providers: state.providers.map(p => providerView(p)),
     },
   };
 }
