@@ -35,25 +35,59 @@ export function nameOf(id: string): { vendor: string; model: string } {
   return { vendor: vendorFor(prefix)?.name ?? prefix, model };
 }
 
-/** How this model is reached, in the words that matter to a lawyer: who
- * gets the text, and what it costs to ask. */
-export function connectionOf(p: ProviderInfo): string {
-  if (p.locality === 'local') return 'on this machine';
-  switch (p.auth) {
-    case 'subscription':
-      return 'your subscription';
-    case 'apikey':
-      return p.keySet === false || p.keySet === undefined ? 'needs a key' : p.keySet === 'env' ? 'key from the environment' : 'key set';
-    case 'local':
-      return 'on this machine';
-    default:
-      return 'your cloud account';
-  }
+/** How a model is reached, and whether it can answer at all. */
+export interface Reach {
+  /** Who gets the text, in the words that matter to a lawyer. */
+  how: string;
+  /** False only when the runtime has no credential to call it with. */
+  usable: boolean;
+  /** Why it cannot answer. Shown in place of the action, as text: a
+   * disabled button is removed from the accessibility tree, so the one
+   * thing a blocked row has to say would be the thing never announced. */
+  blocked?: string;
 }
 
-/** Nothing can answer without a way in. */
-export function usable(p: ProviderInfo): boolean {
-  return !(p.auth === 'apikey' && (p.keySet === false || p.keySet === undefined));
+/**
+ * ONE function for both, because they were two and disagreed.
+ *
+ * A model server on this machine has `locality: 'local'` AND `auth:
+ * 'apikey'` with no key — the vendor row takes a key, the loopback address
+ * means nobody checks it. Read `auth` alone and the row is refused; read
+ * `locality` alone and an uncredentialed Bedrock row looks ready. So a
+ * lawyer running everything locally could not make their own model answer,
+ * while one who had pasted no AWS keys at all could make Bedrock the
+ * default and have every step fail at call time.
+ *
+ * `keySet` is the runtime's own answer to "is there a credential", and it
+ * covers the enterprise chains (`'default-chain'` — an AWS profile, gcloud's
+ * ADC) as well as single keys. Absent means the provider takes no key, or
+ * the runtime predates the field; neither is a reason to refuse a row.
+ */
+export function reachOf(p: ProviderInfo): Reach {
+  if (p.locality === 'local' || p.auth === 'local') return { how: 'on this machine', usable: true };
+  if (p.auth === 'subscription') return { how: 'your subscription', usable: true };
+  const enterprise = p.auth === 'azure' || p.auth === 'sigv4' || p.auth === 'gcp';
+  switch (p.keySet) {
+    case false:
+      return enterprise
+        ? {
+            how: 'no credentials yet',
+            usable: false,
+            blocked: 'needs credentials first',
+          }
+        : { how: 'no key yet', usable: false, blocked: 'needs a key first' };
+    case 'env':
+      return { how: 'key from the environment', usable: true };
+    case 'default-chain':
+      return { how: 'the credentials on this machine', usable: true };
+    case true:
+      return {
+        how: enterprise ? 'your cloud account' : 'key set',
+        usable: true,
+      };
+    default:
+      return { how: 'your cloud account', usable: true };
+  }
 }
 
 export function YourModels({ providers, defaultId, builtinDefault, busy, onMakeDefault }: YourModelsProps): JSX.Element {
@@ -61,35 +95,53 @@ export function YourModels({ providers, defaultId, builtinDefault, busy, onMakeD
     return <p className="muted">No model is loaded. Add one below.</p>;
   }
   const current = defaultId.trim();
+  // The loaded set can name the same id twice — `loadRegistry` appends the
+  // built-ins and then the file, and a file may re-declare one (adding
+  // `ollama/gemma4:e4b`, which is the built-in's own model, does it). Two
+  // identical rows and a duplicate React key; the first one wins.
+  const seen = new Set<string>();
+  const rows = providers.filter(p => {
+    if (seen.has(p.id)) return false;
+    seen.add(p.id);
+    return true;
+  });
   return (
-    <table className="v2-yours" aria-label="Models you can use">
-      <tbody>
-        {providers.map(p => {
-          const { vendor, model } = nameOf(p.id);
-          const isDefault = p.id === current;
-          return (
-            <tr key={p.id} className={isDefault ? 'v2-yours-on' : undefined}>
-              <th scope="row">
-                {vendor}
-                {model === '' ? null : <span className="v2-yours-model"> · {model}</span>}
-              </th>
-              <td className="v2-yours-how">{connectionOf(p)}</td>
-              <td className="v2-yours-act">
-                {isDefault ? (
-                  <span className="v2-yours-default">
-                    answers by default
-                    {builtinDefault ? <span className="v2-yours-note"> · built in, not yet saved</span> : null}
-                  </span>
-                ) : (
-                  <button type="button" className="v2-link" disabled={busy || !usable(p)} onClick={() => onMakeDefault(p.id)}>
-                    {usable(p) ? 'use this one' : 'needs a key first'}
-                  </button>
-                )}
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+    <div className="v2-yours-wrap">
+      <table className="v2-yours" aria-label="Models you can use">
+        <tbody>
+          {rows.map(p => {
+            const { vendor, model } = nameOf(p.id);
+            const isDefault = p.id === current;
+            const reach = reachOf(p);
+            return (
+              <tr key={p.id} className={isDefault ? 'v2-yours-on' : undefined}>
+                <th scope="row">
+                  {vendor}
+                  {model === '' ? null : <span className="v2-yours-model"> · {model}</span>}
+                </th>
+                <td className="v2-yours-how">{reach.how}</td>
+                <td className="v2-yours-act">
+                  {isDefault ? (
+                    <span className="v2-yours-default">
+                      answers by default
+                      {builtinDefault ? <span className="v2-yours-note"> · built in, not yet saved</span> : null}
+                    </span>
+                  ) : reach.usable ? (
+                    // Named per row: a reader pulling up the button list hears
+                    // "use this one" once per model otherwise, with nothing to
+                    // tell them apart.
+                    <button type="button" className="v2-link" disabled={busy} aria-label={`Use ${vendor}${model === '' ? '' : ` ${model}`}`} onClick={() => onMakeDefault(p.id)}>
+                      use this one
+                    </button>
+                  ) : (
+                    <span className="v2-yours-note">{reach.blocked}</span>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }

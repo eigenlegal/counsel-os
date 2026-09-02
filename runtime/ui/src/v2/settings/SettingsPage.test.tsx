@@ -107,12 +107,80 @@ describe('SettingsPage', () => {
 
     // "use this one" IS the save: the row carries the act that used to mean
     // reading an id off one group and typing it into another.
-    await userEvent.click(screen.getByRole('button', { name: 'use this one' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Use Ollama gemma4:e4b' }));
 
     await waitFor(() => expect(screen.getByText('unknown provider ollama/gemma4:e4b')).toBeTruthy());
     expect(puts).toHaveLength(1);
     expect((puts[0] as { default: string }).default).toBe('ollama/gemma4:e4b');
     expect((puts[0] as { providers: unknown[] }).providers).toHaveLength(1);
+  });
+
+  test('a save the page refuses does not move the default it refused', async () => {
+    const ollama: ProviderInfo = { ...fakeProvider, id: 'ollama/gemma4:e4b', auth: 'local', locality: 'local' };
+    install(() => json(view), { ...view, effective: { ...view.effective, providers: [fakeProvider, ollama] } });
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByRole('table', { name: 'Models you can use' })).toBeTruthy());
+
+    // A blank row makes the form invalid. Clicking "use this one" then used
+    // to flip the table to the new default and send nothing — and the only
+    // message said so from inside a collapsed disclosure.
+    await userEvent.click(screen.getByRole('button', { name: 'or add a blank row' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Use Ollama gemma4:e4b' }));
+
+    await waitFor(() => expect(screen.getByText('Nothing was saved. Correct the fields marked above.')).toBeTruthy());
+    expect(puts).toHaveLength(0);
+    // The table still says what is true on disk: the row that was clicked
+    // did NOT become the default.
+    const table = screen.getByRole('table', { name: 'Models you can use' });
+    const clicked = within(table).getByRole('row', { name: /gemma4/ });
+    expect(within(clicked).queryByText(/answers by default/)).toBeNull();
+    expect(within(clicked).getByRole('button', { name: 'Use Ollama gemma4:e4b' })).toBeTruthy();
+    // And the field it wants is on screen, not folded away.
+    expect(screen.getByText('id is required')).toBeTruthy();
+  });
+
+  test('a blank row leads with the one field it needs', async () => {
+    install(() => json(view));
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByRole('table', { name: 'Models you can use' })).toBeTruthy());
+
+    const before = screen.getAllByLabelText('Id').length;
+    await userEvent.click(screen.getByRole('button', { name: 'or add a blank row' }));
+    const ids = screen.getAllByLabelText('Id');
+    expect(ids).toHaveLength(before + 1);
+
+    // There is no vendor to list models for, so the Id field takes the lead
+    // instead of hiding under "the rest of this row" — which left the row
+    // saying "name it below" and pointing at nothing.
+    const added = ids[ids.length - 1] as HTMLElement;
+    expect(added.closest('.v2-provider-main')).not.toBeNull();
+    expect(added.closest('details')).toBeNull();
+    // A row that DOES name a vendor keeps its id folded away, where it was.
+    const known = ids[0] as HTMLElement;
+    expect(known.closest('details')).not.toBeNull();
+  });
+
+  test('a search nobody serves says so, instead of offering everything', async () => {
+    install(() => json(view));
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByRole('table', { name: 'Models you can use' })).toBeTruthy());
+
+    const user = userEvent.setup({ document });
+    const box = screen.getByRole('combobox', { name: 'Search by maker or vendor' });
+    // This field's own list: `queryAllByRole('option')` is document-wide,
+    // and every other combobox on the page has one too.
+    const list = (): HTMLElement[] => Array.from(box.closest('.v2-combo')?.querySelectorAll('[role="option"]') ?? []) as HTMLElement[];
+
+    // A live query offers what it found…
+    await user.type(box, 'gemini');
+    await waitFor(() => expect(list().some(o => (o.textContent ?? '').includes('Google'))).toBe(true));
+
+    // …and a dead one offers nothing. The old fallback answered it with the
+    // whole catalog, which read as thirty-odd vendors that all serve it.
+    await user.type(box, ' pro');
+    await waitFor(() => expect(list()).toHaveLength(0));
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.getByText(/Nothing matches/)).toBeTruthy());
   });
 
   test('a 400 lands on the field it names', async () => {
@@ -133,7 +201,7 @@ describe('SettingsPage', () => {
     // The button belongs to the form's footer, not to any one group.
     expect(save.closest('.v2-group')).toBeNull();
     expect(save.closest('.v2-save')).not.toBeNull();
-    expect(screen.getByText(/Saves Providers, Default provider, Task routes and Step timeout/)).toBeTruthy();
+    expect(screen.getByText(/Saves your models, the task routes and the step timeout/)).toBeTruthy();
 
     await userEvent.click(save);
     await waitFor(() => expect(screen.getByText(/^Saved\./)).toBeTruthy());
@@ -189,7 +257,7 @@ describe('SettingsPage', () => {
     // `userEvent.setup({ document })`: the direct API infers its document
     // from the element it is handed, and `keyboard` is given none.
     const user = userEvent.setup({ document });
-    await user.type(screen.getByRole('combobox', { name: 'Search by model, maker or vendor' }), 'llama');
+    await user.type(screen.getByRole('combobox', { name: 'Search by maker or vendor' }), 'llama');
 
     // Meta sells no API; every vendor that serves Llama has to answer to it,
     // or the maker looks absent from the app.
@@ -210,10 +278,10 @@ describe('SettingsPage', () => {
   test('the catalog picker prefills a provider row without saving anything', async () => {
     install(() => json(view));
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Search by model, maker or vendor' })).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Search by maker or vendor' })).toBeTruthy());
     const user = userEvent.setup({ document });
     const before = (screen.getAllByLabelText('Id') as HTMLInputElement[]).length;
-    await user.type(screen.getByRole('combobox', { name: 'Search by model, maker or vendor' }), 'Ollama');
+    await user.type(screen.getByRole('combobox', { name: 'Search by maker or vendor' }), 'Ollama');
     await user.keyboard('{Escape}');
     await userEvent.click(screen.getByRole('button', { name: 'Add' }));
     const ids = screen.getAllByLabelText('Id') as HTMLInputElement[];
@@ -237,7 +305,7 @@ describe('SettingsPage', () => {
     expect(rows.some(r => r.includes('Claude') && r.includes('your subscription'))).toBe(true);
 
     const claudeRow = within(table).getAllByRole('row').find(r => (r.textContent ?? '').includes('claude-opus-5'))!;
-    await userEvent.click(within(claudeRow).getByRole('button', { name: 'use this one' }));
+    await userEvent.click(within(claudeRow).getByRole('button', { name: /^Use / }));
     await waitFor(() => expect((puts[0] as { default: string }).default).toBe('claude-sub/claude-opus-5'));
     // And the row it is on says so, rather than offering the act again.
     await waitFor(() => expect(within(table).getByText(/answers by default/)).toBeTruthy());
@@ -270,7 +338,7 @@ describe('SettingsPage, the default provider field (cou-93 item 3)', () => {
     const row = within(table).getAllByRole('row').find(r => (r.textContent ?? '').includes('claude-opus-5'))!;
     expect(within(row).getByText(/answers by default/)).toBeTruthy();
     expect(within(row).getByText(/built in, not yet saved/)).toBeTruthy();
-    expect(within(row).queryByRole('button', { name: 'use this one' })).toBeNull();
+    expect(within(row).queryByRole('button', { name: /^Use / })).toBeNull();
   });
 });
 
@@ -303,8 +371,8 @@ describe('SettingsPage, signing out', () => {
 describe('SettingsPage, the vendor catalog (providers spec §3, §6)', () => {
   async function pick(text: string): Promise<void> {
     const user = userEvent.setup({ document });
-    await user.clear(screen.getByRole('combobox', { name: 'Search by model, maker or vendor' }));
-    await user.type(screen.getByRole('combobox', { name: 'Search by model, maker or vendor' }), text);
+    await user.clear(screen.getByRole('combobox', { name: 'Search by maker or vendor' }));
+    await user.type(screen.getByRole('combobox', { name: 'Search by maker or vendor' }), text);
     await user.keyboard('{Escape}');
     await userEvent.click(screen.getByRole('button', { name: 'Add' }));
   }
@@ -312,7 +380,7 @@ describe('SettingsPage, the vendor catalog (providers spec §3, §6)', () => {
   test('the picker covers the catalog in three groups and prefills prefix, key variable and a preset base URL', async () => {
     install(() => json(view));
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Search by model, maker or vendor' })).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Search by maker or vendor' })).toBeTruthy());
     // No button per vendor: one field, one Add.
     expect(screen.queryByRole('button', { name: 'Add Google Gemini' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Add' })).toBeTruthy();
@@ -332,7 +400,7 @@ describe('SettingsPage, the vendor catalog (providers spec §3, §6)', () => {
   test('each provider row says where its text goes, from its id and base URL', async () => {
     install(() => json(view));
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Search by model, maker or vendor' })).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Search by maker or vendor' })).toBeTruthy());
     // The fixture's row is an OpenAI-compatible loopback server: local.
     expect(screen.getAllByRole('note').some((el: Element) => el.textContent?.includes('local · nothing leaves this machine'))).toBe(true);
     await pick('Google Gemini');
@@ -344,9 +412,9 @@ describe('SettingsPage, the vendor catalog (providers spec §3, §6)', () => {
   test('an unverified preset says so before it is added', async () => {
     install(() => json(view));
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Search by model, maker or vendor' })).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Search by maker or vendor' })).toBeTruthy());
     const user = userEvent.setup({ document });
-    await user.type(screen.getByRole('combobox', { name: 'Search by model, maker or vendor' }), 'SambaNova');
+    await user.type(screen.getByRole('combobox', { name: 'Search by maker or vendor' }), 'SambaNova');
     await user.keyboard('{Escape}');
     expect(screen.getAllByRole('note').some((el: Element) => el.textContent?.includes('not verified'))).toBe(true);
   });
@@ -454,9 +522,9 @@ describe('the enterprise vendors in Settings (providers spec §3 step 5)', () =>
   test('the picker lists them under Hosted API · enterprise; adding one prefills the row with its field set and defaults, no key variable', async () => {
     install(() => json(view));
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Search by model, maker or vendor' })).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Search by maker or vendor' })).toBeTruthy());
     const user = userEvent.setup({ document });
-    await user.type(screen.getByRole('combobox', { name: 'Search by model, maker or vendor' }), 'Hosted API · enterprise · Google Vertex AI');
+    await user.type(screen.getByRole('combobox', { name: 'Search by maker or vendor' }), 'Hosted API · enterprise · Google Vertex AI');
     await user.keyboard('{Escape}');
     expect(screen.getByRole('link', { name: 'How to set up Google Vertex AI' })).toBeTruthy();
     expect(screen.getByText(/they go to your Keychain as one item/)).toBeTruthy();

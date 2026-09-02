@@ -6,7 +6,7 @@ import { ModelCombo } from '../../settings/ModelCombo';
 import { ProviderCombo } from '../../settings/ProviderCombo';
 import { useModels } from '../../settings/useModels';
 import { ProviderTest } from '../../settings/ProviderTest';
-import { addableVendors, dataLineFor, isEnterpriseVendor, makesLine, pickerLabel, prefixOf, searchVendors, vendorByPickerLabel, vendorFor } from '../vendors';
+import { dataLineFor, isEnterpriseVendor, makesLine, pickerLabel, prefixOf, searchVendors, vendorByPickerLabel, vendorFor } from '../vendors';
 import { EnterpriseFields } from './EnterpriseFields';
 import { KeyControl } from './KeyControl';
 import { YourModels } from './YourModels';
@@ -36,16 +36,17 @@ export interface SettingsPageProps {
   onStartRetro?: () => void;
 }
 
-/** The subscription provider every install already has. Named here so the
- * guided start can point at it instead of adding a duplicate row. */
-const CLAUDE_BUILTIN = 'claude-sub/claude-opus-5';
-
 /**
  * Settings, ordered by what the operator came to do (cou-84): the models you
- * have (Providers) → the one that answers (Default provider) → the
- * exceptions (Task routes) → how long an answer may take (Step timeout) —
- * then Test, then Runtime, read-only. Each group opens with a plain line
- * saying what it is for.
+ * have and which one answers (Models you can use) → the exceptions (Task
+ * routes) → how long an answer may take (Step timeout) — then Test, then
+ * Runtime, read-only. Each group opens with a plain line saying what it is
+ * for.
+ *
+ * The models and the default were two groups until the founder read the
+ * page and could not tell what he had: one said "None added" while three
+ * models were answering, and the other held an id he was expected to type.
+ * Choosing is now an action on the row it belongs to.
  *
  * How the models SCORE, how each task routes, and what actually ran are not
  * settings: they are the operator's own view of the practice, and they live
@@ -132,13 +133,15 @@ function seedDefault(form: FormState, view: SettingsView): FormState {
 }
 
 /**
- * The picker's options for a query. The catalog is thirty-odd vendors; a
- * search that finds nothing should still leave the whole list reachable,
- * so an empty result falls back to everything rather than to a dead box.
+ * The picker's options for a query.
+ *
+ * An empty box offers the whole catalog. A query that finds nothing offers
+ * NOTHING — falling back to everything looked like thirty-odd matches: type
+ * `gemini pro` (no vendor's text holds `pro`) and the list answered with
+ * every vendor there is, as if all of them served it.
  */
 function searchOptions(query: string): string[] {
-  const hits = searchVendors(query);
-  return (hits.length === 0 ? addableVendors() : hits).map(pickerLabel);
+  return searchVendors(query).map(pickerLabel);
 }
 
 function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: SettingsView): void }): JSX.Element {
@@ -195,14 +198,18 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
     // click that saves, and reading the default back out of state in the
     // same tick would save the old one.
     const edited = { ...form, ...change };
-    if (Object.keys(change).length > 0) setForm(edited);
     const built = registryFromForm(edited);
     if (!built.ok) {
-      // Never sent: these are the failures the page can see for itself.
+      // Never sent: these are the failures the page can see for itself. The
+      // change does NOT go into the form either — "use this one" must not
+      // leave the table showing a default that was never written.
       setErrors(built.errors);
-      setGeneral([]);
+      // A row's own message can sit inside a collapsed disclosure, so say it
+      // here too, by the Save button, where it cannot be missed.
+      setGeneral(['Nothing was saved. Correct the fields marked above.']);
       return;
     }
+    if (Object.keys(change).length > 0) setForm(edited);
     setErrors({});
     setGeneral([]);
     setBusy(true);
@@ -271,7 +278,7 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
           <div className="v2-add-provider-row">
             <ProviderCombo
               id="v2-add-provider"
-              label="Search by model, maker or vendor"
+              label="Search by maker or vendor"
               value={pick}
               options={searchOptions(pick)}
               placeholder="llama · gemini · a vendor's name"
@@ -301,7 +308,15 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
             const v = vendorByPickerLabel(pick);
             if (v === undefined) {
               const hits = searchVendors(pick).slice(0, 4);
-              if (pick.trim() === '' || hits.length === 0) return null;
+              if (pick.trim() === '') return null;
+              if (hits.length === 0) {
+                return (
+                  <p className="muted v2-add-provider-note" role="note">
+                    Nothing matches <strong>{pick.trim()}</strong>. Search for a maker or a family — <em>llama</em>, <em>gemini</em>, <em>qwen</em> — or the
+                    vendor you buy from. Any server that speaks the OpenAI API works from a blank row.
+                  </p>
+                );
+              }
               return (
                 <p className="muted v2-add-provider-note" role="note">
                   {hits.map(h => `${h.label ?? h.name}${makesLine(h, pick) === null ? '' : ` (${makesLine(h, pick)})`}`).join(' · ')}
@@ -341,6 +356,18 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
         {form.providers.map((row, index) => {
           const rowVendor = vendorFor(prefixOf(row.id.trim()));
           const enterprise = isEnterpriseVendor(rowVendor);
+          // A row nobody can fix is a row folded shut over its own error.
+          const rowHasError = Object.keys(errors).some(key => key.startsWith(`providers.${index}.`));
+          // The Id field leads the row when there is no vendor to name a
+          // model for: a blank row folded its only usable control away, and
+          // said "give it an id below" pointing at nothing.
+          const idField = (
+            <div className="field">
+              <label htmlFor={`v2-${row.key}-id`}>Id</label>
+              <input id={`v2-${row.key}-id`} value={row.id} placeholder="openai/gpt-5.6" onChange={e => patchRow(index, { id: e.target.value })} />
+              <FieldError message={errors[`providers.${index}.id`]} />
+            </div>
+          );
           return (
           <div className="v2-provider" key={row.key}>
             {/* What this row IS, before what it is made of: the vendor and
@@ -350,20 +377,20 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
               <strong>{rowVendor?.label ?? rowVendor?.name ?? 'A model'}</strong>
               <span className="muted">
                 {' — '}
-                {row.id.trim() === '' ? 'give it an id below' : <code>{row.id.trim()}</code>}
+                {row.id.trim() === '' ? 'name it below' : <code>{row.id.trim()}</code>}
               </span>
             </p>
             <div className="v2-provider-main">
-              <ModelField rowKey={row.key} id={row.id} baseURL={row.baseURL} extra={enterprise ? row.extra : undefined} onPick={model => patchRow(index, { id: `${prefixOf(row.id.trim())}/${model}` })} />
+              {rowVendor === undefined ? (
+                idField
+              ) : (
+                <ModelField rowKey={row.key} id={row.id} baseURL={row.baseURL} extra={enterprise ? row.extra : undefined} onPick={model => patchRow(index, { id: `${prefixOf(row.id.trim())}/${model}` })} />
+              )}
             </div>
-            <details className="v2-provider-advanced">
+            <details className="v2-provider-advanced" open={rowHasError}>
               <summary>the rest of this row</summary>
             <div className="v2-provider-grid">
-              <div className="field">
-                <label htmlFor={`v2-${row.key}-id`}>Id</label>
-                <input id={`v2-${row.key}-id`} value={row.id} placeholder="openai/gpt-5.6" onChange={e => patchRow(index, { id: e.target.value })} />
-                <FieldError message={errors[`providers.${index}.id`]} />
-              </div>
+              {rowVendor === undefined ? null : idField}
               <div className="field">
                 <label htmlFor={`v2-${row.key}-baseurl`}>baseURL</label>
                 <input id={`v2-${row.key}-baseurl`} value={row.baseURL} placeholder={enterprise ? 'optional — a private endpoint' : 'https://…'} onChange={e => patchRow(index, { baseURL: e.target.value })} />
@@ -585,7 +612,7 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
           <button type="submit" className="v2-primary" disabled={busy}>
             {busy ? 'Saving…' : 'Save'}
           </button>
-          <span className="muted">Saves Providers, Default provider, Task routes and Step timeout together.</span>
+          <span className="muted">Saves your models, the task routes and the step timeout together.</span>
         </div>
       </footer>
     </form>
