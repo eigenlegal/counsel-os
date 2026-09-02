@@ -34,7 +34,7 @@ import { pickJudge, providerJudge } from './evals/judge';
 import { appendResult } from './evals/results';
 import { runSet, summarize } from './evals/runner';
 import { renderResult, renderSummary, selectFixtures } from './evals/select';
-import { estimateCost, needsConfirmation } from './evals/cost';
+import { confirmationMessage, estimateCost, needsConfirmation } from './evals/cost';
 
 const { values, positionals } = parseArgs({
   args: Bun.argv.slice(2),
@@ -412,8 +412,8 @@ if (cmd === 'serve') {
   // (OpenRouter); the CLI has no live listing, so the estimate is null and
   // the run says so rather than pretending it is free.
   const estimate = estimateCost(selected.fixtures.length, null);
-  if (needsConfirmation(estimate) && values.yes !== true) {
-    console.error(`this run is estimated at $${estimate!.toFixed(2)}; pass --yes to accept`);
+  if (needsConfirmation(estimate, selected.fixtures.length) && values.yes !== true) {
+    console.error(`${confirmationMessage(estimate, selected.fixtures.length, providerId)} Pass --yes to accept.`);
     process.exit(2);
   }
   const judge = pickJudge({ providers: registry.providers, router: registry.router, providerId, practiceSet: selected.fixtures.some(l => l.set === 'practice') });

@@ -22,6 +22,20 @@ export function estimateCost(count: number, pricing: Pricing | null | undefined,
   return Math.round(perRun * count * 100) / 100;
 }
 
-export function needsConfirmation(estimateUsd: number | null): boolean {
-  return estimateUsd !== null && estimateUsd > CONFIRM_OVER_USD;
+/**
+ * Whether a run must be confirmed first: more than one fixture on a provider
+ * whose price is unknown (a whole set on the subscription harness is real
+ * money and the window), or any run over the dollar line. A single fixture
+ * on an unpriced provider runs without asking — it is the smoke test.
+ */
+export function needsConfirmation(estimateUsd: number | null, count = 1): boolean {
+  if (estimateUsd === null) return count > 1;
+  return estimateUsd > CONFIRM_OVER_USD;
+}
+
+export function confirmationMessage(estimateUsd: number | null, count: number, providerId: string): string {
+  const n = `${count} fixture${count === 1 ? '' : 's'}`;
+  return estimateUsd === null
+    ? `${n} on ${providerId} with no known price — confirm to run them.`
+    : `${n} on ${providerId}, about $${estimateUsd.toFixed(2)} — confirm to run them.`;
 }

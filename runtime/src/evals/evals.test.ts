@@ -288,8 +288,10 @@ describe('cost estimate', () => {
   test('count × discovered pricing over the assumed step; null without pricing', () => {
     expect(estimateCost(8, { prompt: 3, completion: 15 })).toBe(1.32);
     expect(estimateCost(8, null)).toBeNull();
-    expect(needsConfirmation(1.32)).toBe(true);
-    expect(needsConfirmation(0.4)).toBe(false);
-    expect(needsConfirmation(null)).toBe(false);
+    expect(needsConfirmation(1.32, 8)).toBe(true);
+    expect(needsConfirmation(0.4, 8)).toBe(false);
+    // No price known: a single fixture is the smoke test and runs; a set asks.
+    expect(needsConfirmation(null, 1)).toBe(false);
+    expect(needsConfirmation(null, 2)).toBe(true);
   });
 });

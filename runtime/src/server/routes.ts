@@ -33,7 +33,7 @@ import {
   type RuntimeState,
   type SettingsDeps, providerView, keyContext, putProviderKey, deleteProviderKey, KeyBody } from './settings';
 import { sseFromEvents, type StreamEvent } from './sse';
-import { estimateCost, needsConfirmation, type Pricing } from '../evals/cost';
+import { confirmationMessage, estimateCost, needsConfirmation, type Pricing } from '../evals/cost';
 import { loadFixtures } from '../evals/fixture';
 import { pickJudge, providerJudge } from '../evals/judge';
 import { appendResult, readResults } from '../evals/results';
@@ -688,8 +688,8 @@ export function createApp(deps: ServerDeps): App {
     if (selected.error !== undefined) throw new HttpError(400, selected.error);
     if (selected.fixtures.length === 0) throw new HttpError(400, 'nothing to run', { skipped: selected.skipped });
     const estimateUsd = estimateCost(selected.fixtures.length, deps.evals?.pricing?.(providerId) ?? null);
-    if (needsConfirmation(estimateUsd) && input.confirm !== true) {
-      return fail(409, 'confirm-cost', { estimateUsd, count: selected.fixtures.length, providerId });
+    if (needsConfirmation(estimateUsd, selected.fixtures.length) && input.confirm !== true) {
+      return fail(409, 'confirm-cost', { estimateUsd, count: selected.fixtures.length, providerId, message: confirmationMessage(estimateUsd, selected.fixtures.length, providerId) });
     }
     if (evalRunning) return fail(409, 'eval-busy');
     evalRunning = true;

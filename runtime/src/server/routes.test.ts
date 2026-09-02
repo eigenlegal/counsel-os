@@ -1858,6 +1858,14 @@ describe('the eval runner over HTTP (routing-and-evals spec §4.2)', () => {
     expect(((await (await call(app, 'GET', '/evals/results')).json()) as { results: unknown[] }).results).toEqual([]);
   });
 
+  test('the cost guard: a set on a provider with no known price needs confirm: true; one fixture does not', async () => {
+    const app = appWith([new FakeModelProvider([{ output: sample('law-beats-practice') }, { output: sample('law-beats-practice') }])], { evals: evalsDeps() });
+    const refused = await call(app, 'POST', '/evals/run', { body: { all: true } });
+    expect(refused.status).toBe(409);
+    expect(await refused.json()).toMatchObject({ error: 'confirm-cost', estimateUsd: null, count: 8, providerId: 'fake/fake', message: '8 fixtures on fake/fake with no known price — confirm to run them.' });
+    expect((await call(app, 'POST', '/evals/run', { body: { fixtures: ['law-beats-practice'] } })).status).toBe(200);
+  });
+
   test('the cost guard: over $1 estimated needs confirm: true', async () => {
     const pricing = () => ({ prompt: 3, completion: 15 });
     const app = appWith([new FakeModelProvider([{ output: sample('law-beats-practice') }])], { evals: evalsDeps({ pricing }) });
