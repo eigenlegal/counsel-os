@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Health } from '../../api/types';
+import type { ThreadPolicy, Health } from '../../api/types';
 import { withAttachments } from '../home/home';
 import { carriesFiles, droppedFiles, intake, type IntakeStatus } from '../intake';
-import { ProviderNotice } from '../ProviderNotice';
+import { PolicyNotice, ProviderNotice } from '../ProviderNotice';
 
 /** A prefill pushed in from outside — the vault's "Ask counsel about this
  * file" (spec §3.4). The nonce distinguishes two asks about the same file. */
@@ -27,6 +27,9 @@ export interface ComposerProps {
    * default is not loaded, so the reader learns which model will answer
    * BEFORE sending. Absent = no notice. */
   health?: Health | null;
+  /** The thread's privacy policy (providers spec §7): when the matter stays
+   * local, the line above the box names the local model that answers. */
+  policy?: ThreadPolicy | null;
   /** The thread's EXPLICIT matter, for the line above the box and for where
    * a dropped document lands. Absent or `null`: drops go to the inbox. */
   matter?: { path: string; title: string } | null;
@@ -44,7 +47,7 @@ export interface ComposerProps {
  * picker under every message asked the reader to make a choice they had
  * already made once, in the one place that remembers it.
  */
-export function Composer({ streaming, disabled = false, onSend, onStop, seed, onSeedUsed, health, matter = null, dropDest }: ComposerProps): JSX.Element {
+export function Composer({ streaming, disabled = false, onSend, onStop, seed, onSeedUsed, health, policy = null, matter = null, dropDest }: ComposerProps): JSX.Element {
   const [message, setMessage] = useState('');
   /** Vault paths riding along with the message — a dropped document lands
    * here as a chip, the way Home's "attach from vault" chips do. */
@@ -96,6 +99,7 @@ export function Composer({ streaming, disabled = false, onSend, onStop, seed, on
         send();
       }}
     >
+      <PolicyNotice health={health} policy={policy} />
       <ProviderNotice health={health} />
       {matter === null ? null : (
         <p className="v2-composer-matter">

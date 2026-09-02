@@ -118,3 +118,23 @@ export function swapPlates(health: Health | null): { saved: Plate; effective: (P
   const model = plate.known ? plate.detail.split(' · ')[0]! : effectiveId;
   return { saved, effective: { ...plate, model } };
 }
+
+/**
+ * The provider a stays-local step will run on (providers spec §7): the
+ * saved default when it is local, else the best local one the way the
+ * router ranks them — tools first, then the largest context. `null` when
+ * nothing local is loaded, which the notice says in so many words.
+ */
+export function localPlate(health: Health | null): (Plate & { model: string }) | null {
+  if (health === null) return null;
+  const local = health.providers.filter(p => p.auth === 'local');
+  if (local.length === 0) return null;
+  const preferred = local.find(p => p.id === health.default);
+  const pick =
+    preferred ??
+    [...local].sort((a, b) => {
+      if (a.capabilities.tools !== b.capabilities.tools) return a.capabilities.tools ? -1 : 1;
+      return b.capabilities.contextTokens - a.capabilities.contextTokens;
+    })[0]!;
+  return { ...plateFor(pick.id, 'local'), model: modelName(pick.id.slice(pick.id.indexOf('/') + 1)) };
+}

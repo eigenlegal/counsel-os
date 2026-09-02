@@ -971,3 +971,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .v2-retro { margin-top: 22px; }
 .v2-retro-line { margin: 6px 0 10px; font-size: 13px; color: var(--fg-muted); }
 .v2-retro-due-word { color: var(--warn, var(--accent)); font-style: italic; }
+
+/* The matter's privacy policy (providers spec §7): set text beside the
+   matter line, the offer to link an inferred stays-local matter, and the
+   switcher's cloud rows greyed while such a thread is on screen. */
+.v2-thread-local { font: italic 500 12.5px var(--serif); color: var(--fg-muted); }
+.v2-thread-linkit { font-size: 12px; }
+.v2-policy-notice { color: var(--fg-muted); }
+.v2-switch-off { opacity: 0.45; cursor: default; }
+.v2-setup-local { margin-top: 10px; }

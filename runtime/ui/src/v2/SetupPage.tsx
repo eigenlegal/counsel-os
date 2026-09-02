@@ -120,6 +120,7 @@ export function SetupPage({ onDone }: SetupPageProps): JSX.Element {
   const [practice, setPractice] = useState('');
   const [provider, setProvider] = useState<string | null>(null);
   const [sample, setSample] = useState(true);
+  const [staysLocal, setStaysLocal] = useState(false);
 
   const [phase, setPhase] = useState<Phase>({ kind: 'form' });
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -163,6 +164,7 @@ export function SetupPage({ onDone }: SetupPageProps): JSX.Element {
       sampleMatter: sample,
       ...(provider === null ? {} : { defaultProvider: provider }),
       git: true,
+      staysLocalDefault: staysLocal,
     };
     setPhase({ kind: 'creating', vault, done: false });
     try {
@@ -326,6 +328,12 @@ export function SetupPage({ onDone }: SetupPageProps): JSX.Element {
             <h2 className="runin">What you practice</h2>
             <p className="v2-setup-why">One sentence. It tunes your practice profile — the positions counsel opens from and when it escalates to you. You can rewrite the profile later.</p>
             <Field id="v2-setup-practice" label="Your practice" value={practice} onChange={setPractice} error={errors.practice} placeholder="e.g. in-house GC at a B2B SaaS company" />
+            {/* The vault-wide privacy default (providers spec §7): one checkbox,
+                written to config.md as `default_locality: local`. */}
+            <label className="v2-setup-sample v2-setup-local">
+              <input type="checkbox" checked={staysLocal} onChange={event => setStaysLocal(event.target.checked)} />
+              <span>Keep every matter on this machine unless I say otherwise — counsel then answers only on a local model.</span>
+            </label>
           </section>
 
           <section className="v2-setup-group rule-double">

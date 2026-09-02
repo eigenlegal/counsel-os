@@ -304,3 +304,20 @@ describe('Rail', () => {
     expect(document.querySelector('.v2-thread-sub')?.textContent).toBe('Acme nda');
   });
 });
+
+describe('Rail switcher under a stays-local thread (providers spec §7)', () => {
+  test('cloud rows are shown, greyed, and cannot be picked; the local row can', async () => {
+    const picked: string[] = [];
+    mount({ health: { ...health, providers: [fake, claude] }, localOnly: true, onSetDefault: id => picked.push(id) });
+    await userEvent.click(screen.getByRole('button', { name: /fake\/fake/ }));
+    const menu = screen.getByRole('menu', { name: 'Switch model' }) as HTMLElement;
+    const rows = Array.from(menu.querySelectorAll<HTMLElement>('li'));
+    const claudeRow = rows.find(li => li.textContent?.includes('Claude'))!;
+    expect(claudeRow.className).toContain('v2-switch-off');
+    expect(claudeRow.getAttribute('aria-disabled')).toBe('true');
+    expect(claudeRow.getAttribute('title')).toBe('This matter stays on this machine');
+    await userEvent.click(claudeRow);
+    expect(picked).toEqual([]);
+    expect(rows.find(li => li.textContent?.includes('fake/fake'))!.className).not.toContain('v2-switch-off');
+  });
+});

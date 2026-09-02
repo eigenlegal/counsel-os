@@ -50,6 +50,7 @@ entities_path: entities
 matters_path: matters
 auto_apply_law_updates: false
 law_management: plugin
+default_locality: any
 entity_properties:
   type_field: counsel-os-type
   values: [counterparty, vendor, customer, prospect, matter]
@@ -64,6 +65,16 @@ syncing law content entirely, and `/counsel-os:law-refresh` maintains it instead
 For per-file ownership, set `managed-by: user` in an individual law file's
 frontmatter — update skips marked files (even under auto-apply) and law-refresh
 maintains them. Custom law areas the user creates are user-owned automatically.
+
+`default_locality: local` keeps every matter on this machine: a step for any
+matter runs only on a local model (Ollama, LM Studio, another loopback
+server), never on a cloud provider. A matter opts out with `stays_local: false`
+in its frontmatter, and any matter can opt in alone with `stays_local: true`
+(a folder matter's `matter.md` governs everything in its folder). The policy is
+decided before the first model call — from the conversation's linked matter,
+else a matter document attached to the message, else this default — and is
+never downgraded silently: with no local model loaded the step does not run
+and the app says so.
 
 ## Documents in matters
 

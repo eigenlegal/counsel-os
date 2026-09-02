@@ -135,3 +135,24 @@ describe('swapPlates (cou-95)', () => {
     });
   });
 });
+
+import { localPlate } from './plate';
+
+describe('localPlate (providers spec §7)', () => {
+  const local = (id: string, tools = true, contextTokens = 32_000): Health['providers'][number] => ({
+    id, kind: 'direct', auth: 'local', capabilities: { tools, caching: false, thinking: false, contextTokens, auth: 'local' },
+  });
+  const cloud: Health['providers'][number] = { id: 'claude-sub/claude-opus-5', kind: 'harness', auth: 'subscription', capabilities: { tools: true, caching: true, thinking: true, contextTokens: 200_000, auth: 'subscription' } };
+  const base: Health = { vault: '/v', tenant: 'default', default: 'claude-sub/claude-opus-5', stepTimeoutMs: 1, providers: [] };
+
+  test('the saved default when it is local; else tools first, then the largest context', () => {
+    expect(localPlate({ ...base, default: 'ollama/small', providers: [cloud, local('ollama/small'), local('ollama/big', true, 128_000)] })?.model).toBe('small');
+    expect(localPlate({ ...base, providers: [cloud, local('ollama/notools', false, 999_999), local('ollama/big', true, 128_000), local('ollama/small')] })?.model).toBe('big');
+    expect(localPlate({ ...base, providers: [cloud, local('ollama/notools', false, 999_999)] })?.model).toBe('notools');
+  });
+
+  test('nothing local → null', () => {
+    expect(localPlate({ ...base, providers: [cloud] })).toBeNull();
+    expect(localPlate(null)).toBeNull();
+  });
+});

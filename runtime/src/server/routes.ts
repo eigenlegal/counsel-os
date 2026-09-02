@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { RouterError } from '../core/types';
-import { DEFAULT_STEP_TIMEOUT_MS, runStep, type CounselLoopDeps } from '../loop/counsel-loop';
+import { MatterStaysLocalError, RouterError } from '../core/types';
+import { DEFAULT_STEP_TIMEOUT_MS, runStep, type CounselLoopDeps, policyForOptions, resolveStepProvider } from '../loop/counsel-loop';
 import { pendingProposals } from '../loop/pending-proposals';
 import { applyProposal } from '../loop/proposals';
 import { listRuns, readRun, type RunRecord } from '../loop/run-record';
@@ -435,7 +435,14 @@ export function createApp(deps: ServerDeps): App {
     return json(await deps.store.create(deps.tenant, init), 201);
   };
 
-  const getThread = async (id: string): Promise<Response> => json(await loadThread(deps, id));
+  /** The thread plus the privacy policy its EXPLICIT matter (or the vault
+   * default) implies — what the UI shows before the reader sends anything.
+   * Attachment chips are only known at send time and are judged there. */
+  const getThread = async (id: string): Promise<Response> => {
+    const thread = await loadThread(deps, id);
+    const policy = await policyForOptions({ tenant: deps.tenant, vaultRoot: deps.vaultRoot, vault: deps.vault }, { ...(thread.header.matter === undefined ? {} : { matter: thread.header.matter }), message: '' });
+    return json({ ...thread, policy: { localOnly: policy.localOnly, source: policy.source } });
+  };
 
   const patchThread = async (req: Request, id: string): Promise<Response> => {
     const patch = await body(req, PatchThreadBody);
@@ -458,9 +465,19 @@ export function createApp(deps: ServerDeps): App {
 
   const steps = async (req: Request, id: string): Promise<Response> => {
     const input = await body(req, StepBody);
-    await loadThread(deps, id);
+    const { header } = await loadThread(deps, id);
     const loop = loopDeps();
     checkProvider(loop, input);
+    // The matter's privacy policy, decided here before anything streams
+    // (providers spec §7): a refused step is a 409, not an error event in a
+    // transcript that never got the question.
+    const policy = await policyForOptions(loop, { ...(header.matter === undefined ? {} : { matter: header.matter }), message: input.message });
+    try {
+      resolveStepProvider(loop, { threadId: id, message: input.message, ...(input.task === undefined ? {} : { task: input.task }), ...(input.provider === undefined ? {} : { providerId: input.provider }) }, policy);
+    } catch (err) {
+      if (err instanceof MatterStaysLocalError) return json({ error: 'matter-stays-local', message: err.message }, 409);
+      throw err;
+    }
 
     let outputSchema: z.ZodType<unknown> | undefined;
     if (input.outputSchema) {

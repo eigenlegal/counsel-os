@@ -241,7 +241,7 @@ export function runSetup(plan: SetupPlan, deps: SetupDeps): SetupResult {
   };
 
   // 1. The marker. On adoption the existing config stands, overrides and all.
-  place('config', 'config.md', configFor(vault));
+  place('config', 'config.md', configFor(vault, { defaultLocality: plan.staysLocalDefault ? 'local' : 'any' }));
 
   // 2. The per-machine pointer — a cache, always refreshed to this vault.
   mkdirSync(deps.home, { recursive: true, mode: 0o700 });

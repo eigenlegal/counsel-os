@@ -19,7 +19,12 @@ export interface ModelSwitcherProps {
   /** Make this loaded provider the saved default (the settings round-trip
    * lives in the Shell — the rail stays presentational). */
   onSetDefault(id: string): void;
+  /** The open thread's matter stays on this machine (providers spec §7):
+   * cloud rows are shown but cannot be picked, with the reason on hover. */
+  localOnly?: boolean;
 }
+
+export const STAYS_LOCAL_NOTE = 'This matter stays on this machine';
 
 interface Row {
   id: string;
@@ -40,7 +45,7 @@ interface Row {
  * AMBER when the saved default did not load and the runtime fell back —
  * the title carries the explanation, the plate itself stays calm.
  */
-export function ModelSwitcher({ health, collapsed, onSetDefault }: ModelSwitcherProps): JSX.Element {
+export function ModelSwitcher({ health, collapsed, onSetDefault, localOnly = false }: ModelSwitcherProps): JSX.Element {
   const state = useMenuTriggerState({});
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
@@ -76,6 +81,7 @@ export function ModelSwitcher({ health, collapsed, onSetDefault }: ModelSwitcher
     health === null ? null : plateFor(effective, health.providers.find(p => p.id === effective)?.auth);
 
   const rows: Row[] = [...(health?.providers ?? []).map(p => ({ id: p.id })), { id: SETTINGS_KEY }];
+  const disabledKeys = new Set(localOnly ? (health?.providers ?? []).filter(p => p.auth !== 'local').map(p => p.id) : []);
   const children = (row: Row): JSX.Element => {
     if (row.id === SETTINGS_KEY) {
       return (
@@ -126,7 +132,7 @@ export function ModelSwitcher({ health, collapsed, onSetDefault }: ModelSwitcher
             }
           }}
         >
-          <SwitchMenu {...menuProps} items={rows} autoFocus={state.focusStrategy || true} onAction={act} onClose={state.close}>
+          <SwitchMenu {...menuProps} items={rows} disabledKeys={disabledKeys} autoFocus={state.focusStrategy || true} onAction={act} onClose={state.close}>
             {children}
           </SwitchMenu>
         </div>
@@ -181,9 +187,15 @@ function SwitchMenu(props: AriaMenuProps<Row> & { onClose(): void }): JSX.Elemen
 
 function SwitchRow({ item, state }: { item: Node<Row>; state: TreeState<Row> }): JSX.Element {
   const ref = useRef<HTMLLIElement | null>(null);
-  const { menuItemProps, isFocused } = useMenuItem({ key: item.key }, state, ref);
+  const { menuItemProps, isFocused, isDisabled } = useMenuItem({ key: item.key }, state, ref);
   return (
-    <li {...menuItemProps} ref={ref} className="v2-switch-item" data-focused={isFocused ? true : undefined}>
+    <li
+      {...menuItemProps}
+      ref={ref}
+      className={isDisabled ? 'v2-switch-item v2-switch-off' : 'v2-switch-item'}
+      data-focused={isFocused ? true : undefined}
+      title={isDisabled ? STAYS_LOCAL_NOTE : undefined}
+    >
       {item.rendered}
     </li>
   );

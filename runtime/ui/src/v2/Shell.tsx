@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, fetchJson } from '../api/client';
 import { bootstrapToken } from '../api/token';
 import { onUnauthorized } from '../api/unauthorized';
-import type { Health, RetroStart, SettingsView, ThreadHeader, VaultOverview } from '../api/types';
+import type { Health, RetroStart, SettingsView, ThreadHeader, ThreadPolicy, VaultOverview } from '../api/types';
 import { parseHash, threadFromHash, vaultPathFromHash, type Route } from '../app';
 import { Chat } from './chat/Chat';
 import { VAULT_CHANGED_EVENT } from './intake';
@@ -95,6 +95,9 @@ export function Shell(): JSX.Element {
    * text, which is exactly what they were before.
    */
   const [vaultPaths, setVaultPaths] = useState<ReadonlySet<string>>(() => new Set());
+  /** The open thread's privacy policy, for the rail's switcher (providers
+   * spec §7): cloud rows grey out while a stays-local thread is on screen. */
+  const [threadPolicy, setThreadPolicy] = useState<ThreadPolicy | null>(null);
   const loadIndex = useCallback(async (): Promise<void> => {
     try {
       const paths = await fetchJson<unknown>('/vault/index');
@@ -427,6 +430,7 @@ export function Shell(): JSX.Element {
         onDelete={id => void deleteThread(id)}
         onSetDefault={id => void setDefaultProvider(id)}
         matterTitles={matterTitles}
+        localOnly={route === 'chat' && threadPolicy?.localOnly === true}
       />
       <div className="v2-main-col">
         {error === null ? null : (
@@ -477,6 +481,7 @@ export function Shell(): JSX.Element {
                 onFileDecided={fileDecided}
                 onOpenFile={openDrawer}
                 vaultPaths={vaultPaths}
+                onPolicy={setThreadPolicy}
               />
             )}
           </main>

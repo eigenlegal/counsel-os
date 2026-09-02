@@ -152,3 +152,23 @@ describe('v2 Composer document intake (docx spec §6)', () => {
     expect(screen.getByRole('alert').textContent).toContain('only Word documents (.docx) can be added for now');
   });
 });
+
+describe('v2 Composer, the matter privacy policy (providers spec §7)', () => {
+  test('a stays-local matter names the local model that answers', () => {
+    render(<Composer streaming={false} onSend={noop} onStop={noop} health={fine} policy={{ localOnly: true, source: 'matter' }} />);
+    const notice = screen.getByRole('status');
+    expect(notice.className).toContain('v2-policy-notice');
+    expect(notice.textContent).toBe('This matter stays on this machine · answering on Ollama (gemma4:e4b)');
+  });
+
+  test('with no local model loaded it says so and points at Settings', () => {
+    const cloudOnly: Health = { ...fine, default: 'claude-sub/claude-opus-5', providers: [{ id: 'claude-sub/claude-opus-5', kind: 'harness', auth: 'subscription', capabilities: { tools: true, caching: true, thinking: true, contextTokens: 200_000, auth: 'subscription' } }] };
+    render(<Composer streaming={false} onSend={noop} onStop={noop} health={cloudOnly} policy={{ localOnly: true, source: 'vault' }} />);
+    expect(screen.getByRole('status').textContent).toBe('This matter stays on this machine, and no local model is loaded.add one');
+  });
+
+  test('no policy, no line', () => {
+    render(<Composer streaming={false} onSend={noop} onStop={noop} health={fine} policy={{ localOnly: false, source: 'none' }} />);
+    expect(document.querySelector('.v2-policy-notice')).toBeNull();
+  });
+});

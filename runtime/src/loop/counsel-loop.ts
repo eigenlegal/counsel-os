@@ -6,6 +6,9 @@ import type { Router } from '../router/router';
 import { ThreadStore, type ThreadEvent, type ThreadHeader } from '../threads/store';
 import { window } from '../threads/window';
 import { readVaultConfig, type VaultConfig } from '../vault/resolve-root';
+import { policyForStep, readerOver, type StepPolicy } from '../vault/policy';
+import { isLocal } from '../router/router';
+import { MatterStaysLocalError } from '../core/types';
 import { guardedVaultTools } from '../vault/vault-tools';
 import { builtinTools } from '../tools/builtin';
 import { ToolRegistry } from '../tools/registry';
@@ -115,14 +118,35 @@ function bindToThread(deps: CounselLoopDeps, provider: ModelProvider, threadId: 
   });
 }
 
-function resolveProvider(deps: CounselLoopDeps, opts: RunStepOptions): ModelProvider {
+/**
+ * The matter's privacy policy for one step (providers spec §7), from the
+ * thread's explicit matter, the message's attachment chips, or the vault
+ * default — decided before any provider is chosen.
+ */
+export async function policyForOptions(
+  deps: Pick<CounselLoopDeps, 'tenant' | 'vaultRoot' | 'vault'>,
+  opts: { matter?: string | undefined; message: string },
+): Promise<StepPolicy> {
+  return policyForStep({ ...(opts.matter === undefined ? {} : { matter: opts.matter }), message: opts.message }, readVaultConfig(deps.vaultRoot), readerOver(deps.vault, deps.tenant));
+}
+
+/**
+ * The provider for a step, honouring the policy: an explicit `providerId`
+ * that is not local is refused outright under `localOnly` (never a silent
+ * swap), and the router's local-only path picks among what is loaded.
+ */
+export function resolveStepProvider(deps: CounselLoopDeps, opts: RunStepOptions, policy: StepPolicy): ModelProvider {
   if (opts.providerId) {
     const found = deps.providers.find(p => p.id === opts.providerId);
     if (!found) throw new Error(`unknown provider: ${opts.providerId}`);
+    if (policy.localOnly && !isLocal(found.capabilities)) {
+      throw new MatterStaysLocalError(`This matter stays on this machine; ${found.id} is not a local model.`);
+    }
     return found;
   }
-  return deps.router.resolve(opts.task);
+  return deps.router.resolve(opts.task, { localOnly: policy.localOnly });
 }
+
 
 /**
  * The tools a counsel step gets: the vault tools with the `remember` gate
@@ -184,6 +208,10 @@ export async function* runStep(
     return;
   }
   if (opts.task === undefined && early.task !== undefined) opts = { ...opts, task: early.task };
+  // The matter's privacy policy, from the header and the message — before
+  // the run opens, before the user turn is appended, before any provider is
+  // looked at (providers spec §7).
+  const policy = await policyForOptions(deps, { ...(early.matter === undefined ? {} : { matter: early.matter }), message: opts.message });
 
   // The run record opens here — before the provider is even chosen — so
   // everything that follows is visible to `/runs` while it is happening and
@@ -227,6 +255,20 @@ export async function* runStep(
   // `running` for a step nothing was wrong with.
   let deadline: Deadline | undefined;
   try {
+    // The provider is chosen BEFORE the user turn is appended: a step the
+    // policy refuses (a cloud provider named for a matter that stays local,
+    // or no local model at all) never ran, so the transcript must not show
+    // a question nobody answered.
+    let provider: ModelProvider;
+    try {
+      provider = bindToThread(deps, resolveStepProvider(deps, opts, policy), threadId);
+    } catch (err) {
+      failRun(message(err));
+      yield { type: 'error', message: message(err), runId };
+      return;
+    }
+    patchRun(deps, runId, { provider: provider.id, ...(policy.localOnly ? { policy: 'stays-local' as const } : {}) });
+
     const userFailed = await tryPersist(() =>
       store.append(tenant, threadId, { t: 'user', at: nowIso(), content: opts.message }),
     );
@@ -235,16 +277,6 @@ export async function* runStep(
       yield { type: 'error', message: userFailed, runId };
       return;
     }
-
-    let provider: ModelProvider;
-    try {
-      provider = bindToThread(deps, resolveProvider(deps, opts), threadId);
-    } catch (err) {
-      failRun(message(err));
-      yield { type: 'error', message: message(err), runId };
-      return;
-    }
-    patchRun(deps, runId, { provider: provider.id });
 
     const stepFailed = await tryPersist(() =>
       store.append(tenant, threadId, {

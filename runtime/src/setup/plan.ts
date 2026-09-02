@@ -30,6 +30,9 @@ export const SetupPlan = z.object({
   defaultProvider: z.string().trim().min(1).optional(),
   /** `git init` + initial commit when git is on PATH. */
   git: z.boolean().default(true),
+  /** First-run: "Keep every matter on this machine unless I say otherwise"
+   * → `default_locality: local` in config.md (providers spec §7). */
+  staysLocalDefault: z.boolean().default(false),
 });
 export type SetupPlan = z.infer<typeof SetupPlan>;
 export type SetupPlanInput = z.input<typeof SetupPlan>;
@@ -104,7 +107,10 @@ General defaults — escalate uncapped liability, broad indemnities, and anythin
 }
 
 /** `{legal_root}/config.md`, verbatim from the setup skill (Step 1). */
-export function configFor(vault: string): string {
+export function configFor(vault: string, opts: { defaultLocality?: 'local' | 'any' } = {}): string {
+  const locality = opts.defaultLocality === 'local'
+    ? 'default_locality: local        # every matter stays on this machine unless its frontmatter says stays_local: false'
+    : '# default_locality: any          # local = every matter stays on this machine unless its frontmatter says stays_local: false';
   return `# Counsel OS Configuration
 
 counsel-os-config: true
@@ -116,6 +122,7 @@ legal_root: ${vault}
 # matters_path: matters
 # auto_apply_law_updates: false   # true = update applies law content without per-area approval
 # law_management: plugin          # 'user' = you own ALL law content; update stops syncing it (/counsel-os:law-refresh maintains it)
+${locality}
 # entity_properties:
 #   type_field: counsel-os-type
 #   values: [counterparty, vendor, customer, prospect, matter]

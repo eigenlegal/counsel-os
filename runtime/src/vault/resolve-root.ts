@@ -33,6 +33,10 @@ export interface VaultConfig {
    * → the retro module's default (quarterly). Optional so the many literal
    * `VaultConfig`s in tests stay as they are. */
   retroCadenceDays?: number;
+  /** `default_locality: local` — every matter stays on this machine unless
+   * its own frontmatter says `stays_local: false` (providers spec §7).
+   * Absent → `any`. Optional so the literal `VaultConfig`s in tests stay. */
+  defaultLocality?: 'local' | 'any';
 }
 
 const CWD_WALK_MAX_DEPTH = 3;
@@ -242,5 +246,6 @@ export function readVaultConfig(root: string): VaultConfig {
     autoApplyLawUpdates: flag(findOverride('auto_apply_law_updates')) === 'true',
     lawManagement: flag(findOverride('law_management')) === 'user' ? 'user' : 'plugin',
     ...(Number.isInteger(cadence) && cadence > 0 ? { retroCadenceDays: cadence } : {}),
+    ...(flag(findOverride('default_locality')) === 'local' ? { defaultLocality: 'local' as const } : {}),
   };
 }

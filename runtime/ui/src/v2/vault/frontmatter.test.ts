@@ -72,3 +72,13 @@ describe('frontmatter cleanup (founder feedback 2026-08-31)', () => {
     ]);
   });
 });
+
+describe('the privacy flag in the facts block (providers spec §7)', () => {
+  test('stays_local reads as yes / no, never true / false', () => {
+    expect(splitFrontmatter('---\nstays_local: true\nstage: working\n---\nbody\n').rows).toEqual([
+      { key: 'stays local', value: 'yes' },
+      { key: 'stage', value: 'working' },
+    ]);
+    expect(splitFrontmatter('---\nstays-local: FALSE\n---\n').rows).toEqual([{ key: 'stays local', value: 'no' }]);
+  });
+});

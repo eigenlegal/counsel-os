@@ -1493,3 +1493,59 @@ describe('retro (skills/retro in the runtime)', () => {
     expect(system).toContain('Period: all time to');
   });
 });
+
+describe('matter privacy policy over HTTP (providers spec §7)', () => {
+  const localCaps: Capabilities = { tools: true, caching: false, thinking: false, contextTokens: 1_000_000, auth: 'local' };
+  function cloudFake(id: string): ModelProvider {
+    const fake = new FakeModelProvider([{ text: 'cloud' }]);
+    return { id, kind: 'direct', capabilities: { ...localCaps, auth: 'apikey' }, run: req => fake.run(req) };
+  }
+  function localFake(id: string): ModelProvider {
+    const fake = new FakeModelProvider([{ text: 'local' }]);
+    return { id, kind: 'direct', capabilities: localCaps, run: req => fake.run(req) };
+  }
+
+  test('GET /threads/:id carries the policy its explicit matter implies', async () => {
+    const app = appWith([cloudFake('anthropic/c'), localFake('ollama/l')]);
+    await vault.write('default', 'matters/acme.md', '---\nstays_local: true\n---\n# Acme\n');
+    const id = await newThread(app);
+    let body = (await (await call(app, 'GET', `/threads/${id}`)).json()) as { policy: unknown };
+    expect(body.policy).toEqual({ localOnly: false, source: 'none' });
+    expect((await call(app, 'PATCH', `/threads/${id}`, { body: { matter: 'matters/acme.md' } })).status).toBe(200);
+    body = (await (await call(app, 'GET', `/threads/${id}`)).json()) as { policy: unknown };
+    expect(body.policy).toEqual({ localOnly: true, source: 'matter' });
+  });
+
+  test('a cloud provider named for a stays-local matter is a 409 before anything streams', async () => {
+    const app = appWith([cloudFake('anthropic/c'), localFake('ollama/l')]);
+    await vault.write('default', 'matters/acme.md', '---\nstays_local: true\n---\n# Acme\n');
+    const id = await newThread(app);
+    await call(app, 'PATCH', `/threads/${id}`, { body: { matter: 'matters/acme.md' } });
+    const res = await call(app, 'POST', `/threads/${id}/steps`, { body: { message: 'hi', provider: 'anthropic/c' } });
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: 'matter-stays-local', message: 'This matter stays on this machine; anthropic/c is not a local model.' });
+    const { events } = (await (await call(app, 'GET', `/threads/${id}`)).json()) as { events: unknown[] };
+    expect(events).toHaveLength(0);
+  });
+
+  test('no local provider loaded is the founder\'s sentence, 409', async () => {
+    const app = appWith([cloudFake('anthropic/c')]);
+    await vault.write('default', 'matters/acme.md', '---\nstays_local: true\n---\n# Acme\n');
+    const id = await newThread(app);
+    await call(app, 'PATCH', `/threads/${id}`, { body: { matter: 'matters/acme.md' } });
+    const res = await call(app, 'POST', `/threads/${id}/steps`, { body: { message: 'hi' } });
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { message: string }).message).toBe('This matter stays on this machine, and no local model is loaded.');
+  });
+
+  test('with a local provider the step streams on it', async () => {
+    const app = appWith([cloudFake('anthropic/c'), localFake('ollama/l')]);
+    await vault.write('default', 'matters/acme.md', '---\nstays_local: true\n---\n# Acme\n');
+    const id = await newThread(app);
+    await call(app, 'PATCH', `/threads/${id}`, { body: { matter: 'matters/acme.md' } });
+    const { res } = await step(app, id, { message: 'hi' });
+    expect(res.status).toBe(200);
+    const { events } = (await (await call(app, 'GET', `/threads/${id}`)).json()) as { events: Array<Record<string, unknown>> };
+    expect(events.find(e => e['t'] === 'step')?.['provider']).toBe('ollama/l');
+  });
+});

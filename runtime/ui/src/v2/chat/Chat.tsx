@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, fetchJson, streamStep } from '../../api/client';
-import type { Health, RunRecord, Thread, ThreadEvent, ThreadHeader, VaultFile } from '../../api/types';
+import type { Health, RunRecord, Thread, ThreadEvent, ThreadHeader, ThreadPolicy, VaultFile } from '../../api/types';
 import { proposalFromHash } from '../../app';
 import { applyStepEvent, buildTurns, emptyAssistantTurn, type AssistantTurn, type Turn } from '../../chat/turns';
 import { createThread, defaultProviderId, titleFor } from '../threads';
@@ -41,6 +41,10 @@ export interface ChatProps {
   /** Every file path the vault holds (`GET /vault/index`): a path the model
    * writes in an answer becomes a click target only when it is in here. */
   vaultPaths?: ReadonlySet<string>;
+  /** The thread's privacy policy as `GET /threads/:id` reports it — the
+   * shell passes it to the rail so the switcher greys cloud rows for this
+   * thread (providers spec §7). Fires with `null` for a draft. */
+  onPolicy?: (policy: ThreadPolicy | null) => void;
 }
 
 function detail(err: unknown): string {
@@ -100,6 +104,7 @@ export function Chat({
   initialAsk,
   onAskUsed,
   vaultPaths,
+  onPolicy,
 }: ChatProps): JSX.Element {
   /** The thread this pane is about. A ref, not only state: `load` and
    * `send` read it outside a render, and it changes exactly once — from
@@ -161,8 +166,9 @@ export function Chat({
   const load = useCallback(async (): Promise<void> => {
     // Cleared before the draft guard: a load that finds nothing to fetch
     // must still dismiss whatever is on screen, or the button that called it
-    // does nothing at all.
-    setError(null);
+    // does nothing at all. A policy refusal is the exception: the send's own
+    // `finally` reloads, and the sentence must survive that reload.
+    if (!refusedRef.current) setError(null);
     const id = idRef.current;
     if (id === null) {
       setLoading(false);
@@ -240,6 +246,8 @@ export function Chat({
     retry.current = null;
     setLiveMs({});
     setError(null);
+    setRefused(false);
+    refusedRef.current = false;
     showPending(message);
     showLive(emptyAssistantTurn());
 
@@ -295,6 +303,18 @@ export function Chat({
       );
     } catch (err) {
       if (!controller.signal.aborted) {
+        // The runtime refused the step for the matter's privacy policy
+        // (409 matter-stays-local): nothing ran, nothing to retry into —
+        // the sentence is the whole answer, without a Retry into cloud.
+        const body = err instanceof ApiError && err.status === 409 ? (err.body as { error?: string; message?: string } | null) : null;
+        if (body !== null && body?.error === 'matter-stays-local') {
+          showLive(null);
+          showPending(null);
+          setError(body.message ?? 'This matter stays on this machine.');
+          setRefused(true);
+          refusedRef.current = true;
+          return;
+        }
         showLive(applyStepEvent(liveRef.current ?? emptyAssistantTurn(), { type: 'error', message: detail(err) }));
         setError(detail(err));
       }
@@ -428,26 +448,43 @@ export function Chat({
    * model the reader uses; until it lands — or if it cannot — the prettified
    * filename stands in, so the line never flashes empty.
    */
-  const [matterTitles, setMatterTitles] = useState<Record<string, string>>({});
+  const [matterTitles, setMatterTitles] = useState<Record<string, { title: string; staysLocal: boolean }>>({});
   useEffect(() => {
     if (matterPath === null || matterTitles[matterPath] !== undefined) return;
     let cancelled = false;
     void (async () => {
       let title = matterFallbackTitle(matterPath);
+      let staysLocal = false;
       try {
         const file = await fetchJson<VaultFile>(`/vault/read?path=${encodeURIComponent(matterPath)}`);
-        if (typeof file.content === 'string') title = readerModel(file.content, matterPath).title;
+        if (typeof file.content === 'string') {
+          const model = readerModel(file.content, matterPath);
+          title = model.title;
+          // The matter's own word (providers spec §7), so an INFERRED matter
+          // that stays local can offer the link — never take it.
+          staysLocal = model.rows.some(r => r.key === 'stays local' && /^(yes|true)$/i.test(r.value));
+        }
       } catch {
         // A matter file that moved or cannot be read keeps the fallback —
         // the header is a courtesy, not a record.
       }
-      if (!cancelled) setMatterTitles(current => ({ ...current, [matterPath]: title }));
+      if (!cancelled) setMatterTitles(current => ({ ...current, [matterPath]: { title, staysLocal } }));
     })();
     return () => {
       cancelled = true;
     };
   }, [matterPath]);
-  const matterTitle = matterPath === null ? null : (matterTitles[matterPath] ?? matterFallbackTitle(matterPath));
+  const matterTitle = matterPath === null ? null : (matterTitles[matterPath]?.title ?? matterFallbackTitle(matterPath));
+  const inferredStaysLocal = matterInferred && inferredMatter !== null && matterTitles[inferredMatter]?.staysLocal === true;
+  /** The thread's policy as the runtime reports it; a draft has none. */
+  const policy: ThreadPolicy | null = thread?.policy ?? null;
+  const [refused, setRefused] = useState(false);
+  /** Mirrors `refused` for `load`, which runs in the send's `finally` and
+   * would otherwise wipe the refusal sentence the moment it appeared. */
+  const refusedRef = useRef(false);
+  useEffect(() => {
+    onPolicy?.(policy);
+  }, [policy?.localOnly, policy?.source]);
 
   return (
     <section className="v2-chat">
@@ -488,7 +525,18 @@ export function Chat({
               <span className="v2-thread-matter-name">{matterTitle}</span>
             </a>
           )}
+          {/* The policy in force reads beside the matter (providers spec §7):
+              set text, and only from an EXPLICIT link. An inferred matter
+              that stays local offers the link instead — never takes it. */}
+          {policy !== null && policy.localOnly && policy.source === 'matter' && explicitMatter !== null ? (
+            <span className="v2-thread-local">· stays local</span>
+          ) : null}
           {matterInferred ? <span className="v2-thread-inferred">inferred</span> : null}
+          {inferredStaysLocal && inferredMatter !== null ? (
+            <button type="button" className="v2-link v2-thread-linkit" onClick={() => void patchThread({ matter: inferredMatter })}>
+              stays local — link it
+            </button>
+          ) : null}
           <MatterPicker current={explicitMatter} label={matterPath === null ? 'link a matter' : 'change'} onPick={path => void patchThread({ matter: path })} />
           <span className="v2-thread-date">{relTime(thread.header.createdAt)}</span>
         </header>
@@ -525,15 +573,18 @@ export function Chat({
       {error === null ? null : (
         <div className="v2-notice v2-notice-error v2-chat-error" role="alert">
           <span>{error}</span>
-          <button type="button" onClick={retryNow}>
-            Retry
-          </button>
+          {refused ? null : (
+            <button type="button" onClick={retryNow}>
+              Retry
+            </button>
+          )}
         </div>
       )}
 
       <Composer
         streaming={streaming}
         health={health}
+        policy={policy}
         matter={explicitMatter === null || matterTitle === null ? null : { path: explicitMatter, title: matterTitle }}
         {...(explicitMatter === null ? {} : { dropDest: matterFolderOf(explicitMatter) })}
         seed={seed}

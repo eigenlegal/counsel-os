@@ -97,7 +97,7 @@ describe('SetupPage', () => {
     expect(screen.getByRole('radio', { name: /Documents\/Counsel OS/ }).getAttribute('aria-checked')).toBe('true');
     expect(screen.getByRole('radio', { name: /^solo$/ }).getAttribute('aria-checked')).toBe('true');
     expect((screen.getByRole('radio', { name: /ChatGPT/ }) as HTMLButtonElement).disabled).toBe(true);
-    expect((screen.getByRole('checkbox') as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByRole('checkbox', { name: /sample matter/ }) as HTMLInputElement).checked).toBe(true);
     expect(screen.getByText(/Writes 26 law areas, your standards, methods and clause library/)).toBeTruthy();
     expect(document.querySelector('.v2-rail')).toBeNull();
     expect(screen.getByText('bun runtime/src/cli.ts init')).toBeTruthy();
@@ -112,7 +112,7 @@ describe('SetupPage', () => {
     await userEvent.type(screen.getByLabelText('Jurisdiction'), 'Massachusetts');
     await userEvent.type(screen.getByLabelText('Your practice'), 'Commercial contracts');
     await userEvent.click(screen.getByRole('radio', { name: /Ollama/ }));
-    await userEvent.click(screen.getByRole('checkbox'));
+    await userEvent.click(screen.getByRole('checkbox', { name: /sample matter/ }));
     await userEvent.click(screen.getByRole('button', { name: 'Create' }));
     await waitFor(() => expect(posts).toHaveLength(1));
     expect(posts[0]).toEqual({
@@ -122,6 +122,7 @@ describe('SetupPage', () => {
       sampleMatter: false,
       defaultProvider: 'ollama/gemma4:e4b',
       git: true,
+      staysLocalDefault: false,
     });
   });
 
@@ -212,5 +213,16 @@ describe('SetupPage', () => {
     await userEvent.type(screen.getByLabelText('Name'), 'J');
     await userEvent.click(screen.getByRole('button', { name: 'Create' }));
     await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('counsel-os did not answer'));
+  });
+});
+
+describe('SetupPage, keep every matter on this machine (providers spec §7)', () => {
+  test('the checkbox writes staysLocalDefault into the plan', async () => {
+    await mounted();
+    await userEvent.type(screen.getByLabelText('Name'), 'Jack Wang');
+    await userEvent.click(screen.getByRole('checkbox', { name: /Keep every matter on this machine/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create' }));
+    await waitFor(() => expect(posts).toHaveLength(1));
+    expect(posts[0]!.staysLocalDefault).toBe(true);
   });
 });
