@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { ApiError, fetchJson } from '../../api/client';
 import type { Health as HealthData, SettingsErrorBody, SettingsView } from '../../api/types';
 import { Health } from '../../settings/Health';
+import { ModelCombo } from '../../settings/ModelCombo';
 import { ProviderCombo } from '../../settings/ProviderCombo';
+import { useModels } from '../../settings/useModels';
 import { ProviderTest } from '../../settings/ProviderTest';
 import { addableVendors, dataLineFor, pickerLabel, prefixOf, vendorByPickerLabel, vendorFor } from '../vendors';
 import { KeyControl } from './KeyControl';
@@ -227,6 +229,7 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
                 <input id={`v2-${row.key}-id`} value={row.id} placeholder="openai/gpt-5.6" onChange={e => patchRow(index, { id: e.target.value })} />
                 <FieldError message={errors[`providers.${index}.id`]} />
               </div>
+              <ModelField rowKey={row.key} id={row.id} baseURL={row.baseURL} onPick={model => patchRow(index, { id: `${prefixOf(row.id.trim())}/${model}` })} />
               <div className="field">
                 <label htmlFor={`v2-${row.key}-baseurl`}>baseURL</label>
                 <input id={`v2-${row.key}-baseurl`} value={row.baseURL} placeholder="https://…" onChange={e => patchRow(index, { baseURL: e.target.value })} />
@@ -566,6 +569,43 @@ function TriField({ id, label, value, error, onChange }: { id: string; label: st
         ))}
       </select>
       <FieldError message={error} />
+    </div>
+  );
+}
+
+/**
+ * The row's Model picker (providers spec §4): the vendor's own list for the
+ * id's prefix, the row's base URL considered (a local runner lists from
+ * there), a custom id still typeable, the runtime's sentence under the
+ * field when the list could not be had, and "refresh" as a quiet link.
+ * Nothing shows until the id names a vendor that has models to list.
+ */
+function ModelField({ rowKey, id, baseURL, onPick }: { rowKey: string; id: string; baseURL: string; onPick(model: string): void }): JSX.Element | null {
+  const trimmed = id.trim();
+  const prefix = trimmed === '' ? null : prefixOf(trimmed);
+  const vendor = prefix === null ? undefined : vendorFor(prefix);
+  const listable = vendor !== undefined && vendor.group !== 'subscription';
+  const { result, loading, refresh } = useModels(listable ? prefix : null, baseURL.trim() === '' ? undefined : baseURL);
+  if (!listable || prefix === null) return null;
+  const model = trimmed.slice(prefix.length + 1);
+  return (
+    <div className="field v2-model-field">
+      <ModelCombo id={`v2-${rowKey}-model`} label="Model" value={model} models={result?.models ?? []} placeholder={loading ? 'listing…' : 'pick or type a model'} onChange={onPick} />
+      {result === null ? null : result.error !== undefined ? (
+        <p className="v2-model-note v2-model-note-error" role="status">
+          {result.error}
+          <button type="button" className="v2-link" onClick={refresh}>
+            refresh
+          </button>
+        </p>
+      ) : (
+        <p className="v2-model-note" role="note">
+          {result.models.length} model{result.models.length === 1 ? '' : 's'} {result.source === 'curated' ? 'known' : 'listed'}
+          <button type="button" className="v2-link" onClick={refresh}>
+            refresh
+          </button>
+        </p>
+      )}
     </div>
   );
 }

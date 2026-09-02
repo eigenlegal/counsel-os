@@ -240,3 +240,20 @@ describe('SetupPage, the keyed vendors (providers spec §12)', () => {
     expect(models.textContent).toContain('good starting points');
   });
 });
+
+describe('SetupPage, the Ollama row lists its models (providers spec §4)', () => {
+  test('picking the row shows its models in the picker; picking a model changes the provider sent', async () => {
+    await mounted();
+    await waitFor(() => expect(screen.getByRole('radio', { name: /Ollama/ })).toBeTruthy());
+    expect(screen.queryByLabelText('Ollama model')).toBeNull();
+    await userEvent.click(screen.getByRole('radio', { name: /Ollama/ }));
+    await waitFor(() => expect(screen.getByLabelText('Ollama model')).toBeTruthy());
+    expect((screen.getByLabelText('Ollama model') as HTMLInputElement).value).toBe('gemma4:e4b');
+    await userEvent.click(screen.getByRole('button', { name: 'Show models' }));
+    expect(Array.from(document.querySelectorAll('.v2-combo-item-model'), el => el.textContent)).toEqual(['a', 'b', 'c']);
+    await userEvent.click(screen.getByText('b'));
+    // The row keeps reading as selected, with the chosen model.
+    expect(screen.getByRole('radio', { name: /Ollama/ }).textContent).toContain('b · local');
+    expect((screen.getByLabelText('Ollama model') as HTMLInputElement).value).toBe('b');
+  });
+});

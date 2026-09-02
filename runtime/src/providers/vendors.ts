@@ -38,6 +38,7 @@ import { createXai } from '@ai-sdk/xai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { createOllama } from 'ai-sdk-ollama';
 import type { Capabilities, Locality } from '../core/types';
+import type { Discovery } from './discovery';
 
 /** Who receives the text when a cloud vendor answers, and where they say
  * what they do with it. `null` for anything that stays on this machine. */
@@ -84,9 +85,12 @@ export interface Vendor {
   keyEnv?: string;
   keyLabel?: string;
   help: { getKey?: string; install?: string; note?: string };
-  /** How models are discovered (step 3); `curated` ships a list here. */
+  /** How models are discovered (step 3): `list` asks the vendor (see
+   * `discovery`), `curated` ships a list here, `none` means type the id. */
   models: 'list' | 'curated' | 'none';
   curated?: VendorModel[];
+  /** The listing's shape and, when it is not at the base URL, its URL. */
+  discovery?: Discovery;
   /** Open models worth starting with (Ollama). */
   openModels?: OpenModel[];
   /** Capability defaults for the prefix; an entry may refine them. */
@@ -129,6 +133,30 @@ const ANTHROPIC_MODELS: VendorModel[] = [
   { id: 'claude-haiku-4-5-20251001', contextTokens: 200_000 },
 ];
 
+/** xAI documents no listing endpoint; the ids from its models page. */
+const XAI_MODELS: VendorModel[] = [
+  { id: 'grok-4', contextTokens: 256_000 },
+  { id: 'grok-4-fast', contextTokens: 2_000_000 },
+  { id: 'grok-3', contextTokens: 131_072 },
+  { id: 'grok-3-mini', contextTokens: 131_072 },
+];
+
+/** Perplexity has no listing endpoint; the Sonar family. */
+const PERPLEXITY_MODELS: VendorModel[] = [
+  { id: 'sonar', contextTokens: 128_000 },
+  { id: 'sonar-pro', contextTokens: 200_000 },
+  { id: 'sonar-reasoning-pro', contextTokens: 128_000 },
+  { id: 'sonar-deep-research', contextTokens: 128_000 },
+];
+
+/** DeepInfra documents no OpenAI-shaped listing; a few open models it hosts. */
+const DEEPINFRA_MODELS: VendorModel[] = [
+  { id: 'meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8', contextTokens: 1_000_000 },
+  { id: 'Qwen/Qwen3-235B-A22B-Instruct-2507', contextTokens: 262_144 },
+  { id: 'deepseek-ai/DeepSeek-V3.1', contextTokens: 163_840 },
+  { id: 'openai/gpt-oss-120b', contextTokens: 131_072 },
+];
+
 /** Good starting points for a local model; the scoreboard (phase 2) ranks
  * them for the practice's own work. Tool use and a long context are what
  * counsel's loop needs. */
@@ -169,84 +197,84 @@ const SDK_VENDORS: Vendor[] = [
     prefix: 'openai', name: 'OpenAI', kind: 'direct', layer: 'sdk', group: 'hosted', auth: 'apikey', locality: 'cloud',
     handles: { company: 'OpenAI', termsUrl: 'https://openai.com/policies/business-terms' },
     keyEnv: 'OPENAI_API_KEY', keyLabel: 'API key', help: { getKey: 'https://platform.openai.com/api-keys' },
-    models: 'list', capabilities: CLOUD_CAPS,
+    models: 'list', discovery: { shape: 'openai' }, capabilities: CLOUD_CAPS,
     make: ({ model, apiKey, baseURL }) => createOpenAI(keyed(apiKey, baseURL))(model),
   },
   {
     prefix: 'google', name: 'Google', kind: 'direct', layer: 'sdk', group: 'hosted', auth: 'apikey', locality: 'cloud',
     handles: { company: 'Google', termsUrl: 'https://ai.google.dev/gemini-api/terms' },
     keyEnv: 'GOOGLE_GENERATIVE_AI_API_KEY', keyLabel: 'API key', help: { getKey: 'https://aistudio.google.com/apikey' },
-    models: 'list', capabilities: { tools: true, caching: true, thinking: true, contextTokens: 1_000_000 },
+    models: 'list', discovery: { shape: 'google' }, capabilities: { tools: true, caching: true, thinking: true, contextTokens: 1_000_000 },
     make: ({ model, apiKey, baseURL }) => createGoogle(keyed(apiKey, baseURL))(model),
   },
   {
     prefix: 'mistral', name: 'Mistral', kind: 'direct', layer: 'sdk', group: 'hosted', auth: 'apikey', locality: 'cloud',
     handles: { company: 'Mistral AI', termsUrl: 'https://mistral.ai/terms' },
     keyEnv: 'MISTRAL_API_KEY', keyLabel: 'API key', help: { getKey: 'https://console.mistral.ai/api-keys' },
-    models: 'list', capabilities: CLOUD_CAPS_NO_CACHE,
+    models: 'list', discovery: { shape: 'openai' }, capabilities: CLOUD_CAPS_NO_CACHE,
     make: ({ model, apiKey, baseURL }) => createMistral(keyed(apiKey, baseURL))(model),
   },
   {
     prefix: 'groq', name: 'Groq', kind: 'direct', layer: 'sdk', group: 'hosted', auth: 'apikey', locality: 'cloud',
     handles: { company: 'Groq', termsUrl: 'https://groq.com/terms-of-use' },
     keyEnv: 'GROQ_API_KEY', keyLabel: 'API key', help: { getKey: 'https://console.groq.com/keys' },
-    models: 'list', capabilities: CLOUD_CAPS_NO_CACHE,
+    models: 'list', discovery: { shape: 'openai' }, capabilities: CLOUD_CAPS_NO_CACHE,
     make: ({ model, apiKey, baseURL }) => createGroq(keyed(apiKey, baseURL))(model),
   },
   {
     prefix: 'xai', name: 'xAI', kind: 'direct', layer: 'sdk', group: 'hosted', auth: 'apikey', locality: 'cloud',
     handles: { company: 'xAI', termsUrl: 'https://x.ai/legal/terms-of-service-enterprise' },
     keyEnv: 'XAI_API_KEY', keyLabel: 'API key', help: { getKey: 'https://console.x.ai' },
-    models: 'list', capabilities: CLOUD_CAPS_NO_CACHE,
+    models: 'curated', curated: XAI_MODELS, discovery: { shape: 'openai' }, capabilities: CLOUD_CAPS_NO_CACHE,
     make: ({ model, apiKey, baseURL }) => createXai(keyed(apiKey, baseURL))(model),
   },
   {
     prefix: 'deepseek', name: 'DeepSeek', kind: 'direct', layer: 'sdk', group: 'hosted', auth: 'apikey', locality: 'cloud',
     handles: { company: 'DeepSeek', termsUrl: 'https://platform.deepseek.com/' },
     keyEnv: 'DEEPSEEK_API_KEY', keyLabel: 'API key', help: { getKey: 'https://platform.deepseek.com/api_keys' },
-    models: 'list', capabilities: CLOUD_CAPS_NO_CACHE,
+    models: 'list', discovery: { shape: 'openai' }, capabilities: CLOUD_CAPS_NO_CACHE,
     make: ({ model, apiKey, baseURL }) => createDeepSeek(keyed(apiKey, baseURL))(model),
   },
   {
     prefix: 'cohere', name: 'Cohere', kind: 'direct', layer: 'sdk', group: 'hosted', auth: 'apikey', locality: 'cloud',
     handles: { company: 'Cohere', termsUrl: 'https://cohere.com/terms-of-use' },
     keyEnv: 'COHERE_API_KEY', keyLabel: 'API key', help: { getKey: 'https://dashboard.cohere.com/api-keys' },
-    models: 'list', capabilities: CLOUD_CAPS_NO_CACHE,
+    models: 'list', discovery: { shape: 'cohere' }, capabilities: CLOUD_CAPS_NO_CACHE,
     make: ({ model, apiKey, baseURL }) => createCohere(keyed(apiKey, baseURL))(model),
   },
   {
     prefix: 'perplexity', name: 'Perplexity', kind: 'direct', layer: 'sdk', group: 'hosted', auth: 'apikey', locality: 'cloud',
     handles: { company: 'Perplexity', termsUrl: 'https://www.perplexity.ai/hub/legal/terms-of-service' },
     keyEnv: 'PERPLEXITY_API_KEY', keyLabel: 'API key', help: { getKey: 'https://www.perplexity.ai/settings/api' },
-    models: 'none', capabilities: { tools: false, caching: false, thinking: false, contextTokens: 128_000 },
+    models: 'curated', curated: PERPLEXITY_MODELS, discovery: { shape: 'openai' }, capabilities: { tools: false, caching: false, thinking: false, contextTokens: 128_000 },
     make: ({ model, apiKey, baseURL }) => createPerplexity(keyed(apiKey, baseURL))(model),
   },
   {
     prefix: 'togetherai', name: 'Together AI', kind: 'direct', layer: 'sdk', group: 'hosted', auth: 'apikey', locality: 'cloud',
     handles: { company: 'Together AI', termsUrl: 'https://www.together.ai/terms-of-service' },
     keyEnv: 'TOGETHER_AI_API_KEY', keyLabel: 'API key', help: { getKey: 'https://api.together.ai/settings/api-keys' },
-    models: 'list', capabilities: CLOUD_CAPS_NO_CACHE,
+    models: 'list', discovery: { shape: 'together' }, capabilities: CLOUD_CAPS_NO_CACHE,
     make: ({ model, apiKey, baseURL }) => createTogetherAI(keyed(apiKey, baseURL))(model),
   },
   {
     prefix: 'fireworks', name: 'Fireworks', kind: 'direct', layer: 'sdk', group: 'hosted', auth: 'apikey', locality: 'cloud',
     handles: { company: 'Fireworks AI', termsUrl: 'https://fireworks.ai/terms-of-service' },
     keyEnv: 'FIREWORKS_API_KEY', keyLabel: 'API key', help: { getKey: 'https://fireworks.ai/account/api-keys' },
-    models: 'list', capabilities: CLOUD_CAPS_NO_CACHE,
+    models: 'list', discovery: { shape: 'openai', unverified: true }, capabilities: CLOUD_CAPS_NO_CACHE,
     make: ({ model, apiKey, baseURL }) => createFireworks(keyed(apiKey, baseURL))(model),
   },
   {
     prefix: 'deepinfra', name: 'DeepInfra', kind: 'direct', layer: 'sdk', group: 'hosted', auth: 'apikey', locality: 'cloud',
     handles: { company: 'DeepInfra', termsUrl: 'https://deepinfra.com/terms' },
     keyEnv: 'DEEPINFRA_API_KEY', keyLabel: 'API key', help: { getKey: 'https://deepinfra.com/dash/api_keys' },
-    models: 'list', capabilities: CLOUD_CAPS_NO_CACHE,
+    models: 'curated', curated: DEEPINFRA_MODELS, discovery: { shape: 'openai' }, capabilities: CLOUD_CAPS_NO_CACHE,
     make: ({ model, apiKey, baseURL }) => createDeepInfra(keyed(apiKey, baseURL))(model),
   },
   {
     prefix: 'cerebras', name: 'Cerebras', kind: 'direct', layer: 'sdk', group: 'hosted', auth: 'apikey', locality: 'cloud',
     handles: { company: 'Cerebras', termsUrl: 'https://www.cerebras.ai/terms-of-service' },
     keyEnv: 'CEREBRAS_API_KEY', keyLabel: 'API key', help: { getKey: 'https://cloud.cerebras.ai/platform' },
-    models: 'list', capabilities: CLOUD_CAPS_NO_CACHE,
+    models: 'list', discovery: { shape: 'openai' }, capabilities: CLOUD_CAPS_NO_CACHE,
     make: ({ model, apiKey, baseURL }) => createCerebras(keyed(apiKey, baseURL))(model),
   },
   {
@@ -255,17 +283,17 @@ const SDK_VENDORS: Vendor[] = [
     // model. The label names the relay, since that is who holds the key.
     handles: { company: 'OpenRouter (and the model’s vendor)', termsUrl: 'https://openrouter.ai/terms' },
     keyEnv: 'OPENROUTER_API_KEY', keyLabel: 'API key', help: { getKey: 'https://openrouter.ai/keys', note: 'One key, many models.' },
-    models: 'list', capabilities: CLOUD_CAPS_NO_CACHE,
+    models: 'list', discovery: { shape: 'openrouter' }, capabilities: CLOUD_CAPS_NO_CACHE,
     make: ({ model, apiKey, baseURL }) => createOpenRouter(keyed(apiKey, baseURL))(model),
   },
   {
     prefix: 'ollama', name: 'Ollama', kind: 'direct', layer: 'sdk', group: 'local', auth: 'local', locality: 'local', handles: null,
-    help: { install: 'https://ollama.com/download' }, models: 'list', openModels: OPEN_MODELS, capabilities: LOCAL_CAPS,
+    help: { install: 'https://ollama.com/download' }, models: 'list', discovery: { shape: 'ollama' }, openModels: OPEN_MODELS, capabilities: LOCAL_CAPS,
     make: ({ model, baseURL }) => createOllama(baseURL === undefined ? {} : { baseURL })(model),
   },
   {
     prefix: 'openai-compatible', name: 'OpenAI-compatible', kind: 'direct', layer: 'sdk', group: 'local', auth: 'apikey', locality: 'by-baseURL', handles: null,
-    keyLabel: 'API key (if the server wants one)', help: {}, models: 'list', capabilities: LOCAL_CAPS, requiresBaseURL: true,
+    keyLabel: 'API key (if the server wants one)', help: {}, models: 'list', discovery: { shape: 'openai' }, capabilities: LOCAL_CAPS, requiresBaseURL: true,
     make: ({ model, apiKey, baseURL }) => createOpenAICompatible({ name: model, baseURL: baseURL ?? '', ...(apiKey === undefined ? {} : { apiKey }) })(model),
   },
 ];
@@ -329,6 +357,7 @@ function vendorFromPreset(p: Preset): Vendor {
     ...(p.keyLabel === undefined ? {} : { keyLabel: p.keyLabel }),
     help: { ...(p.getKey === undefined ? {} : { getKey: p.getKey }), ...(p.note === undefined ? {} : { note: p.note }) },
     models: 'list',
+    discovery: { shape: 'openai', ...(p.unverified === true ? { unverified: true } : {}) },
     capabilities: { ...(local ? LOCAL_CAPS : CLOUD_CAPS_NO_CACHE), ...p.capabilities },
     defaultBaseURL: p.baseURL,
     ...(p.baseURLFields === undefined ? {} : { baseURLFields: p.baseURLFields, requiresBaseURL: true }),

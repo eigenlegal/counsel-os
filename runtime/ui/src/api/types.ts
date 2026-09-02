@@ -382,6 +382,22 @@ export interface SetupLocation {
 
 /** One row of `GET /setup/providers`. COPIED from `ProviderProbe` in
  * `runtime/src/setup/detect.ts`; a change there is a change here. */
+/** `GET /providers/:id/models` (providers spec §4). COPIED from
+ * `runtime/src/providers/discovery.ts`; a change there is a change here. */
+export interface DiscoveredModel {
+  id: string;
+  contextTokens?: number;
+  /** USD per million tokens, when the vendor says. */
+  pricing?: { prompt: number; completion: number };
+}
+
+export interface DiscoveryResult {
+  models: DiscoveredModel[];
+  source: 'list' | 'curated';
+  /** One sentence when the list could not be had; the picker still types. */
+  error?: string;
+}
+
 export interface SetupProvider {
   id: string;
   vendor: 'Claude' | 'ChatGPT' | 'Ollama';

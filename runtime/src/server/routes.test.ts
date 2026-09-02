@@ -9,6 +9,7 @@ import { Router } from '../router/router';
 import { ThreadStore, type ThreadEvent } from '../threads/store';
 import { FsVaultStore } from '../vault/fs-store';
 import { fsSearch } from '../vault/search';
+import { memoryStore } from '../providers/secrets';
 import { buildDocx } from '../docx/test/builder';
 import { API_PREFIXES, createApp, safeBasename, suffixed, TRUNCATED_HEADER, UPLOAD_MAX_BYTES, type App, type ServerDeps } from './routes';
 import type { RuntimeState } from './settings';
@@ -1566,5 +1567,95 @@ describe('providers carry their locality and handles (providers spec §6)', () =
     }
     const settings = (await (await call(app, 'GET', '/settings')).json()) as { effective: { providers: Array<{ id: string; locality: string }> } };
     expect(settings.effective.providers.find(p => p.id === 'fake/fake')?.locality).toBe('local');
+  });
+});
+
+describe('model discovery (providers spec §4)', () => {
+  const listing = { object: 'list', data: [{ id: 'gpt-5.6' }, { id: 'gpt-5.6-mini' }] };
+  function recording(body: unknown = listing): { fetch: typeof fetch; urls: string[] } {
+    const urls: string[] = [];
+    const f = (async (input: string | URL | Request) => {
+      urls.push(String(input));
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+    }) as unknown as typeof fetch;
+    return { fetch: f, urls };
+  }
+
+  test('a keyed vendor with no key is a sentence, and the vendor is never called', async () => {
+    const rec = recording();
+    // An empty environment on purpose: the developer's own OPENAI_API_KEY
+    // must never turn a route test into a real request.
+    const app = appWith([new FakeModelProvider([{ text: 'x' }])], { discovery: { fetch: rec.fetch, env: {} } });
+    const res = await call(app, 'GET', '/providers/openai/models');
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ models: [], source: 'list', error: 'No key for OpenAI yet.' });
+    expect(rec.urls).toEqual([]);
+  });
+
+  test('with a key in the environment: the vendor lists; a full id resolves its vendor; the cache holds until ?refresh=1', async () => {
+    const rec = recording();
+    const app = appWith([new FakeModelProvider([{ text: 'x' }])], { discovery: { fetch: rec.fetch, env: { OPENAI_API_KEY: 'sk-t' } } });
+    const first = await (await call(app, 'GET', '/providers/openai/models')).json();
+    expect(first).toEqual({ models: [{ id: 'gpt-5.6' }, { id: 'gpt-5.6-mini' }], source: 'list' });
+    // A full id (with its own slash) names the same vendor and hits the cache.
+    const byId = await (await call(app, 'GET', '/providers/openai%2Fgpt-5.6/models')).json();
+    expect(byId).toEqual(first);
+    const again = await (await call(app, 'GET', '/providers/openai/gpt-5.6/models')).json();
+    expect(again).toEqual(first);
+    expect(rec.urls).toEqual(['https://api.openai.com/v1/models']);
+    await call(app, 'GET', '/providers/openai/models?refresh=1');
+    expect(rec.urls).toHaveLength(2);
+  });
+
+  test("a registry entry's apiKeyEnv and baseURL win over the vendor's defaults", async () => {
+    const rec = recording({ data: [{ id: 'local-model' }] });
+    const file = join(mkdtempSync(join(tmpdir(), 'routes-disc-')), 'providers.yaml');
+    writeFileSync(file, 'providers:\n  - id: openai-compatible/mine\n    baseURL: http://127.0.0.1:1234/v1\n    apiKeyEnv: MY_KEY\n');
+    const app = appWith([new FakeModelProvider([{ text: 'x' }])], { settings: { file, reload: () => {} }, discovery: { fetch: rec.fetch, env: { MY_KEY: 'k' } } });
+    const res = await (await call(app, 'GET', '/providers/openai-compatible%2Fmine/models')).json();
+    expect(res).toEqual({ models: [{ id: 'local-model' }], source: 'list' });
+    expect(rec.urls).toEqual(['http://127.0.0.1:1234/v1/models']);
+  });
+
+  test('?baseURL= reaches a local runner and is held to the base-URL rule', async () => {
+    const rec = recording({ models: [{ name: 'gemma4:e4b' }] });
+    const app = appWith([new FakeModelProvider([{ text: 'x' }])], { discovery: { fetch: rec.fetch, env: {} } });
+    const ok = await (await call(app, 'GET', '/providers/ollama/models?baseURL=http%3A%2F%2F127.0.0.1%3A11435')).json();
+    expect(ok).toEqual({ models: [{ id: 'gemma4:e4b' }], source: 'list' });
+    expect(rec.urls).toEqual(['http://127.0.0.1:11435/api/tags']);
+    expect((await call(app, 'GET', '/providers/ollama/models?baseURL=http%3A%2F%2Fevil.example%2Fv1')).status).toBe(400);
+  });
+
+  test('a curated vendor answers from the catalog; an unknown prefix is 404; no token is 401', async () => {
+    const rec = recording();
+    const app = appWith([new FakeModelProvider([{ text: 'x' }])], { discovery: { fetch: rec.fetch, env: {} } });
+    const curated = (await (await call(app, 'GET', '/providers/anthropic/models')).json()) as { source: string; models: Array<{ id: string }> };
+    expect(curated.source).toBe('curated');
+    expect(curated.models.map((m: { id: string }) => m.id)).toContain('claude-opus-5');
+    expect(rec.urls).toEqual([]);
+    expect((await call(app, 'GET', '/providers/nope/models')).status).toBe(404);
+    expect((await call(app, 'GET', '/providers/openai/models', { token: null })).status).toBe(401);
+  });
+});
+
+describe('model discovery reads the secret store first (providers spec §5)', () => {
+  test('a key set only in the store makes the listing call the vendor instead of answering "No key … yet"', async () => {
+    const urls: string[] = [];
+    const seen: { auth: string | null } = { auth: null };
+    const f = (async (input: string | URL | Request, init?: RequestInit) => {
+      urls.push(String(input));
+      seen.auth = new Headers(init?.headers).get('authorization');
+      return new Response(JSON.stringify({ data: [{ id: 'gpt-5.6' }] }), { status: 200, headers: { 'content-type': 'application/json' } });
+    }) as unknown as typeof fetch;
+    const file = join(mkdtempSync(join(tmpdir(), 'routes-disc-key-')), 'providers.yaml');
+    writeFileSync(file, 'providers:\n  - id: openai/gpt-5.6\n');
+    const app = appWith([new FakeModelProvider([{ text: 'x' }])], {
+      settings: { file, reload: () => {}, secrets: memoryStore({ 'openai/gpt-5.6': 'sk-from-store' }) },
+      discovery: { fetch: f, env: {} },
+    });
+    const res = await (await call(app, 'GET', '/providers/openai/models')).json();
+    expect(res).toEqual({ models: [{ id: 'gpt-5.6' }], source: 'list' });
+    expect(urls).toEqual(['https://api.openai.com/v1/models']);
+    expect(seen.auth).toBe('Bearer sk-from-store');
   });
 });
