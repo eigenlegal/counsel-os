@@ -143,6 +143,8 @@ An API key is pasted once in Settings, on the provider's row, and kept in the pl
 
 The runtime reports only whether a key is set (`keySet: true | false | 'env'` on `/settings` and `/health`), never the value. `PUT /providers/<id>/key` and `DELETE /providers/<id>/key` are the only routes that touch keys.
 
+**Picking a model.** The model part of an id (`gpt-5.6` in `openai/gpt-5.6`) can be picked from the vendor's own list in Settings — the runtime asks the vendor (`GET /providers/<prefix>/models`) and shows each model's context size where the vendor reports it; vendors without a listing endpoint (Anthropic, xAI, Perplexity, DeepInfra) offer a curated list, and any id can still be typed. A local runner (Ollama, LM Studio, …) lists from the row's base URL; a keyed vendor is only asked once its key is set.
+
 ## Plugin-internal constants
 
 These aren't user-configurable; they're baked into the plugin:

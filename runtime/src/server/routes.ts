@@ -6,7 +6,9 @@ import { applyProposal } from '../loop/proposals';
 import { listRuns, readRun, type RunRecord } from '../loop/run-record';
 import { DOCX_CONTENT_TYPE, docxToMarkdown, isDocxPath, NotADocxError, openDocx, UnsafeXmlError } from '../docx';
 import { assertSafeXml } from '../docx/safety';
-import { RegistryFile } from '../providers/registry';
+import { BASE_URL_RULE, isAllowedBaseURL, readRegistry, RegistryFile } from '../providers/registry';
+import { DiscoveryCache, discoverModels } from '../providers/discovery';
+import { prefixOf, vendorFor } from '../providers/vendors';
 import type { ThreadEvent, ThreadHeader } from '../threads/store';
 import { vaultDocket } from '../vault/docket';
 import { normalizeVaultPath } from '../vault/knowledge-paths';
@@ -52,6 +54,10 @@ export interface ServerDeps extends Omit<CounselLoopDeps, 'providers' | 'router'
   /** The doctor's git runner (spec 2026-09-01 §7). Default: real git when
    * on PATH; `null` reports "git is not installed". */
   git?: GitRunner | null;
+  /** Model discovery (providers spec §4): the fetch the vendor listings go
+   * through, the environment the keys are read from, and the ten-minute
+   * cache — all injectable so the route tests never touch the network. */
+  discovery?: { fetch?: typeof fetch; env?: NodeJS.ProcessEnv; cache?: DiscoveryCache };
 }
 
 export type App = (req: Request) => Promise<Response>;
@@ -441,6 +447,53 @@ export function createApp(deps: ServerDeps): App {
     } finally {
       release();
     }
+  };
+
+  /**
+   * `GET /providers/:id/models` (providers spec §4): the vendor's own list,
+   * or the catalog's curated one. `:id` is a prefix (`openai`) or a full
+   * provider id (`openai/gpt-5.6`, which may itself contain slashes). The
+   * key is resolved the way the registry resolves it — the secret store,
+   * else the entry's `apiKeyEnv`, else the vendor's usual variable — and a keyed vendor is
+   * never called without one. Cached per vendor and base URL for ten
+   * minutes; `?refresh=1` asks again. Never a throw: a vendor that is down
+   * is a sentence in `error`.
+   */
+  const discoveryCache = deps.discovery?.cache ?? new DiscoveryCache();
+  const modelsRoute = async (id: string, url: URL): Promise<Response> => {
+    const prefix = prefixOf(id);
+    const vendor = vendorFor(prefix);
+    if (vendor === undefined) return fail(404, `unknown provider: ${prefix}`);
+    const env = deps.discovery?.env ?? process.env;
+    let entry: { id: string; baseURL?: string; apiKeyEnv?: string } | undefined;
+    try {
+      const rows = readRegistry(deps.settings.file).providers ?? [];
+      entry = rows.find(e => e.id === id) ?? rows.find(e => prefixOf(e.id) === prefix);
+    } catch {
+      entry = undefined; // a file that does not parse is /settings' problem, not this listing's
+    }
+    const queryBase = url.searchParams.get('baseURL');
+    if (queryBase !== null && !isAllowedBaseURL(queryBase)) return fail(400, BASE_URL_RULE);
+    const baseURL = queryBase ?? entry?.baseURL;
+    // The key, the way the registry resolves it (providers spec §5): the
+    // secret store for the entry's id first, then the entry's variable,
+    // then the vendor's usual one.
+    const keyEnv = entry?.apiKeyEnv ?? vendor.keyEnv;
+    const secretId = entry?.id ?? (id === prefix ? undefined : id);
+    const stored = secretId === undefined ? null : (deps.settings.secrets?.get(secretId) ?? null);
+    const apiKey = stored ?? (keyEnv === undefined ? undefined : env[keyEnv]);
+    const cacheKey = discoveryCache.key(prefix, baseURL);
+    if (url.searchParams.get('refresh') !== '1') {
+      const hit = discoveryCache.get(cacheKey);
+      if (hit !== null) return json(hit);
+    }
+    const result = await discoverModels(vendor, {
+      ...(apiKey === undefined ? {} : { apiKey }),
+      ...(baseURL === undefined ? {} : { baseURL }),
+      ...(deps.discovery?.fetch === undefined ? {} : { fetch: deps.discovery.fetch }),
+    });
+    discoveryCache.set(cacheKey, result);
+    return json(result);
   };
 
   const runProviderTest = async (req: Request): Promise<Response> =>
@@ -970,6 +1023,10 @@ export function createApp(deps: ServerDeps): App {
       }
 
       if (segments.length === 1 && first === 'doctor' && method === 'GET') return doctorRoute();
+
+      if (first === 'providers' && segments.length >= 3 && segments[segments.length - 1] === 'models' && method === 'GET') {
+        return await modelsRoute(decodeURIComponent(segments.slice(1, -1).join('/')), url);
+      }
 
       if (segments.length === 1 && first === 'retro') {
         if (method === 'GET') return await retroStatusRoute();

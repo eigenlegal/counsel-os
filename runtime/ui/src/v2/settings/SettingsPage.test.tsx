@@ -353,3 +353,65 @@ describe('SettingsPage, provider keys (providers spec §5)', () => {
     expect(screen.queryByRole('button', { name: 'paste a key' })).toBeNull();
   });
 });
+
+describe('SettingsPage, the model picker on a provider row (providers spec §4)', () => {
+  const withRow: SettingsView = {
+    ...view,
+    registry: { ...view.registry, providers: [{ id: 'openai/gpt-5.6', apiKeyEnv: 'OPENAI_API_KEY' }] },
+  };
+
+  function installWithModels(answer: (url: string) => Response | null): { listed: string[] } {
+    const listed: string[] = [];
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url === '/settings' && (init?.method ?? 'GET') === 'GET') return json(withRow);
+      if (url === '/content/status') return json({ shippedVersion: '0.0.0', vaultVersion: '0.0.0', receivedAt: null, lawManagement: 'plugin', autoApplyLawUpdates: false, items: [], counts: { current: 0, 'update-available': 0, 'user-modified': 0, 'vault-only': 0, missing: 0, 'upstream-changed': 0 } });
+      if (url.startsWith('/providers/')) {
+        listed.push(url);
+        const r = answer(url);
+        if (r !== null) return r;
+      }
+      throw new Error(`unexpected fetch: ${init?.method ?? 'GET'} ${url}`);
+    }) as unknown as typeof fetch;
+    return { listed };
+  }
+
+  test("the row lists the vendor's models with context sizes; a pick rewrites the id; refresh asks again", async () => {
+    const { listed } = installWithModels(() => json({ models: [{ id: 'gpt-5.6', contextTokens: 400000 }, { id: 'gpt-5.6-mini', contextTokens: 128000 }], source: 'list' }));
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByLabelText('Model')).toBeTruthy());
+    expect((screen.getByLabelText('Model') as HTMLInputElement).value).toBe('gpt-5.6');
+    await waitFor(() => expect(screen.getByText(/2 models listed/)).toBeTruthy());
+    expect(listed).toEqual(['/providers/openai/models']);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Show models' }));
+    await userEvent.click(screen.getByText('gpt-5.6-mini'));
+    expect((screen.getByLabelText('Id') as HTMLInputElement).value).toBe('openai/gpt-5.6-mini');
+
+    await userEvent.click(screen.getByRole('button', { name: 'refresh' }));
+    await waitFor(() => expect(listed).toHaveLength(2));
+    expect(listed[1]).toBe('/providers/openai/models?refresh=1');
+  });
+
+  test('a listing that failed is the runtime\'s sentence under the field, and the id is still typeable', async () => {
+    installWithModels(() => json({ models: [], source: 'list', error: 'No key for OpenAI yet.' }));
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByText('No key for OpenAI yet.')).toBeTruthy());
+    const user = userEvent.setup({ document });
+    const model = screen.getByLabelText('Model') as HTMLInputElement;
+    await user.clear(model);
+    await user.type(model, 'gpt-7');
+    expect((screen.getByLabelText('Id') as HTMLInputElement).value).toBe('openai/gpt-7');
+  });
+
+  test('a local runner row lists from its base URL', async () => {
+    const { listed } = installWithModels(() => json({ models: [{ id: 'qwen3:32b' }], source: 'list' }));
+    const local: SettingsView = { ...view, registry: { ...view.registry, providers: [{ id: 'lmstudio/qwen3:32b', baseURL: 'http://127.0.0.1:1234/v1' }] } };
+    globalThis.fetch = ((orig: typeof fetch) => (async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input) === '/settings' && (init?.method ?? 'GET') === 'GET') return json(local);
+      return orig(input, init);
+    }) as unknown as typeof fetch)(globalThis.fetch);
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(listed).toEqual(['/providers/lmstudio/models?baseURL=http%3A%2F%2F127.0.0.1%3A1234%2Fv1']));
+  });
+});

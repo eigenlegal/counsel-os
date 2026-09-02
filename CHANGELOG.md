@@ -8,6 +8,12 @@ reconstructed from git history. New entries are prepended automatically by
 
 ## [Unreleased]
 
+Model discovery (providers spec §4, step 3)
+
+- `GET /providers/:id/models` lists what a vendor can answer with — from the vendor's own list where one exists (OpenAI, Google, Mistral, Groq, DeepSeek, Cohere, Together AI, Fireworks, Cerebras, OpenRouter, Ollama, and every OpenAI-compatible preset and local runner), from a curated list where none does (Anthropic, xAI, Perplexity, DeepInfra) — with context sizes where the vendor reports them and OpenRouter's per-million prices kept for the scoreboard. A keyed vendor is never called without a key; a failure is one sentence, never an empty picker; listings are remembered for ten minutes (`?refresh=1` asks again).
+- Settings: each provider row gains a Model picker over that list (context size beside each model, custom ids still typed) with the runtime's sentence and a `refresh` link under it; a local runner lists from the row's base URL.
+- First run: a usable Ollama row lists its models in the same picker; picking one is the model counsel starts on.
+
 More providers and models, step 1 — the vendor catalog (providers spec §3, §6)
 
 - One vendor catalog (`runtime/src/providers/vendors.ts`) in two layers replaces the hand-kept allowlist. SDK-native: Google Gemini, Mistral, Groq, xAI, DeepSeek, Cohere, Perplexity, Together AI, Fireworks, DeepInfra, Cerebras and OpenRouter join Anthropic, OpenAI, Ollama and the OpenAI-compatible shape. Presets (data rows over the OpenAI-compatible shape, base URL built in): Kimi/Moonshot, GLM/Z.ai, Qwen/Alibaba Model Studio, SambaNova, Baseten, Hugging Face, Cloudflare Workers AI, Replicate, and the local runners LM Studio, llama.cpp, vLLM, MLX, Jan, GPT4All. An unknown prefix in `providers.yaml` now names the known ones. Settings adds a provider through one grouped picker (Subscriptions · Local runners · Hosted API); the first-run screen names the hosted vendors a key unlocks and open models worth starting with on Ollama.

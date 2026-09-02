@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { ModelCombo } from '../settings/ModelCombo';
 import { keyedHints, OPEN_MODELS } from './vendors';
 import { ApiError, fetchJson } from '../api/client';
 import type { SetupLocation, SetupPlanBody, SetupProvider, SetupResponse } from '../api/types';
@@ -347,17 +348,32 @@ export function SetupPage({ onDone }: SetupPageProps): JSX.Element {
             ) : (
               <div role="radiogroup" aria-label="Which model answers">
                 {providers.map(p => {
-                  const on = provider === p.id;
+                  // A row's id is `<prefix>/<model>`; the picked model may
+                  // have replaced the probe's suggestion.
+                  const prefix = p.id.slice(0, p.id.indexOf('/'));
+                  const on = provider !== null && provider.startsWith(`${prefix}/`);
+                  const chosen = on ? provider!.slice(prefix.length + 1) : p.model;
                   const pick = on ? 'selected' : p.usable ? 'use this' : p.installed ? 'sign in' : 'install';
+                  const listed = p.usable && (p.models?.length ?? 0) > 0;
                   return (
-                    <button type="button" key={p.id} role="radio" aria-checked={on} className="v2-setup-prov" disabled={!p.usable} onClick={() => setProvider(p.id)}>
-                      <span className="v2-setup-vendor">{p.vendor}</span>
-                      <span className="v2-setup-model">
-                        {p.model} · {p.connection}
-                      </span>
-                      <span className={p.usable ? 'v2-setup-state v2-setup-state-in' : 'v2-setup-state'}>{p.state}</span>
-                      <span className={on ? 'v2-setup-pick v2-setup-pick-on' : 'v2-setup-pick'}>{pick}</span>
-                    </button>
+                    <div key={p.id}>
+                      <button type="button" role="radio" aria-checked={on} className="v2-setup-prov" disabled={!p.usable} onClick={() => setProvider(on ? provider : p.id)}>
+                        <span className="v2-setup-vendor">{p.vendor}</span>
+                        <span className="v2-setup-model">
+                          {listed ? chosen : p.model} · {p.connection}
+                        </span>
+                        <span className={p.usable ? 'v2-setup-state v2-setup-state-in' : 'v2-setup-state'}>{p.state}</span>
+                        <span className={on ? 'v2-setup-pick v2-setup-pick-on' : 'v2-setup-pick'}>{pick}</span>
+                      </button>
+                      {/* The runner's own models, in the same picker Settings
+                          uses (providers spec §4): pick one and this row is
+                          the answer. */}
+                      {listed && on ? (
+                        <div className="field v2-setup-models">
+                          <ModelCombo id={`v2-setup-${prefix}-model`} label={`${p.vendor} model`} value={chosen} models={(p.models ?? []).map(id => ({ id }))} onChange={model => setProvider(`${prefix}/${model}`)} />
+                        </div>
+                      ) : null}
+                    </div>
                   );
                 })}
               </div>
