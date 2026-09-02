@@ -188,6 +188,19 @@ export function listAllRuns(vaultRoot: string, tenant: Tenant): RunRecord[] {
  * of its own — an id that names no thread simply matches nothing.
  */
 export function listRuns(vaultRoot: string, tenant: Tenant, threadId: string): RunRecord[] {
+  return readRuns(vaultRoot, tenant, { threadId });
+}
+
+/**
+ * Every run this tenant has, newest first — one thread's, or all of them
+ * (the routing ledger).
+ *
+ * A record's name is its run id, which carries no date, so ordering means
+ * reading them. They are small files and the caller passes a `limit`, but
+ * the read is over the whole directory either way: if that ever matters,
+ * the fix is an index, not a smaller read.
+ */
+export function readRuns(vaultRoot: string, tenant: Tenant, opts: { threadId?: string; limit?: number } = {}): RunRecord[] {
   const dir = runsDir(vaultRoot, tenant);
   let names: string[];
   try {
@@ -203,10 +216,12 @@ export function listRuns(vaultRoot: string, tenant: Tenant, threadId: string): R
     // a crashed write left mid-rename.
     if (!name.endsWith('.json')) continue;
     const rec = readRecordAt(join(dir, name));
-    if (rec !== null && rec.threadId === threadId) runs.push(rec);
+    if (rec === null) continue;
+    if (opts.threadId !== undefined && rec.threadId !== opts.threadId) continue;
+    runs.push(rec);
   }
   // Newest first. `startedAt` is an ISO string, so it sorts lexically; the
   // run id breaks ties so the order is stable rather than readdir's.
   runs.sort((a, b) => b.startedAt.localeCompare(a.startedAt) || b.runId.localeCompare(a.runId));
-  return runs;
+  return opts.limit === undefined ? runs : runs.slice(0, opts.limit);
 }

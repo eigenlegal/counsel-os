@@ -1,5 +1,6 @@
 import { readRouting, setRouting } from '../../api/client';
 import type { RoutingView } from '../../api/types';
+import { RoutingLedger } from './RoutingLedger';
 import { RoutingLine } from './RoutingLine';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, fetchJson, streamEvals } from '../../api/client';
@@ -305,6 +306,10 @@ export function ModelsGroup({ providerIds }: ModelsGroupProps): JSX.Element {
           </table>
         </div>
       )}
+      {/* What actually ran. The board above is how models do on
+          fixtures; this is what the practice got. */}
+      <h4 className="v2-models-sub">what ran</h4>
+      <RoutingLedger />
     </div>
   );
 }

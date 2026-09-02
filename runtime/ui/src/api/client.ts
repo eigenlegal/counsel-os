@@ -9,7 +9,7 @@
 import { parseSseChunk } from './sse';
 import { clearToken, readToken } from './token';
 import { reportUnauthorized } from './unauthorized';
-import type { EvalStreamEvent, FixtureDraft, RoutingView, RunMark, SavedFixture, StepBody, StreamEvent, TaskSource } from './types';
+import type { EvalStreamEvent, FixtureDraft, LedgerRun, RoutingView, RunMark, SavedFixture, StepBody, StreamEvent, TaskSource } from './types';
 
 /** A request that came back with a status the caller has to reason about.
  * `body` is the parsed JSON when there was any — 409 on approve carries the
@@ -353,6 +353,11 @@ export async function saveFixture(input: {
   overwrite?: boolean;
 }): Promise<SavedFixture> {
   return fetchJson<SavedFixture>('/fixtures/save', { method: 'POST', body: JSON.stringify(input) });
+}
+
+/** What ran, newest first (routing-and-evals spec §6). */
+export async function readRoutingLedger(limit = 50): Promise<LedgerRun[]> {
+  return (await fetchJson<{ runs: LedgerRun[] }>(`/routing/ledger?limit=${limit}`)).runs;
 }
 
 /** Change one task's bar, preference or pin; the answer is the fresh view. */

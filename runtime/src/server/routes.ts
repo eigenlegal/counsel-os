@@ -5,7 +5,7 @@ import { MatterStaysLocalError, RouterError } from '../core/types';
 import { DEFAULT_STEP_TIMEOUT_MS, runStep, type CounselLoopDeps, policyForOptions, resolveStepProvider } from '../loop/counsel-loop';
 import { pendingProposals } from '../loop/pending-proposals';
 import { applyProposal } from '../loop/proposals';
-import { finishRun, listRuns, readRun, type RunRecord } from '../loop/run-record';
+import { finishRun, listRuns, readRun, readRuns, type RunRecord } from '../loop/run-record';
 import { DOCX_CONTENT_TYPE, docxToMarkdown, isDocxPath, NotADocxError, openDocx, UnsafeXmlError } from '../docx';
 import { assertSafeXml } from '../docx/safety';
 import { BASE_URL_RULE, isAllowedBaseURL, readRegistry, RegistryFile } from '../providers/registry';
@@ -727,6 +727,41 @@ export function createApp(deps: ServerDeps): App {
   const evalScoreboard = (): Response => {
     const counts = fixtureCounts(evalLoaded().map(l => ({ task: taskOf(l), set: sourceKindOf(l), runnable: runnable(l) })));
     return json(scoreboard(readResults(deps.vaultRoot, { since: null }), counts));
+  };
+
+  /**
+   * The routing ledger: what actually ran, newest first, with the model it
+   * got and the reason it got it.
+   *
+   * The scoreboard says how models do on fixtures and the Models group says
+   * how each task is meant to route. Neither answers "what happened", which
+   * is the question you ask after a morning's work — and it is the only way
+   * to find out whether the rule and the practice agree.
+   */
+  const routingLedger = async (url: URL): Promise<Response> => {
+    const raw = url.searchParams.get('limit');
+    const limit = raw === null ? 50 : Number(raw);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 500) throw new HttpError(400, 'limit must be a whole number from 1 to 500');
+    const runs = readRuns(deps.vaultRoot, deps.tenant, { limit });
+    // The thread's title, so a row reads as work rather than as a uuid.
+    const titles = new Map((await deps.store.list(deps.tenant)).map(h => [h.id, h.title ?? ''] as const));
+    return json({
+      runs: runs.map(r => ({
+        runId: r.runId,
+        threadId: r.threadId,
+        thread: titles.get(r.threadId) ?? '',
+        at: r.startedAt,
+        status: r.status,
+        provider: r.provider,
+        ...(r.task === undefined ? {} : { task: r.task }),
+        ...(r.taskSource === undefined ? {} : { taskSource: r.taskSource }),
+        ...(r.routeReason === undefined ? {} : { routeReason: r.routeReason }),
+        ...(r.policy === undefined ? {} : { policy: r.policy }),
+        ...(r.costUsd === undefined ? {} : { costUsd: r.costUsd }),
+        ...(r.durationMs === undefined ? {} : { durationMs: r.durationMs }),
+        ...(r.mark === undefined ? {} : { mark: r.mark.mark }),
+      })),
+    });
   };
 
   /**
@@ -1553,6 +1588,8 @@ export function createApp(deps: ServerDeps): App {
         if (second === 'draft') return await fixtureDraft(req);
         if (second === 'save') return await fixtureSave(req);
       }
+
+      if (segments.length === 2 && first === 'routing' && second === 'ledger' && method === 'GET') return await routingLedger(url);
 
       if (segments.length === 1 && first === 'routing') {
         if (method === 'GET') return routingGet();

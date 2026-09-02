@@ -665,3 +665,22 @@ export interface SavedFixture {
    * were about. */
   dropped: string[];
 }
+
+/** One row of the routing ledger (`GET /routing/ledger`): a run that
+ * happened, and what it got. */
+export interface LedgerRun {
+  runId: string;
+  threadId: string;
+  /** The conversation's title, so a row reads as work rather than a uuid. */
+  thread: string;
+  at: string;
+  status: string;
+  provider: string;
+  task?: string;
+  taskSource?: TaskSource;
+  routeReason?: { kind: string; text: string };
+  policy?: 'stays-local';
+  costUsd?: number;
+  durationMs?: number;
+  mark?: 'useful' | 'not-right';
+}
