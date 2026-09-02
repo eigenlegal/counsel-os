@@ -1641,10 +1641,10 @@ describe('model discovery (providers spec §4)', () => {
 describe('model discovery reads the secret store first (providers spec §5)', () => {
   test('a key set only in the store makes the listing call the vendor instead of answering "No key … yet"', async () => {
     const urls: string[] = [];
-    let auth: string | null = null;
+    const seen: { auth: string | null } = { auth: null };
     const f = (async (input: string | URL | Request, init?: RequestInit) => {
       urls.push(String(input));
-      auth = new Headers(init?.headers).get('authorization');
+      seen.auth = new Headers(init?.headers).get('authorization');
       return new Response(JSON.stringify({ data: [{ id: 'gpt-5.6' }] }), { status: 200, headers: { 'content-type': 'application/json' } });
     }) as unknown as typeof fetch;
     const file = join(mkdtempSync(join(tmpdir(), 'routes-disc-key-')), 'providers.yaml');
@@ -1656,6 +1656,6 @@ describe('model discovery reads the secret store first (providers spec §5)', ()
     const res = await (await call(app, 'GET', '/providers/openai/models')).json();
     expect(res).toEqual({ models: [{ id: 'gpt-5.6' }], source: 'list' });
     expect(urls).toEqual(['https://api.openai.com/v1/models']);
-    expect(auth).toBe('Bearer sk-from-store');
+    expect(seen.auth).toBe('Bearer sk-from-store');
   });
 });
