@@ -1888,6 +1888,37 @@ describe('the eval runner over HTTP (routing-and-evals spec §4.2)', () => {
     expect(await legacy.json()).toMatchObject({ error: 'nothing to run', skipped: [{ id: 'demo-nda' }] });
   });
 
+  test('GET /evals/scoreboard folds the saved results per task, provider and set, with the fixture counts', async () => {
+    const app = appWith([new FakeModelProvider([{ output: sample('law-beats-practice'), usage: { inputTokens: 10, outputTokens: 2, costUsd: 0.01 } }])], { evals: evalsDeps() });
+    const empty = (await (await call(app, 'GET', '/evals/scoreboard')).json()) as { tasks: Array<{ task: string; sets: Record<string, { fixtures: number; rows: unknown[] }> }> };
+    const review = empty.tasks.find(t => t.task === 'review')!;
+    expect(review.sets.shipped!.fixtures).toBe(8);
+    expect(review.sets.shipped!.rows).toEqual([]);
+    expect(review.sets.practice).toEqual({ fixtures: 0, rows: [] });
+
+    await (await call(app, 'POST', '/evals/run', { body: { fixtures: ['law-beats-practice'], save: true } })).text();
+    const board = (await (await call(app, 'GET', '/evals/scoreboard')).json()) as typeof empty;
+    const row = board.tasks.find(t => t.task === 'review')!.sets.shipped!.rows[0] as Record<string, unknown>;
+    expect(row).toMatchObject({ providerId: 'fake/fake', modelVersion: 'fake', score: 1, scored: 1, sampleSize: 1, failed: [], meanCostUsd: 0.01, staleDays: 0 });
+    expect(typeof row.medianMs).toBe('number');
+    expect(board.tasks.find(t => t.task === 'review')!.sets.practice!.rows).toEqual([]);
+  });
+
+  test('GET /evals/estimate says how many fixtures a task runs and what it may cost', async () => {
+    const app = appWith([new FakeModelProvider([{ text: 'x' }])], { evals: evalsDeps({ pricing: () => ({ prompt: 3, completion: 15 }) }) });
+    const res = await call(app, 'GET', '/evals/estimate?task=review&providerId=fake%2Ffake');
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ task: 'review', providerId: 'fake/fake', count: 8, estimateUsd: 1.32, needsConfirm: true });
+    const unknown = await call(app, 'GET', '/evals/estimate?task=review&providerId=nope%2Fnope');
+    expect(unknown.status).toBe(422);
+    expect((await call(app, 'GET', '/evals/estimate?task=review')).status).toBe(400);
+    expect((await call(app, 'GET', '/evals/estimate?providerId=fake%2Ffake')).status).toBe(400);
+    const noTask = await call(app, 'GET', '/evals/estimate?task=ghost&providerId=fake%2Ffake');
+    expect(await noTask.json()).toMatchObject({ count: 0, estimateUsd: 0, needsConfirm: false });
+    const free = appWith([new FakeModelProvider([{ text: 'x' }])], { evals: evalsDeps() });
+    expect(await (await call(free, 'GET', '/evals/estimate?task=review&providerId=fake%2Ffake')).json()).toMatchObject({ count: 8, estimateUsd: null, needsConfirm: false });
+  });
+
   test('one run at a time: a second POST while one streams is 409 eval-busy', async () => {
     let release: () => void = () => {};
     const gate = new Promise<void>(r => (release = r));

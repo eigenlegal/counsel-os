@@ -882,6 +882,201 @@ export const MANIFEST: ContentManifest = {
     },
     "skills/demo/assets/sample-mutual-nda.md": {
       "hash": "0072b329826d5ea2297b8c786ba0b54bef092ab1c5c646874bd90569030f9624"
+    },
+    "evals/fixtures/ai-training-data.json": {
+      "hash": "2e3649712fff0a61c56eab83de4300b84c552fe3d7ccbaa41e83b16c39c19832"
+    },
+    "evals/fixtures/demo-nda.json": {
+      "hash": "66fbe53f86e1548890641f7e7c82c3b9aff4d3425cf3f8c212f55b88e2456949"
+    },
+    "evals/fixtures/entity-override-scoping.json": {
+      "hash": "010da2b816bbc593b08644342e8e4f42e8d9f89744df14f6eaba961c98c1675f"
+    },
+    "evals/fixtures/escalation-trigger.json": {
+      "hash": "a258d157309fe17c7c07819e8430623370c7777f9cf1d3a1d9ecb9df03be0e02"
+    },
+    "evals/fixtures/green-yellow-red-calibration.json": {
+      "hash": "2f10dfc980f062ec25ffeca1e6678ed26d4d1a979f95bfafbdcae6184a4c572c"
+    },
+    "evals/fixtures/law-area-trigger-detection.json": {
+      "hash": "404b5e8681fdcce44f77d690b26e3159c4eefe161a30a46e9933114f6dc13edf"
+    },
+    "evals/fixtures/law-beats-practice.json": {
+      "hash": "42e248d7275414f4c864929c4a5587fe330fb9942e1e99153f7b72f3386cb680"
+    },
+    "evals/fixtures/missing-provision-coverage.json": {
+      "hash": "963745a8c4681760077db454c36d8b5fef9ff379e8733fccb2c5087806c4f5da"
+    },
+    "evals/fixtures/msa-liability-indemnity.json": {
+      "hash": "5db07829d71205f8031e495fdab2c33ffb40de6b775ee7d1ffd6733f3f4992dc"
+    },
+    "evals/fixtures/nda-residuals.json": {
+      "hash": "b3be8a955357036672dec720237d1f679a789c230d91ce971034372de65abd64"
+    },
+    "evals/fixtures/redline-roundtrip.json": {
+      "hash": "b21494abae937bf7fed4e2e74637a0daf911d9646bdfb75735f8a2d73fb33ccd"
+    },
+    "evals/fixtures/reference-never-governs.json": {
+      "hash": "0200faf249e1620a1632bc6aff4fdeb5e1f9bc9db95d20d66db870458dd31aa9"
+    },
+    "evals/fixtures/saas-dpa-breach.json": {
+      "hash": "35a475bb4d675d2bdab4d912b8d3aefa3454e665bfd134b616b05ff7c5f1259c"
+    },
+    "evals/vaults/entity-override-scoping/config.md": {
+      "hash": "a59d2d800232831df43fa3eae56104f1811b51f5fd5c720eaed5df2ac1990a49"
+    },
+    "evals/vaults/entity-override-scoping/entities/aurelia-systems.md": {
+      "hash": "1c22aad1bbbb3885131783d5feca6226dac111ec55547ca186dac8937e7412be"
+    },
+    "evals/vaults/entity-override-scoping/memory/patterns.md": {
+      "hash": "e9ade72874dc00ecaf2044ce98655fad78ae039fc1421c532e3cb5a4098edff7"
+    },
+    "evals/vaults/entity-override-scoping/practice/profile.md": {
+      "hash": "27d6dcfc6934f7dd33ee4bc72ef80bd0fe8e98be1a07d74bc027008a3c13cd1b"
+    },
+    "evals/vaults/entity-override-scoping/practice/standards/limitation-of-liability.md": {
+      "hash": "0758ee85056940f43602ea50d137ab9aee276e5cac7e7aaf551b90d3648e18a0"
+    },
+    "evals/vaults/escalation-trigger/config.md": {
+      "hash": "a59d2d800232831df43fa3eae56104f1811b51f5fd5c720eaed5df2ac1990a49"
+    },
+    "evals/vaults/escalation-trigger/memory/patterns.md": {
+      "hash": "e9ade72874dc00ecaf2044ce98655fad78ae039fc1421c532e3cb5a4098edff7"
+    },
+    "evals/vaults/escalation-trigger/practice/profile.md": {
+      "hash": "d21a69857dcb1829639b85ec1ef4ca5b547840aa2aad90913b8f26b1b8fda8b4"
+    },
+    "evals/vaults/escalation-trigger/practice/standards/indemnification.md": {
+      "hash": "408b9481d0ead73f21b17a98281198d5a6c140b0bc0a82f76c3f507219214253"
+    },
+    "evals/vaults/green-yellow-red-calibration/config.md": {
+      "hash": "a59d2d800232831df43fa3eae56104f1811b51f5fd5c720eaed5df2ac1990a49"
+    },
+    "evals/vaults/green-yellow-red-calibration/memory/patterns.md": {
+      "hash": "e9ade72874dc00ecaf2044ce98655fad78ae039fc1421c532e3cb5a4098edff7"
+    },
+    "evals/vaults/green-yellow-red-calibration/practice/profile.md": {
+      "hash": "2128cd6fffc5bd565183ff2953849f3006289f416862fd1befcb53f3825a33ea"
+    },
+    "evals/vaults/green-yellow-red-calibration/practice/standards/fees-payment.md": {
+      "hash": "433426fde9d6fd29d750bc156e861e44626b0231e326e8ed16a9c9d4181a6473"
+    },
+    "evals/vaults/green-yellow-red-calibration/practice/standards/limitation-of-liability.md": {
+      "hash": "69bf2be5411b8d0fb79191deea87afe0233732efd16e2129a9d5bbec98b081ff"
+    },
+    "evals/vaults/green-yellow-red-calibration/practice/standards/termination-renewal.md": {
+      "hash": "74b87bcf0480b38027310634818dad52ec4e271de1598c4e4bc9eedfa55ff0a1"
+    },
+    "evals/vaults/law-area-trigger-detection/config.md": {
+      "hash": "a59d2d800232831df43fa3eae56104f1811b51f5fd5c720eaed5df2ac1990a49"
+    },
+    "evals/vaults/law-area-trigger-detection/law/data-privacy.md": {
+      "hash": "7c91f645eb90932c8558bc95d05455d906cea90e9987febb76af78be10336732"
+    },
+    "evals/vaults/law-area-trigger-detection/law/employment.md": {
+      "hash": "466ce26c1ee160d535d89fab2485b190d8ba586a7122db689580b8d2e3e6b55b"
+    },
+    "evals/vaults/law-area-trigger-detection/law/financial-services.md": {
+      "hash": "e595d6d3414fe66ca4d539e56ade3346763f85f6c94f9a4a0c6cea879fb9b713"
+    },
+    "evals/vaults/law-area-trigger-detection/memory/patterns.md": {
+      "hash": "e9ade72874dc00ecaf2044ce98655fad78ae039fc1421c532e3cb5a4098edff7"
+    },
+    "evals/vaults/law-area-trigger-detection/practice/profile.md": {
+      "hash": "f42cef37ae5f4fecee68b86ca483e187121e440c50505e7a8337e668cba07fd8"
+    },
+    "evals/vaults/law-area-trigger-detection/practice/standards/data-protection.md": {
+      "hash": "847953fab13b9b5b20f95b861313f4080daa399992344298888d563983802148"
+    },
+    "evals/vaults/law-beats-practice/config.md": {
+      "hash": "a59d2d800232831df43fa3eae56104f1811b51f5fd5c720eaed5df2ac1990a49"
+    },
+    "evals/vaults/law-beats-practice/law/data-privacy.md": {
+      "hash": "b9f9f15cf12d093af120cfa9f2fc793eac3ad8dd595cd8c7a658d732f833f5a4"
+    },
+    "evals/vaults/law-beats-practice/memory/patterns.md": {
+      "hash": "e9ade72874dc00ecaf2044ce98655fad78ae039fc1421c532e3cb5a4098edff7"
+    },
+    "evals/vaults/law-beats-practice/practice/profile.md": {
+      "hash": "10913c03967cf8d907300f5817a717ff9bcea2ba1813704fb17e37aa5b035cea"
+    },
+    "evals/vaults/law-beats-practice/practice/standards/data-protection.md": {
+      "hash": "94de67c84ee00cef8fef77d2b1bafc10fcf113d9d5c0522cc2514a114778a506"
+    },
+    "evals/vaults/missing-provision-coverage/config.md": {
+      "hash": "a59d2d800232831df43fa3eae56104f1811b51f5fd5c720eaed5df2ac1990a49"
+    },
+    "evals/vaults/missing-provision-coverage/law/data-privacy.md": {
+      "hash": "1347bffd84b951aefc140d61c3e88ca1a3ba5160ef2c866f6ca6294c5f1c415d"
+    },
+    "evals/vaults/missing-provision-coverage/matters/davenport-msa-draft.md": {
+      "hash": "c857f0232f7d26c1f60c3983d4653e12f789dbfc23f7ed0fd7cc31b4a12b4167"
+    },
+    "evals/vaults/missing-provision-coverage/memory/patterns.md": {
+      "hash": "e9ade72874dc00ecaf2044ce98655fad78ae039fc1421c532e3cb5a4098edff7"
+    },
+    "evals/vaults/missing-provision-coverage/practice/methods/contract-review.md": {
+      "hash": "d61b1be7bd6dbf47db51d6ba84f631187142a7379e661953db80994955d3569a"
+    },
+    "evals/vaults/missing-provision-coverage/practice/profile.md": {
+      "hash": "1ec8accbbbbd200b976e00321b3be7157cd69f17df4aa53350c0ebadd950dc31"
+    },
+    "evals/vaults/missing-provision-coverage/practice/standards/data-protection.md": {
+      "hash": "c9eecaaf0684aa7d139c75f527f4a16ec4571c07347b93f39a33f38c449fba8e"
+    },
+    "evals/vaults/missing-provision-coverage/practice/standards/indemnification.md": {
+      "hash": "482c2da9a239aa18afe89c8ed82c64509e21271e3eac36bb8b7b87fd574c61eb"
+    },
+    "evals/vaults/missing-provision-coverage/practice/standards/limitation-of-liability.md": {
+      "hash": "dbbcf78568808c08e774862917469d5e4f57319a1eb28eee02b9970a3c3caa73"
+    },
+    "evals/vaults/redline-roundtrip/config.md": {
+      "hash": "a59d2d800232831df43fa3eae56104f1811b51f5fd5c720eaed5df2ac1990a49"
+    },
+    "evals/vaults/redline-roundtrip/matters/2026-05-brockhaven-msa.md": {
+      "hash": "3761d3ba3e4178c5bdafb39b94aca19d39adecadc0277bc533bf96f890ff518b"
+    },
+    "evals/vaults/redline-roundtrip/matters/brockhaven-msa-r1-extraction.json": {
+      "hash": "826d22f56ae269af8d36c0a43b000e3a3ccab492d08063573389383397c27250"
+    },
+    "evals/vaults/redline-roundtrip/memory/patterns.md": {
+      "hash": "a2e62642172ca6930ea356d11898232c3e377d24c30ccce66a820715b5d9f18d"
+    },
+    "evals/vaults/redline-roundtrip/practice/profile.md": {
+      "hash": "cfca2371a4fe739cd8189beb33d16b5c453032113eee071d6e09bfbefa719b15"
+    },
+    "evals/vaults/redline-roundtrip/practice/standards/fees-payment.md": {
+      "hash": "bd2e28e247d38306fc79016cb027a73339b6b06b102d25223d881110278cdef8"
+    },
+    "evals/vaults/redline-roundtrip/practice/standards/indemnification.md": {
+      "hash": "03bf60f99d7efa5aca7703b2cfaf570dcdfd18ce1e06049590bae4917c31fc9b"
+    },
+    "evals/vaults/redline-roundtrip/practice/standards/most-favored-nation.md": {
+      "hash": "f1227f4790a52176bde0860fead515bc0c7f5b141f4974b6199136b9549c41f3"
+    },
+    "evals/vaults/redline-roundtrip/practice/standards/termination-renewal.md": {
+      "hash": "81e1c76140183444c60f7543ca227a457f58df53c9d39adfcea87f9409bdefe2"
+    },
+    "evals/vaults/reference-never-governs/config.md": {
+      "hash": "a59d2d800232831df43fa3eae56104f1811b51f5fd5c720eaed5df2ac1990a49"
+    },
+    "evals/vaults/reference-never-governs/memory/patterns.md": {
+      "hash": "e9ade72874dc00ecaf2044ce98655fad78ae039fc1421c532e3cb5a4098edff7"
+    },
+    "evals/vaults/reference-never-governs/practice/profile.md": {
+      "hash": "5adc8092001e9df1330382db582e0efeabbfaf9b09b09977144584adc46a8281"
+    },
+    "evals/vaults/reference-never-governs/practice/reference/_index.md": {
+      "hash": "0d2ad0661c3df3910e2812c28746b041bef349803a2d984aa6a1e4731f847ecb"
+    },
+    "evals/vaults/reference-never-governs/practice/reference/vendor-forms/_index.md": {
+      "hash": "441517de2c7785908c13b360cfa820e3cfec756405f2395d9992d60511f192b4"
+    },
+    "evals/vaults/reference-never-governs/practice/reference/vendor-forms/services-agreement-liability-sample.md": {
+      "hash": "621fd598c5c05e50970cfdd24f8583613fa2cb59a86d6d69a2ff68eed7e325ff"
+    },
+    "evals/vaults/reference-never-governs/practice/standards/limitation-of-liability.md": {
+      "hash": "6042f5594369ef79aad2df491c06fe5722ae42ea549994fc5fcc92cd6684fd0a"
     }
   },
   "groups": {

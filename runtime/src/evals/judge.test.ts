@@ -44,7 +44,7 @@ describe('pickJudge', () => {
 });
 
 describe('selectFixtures', () => {
-  const loaded = (id: string, extra: Record<string, unknown> = {}): LoadedFixture => ({ fixture: parseFixture({ id, task: 't', ...extra }), set: 'shipped', file: id, vaultsDir: '/x' });
+  const loaded = (id: string, extra: Record<string, unknown> = {}): LoadedFixture => ({ fixture: parseFixture({ id, task: 't', ...extra }), set: 'shipped', file: id, vaults: { kind: 'dir', dir: '/x' } });
   const all = [loaded('a', { vault: 'v' }), loaded('b', { vault: 'v', scorer: 'redline', expected: { document: 'd.docx', items: [] } }), loaded('legacy')];
 
   test('by id, by task, or all; legacy fixtures are skipped with a reason', () => {

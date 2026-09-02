@@ -20,6 +20,11 @@ export const SHIPPED_ROOTS: readonly string[] = [
   'skills/retro',
   // The synthetic NDA the sample matter is made of (spec 2026-09-01 §4).
   'skills/demo/assets',
+  // The shipped eval suite — fixtures and their mini-vaults — so a compiled
+  // binary can list and run them (routing-and-evals spec §9). Setup and
+  // update never seed a vault from these: `PLACEMENTS` names its roots.
+  'evals/fixtures',
+  'evals/vaults',
 ];
 
 /** Files under a shipped root that are documentation for maintainers, not

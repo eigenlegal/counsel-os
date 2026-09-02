@@ -71,7 +71,11 @@ describe('the generated manifest', () => {
   });
 
   test('records every shipped file and every recorded group', () => {
-    expect(Object.keys(MANIFEST.files)).toHaveLength(repoContentSource(REPO).list('knowledge').length + repoContentSource(REPO).list('templates').length + repoContentSource(REPO).list('primitives').length + repoContentSource(REPO).list('skills').length);
+    const source = repoContentSource(REPO);
+    expect(Object.keys(MANIFEST.files)).toHaveLength(['knowledge', 'templates', 'primitives', 'skills', 'evals'].reduce((n, root) => n + source.list(root).length, 0));
+    // The eval suite ships too (routing-and-evals spec §9).
+    expect(source.list('evals/fixtures').length).toBeGreaterThanOrEqual(13);
+    expect(Object.keys(MANIFEST.files).some(p => p.startsWith('evals/vaults/'))).toBe(true);
     expect(Object.keys(MANIFEST.groups).length).toBeGreaterThanOrEqual(30);
     expect(MANIFEST.groups['law/corporate']!.contentVersion).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });

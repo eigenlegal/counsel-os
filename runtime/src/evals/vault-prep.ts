@@ -4,10 +4,16 @@
  * directory and `config.md`'s `__VAULT_PATH__` placeholder is rewritten to
  * the copy's real path, so the resolver treats it as a marked legal root.
  * The caller owns the temp directory and removes it when the run ends.
+ *
+ * A shipped vault comes out of the content source (the compiled binary has
+ * no `evals/` on disk); a practice vault is a directory. The content walk
+ * skips dotfiles, so a `matters/.gitkeep` never ships — the standard empty
+ * folders are made here instead.
  */
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { isText } from '../content/generate';
 import type { LoadedFixture } from './fixture';
 
 export interface PreparedVault {
@@ -16,15 +22,37 @@ export interface PreparedVault {
   remove(): void;
 }
 
+/** Folders every fixture vault has, whether or not a file sits in them. */
+const EMPTY_FOLDERS = ['matters', 'memory', 'entities'];
+
 export function prepareFixtureVault(loaded: LoadedFixture, opts: { tmpDir?: string } = {}): PreparedVault {
   const name = loaded.fixture.vault;
   if (name === undefined) throw new Error(`fixture ${loaded.fixture.id} has no vault — a legacy fixture cannot be run, only scored from a saved output`);
-  const src = join(loaded.vaultsDir, name);
-  if (!existsSync(src) || !statSync(src).isDirectory()) throw new Error(`vault not found for fixture ${loaded.fixture.id}: ${src}`);
 
   const tmp = mkdtempSync(join(opts.tmpDir ?? tmpdir(), 'counsel-eval-'));
   const vault = join(tmp, 'vault');
-  cpSync(src, vault, { recursive: true });
+  try {
+    if (loaded.vaults.kind === 'dir') {
+      const src = join(loaded.vaults.dir, name);
+      if (!existsSync(src) || !statSync(src).isDirectory()) throw new Error(`vault not found for fixture ${loaded.fixture.id}: ${src}`);
+      cpSync(src, vault, { recursive: true });
+    } else {
+      const { content, prefix } = loaded.vaults;
+      const under = `${prefix}/${name}`;
+      const files = content.list(under);
+      if (files.length === 0) throw new Error(`vault not found for fixture ${loaded.fixture.id}: ${under}`);
+      for (const path of files) {
+        const dest = join(vault, path.slice(under.length + 1));
+        mkdirSync(dirname(dest), { recursive: true });
+        if (isText(path)) writeFileSync(dest, content.read(path), 'utf8');
+        else writeFileSync(dest, content.readBytes(path));
+      }
+    }
+  } catch (err) {
+    rmSync(tmp, { recursive: true, force: true });
+    throw err;
+  }
+  for (const folder of EMPTY_FOLDERS) mkdirSync(join(vault, folder), { recursive: true });
   const cfg = join(vault, 'config.md');
   if (existsSync(cfg)) writeFileSync(cfg, readFileSync(cfg, 'utf8').replaceAll('__VAULT_PATH__', vault), 'utf8');
   return { tmp, vault, remove: () => rmSync(tmp, { recursive: true, force: true }) };

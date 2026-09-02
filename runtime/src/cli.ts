@@ -29,11 +29,13 @@ import { ThreadStore } from './threads/store';
 import { startRetro } from './retro/index';
 import { runStep } from './loop/counsel-loop';
 import { loadRegistry } from './providers/registry';
-import { loadFixtures } from './evals/fixture';
+import { repoContentSource } from './content/repo';
+import { loadFixtures, sourceKindOf } from './evals/fixture';
 import { pickJudge, providerJudge } from './evals/judge';
-import { appendResult } from './evals/results';
+import { appendResult, readResults } from './evals/results';
 import { runSet, summarize } from './evals/runner';
-import { renderResult, renderSummary, selectFixtures } from './evals/select';
+import { fixtureCounts, renderScoreboard, scoreboard } from './evals/scoreboard';
+import { renderResult, renderSummary, runnable, selectFixtures, taskOf } from './evals/select';
 import { confirmationMessage, estimateCost, needsConfirmation } from './evals/cost';
 
 const { values, positionals } = parseArgs({
@@ -78,6 +80,7 @@ const { values, positionals } = parseArgs({
     save: { type: 'boolean' },             // `eval`: append the lines to <vault>/.counsel/evals/results.jsonl
     json: { type: 'boolean' },             // `eval`: one JSON line per result instead of the text table
     repo: { type: 'string' },              // `eval`: the checkout the shipped fixtures live in (default: the plugin root)
+    scoreboard: { type: 'boolean' },       // `eval`: print the scoreboard from the saved results instead of running
     ours: { type: 'string' },         // `docx rounds`
     theirs: { type: 'string' },       // `docx rounds`
     base: { type: 'string' },         // `docx rounds`: the round N-1 baseline
@@ -106,6 +109,8 @@ function usage(): never {
   console.error('         opens a retro thread over the runtime\'s record of the period and runs its first step; knowledge changes come back as proposals');
   console.error('       bun runtime/src/cli.ts eval (--fixture <id> [--fixture <id>…] | --task <task> | --all) [--provider <id>] [--vault <dir>] [--save] [--yes] [--json] [--step-timeout <ms>]');
   console.error('         runs eval fixtures (the shipped set plus <vault>/practice/evals) through the loop on one provider and scores them; --yes accepts a run estimated over $1');
+  console.error('       bun runtime/src/cli.ts eval --scoreboard [--vault <dir>] [--json]');
+  console.error('         the scoreboard: per task and provider, the latest score per fixture set (practice · shipped · benchmark), from the saved results');
   console.error('       bun runtime/src/cli.ts doctor [--vault <dir>]');
   console.error('         read-only vault health: root config, structure, law currency, git, standards/library consistency, matter law impact');
   console.error('       bun runtime/src/cli.ts docx apply <file.docx> <redlines.json> [--out <file>] [--track] [--author <name>] (the redline; result JSON to stdout, exit 2 on any skip)');
@@ -384,8 +389,15 @@ if (cmd === 'serve') {
 } else if (cmd === 'eval') {
   const vaultRoot = vaultForMaintenance();
   const pluginRoot = defaultPluginRoot();
-  const repoRoot = values.repo === undefined ? pluginRoot : resolve(values.repo);
-  const loaded = loadFixtures({ repoRoot, vaultRoot });
+  // The shipped set comes through the content source — the compiled binary
+  // has no `evals/` on disk; `--repo` reads another checkout's instead.
+  const content = values.repo === undefined ? shippedContent(pluginRoot) : repoContentSource(resolve(values.repo));
+  const loaded = loadFixtures({ content, vaultRoot });
+  if (values.scoreboard === true) {
+    const board = scoreboard(readResults(vaultRoot, { since: null }), fixtureCounts(loaded.map(l => ({ task: taskOf(l), set: sourceKindOf(l), runnable: runnable(l) }))));
+    console.log(values.json === true ? JSON.stringify(board) : renderScoreboard(board));
+    process.exit(0);
+  }
   const selected = selectFixtures(loaded, { ...(values.fixture === undefined ? {} : { fixtures: values.fixture }), ...(values.task === undefined ? {} : { task: values.task }), ...(values.all === undefined ? {} : { all: values.all }) });
   if (selected.error !== undefined) {
     console.error(selected.error);

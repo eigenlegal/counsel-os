@@ -20,6 +20,7 @@ import { isTask, TASK_IDS } from '../tasks/taxonomy';
 import { modelClassifier } from '../tasks/classify';
 import { applyUpdates, contentStatus, UpdateError } from '../content/update';
 import { repoContentSource } from '../content/repo';
+import type { ContentSource } from '../content/source';
 import { runDoctor } from '../doctor/index';
 import { retroStatusFor, startRetro } from '../retro/index';
 import { systemGit, type GitRunner } from '../setup/run';
@@ -34,10 +35,11 @@ import {
   type SettingsDeps, providerView, keyContext, putProviderKey, deleteProviderKey, KeyBody } from './settings';
 import { sseFromEvents, type StreamEvent } from './sse';
 import { confirmationMessage, estimateCost, needsConfirmation, type Pricing } from '../evals/cost';
-import { loadFixtures } from '../evals/fixture';
+import { loadFixtures, sourceKindOf } from '../evals/fixture';
 import { pickJudge, providerJudge } from '../evals/judge';
 import { appendResult, readResults } from '../evals/results';
 import { runSet, summarize } from '../evals/runner';
+import { fixtureCounts, scoreboard } from '../evals/scoreboard';
 import type { Judge } from '../evals/scorers/types';
 import { runnable, selectFixtures, taskOf } from '../evals/select';
 import { serveStatic, type StaticSource } from './static';
@@ -654,11 +656,16 @@ export function createApp(deps: ServerDeps): App {
   };
 
   // ── Evals (routing-and-evals spec §4.2) ─────────────────────────────────
-  const evalRepoRoot = (): string => deps.evals?.repoRoot ?? deps.pluginRoot;
+  /** The shipped fixtures come through the content source (spec §9), so
+   * the compiled binary runs the same suite as a checkout; `evals.repoRoot`
+   * points at another checkout. */
+  const evalContent = (): ContentSource =>
+    deps.evals?.repoRoot !== undefined ? repoContentSource(deps.evals.repoRoot) : (deps.content ?? repoContentSource(deps.pluginRoot));
+  const evalLoaded = () => loadFixtures({ content: evalContent(), vaultRoot: deps.vaultRoot });
 
   const evalFixtures = (): Response =>
     json({
-      fixtures: loadFixtures({ repoRoot: evalRepoRoot(), vaultRoot: deps.vaultRoot }).map(l => ({
+      fixtures: evalLoaded().map(l => ({
         id: l.fixture.id,
         ...(l.fixture.title === undefined ? {} : { title: l.fixture.title }),
         scorer: l.fixture.scorer,
@@ -674,6 +681,28 @@ export function createApp(deps: ServerDeps): App {
     return json({ results: readResults(deps.vaultRoot, { since }) });
   };
 
+  /** The scoreboard (spec §5): the results record folded per task ×
+   * provider × set, with the fixture counts so an unscored task still shows. */
+  const evalScoreboard = (): Response => {
+    const counts = fixtureCounts(evalLoaded().map(l => ({ task: taskOf(l), set: sourceKindOf(l), runnable: runnable(l) })));
+    return json(scoreboard(readResults(deps.vaultRoot, { since: null }), counts));
+  };
+
+  /** What scoring a task on a provider would run and roughly cost — the
+   * one-line confirmation the Models group shows before a run. */
+  const evalEstimate = (url: URL): Response => {
+    const task = url.searchParams.get('task');
+    const providerId = url.searchParams.get('providerId');
+    if (task === null || task === '') return fail(400, 'task is required');
+    if (providerId === null || providerId === '') return fail(400, 'providerId is required');
+    const state = deps.state();
+    if (!state.providers.some(p => p.id === providerId)) return fail(422, `unknown provider: ${providerId}`);
+    const selected = selectFixtures(evalLoaded(), { task });
+    const count = selected.fixtures.length;
+    const estimateUsd = estimateCost(count, deps.evals?.pricing?.(providerId) ?? null);
+    return json({ task, providerId, count, estimateUsd, needsConfirm: needsConfirmation(estimateUsd), skipped: selected.skipped });
+  };
+
   /** One run at a time: a set is a queue of steps against the shared
    * window, and two sets at once would only race each other. */
   let evalRunning = false;
@@ -683,7 +712,7 @@ export function createApp(deps: ServerDeps): App {
     const state = deps.state();
     const providerId = input.providerId ?? effectiveDefault(state);
     if (providerId === null || !state.providers.some(p => p.id === providerId)) throw new HttpError(422, `unknown provider: ${providerId ?? '(none configured)'}`);
-    const loaded = loadFixtures({ repoRoot: evalRepoRoot(), vaultRoot: deps.vaultRoot });
+    const loaded = evalLoaded();
     const selected = selectFixtures(loaded, { ...(input.fixtures === undefined ? {} : { fixtures: input.fixtures }), ...(input.task === undefined ? {} : { task: input.task }), ...(input.all === undefined ? {} : { all: input.all }) });
     if (selected.error !== undefined) throw new HttpError(400, selected.error);
     if (selected.fixtures.length === 0) throw new HttpError(400, 'nothing to run', { skipped: selected.skipped });
@@ -1210,6 +1239,8 @@ export function createApp(deps: ServerDeps): App {
       if (segments.length === 2 && first === 'evals') {
         if (second === 'fixtures' && method === 'GET') return evalFixtures();
         if (second === 'results' && method === 'GET') return evalResults(url);
+        if (second === 'scoreboard' && method === 'GET') return evalScoreboard();
+        if (second === 'estimate' && method === 'GET') return evalEstimate(url);
         if (second === 'run' && method === 'POST') return await evalRun(req);
       }
 
