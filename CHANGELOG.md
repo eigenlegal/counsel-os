@@ -8,6 +8,13 @@ reconstructed from git history. New entries are prepended automatically by
 
 ## [Unreleased]
 
+Routing from the scoreboard (routing-and-evals spec §6)
+
+- The scoreboard picks the model for a task: candidates clear the task's bar on the practice's own fixtures, or the shipped suite until the practice has its own; a pin wins among them; `cost` and `latency` choose only among peers within 0.05 of the best score, so a cheaper model never displaces a materially better answer.
+- Two things routing will not do: send a matter that stays on this machine to the cloud, however well a cloud model scores; or refuse to answer for want of a measurement — an unscored task falls to the configured route and the default, as before.
+- Every run records why its model answered — the scoreboard, a pin, the route, the default, or the matter's policy — and the record shows it beside the model.
+- `practice/routing.yaml` holds the bar, the preference and the pin for each task; a typo in one task costs that task, not the file.
+
 Routing and evals, step 1 — every step has a task, and the vault keeps what you did with the answer (routing-and-evals spec §3, §7)
 
 - A closed legal task taxonomy — `review`, `redline`, `draft`, `research`, `extract`, `summarize`, `compare`, `remember`, `docket`, `retro`, `chat` — and where a step's task came from: named on the request, set on the conversation, a rule over the message and its attachments, an optional model call (`classify: model` in `config.md`, off by default), else `chat`. The task and its source sit on the step event and the run record; the turn's record shows `task · by rule · change`, and the picker corrects it (`PATCH /threads/:id/steps/:runId/task`).
