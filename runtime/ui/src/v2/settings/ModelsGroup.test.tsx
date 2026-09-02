@@ -3,7 +3,7 @@ import { cleanup, render, screen, userEvent, waitFor, within } from '../../test/
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { clearToken, TOKEN_KEY } from '../../api/token';
 import type { Scoreboard, ScoreboardRow, ScoreboardSet } from '../../api/types';
-import { confirmLine, ModelsGroup, staleness } from './ModelsGroup';
+import { confirmLine, ModelsGroup, runCost, scoredLabel, staleness } from './ModelsGroup';
 
 const realFetch = globalThis.fetch;
 
@@ -120,7 +120,7 @@ describe('ModelsGroup', () => {
     expect(within(table).getAllByRole('rowheader').map(h => h.textContent)).toEqual(['review8 fixtures', 'extract1 fixture']);
     // The score is text, with the facts under it; the failed cell carries its reason and offers a retry.
     expect(screen.getByText('0.91')).toBeTruthy();
-    expect(screen.getByText('8/8 · 3d ago · 4.2s · $0.070/run')).toBeTruthy();
+    expect(screen.getByText('8/8 · 3d ago · 4.2s · $0.07/run')).toBeTruthy();
     expect(screen.getByText('failed')).toBeTruthy();
     expect(screen.getByText('step timed out')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'retry' })).toBeTruthy();
@@ -226,5 +226,21 @@ describe('ModelsGroup', () => {
     expect(staleness(3)).toBe('3d ago');
     expect(confirmLine('claude-sub/claude-opus-5', 'review', { task: 'review', providerId: 'x', count: 8, estimateUsd: 0.6, needsConfirm: false })).toBe('Score claude-sub/claude-opus-5 on review · 8 fixtures · about $0.60');
     expect(confirmLine('x', 'draft', { task: 'draft', providerId: 'x', count: 1, estimateUsd: null, needsConfirm: false })).toBe('Score x on draft · 1 fixture · cost unknown');
+  });
+});
+
+describe('the facts line', () => {
+  test('a scored count the fixture count cannot hold stands on its own', () => {
+    // A result left behind by a fixture whose task changed: `1/0` read as a
+    // broken fraction.
+    expect(scoredLabel(1, 0)).toBe('1 scored');
+    expect(scoredLabel(3, 2)).toBe('3 scored');
+    expect(scoredLabel(2, 8)).toBe('2/8');
+  });
+
+  test('cost is money to the cent, and says so when a run is cheaper than one', () => {
+    expect(runCost(0.23)).toBe('$0.23/run');
+    expect(runCost(0.005)).toBe('$0.01/run');
+    expect(runCost(0.0004)).toBe('<$0.01/run');
   });
 });

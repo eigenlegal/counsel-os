@@ -13,6 +13,22 @@ export function staleness(days: number): string {
 }
 
 /** The one-line confirmation before a run: what, how many, roughly what it costs. */
+/**
+ * How many of the task's fixtures this row actually scored. A fixture can
+ * leave a result behind after its own `task` changed (or after it was
+ * retired), which left the row reading `1/0` — a fraction a lawyer cannot
+ * make sense of. When the denominator cannot hold the numerator, the count
+ * stands on its own.
+ */
+export function scoredLabel(scored: number, fixtures: number): string {
+  return fixtures >= scored && fixtures > 0 ? `${scored}/${fixtures}` : `${scored} scored`;
+}
+
+/** Money to the cent. A run cheaper than a cent says so rather than `$0.00`. */
+export function runCost(usd: number): string {
+  return usd < 0.005 ? '<$0.01/run' : `$${usd.toFixed(2)}/run`;
+}
+
 export function confirmLine(providerId: string, task: string, estimate: EvalEstimate): string {
   const fixtures = `${estimate.count} fixture${estimate.count === 1 ? '' : 's'}`;
   const cost = estimate.estimateUsd === null ? 'cost unknown' : `about $${estimate.estimateUsd.toFixed(2)}`;
@@ -146,9 +162,9 @@ export function ModelsGroup({ providerIds }: ModelsGroupProps): JSX.Element {
             <span className={`v2-models-score${r.score === null ? ' v2-models-failed' : ''}`}>{r.score === null ? 'failed' : r.score.toFixed(2)}</span>
             {rows.length > 1 || r.modelVersion !== providerId.slice(providerId.indexOf('/') + 1) ? <span className="v2-models-version">{r.modelVersion}</span> : null}
             <span className="v2-models-facts">
-              {r.scored}/{fixtures} · {staleness(r.staleDays)}
+              {scoredLabel(r.scored, fixtures)} · {staleness(r.staleDays)}
               {r.medianMs === null ? '' : ` · ${(r.medianMs / 1000).toFixed(1)}s`}
-              {r.meanCostUsd === null ? '' : ` · $${r.meanCostUsd.toFixed(3)}/run`}
+              {r.meanCostUsd === null ? '' : ` · ${runCost(r.meanCostUsd)}`}
             </span>
             {r.failed.length === 0 ? null : (
               <span className="v2-models-reason">
