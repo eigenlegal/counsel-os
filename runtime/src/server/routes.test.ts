@@ -10,6 +10,7 @@ import { ThreadStore, type ThreadEvent } from '../threads/store';
 import { FsVaultStore } from '../vault/fs-store';
 import { fsSearch } from '../vault/search';
 import { memoryStore } from '../providers/secrets';
+import { readOutcomes } from '../outcomes/store';
 import { buildDocx } from '../docx/test/builder';
 import { API_PREFIXES, createApp, safeBasename, suffixed, TRUNCATED_HEADER, UPLOAD_MAX_BYTES, type App, type ServerDeps } from './routes';
 import type { RuntimeState } from './settings';
@@ -1699,5 +1700,111 @@ describe('GET /providers/:id/models for an enterprise vendor (providers spec §3
     expect(listed).toEqual({ source: 'list', models: [{ id: 'gpt-5-prod' }] });
     expect(az.requests[0]?.url).toBe('https://firm.openai.azure.com/openai/deployments?api-version=2023-03-15-preview');
     expect(az.requests[0]?.headers.get('api-key')).toBe('az-route-key');
+  });
+});
+
+describe('the outcomes record (routing-and-evals spec §7)', () => {
+  const proposal = {
+    toolCalls: [{ name: 'propose_update', input: { path: 'practice/standards/x.md', content: 'NEW TEXT\n', rationale: 'because' } }],
+    text: 'proposed',
+  };
+
+  async function seedProposal(app: App): Promise<{ threadId: string; proposalId: string }> {
+    const threadId = await newThread(app);
+    await step(app, threadId, { message: 'remember this' });
+    const { events } = await store.get('default', threadId);
+    const ev = events.find((e): e is Extract<ThreadEvent, { t: 'proposal' }> => 't' in e && e.t === 'proposal')!;
+    return { threadId, proposalId: ev.id };
+  }
+
+  test('a decision is recorded with its optional reason; a conflict is not', async () => {
+    const app = appWithFake([proposal, proposal]);
+    const { threadId, proposalId } = await seedProposal(app);
+    const res = await call(app, 'POST', `/threads/${threadId}/approve`, { body: { proposalId, decision: 'reject', reason: 'Too broad for the standard.' } });
+    expect(res.status).toBe(200);
+
+    const lines = readOutcomes(vaultRoot);
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatchObject({ kind: 'proposal.decided', threadId, path: 'practice/standards/x.md', detail: { proposalId, decision: 'rejected', reason: 'Too broad for the standard.' } });
+
+    const second = await seedProposal(app);
+    await vault.write('default', 'practice/standards/x.md', 'SOMEONE ELSE\n');
+    const conflict = await call(app, 'POST', `/threads/${second.threadId}/approve`, { body: { proposalId: second.proposalId, decision: 'approve' } });
+    expect(conflict.status).toBe(409);
+    expect(readOutcomes(vaultRoot)).toHaveLength(1);
+  });
+
+  test('a mark lands on the run record and in the record; a foreign run is 404', async () => {
+    const app = appWithFake([{ text: 'answer' }, { text: 'other' }]);
+    const id = await newThread(app);
+    const { res: stepRes } = await step(app, id, { message: 'Summarize where we stand.' });
+    const runId = stepRes.headers.get('x-run-id')!;
+
+    const res = await call(app, 'POST', `/threads/${id}/turns/${runId}/mark`, { body: { mark: 'not-right', reason: 'missed the term' } });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { mark: { mark: string } }).mark.mark).toBe('not-right');
+    const run = (await (await call(app, 'GET', `/runs/${runId}`)).json()) as { mark?: { mark: string; reason?: string } };
+    expect(run.mark).toMatchObject({ mark: 'not-right', reason: 'missed the term' });
+    expect(readOutcomes(vaultRoot, { kind: 'answer.marked' })[0]).toMatchObject({ threadId: id, runId, task: 'summarize', providerId: 'fake/fake', detail: { mark: 'not-right', reason: 'missed the term' } });
+
+    const other = await newThread(app);
+    expect((await call(app, 'POST', `/threads/${other}/turns/${runId}/mark`, { body: { mark: 'useful' } })).status).toBe(404);
+    expect((await call(app, 'POST', `/threads/${id}/turns/${runId}/mark`, { body: { mark: 'meh' } })).status).toBe(400);
+  });
+
+  test('a task correction rewrites the step event and the record, and is recorded; an unknown task is 400', async () => {
+    const app = appWithFake([{ text: 'answer' }]);
+    const id = await newThread(app);
+    const { res: stepRes } = await step(app, id, { message: 'hi' });
+    const runId = stepRes.headers.get('x-run-id')!;
+    expect(readRunTask()).toEqual(['chat', 'default']);
+
+    expect((await call(app, 'PATCH', `/threads/${id}/steps/${runId}/task`, { body: { task: 'classify' } })).status).toBe(400);
+    const res = await call(app, 'PATCH', `/threads/${id}/steps/${runId}/task`, { body: { task: 'review' } });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ task: 'review', taskSource: 'corrected' });
+    expect(readRunTask()).toEqual(['review', 'corrected']);
+    const { events } = await store.get('default', id);
+    const stepEv = events.find((e): e is Extract<ThreadEvent, { t: 'step' }> => 't' in e && e.t === 'step')!;
+    expect([stepEv.task, stepEv.taskSource]).toEqual(['review', 'corrected']);
+    expect(readOutcomes(vaultRoot, { kind: 'task.corrected' })[0]).toMatchObject({ threadId: id, runId, task: 'review', detail: { from: 'chat', to: 'review', was: 'default' } });
+
+    function readRunTask(): [string | undefined, string | undefined] {
+      const raw = JSON.parse(readFileSync(join(vaultRoot, '.counsel', 'runs', 'default', `${runId}.json`), 'utf8')) as { task?: string; taskSource?: string };
+      return [raw.task, raw.taskSource];
+    }
+  });
+
+  test('deleting a thread is recorded; GET /outcomes lists since a date; a bad date is 400', async () => {
+    const app = appWithFake([{ text: 'answer' }]);
+    const id = await newThread(app);
+    expect((await call(app, 'DELETE', `/threads/${id}`)).status).toBe(204);
+
+    const all = (await (await call(app, 'GET', '/outcomes')).json()) as Array<{ kind: string; threadId: string }>;
+    expect(all).toHaveLength(1);
+    expect(all[0]).toMatchObject({ kind: 'thread.deleted', threadId: id });
+    const later = (await (await call(app, 'GET', '/outcomes?since=2999-01-01T00:00:00.000Z')).json()) as unknown[];
+    expect(later).toEqual([]);
+    expect((await call(app, 'GET', '/outcomes?since=yesterday')).status).toBe(400);
+  });
+
+  test('PATCH /settings/vault flips the switch in config.md, /health shows it, and nothing is written while off', async () => {
+    writeFileSync(join(vaultRoot, 'config.md'), 'counsel-os-config: true\nlegal_root: x\n', 'utf8');
+    const app = appWithFake([{ text: 'answer' }]);
+    expect(((await (await call(app, 'GET', '/health')).json()) as { outcomes: boolean }).outcomes).toBe(true);
+
+    const off = await call(app, 'PATCH', '/settings/vault', { body: { outcomes: false } });
+    expect(off.status).toBe(200);
+    expect(await off.json()).toEqual({ outcomes: false });
+    expect(readFileSync(join(vaultRoot, 'config.md'), 'utf8')).toContain('outcomes: off');
+    expect(((await (await call(app, 'GET', '/health')).json()) as { outcomes: boolean }).outcomes).toBe(false);
+
+    const id = await newThread(app);
+    expect((await call(app, 'DELETE', `/threads/${id}`)).status).toBe(204);
+    expect(readOutcomes(vaultRoot)).toEqual([]);
+
+    const on = await call(app, 'PATCH', '/settings/vault', { body: { outcomes: true } });
+    expect(await on.json()).toEqual({ outcomes: true });
+    expect((await call(app, 'PATCH', '/settings/vault', { body: { outcomes: 'yes' } })).status).toBe(400);
   });
 });

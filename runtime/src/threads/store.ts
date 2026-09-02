@@ -34,7 +34,7 @@ export interface ThreadHeader {
 
 export type ThreadEvent =
   | { t: 'user'; at: string; content: string }
-  | { t: 'step'; at: string; runId: string; provider: string; task?: string }
+  | { t: 'step'; at: string; runId: string; provider: string; task?: string; taskSource?: 'caller' | 'rule' | 'model' | 'default' | 'corrected' }
   // Spec §5's warning event: something the run recovered from, worth
   // showing in the transcript but not an `error` and not model output. The
   // resume-failure fallback is the first user — it records that the vendor
@@ -296,6 +296,27 @@ export class ThreadStore {
     const header = this.readHeader(tenant, id);
     header.updatedAt = new Date().toISOString();
     this.writeHeader(tenant, header);
+  }
+
+  /** Rewrites one step event's task (a correction by the lawyer, spec §7)
+   * the way `updateProposal` rewrites a proposal's status. */
+  async updateStep(tenant: Tenant, id: string, runId: string, patch: { task: string; taskSource: 'corrected' }): Promise<boolean> {
+    this.validateTenant(tenant);
+    this.validateId(id);
+    let found = false;
+    const events = this.readEvents(tenant, id).map(ev => {
+      if ('t' in ev && ev.t === 'step' && ev.runId === runId) {
+        found = true;
+        return { ...ev, ...patch };
+      }
+      return ev;
+    });
+    if (!found) return false;
+    const logPath = this.logPath(tenant, id);
+    const tmpPath = `${logPath}.tmp`;
+    writeFileSync(tmpPath, events.map(ev => JSON.stringify(ev) + '\n').join(''), 'utf8');
+    renameSync(tmpPath, logPath);
+    return true;
   }
 
   async remove(tenant: Tenant, id: string): Promise<void> {

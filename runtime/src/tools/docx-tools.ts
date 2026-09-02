@@ -62,7 +62,7 @@ export interface DocxToolOptions {
    * `vaultRoot` with the same never-overwrite flag. */
   vault?: VaultStore;
   /** The thread the step runs in: the `artifact` event is recorded there. */
-  thread?: { store: ThreadStore; threadId: string; tenant: Tenant };
+  thread?: { store: ThreadStore; threadId: string; tenant: Tenant; outcome?: (line: { kind: 'artifact.produced'; path: string; detail: Record<string, unknown> }) => void };
 }
 
 /** The redline JSON item, as the primitives specify it. `match` is kept
@@ -187,6 +187,7 @@ export function docxTools(opts: DocxToolOptions): Tool[] {
           summary,
         });
         out.artifactId = artifactId;
+        opts.thread.outcome?.({ kind: 'artifact.produced', path: rel, detail: { artifactId, kind: 'docx-redline', summary } });
       }
       return out;
     },
@@ -282,6 +283,7 @@ export function docxTools(opts: DocxToolOptions): Tool[] {
           summary,
         });
         out.artifactId = artifactId;
+        opts.thread.outcome?.({ kind: 'artifact.produced', path: rel, detail: { artifactId, kind: 'docx-compare', summary } });
       }
       return out;
     },

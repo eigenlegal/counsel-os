@@ -438,3 +438,24 @@ describe('the enterprise vendors in Settings (providers spec §3 step 5)', () =>
     expect(puts).toHaveLength(0);
   });
 });
+
+describe('the Task field (routing-and-evals spec §3)', () => {
+  test('offers the closed taxonomy and still takes a typed name', async () => {
+    install(() => json(view));
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByLabelText('Task')).toBeTruthy());
+
+    await userEvent.click(screen.getByRole('button', { name: 'Show tasks' }));
+    const listed = Array.from(document.querySelectorAll('.v2-combo-item'), el => el.textContent);
+    expect(listed).toEqual(['review', 'redline', 'draft', 'research', 'extract', 'summarize', 'compare', 'remember', 'docket', 'retro', 'chat']);
+    await userEvent.click(screen.getByText('redline'));
+    await waitFor(() => expect(document.querySelector('.v2-combo-pop')).toBeNull());
+    const field = screen.getByLabelText('Task') as HTMLInputElement;
+    expect(field.value).toBe('redline');
+
+    const user = userEvent.setup({ document });
+    await user.clear(field);
+    await user.type(field, 'classify');
+    expect(field.value).toBe('classify');
+  });
+});

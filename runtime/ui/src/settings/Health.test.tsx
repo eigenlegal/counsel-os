@@ -1,0 +1,68 @@
+import { cleanup, render, screen, userEvent, waitFor } from '../test/dom';
+
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
+import { clearToken, TOKEN_KEY } from '../api/token';
+import type { Health as HealthData, SettingsView } from '../api/types';
+import { Health } from './Health';
+
+const health: HealthData = { vault: '/Users/jack/legal', tenant: 'default', providers: [], default: 'fake/fake', stepTimeoutMs: 120000, outcomes: true };
+const effective: SettingsView['effective'] = { default: 'fake/fake', stepTimeoutMs: 120000, providers: [] };
+
+const realFetch = globalThis.fetch;
+let patches: unknown[] = [];
+
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+}
+
+function install(answer: (body: { outcomes: boolean }) => Response): void {
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    if (url === '/settings/vault' && init?.method === 'PATCH') {
+      const body = JSON.parse(String(init.body)) as { outcomes: boolean };
+      patches.push(body);
+      return answer(body);
+    }
+    throw new Error(`unexpected fetch: ${init?.method ?? 'GET'} ${url}`);
+  }) as unknown as typeof fetch;
+}
+
+beforeEach(() => {
+  patches = [];
+  sessionStorage.setItem(TOKEN_KEY, 'test-token');
+});
+
+afterEach(() => {
+  cleanup();
+  globalThis.fetch = realFetch;
+  clearToken();
+  sessionStorage.clear();
+});
+
+describe('the Decisions and marks switch (routing-and-evals spec §7)', () => {
+  test('reads the runtime, and one set-text link flips it through PATCH /settings/vault', async () => {
+    install(body => json({ outcomes: body.outcomes }));
+    render(<Health health={health} effective={effective} file="/Users/jack/.counsel-os/providers.yaml" />);
+    expect(screen.getByText('Decisions and marks')).toBeTruthy();
+    expect(screen.getByText(/kept locally · on/)).toBeTruthy();
+
+    await userEvent.click(screen.getByRole('button', { name: 'turn off' }));
+    await waitFor(() => expect(screen.getByText(/not kept · off/)).toBeTruthy());
+    expect(patches).toEqual([{ outcomes: false }]);
+    expect(screen.getByRole('button', { name: 'turn on' })).toBeTruthy();
+  });
+
+  test('an older runtime that does not report the switch shows no row', () => {
+    const { outcomes: _drop, ...older } = health;
+    render(<Health health={older} effective={effective} file="/x/providers.yaml" />);
+    expect(screen.queryByText('Decisions and marks')).toBeNull();
+  });
+
+  test('a refused flip says so and keeps the runtime\'s answer', async () => {
+    install(() => json({ error: 'config.md is read-only' }, 500));
+    render(<Health health={health} effective={effective} file="/x/providers.yaml" />);
+    await userEvent.click(screen.getByRole('button', { name: 'turn off' }));
+    await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
+    expect(screen.getByText(/kept locally · on/)).toBeTruthy();
+  });
+});

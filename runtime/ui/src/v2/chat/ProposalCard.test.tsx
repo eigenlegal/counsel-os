@@ -332,3 +332,32 @@ describe('ProposalCard as the docket anchor', () => {
     }
   });
 });
+
+describe('a reason on the decision (routing-and-evals spec §7)', () => {
+  test('closed by default; `add a reason` opens the field and the reason rides with the decision', async () => {
+    install({ approve: () => json({ proposal: { ...proposal, status: 'rejected' }, version: null }) });
+    render(<ProposalCard threadId="t-1" proposal={proposal} onReload={() => {}} />);
+    await waitFor(() => expect(marks('del').length).toBeGreaterThan(0));
+    expect(screen.queryByLabelText('Reason')).toBeNull();
+
+    await userEvent.click(screen.getByRole('button', { name: 'add a reason' }));
+    const field = screen.getByLabelText('Reason') as HTMLInputElement;
+    expect(field.maxLength).toBe(500);
+    await userEvent.type(field, 'Too broad for the standard.');
+    await userEvent.click(screen.getByRole('button', { name: 'Reject' }));
+
+    await waitFor(() => expect(screen.getByText(/rejected/)).toBeTruthy());
+    expect(calls.at(-1)).toEqual({ url: '/threads/t-1/approve', body: { proposalId: 'p-1', decision: 'reject', reason: 'Too broad for the standard.' } });
+  });
+
+  test('an empty reason is not sent', async () => {
+    install({ approve: () => json({ proposal: { ...proposal, status: 'approved' }, version: 'new0000' }) });
+    render(<ProposalCard threadId="t-1" proposal={proposal} onReload={() => {}} />);
+    await waitFor(() => expect(marks('del').length).toBeGreaterThan(0));
+    await userEvent.click(screen.getByRole('button', { name: 'add a reason' }));
+    await userEvent.type(screen.getByLabelText('Reason'), '   ');
+    await userEvent.click(screen.getByRole('button', { name: 'Approve' }));
+    await waitFor(() => expect(screen.getByText(/✓ approved/)).toBeTruthy());
+    expect(calls.at(-1)).toEqual({ url: '/threads/t-1/approve', body: { proposalId: 'p-1', decision: 'approve' } });
+  });
+});

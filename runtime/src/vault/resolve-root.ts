@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 
@@ -37,6 +37,14 @@ export interface VaultConfig {
    * its own frontmatter says `stays_local: false` (providers spec §7).
    * Absent → `any`. Optional so the literal `VaultConfig`s in tests stay. */
   defaultLocality?: 'local' | 'any';
+  /** `outcomes: off` — the vault keeps NO local record of decisions, marks
+   * and corrections (routing-and-evals spec §7). Absent → on. */
+  outcomes?: boolean;
+  /** `classify: model` — when no rule names a step's task, spend one small
+   * structured model call on it (routing-and-evals spec §3). Default: rules
+   * only, then `chat` — a model turn before every message is the lawyer's
+   * call, not the runtime's. */
+  classify?: 'rules' | 'model';
 }
 
 const CWD_WALK_MAX_DEPTH = 3;
@@ -247,5 +255,36 @@ export function readVaultConfig(root: string): VaultConfig {
     lawManagement: flag(findOverride('law_management')) === 'user' ? 'user' : 'plugin',
     ...(Number.isInteger(cadence) && cadence > 0 ? { retroCadenceDays: cadence } : {}),
     ...(flag(findOverride('default_locality')) === 'local' ? { defaultLocality: 'local' as const } : {}),
+    ...(['off', 'false', 'no'].includes(flag(findOverride('outcomes'))) ? { outcomes: false } : {}),
+    ...(flag(findOverride('classify')) === 'model' ? { classify: 'model' as const } : {}),
   };
+}
+
+/**
+ * Sets one `key: value` line in `{root}/config.md`: replaces the live line
+ * when there is one, uncomments a `# key: …` line when that is what exists,
+ * else appends. The marker lines are never touched. Used by the Settings
+ * switches that edit the vault's own config (spec §7's outcomes switch).
+ */
+export function writeVaultConfigOverride(root: string, key: string, value: string): void {
+  const path = join(root, 'config.md');
+  let text = '';
+  try {
+    text = readFileSync(path, 'utf8');
+  } catch {
+    text = '';
+  }
+  const lines = text.split('\n');
+  const live = lines.findIndex(l => l.startsWith(`${key}:`));
+  if (live !== -1) {
+    lines[live] = `${key}: ${value}`;
+  } else {
+    const commented = lines.findIndex(l => /^#\s*/.test(l) && l.replace(/^#\s*/, '').startsWith(`${key}:`));
+    if (commented !== -1) lines[commented] = `${key}: ${value}`;
+    else {
+      if (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
+      lines.push(`${key}: ${value}`, '');
+    }
+  }
+  writeFileSync(path, lines.join('\n'), 'utf8');
 }

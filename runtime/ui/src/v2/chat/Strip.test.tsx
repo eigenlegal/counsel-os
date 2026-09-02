@@ -1,6 +1,7 @@
-import { cleanup, render, screen, userEvent } from '../../test/dom';
+import { cleanup, render, screen, userEvent, waitFor } from '../../test/dom';
 
-import { afterEach, describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
+import { clearToken, TOKEN_KEY } from '../../api/token';
 import type { RunRecord } from '../../api/types';
 import { emptyAssistantTurn, type AssistantTurn } from '../../chat/turns';
 import { pillFor, shortId, Strip, stripLine } from './Strip';
@@ -38,7 +39,33 @@ const run: RunRecord = {
   durationMs: 1640,
 };
 
-afterEach(cleanup);
+const realFetch = globalThis.fetch;
+let posts: { url: string; method: string; body: unknown }[] = [];
+
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+}
+
+function install(answer: (url: string, body: Record<string, unknown>) => Response): void {
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    const body = init?.body === undefined ? {} : (JSON.parse(String(init.body)) as Record<string, unknown>);
+    posts.push({ url, method: init?.method ?? 'GET', body });
+    return answer(url, body);
+  }) as unknown as typeof fetch;
+}
+
+beforeEach(() => {
+  posts = [];
+  sessionStorage.setItem(TOKEN_KEY, 'test-token');
+});
+
+afterEach(() => {
+  cleanup();
+  globalThis.fetch = realFetch;
+  clearToken();
+  sessionStorage.clear();
+});
 
 describe('pillFor', () => {
   test('the run record wins; a turn alone reads its own status', () => {
@@ -189,5 +216,60 @@ describe('stripLine with produced documents', () => {
       artifacts: [{ id: 'a-1', kind: 'docx-redline', path: 'matters/acme/nda-redline.docx', summary: { changes: 1, comments: 0, applied: 1, skipped: 0, clauses: 1, bytes: 10 }, tracked: true }],
     });
     expect(stripLine(produced)).toBe('1 source · 1 document produced');
+  });
+});
+
+describe('the task and the marks (routing-and-evals spec §3, §7)', () => {
+  test('the record names the task and where it came from; outside a thread there is nothing to click', async () => {
+    render(<Strip turn={turn} run={{ ...run, task: 'redline', taskSource: 'rule' }} ms={{}} />);
+    await userEvent.click(document.querySelector('summary') as HTMLElement);
+    const cell = document.querySelector('.v2-record-task') as HTMLElement;
+    expect(cell.textContent).toBe('redline · by rule');
+    expect(screen.queryByRole('button', { name: 'change' })).toBeNull();
+    expect(document.querySelector('.v2-marks')).toBeNull();
+  });
+
+  test('inside a thread: `change` opens the closed taxonomy, a pick PATCHes the step and the line says corrected', async () => {
+    install((url, body) => (url.endsWith('/task') ? json({ task: body.task, taskSource: 'corrected' }) : json({}, 404)));
+    render(<Strip turn={turn} run={{ ...run, task: 'chat', taskSource: 'default' }} ms={{}} threadId="t-1" />);
+    await userEvent.click(document.querySelector('summary') as HTMLElement);
+    expect((document.querySelector('.v2-record-task') as HTMLElement).textContent).toBe('chat · by default · change');
+
+    await userEvent.click(screen.getByRole('button', { name: 'change' }));
+    const items = Array.from(document.querySelectorAll('.v2-task-pop .v2-switch-item'), el => el.textContent?.trim());
+    expect(items).toEqual(['review', 'redline', 'draft', 'research', 'extract', 'summarize', 'compare', 'remember', 'docket', 'retro', 'chat']);
+
+    await userEvent.click(screen.getByText('review'));
+    await waitFor(() => expect((document.querySelector('.v2-record-task') as HTMLElement).textContent).toBe('review · corrected · change'));
+    expect(posts).toEqual([{ url: '/threads/t-1/steps/r-1/task', method: 'PATCH', body: { task: 'review' } }]);
+    expect(document.querySelector('.v2-task-pop')).toBeNull();
+  });
+
+  test('useful · not right under the strip: a click POSTs the mark and the chosen word is set', async () => {
+    install((url, body) => (url.endsWith('/mark') ? json({ mark: { mark: body.mark, at: '2026-09-02T00:00:00.000Z' } }) : json({}, 404)));
+    render(<Strip turn={turn} run={run} ms={{}} threadId="t-1" />);
+    const useful = screen.getByRole('button', { name: 'useful' });
+    const notRight = screen.getByRole('button', { name: 'not right' });
+    expect(useful.getAttribute('aria-pressed')).toBe('false');
+
+    await userEvent.click(notRight);
+    await waitFor(() => expect(notRight.getAttribute('aria-pressed')).toBe('true'));
+    expect(useful.getAttribute('aria-pressed')).toBe('false');
+    expect(posts).toEqual([{ url: '/threads/t-1/turns/r-1/mark', method: 'POST', body: { mark: 'not-right' } }]);
+  });
+
+  test('a mark already on the record shows as chosen; a failed post says so and keeps the old answer', async () => {
+    install(() => json({ error: 'vault is read-only' }, 500));
+    render(<Strip turn={turn} run={{ ...run, mark: { mark: 'useful', at: '2026-09-02T00:00:00.000Z' } }} ms={{}} threadId="t-1" />);
+    expect(screen.getByRole('button', { name: 'useful' }).getAttribute('aria-pressed')).toBe('true');
+
+    await userEvent.click(screen.getByRole('button', { name: 'not right' }));
+    await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
+    expect(screen.getByRole('button', { name: 'useful' }).getAttribute('aria-pressed')).toBe('true');
+  });
+
+  test('a run that is not done cannot be marked', () => {
+    render(<Strip turn={{ ...turn, status: 'error' }} run={{ ...run, status: 'error' }} ms={{}} threadId="t-1" />);
+    expect(document.querySelector('.v2-marks')).toBeNull();
   });
 });

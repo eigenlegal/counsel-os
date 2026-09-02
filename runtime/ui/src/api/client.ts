@@ -9,7 +9,7 @@
 import { parseSseChunk } from './sse';
 import { clearToken, readToken } from './token';
 import { reportUnauthorized } from './unauthorized';
-import type { StepBody, StreamEvent } from './types';
+import type { RunMark, StepBody, StreamEvent, TaskSource } from './types';
 
 /** A request that came back with a status the caller has to reason about.
  * `body` is the parsed JSON when there was any — 409 on approve carries the
@@ -82,6 +82,31 @@ export async function setProviderFields(id: string, fields: Record<string, strin
     method: 'PUT',
     body: JSON.stringify({ fields: clean }),
   });
+}
+
+/** `POST /threads/:id/turns/:runId/mark` (routing-and-evals spec §7): the
+ * lawyer's mark on one answer. The runtime keeps it on the run record. */
+export async function markTurn(threadId: string, runId: string, mark: 'useful' | 'not-right', reason?: string): Promise<RunMark> {
+  const body = await fetchJson<{ mark: RunMark }>(`/threads/${encodeURIComponent(threadId)}/turns/${encodeURIComponent(runId)}/mark`, {
+    method: 'POST',
+    body: JSON.stringify({ mark, ...(reason === undefined || reason.trim() === '' ? {} : { reason: reason.trim() }) }),
+  });
+  return body.mark;
+}
+
+/** `PATCH /threads/:id/steps/:runId/task` (spec §3): the lawyer corrects
+ * what kind of work a step was. */
+export async function correctTask(threadId: string, runId: string, task: string): Promise<{ task: string; taskSource: TaskSource }> {
+  return fetchJson(`/threads/${encodeURIComponent(threadId)}/steps/${encodeURIComponent(runId)}/task`, {
+    method: 'PATCH',
+    body: JSON.stringify({ task }),
+  });
+}
+
+/** `PATCH /settings/vault` — the vault's own switches (`config.md`). */
+export async function setVaultOutcomes(outcomes: boolean): Promise<boolean> {
+  const body = await fetchJson<{ outcomes: boolean }>('/settings/vault', { method: 'PATCH', body: JSON.stringify({ outcomes }) });
+  return body.outcomes;
 }
 
 export async function deleteProviderKey(id: string): Promise<void> {

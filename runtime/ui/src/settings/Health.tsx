@@ -1,4 +1,5 @@
-import { signOut } from '../api/client';
+import { useState } from 'react';
+import { ApiError, setVaultOutcomes, signOut } from '../api/client';
 import { dataLineOf } from '../v2/vendors';
 import type { Health as HealthData, SettingsView } from '../api/types';
 
@@ -41,6 +42,29 @@ export function timeoutInWords(ms: number): string {
 }
 
 export function Health({ health, effective, file, secrets }: HealthProps): JSX.Element {
+  // The vault's record of decisions and marks (routing-and-evals spec §7):
+  // one switch, written to config.md by the runtime. Seeded from /health;
+  // a flip keeps the answer the runtime returned.
+  const [outcomes, setOutcomes] = useState<boolean | undefined>(health?.outcomes);
+  const [seededFrom, setSeededFrom] = useState(health?.outcomes);
+  if (health?.outcomes !== seededFrom) {
+    setSeededFrom(health?.outcomes);
+    setOutcomes(health?.outcomes);
+  }
+  const [flipping, setFlipping] = useState(false);
+  const [flipFailed, setFlipFailed] = useState<string | null>(null);
+  const flip = async (): Promise<void> => {
+    if (outcomes === undefined) return;
+    setFlipping(true);
+    setFlipFailed(null);
+    try {
+      setOutcomes(await setVaultOutcomes(!outcomes));
+    } catch (err) {
+      if (!(err instanceof ApiError && err.status === 401)) setFlipFailed(err instanceof Error ? err.message : String(err));
+    } finally {
+      setFlipping(false);
+    }
+  };
   return (
     <section className="settings-health">
       <h2>Runtime</h2>
@@ -92,7 +116,31 @@ export function Health({ health, effective, file, secrets }: HealthProps): JSX.E
           </dt>
           <dd>{keysInWords(secrets, file)}</dd>
         </div>
+        {outcomes === undefined ? null : (
+          <div className="fact">
+            <dt>
+              Decisions and marks
+              <span className="leader" aria-hidden="true" />
+            </dt>
+            <dd>
+              {outcomes ? 'kept locally · on' : 'not kept · off'}
+              {' · '}
+              <button type="button" className="v2-link" disabled={flipping} onClick={() => void flip()}>
+                {outcomes ? 'turn off' : 'turn on'}
+              </button>
+              {flipFailed === null ? null : (
+                <span className="v2-marks-failed" role="alert">
+                  {' — '}
+                  {flipFailed}
+                </span>
+              )}
+            </dd>
+          </div>
+        )}
       </dl>
+      <p className="muted">
+        Decisions and marks is the vault&rsquo;s own record of what you did with counsel&rsquo;s work — approvals, rejections, useful / not right, task corrections. It stays in <code>.counsel/outcomes.jsonl</code> on this machine, is never sent anywhere, and feeds the retro. Off stops every write.
+      </p>
 
       <p className="muted settings-signout">
         This browser is signed in to the runtime and stays so across tabs and restarts.{' '}

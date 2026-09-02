@@ -6,6 +6,15 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
+## [Unreleased]
+
+Routing and evals, step 1 — every step has a task, and the vault keeps what you did with the answer (routing-and-evals spec §3, §7)
+
+- A closed legal task taxonomy — `review`, `redline`, `draft`, `research`, `extract`, `summarize`, `compare`, `remember`, `docket`, `retro`, `chat` — and where a step's task came from: named on the request, set on the conversation, a rule over the message and its attachments, an optional model call (`classify: model` in `config.md`, off by default), else `chat`. The task and its source sit on the step event and the run record; the turn's record shows `task · by rule · change`, and the picker corrects it (`PATCH /threads/:id/steps/:runId/task`).
+- The outcomes record: `.counsel/outcomes.jsonl`, one line per thing you did — a proposal approved or rejected (with an optional reason from the slip's new *add a reason*), an answer marked *useful* or *not right* (two words under the turn's strip; `POST /threads/:id/turns/:runId/mark`), a task corrected, a document produced by a redline or a compare, a conversation deleted. Local only, never sent to a model. `GET /outcomes?since=` reads it; `outcomes: off` in `config.md` (or Settings → Runtime → *Decisions and marks* → `turn off`, which writes it) stops every write; `/health` reports the switch.
+- The retro's evidence gains a *Decisions and marks* section with the period's counts.
+- Settings: a task route's Task field offers the taxonomy (a custom name still goes through).
+
 ## [0.13.0] — 2026-09-02
 
 Providers phase 1, retro, the binary — any model, keys in the Keychain, matters that stay local

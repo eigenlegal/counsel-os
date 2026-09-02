@@ -30,6 +30,10 @@ exports[`gatherRetroEvidence renders the period as plain facts for the system pr
 - 1 documents (docx-redline 1); 5 edits applied, 1 skipped, 3 comments.
   - matters/acme/acme-nda-redline-2026-08-10.docx
 
+### Decisions and marks
+- Proposals decided: 0 approved, 0 rejected (0 with a reason).
+- Answers marked: 0 useful, 0 not right; 0 task corrections; 0 conversations deleted.
+
 ### Matters
 - 1 of 2 matters touched in the period:
   - matters/acme-nda.md — Acme — NDA · working · updated 2026-08-10

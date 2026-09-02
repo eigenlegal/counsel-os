@@ -456,6 +456,16 @@ a { color: var(--accent); }
 .v2-record dt { color: var(--fg-muted); }
 .v2-record dd { margin: 0; }
 .v2-record-id { margin-right: var(--s2); }
+.v2-record-source { color: var(--fg-faint); }
+.v2-task-pick { vertical-align: baseline; }
+.v2-task-pop { min-width: 160px; }
+/* The lawyer's mark (routing-and-evals spec §7): two words under the strip,
+   set text like every other verb on the page; the chosen one goes to the
+   text weight via `aria-pressed`. */
+.v2-marks { margin: 4px 0 0; font: 12px var(--sans); color: var(--fg-faint); }
+.v2-marks .v2-link { font-size: 12px; color: var(--fg-faint); }
+.v2-marks .v2-link[aria-pressed="true"] { color: var(--fg); }
+.v2-marks-failed { color: var(--error); }
 
 /* ── v2 proposal slip ─────────────────────────────────────────────────── */
 
@@ -784,6 +794,10 @@ a { color: var(--accent); }
 .v2-slip-why { padding: 0 2px 10px; margin: 0; color: var(--fg-muted); font: 14px/1.5 var(--sans); }
 .v2-slip-acts { display: flex; gap: 8px; align-items: center; padding: 10px 2px; }
 .v2-slip-base { margin-left: auto; font-size: 12px; color: var(--fg-faint); }
+.v2-slip-reason-link { font-size: 12px; }
+.v2-slip-reason { display: flex; gap: 8px; align-items: baseline; padding: 6px 2px 0; font-size: 12.5px; }
+.v2-slip-reason-label { color: var(--fg-muted); }
+.v2-slip-reason input { flex: 1; font: 12.5px var(--sans); padding: 3px 6px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--radius); color: var(--fg); }
 
 /* Word-style tracked changes: the document itself, marked up inline. */
 .v2-redline { border: 1px solid var(--border); border-radius: 6px; background: var(--bg-raised); padding: 14px 18px; margin: 0 0 2px; font: 15px/1.7 var(--serif); max-height: 24rem; overflow: auto; }

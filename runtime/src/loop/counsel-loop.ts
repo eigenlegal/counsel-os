@@ -19,6 +19,9 @@ import { proposeUpdateTool } from './proposals';
 import { writeRunLog, type RunLogEntry, type ToolCallLog } from './run-log';
 import { finishRun, startRun, type RunPatch, type RunRecord } from './run-record';
 import { RETRO_TASK, retroSections } from '../retro/index';
+import { classifyTask, type ModelClassifier } from '../tasks/classify';
+import type { TaskSource } from '../tasks/taxonomy';
+import { appendOutcome } from '../outcomes/store';
 
 /**
  * Headroom left in the context window for the model's own reply and for the
@@ -66,6 +69,10 @@ export interface CounselLoopDeps {
   platform?: Platform;
   /** The per-step deadline, in milliseconds. Default `DEFAULT_STEP_TIMEOUT_MS`. */
   stepTimeoutMs?: number;
+  /** The model-backed task classifier (routing-and-evals spec §3), used only
+   * when neither the caller nor the thread named a task and no rule fired.
+   * Absent → rules then `chat`; serve wires `modelClassifier`. */
+  classifier?: ModelClassifier;
 }
 
 export interface RunStepOptions {
@@ -207,17 +214,24 @@ export async function* runStep(
     yield { type: 'error', message: `unknown thread: ${threadId}`, runId };
     return;
   }
-  if (opts.task === undefined && early.task !== undefined) opts = { ...opts, task: early.task };
   // The matter's privacy policy, from the header and the message — before
   // the run opens, before the user turn is appended, before any provider is
-  // looked at (providers spec §7).
+  // looked at (providers spec §7) — and before the task classifier, which
+  // may itself call a model.
   const policy = await policyForOptions(deps, { ...(early.matter === undefined ? {} : { matter: early.matter }), message: opts.message });
+  // The task and where it came from (spec §3): caller, thread, rule, one
+  // small model call (local only under the policy), else `chat`. Decided
+  // before the run opens so the record and the step event carry the same
+  // answer.
+  const classified = await classifyTask({ message: opts.message, callerTask: opts.task, threadTask: early.task }, deps.classifier, { localOnly: policy.localOnly });
+  const taskSource: TaskSource = classified.source;
+  opts = { ...opts, task: classified.task };
 
   // The run record opens here — before the provider is even chosen — so
   // everything that follows is visible to `/runs` while it is happening and
   // after it dies (spec §4.3). The unknown-thread return above is the one
   // exception: there was no run to record.
-  beginRun(deps, opts, runId, new Date(startedAt).toISOString());
+  beginRun(deps, opts, runId, new Date(startedAt).toISOString(), taskSource);
   // Tracks whether the record has reached a terminal status yet, so the
   // `finally` below can tell "the step ended" from "the caller walked away".
   const run: RunState = {
@@ -284,7 +298,7 @@ export async function* runStep(
         at: nowIso(),
         runId,
         provider: provider.id,
-        ...(opts.task ? { task: opts.task } : {}),
+        ...(opts.task ? { task: opts.task, taskSource } : {}),
       }),
     );
     if (stepFailed) {
@@ -307,7 +321,18 @@ export async function* runStep(
         vaultRoot: deps.vaultRoot,
         repoRoot: deps.pluginRoot,
         vault: deps.vault,
-        thread: { store: deps.store, threadId, tenant },
+        thread: {
+          store: deps.store,
+          threadId,
+          tenant,
+          outcome: line => {
+            try {
+              appendOutcome(deps.vaultRoot, cfg, { ...line, threadId, runId, ...(opts.task ? { task: opts.task } : {}), providerId: provider.id });
+            } catch (err) {
+              console.error(`counsel-loop: outcome write failed for ${runId}: ${message(err)}`);
+            }
+          },
+        },
       })) registry.register(t);
       const scriptTools = registry.available(platform);
 
@@ -1084,7 +1109,7 @@ function rememberPrimitive(into: string[], ev: Extract<StepEvent, { type: 'tool_
  * that dies choosing one still leaves the request behind (spec §4.3).
  * Failures go to stderr, never out of the loop: the record is telemetry.
  */
-function beginRun(deps: CounselLoopDeps, opts: RunStepOptions, runId: string, startedAt: string): void {
+function beginRun(deps: CounselLoopDeps, opts: RunStepOptions, runId: string, startedAt: string, taskSource?: TaskSource): void {
   const rec: RunRecord = {
     runId,
     threadId: opts.threadId,
@@ -1096,6 +1121,7 @@ function beginRun(deps: CounselLoopDeps, opts: RunStepOptions, runId: string, st
     // router (or the caller's `providerId`) names one.
     provider: '',
     ...(opts.task ? { task: opts.task } : {}),
+    ...(taskSource === undefined ? {} : { taskSource }),
     primitivesRead: [],
     toolCalls: [],
     proposals: [],

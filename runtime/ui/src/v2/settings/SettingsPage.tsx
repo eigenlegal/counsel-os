@@ -10,6 +10,7 @@ import { addableVendors, dataLineFor, isEnterpriseVendor, pickerLabel, prefixOf,
 import { EnterpriseFields } from './EnterpriseFields';
 import { KeyControl } from './KeyControl';
 import { ContentGroup } from './ContentGroup';
+import { TASK_IDS } from '../../tasks';
 import { DoctorLedger } from './DoctorLedger';
 import { RetroAction } from './RetroAction';
 import {
@@ -465,8 +466,10 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
             <div className="v2-provider" key={row.key}>
               <div className="v2-provider-grid">
                 <div className="field">
-                  <label htmlFor={`v2-${row.key}-task`}>Task</label>
-                  <input id={`v2-${row.key}-task`} value={row.task} placeholder="review" onChange={e => patchRoute(index, { task: e.target.value })} />
+                  {/* The closed taxonomy as suggestions (routing-and-evals
+                      spec §3); a typed name still goes through — the route
+                      shape allows a custom task. */}
+                  <ProviderCombo id={`v2-${row.key}-task`} label="Task" value={row.task} options={[...TASK_IDS]} placeholder="review" toggleLabel="Show tasks" onChange={value => patchRoute(index, { task: value })} />
                   <FieldError message={errors[`route.${row.key}.task`] ?? errors[`tasks.${name}`]} />
                 </div>
                 <div className="field">

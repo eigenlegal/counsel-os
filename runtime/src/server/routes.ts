@@ -3,7 +3,7 @@ import { MatterStaysLocalError, RouterError } from '../core/types';
 import { DEFAULT_STEP_TIMEOUT_MS, runStep, type CounselLoopDeps, policyForOptions, resolveStepProvider } from '../loop/counsel-loop';
 import { pendingProposals } from '../loop/pending-proposals';
 import { applyProposal } from '../loop/proposals';
-import { listRuns, readRun, type RunRecord } from '../loop/run-record';
+import { finishRun, listRuns, readRun, type RunRecord } from '../loop/run-record';
 import { DOCX_CONTENT_TYPE, docxToMarkdown, isDocxPath, NotADocxError, openDocx, UnsafeXmlError } from '../docx';
 import { assertSafeXml } from '../docx/safety';
 import { BASE_URL_RULE, isAllowedBaseURL, readRegistry, RegistryFile } from '../providers/registry';
@@ -14,7 +14,10 @@ import type { ThreadEvent, ThreadHeader } from '../threads/store';
 import { vaultDocket } from '../vault/docket';
 import { normalizeVaultPath } from '../vault/knowledge-paths';
 import { vaultOverview } from '../vault/overview';
-import { readVaultConfig } from '../vault/resolve-root';
+import { readVaultConfig, writeVaultConfigOverride } from '../vault/resolve-root';
+import { appendOutcome, readOutcomes, type OutcomeLine } from '../outcomes/store';
+import { isTask, TASK_IDS } from '../tasks/taxonomy';
+import { modelClassifier } from '../tasks/classify';
 import { applyUpdates, contentStatus, UpdateError } from '../content/update';
 import { repoContentSource } from '../content/repo';
 import { runDoctor } from '../doctor/index';
@@ -69,7 +72,7 @@ export type App = (req: Request) => Promise<Response>;
  * static, served with no credential, so a new route whose prefix is missing
  * here would be reachable by anyone who can reach the port.
  */
-export const API_PREFIXES: readonly string[] = ['health', 'threads', 'runs', 'vault', 'settings', 'proposals', 'docket', 'setup', 'content', 'doctor', 'session', 'retro', 'providers'];
+export const API_PREFIXES: readonly string[] = ['health', 'threads', 'runs', 'vault', 'settings', 'proposals', 'docket', 'setup', 'content', 'doctor', 'session', 'retro', 'providers', 'outcomes'];
 
 /** True when `pathname` belongs to the API (and so needs a token). `/` and
  * every client-side route are false. */
@@ -117,6 +120,21 @@ const StepBody = z.object({
 const ApproveBody = z.object({
   proposalId: z.string().min(1),
   decision: z.enum(['approve', 'reject']),
+  /** Why (spec §7) — optional, kept in the outcomes record, never required. */
+  reason: z.string().trim().max(500).optional(),
+});
+
+const MarkBody = z.object({
+  mark: z.enum(['useful', 'not-right']),
+  reason: z.string().trim().max(500).optional(),
+});
+
+const TaskBody = z.object({
+  task: z.string().trim().min(1).max(40),
+});
+
+const VaultSettingsBody = z.object({
+  outcomes: z.boolean(),
 });
 
 function text(err: unknown): string {
@@ -377,7 +395,19 @@ export function createApp(deps: ServerDeps): App {
       router: state.router,
       ...(deps.platform === undefined ? {} : { platform: deps.platform }),
       ...(state.stepTimeoutMs === undefined ? {} : { stepTimeoutMs: state.stepTimeoutMs }),
+      // The model classifier is opt-in (`classify: model` in config.md): a
+      // scripted or metered provider must not spend a turn on it unasked.
+      ...(readVaultConfig(deps.vaultRoot).classify === 'model' ? { classifier: modelClassifier(state.providers, state.router, deps.tenant) } : {}),
     };
+  };
+
+  /** Appends to the vault's outcomes record; never fails a request. */
+  const recordOutcome = (line: Omit<OutcomeLine, 'at'>): void => {
+    try {
+      appendOutcome(deps.vaultRoot, readVaultConfig(deps.vaultRoot), line);
+    } catch (err) {
+      console.error(`outcomes: write failed: ${text(err)}`);
+    }
   };
 
   /** Runs `fn` with this thread's lock held for its whole duration — for the
@@ -405,6 +435,9 @@ export function createApp(deps: ServerDeps): App {
       // What a step on this runtime actually gets, not what was configured:
       // an operator reading /health wants the effective number.
       stepTimeoutMs: state.stepTimeoutMs ?? DEFAULT_STEP_TIMEOUT_MS,
+      // Whether this vault keeps the local record of decisions and marks
+      // (routing-and-evals spec §7).
+      outcomes: readVaultConfig(deps.vaultRoot).outcomes !== false,
     });
   };
 
@@ -554,10 +587,55 @@ export function createApp(deps: ServerDeps): App {
   };
   const deleteThread = async (id: string): Promise<Response> =>
     withThreadLock(id, async () => {
-      await loadThread(deps, id);
+      const { header } = await loadThread(deps, id);
       await deps.store.remove(deps.tenant, id);
+      recordOutcome({ kind: 'thread.deleted', threadId: id, ...(header.matter === undefined ? {} : { matter: header.matter }), detail: { title: header.title ?? '' } });
       return new Response(null, { status: 204 });
     });
+
+  /** The lawyer's mark on an answer (spec §7): recorded, and kept on the run
+   * record so the strip shows it after a reload. */
+  const markTurn = async (req: Request, id: string, runId: string): Promise<Response> => {
+    const input = await body(req, MarkBody);
+    const { header } = await loadThread(deps, id);
+    const run = readRun(deps.vaultRoot, deps.tenant, runId);
+    if (run === null || run.threadId !== id) throw new HttpError(404, `unknown run: ${runId}`);
+    const at = new Date().toISOString();
+    const mark = { mark: input.mark, at, ...(input.reason === undefined || input.reason === '' ? {} : { reason: input.reason }) };
+    finishRun(deps.vaultRoot, deps.tenant, runId, { mark });
+    recordOutcome({ kind: 'answer.marked', threadId: id, runId, ...(run.task === undefined ? {} : { task: run.task }), providerId: run.provider, ...(header.matter === undefined ? {} : { matter: header.matter }), detail: { mark: input.mark, ...(input.reason === undefined || input.reason === '' ? {} : { reason: input.reason }) } });
+    return json({ mark });
+  };
+
+  /** The lawyer corrects a step's task (spec §3): the step event and the run
+   * record change, and the correction is an outcome. */
+  const correctTask = async (req: Request, id: string, runId: string): Promise<Response> =>
+    withThreadLock(id, async () => {
+      const input = await body(req, TaskBody);
+      const { header } = await loadThread(deps, id);
+      const run = readRun(deps.vaultRoot, deps.tenant, runId);
+      if (run === null || run.threadId !== id) throw new HttpError(404, `unknown run: ${runId}`);
+      if (!isTask(input.task)) return fail(400, `task must be one of ${TASK_IDS.join(', ')}`);
+      const from = run.task ?? 'chat';
+      if (from === input.task) return json({ task: input.task, taskSource: run.taskSource ?? 'caller' });
+      await deps.store.updateStep(deps.tenant, id, runId, { task: input.task, taskSource: 'corrected' });
+      finishRun(deps.vaultRoot, deps.tenant, runId, { task: input.task, taskSource: 'corrected' });
+      recordOutcome({ kind: 'task.corrected', threadId: id, runId, task: input.task, providerId: run.provider, ...(header.matter === undefined ? {} : { matter: header.matter }), detail: { from, to: input.task, was: run.taskSource ?? 'caller' } });
+      return json({ task: input.task, taskSource: 'corrected' });
+    });
+
+  const outcomes = (url: URL): Response => {
+    const since = url.searchParams.get('since');
+    if (since !== null && Number.isNaN(Date.parse(since))) return fail(400, 'since must be a date');
+    return json(readOutcomes(deps.vaultRoot, { since }));
+  };
+
+  /** The vault-level switches Settings edits in config.md (spec §7). */
+  const patchVaultSettings = async (req: Request): Promise<Response> => {
+    const input = await body(req, VaultSettingsBody);
+    writeVaultConfigOverride(deps.vaultRoot, 'outcomes', input.outcomes ? 'on' : 'off');
+    return json({ outcomes: readVaultConfig(deps.vaultRoot).outcomes !== false });
+  };
 
   const steps = async (req: Request, id: string): Promise<Response> => {
     const input = await body(req, StepBody);
@@ -625,6 +703,14 @@ export function createApp(deps: ServerDeps): App {
 
     if (result.status === 'conflict') {
       return fail(409, `vault conflict on ${await proposalPath(deps, id, input.proposalId)}`, { conflict: result.conflict });
+    }
+    if (!('error' in result) && (result.status === 'approved' || result.status === 'rejected')) {
+      recordOutcome({
+        kind: 'proposal.decided',
+        threadId: id,
+        path: await proposalPath(deps, id, input.proposalId),
+        detail: { proposalId: input.proposalId, decision: result.status, decidedAt: new Date().toISOString(), ...(input.reason === undefined || input.reason === '' ? {} : { reason: input.reason }) },
+      });
     }
     // The proposal had already been decided — the earlier decision stands
     // and nothing was written.
@@ -1002,6 +1088,15 @@ export function createApp(deps: ServerDeps): App {
         if (third === 'steps') return await steps(req, second);
         if (third === 'approve') return await approve(req, second);
       }
+
+      if (segments.length === 5 && first === 'threads' && second !== undefined && segments[3] !== undefined) {
+        if (third === 'turns' && segments[4] === 'mark' && method === 'POST') return await markTurn(req, second, segments[3]);
+        if (third === 'steps' && segments[4] === 'task' && method === 'PATCH') return await correctTask(req, second, segments[3]);
+      }
+
+      if (segments.length === 1 && first === 'outcomes' && method === 'GET') return outcomes(url);
+
+      if (segments.length === 2 && first === 'settings' && second === 'vault' && method === 'PATCH') return await patchVaultSettings(req);
 
       if (segments.length === 1 && first === 'runs' && method === 'GET') return await runs(url);
 

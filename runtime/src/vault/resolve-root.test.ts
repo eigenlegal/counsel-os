@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { readVaultConfig, resolveLegalRoot } from './resolve-root';
+import { readVaultConfig, resolveLegalRoot, writeVaultConfigOverride } from './resolve-root';
 
 function tmpDir(prefix: string): string {
   return mkdtempSync(join(tmpdir(), prefix));
@@ -216,5 +216,46 @@ describe('readVaultConfig default_locality (providers spec §7)', () => {
     expect(readVaultConfig(root).defaultLocality).toBeUndefined();
     writeFileSync(join(root, 'config.md'), 'counsel-os-config: true\nlegal_root: x\n', 'utf8');
     expect(readVaultConfig(root).defaultLocality).toBeUndefined();
+  });
+});
+
+describe('readVaultConfig outcomes + classify (routing-and-evals spec §3, §7)', () => {
+  function withConfig(body: string): string {
+    const root = tmpDir('root-');
+    writeFileSync(join(root, 'config.md'), `counsel-os-config: true\nlegal_root: x\n${body}`, 'utf8');
+    return root;
+  }
+
+  test('outcomes is on unless the config says off/false/no', () => {
+    expect(readVaultConfig(withConfig('')).outcomes).toBeUndefined();
+    expect(readVaultConfig(withConfig('outcomes: on\n')).outcomes).toBeUndefined();
+    expect(readVaultConfig(withConfig('outcomes: off\n')).outcomes).toBe(false);
+    expect(readVaultConfig(withConfig('outcomes: no\n')).outcomes).toBe(false);
+    expect(readVaultConfig(withConfig('# outcomes: off\n')).outcomes).toBeUndefined();
+  });
+
+  test('classify is rules-only unless the config opts into the model', () => {
+    expect(readVaultConfig(withConfig('')).classify).toBeUndefined();
+    expect(readVaultConfig(withConfig('classify: rules\n')).classify).toBeUndefined();
+    expect(readVaultConfig(withConfig('classify: model\n')).classify).toBe('model');
+  });
+
+  test('writeVaultConfigOverride replaces a live line, uncomments a commented one, or appends', () => {
+    const root = withConfig('outcomes: on\n');
+    writeVaultConfigOverride(root, 'outcomes', 'off');
+    expect(readFileSync(join(root, 'config.md'), 'utf8')).toBe('counsel-os-config: true\nlegal_root: x\noutcomes: off\n');
+    expect(readVaultConfig(root).outcomes).toBe(false);
+
+    const commented = withConfig('# outcomes: off\n');
+    writeVaultConfigOverride(commented, 'outcomes', 'off');
+    expect(readFileSync(join(commented, 'config.md'), 'utf8')).toContain('\noutcomes: off\n');
+    expect(readFileSync(join(commented, 'config.md'), 'utf8')).not.toContain('# outcomes');
+
+    const bare = withConfig('');
+    writeVaultConfigOverride(bare, 'outcomes', 'off');
+    expect(readVaultConfig(bare).outcomes).toBe(false);
+    writeVaultConfigOverride(bare, 'outcomes', 'on');
+    expect(readVaultConfig(bare).outcomes).toBeUndefined();
+    expect(readFileSync(join(bare, 'config.md'), 'utf8').match(/^outcomes:/gm)).toHaveLength(1);
   });
 });

@@ -51,6 +51,8 @@ matters_path: matters
 auto_apply_law_updates: false
 law_management: plugin
 default_locality: any
+outcomes: on
+classify: rules
 entity_properties:
   type_field: counsel-os-type
   values: [counterparty, vendor, customer, prospect, matter]
@@ -75,6 +77,26 @@ decided before the first model call — from the conversation's linked matter,
 else a matter document attached to the message, else this default — and is
 never downgraded silently: with no local model loaded the step does not run
 and the app says so.
+
+`outcomes: off` stops the vault's own record of what you did with counsel's
+work. By default the runtime appends one line per event to
+`.counsel/outcomes.jsonl` — a proposal approved or rejected (with the reason
+you gave, if any), an answer marked *useful* or *not right*, a step's task
+corrected, a document produced, a conversation deleted. The record never leaves
+this machine and is never sent to a model; the retro reads it, and the
+scoreboard will. The switch is also in Settings → Runtime (*Decisions and
+marks*), which writes this line for you.
+
+`classify: model` lets the runtime spend one small structured model call on a
+message that no rule can name — "so where does this leave us?" — to decide
+which kind of work it is (`review`, `redline`, `draft`, `research`, `extract`,
+`summarize`, `compare`, `remember`, `docket`, `retro`, else `chat`). The call
+goes to the smallest local model when one is loaded, else the default
+provider; it sees the one message and nothing else, and times out after ten
+seconds into `chat`. The default, `rules`, classifies by the words in the
+message alone and costs nothing. A task named on the request, or set on the
+conversation, always wins; the record shows where each step's task came from
+and lets you correct it.
 
 ## Documents in matters
 
