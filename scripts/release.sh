@@ -183,26 +183,40 @@ if [ "$BEHIND" != "0" ]; then
   exit 1
 fi
 
-# Eval freshness: warn (never fail) when evals/outputs/ is missing or stale —
-# releases should ship with reasonably fresh eval evidence. mtimes are read in
-# python3 because stat -f (BSD) vs stat -c (GNU) is not portable.
+# Eval freshness: warn (never fail) when the eval results record is missing or
+# stale — releases should ship with reasonably fresh eval evidence. The runner
+# writes one line per fixture run to <vault>/.counsel/evals/results.jsonl; the
+# vault is found through COUNSEL_OS_LEGAL_ROOT (or ~/Documents/Counsel OS).
 # SKIP_EVAL_FRESHNESS=1 silences the check.
 if [ "${SKIP_EVAL_FRESHNESS:-0}" != "1" ]; then
   python3 - <<'PY'
-import time
+import json, os, time
 from pathlib import Path
 
-outputs = list(Path("evals/outputs").glob("*.json"))
-if outputs:
-    age_days = int((time.time() - max(p.stat().st_mtime for p in outputs)) // 86400)
-    state = f"{age_days} days old" if age_days > 30 else None
+root = os.environ.get("COUNSEL_OS_LEGAL_ROOT") or str(Path.home() / "Documents" / "Counsel OS")
+results = Path(root) / ".counsel" / "evals" / "results.jsonl"
+state = None
+if results.exists():
+    latest = None
+    for line in results.read_text().splitlines():
+        try:
+            at = json.loads(line).get("at")
+        except ValueError:
+            continue
+        if isinstance(at, str) and (latest is None or at > latest):
+            latest = at
+    if latest is None:
+        state = "empty"
+    else:
+        age_days = int((time.time() - time.mktime(time.strptime(latest[:10], "%Y-%m-%d"))) // 86400)
+        state = f"{age_days} days old" if age_days > 30 else None
 else:
     state = "missing"
 if state:
     bar = "!" * 72
     print(bar)
-    print(f"WARNING: eval outputs are {state} — consider running")
-    print("         scripts/run_evals.py --generate before releasing.")
+    print(f"WARNING: eval results are {state} ({results}) — consider running")
+    print("         bun runtime/src/cli.ts eval --all --save   before releasing.")
     print("         (SKIP_EVAL_FRESHNESS=1 silences this check)")
     print(bar)
 PY

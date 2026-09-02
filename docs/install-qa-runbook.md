@@ -32,7 +32,7 @@ ideal. Confirm the starting state is clean before you begin (Step 0).
 | In scope | Out of scope |
 |----------|--------------|
 | Claude Code marketplace install (Path A) | Load-testing, performance benchmarking |
-| Claude Desktop / Cowork install (Path B) | Eval quality (covered by `scripts/run_evals.py`) |
+| Claude Desktop / Cowork install (Path B) | Eval quality (covered by `bun runtime/src/cli.ts eval`) |
 | Browse binary + Chromium first-run download | Any real client matter or counterparty |
 | `/counsel-os:setup` end-to-end | Publishing / release (founder-gated, separate) |
 | qmd-offer flow in setup (install / index / decline) | Semantic search quality (`qmd embed` is opt-in, never run at setup) |

@@ -33,6 +33,13 @@ import {
   type RuntimeState,
   type SettingsDeps, providerView, keyContext, putProviderKey, deleteProviderKey, KeyBody } from './settings';
 import { sseFromEvents, type StreamEvent } from './sse';
+import { estimateCost, needsConfirmation, type Pricing } from '../evals/cost';
+import { loadFixtures } from '../evals/fixture';
+import { pickJudge, providerJudge } from '../evals/judge';
+import { appendResult, readResults } from '../evals/results';
+import { runSet, summarize } from '../evals/runner';
+import type { Judge } from '../evals/scorers/types';
+import { runnable, selectFixtures, taskOf } from '../evals/select';
 import { serveStatic, type StaticSource } from './static';
 
 /**
@@ -62,6 +69,12 @@ export interface ServerDeps extends Omit<CounselLoopDeps, 'providers' | 'router'
    * through, the environment the keys are read from, and the ten-minute
    * cache — all injectable so the route tests never touch the network. */
   discovery?: { fetch?: typeof fetch; env?: NodeJS.ProcessEnv; cache?: DiscoveryCache };
+  /** The eval runner (routing-and-evals spec §4.2): where the shipped
+   * fixtures live (default: the plugin root, i.e. the checkout), the price
+   * lookup behind the cost guard (default: none known → no guard, and the
+   * response says so), and the rubric judge (default: picked from the live
+   * providers per spec §12). */
+  evals?: { repoRoot?: string; pricing?: (providerId: string) => Pricing | null; judge?: Judge; tmpDir?: string };
 }
 
 export type App = (req: Request) => Promise<Response>;
@@ -72,7 +85,7 @@ export type App = (req: Request) => Promise<Response>;
  * static, served with no credential, so a new route whose prefix is missing
  * here would be reachable by anyone who can reach the port.
  */
-export const API_PREFIXES: readonly string[] = ['health', 'threads', 'runs', 'vault', 'settings', 'proposals', 'docket', 'setup', 'content', 'doctor', 'session', 'retro', 'providers', 'outcomes'];
+export const API_PREFIXES: readonly string[] = ['health', 'threads', 'runs', 'vault', 'settings', 'proposals', 'docket', 'setup', 'content', 'doctor', 'session', 'retro', 'providers', 'outcomes', 'evals'];
 
 /** True when `pathname` belongs to the API (and so needs a token). `/` and
  * every client-side route are false. */
@@ -107,6 +120,16 @@ const PatchThreadBody = z
  * other schema failure rather than a silently ignored one. */
 const RetroBody = z.object({
   since: z.string().refine(v => !Number.isNaN(Date.parse(v)), 'since must be a date').optional(),
+});
+
+const EvalRunBody = z.object({
+  fixtures: z.array(z.string()).optional(),
+  task: z.string().optional(),
+  all: z.boolean().optional(),
+  providerId: z.string().optional(),
+  save: z.boolean().optional(),
+  /** Accepts a run the cost guard would otherwise refuse (over $1). */
+  confirm: z.boolean().optional(),
 });
 
 const StepBody = z.object({
@@ -630,6 +653,94 @@ export function createApp(deps: ServerDeps): App {
     return json(readOutcomes(deps.vaultRoot, { since }));
   };
 
+  // ── Evals (routing-and-evals spec §4.2) ─────────────────────────────────
+  const evalRepoRoot = (): string => deps.evals?.repoRoot ?? deps.pluginRoot;
+
+  const evalFixtures = (): Response =>
+    json({
+      fixtures: loadFixtures({ repoRoot: evalRepoRoot(), vaultRoot: deps.vaultRoot }).map(l => ({
+        id: l.fixture.id,
+        ...(l.fixture.title === undefined ? {} : { title: l.fixture.title }),
+        scorer: l.fixture.scorer,
+        task: taskOf(l),
+        source: l.fixture.source?.kind ?? l.set,
+        runnable: runnable(l),
+      })),
+    });
+
+  const evalResults = (url: URL): Response => {
+    const since = url.searchParams.get('since');
+    if (since !== null && Number.isNaN(Date.parse(since))) return fail(400, 'since must be a date');
+    return json({ results: readResults(deps.vaultRoot, { since }) });
+  };
+
+  /** One run at a time: a set is a queue of steps against the shared
+   * window, and two sets at once would only race each other. */
+  let evalRunning = false;
+
+  const evalRun = async (req: Request): Promise<Response> => {
+    const input = await body(req, EvalRunBody);
+    const state = deps.state();
+    const providerId = input.providerId ?? effectiveDefault(state);
+    if (providerId === null || !state.providers.some(p => p.id === providerId)) throw new HttpError(422, `unknown provider: ${providerId ?? '(none configured)'}`);
+    const loaded = loadFixtures({ repoRoot: evalRepoRoot(), vaultRoot: deps.vaultRoot });
+    const selected = selectFixtures(loaded, { ...(input.fixtures === undefined ? {} : { fixtures: input.fixtures }), ...(input.task === undefined ? {} : { task: input.task }), ...(input.all === undefined ? {} : { all: input.all }) });
+    if (selected.error !== undefined) throw new HttpError(400, selected.error);
+    if (selected.fixtures.length === 0) throw new HttpError(400, 'nothing to run', { skipped: selected.skipped });
+    const estimateUsd = estimateCost(selected.fixtures.length, deps.evals?.pricing?.(providerId) ?? null);
+    if (needsConfirmation(estimateUsd) && input.confirm !== true) {
+      return fail(409, 'confirm-cost', { estimateUsd, count: selected.fixtures.length, providerId });
+    }
+    if (evalRunning) return fail(409, 'eval-busy');
+    evalRunning = true;
+
+    const judge: Judge | undefined =
+      deps.evals?.judge ??
+      (() => {
+        const picked = pickJudge({ providers: state.providers, router: state.router, providerId, practiceSet: selected.fixtures.some(l => l.set === 'practice') });
+        return picked === null ? undefined : providerJudge(picked.provider, { tenant: deps.tenant });
+      })();
+
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        const send = (event: string, data: unknown): void => {
+          controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+        };
+        try {
+          send('plan', { count: selected.fixtures.length, providerId, estimateUsd, skipped: selected.skipped });
+          const results = await runSet({
+            fixtures: selected.fixtures,
+            providerId,
+            deps: {
+              pluginRoot: deps.pluginRoot,
+              ...(deps.content === undefined ? {} : { content: deps.content }),
+              providers: state.providers,
+              router: state.router,
+              ...(state.stepTimeoutMs === undefined ? {} : { stepTimeoutMs: state.stepTimeoutMs }),
+              ...(judge === undefined ? {} : { judge }),
+              ...(deps.evals?.tmpDir === undefined ? {} : { tmpDir: deps.evals.tmpDir }),
+            },
+            onProgress: p => {
+              if (p.phase === 'start') send('progress', { index: p.index, total: p.total, fixtureId: p.fixtureId });
+            },
+            onResult: line => {
+              if (input.save === true) appendResult(deps.vaultRoot, line);
+              send('result', line);
+            },
+          });
+          send('done', { summary: summarize(results), saved: input.save === true });
+        } catch (err) {
+          send('error', { message: err instanceof Error ? err.message : String(err) });
+        } finally {
+          evalRunning = false;
+          controller.close();
+        }
+      },
+    });
+    return new Response(stream, { status: 200, headers: { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive' } });
+  };
+
   /** The vault-level switches Settings edits in config.md (spec §7). */
   const patchVaultSettings = async (req: Request): Promise<Response> => {
     const input = await body(req, VaultSettingsBody);
@@ -1095,6 +1206,12 @@ export function createApp(deps: ServerDeps): App {
       }
 
       if (segments.length === 1 && first === 'outcomes' && method === 'GET') return outcomes(url);
+
+      if (segments.length === 2 && first === 'evals') {
+        if (second === 'fixtures' && method === 'GET') return evalFixtures();
+        if (second === 'results' && method === 'GET') return evalResults(url);
+        if (second === 'run' && method === 'POST') return await evalRun(req);
+      }
 
       if (segments.length === 2 && first === 'settings' && second === 'vault' && method === 'PATCH') return await patchVaultSettings(req);
 

@@ -159,7 +159,7 @@ describe('self-test and parity with the Python scorer', () => {
     for (const id of ids) {
       const loaded = shipped.find(l => l.fixture.id === id)!;
       const r = scoreFindings(loaded.fixture, sampleOf(id));
-      expect([id, r.score]).toEqual([id, baseline.scores[id]]);
+      expect([id, r.score]).toEqual([id, baseline.scores[id]!]);
       sum += r.score!;
     }
     expect(Math.round((sum / ids.length) * 10_000) / 10_000).toBe(baseline.mean);

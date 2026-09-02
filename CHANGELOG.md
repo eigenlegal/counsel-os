@@ -15,6 +15,14 @@ Routing and evals, step 1 — every step has a task, and the vault keeps what yo
 - The retro's evidence gains a *Decisions and marks* section with the period's counts.
 - Settings: a task route's Task field offers the taxonomy (a custom name still goes through).
 
+Routing and evals, step 2 — the eval runner moves into the runtime (routing-and-evals spec §4, §5, §9, §11)
+
+- `counsel-os eval (--fixture <id> | --task <task> | --all) [--provider <id>] [--save] [--yes] [--json]` runs eval fixtures through the real loop in a temp copy of each fixture's mini-vault on any provider the runtime knows, scores the typed answer, and prints one line per fixture with the score, its terms, the duration and the cost. `--save` appends the lines to `<vault>/.counsel/evals/results.jsonl` — the record the scoreboard (step 3) reads; a step that errors is `score: null` with the message, never averaged in. `--yes` accepts a run estimated over $1.
+- Fixture v2: a `scorer` per fixture — `findings` (the v1 shape, unchanged), `extraction`, `classification`, `redline` (the model's edits are applied to the fixture's Word document through the runtime's own redline engine before scoring), `rubric` (criteria judged by a model; on a practice set the judge never grades its own vendor) — plus `source` (provenance and license), `weights`, `task_kind`, and `documents[]` for a benchmark of many documents in one vault. The practice's own fixtures live under `<vault>/practice/evals/` and never ship.
+- The `findings` scorer gains the severity band rule: an expected catch counts only when the finding's severity is within one band of the catch's, unless the catch says `severity: any`. Every shipped sample output still scores 1.0.
+- The app: `POST /evals/run` (an SSE stream of `plan · progress · result · done`; `409 confirm-cost` over $1 without `confirm: true`; `409 eval-busy` while one runs), `GET /evals/fixtures`, `GET /evals/results?since=`.
+- The Python eval harness (`scripts/run_evals.py`, `scripts/eval_runtime_runner.py`, its test) is retired; `evals/baselines/claude-fable-5.json` stays as the parity anchor the TypeScript scorer is tested against. `bun run evals:self-test` and `bun run evals:runner-test` are the CI steps. `evals/README.md` documents the v2 schema and the provenance rule for anything not written here.
+
 ## [0.13.0] — 2026-09-02
 
 Providers phase 1, retro, the binary — any model, keys in the Keychain, matters that stay local

@@ -12,7 +12,7 @@
 | Consistency spot-check | `/counsel-os:doctor --consistency` | Before significant negotiations, and after law refreshes or manual standards edits |
 | Practice analytics + knowledge harvest | `/counsel-os:retro` | Quarterly, or every ~10 closed matters |
 | Refresh user-owned law | `/counsel-os:law-refresh` | Per the cadence tiers below |
-| Golden-matter evals | `python3 scripts/run_evals.py --generate` | Before releases and when changing models — plugin developers only, not end users |
+| Golden-matter evals | `bun runtime/src/cli.ts eval --all --save` | Before releases and when changing models — plugin developers only, not end users |
 
 Notes on the loop:
 
@@ -66,12 +66,12 @@ In-session recurrence:
 
 ## Evals (plugin developers only)
 
-`scripts/run_evals.py` scores golden-matter fixtures (expected catches, expected citations, false-positive guards) against generated outputs:
+The runtime's eval runner (`runtime/src/evals/`) runs golden-matter fixtures (expected catches, expected citations, false-positive guards) through the loop on a provider and scores the answers:
 
 ```bash
-python3 scripts/run_evals.py --generate            # generate + score with your default model
-python3 scripts/run_evals.py --generate --model X  # when evaluating a model change
-python3 scripts/run_evals.py --generate --only ID  # a single fixture
+bun runtime/src/cli.ts eval --all --save                       # every runnable fixture on your default provider
+bun runtime/src/cli.ts eval --all --provider anthropic/X       # when evaluating a model change
+bun runtime/src/cli.ts eval --fixture law-beats-practice       # a single fixture
 ```
 
 Run before cutting a release and whenever the underlying model changes — scoring is deterministic, so regressions are attributable to the content or the model, not the harness. End users never need this; CI runs the scorer self-test on every push.

@@ -46,7 +46,7 @@ jobs:
       - name: Eval scorer self-test
         run: bun run evals:self-test
 
-      - name: Eval runtime runner test
+      - name: Eval runner tests (scorers, runner, parity with the saved baseline)
         run: bun run evals:runner-test
 
       - name: Law frontmatter warnings
