@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { FakeModelProvider, runToolDef } from '../core/fake-provider';
 import type { Capabilities, ModelProvider, StepEvent, StepRequest } from '../core/types';
+import { readRoutingPolicy, writeRoutingPolicy } from '../router/policy';
 import { Router } from '../router/router';
 import { ThreadStore, type ThreadEvent } from '../threads/store';
 import { FsVaultStore } from '../vault/fs-store';
@@ -1916,6 +1917,61 @@ describe('the eval runner over HTTP (routing-and-evals spec §4.2)', () => {
     expect(row).toMatchObject({ providerId: 'fake/fake', modelVersion: 'fake', score: 1, scored: 1, sampleSize: 1, failed: [], meanCostUsd: 0.01, staleDays: 0 });
     expect(typeof row.medianMs).toBe('number');
     expect(board.tasks.find(t => t.task === 'review')!.sets.practice!.rows).toEqual([]);
+  });
+
+  test('GET /routing reports the bar, the preference and who that picks; PUT changes one task and the next step follows it', async () => {
+    const app = appWith([new FakeModelProvider([{ output: sample('law-beats-practice'), usage: { inputTokens: 10, outputTokens: 2, costUsd: 0.01 } }])], { evals: evalsDeps() });
+    // Nothing scored yet: the defaults stand and no task claims a pick.
+    const bare = (await (await call(app, 'GET', '/routing')).json()) as { defaults: { minScore: number; prefer: string }; tasks: Record<string, unknown> };
+    expect(bare.defaults).toEqual({ minScore: 0.7, prefer: 'quality' });
+
+    // Score the fake provider on `review`; it clears the default bar.
+    await (await call(app, 'POST', '/evals/run', { body: { fixtures: ['law-beats-practice'], save: true } })).text();
+    const scored = (await (await call(app, 'GET', '/routing')).json()) as {
+      tasks: Record<string, { minScore: number; prefer: string; pinned?: string; picked?: { providerId: string; reason: string } }>;
+    };
+    expect(scored.tasks['review']).toMatchObject({ minScore: 0.7, prefer: 'quality' });
+    expect(scored.tasks['review']?.picked).toEqual({ providerId: 'fake/fake', reason: 'review 1.00' });
+
+    // Raise the bar above what it scored: the same provider is no longer the
+    // scoreboard's pick, and the reason says so.
+    const raised = (await (await call(app, 'PUT', '/routing', { body: { task: 'review', minScore: 1 } })).json()) as typeof scored;
+    expect(raised.tasks['review']?.minScore).toBe(1);
+    const lowered = (await (await call(app, 'PUT', '/routing', { body: { task: 'review', minScore: 0.5, prefer: 'cost', pinned: 'fake/fake' } })).json()) as typeof scored;
+    expect(lowered.tasks['review']).toMatchObject({ minScore: 0.5, prefer: 'cost', pinned: 'fake/fake' });
+    expect(lowered.tasks['review']?.picked?.reason).toBe('pinned for review · 1.00');
+
+    // Unpinning leaves the rest of the task's policy alone.
+    const unpinned = (await (await call(app, 'PUT', '/routing', { body: { task: 'review', pinned: null } })).json()) as typeof scored;
+    expect(unpinned.tasks['review']?.pinned).toBeUndefined();
+    expect(unpinned.tasks['review']).toMatchObject({ minScore: 0.5, prefer: 'cost' });
+  });
+
+  test('PUT /routing refuses a body that is not a routing change', async () => {
+    const app = appWith([new FakeModelProvider([{ text: 'x' }])], { evals: evalsDeps() });
+    expect((await call(app, 'PUT', '/routing', { body: { task: '' } })).status).toBe(400);
+    expect((await call(app, 'PUT', '/routing', { body: { task: 'review', minScore: 2 } })).status).toBe(400);
+    expect((await call(app, 'PUT', '/routing', { body: { task: 'review', prefer: 'cheapest' } })).status).toBe(400);
+    // A task name is a name, not free text: it becomes a key in the policy file.
+    expect((await call(app, 'PUT', '/routing', { body: { task: 'review: contracts', minScore: 0.5 } })).status).toBe(400);
+    expect((await call(app, 'PUT', '/routing', { body: { task: '#urgent', minScore: 0.5 } })).status).toBe(400);
+    // A pin names a provider this practice has loaded.
+    expect((await call(app, 'PUT', '/routing', { body: { task: 'review', pinned: 'ghost/ghost' } })).status).toBe(422);
+  });
+
+  test('a change to one task leaves every other task alone, whatever its name looks like in YAML', async () => {
+    const app = appWith([new FakeModelProvider([{ text: 'x' }])], { evals: evalsDeps() });
+    // A fixture may name any task, and that name reaches the policy file. A
+    // name that reads as YAML syntax must survive the write, or the file
+    // parses back as no policy at all and every bar in it is lost.
+    writeRoutingPolicy(vaultRoot, { tasks: { 'draft: memo': { min_score: 0.9 }, extract: { prefer: 'cost' } } });
+    const after = (await (await call(app, 'PUT', '/routing', { body: { task: 'review', minScore: 0.6 } })).json()) as {
+      tasks: Record<string, { minScore: number; prefer: string }>;
+    };
+    expect(after.tasks['review']).toMatchObject({ minScore: 0.6 });
+    expect(after.tasks['draft: memo']).toMatchObject({ minScore: 0.9 });
+    expect(after.tasks['extract']).toMatchObject({ prefer: 'cost' });
+    expect(readRoutingPolicy(vaultRoot).tasks['draft: memo']?.min_score).toBe(0.9);
   });
 
   test('GET /evals/estimate says how many fixtures a task runs and what it may cost', async () => {

@@ -78,7 +78,23 @@ export function readRoutingPolicy(vaultRoot: string): RoutingPolicy {
   }
 }
 
-/** The file as a lawyer would read it: one block per task, comments kept. */
+/**
+ * A YAML scalar that means exactly the string it holds. A task name or a
+ * provider id reaches this file from the UI, so anything that would be read
+ * as YAML syntax — a colon, a leading `#`, `&`, `*`, `-`, a newline — is
+ * quoted. Unquoted, one such value makes the whole file unparseable, and an
+ * unparseable file reads as "no policy at all": every bar and every pin in
+ * it silently gone.
+ */
+function scalar(s: string): string {
+  return /^[A-Za-z0-9_][A-Za-z0-9_./-]*$/.test(s) ? s : `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`;
+}
+
+/**
+ * The file as a lawyer would read it: the header, then one block per task.
+ * The whole file is rewritten from the policy, so a hand-written comment
+ * below the header does not survive a change made in Settings.
+ */
 export function renderRoutingPolicy(policy: RoutingPolicy): string {
   const head = [
     '# How counsel-os routes each kind of work (docs: routing-and-evals spec §6).',
@@ -93,10 +109,10 @@ export function renderRoutingPolicy(policy: RoutingPolicy): string {
   const lines = ['tasks:'];
   for (const task of names) {
     const entry = policy.tasks[task]!;
-    lines.push(`  ${task}:`);
+    lines.push(`  ${scalar(task)}:`);
     if (entry.min_score !== undefined) lines.push(`    min_score: ${entry.min_score}`);
     if (entry.prefer !== undefined) lines.push(`    prefer: ${entry.prefer}`);
-    if (entry.pinned !== undefined) lines.push(`    pinned: ${entry.pinned}`);
+    if (entry.pinned !== undefined) lines.push(`    pinned: ${scalar(entry.pinned)}`);
   }
   return `${head.join('\n')}${lines.join('\n')}\n`;
 }

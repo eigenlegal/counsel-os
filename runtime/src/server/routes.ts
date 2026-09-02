@@ -42,7 +42,7 @@ import { appendResult, readResults } from '../evals/results';
 import { runSet, summarize } from '../evals/runner';
 import { fixtureCounts, scoreboard } from '../evals/scoreboard';
 import { routeScores } from '../router/scores';
-import { readRoutingPolicy } from '../router/policy';
+import { DEFAULT_MIN_SCORE, DEFAULT_PREFERENCE, readRoutingPolicy, taskPolicy, writeRoutingPolicy, type RoutingPolicy } from '../router/policy';
 import type { Judge } from '../evals/scorers/types';
 import { runnable, selectFixtures, taskOf } from '../evals/select';
 import { serveStatic, type StaticSource } from './static';
@@ -90,7 +90,7 @@ export type App = (req: Request) => Promise<Response>;
  * static, served with no credential, so a new route whose prefix is missing
  * here would be reachable by anyone who can reach the port.
  */
-export const API_PREFIXES: readonly string[] = ['health', 'threads', 'runs', 'vault', 'settings', 'proposals', 'docket', 'setup', 'content', 'doctor', 'session', 'retro', 'providers', 'outcomes', 'evals'];
+export const API_PREFIXES: readonly string[] = ['health', 'threads', 'runs', 'vault', 'settings', 'proposals', 'docket', 'setup', 'content', 'doctor', 'session', 'retro', 'providers', 'outcomes', 'evals', 'routing'];
 
 /** True when `pathname` belongs to the API (and so needs a token). `/` and
  * every client-side route are false. */
@@ -713,6 +713,78 @@ export function createApp(deps: ServerDeps): App {
     return json(scoreboard(readResults(deps.vaultRoot, { since: null }), counts));
   };
 
+  /**
+   * How the practice routes each task, and who that picks today
+   * (routing-and-evals spec §6). The pick runs the router itself, so the
+   * Models group marks the provider a step would actually get rather than
+   * a second guess at the same rule.
+   */
+  const routingGet = (): Response => {
+    const { scores, policy } = routingView();
+    const state = deps.state();
+    const tasks: Record<string, { minScore: number; prefer: string; pinned?: string; picked?: { providerId: string; reason: string } }> = {};
+    const named = new Set([...Object.keys(policy.tasks), ...Object.keys(scores)]);
+    for (const task of named) {
+      const entry = taskPolicy(policy, task);
+      const row: { minScore: number; prefer: string; pinned?: string; picked?: { providerId: string; reason: string } } = {
+        minScore: entry.min_score,
+        prefer: entry.prefer,
+        ...(entry.pinned === undefined ? {} : { pinned: entry.pinned }),
+      };
+      try {
+        const routed = state.router.route(task, { scores: scores[task] ?? [], policy: entry });
+        row.picked = { providerId: routed.provider.id, reason: routed.reason.text };
+      } catch {
+        // A router that cannot resolve at all (no default loaded) leaves the
+        // row without a pick rather than failing the whole view.
+      }
+      tasks[task] = row;
+    }
+    return json({ defaults: { minScore: DEFAULT_MIN_SCORE, prefer: DEFAULT_PREFERENCE }, tasks });
+  };
+
+  const RoutingBody = z.object({
+    /** A task name, not free text: it becomes a key in `practice/routing.yaml`
+     * and names a row of the ledger. */
+    task: z.string().regex(/^[a-z0-9][a-z0-9_.-]{0,63}$/, 'a task is a lowercase name'),
+    minScore: z.number().min(0).max(1).optional(),
+    prefer: z.enum(['quality', 'cost', 'latency']).optional(),
+    /** `null` unpins; a string pins that provider. */
+    pinned: z.string().min(1).nullable().optional(),
+  });
+
+  /** One task's routing, changed in place. Writes `practice/routing.yaml`
+   * and forgets the cached view so the next step routes by it. */
+  const routingPut = async (req: Request): Promise<Response> => {
+    const input = await body(req, RoutingBody);
+    // A pin names a provider this practice actually loaded. Anything else is
+    // a pin that can never be honoured, written into a file the lawyer reads.
+    if (typeof input.pinned === 'string' && !deps.state().providers.some(p => p.id === input.pinned)) {
+      return fail(422, `unknown provider: ${input.pinned}`);
+    }
+    const release = await locks.acquire(SETTINGS_LOCK);
+    try {
+      const policy: RoutingPolicy = readRoutingPolicy(deps.vaultRoot);
+      const entry = { ...(policy.tasks[input.task] ?? {}) };
+      if (input.minScore !== undefined) entry.min_score = input.minScore;
+      if (input.prefer !== undefined) entry.prefer = input.prefer;
+      if (input.pinned !== undefined) {
+        if (input.pinned === null) delete entry.pinned;
+        else entry.pinned = input.pinned;
+      }
+      policy.tasks[input.task] = entry;
+      writeRoutingPolicy(deps.vaultRoot, policy);
+      forgetRouting();
+      // Read back INSIDE the lock: two quick changes from the same screen
+      // would otherwise each answer with whatever the file held when they
+      // got round to reading it, and the later answer could be the older
+      // one.
+      return routingGet();
+    } finally {
+      release();
+    }
+  };
+
   /** What scoring a task on a provider would run and roughly cost — the
    * one-line confirmation the Models group shows before a run. */
   const evalEstimate = (url: URL): Response => {
@@ -1278,6 +1350,11 @@ export function createApp(deps: ServerDeps): App {
         if (second === 'scoreboard' && method === 'GET') return evalScoreboard();
         if (second === 'estimate' && method === 'GET') return evalEstimate(url);
         if (second === 'run' && method === 'POST') return await evalRun(req);
+      }
+
+      if (segments.length === 1 && first === 'routing') {
+        if (method === 'GET') return routingGet();
+        if (method === 'PUT') return await routingPut(req);
       }
 
       if (segments.length === 2 && first === 'settings' && second === 'vault' && method === 'PATCH') return await patchVaultSettings(req);

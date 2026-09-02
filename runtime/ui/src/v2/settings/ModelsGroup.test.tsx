@@ -2,10 +2,18 @@ import { cleanup, render, screen, userEvent, waitFor, within } from '../../test/
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { clearToken, TOKEN_KEY } from '../../api/token';
-import type { Scoreboard, ScoreboardRow, ScoreboardSet } from '../../api/types';
+import type { RoutingView, Scoreboard, ScoreboardRow, ScoreboardSet } from '../../api/types';
 import { confirmLine, ModelsGroup, runCost, scoredLabel, staleness } from './ModelsGroup';
 
 const realFetch = globalThis.fetch;
+
+const baseRouting: RoutingView = {
+  defaults: { minScore: 0.7, prefer: 'quality' },
+  tasks: { review: { minScore: 0.7, prefer: 'quality', picked: { providerId: 'claude-sub/claude-opus-5', reason: 'review 0.91' } } },
+};
+let routing: RoutingView = baseRouting;
+let routingPuts: Array<{ task: string; minScore?: number; prefer?: string; pinned?: string | null }> = [];
+let routingPutStatus = 200;
 
 function row(over: Partial<ScoreboardRow> & { providerId: string }): ScoreboardRow {
   return {
@@ -70,6 +78,9 @@ function sse(text: string): Response {
 const json = (b: unknown, status = 200): Response => new Response(JSON.stringify(b), { status, headers: { 'content-type': 'application/json' } });
 
 beforeEach(() => {
+  routing = baseRouting;
+  routingPuts = [];
+  routingPutStatus = 200;
   board = scored;
   estimate = { count: 8, estimateUsd: 0.6 };
   runs = [];
@@ -86,6 +97,22 @@ beforeEach(() => {
     if (url.startsWith('/evals/estimate?')) {
       const q = new URLSearchParams(url.slice(url.indexOf('?') + 1));
       return json({ task: q.get('task'), providerId: q.get('providerId'), ...estimate, needsConfirm: estimate.estimateUsd !== null && estimate.estimateUsd > 1 });
+    }
+    if (url === '/routing' && (init?.method ?? 'GET') === 'GET') return json(routing);
+    if (url === '/routing' && init?.method === 'PUT') {
+      const change = JSON.parse(String(init.body)) as { task: string; minScore?: number; prefer?: string; pinned?: string | null };
+      if (routingPutStatus !== 200) {
+        routingPuts.push(change);
+        return json({ error: 'the vault is read-only' }, routingPutStatus);
+      }
+      routingPuts.push(change);
+      const entry = { ...(routing.tasks[change.task] ?? { minScore: 0.7, prefer: 'quality' }) };
+      if (change.minScore !== undefined) entry.minScore = change.minScore;
+      if (change.prefer !== undefined) entry.prefer = change.prefer;
+      if (change.pinned === null) delete entry.pinned;
+      else if (change.pinned !== undefined) entry.pinned = change.pinned;
+      routing = { ...routing, tasks: { ...routing.tasks, [change.task]: entry } };
+      return json(routing);
     }
     if (url === '/evals/run' && init?.method === 'POST') {
       runs.push(JSON.parse(String(init.body)));
@@ -117,7 +144,8 @@ describe('ModelsGroup', () => {
     await userEvent.click(screen.getByRole('tab', { name: 'shipped' }));
     const table = screen.getByRole('table', { name: 'shipped scores' });
     expect(within(table).getAllByRole('columnheader').map(h => h.textContent)).toEqual(['task', 'claude-sub/claude-opus-5', 'fake/fake']);
-    expect(within(table).getAllByRole('rowheader').map(h => h.textContent)).toEqual(['review8 fixtures', 'extract1 fixture']);
+    // The rowheader also carries the routing line; its own text is the task and its fixture count.
+    expect(within(table).getAllByRole('rowheader').map(h => h.querySelector('.v2-models-taskname')!.textContent)).toEqual(['review8 fixtures', 'extract1 fixture']);
     // The score is text, with the facts under it; the failed cell carries its reason and offers a retry.
     expect(screen.getByText('0.91')).toBeTruthy();
     expect(screen.getByText('8/8 · 3d ago · 4.2s · $0.07/run')).toBeTruthy();
@@ -243,4 +271,46 @@ describe('the facts line', () => {
     expect(runCost(0.005)).toBe('$0.01/run');
     expect(runCost(0.0004)).toBe('<$0.01/run');
   });
+});
+
+describe('how a task is routed', () => {
+  test('the bar, the preference and who that picks read under the task; changing one saves it', async () => {
+    render(<ModelsGroup providerIds={['claude-sub/claude-opus-5', 'fake/fake']} />);
+    await waitFor(() => expect(screen.getByRole('table', { name: /scores/ })).toBeTruthy());
+    const line = document.querySelector('.v2-routing')!;
+    expect(line.textContent).toContain('bar 0.70 · by quality');
+    expect(line.textContent).toContain('picks claude-sub/claude-opus-5');
+
+    await userEvent.click(within(line as HTMLElement).getByRole('button', { name: 'change' }));
+    await userEvent.click(within(line as HTMLElement).getByRole('button', { name: '0.8' }));
+    await waitFor(() => expect(routingPuts).toEqual([{ task: 'review', minScore: 0.8 }]));
+    await waitFor(() => expect(document.querySelector('.v2-routing')!.textContent).toContain('bar 0.80'));
+
+    await userEvent.click(within(document.querySelector('.v2-routing') as HTMLElement).getByRole('button', { name: 'cost' }));
+    await waitFor(() => expect(routingPuts[1]).toEqual({ task: 'review', prefer: 'cost' }));
+  });
+
+  test('a pinned task says so and offers to unpin', async () => {
+    routing = { ...baseRouting, tasks: { review: { minScore: 0.7, prefer: 'quality', pinned: 'fake/fake' } } };
+    render(<ModelsGroup providerIds={['claude-sub/claude-opus-5', 'fake/fake']} />);
+    await waitFor(() => expect(document.querySelector('.v2-routing')!.textContent).toContain('pinned fake/fake'));
+    await userEvent.click(within(document.querySelector('.v2-routing') as HTMLElement).getByRole('button', { name: 'change' }));
+    await userEvent.click(within(document.querySelector('.v2-routing') as HTMLElement).getByRole('button', { name: 'unpin' }));
+    await waitFor(() => expect(routingPuts).toEqual([{ task: 'review', pinned: null }]));
+    await waitFor(() => expect(document.querySelector('.v2-routing')!.textContent).not.toContain('pinned'));
+  });
+});
+
+test('a change that fails says so on its own line and leaves the ledger standing', async () => {
+  routingPutStatus = 500;
+  render(<ModelsGroup providerIds={['claude-sub/claude-opus-5', 'fake/fake']} />);
+  await waitFor(() => expect(screen.getByRole('table', { name: /scores/ })).toBeTruthy());
+  const line = document.querySelector('.v2-routing') as HTMLElement;
+  await userEvent.click(within(line).getByRole('button', { name: 'change' }));
+  await userEvent.click(within(line).getByRole('button', { name: '0.8' }));
+
+  await waitFor(() => expect(document.querySelector('.v2-routing-error')?.textContent).toContain('not changed'));
+  // The scores, the tabs and the score actions are all still there.
+  expect(screen.getByRole('table', { name: /scores/ })).toBeTruthy();
+  expect(document.querySelector('.v2-routing')!.textContent).toContain('bar 0.70');
 });
