@@ -352,17 +352,11 @@ There is no intermediate modified.docx — accepting all changes in Word yields
 the clean version. Drop `track` only when the user explicitly wants a
 silently-edited copy with no revision marks.
 
-**3. Word Compare (alternative engine, optional; being replaced by the runtime's `docx_compare`):**
+**3. Comparing two documents that already exist (no edit list):** when a counterparty returns a clean revised draft and the user wants a redline against the original, call the `docx_compare` tool (`original`, `revised`, `author`; `output` only to override the name). It aligns the paragraphs by similarity, writes the differences as native tracked changes into a copy of the original — `<original>-compare-<date>.docx` beside it — and reports what changed, was inserted or deleted, and what it could not place (table rows are compared in place, never inserted or deleted). Outside the runtime:
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/scripts/word_compare.sh" "{original.docx}" "{modified.docx}" "{author_name}" "{output_path}"
+bun runtime/src/cli.ts docx compare --author "{author_name}" "{original.docx}" "{revised.docx}"
 ```
-Use only when comparing two documents that already exist independently (e.g.
-a counterparty returned a clean revised draft and the user wants a redline
-against the original), or when the user explicitly asks for Word's own compare
-engine. Requires Microsoft Word on macOS with an unlocked GUI session, and
-recent Word builds have rejected the AppleScript `compare` verb on some
-installations — if it fails, fall back to `--track` when the edit list is
-known, or tell the user to run Word's Review > Compare manually.
+For round-over-round comparison of a returned markup against what we sent, use `diff_rounds` (`ours`, `theirs`, `base` when the pre-edit baseline exists) — see `primitives/read.md`.
 
 **4. Clean format option.** Default to preserving formatting for contract redlines.
 - **(A) Preserve formatting** — tracked changes show content edits only (standard for redlines)

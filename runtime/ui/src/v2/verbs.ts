@@ -24,6 +24,8 @@ const TABLE: Record<string, string> = {
   extract_redlines: 'Extracted changes from',
   check_document: 'Checked',
   apply_redlines: 'Redlined',
+  docx_compare: 'Compared',
+  diff_rounds: 'Compared the rounds of',
 };
 
 /** The platform's script tools (`runtime/src/tools/builtin.ts`) — the one
@@ -32,18 +34,17 @@ const TABLE: Record<string, string> = {
 const SCRIPT_TOOLS: ReadonlySet<string> = new Set([
   'docket_sweep',
   'clean_format',
-  'word_compare',
 ]);
 
 const SEARCH_LIKE = /grep|search|find/i;
 
 /** The verbs whose object is a vault path a drawer can open. */
-const FILE_VERBS: ReadonlySet<string> = new Set(['Read', 'Proposed', 'Wrote', 'Extracted changes from', 'Checked', 'Redlined']);
+const FILE_VERBS: ReadonlySet<string> = new Set(['Read', 'Proposed', 'Wrote', 'Extracted changes from', 'Checked', 'Redlined', 'Compared']);
 
 function objectOf(input: unknown): string | undefined {
   if (typeof input !== 'object' || input === null) return undefined;
   const record = input as Record<string, unknown>;
-  for (const key of ['path', 'original', 'name', 'query', 'dir']) {
+  for (const key of ['path', 'original', 'theirs', 'name', 'query', 'dir']) {
     const value = record[key];
     if (typeof value === 'string' && value !== '') return value;
   }

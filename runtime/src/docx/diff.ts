@@ -75,8 +75,10 @@ function findLongestMatch(
   return { i: besti, j: bestj, size: bestsize };
 }
 
-/** `SequenceMatcher.get_opcodes()` for two token lists, `autojunk=False`. */
-export function sequenceOpcodes(a: string[], b: string[]): Opcode[] {
+/** `SequenceMatcher.get_matching_blocks()` without the sentinel: the
+ * non-overlapping equal blocks `[i, j, size]`, ascending, adjacent ones
+ * merged. */
+export function matchingBlocks(a: string[], b: string[]): Array<[number, number, number]> {
   const b2j = new Map<string, number[]>();
   b.forEach((tok, j) => {
     const list = b2j.get(tok);
@@ -114,7 +116,24 @@ export function sequenceOpcodes(a: string[], b: string[]): Opcode[] {
     }
   }
   if (k1 > 0) merged.push([i1, j1, k1]);
-  merged.push([a.length, b.length, 0]);
+  return merged;
+}
+
+/** `SequenceMatcher.ratio()` over two strings (code points, as Python
+ * indexes a `str`): `2·M / (|a| + |b|)`, 1.0 when both are empty. */
+export function ratio(a: string, b: string): number {
+  const ca = Array.from(a);
+  const cb = Array.from(b);
+  const length = ca.length + cb.length;
+  if (length === 0) return 1;
+  let matches = 0;
+  for (const [, , size] of matchingBlocks(ca, cb)) matches += size;
+  return (2 * matches) / length;
+}
+
+/** `SequenceMatcher.get_opcodes()` for two token lists, `autojunk=False`. */
+export function sequenceOpcodes(a: string[], b: string[]): Opcode[] {
+  const merged: Array<[number, number, number]> = [...matchingBlocks(a, b), [a.length, b.length, 0]];
 
   const out: Opcode[] = [];
   let i = 0;

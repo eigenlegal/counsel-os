@@ -13,7 +13,7 @@ primitives/          — The 5 instruction files the LLM follows
 skills/              — Plugin skills (counsel, browse, retro, setup, update, law-refresh)
 knowledge/law/       — 26 law area reference files (plugin-managed)
 knowledge/practice-seed/  — Starting content seeded to user vaults
-scripts/             — Automation (redline pipeline: apply_redlines, word_compare, clean_format, extract_redlines; import_reference; resolve_legal_root; release/lint tooling)
+scripts/             — Automation (clean_format, extract_redlines, check_document — the redline write path and compare live in runtime/src/docx; import_reference; resolve_legal_root; release/lint tooling)
 docs/                — Architecture documentation
 templates/memory/    — Seed template for patterns.md
 ```

@@ -326,11 +326,10 @@ Plugin (methodology + tooling):
     docket_sweep.py                            # Deterministic deadline classifier over matter frontmatter (see /counsel-os:docket)
     clean_format.py                            # Reformat .docx to professional standards
     legal-template.docx                        # Style template for clean_format.py
-    word_compare.sh                            # Drive Word Compare via AppleScript
     resolve_legal_root.sh                      # Canonical legal-root discovery (exit 0/1/2)
     import_reference.sh                        # Import third-party material into practice/reference/ (see remember --reference)
     extract_redlines.py                        # Structured tracked-changes + comments extraction (see read --redline)
-    diff_rounds.py                             # Round-over-round redline comparison: ACCEPTED/REVERTED/MODIFIED/NEW (see read --redline)
+    (runtime/src/docx — apply_redlines, docx_compare, diff_rounds: TypeScript, no Word; `bun runtime/src/cli.ts docx …`)
     check_document.py                          # Deterministic mechanical QA: dangling cross-refs, unattached exhibits, unused/undefined terms, party-name drift (see read --qa)
 
 User's vault (all knowledge — discovered via config + Knowledge Base Search):

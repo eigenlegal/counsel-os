@@ -26,7 +26,7 @@ export interface ArtifactSummary {
   bytes: number;
 }
 
-export type ArtifactKind = 'docx-redline';
+export type ArtifactKind = 'docx-redline' | 'docx-compare';
 
 /** One event of a running step, as the SSE stream delivers it. `runId` is
  * added by the server to every frame. */
@@ -72,6 +72,7 @@ export type ThreadEvent =
       kind: ArtifactKind;
       path: string;
       source: string;
+      compared?: string;
       author: string;
       tracked: boolean;
       summary: ArtifactSummary;

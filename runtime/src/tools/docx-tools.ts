@@ -13,7 +13,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { z } from 'zod';
 import type { ArtifactSummary, Tenant, Tool, VaultStore } from '../core/types';
-import { applyRedlines, checkDocx, checkText, detectFormat, docxToMarkdown, extractRedlines, isDocxPath, openDocx, redlineOutputName, type RedlineItem, type RedlineResult } from '../docx';
+import { applyRedlines, checkDocx, checkText, compareDocuments, compareOutputName, detectFormat, diffRounds, docxToMarkdown, extractRedlines, isDocxPath, openDocx, redlineOutputName, roundsToMarkdown, type CompareResult, type RedlineItem, type RedlineResult, type RoundsResult } from '../docx';
 import type { ThreadStore } from '../threads/store';
 import { RESERVED_DIR } from '../vault/fs-store';
 
@@ -85,6 +85,13 @@ export interface ApplyRedlinesInput {
   author?: string;
 }
 
+export interface CompareOutput extends Omit<CompareResult, 'stats'> {
+  kind: 'docx-compare';
+  output: string;
+  summary: ArtifactSummary;
+  artifactId?: string;
+}
+
 export interface ApplyRedlinesOutput extends Omit<RedlineResult, 'stats'> {
   /** Vault-relative path of the document written. */
   output: string;
@@ -93,11 +100,17 @@ export interface ApplyRedlinesOutput extends Omit<RedlineResult, 'stats'> {
   artifactId?: string;
 }
 
-/** `<original>-redline-<date>.docx` beside the source, or the caller's
- * `output` — the first name not yet taken (`-2`, `-3`, …). */
-async function freeOutputPath(vaultRoot: string, original: string, wanted: string | undefined, now: Date): Promise<{ abs: string; rel: string }> {
+/** The default name beside the source, or the caller's `output` — the first
+ * name not yet taken (`-2`, `-3`, …). */
+async function freeOutputPath(
+  vaultRoot: string,
+  original: string,
+  wanted: string | undefined,
+  now: Date,
+  nameFor: (original: string, now: Date, n: number) => string = redlineOutputName,
+): Promise<{ abs: string; rel: string }> {
   for (let n = 1; n < 1000; n += 1) {
-    const candidate = wanted === undefined ? redlineOutputName(original, now, n) : n === 1 ? wanted : wanted.replace(/(\.docx)?$/i, `-${n}$1`);
+    const candidate = wanted === undefined ? nameFor(original, now, n) : n === 1 ? wanted : wanted.replace(/(\.docx)?$/i, `-${n}$1`);
     const resolved = resolveVaultFile(vaultRoot, candidate);
     if (!(await Bun.file(resolved.abs).exists())) return resolved;
   }
@@ -222,5 +235,79 @@ export function docxTools(opts: DocxToolOptions): Tool[] {
     },
   };
 
-  return [docxRead as Tool, extract as Tool, check as Tool, apply as Tool];
+  const writeOut = async (rel: string, abs: string, bytes: Uint8Array, tenant: Tenant): Promise<void> => {
+    if (opts.vault?.writeBytes !== undefined) await opts.vault.writeBytes(tenant, rel, bytes);
+    else {
+      await mkdir(dirname(abs), { recursive: true });
+      await writeFile(abs, bytes, { flag: 'wx' });
+    }
+  };
+
+  const compare: Tool<{ original: string; revised: string; output?: string; author?: string }, CompareOutput> = {
+    name: 'docx_compare',
+    description:
+      'Compare two Word (.docx) documents that exist independently — the original and a revised draft with no edit list — and write a NEW document beside the original with the differences as native Word tracked changes attributed to `author`: `<original>-compare-<date>.docx`, never overwriting. Accepting all changes yields the revised text; rejecting them yields the original. Paragraphs are aligned by similarity; table cells compare in place but rows are never inserted or deleted (reported as skipped). Replaces Word Compare. Paths are vault-relative.',
+    platforms: new Set(ALL_PLATFORMS),
+    inputSchema: z.object({
+      original: z.string().describe('Vault-relative path to the original .docx.'),
+      revised: z.string().describe('Vault-relative path to the revised .docx to compare against it.'),
+      output: z.string().optional().describe('Vault-relative path to write; default `<original>-compare-<date>.docx` beside the original. Never overwrites.'),
+      author: z.string().optional().describe('Who the revision marks are attributed to; default "Counsel OS".'),
+    }),
+    async execute({ original, revised, output, author }, ctx) {
+      if (!isDocxPath(original) || !isDocxPath(revised)) throw new VaultPathError('docx_compare compares .docx files only');
+      const src = await read(original);
+      const rev = await read(revised);
+      const now = new Date();
+      const pkg = openDocx(src.bytes);
+      const result = compareDocuments(pkg, openDocx(rev.bytes), { author: author ?? 'Counsel OS', now });
+      const bytes = pkg.save();
+      const { abs, rel } = await freeOutputPath(opts.vaultRoot, src.rel, output, now, compareOutputName);
+      await writeOut(rel, abs, bytes, ctx.tenant);
+      const { stats, ...report } = result;
+      const summary: ArtifactSummary = { changes: stats.regions, comments: 0, applied: result.applied.length, skipped: result.skipped.length, clauses: stats.paragraphs, bytes: bytes.byteLength };
+      const out: CompareOutput = { ...report, kind: 'docx-compare', output: rel, summary };
+      if (opts.thread !== undefined) {
+        const artifactId = randomUUID();
+        await opts.thread.store.append(opts.thread.tenant, opts.thread.threadId, {
+          t: 'artifact',
+          at: now.toISOString(),
+          id: artifactId,
+          kind: 'docx-compare',
+          path: rel,
+          source: src.rel,
+          compared: rev.rel,
+          author: author ?? 'Counsel OS',
+          tracked: true,
+          summary,
+        });
+        out.artifactId = artifactId;
+      }
+      return out;
+    },
+  };
+
+  const rounds: Tool<{ ours: string; theirs: string; base?: string; format?: 'json' | 'markdown'; full_text?: boolean }, RoundsResult | { markdown: string }> = {
+    name: 'diff_rounds',
+    description:
+      'Round-over-round negotiation comparison: `ours` is the version we sent (its accept-all text is our proposal), `theirs` the markup the counterparty returned. Classifies each of our counters ACCEPTED / REVERTED / MODIFIED / NEW / UNMATCHED_CHANGE. Pass `base` (the round N-1 document before our edits) whenever it exists — without it silent acceptances are invisible and unattributable edits are UNMATCHED_CHANGE. Returns the JSON report, or `{markdown}` with format "markdown". Paths are vault-relative.',
+    platforms: new Set(ALL_PLATFORMS),
+    inputSchema: z.object({
+      ours: z.string().describe('Vault-relative path to the version we sent.'),
+      theirs: z.string().describe('Vault-relative path to the markup they returned.'),
+      base: z.string().optional().describe('Vault-relative path to the round N-1 baseline before our edits.'),
+      format: z.enum(['json', 'markdown']).optional().describe('json (default) or markdown.'),
+      full_text: z.boolean().optional().describe('markdown only: do not truncate excerpts.'),
+    }),
+    async execute({ ours, theirs, base, format, full_text }) {
+      for (const p of [ours, theirs, ...(base === undefined ? [] : [base])]) if (!isDocxPath(p)) throw new VaultPathError(`diff_rounds compares .docx files only: ${p}`);
+      const o = await read(ours);
+      const t = await read(theirs);
+      const b = base === undefined ? null : await read(base);
+      const data = diffRounds({ ours: openDocx(o.bytes), theirs: openDocx(t.bytes), base: b === null ? null : openDocx(b.bytes), names: { ours: o.rel, theirs: t.rel, base: b === null ? null : b.rel } });
+      return format === 'markdown' ? { markdown: roundsToMarkdown(data, full_text === true) } : data;
+    },
+  };
+
+  return [docxRead as Tool, extract as Tool, check as Tool, apply as Tool, compare as Tool, rounds as Tool];
 }

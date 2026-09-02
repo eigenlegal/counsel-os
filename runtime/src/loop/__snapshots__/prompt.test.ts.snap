@@ -36,7 +36,8 @@ yourself. Pass the tool's arguments as named fields, not as a command line.
 | \`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/check_document.py" <file> --json  (or bun runtime/src/cli.ts docx check <file>)\` | \`check_document\` | \`file\` (vault-relative) — accepts .docx, .md, or .txt; the result is already the JSON report |
 | \`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/clean_format.py" <input.docx> <output.docx>\` | \`clean_format\` | \`input\`, \`output\` |
 | \`bun runtime/src/cli.ts docx apply <original.docx> <redlines.json> [--out <file>] [--track] [--author <name>]\` | \`apply_redlines\` | \`original\` (vault-relative .docx), \`items\` (the redline JSON array inline) or \`edits\` (vault path of a JSON file), \`track\` (true for a redline), \`author\`, \`output\` (optional; default \`<original>-redline-<date>.docx\` beside the source) |
-| \`"\${CLAUDE_PLUGIN_ROOT}/scripts/word_compare.sh" <original.docx> <modified.docx> <author> <output.docx>\` | \`word_compare\` | \`original\`, \`modified\`, \`author\`, \`output\` |
+| \`bun runtime/src/cli.ts docx compare <original.docx> <revised.docx> [--out <file>] [--author <name>]\` | \`docx_compare\` | \`original\`, \`revised\` (vault-relative .docx), \`author\`, \`output\` (optional; default \`<original>-compare-<date>.docx\` beside the original) |
+| \`bun runtime/src/cli.ts docx rounds --ours <sent.docx> --theirs <returned.docx> [--base <round-n-1.docx>] [--format json|markdown]\` | \`diff_rounds\` | \`ours\`, \`theirs\` (vault-relative .docx), \`base\` (optional), \`format\` (optional) |
 
 If a methodology step calls for a script or shell command with no tool
 listed above, do not improvise. Tell the user what you cannot do. Continue
@@ -68,7 +69,7 @@ If the request carries an output schema, do the work with the primitives first, 
 
 Available: \`docket_sweep\`, \`propose_update\`, \`read_primitive\`, \`vault_list\`, \`vault_read\`, \`vault_search\`, \`vault_write\`.
 
-Unavailable: \`extract_redlines\` (needs macos, linux, windows, hosted), \`check_document\` (needs macos, linux, windows, hosted), \`clean_format\` (needs macos, linux, windows, hosted), \`apply_redlines\` (needs macos, linux, windows, hosted), \`word_compare\` (needs macos)
+Unavailable: \`extract_redlines\` (needs macos, linux, windows, hosted), \`check_document\` (needs macos, linux, windows, hosted), \`clean_format\` (needs macos, linux, windows, hosted), \`apply_redlines\` (needs macos, linux, windows, hosted), \`clean_format\` (needs macos)
 
 # Counsel OS
 

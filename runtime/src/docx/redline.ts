@@ -393,9 +393,10 @@ export function replaceInParagraph(p: Element, current: string, proposed: string
 
 // ── Tracked changes ────────────────────────────────────────────────────────
 
-type IdAllocator = () => number;
+export type IdAllocator = () => number;
 
-function revisionIdAllocator(pkg: DocxPackage): IdAllocator {
+/** Unique `w:id` values for new revision elements, above any existing. */
+export function revisionIdAllocator(pkg: DocxPackage): IdAllocator {
   let max = 0;
   for (const el of descendants(bodyOf(pkg))) {
     if (!isW(el, 'ins') && !isW(el, 'del')) continue;
@@ -406,7 +407,7 @@ function revisionIdAllocator(pkg: DocxPackage): IdAllocator {
   return () => next++;
 }
 
-function revisionElement(doc: Document, tag: 'ins' | 'del', author: string, when: string, alloc: IdAllocator): Element {
+export function revisionElement(doc: Document, tag: 'ins' | 'del', author: string, when: string, alloc: IdAllocator): Element {
   const el = w(doc, tag);
   el.setAttributeNS(W_NS, 'w:id', String(alloc()));
   el.setAttributeNS(W_NS, 'w:author', author);
