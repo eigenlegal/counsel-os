@@ -26,14 +26,15 @@ export function WorkLine({ tools, ms, onOpenFile }: WorkLineProps): JSX.Element 
     <div className="v2-work-line-wrap">
       <button type="button" className="v2-work-line" aria-expanded={open} onClick={() => setOpen(o => !o)}>
         {lead}
-        {lead !== '' && parts.read.length > 0 ? ' · ' : ''}
-        {parts.read.length > 0 ? 'read ' : lead === '' ? 'worked ' : ''}
+        {/* The separator travels with the word after it, so a wrapped line
+            never opens with a lone middle dot. */}
+        {parts.read.length > 0 ? <span className="v2-wl-seg">{lead !== '' ? ' · ' : ''}read </span> : lead === '' ? 'worked ' : ''}
         {parts.read.map(base => (
           <span key={base} className="v2-file-chip">
             {base}
           </span>
         ))}
-        {parts.other > 0 ? ` · ran ${parts.other} tool${parts.other === 1 ? '' : 's'}` : ''}
+        {parts.other > 0 ? <span className="v2-wl-seg">{` · ran ${parts.other} tool${parts.other === 1 ? '' : 's'}`}</span> : ''}
         <span className="v2-chev" aria-hidden="true">
           <Chevron />
         </span>

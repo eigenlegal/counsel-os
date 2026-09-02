@@ -387,7 +387,7 @@ export function SetupPage({ onDone }: SetupPageProps): JSX.Element {
                 <span className="v2-setup-note">{phase.kind === 'failed' && phase.wrote ? 'The vault was written.' : 'Nothing was written yet.'}</span>
               </>
             ) : (
-              <span className="v2-setup-note">Writes 26 law areas, 24 standards, 35 methods, and your profile into the folder above.</span>
+              <span className="v2-setup-note">Writes 26 law areas, your standards, methods and clause library, and your profile into the folder above.</span>
             )}
           </div>
         </form>

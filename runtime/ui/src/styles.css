@@ -213,11 +213,14 @@ a { color: var(--accent); }
 
 /* Dotted-leader facts (spec §3.5). */
 .facts { margin: 0 0 0.8rem; }
-.fact { display: flex; align-items: baseline; font-size: 0.85rem; padding: 2px 0; }
+/* Label · leader · value; a long value (a vault path) wraps inside its own
+   column instead of climbing over the label. */
+.fact { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 8px; align-items: baseline; font-size: 0.85rem; padding: 2px 0; }
 /* The leader lives INSIDE the <dt> — `dl > div` may hold only dt/dd — so the
  * dt is the flex row that lets it stretch. */
 .fact dt { flex: 1; display: flex; align-items: baseline; min-width: 0; color: var(--fg-faint); }
-.fact dd { margin: 0; word-break: break-all; }
+.fact dd { margin: 0; min-width: 0; text-align: right; overflow-wrap: anywhere; }
+.settings-health { margin-top: 18px; }
 
 .providers-table { border-collapse: collapse; font-size: 0.88rem; }
 .providers-table th, .providers-table td { border: 1px solid var(--border); padding: 0.2rem 0.5rem; text-align: left; }
@@ -673,7 +676,7 @@ a { color: var(--accent); }
 .v2-docket-head { margin-bottom: 8px; }
 .v2-docket-row { display: flex; align-items: baseline; gap: 12px; padding: 4px 0; }
 .v2-docket-what { font: 14.5px/1.45 var(--sans); color: var(--fg); }
-.v2-docket-path { font: 12px var(--mono); color: var(--fg-faint); margin-top: 3px; }
+.v2-docket-path { font: 12px/1.45 var(--sans); color: var(--fg-faint); margin-top: 3px; }
 .v2-docket-go { margin-left: auto; background: none; border: none; color: var(--accent); font: 600 13px var(--sans); flex-shrink: 0; cursor: pointer; }
 .v2-docket-go::after { content: " →"; }
 /* The bounded-scan hedge: set text under the rows, never a banner. */
@@ -747,13 +750,14 @@ a { color: var(--accent); }
 .v2-thread-matter .v2-tag { font-size: 9.5px; }
 .v2-thread-matter-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .v2-thread-matter:hover .v2-thread-matter-name { text-decoration: underline; }
-.v2-thread-date { margin-left: auto; font-size: 12px; color: var(--fg-faint); }
+.v2-thread-date { margin-left: auto; font-size: 12px; color: var(--fg-faint); white-space: nowrap; }
 
 /* One quiet work line. */
 .v2-work-line-wrap { margin: 2px 0 4px; }
 .v2-work-line { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; background: none; border: none; padding: 0; font-size: 12.5px; color: var(--fg-faint); text-align: left; cursor: pointer; }
 .v2-file-chip { font: 11.5px var(--mono); background: var(--bg-raised); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; color: var(--fg-muted); }
 .v2-work-line-wrap .v2-steps { margin-top: 6px; }
+.v2-wl-seg { white-space: nowrap; }
 
 /* Source chips: the derived citations inside the prose. The class is added
    AFTER the sanitizer, by path match — a document cannot mint it. */
@@ -951,3 +955,11 @@ a { color: var(--accent); }
 .v2-artifact-acts .v2-artifact-quiet { color: var(--fg-muted); font-weight: 500; border-bottom: 1px solid var(--border-strong); text-decoration: none; }
 .v2-artifact-by { margin-left: auto; font-size: 12px; color: var(--fg-faint); }
 .v2-artifact .v2-notice { margin: 0 0 10px; }
+
+/* Keyboard focus: the house hairline, not the browser's blue halo (the
+   popover rows, the delete confirm and the rename input showed it). */
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, [role="menuitem"]:focus-visible, [role="option"]:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

@@ -98,7 +98,7 @@ describe('SetupPage', () => {
     expect(screen.getByRole('radio', { name: /^solo$/ }).getAttribute('aria-checked')).toBe('true');
     expect((screen.getByRole('radio', { name: /ChatGPT/ }) as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByRole('checkbox') as HTMLInputElement).checked).toBe(true);
-    expect(screen.getByText(/Writes 26 law areas, 24 standards, 35 methods/)).toBeTruthy();
+    expect(screen.getByText(/Writes 26 law areas, your standards, methods and clause library/)).toBeTruthy();
     expect(document.querySelector('.v2-rail')).toBeNull();
     expect(screen.getByText('bun runtime/src/cli.ts init')).toBeTruthy();
   });

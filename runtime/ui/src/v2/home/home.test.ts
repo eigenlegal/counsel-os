@@ -31,15 +31,15 @@ describe('greetingFor', () => {
 describe('sublineFor', () => {
   test('honest counts, omitting what is zero; nothing to say is null', () => {
     expect(sublineFor({ nextActions: 3, pending: 1 })).toBe(
-      'Three matters have open next-actions, and one proposal is waiting on you below.',
+      'Three matters have open next actions, and one proposal is waiting on you below.',
     );
-    expect(sublineFor({ nextActions: 1, pending: 0 })).toBe('One matter has open next-actions.');
+    expect(sublineFor({ nextActions: 1, pending: 0 })).toBe('One matter has an open next action.');
     expect(sublineFor({ nextActions: 0, pending: 2 })).toBe('Two proposals are waiting on you below.');
     expect(sublineFor({ nextActions: 0, pending: 0 })).toBeNull();
   });
 
   test('past the count words, the numeral', () => {
-    expect(sublineFor({ nextActions: 12, pending: 0 })).toBe('12 matters have open next-actions.');
+    expect(sublineFor({ nextActions: 12, pending: 0 })).toBe('12 matters have open next actions.');
   });
 });
 

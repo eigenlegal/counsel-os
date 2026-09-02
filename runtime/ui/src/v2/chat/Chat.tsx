@@ -460,6 +460,7 @@ export function Chat({
                 aria-label="Conversation title"
                 value={titleDraft}
                 autoFocus
+                onFocus={event => event.currentTarget.select()}
                 onChange={event => setTitleDraft(event.target.value)}
                 onKeyDown={event => {
                   if (event.key === 'Enter') {
