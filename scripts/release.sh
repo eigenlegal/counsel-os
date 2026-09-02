@@ -138,12 +138,21 @@ if bullets:
     lines.extend(bullets)
 entry = "\n".join(lines) + "\n\n"
 
-# Insert before the first version heading; append if none exists yet.
-m = re.search(r"^## \[", text, flags=re.M)
-if m:
-    text = text[: m.start()] + entry + text[m.start():]
+# An `## [Unreleased]` section (PRs append their notes there) is FOLDED into
+# the new entry: its heading goes, its paragraphs and bullets follow the
+# release's own subject and body, in place. Otherwise insert before the first
+# version heading; append if none exists yet.
+unreleased = re.search(r"^## \[Unreleased\]\n(.*?)(?=^## \[|\Z)", text, flags=re.M | re.S)
+if unreleased:
+    carried = unreleased.group(1).strip("\n")
+    folded = entry.rstrip("\n") + ("\n\n" + carried + "\n\n" if carried else "\n\n")
+    text = text[: unreleased.start()] + folded + text[unreleased.end():]
 else:
-    text = text.rstrip("\n") + "\n\n" + entry
+    m = re.search(r"^## \[", text, flags=re.M)
+    if m:
+        text = text[: m.start()] + entry + text[m.start():]
+    else:
+        text = text.rstrip("\n") + "\n\n" + entry
 p.write_text(text, encoding="utf-8")
 print(f"prepended CHANGELOG.md entry for {v}")
 PY
