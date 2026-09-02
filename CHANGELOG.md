@@ -6,7 +6,11 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
-## [Unreleased]
+## [0.14.0] — 2026-09-02
+
+routing from your own scores
+
+- The scoreboard now picks the model for each kind of legal work, you set the bar it has to clear, and a review you just read becomes a fixture that measures it. Public benchmarks import into the same format.
 
 Routing knobs (routing-and-evals spec §6)
 
