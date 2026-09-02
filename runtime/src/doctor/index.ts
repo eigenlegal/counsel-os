@@ -33,7 +33,9 @@ export function verdictOf(findings: Finding[]): { verdict: Verdict; summary: str
   return { verdict: 'healthy', summary: 'healthy' };
 }
 
-/** Runs every check. Read-only. */
+/** Runs every check. Read-only, except the edits-after-counsel check,
+ * which writes only under the vault's `.counsel/` (the outcomes and
+ * written records). */
 export function runDoctor(deps: DoctorDeps): DoctorReport {
   const now = deps.now?.() ?? new Date();
   const ctx: DoctorContext = {

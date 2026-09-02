@@ -16,6 +16,7 @@ import { normalizeVaultPath } from '../vault/knowledge-paths';
 import { vaultOverview } from '../vault/overview';
 import { readVaultConfig, writeVaultConfigOverride } from '../vault/resolve-root';
 import { appendOutcome, readOutcomes, type OutcomeLine } from '../outcomes/store';
+import { recordWritten } from '../outcomes/written';
 import { isTask, TASK_IDS } from '../tasks/taxonomy';
 import { modelClassifier } from '../tasks/classify';
 import { applyUpdates, contentStatus, UpdateError } from '../content/update';
@@ -870,12 +871,22 @@ export function createApp(deps: ServerDeps): App {
       return fail(409, `vault conflict on ${await proposalPath(deps, id, input.proposalId)}`, { conflict: result.conflict });
     }
     if (!('error' in result) && (result.status === 'approved' || result.status === 'rejected')) {
+      const path = await proposalPath(deps, id, input.proposalId);
       recordOutcome({
         kind: 'proposal.decided',
         threadId: id,
-        path: await proposalPath(deps, id, input.proposalId),
+        path,
         detail: { proposalId: input.proposalId, decision: result.status, decidedAt: new Date().toISOString(), ...(input.reason === undefined || input.reason === '' ? {} : { reason: input.reason }) },
       });
+      // An approved proposal into a matter is counsel's version of that
+      // file from now on (spec §7, lawyer edits).
+      if (result.status === 'approved') {
+        try {
+          recordWritten(deps.vaultRoot, readVaultConfig(deps.vaultRoot), { path, kind: 'proposal', threadId: id });
+        } catch (err) {
+          console.error(`routes: written record failed for ${path}: ${text(err)}`);
+        }
+      }
     }
     // The proposal had already been decided — the earlier decision stands
     // and nothing was written.

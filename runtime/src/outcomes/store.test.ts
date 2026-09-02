@@ -57,7 +57,17 @@ describe('the outcomes record (routing-and-evals spec §7)', () => {
       { at: 'a', kind: 'task.corrected', detail: { from: 'chat', to: 'review' } },
       { at: 'a', kind: 'artifact.produced', detail: {} },
       { at: 'a', kind: 'thread.deleted', detail: {} },
+      { at: 'a', kind: 'file.edited-after-counsel', path: 'matters/a/notes.md', detail: {} },
+      { at: 'b', kind: 'file.edited-after-counsel', path: 'matters/a/notes.md', detail: {} },
+      { at: 'b', kind: 'file.edited-after-counsel', path: 'matters/b/nda.docx', detail: {} },
     ]);
-    expect(counts).toEqual({ decisions: { approved: 1, rejected: 1, withReason: 1 }, marks: { useful: 1, notRight: 2 }, corrections: 1, documents: 1, deletedThreads: 1 });
+    expect(counts).toEqual({
+      decisions: { approved: 1, rejected: 1, withReason: 1 },
+      marks: { useful: 1, notRight: 2 },
+      corrections: 1,
+      documents: 1,
+      deletedThreads: 1,
+      edits: { count: 3, files: 2, paths: ['matters/a/notes.md', 'matters/b/nda.docx'] },
+    });
   });
 });

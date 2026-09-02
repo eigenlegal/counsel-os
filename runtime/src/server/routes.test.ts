@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
+import { readWritten } from '../outcomes/written';
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -492,6 +493,19 @@ describe('POST /threads/:id/approve', () => {
     expect(ev).toBeDefined();
     return { threadId, proposalId: ev!.id };
   }
+
+  test('an approved proposal into a matter is recorded as counsel\'s version of that file (spec §7, lawyer edits)', async () => {
+    const app = appWithFake([
+      { toolCalls: [{ name: 'propose_update', input: { path: 'matters/acme/notes.md', content: 'NOTE\n', rationale: 'log it' } }], text: 'proposed' },
+    ]);
+    const { threadId, proposalId } = await seedProposal(app);
+    const res = await call(app, 'POST', `/threads/${threadId}/approve`, { body: { proposalId, decision: 'approve' } });
+    expect(res.status).toBe(200);
+    const entry = readWritten(vaultRoot).files['matters/acme/notes.md'];
+    expect(entry).toBeDefined();
+    expect(entry!.kind).toBe('proposal');
+    expect(entry!.threadId).toBe(threadId);
+  });
 
   test('approve writes the vault file and returns the updated proposal', async () => {
     const app = appWithFake([proposal]);
@@ -1380,7 +1394,7 @@ describe('content updates and doctor (spec 2026-09-01 §6–§7)', () => {
     expect(res.status).toBe(200);
     const report = (await res.json()) as { findings: Array<{ check: string; severity: string }>; verdict: string; vault: string };
     expect(report.vault).toBe(vaultRoot);
-    expect(report.findings.map(f => f.check)).toEqual(['root-config', 'structure', 'law-currency', 'git', 'consistency', 'law-impact']);
+    expect(report.findings.map(f => f.check)).toEqual(['root-config', 'structure', 'law-currency', 'git', 'consistency', 'law-impact', 'edits-after-counsel']);
     expect(report.findings[0]!.severity).toBe('ok');
     expect(report.findings.find(f => f.check === 'git')!.severity).toBe('warn');
     expect(['warnings', 'broken']).toContain(report.verdict);

@@ -79,6 +79,23 @@ describe('guardedVaultTools', () => {
     expect(await store.read('default', 'matters/a.md')).toBe('hi');
   });
 
+  test('an onWrite hook sees the normalized path after a matter write, and its throw never fails the write', async () => {
+    const store = new FsVaultStore(mkdtempSync(join(tmpdir(), 'gvt-')));
+    const seen: string[] = [];
+    const tools = guardedVaultTools(store, defaultCfg, {
+      onWrite: path => {
+        seen.push(path);
+        throw new Error('bookkeeping broke');
+      },
+    });
+    const r = await runToolDef(tools, 'vault_write', { path: './matters/a.md', content: 'hi' }, 'default');
+    expect(r.isError).toBe(false);
+    expect(seen).toEqual(['matters/a.md']);
+    const refused = await runToolDef(tools, 'vault_write', { path: 'practice/x.md', content: 'no' }, 'default');
+    expect(refused.isError).toBe(true);
+    expect(seen).toEqual(['matters/a.md']);
+  });
+
   test('vault_read/vault_list/vault_search are unaffected by the guard', async () => {
     const store = new FsVaultStore(mkdtempSync(join(tmpdir(), 'gvt-')));
     await store.write('default', 'practice/profile.md', 'profile content');

@@ -4,6 +4,9 @@ import type { GitRunner } from '../setup/run';
 import { parseFrontmatter, splitFrontmatterBlock } from '../vault/overview';
 import type { VaultConfig } from '../vault/resolve-root';
 import { cadenceFor, type LawPolicy } from './policy';
+import { detectEdits } from '../outcomes/edits';
+import { outcomesEnabled } from '../outcomes/store';
+import { readWritten } from '../outcomes/written';
 
 /**
  * The vault checks of `skills/doctor/SKILL.md` (steps 1, 2, 4B, 8, 10, 11),
@@ -493,4 +496,29 @@ export function checkLawImpact(ctx: DoctorContext): Finding {
   };
 }
 
-export const ALL_CHECKS: ReadonlyArray<(ctx: DoctorContext) => Finding> = [checkRootConfig, checkStructure, checkLawCurrency, checkGit, checkConsistency, checkLawImpact];
+/**
+ * Lawyer edits (routing-and-evals spec §7): the one check that writes —
+ * it runs the edit scan, which appends to the outcomes record and moves
+ * the written record forward, both under `.counsel/`. An edit is
+ * information, never a problem, so the finding is always `ok`.
+ */
+export function checkEditsAfterCounsel(ctx: DoctorContext): Finding {
+  const check = 'edits-after-counsel';
+  if (!outcomesEnabled(ctx.cfg)) return { check, severity: 'ok', message: 'the local record is off (outcomes: off) — edits after counsel are not tracked' };
+  const tracked = Object.keys(readWritten(ctx.vaultRoot).files).length;
+  if (tracked === 0) return { check, severity: 'ok', message: 'no files written by counsel yet — nothing to compare' };
+  const scan = detectEdits(ctx.vaultRoot, ctx.cfg, { now: ctx.now });
+  const noun = (n: number, word: string): string => `${n} ${word}${n === 1 ? '' : 's'}`;
+  if (scan.edited.length === 0) {
+    return { check, severity: 'ok', message: `${noun(scan.checked, 'file')} written by counsel — none edited since the last look` };
+  }
+  return {
+    check,
+    severity: 'ok',
+    message: `${noun(scan.edited.length, 'file')} edited after counsel since the last look — recorded`,
+    detail: scan.edited.map(e => `${e.path}${e.stats === null ? '' : ` (+${e.stats.added} −${e.stats.removed})`}`).join('\n'),
+    paths: scan.edited.map(e => e.path),
+  };
+}
+
+export const ALL_CHECKS: ReadonlyArray<(ctx: DoctorContext) => Finding> = [checkRootConfig, checkStructure, checkLawCurrency, checkGit, checkConsistency, checkLawImpact, checkEditsAfterCounsel];

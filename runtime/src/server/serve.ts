@@ -16,7 +16,8 @@ import { openSecretStore, type SecretStore } from '../providers/secrets';
 import { ThreadStore } from '../threads/store';
 import { FsVaultStore } from '../vault/fs-store';
 import { fsSearch } from '../vault/search';
-import { resolveLegalRoot } from '../vault/resolve-root';
+import { readVaultConfig, resolveLegalRoot } from '../vault/resolve-root';
+import { detectEdits, watchMatters, type MattersWatcher } from '../outcomes/edits';
 import { createApp, type App } from './routes';
 import type { RuntimeState } from './settings';
 import { createSetupApp } from './setup-routes';
@@ -410,6 +411,7 @@ export async function startServer(opts: StartServerOptions = {}): Promise<Runnin
 
   let vaultRoot: string | null = resolveVaultOrSetup(opts);
   let store: ThreadStore | null = null;
+  let mattersWatcher: MattersWatcher | null = null;
 
   /** The app over a vault — what this server has always been. Built once
    * at start when a root exists, or once from `POST /setup` when not. */
@@ -437,6 +439,20 @@ export async function startServer(opts: StartServerOptions = {}): Promise<Runnin
       if (auto.applied.length > 0) console.log(`counsel-os runtime: applied ${auto.applied.length} law update${auto.applied.length === 1 ? '' : 's'} (auto_apply_law_updates)`);
     } catch (err) {
       console.error(`counsel-os runtime: auto-apply of law updates failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+    // Lawyer edits (routing-and-evals spec §7): files counsel wrote that
+    // changed while the runtime was down are recorded now, then a light
+    // watcher on the matters folder keeps looking. Off with `outcomes: off`
+    // (read at every scan). Never fatal.
+    try {
+      const scan = detectEdits(vault, readVaultConfig(vault));
+      if (scan.edited.length > 0) console.log(`counsel-os runtime: ${scan.edited.length} file${scan.edited.length === 1 ? '' : 's'} edited after counsel — recorded`);
+      mattersWatcher?.close();
+      mattersWatcher = watchMatters(vault, () => readVaultConfig(vault), {
+        onError: message => console.error(`counsel-os runtime: matters watcher: ${message}`),
+      });
+    } catch (err) {
+      console.error(`counsel-os runtime: edit scan failed: ${err instanceof Error ? err.message : String(err)}`);
     }
     return createApp({
       token,
@@ -535,6 +551,8 @@ export async function startServer(opts: StartServerOptions = {}): Promise<Runnin
       process.off('SIGINT', onSignal);
       process.off('SIGTERM', onSignal);
       process.off('exit', removeFile);
+      mattersWatcher?.close();
+      mattersWatcher = null;
       removeFile();
       await server.stop(true);
     },

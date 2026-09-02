@@ -12,6 +12,7 @@ import { FsVaultStore } from '../vault/fs-store';
 import { runStep, withStepTimeout, RESUME_WARNING, type CounselLoopDeps } from './counsel-loop';
 import type { RunLogEntry } from './run-log';
 import { listRuns, readRun } from './run-record';
+import { readWritten } from '../outcomes/written';
 
 let vaultRoot: string;
 let pluginRoot: string;
@@ -176,6 +177,17 @@ describe('runStep', () => {
     const result = events.find(e => e.type === 'tool_result') as Extract<StepEvent, { type: 'tool_result' }>;
     expect(result.isError).toBe(true);
     expect(String(result.output)).toContain('propose_update');
+  });
+
+  test('(a2b) a vault_write into a matter is recorded as counsel\'s version of that file (spec §7, lawyer edits)', async () => {
+    const fake = new FakeModelProvider([{ toolCalls: [{ name: 'vault_write', input: { path: 'matters/acme/notes.md', content: '# Notes\n' } }], text: 'written' }]);
+    const { id } = await store.create('default', {});
+    const events = await collect(runStep(deps([fake]), { threadId: id, message: 'write it' }));
+    const entry = readWritten(vaultRoot).files['matters/acme/notes.md'];
+    expect(entry).toBeDefined();
+    expect(entry!.kind).toBe('write');
+    expect(entry!.runId).toBe(events[0]!.runId);
+    expect(entry!.threadId).toBe(id);
   });
 
   test('(a3) a successful propose_update synthesizes a proposal StepEvent right after its tool_result, not logged twice', async () => {
