@@ -2,6 +2,8 @@ import { homedir } from 'node:os';
 import { isAbsolute, join, resolve } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import type { ContentSource } from '../content/source';
+import { ShippedContentError } from '../content/guard';
+import { isCompiled } from '../core/embedded';
 import { Role, SetupPlan, type SetupPlanInput } from './plan';
 import { runSetup, SetupError, type SetupResult } from './run';
 
@@ -149,6 +151,10 @@ export async function runInit(flags: InitFlags, deps: InitDeps): Promise<number>
   try {
     result = runSetup(parsed.data, { content: deps.content, home: deps.home, pluginRoot: deps.pluginRoot });
   } catch (e) {
+    if (e instanceof ShippedContentError) {
+      err.write(`counsel-os init: ${e.message}\n`);
+      return 1;
+    }
     if (e instanceof SetupError) {
       err.write(`counsel-os init: ${e.message}\n`);
       return 1;
@@ -157,6 +163,6 @@ export async function runInit(flags: InitFlags, deps: InitDeps): Promise<number>
   }
   out.write(`${summarize(result)}\n`);
   for (const warning of result.warnings) out.write(`note: ${warning}\n`);
-  out.write('Next: start the runtime with `bun runtime/src/cli.ts serve --open`.\n');
+  out.write(`Next: start the runtime with \`${isCompiled() ? 'counsel-os' : 'bun runtime/src/cli.ts'} serve --open\`.\n`);
   return 0;
 }

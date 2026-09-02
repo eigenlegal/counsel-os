@@ -86,11 +86,11 @@ describe('the generated manifest', () => {
     expect(mod.MANIFEST).toEqual(small);
   });
 
-  test('the embedded module is a seam, not a source, until the binary build wires it', () => {
+  test('the embedded module is generated from the manifest; a compiled runtime with nothing registered is a build error', () => {
     const text = renderEmbeddedModule(['primitives/draft.md', 'knowledge/law/corporate/governance.md']);
     expect(text).toContain("import f0 from '../../../primitives/draft.md' with { type: 'file' };");
     expect(text).toContain('export function embeddedContentSource');
-    expect(() => contentSourceFor({ compiled: true, pluginRoot: REPO, repo: repoContentSource })).toThrow('not wired');
+    expect(() => contentSourceFor({ compiled: true, pluginRoot: REPO, repo: repoContentSource })).toThrow('no embedded content');
     expect(contentSourceFor({ compiled: false, pluginRoot: REPO, repo: repoContentSource }).kind).toBe('repo');
   });
 });

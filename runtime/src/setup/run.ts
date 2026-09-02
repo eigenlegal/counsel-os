@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, statSync, wr
 import { dirname, join, resolve, sep } from 'node:path';
 import { bodyHash } from '../content/hash';
 import { MANIFEST } from '../content/manifest';
+import { assertShippedContent } from '../content/guard';
 import type { ContentSource } from '../content/source';
 import { writeFileAtomic } from '../core/atomic-write';
 import { readRegistry, writeRegistry } from '../providers/registry';
@@ -202,6 +203,9 @@ export function readReceivedSnapshot(vault: string, rel: string): string | null 
 }
 
 export function runSetup(plan: SetupPlan, deps: SetupDeps): SetupResult {
+  // Before a single file is written: a source that ships nothing must not
+  // seed a vault that looks set up and has no law in it.
+  assertShippedContent(deps.content);
   const vault = resolve(plan.vault);
   const now = deps.now ?? (() => new Date());
   const { adopted } = checkVault(vault, deps.pluginRoot);

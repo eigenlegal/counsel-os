@@ -6,8 +6,20 @@ import { Codex, type CodexOptions, type ThreadOptions, type TurnOptions } from '
 import type { Capabilities, ModelProvider, StepEvent, StepRequest, Tenant } from '../core/types';
 import { toHarnessJsonSchema } from './schema';
 import { transportEnv } from './env';
+import { isCompiled } from '../core/embedded';
+import { locatedCli } from './cli-locate';
 
 const STDIO_SERVER = resolve(import.meta.dir, '../mcp/stdio.ts');
+
+/**
+ * How Codex reaches the runtime's tools (packaging spec §3.3). In a checkout
+ * that is `bun …/mcp/stdio.ts`; the compiled binary has no `.ts` on disk and
+ * no `bun`, so it re-execs ITSELF as `counsel-os mcp-stdio` — the same
+ * module, behind the CLI subcommand.
+ */
+export function mcpStdioCommand(compiled: boolean = isCompiled()): { command: string; args: string[] } {
+  return compiled ? { command: process.execPath, args: ['mcp-stdio'] } : { command: 'bun', args: [STDIO_SERVER] };
+}
 
 type AnyEv = { type: string; [k: string]: unknown };
 
@@ -208,13 +220,22 @@ export function buildCodexConfig(opts: {
    * stdio server falls back to its own repo root, which is correct in a
    * normal install and wrong only for a relocated plugin. */
   pluginRoot?: string;
+  /** Tests: the bridge command; defaults to `mcpStdioCommand()`. */
+  mcp?: { command: string; args: string[] };
+  /** The `codex` CLI to run; defaults to the one `locatedCli` finds. The
+   * SDK's own fallback resolves a bundled copy through `node_modules`,
+   * which a compiled binary does not have (packaging spec §3.4). */
+  codexPath?: string;
 }): CodexOptions {
+  const mcp = opts.mcp ?? mcpStdioCommand();
+  const codexPath = opts.codexPath ?? locatedCli('codex');
   return {
+    ...(codexPath === undefined ? {} : { codexPathOverride: codexPath }),
     config: {
       mcp_servers: {
         counsel: {
-          command: 'bun',
-          args: [STDIO_SERVER],
+          command: mcp.command,
+          args: mcp.args,
           env: {
             COUNSEL_VAULT: opts.vaultRoot,
             COUNSEL_TENANT: opts.tenant,

@@ -6,7 +6,7 @@ import { SetupPlan } from '../setup/plan';
 import { runSetup, SetupError, type SetupResult } from '../setup/run';
 import { authorize, CLEAR_SESSION_COOKIE, withSessionCookie } from './auth';
 import { isApiPath, type App } from './routes';
-import { serveStatic } from './static';
+import { serveStatic, type StaticSource } from './static';
 
 /**
  * The HTTP surface while the runtime has NO vault (spec 2026-09-01 §4,
@@ -21,7 +21,7 @@ export interface SetupAppDeps {
   token: string;
   tenant: string;
   /** The built UI, served as it would be with a vault. */
-  distDir?: string;
+  distDir?: string | StaticSource;
   content: ContentSource;
   /** The runtime's state dir (`counselHome(env)`): the pointer lands here. */
   home: string;

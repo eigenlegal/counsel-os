@@ -146,6 +146,40 @@ export function resolveStaticTarget(distDir: string, pathname: string): StaticTa
   return { rel: target.rel, file: real };
 }
 
+/**
+ * The built UI as the compiled binary carries it (packaging spec §3.2):
+ * request path relative to the dist root → the embedded file. There is no
+ * filesystem to traverse here — a path is served only when it is a key of
+ * the map, exactly, after decoding and collapsing — so the containment
+ * argument is the map itself.
+ */
+export interface StaticSource {
+  kind: 'embedded';
+  files: Record<string, string>;
+}
+
+/** `resolveStaticTarget` for an embedded source: the same decoding and
+ * collapsing, then an exact lookup. */
+export function resolveEmbeddedTarget(source: StaticSource, pathname: string): StaticTarget | null {
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(pathname);
+  } catch {
+    return null;
+  }
+  if (decoded.includes('\0') || decoded.includes('\\')) return null;
+  const rel = decoded.replace(/^\/+/, '');
+  if (rel === '') return null;
+  // Collapse `.`/`..` the way `resolve` would, against a fixed root, so a
+  // spelled-out escape can never match a key.
+  const collapsed = relative('/', resolve('/', rel)).split(sep).join('/');
+  if (collapsed === '' || collapsed.startsWith('..')) return null;
+  const file = source.files[collapsed] ?? null;
+  // A key that names a directory-like prefix is not a file: `assets` alone
+  // is served only if the build wrote a file called exactly that.
+  return { rel: collapsed, file };
+}
+
 /** The resolved regular file a request names, or `null`. The whole of the
  * containment decision; `resolveStaticTarget` adds the relative path the
  * cache rules need. */
@@ -196,7 +230,9 @@ function placeholder(method: string): Response {
  * `/assets/*`: those names are build output, and answering a missing script
  * with HTML would hand the browser a page to execute.
  */
-export function serveStatic(distDir: string): (req: Request) => Promise<Response | null> {
+export function serveStatic(source: string | StaticSource): (req: Request) => Promise<Response | null> {
+  const resolveTarget = typeof source === 'string' ? (p: string) => resolveStaticTarget(source, p) : (p: string) => resolveEmbeddedTarget(source, p);
+  const indexFile = typeof source === 'string' ? () => resolveStaticFile(source, `/${INDEX}`) : () => source.files[INDEX] ?? null;
   return async function staticHandler(req: Request): Promise<Response | null> {
     if (req.method !== 'GET' && req.method !== 'HEAD') return null;
 
@@ -208,7 +244,7 @@ export function serveStatic(distDir: string): (req: Request) => Promise<Response
     }
 
     try {
-      const target = resolveStaticTarget(distDir, pathname);
+      const target = resolveTarget(pathname);
       // Both rules below key on the RESOLVED relative path, never on the
       // request's spelling: `/assets/%2e%2e%2findex.html` starts with
       // `/assets/` and is the shell (a year of immutable caching would
@@ -221,7 +257,7 @@ export function serveStatic(distDir: string): (req: Request) => Promise<Response
       }
       if (isAsset) return notFound(pathname);
 
-      const index = resolveStaticFile(distDir, `/${INDEX}`);
+      const index = indexFile();
       if (index !== null) return fileResponse(req.method, index, SHELL_CACHE, HTML);
       return placeholder(req.method);
     } catch {

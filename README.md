@@ -58,6 +58,19 @@ Pick the path that matches the app you already use:
 - **Claude Desktop, Cowork**: no terminal required.
 - **Claude Code, local clone**: only if you are developing the plugin itself.
 
+### Standalone binary (preview)
+
+The runtime — the web app, the Word tools, setup, and the shipped content — also ships as one file per platform on every [release](https://github.com/eigenlegal/counsel-os/releases): `counsel-os-darwin-arm64` (Apple silicon) and `counsel-os-linux-x64`, each with a `.sha256` beside it. No Bun, no clone, no build:
+
+```sh
+curl -fsSLo counsel-os https://github.com/eigenlegal/counsel-os/releases/latest/download/counsel-os-darwin-arm64
+chmod +x counsel-os
+./counsel-os init          # creates ~/Documents/Counsel OS and seeds it (asks four questions; --yes to skip)
+./counsel-os serve --open  # the app, at http://127.0.0.1:7431
+```
+
+The Claude tier runs your own `claude` CLI and the ChatGPT tier your `codex` CLI; the binary finds either on PATH or in the usual install locations and says so on the first-run screen when one is missing. `counsel-os version`, `doctor`, `update-content`, and the `docx` commands all work from the binary. A `curl | sh` installer, a Homebrew tap, and a drag-to-Applications Mac app are the next steps (`docs/superpowers/specs/2026-09-01-packaging-design.md`).
+
 ### Claude Code marketplace (recommended)
 
 The marketplace is the official install path. You get versioned releases, updates through `/counsel-os:update` followed by `/reload-plugins`, and no build toolchain. The browse skill downloads its prebuilt binary and browser builds from the GitHub release on first use. The two install commands are in [Quickstart](#quickstart) above.

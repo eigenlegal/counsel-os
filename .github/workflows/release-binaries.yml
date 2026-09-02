@@ -142,6 +142,59 @@ jobs:
           gh release upload "$RELEASE_TAG" "browse/dist/${{ matrix.artifact }}" --clobber
           gh release upload "$RELEASE_TAG" "browse/dist/${{ matrix.artifact }}-browsers.tar.gz" --clobber
 
+      # The standalone counsel-os runtime (packaging spec §3): the UI and
+      # the shipped content are embedded, so the binary is the whole app.
+      - name: Build the counsel-os binary
+        run: bun run build:runtime --out "dist/${{ matrix.artifact }}"
+        env:
+          # The matrix artifact name is counsel-browse-<platform>; the runtime
+          # asset is counsel-os-<platform>, derived below.
+          MATRIX_ARTIFACT: ${{ matrix.artifact }}
+
+      # Smoke the built binary as a new user would: version, setup mode with
+      # no vault, init into a temp vault, serve over it, read the sample NDA.
+      - name: Smoke test the counsel-os binary
+        run: |
+          set -euo pipefail
+          BIN="dist/${{ matrix.artifact }}"
+          NAME="counsel-os-${MATRIX_ARTIFACT#counsel-browse-}"
+          mv "$BIN" "dist/$NAME"; BIN="dist/$NAME"
+          chmod +x "$BIN"
+          "$BIN" version
+          HOME_TMP=$(mktemp -d); VAULT_TMP=$(mktemp -d)
+          export COUNSEL_OS_HOME="$HOME_TMP"
+          PORT=$((7500 + RANDOM % 400))
+          # No --vault and a HOME with no legal root: the binary must start in
+          # setup mode rather than exit (packaging spec §3; setup spec §4).
+          HOME="$HOME_TMP" "$BIN" serve --port "$PORT" >"$HOME_TMP/serve1.log" 2>&1 &
+          SERVE1=$!; sleep 2
+          TOKEN=$(grep -o 'token=[a-f0-9]*' "$HOME_TMP/serve1.log" | head -1 | cut -d= -f2 || true)
+          if [ -z "$TOKEN" ]; then cat "$HOME_TMP/serve1.log"; exit 1; fi
+          curl -fsS -H "Authorization: Bearer $TOKEN" "http://127.0.0.1:$PORT/health" | grep -q '"setup":true'
+          kill $SERVE1 || true
+          "$BIN" init --vault "$VAULT_TMP/Counsel OS" --name "Smoke Test" --org "CI" --role solo --jurisdiction Massachusetts --practice "commercial contracts" --sample-matter --yes
+          test "$(ls "$VAULT_TMP/Counsel OS/law" | wc -l)" -ge 20
+          "$BIN" serve --port "$PORT" --vault "$VAULT_TMP/Counsel OS" >"$HOME_TMP/serve2.log" 2>&1 &
+          SERVE2=$!; sleep 2
+          TOKEN=$(grep -o 'token=[a-f0-9]*' "$HOME_TMP/serve2.log" | head -1 | cut -d= -f2)
+          curl -fsS -H "Authorization: Bearer $TOKEN" "http://127.0.0.1:$PORT/vault/overview" | grep -q 'sample-mutual-nda'
+          curl -fsS -H "Authorization: Bearer $TOKEN" "http://127.0.0.1:$PORT/" | grep -q '<script'
+          kill $SERVE2 || true
+          "$BIN" docx read "$VAULT_TMP/Counsel OS/matters/sample-mutual-nda/sample-mutual-nda.docx" | head -c 200 | grep -qi 'nondisclosure\|non-disclosure\|confidential'
+          (cd dist && shasum -a 256 "$NAME" > "$NAME.sha256")
+          ls -lh dist
+        env:
+          MATRIX_ARTIFACT: ${{ matrix.artifact }}
+
+      - name: Upload the counsel-os binary
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MATRIX_ARTIFACT: ${{ matrix.artifact }}
+        run: |
+          NAME="counsel-os-${MATRIX_ARTIFACT#counsel-browse-}"
+          gh release upload "$RELEASE_TAG" "dist/$NAME" --clobber
+          gh release upload "$RELEASE_TAG" "dist/$NAME.sha256" --clobber
+
       # The playwright runtime the external binary resolves at startup. Pure
       # JS, platform-independent, no nested deps — so exactly ONE matrix job
       # uploads it. Concurrent uploads of the same asset name race even with

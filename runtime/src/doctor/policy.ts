@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { embeddedExtra } from '../core/embedded';
 import { join } from 'node:path';
 
 /**
@@ -27,9 +28,15 @@ export function parseLawPolicy(text: string): LawPolicy {
   return { reviewCadenceMonths, areas };
 }
 
+export const LAW_POLICY_PATH = 'knowledge/law/frontmatter-policy.json';
+
 export function loadLawPolicy(pluginRoot: string): LawPolicy {
   try {
-    return parseLawPolicy(readFileSync(join(pluginRoot, 'knowledge', 'law', 'frontmatter-policy.json'), 'utf8'));
+    // The compiled binary carries the policy as an embedded extra (packaging
+    // spec §3.2); a checkout reads it from the plugin tree.
+    const embedded = embeddedExtra(LAW_POLICY_PATH);
+    const at = embedded ?? join(pluginRoot, 'knowledge', 'law', 'frontmatter-policy.json');
+    return parseLawPolicy(readFileSync(at, 'utf8'));
   } catch {
     return { reviewCadenceMonths: { default: DEFAULT_CADENCE_MONTHS }, areas: new Set() };
   }

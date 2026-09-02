@@ -14,6 +14,14 @@ Retro in the runtime — the practice's feedback loop without the plugin
 - `GET /retro` says when the last retro ran and whether one is due: `retro_cadence_days` in `config.md` (default 90), or for a first retro, a vault with at least 3 matters or 10 conversations. `.counsel/retro.json` records the last retro.
 - A thread header can carry a `task`; the loop runs every step of such a thread as that task when the caller names none.
 
+The `counsel-os` binary (packaging spec §3, step 1)
+
+- `bun run build:runtime` compiles the runtime into one `counsel-os` binary with the built UI and the shipped content embedded (generated modules under `runtime/src/generated/`, never imported by the checkout); `release-binaries.yml` publishes `counsel-os-darwin-arm64` and `counsel-os-linux-x64` with `.sha256` files and smokes each build (version, setup mode, `init`, serve, `docx read`).
+- The vendor CLIs are located (PATH, then `~/.claude/local`, Homebrew, `/usr/local/bin`, `~/.local/bin`, npm's global bin) and handed to the SDKs (`pathToClaudeCodeExecutable`, `codexPathOverride`); the first-run probe reports the path. Nothing is bundled.
+- The Codex bridge re-execs the binary as `counsel-os mcp-stdio`; `counsel-os version` prints the runtime and content versions.
+- `docket_sweep` is the TypeScript sweep Home's docket uses; `clean_format` (still Python) is registered only from a checkout.
+- Guard: `init` and `update-content` refuse a content source that ships zero (or fewer than the manifest's) files instead of seeding an empty vault.
+
 ## [0.12.0] — 2026-09-01
 
 Standalone foundations — Word documents in TypeScript, runtime-owned setup, drag-in intake, stay signed in, new theme

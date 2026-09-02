@@ -28,7 +28,7 @@ import {
   type SettingsDeps,
 } from './settings';
 import { sseFromEvents, type StreamEvent } from './sse';
-import { serveStatic } from './static';
+import { serveStatic, type StaticSource } from './static';
 
 /**
  * Everything the HTTP surface needs, minus the parts a `PUT /settings` can
@@ -48,7 +48,8 @@ export interface ServerDeps extends Omit<CounselLoopDeps, 'providers' | 'router'
   settings: SettingsDeps;
   /** The built UI's `dist/` (spec §4.2). Omitted → no static serving at all,
    * and a non-API path is the 404 it has always been. */
-  distDir?: string;
+  /** The built UI: a `dist/` directory, or the embedded set in the compiled binary. */
+  distDir?: string | StaticSource;
   /** The doctor's git runner (spec 2026-09-01 §7). Default: real git when
    * on PATH; `null` reports "git is not installed". */
   git?: GitRunner | null;

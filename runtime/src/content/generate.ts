@@ -58,23 +58,38 @@ export const MANIFEST: ContentManifest = ${JSON.stringify(manifest, null, 2)};
 `;
 }
 
+/** Shipped files the runtime reads at start that are NOT content (they
+ * sit in `NOT_CONTENT`): doctor's law cadences. Embedded beside the content
+ * and reachable through `embeddedExtra()`. */
+export const EMBEDDED_EXTRAS: readonly string[] = ['knowledge/law/frontmatter-policy.json'];
+
 /**
- * The embedded source module for the compiled binary (spec §3): one
- * \`with { type: 'file' }\` import per shipped file, which Bun's \`--compile\`
- * turns into an embedded asset. Generated only on demand (\`--embedded\`) and
- * git-ignored: nothing wires it yet, and a checkout must not carry 300
- * import lines that type-check against files a plugin install may lack.
+ * The embedded content module for the compiled binary (packaging spec
+ * §3.2): one \`with { type: 'file' }\` import per shipped file (and per
+ * extra), which Bun's \`--compile\` turns into an embedded asset. Written to
+ * `runtime/src/generated/content-embed.ts` (git-ignored) by
+ * `bun run build:runtime`; only the generated entry imports it, so a
+ * checkout never type-checks against files a plugin install may lack. The
+ * import paths are relative to `runtime/src/generated/`.
  */
-export function renderEmbeddedModule(paths: string[]): string {
+export function renderEmbeddedModule(paths: string[], extras: readonly string[] = EMBEDDED_EXTRAS): string {
   const imports = paths.map((p, i) => `import f${i} from '../../../${p}' with { type: 'file' };`).join('\n');
   const entries = paths.map((p, i) => `  ${JSON.stringify(p)}: f${i},`).join('\n');
+  const extraImports = extras.map((p, i) => `import x${i} from '../../../${p}' with { type: 'file' };`).join('\n');
+  const extraEntries = extras.map((p, i) => `  ${JSON.stringify(p)}: x${i},`).join('\n');
   return `${HEADER}import { readFileSync } from 'node:fs';
-import { isShippedPath, type ContentSource } from './source';
+import { isShippedPath, type ContentSource } from '../content/source';
 
 ${imports}
+${extraImports}
 
 const FILES: Record<string, string> = {
 ${entries}
+};
+
+/** Files read at start that are not content — see \`EMBEDDED_EXTRAS\`. */
+export const extras: Record<string, string> = {
+${extraEntries}
 };
 
 export function embeddedContentSource(): ContentSource {
@@ -94,6 +109,8 @@ export function embeddedContentSource(): ContentSource {
     },
   };
 }
+
+export const content: ContentSource = embeddedContentSource();
 `;
 }
 
@@ -104,9 +121,11 @@ export async function main(argv: string[]): Promise<void> {
   await Bun.write(join(import.meta.dir, 'manifest.ts'), renderManifestModule(manifest));
   const at = argv.indexOf('--embedded');
   if (at !== -1) {
-    const out = argv[at + 1];
-    if (out === undefined) throw new Error('--embedded needs an output path');
-    await Bun.write(resolve(out), renderEmbeddedModule(Object.keys(manifest.files)));
+    const out = argv[at + 1] ?? resolve(pluginRoot, 'runtime', 'src', 'generated', 'content-embed.ts');
+    const paths = Object.keys(manifest.files);
+    // A build that would embed nothing is a broken build, not a small one.
+    if (paths.length === 0) throw new Error('refusing to generate an embedded module with zero shipped files');
+    await Bun.write(resolve(out), renderEmbeddedModule(paths));
   }
   console.log(`content manifest: ${Object.keys(manifest.files).length} files, ${Object.keys(manifest.groups).length} groups, version ${manifest.version}`);
 }

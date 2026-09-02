@@ -160,3 +160,48 @@ describe('the cache rules follow the resolved path, not the spelling', () => {
     expect(head.headers.get('x-content-type-options')).toBe('nosniff');
   });
 });
+
+
+describe('serveStatic over an embedded source (the compiled binary)', () => {
+  const { resolveEmbeddedTarget } = require('./static') as typeof import('./static');
+
+  function embedded(): import('./static').StaticSource {
+    const dist = builtDist();
+    return { kind: 'embedded', files: { 'index.html': join(dist, 'index.html'), 'assets/app-abc123.js': join(dist, 'assets', 'app-abc123.js'), 'assets/app-abc123.css': join(dist, 'assets', 'app-abc123.css') } };
+  }
+
+  test('serves an embedded asset immutable, the shell no-store, and a client route falls back to the shell', async () => {
+    const handler = serveStatic(embedded());
+    const js = (await handler(get('/assets/app-abc123.js')))!;
+    expect(js.status).toBe(200);
+    expect(js.headers.get('content-type')).toContain('javascript');
+    expect(js.headers.get('cache-control')).toContain('immutable');
+    expect(await js.text()).toBe('console.log(1)\n');
+
+    const shell = (await handler(get('/')))!;
+    expect(shell.headers.get('cache-control')).toBe('no-store');
+    expect(await shell.text()).toContain('counsel-os');
+
+    const route = (await handler(get('/vault')))!;
+    expect(await route.text()).toContain('counsel-os');
+  });
+
+  test('a missing asset is a 404, a spelled escape or traversal never matches a key', async () => {
+    const source = embedded();
+    const handler = serveStatic(source);
+    expect((await handler(get('/assets/gone.js')))!.status).toBe(404);
+    // A spelled escape collapses to the shell, exactly as the directory handler does: it is not an asset, so it never gets immutable caching.
+    expect(resolveEmbeddedTarget(source, '/assets/%2e%2e%2findex.html')?.rel).toBe('index.html');
+    expect(resolveEmbeddedTarget(source, '/../index.html')?.rel).toBe('index.html');
+    expect(resolveEmbeddedTarget(source, '/%00')).toBeNull();
+    expect(resolveEmbeddedTarget(source, '/assets')?.file ?? null).toBeNull();
+  });
+
+  test('HEAD carries the headers and the length, no body', async () => {
+    const handler = serveStatic(embedded());
+    const head = (await handler(get('/assets/app-abc123.css', 'HEAD')))!;
+    expect(head.status).toBe(200);
+    expect(head.headers.get('content-length')).toBe('7');
+    expect(await head.text()).toBe('');
+  });
+});

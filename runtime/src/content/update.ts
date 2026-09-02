@@ -14,6 +14,7 @@ import { readVaultConfig, type VaultConfig } from '../vault/resolve-root';
 import { unifiedDiff } from './diff';
 import { bodyHash } from './hash';
 import { MANIFEST } from './manifest';
+import { assertShippedContent } from './guard';
 import type { ContentSource } from './source';
 
 /**
@@ -139,6 +140,7 @@ function areaOf(vaultPath: string, group: ContentGroup): string {
 }
 
 export function contentStatus(deps: UpdateDeps): ContentStatus {
+  assertShippedContent(deps.content);
   const cfg = readVaultConfig(deps.vaultRoot);
   const state = readContentState(deps.vaultRoot);
   const received = state?.files ?? {};

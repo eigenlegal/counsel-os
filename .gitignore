@@ -2,6 +2,10 @@
 node_modules/
 browse/dist/
 runtime/ui/dist/
+# The compiled counsel-os binary and the modules `bun run build:runtime`
+# generates to embed the UI and the content (packaging spec §3.2).
+dist/
+runtime/src/generated/
 backups/
 evals/outputs/
 *.bun-build

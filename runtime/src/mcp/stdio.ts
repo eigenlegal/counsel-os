@@ -25,6 +25,7 @@ import { ToolRegistry } from '../tools/registry';
 import { builtinTools } from '../tools/builtin';
 import { ThreadStore } from '../threads/store';
 import { readPrimitiveTool } from '../loop/primitives';
+import { shippedContent } from '../content/shipped';
 import { proposeUpdateTool } from '../loop/proposals';
 import { DEFAULT_TENANT, type ToolDef } from '../core/types';
 
@@ -55,7 +56,7 @@ for (const t of builtinTools({
 // `propose_update`, which is the only way through the `remember` gate.
 const tools: ToolDef[] = [
   ...guardedVaultTools(store, readVaultConfig(vault)),
-  readPrimitiveTool(pluginRoot) as ToolDef,
+  readPrimitiveTool(shippedContent(pluginRoot)) as ToolDef,
   ...(threadId ? [proposeUpdateTool(threads, store, threadId, tenant) as ToolDef] : []),
   ...registry.available(),
 ];
