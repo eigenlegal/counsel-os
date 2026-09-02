@@ -1,4 +1,4 @@
-import { cleanup, render, screen, userEvent, waitFor } from '../../test/dom';
+import { cleanup, render, screen, userEvent, waitFor, within } from '../../test/dom';
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { clearToken, TOKEN_KEY } from '../../api/token';
@@ -75,16 +75,16 @@ describe('SettingsPage', () => {
   test('is grouped by what the operator came to do, each group with a purpose line', async () => {
     install(() => json(view));
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByLabelText('Default provider')).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('table', { name: 'Models you can use' })).toBeTruthy());
     // Descendant, not child: `Health` draws its own heading inside its own
     // section, one level under the group card.
     const headings = Array.from(document.querySelectorAll('.v2-group h2'), el => el.textContent);
     // No Models: a scoreboard is a measurement and a bar is a standing
     // decision, neither of which is a setting. They live on the Models page.
-    expect(headings).toEqual(['Providers', 'Default provider', 'Task routes', 'Step timeout', 'Test', 'Content', 'Runtime']);
+    expect(headings).toEqual(['Models you can use', 'Task routes', 'Step timeout', 'Test', 'Content', 'Runtime']);
     // The plain-language purpose lines (cou-84), one under each heading.
-    expect(screen.getByText(/The models this runtime can call/)).toBeTruthy();
-    expect(screen.getByText(/The model that answers when nothing more specific applies/)).toBeTruthy();
+    expect(screen.getByText(/Everything this runtime has loaded/)).toBeTruthy();
+    expect(screen.getByRole('table', { name: 'Models you can use' })).toBeTruthy();
     expect(screen.getByText(/Send one kind of work to a particular model/)).toBeTruthy();
     expect(screen.getByText(/before the runtime cancels it and reports a timeout/)).toBeTruthy();
     expect(screen.getByText(/What is actually running right now/)).toBeTruthy();
@@ -94,31 +94,93 @@ describe('SettingsPage', () => {
   });
 
   test('saves the edited registry and shows a 422 inline', async () => {
-    install(body => {
-      const reg = body as { default?: string };
-      return reg.default === 'ollama/gemma4:e4b' ? json({ error: 'unknown provider ollama/gemma4:e4b' }, 422) : json(view);
-    });
+    const ollama: ProviderInfo = { ...fakeProvider, id: 'ollama/gemma4:e4b', auth: 'local', locality: 'local' };
+    install(
+      body => {
+        const reg = body as { default?: string };
+        return reg.default === 'ollama/gemma4:e4b' ? json({ error: 'unknown provider ollama/gemma4:e4b' }, 422) : json(view);
+      },
+      { ...view, effective: { ...view.effective, providers: [fakeProvider, ollama] } },
+    );
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByLabelText('Default provider')).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('table', { name: 'Models you can use' })).toBeTruthy());
 
-    // `userEvent.setup({ document })`, not the bare `userEvent.clear`: the
-    // direct API infers its document from the element it is given, and
-    // `clear` is the one call that is not given one — so it looks for a
-    // global that happy-dom installs later than user-event reads it.
-    const user = userEvent.setup({ document });
-    const input = screen.getByLabelText('Default provider') as HTMLInputElement;
-    await user.clear(input);
-    await user.type(input, 'ollama/gemma4:e4b');
-    // Typing opened the combobox's suggestion list, and react-aria
-    // aria-hides everything outside an open popup — including Save. Close
-    // it the way a keyboard user would before reaching for the button.
-    await user.keyboard('{Escape}');
-    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    // "use this one" IS the save: the row carries the act that used to mean
+    // reading an id off one group and typing it into another.
+    await userEvent.click(screen.getByRole('button', { name: 'Use Ollama gemma4:e4b' }));
 
     await waitFor(() => expect(screen.getByText('unknown provider ollama/gemma4:e4b')).toBeTruthy());
     expect(puts).toHaveLength(1);
     expect((puts[0] as { default: string }).default).toBe('ollama/gemma4:e4b');
     expect((puts[0] as { providers: unknown[] }).providers).toHaveLength(1);
+  });
+
+  test('a save the page refuses does not move the default it refused', async () => {
+    const ollama: ProviderInfo = { ...fakeProvider, id: 'ollama/gemma4:e4b', auth: 'local', locality: 'local' };
+    install(() => json(view), { ...view, effective: { ...view.effective, providers: [fakeProvider, ollama] } });
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByRole('table', { name: 'Models you can use' })).toBeTruthy());
+
+    // A blank row makes the form invalid. Clicking "use this one" then used
+    // to flip the table to the new default and send nothing — and the only
+    // message said so from inside a collapsed disclosure.
+    await userEvent.click(screen.getByRole('button', { name: 'or add a blank row' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Use Ollama gemma4:e4b' }));
+
+    await waitFor(() => expect(screen.getByText('Nothing was saved. Correct the fields marked above.')).toBeTruthy());
+    expect(puts).toHaveLength(0);
+    // The table still says what is true on disk: the row that was clicked
+    // did NOT become the default.
+    const table = screen.getByRole('table', { name: 'Models you can use' });
+    const clicked = within(table).getByRole('row', { name: /gemma4/ });
+    expect(within(clicked).queryByText(/answers by default/)).toBeNull();
+    expect(within(clicked).getByRole('button', { name: 'Use Ollama gemma4:e4b' })).toBeTruthy();
+    // And the field it wants is on screen, not folded away.
+    expect(screen.getByText('id is required')).toBeTruthy();
+  });
+
+  test('a blank row leads with the one field it needs', async () => {
+    install(() => json(view));
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByRole('table', { name: 'Models you can use' })).toBeTruthy());
+
+    const before = screen.getAllByLabelText('Id').length;
+    await userEvent.click(screen.getByRole('button', { name: 'or add a blank row' }));
+    const ids = screen.getAllByLabelText('Id');
+    expect(ids).toHaveLength(before + 1);
+
+    // There is no vendor to list models for, so the Id field takes the lead
+    // instead of hiding under "the rest of this row" — which left the row
+    // saying "name it below" and pointing at nothing.
+    const added = ids[ids.length - 1] as HTMLElement;
+    expect(added.closest('.v2-provider-main')).not.toBeNull();
+    expect(added.closest('details')).toBeNull();
+    // A row that DOES name a vendor keeps its id folded away, where it was.
+    const known = ids[0] as HTMLElement;
+    expect(known.closest('details')).not.toBeNull();
+  });
+
+  test('a search nobody serves says so, instead of offering everything', async () => {
+    install(() => json(view));
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByRole('table', { name: 'Models you can use' })).toBeTruthy());
+
+    const user = userEvent.setup({ document });
+    const box = screen.getByRole('combobox', { name: 'Search by maker or vendor' });
+    // This field's own list: `queryAllByRole('option')` is document-wide,
+    // and every other combobox on the page has one too.
+    const list = (): HTMLElement[] => Array.from(box.closest('.v2-combo')?.querySelectorAll('[role="option"]') ?? []) as HTMLElement[];
+
+    // A live query offers what it found…
+    await user.type(box, 'gemini');
+    await waitFor(() => expect(list().some(o => (o.textContent ?? '').includes('Google'))).toBe(true));
+
+    // …and a dead one offers nothing. The old fallback answered it with the
+    // whole catalog, which read as thirty-odd vendors that all serve it.
+    await user.type(box, ' pro');
+    await waitFor(() => expect(list()).toHaveLength(0));
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.getByText(/Nothing matches/)).toBeTruthy());
   });
 
   test('a 400 lands on the field it names', async () => {
@@ -139,7 +201,7 @@ describe('SettingsPage', () => {
     // The button belongs to the form's footer, not to any one group.
     expect(save.closest('.v2-group')).toBeNull();
     expect(save.closest('.v2-save')).not.toBeNull();
-    expect(screen.getByText(/Saves Providers, Default provider, Task routes and Step timeout/)).toBeTruthy();
+    expect(screen.getByText(/Saves your models, the task routes and the step timeout/)).toBeTruthy();
 
     await userEvent.click(save);
     await waitFor(() => expect(screen.getByText(/^Saved\./)).toBeTruthy());
@@ -187,13 +249,39 @@ describe('SettingsPage', () => {
     expect(screen.getByText(/This route will fall back to the default/)).toBeTruthy();
   });
 
+  test('a maker finds the vendors that serve it — the founder’s "meta and google aren’t here"', async () => {
+    install(() => json(view));
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByRole('table', { name: 'Models you can use' })).toBeTruthy());
+
+    // `userEvent.setup({ document })`: the direct API infers its document
+    // from the element it is handed, and `keyboard` is given none.
+    const user = userEvent.setup({ document });
+    await user.type(screen.getByRole('combobox', { name: 'Search by maker or vendor' }), 'llama');
+
+    // Meta sells no API; every vendor that serves Llama has to answer to it,
+    // or the maker looks absent from the app.
+    // Annotated throughout: the late-bound `screen` (test/dom.ts) is a Proxy
+    // whose queries come back untyped, so every callback below would be an
+    // implicit `any`.
+    const offered: string[] = screen.getAllByRole('option').map((o: HTMLElement) => o.textContent ?? '');
+    expect(offered.some((o: string) => o.includes('Together AI'))).toBe(true);
+    expect(offered.some((o: string) => o.includes('Ollama'))).toBe(true);
+    expect(offered.every((o: string) => o.toLowerCase().includes('llama'))).toBe(false);
+    // And the line under the box says WHY each one matched. The open popup
+    // aria-hides the rest of the form, so close it the way a keyboard user
+    // would before reading anything outside.
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(document.querySelector('.v2-add-provider-note')?.textContent ?? '').toMatch(/Llama/));
+  });
+
   test('the catalog picker prefills a provider row without saving anything', async () => {
     install(() => json(view));
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Provider to add' })).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Search by maker or vendor' })).toBeTruthy());
     const user = userEvent.setup({ document });
     const before = (screen.getAllByLabelText('Id') as HTMLInputElement[]).length;
-    await user.type(screen.getByRole('combobox', { name: 'Provider to add' }), 'Ollama');
+    await user.type(screen.getByRole('combobox', { name: 'Search by maker or vendor' }), 'Ollama');
     await user.keyboard('{Escape}');
     await userEvent.click(screen.getByRole('button', { name: 'Add' }));
     const ids = screen.getAllByLabelText('Id') as HTMLInputElement[];
@@ -203,19 +291,24 @@ describe('SettingsPage', () => {
     expect(puts).toHaveLength(0);
   });
 
-  test('the Claude start appears when the built-in is loaded, and sets the default', async () => {
+  test('a built-in is in the list like anything else, and one click makes it answer', async () => {
+    // It used to be a "guided start" that said Claude was loaded and offered
+    // a button — a sentence about a model that was never in any list.
     const claude: ProviderInfo = { ...fakeProvider, id: 'claude-sub/claude-opus-5', kind: 'harness', auth: 'subscription' };
-    install(
-      () => json(view),
-      { ...view, effective: { ...view.effective, providers: [fakeProvider, claude] } },
-    );
+    const both = { ...view, effective: { ...view.effective, providers: [fakeProvider, claude] } };
+    // The PUT answers with the saved view — both models still loaded, and
+    // the file now naming the one that answers.
+    install(() => json({ ...both, registry: { ...view.registry, default: 'claude-sub/claude-opus-5' } }), both);
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByText(/already loaded as/)).toBeTruthy());
+    const table = await waitFor(() => screen.getByRole('table', { name: 'Models you can use' }));
+    const rows = within(table).getAllByRole('row').map(r => r.textContent ?? '');
+    expect(rows.some(r => r.includes('Claude') && r.includes('your subscription'))).toBe(true);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Make it the default' }));
-    expect((screen.getByLabelText('Default provider') as HTMLInputElement).value).toBe('claude-sub/claude-opus-5');
-    // The button disappears once it IS the default — nothing left to do.
-    expect(screen.queryByRole('button', { name: 'Make it the default' })).toBeNull();
+    const claudeRow = within(table).getAllByRole('row').find(r => (r.textContent ?? '').includes('claude-opus-5'))!;
+    await userEvent.click(within(claudeRow).getByRole('button', { name: /^Use / }));
+    await waitFor(() => expect((puts[0] as { default: string }).default).toBe('claude-sub/claude-opus-5'));
+    // And the row it is on says so, rather than offering the act again.
+    await waitFor(() => expect(within(table).getByText(/answers by default/)).toBeTruthy());
   });
 
   test('the timeout is echoed in words', async () => {
@@ -239,10 +332,13 @@ describe('SettingsPage, the default provider field (cou-93 item 3)', () => {
       { file: view.file, registry: {}, effective: { default: 'claude-sub/claude-opus-5', stepTimeoutMs: 600000, providers: [claude] } },
     );
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByLabelText('Default provider')).toBeTruthy());
-    expect((screen.getByLabelText('Default provider') as HTMLInputElement).value).toBe('claude-sub/claude-opus-5');
-    expect(screen.getByText(/Built-in default/)).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Make it the default' })).toBeNull();
+    const table = await waitFor(() => screen.getByRole('table', { name: 'Models you can use' }));
+    // The row that answers says so, and says the choice is the runtime's
+    // rather than one the practice saved.
+    const row = within(table).getAllByRole('row').find(r => (r.textContent ?? '').includes('claude-opus-5'))!;
+    expect(within(row).getByText(/answers by default/)).toBeTruthy();
+    expect(within(row).getByText(/built in, not yet saved/)).toBeTruthy();
+    expect(within(row).queryByRole('button', { name: /^Use / })).toBeNull();
   });
 });
 
@@ -275,8 +371,8 @@ describe('SettingsPage, signing out', () => {
 describe('SettingsPage, the vendor catalog (providers spec §3, §6)', () => {
   async function pick(text: string): Promise<void> {
     const user = userEvent.setup({ document });
-    await user.clear(screen.getByRole('combobox', { name: 'Provider to add' }));
-    await user.type(screen.getByRole('combobox', { name: 'Provider to add' }), text);
+    await user.clear(screen.getByRole('combobox', { name: 'Search by maker or vendor' }));
+    await user.type(screen.getByRole('combobox', { name: 'Search by maker or vendor' }), text);
     await user.keyboard('{Escape}');
     await userEvent.click(screen.getByRole('button', { name: 'Add' }));
   }
@@ -284,7 +380,7 @@ describe('SettingsPage, the vendor catalog (providers spec §3, §6)', () => {
   test('the picker covers the catalog in three groups and prefills prefix, key variable and a preset base URL', async () => {
     install(() => json(view));
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Provider to add' })).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Search by maker or vendor' })).toBeTruthy());
     // No button per vendor: one field, one Add.
     expect(screen.queryByRole('button', { name: 'Add Google Gemini' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Add' })).toBeTruthy();
@@ -304,7 +400,7 @@ describe('SettingsPage, the vendor catalog (providers spec §3, §6)', () => {
   test('each provider row says where its text goes, from its id and base URL', async () => {
     install(() => json(view));
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Provider to add' })).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Search by maker or vendor' })).toBeTruthy());
     // The fixture's row is an OpenAI-compatible loopback server: local.
     expect(screen.getAllByRole('note').some((el: Element) => el.textContent?.includes('local · nothing leaves this machine'))).toBe(true);
     await pick('Google Gemini');
@@ -316,9 +412,9 @@ describe('SettingsPage, the vendor catalog (providers spec §3, §6)', () => {
   test('an unverified preset says so before it is added', async () => {
     install(() => json(view));
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Provider to add' })).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Search by maker or vendor' })).toBeTruthy());
     const user = userEvent.setup({ document });
-    await user.type(screen.getByRole('combobox', { name: 'Provider to add' }), 'SambaNova');
+    await user.type(screen.getByRole('combobox', { name: 'Search by maker or vendor' }), 'SambaNova');
     await user.keyboard('{Escape}');
     expect(screen.getAllByRole('note').some((el: Element) => el.textContent?.includes('not verified'))).toBe(true);
   });
@@ -344,10 +440,11 @@ describe('SettingsPage, provider keys (providers spec §5)', () => {
     // The ledger's Keys fact.
     expect(screen.getByText('Keychain')).toBeTruthy();
     // Copy: the purpose line names the Keychain, and mentions the environment once, for headless use only.
-    const purpose = screen.getByText(/The models this runtime can call/).textContent ?? '';
-    expect(purpose).toContain('Keychain');
-    expect(purpose.match(/environment/g)?.length ?? 0).toBe(1);
-    expect(purpose).not.toContain('OPENAI_API_KEY');
+    // The Keychain sentence sits with the rows it is about, not in a
+    // paragraph over the whole group.
+    const added = screen.getByText(/Saved to your providers file/).textContent ?? '';
+    expect(added).toContain('Keychain');
+    expect(added).not.toContain('OPENAI_API_KEY');
   });
 
   test('a runtime without a store: the ledger says so and the row offers no paste', async () => {
@@ -425,9 +522,9 @@ describe('the enterprise vendors in Settings (providers spec §3 step 5)', () =>
   test('the picker lists them under Hosted API · enterprise; adding one prefills the row with its field set and defaults, no key variable', async () => {
     install(() => json(view));
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Provider to add' })).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Search by maker or vendor' })).toBeTruthy());
     const user = userEvent.setup({ document });
-    await user.type(screen.getByRole('combobox', { name: 'Provider to add' }), 'Hosted API · enterprise · Google Vertex AI');
+    await user.type(screen.getByRole('combobox', { name: 'Search by maker or vendor' }), 'Hosted API · enterprise · Google Vertex AI');
     await user.keyboard('{Escape}');
     expect(screen.getByRole('link', { name: 'How to set up Google Vertex AI' })).toBeTruthy();
     expect(screen.getByText(/they go to your Keychain as one item/)).toBeTruthy();
