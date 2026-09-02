@@ -159,7 +159,16 @@ export interface ProviderInfo {
   /** Providers spec §6; absent on an older runtime. */
   locality?: 'local' | 'cloud';
   handles?: VendorHandles | null;
+  /** Providers spec §5: whether an API-key provider has a key — saved in
+   * the app, from the environment, or absent. Never the value. Absent on
+   * providers that take no key and on an older runtime. */
+  keySet?: KeyState;
 }
+
+/** COPIED from `runtime/src/providers/secrets.ts`; a change there is a
+ * change here. */
+export type KeyState = true | false | 'env';
+export type SecretStoreKind = 'keychain' | 'libsecret' | 'file';
 
 export interface Health {
   /** `true` while the runtime has no vault (spec 2026-09-01 §4, setup
@@ -332,6 +341,9 @@ export interface SettingsView {
     stepTimeoutMs: number;
     providers: ProviderInfo[];
   };
+  /** Where app-entered keys live (providers spec §5); `null` when the
+   * runtime has no store; absent on an older runtime. */
+  secrets?: { where: SecretStoreKind } | null;
 }
 
 /** One zod issue as a 400 reports it. `path` locates the field the form

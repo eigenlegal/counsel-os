@@ -11,6 +11,17 @@ export interface HealthProps {
   /** The registry file this runtime edits, so an operator who wants to hand-
    * edit it knows which one. */
   file: string;
+  /** Where app-entered keys live (providers spec §5). */
+  secrets?: SettingsView['secrets'];
+}
+
+/** The Keys fact in words a lawyer reads: where the keys are. */
+export function keysInWords(secrets: SettingsView['secrets'] | undefined, file: string): string {
+  if (secrets === undefined || secrets === null) return 'environment only — this runtime has no key store';
+  if (secrets.where === 'keychain') return 'Keychain';
+  if (secrets.where === 'libsecret') return 'system keyring (libsecret)';
+  const dir = file.slice(0, file.lastIndexOf('/'));
+  return `file (${dir}/secrets.json, readable only by you)`;
 }
 
 /**
@@ -29,7 +40,7 @@ export function timeoutInWords(ms: number): string {
   return `${ms} ms`;
 }
 
-export function Health({ health, effective, file }: HealthProps): JSX.Element {
+export function Health({ health, effective, file, secrets }: HealthProps): JSX.Element {
   return (
     <section className="settings-health">
       <h2>Runtime</h2>
@@ -73,6 +84,13 @@ export function Health({ health, effective, file }: HealthProps): JSX.Element {
             <span className="leader" aria-hidden="true" />
           </dt>
           <dd>{timeoutInWords(effective.stepTimeoutMs)}</dd>
+        </div>
+        <div className="fact">
+          <dt>
+            Keys
+            <span className="leader" aria-hidden="true" />
+          </dt>
+          <dd>{keysInWords(secrets, file)}</dd>
         </div>
       </dl>
 

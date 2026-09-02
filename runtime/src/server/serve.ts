@@ -12,6 +12,7 @@ import { FakeModelProvider, type FakeScript } from '../core/fake-provider';
 import { DEFAULT_TENANT, type ModelProvider } from '../core/types';
 import { DEFAULT_STEP_TIMEOUT_MS } from '../loop/counsel-loop';
 import { defaultRegistryFile, loadRegistry } from '../providers/registry';
+import { openSecretStore, type SecretStore } from '../providers/secrets';
 import { ThreadStore } from '../threads/store';
 import { FsVaultStore } from '../vault/fs-store';
 import { fsSearch } from '../vault/search';
@@ -54,6 +55,9 @@ export interface StartServerOptions {
   /** Mint a fresh bearer even when `runtime.json` holds one. Every browser
    * signed in with the old one is signed out. */
   newToken?: boolean;
+  /** Where app-entered API keys live (providers spec §5). Omitted → the
+   * platform's store (`openSecretStore`). Tests pass a memory store. */
+  secrets?: SecretStore;
   env?: NodeJS.ProcessEnv;
   /** The user's real home, for setup mode's probes. Omitted → `env.HOME`,
    * then `os.homedir()` — the same rule the root resolver applies. */
@@ -322,6 +326,8 @@ export interface RuntimeStateOptions {
   defaultId?: string;
   /** A step deadline that beats the file's. */
   stepTimeoutMs?: number;
+  /** The secret store the registry asks for keys (providers spec §5). */
+  secrets?: SecretStore;
 }
 
 export interface RuntimeHandle {
@@ -353,6 +359,7 @@ export function runtimeState(opts: RuntimeStateOptions): RuntimeHandle {
       ...(opts.registryFile === undefined ? {} : { file: opts.registryFile }),
       ...(opts.extraProviders === undefined ? {} : { extraProviders: opts.extraProviders }),
       ...(opts.defaultId === undefined ? {} : { defaultId: opts.defaultId }),
+      ...(opts.secrets === undefined ? {} : { secrets: opts.secrets }),
     });
     return {
       providers: loaded.providers,
@@ -392,6 +399,10 @@ export async function startServer(opts: StartServerOptions = {}): Promise<Runnin
   const file = runtimeFilePath(env);
   const token = chooseToken(tokenFilePath(env), opts.newToken === true);
   const startedAt = new Date().toISOString();
+  // One store per server: the keychain on macOS, libsecret on Linux, else
+  // the 0600 file (providers spec §5). Opened here so a reload and the key
+  // routes share it.
+  const secrets = opts.secrets ?? openSecretStore({ env });
 
   let vaultRoot: string | null = resolveVaultOrSetup(opts);
   let store: ThreadStore | null = null;
@@ -408,6 +419,7 @@ export async function startServer(opts: StartServerOptions = {}): Promise<Runnin
       registryFile,
       ...(fake === undefined ? {} : { extraProviders: [fake], defaultId: fake.id }),
       ...(opts.stepTimeoutMs === undefined ? {} : { stepTimeoutMs: opts.stepTimeoutMs }),
+      secrets,
     });
     // The store is given the environment's codex root explicitly: its own
     // default is the real `$HOME`, which would ignore `COUNSEL_OS_HOME` and
@@ -431,7 +443,7 @@ export async function startServer(opts: StartServerOptions = {}): Promise<Runnin
       vault: new FsVaultStore(vault, { search: fsSearch() }),
       store,
       state: runtime.state,
-      settings: { file: registryFile, reload: runtime.reload },
+      settings: { file: registryFile, reload: runtime.reload, secrets, env },
       distDir,
     });
   };

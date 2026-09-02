@@ -131,6 +131,18 @@ tasks:
 
 Id prefixes the runtime knows — SDK-native: `claude-sub`, `codex-sub`, `anthropic`, `openai`, `google`, `mistral`, `groq`, `xai`, `deepseek`, `cohere`, `perplexity`, `togetherai`, `fireworks`, `deepinfra`, `cerebras`, `openrouter`, `ollama`, `openai-compatible`; OpenAI-compatible presets with a built-in base URL: `moonshot`, `zhipu`, `dashscope`, `sambanova`, `baseten`, `huggingface`, `cloudflare` (fill `{account_id}` in `baseURL`), `replicate`, and the local runners `lmstudio`, `llamacpp`, `vllm`, `mlx`, `jan`, `gpt4all`. A preset entry may override `baseURL`. An unknown prefix is refused with that list. Keys are read from `apiKeyEnv`, else the vendor's usual variable; the file holds variable names, never keys. Each provider's `locality` (local or cloud) is derived from the vendor, or from the base URL for the OpenAI-compatible shape; `allow_remote: false` on a task route keeps that task on local providers.
 
+### Keys (providers spec §5)
+
+An API key is pasted once in Settings, on the provider's row, and kept in the platform's secret store — never in `providers.yaml`, never in the vault:
+
+- **macOS:** the login Keychain (`security` CLI), items named `counsel-os/<provider id>` under the account `counsel-os`.
+- **Linux:** the system keyring through `secret-tool` (libsecret) when it is installed.
+- **Otherwise:** `~/.counsel-os/secrets.json`, mode 0600 — Settings says so.
+
+`COUNSEL_OS_SECRETS=file` forces the file store (headless use, CI). A key from the environment still works: the runtime asks the store first, then the entry's `apiKeyEnv`, then the vendor's usual variable (`OPENAI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`, …). An entry may carry `key: keychain` as a note to a reader; it is not read.
+
+The runtime reports only whether a key is set (`keySet: true | false | 'env'` on `/settings` and `/health`), never the value. `PUT /providers/<id>/key` and `DELETE /providers/<id>/key` are the only routes that touch keys.
+
 ## Plugin-internal constants
 
 These aren't user-configurable; they're baked into the plugin:

@@ -4,7 +4,8 @@ import type { Health as HealthData, SettingsErrorBody, SettingsView } from '../.
 import { Health } from '../../settings/Health';
 import { ProviderCombo } from '../../settings/ProviderCombo';
 import { ProviderTest } from '../../settings/ProviderTest';
-import { addableVendors, dataLineFor, pickerLabel, vendorByPickerLabel } from '../vendors';
+import { addableVendors, dataLineFor, pickerLabel, prefixOf, vendorByPickerLabel, vendorFor } from '../vendors';
+import { KeyControl } from './KeyControl';
 import { ContentGroup } from './ContentGroup';
 import { DoctorLedger } from './DoctorLedger';
 import { RetroAction } from './RetroAction';
@@ -87,7 +88,7 @@ export function SettingsPage({ health, onStartRetro }: SettingsPageProps): JSX.E
           </section>
           <ContentGroup />
           <section className="v2-group">
-            <Health health={health} effective={view.effective} file={view.file} />
+            <Health health={health} effective={view.effective} file={view.file} secrets={view.secrets} />
             <DoctorLedger />
             <RetroAction onStart={onStartRetro} />
           </section>
@@ -153,6 +154,17 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
     setSaved(false);
   };
 
+  /** A key changed on the server (providers spec §5): re-read the settings
+   * so `keySet` on the rows is current. Nothing in the form moves. */
+  const refresh = async (): Promise<void> => {
+    try {
+      onSaved(await fetchJson<SettingsView>('/settings'));
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) return;
+      setGeneral([err instanceof Error ? err.message : String(err)]);
+    }
+  };
+
   const save = async (): Promise<void> => {
     setSaved(false);
     const built = registryFromForm(form);
@@ -204,7 +216,7 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
       <section className="v2-group">
         <h2>Providers</h2>
         <p className="muted">
-          The models this runtime can call. Your Claude subscription, your Codex subscription, and a local Ollama model are built in and always loaded. Add one here to use an API key, another local model, or a different endpoint. Saved to your providers file (its path is under Runtime, below); the built-ins are never written there.
+          The models this runtime can call. Your Claude subscription, your Codex subscription, and a local Ollama model are built in and always loaded. Add one here to use a hosted API with a key, another local model, or a different endpoint. Paste a key on its row after you save; it is kept in your Keychain, never in a file in your vault (a key from the environment still works for headless use). The row itself is saved to your providers file (its path is under Runtime, below); the built-ins are never written there.
         </p>
         {form.providers.length === 0 ? <p className="muted">None added — the built-ins are doing all the work.</p> : null}
         {form.providers.map((row, index) => (
@@ -221,8 +233,8 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
                 <FieldError message={errors[`providers.${index}.baseURL`]} />
               </div>
               <div className="field">
-                <label htmlFor={`v2-${row.key}-key`}>apiKeyEnv</label>
-                <input id={`v2-${row.key}-key`} value={row.apiKeyEnv} placeholder="OPENAI_API_KEY" onChange={e => patchRow(index, { apiKeyEnv: e.target.value })} />
+                <label htmlFor={`v2-${row.key}-key`}>key variable (optional)</label>
+                <input id={`v2-${row.key}-key`} value={row.apiKeyEnv} placeholder="only for headless use" onChange={e => patchRow(index, { apiKeyEnv: e.target.value })} />
                 <FieldError message={errors[`providers.${index}.apiKeyEnv`]} />
               </div>
               <TriField id={`v2-${row.key}-tools`} label="tools" value={row.tools} onChange={value => patchRow(index, { tools: value })} />
@@ -259,6 +271,24 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
                     </>
                   )}
                 </p>
+              );
+            })()}
+            {/* The key itself (providers spec §5): set text under the row,
+                for vendors that take one. It is never part of the form —
+                the row saves the endpoint, the key goes to the store. */}
+            {(() => {
+              const id = row.id.trim();
+              const vendor = vendorFor(prefixOf(id));
+              if (vendor === undefined || vendor.connection !== 'API key') return null;
+              const live = view.effective.providers.find(p => p.id === id);
+              return (
+                <KeyControl
+                  id={id}
+                  keySet={live === undefined ? undefined : (live.keySet ?? false)}
+                  {...(vendor.getKey === undefined ? {} : { getKey: vendor.getKey })}
+                  where={view.secrets === undefined || view.secrets === null ? null : view.secrets.where}
+                  onChanged={() => void refresh()}
+                />
               );
             })()}
             <button
@@ -325,11 +355,7 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
               return (
                 <p className="muted v2-add-provider-note" role="note">
                   {v.note === undefined ? null : <>{v.note} </>}
-                  {v.keyEnv === undefined ? null : (
-                    <>
-                      The key is read from <code>{v.keyEnv}</code> for now; entering it in the app comes next.{' '}
-                    </>
-                  )}
+                  {v.connection === 'API key' ? <>Add the row, save, then paste the key on it — it goes to your Keychain. </> : null}
                   {v.getKey === undefined ? null : (
                     <a href={v.getKey} target="_blank" rel="noreferrer">
                       Get a key

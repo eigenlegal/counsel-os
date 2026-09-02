@@ -286,7 +286,7 @@ describe('SettingsPage, the vendor catalog (providers spec §3, §6)', () => {
     await pick('Google Gemini');
     const ids = screen.getAllByLabelText('Id') as HTMLInputElement[];
     expect(ids.map(el => el.value)).toContain('google/');
-    const keys = screen.getAllByLabelText('apiKeyEnv') as HTMLInputElement[];
+    const keys = screen.getAllByLabelText('key variable (optional)') as HTMLInputElement[];
     expect(keys.map(el => el.value)).toContain('GOOGLE_GENERATIVE_AI_API_KEY');
     await pick('LM Studio');
     const urls = screen.getAllByLabelText('baseURL') as HTMLInputElement[];
@@ -316,5 +316,40 @@ describe('SettingsPage, the vendor catalog (providers spec §3, §6)', () => {
     await user.type(screen.getByRole('combobox', { name: 'Provider to add' }), 'SambaNova');
     await user.keyboard('{Escape}');
     expect(screen.getAllByRole('note').some((el: Element) => el.textContent?.includes('not verified'))).toBe(true);
+  });
+});
+
+describe('SettingsPage, provider keys (providers spec §5)', () => {
+  test('a keyed row shows its key control from keySet, the Runtime ledger says where keys live, and the copy no longer sends a lawyer to the environment', async () => {
+    const google: ProviderInfo = { ...fakeProvider, id: 'google/gemini-2.5-pro', auth: 'apikey', keySet: false, locality: 'cloud', handles: { company: 'Google', termsUrl: 'https://ai.google.dev/gemini-api/terms' } };
+    install(
+      () => json(view),
+      {
+        ...view,
+        registry: { ...view.registry, providers: [{ id: 'google/gemini-2.5-pro' }] },
+        effective: { ...view.effective, providers: [fakeProvider, google] },
+        secrets: { where: 'keychain' },
+      },
+    );
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByRole('group', { name: 'Key for google/gemini-2.5-pro' })).toBeTruthy());
+    expect(screen.getByText('not set')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'paste a key' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'get a key' })).toBeTruthy();
+    // The ledger's Keys fact.
+    expect(screen.getByText('Keychain')).toBeTruthy();
+    // Copy: the purpose line names the Keychain, and mentions the environment once, for headless use only.
+    const purpose = screen.getByText(/The models this runtime can call/).textContent ?? '';
+    expect(purpose).toContain('Keychain');
+    expect(purpose.match(/environment/g)?.length ?? 0).toBe(1);
+    expect(purpose).not.toContain('OPENAI_API_KEY');
+  });
+
+  test('a runtime without a store: the ledger says so and the row offers no paste', async () => {
+    const google: ProviderInfo = { ...fakeProvider, id: 'google/gemini-2.5-pro', auth: 'apikey', keySet: 'env' };
+    install(() => json(view), { ...view, registry: { providers: [{ id: 'google/gemini-2.5-pro' }] }, effective: { ...view.effective, providers: [google] }, secrets: null });
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByText(/environment only/)).toBeTruthy());
+    expect(screen.queryByRole('button', { name: 'paste a key' })).toBeNull();
   });
 });
