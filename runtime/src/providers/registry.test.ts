@@ -146,18 +146,19 @@ describe('the registry reads the vendor catalog (providers spec §3)', () => {
         '  - id: groq/llama-3.3-70b-versatile',
         '  - id: xai/grok-4',
         '  - id: openrouter/anthropic/claude-sonnet-5',
-        '  - id: openai-compatible/lmstudio',
-        '    baseURL: http://127.0.0.1:1234/v1',
+        '  - id: lmstudio/qwen3',
+        '  - id: moonshot/kimi-k2',
         '',
       ].join('\n'),
     );
     const r = loadRegistry({ file: f, vaultRoot: dir, env: { GOOGLE_GENERATIVE_AI_API_KEY: 'g', MY_MISTRAL: 'm' } });
     const ids = r.providers.map(p => p.id);
-    for (const id of ['google/gemini-2.5-pro', 'mistral/mistral-large-latest', 'groq/llama-3.3-70b-versatile', 'xai/grok-4', 'openrouter/anthropic/claude-sonnet-5', 'openai-compatible/lmstudio']) {
+    for (const id of ['google/gemini-2.5-pro', 'mistral/mistral-large-latest', 'groq/llama-3.3-70b-versatile', 'xai/grok-4', 'openrouter/anthropic/claude-sonnet-5', 'lmstudio/qwen3', 'moonshot/kimi-k2']) {
       expect(ids).toContain(id);
     }
     expect(r.providers.find(p => p.id === 'google/gemini-2.5-pro')!.capabilities.locality).toBe('cloud');
-    expect(r.providers.find(p => p.id === 'openai-compatible/lmstudio')!.capabilities.locality).toBe('local');
+    expect(r.providers.find(p => p.id === 'lmstudio/qwen3')!.capabilities.locality).toBe('local');
+    expect(r.providers.find(p => p.id === 'moonshot/kimi-k2')!.capabilities.locality).toBe('cloud');
   });
 
   test('an unknown prefix names the known ones', () => {

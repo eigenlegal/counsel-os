@@ -4,7 +4,7 @@ import type { Health as HealthData, SettingsErrorBody, SettingsView } from '../.
 import { Health } from '../../settings/Health';
 import { ProviderCombo } from '../../settings/ProviderCombo';
 import { ProviderTest } from '../../settings/ProviderTest';
-import { dataLineFor, keyedVendors, PRESETS } from '../vendors';
+import { addableVendors, dataLineFor, pickerLabel, vendorByPickerLabel } from '../vendors';
 import { ContentGroup } from './ContentGroup';
 import { DoctorLedger } from './DoctorLedger';
 import { RetroAction } from './RetroAction';
@@ -14,10 +14,7 @@ import {
   formFromRegistry,
   humanDuration,
   mapIssues,
-  ollamaRow,
-  openaiKeyRow,
-  presetRow,
-  vendorKeyRow,
+  catalogRow,
   registryFromForm,
   unplacedTaskMessages,
   type FieldErrors,
@@ -130,6 +127,8 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
   const [general, setGeneral] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
+  /** The catalog picker's text (providers spec §3). */
+  const [pick, setPick] = useState('');
 
   // The one the runtime is running, which is not always the one in the file.
   const effectiveIds = view.effective.providers.map(p => p.id);
@@ -296,69 +295,56 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
               )}
             </div>
           ) : null}
-          <div className="v2-guided-start">
+          {/* The catalog picker (providers spec §3): one field over every
+              vendor and preset, grouped as Subscriptions · Local runners ·
+              Hosted API — thirty rows do not become thirty buttons. Picking
+              prefills a row; nothing is saved until the one Save. */}
+          <div className="v2-guided-start v2-add-provider">
             <p>
-              <strong>OpenAI API key</strong>
-              <span className="muted"> — starts a row for <code>openai/gpt-5.6</code>. The key is read from <code>OPENAI_API_KEY</code> for now; entering it in the app comes with the next update.</span>
+              <strong>Add a provider</strong>
+              <span className="muted"> — a hosted API (a key from the vendor), a model server on this machine, or any OpenAI-compatible endpoint. Type to search; the row's second line says where your text goes.</span>
             </p>
-            <button type="button" onClick={() => patch({ providers: [...form.providers, openaiKeyRow()] })}>
-              Add OpenAI provider
-            </button>
-          </div>
-          {/* The other vendors in the catalog (providers spec §3): one row each,
-              the id left for the operator to finish with a model. */}
-          {keyedVendors()
-            .filter(v => v.prefix !== 'openai')
-            .map(v => (
-              <div className="v2-guided-start" key={v.prefix}>
-                <p>
-                  <strong>{v.name}</strong>
-                  <span className="muted">
-                    {' '}
-                    — starts a row for <code>{v.prefix}/…</code>; text goes to {v.company}. The key is read from <code>{v.keyEnv}</code> for now.
-                    {v.getKey === undefined ? null : (
-                      <>
-                        {' '}
-                        <a href={v.getKey} target="_blank" rel="noreferrer">
-                          Get a key
-                        </a>
-                        .
-                      </>
-                    )}
-                  </span>
-                </p>
-                <button type="button" onClick={() => patch({ providers: [...form.providers, vendorKeyRow(v.prefix, v.keyEnv ?? '')] })}>
-                  {v.addLabel}
-                </button>
-              </div>
-            ))}
-          <div className="v2-guided-start">
-            <p>
-              <strong>Local Ollama model</strong>
-              <span className="muted"> — starts a row for a model Ollama serves on this machine. Finish the id with the model name <code>ollama list</code> shows, for example <code>ollama/llama3.3</code>.</span>
-            </p>
-            <button type="button" onClick={() => patch({ providers: [...form.providers, ollamaRow()] })}>
-              Add Ollama model
-            </button>
-          </div>
-          {PRESETS.map(preset => (
-            <div className="v2-guided-start" key={preset.key}>
-              <p>
-                <strong>{preset.name}</strong>
-                <span className="muted">
-                  {' '}
-                  — a local OpenAI-compatible server at <code>{preset.baseURL}</code>; nothing leaves this machine. Finish the id with the model it serves.
-                </span>
-              </p>
-              <button type="button" onClick={() => patch({ providers: [...form.providers, presetRow(preset.baseURL)] })}>
-                {preset.addLabel}
+            <div className="v2-add-provider-row">
+              <ProviderCombo id="v2-add-provider" label="Provider to add" value={pick} options={addableVendors().map(pickerLabel)} placeholder="Hosted API · Google Gemini" onChange={setPick} />
+              <button
+                type="button"
+                disabled={vendorByPickerLabel(pick) === undefined}
+                onClick={() => {
+                  const v = vendorByPickerLabel(pick);
+                  if (v === undefined) return;
+                  patch({ providers: [...form.providers, catalogRow(v)] });
+                  setPick('');
+                }}
+              >
+                Add
               </button>
             </div>
-          ))}
+            {(() => {
+              const v = vendorByPickerLabel(pick);
+              if (v === undefined) return null;
+              return (
+                <p className="muted v2-add-provider-note" role="note">
+                  {v.note === undefined ? null : <>{v.note} </>}
+                  {v.keyEnv === undefined ? null : (
+                    <>
+                      The key is read from <code>{v.keyEnv}</code> for now; entering it in the app comes next.{' '}
+                    </>
+                  )}
+                  {v.getKey === undefined ? null : (
+                    <a href={v.getKey} target="_blank" rel="noreferrer">
+                      Get a key
+                    </a>
+                  )}
+                  {v.baseURLFields === undefined ? null : <> Fill in {v.baseURLFields.map(f => `{${f}}`).join(', ')} in the base URL.</>}
+                  {v.unverified === true ? <> The base URL was not verified against the vendor’s docs; check it.</> : null}
+                </p>
+              );
+            })()}
+          </div>
           <div className="v2-guided-start">
             <p>
               <strong>Something else</strong>
-              <span className="muted"> — a blank row, for an Anthropic API key (<code>anthropic/…</code>) or an OpenAI-compatible endpoint (<code>openai-compatible/…</code> with a <code>baseURL</code>).</span>
+              <span className="muted"> — a blank row, when the picker above does not have it. Any OpenAI-compatible endpoint works with its base URL.</span>
             </p>
             <button type="button" onClick={() => patch({ providers: [...form.providers, emptyRow()] })}>
               Add provider

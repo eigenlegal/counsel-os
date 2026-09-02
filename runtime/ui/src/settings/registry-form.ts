@@ -113,6 +113,13 @@ export function presetRow(baseURL: string): ProviderRow {
   return { ...emptyRow(), id: 'openai-compatible/', baseURL };
 }
 
+/** A row from the catalog picker (providers spec §3): the prefix, the
+ * usual key variable, and a preset's base URL when it has one. The id is
+ * left for the operator to finish with a model (the picker lands in step 3). */
+export function catalogRow(v: { prefix: string; keyEnv?: string; baseURL?: string }): ProviderRow {
+  return { ...emptyRow(), id: `${v.prefix}/`, apiKeyEnv: v.keyEnv ?? '', baseURL: v.baseURL ?? '' };
+}
+
 export function emptyRoute(): RouteRow {
   return { key: nextKey(), task: '', prefer: '', tools: '', caching: '', thinking: '', contextTokens: '', remote: '' };
 }

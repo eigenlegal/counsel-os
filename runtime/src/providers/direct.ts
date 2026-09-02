@@ -1,7 +1,7 @@
 import { Output, stepCountIs, streamText, tool, type LanguageModel } from 'ai';
 import type { Capabilities, ModelProvider, StepEvent, StepRequest } from '../core/types';
 import { runToolDef } from '../core/fake-provider';
-import { localityFor, prefixOf, vendorFor } from './vendors';
+import { baseURLFor, localityFor, prefixOf, vendorFor } from './vendors';
 
 export class DirectProvider implements ModelProvider {
   readonly id: string;
@@ -109,8 +109,10 @@ export function directProviderFromId(
   const vendor = vendorFor(prefixOf(id));
   const name = id.slice(prefixOf(id).length + 1);
   if (vendor === undefined || vendor.kind !== 'direct' || vendor.make === undefined || name === '') throw new Error(`unknown provider: ${id}`);
-  if (vendor.requiresBaseURL === true && !reg.baseURL) throw new Error(`unknown provider: ${vendor.prefix} requires baseURL for ${id}`);
-  const model = vendor.make({ model: name, ...(reg.apiKey === undefined ? {} : { apiKey: reg.apiKey }), ...(reg.baseURL === undefined ? {} : { baseURL: reg.baseURL }) });
-  const capabilities: Capabilities = { ...vendor.capabilities, auth: vendor.auth, ...reg.capabilities, locality: localityFor(vendor, reg.baseURL) };
-  return new DirectProvider({ id, model, capabilities, ...(reg.baseURL === undefined ? {} : { baseURL: reg.baseURL }) });
+  // The entry's base URL, else the preset's; a template with unfilled
+  // fields, or the bare shape with none, is refused here.
+  const baseURL = baseURLFor(vendor, reg.baseURL === '' ? undefined : reg.baseURL, id);
+  const model = vendor.make({ model: name, ...(reg.apiKey === undefined ? {} : { apiKey: reg.apiKey }), ...(baseURL === undefined ? {} : { baseURL }) });
+  const capabilities: Capabilities = { ...vendor.capabilities, auth: vendor.auth, ...reg.capabilities, locality: localityFor(vendor, baseURL) };
+  return new DirectProvider({ id, model, capabilities, ...(baseURL === undefined ? {} : { baseURL }) });
 }

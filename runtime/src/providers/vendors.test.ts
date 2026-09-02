@@ -1,22 +1,23 @@
 import { describe, expect, test } from 'bun:test';
 import { directProviderFromId } from './direct';
-import { allVendors, handlesFor, isLoopbackURL, knownPrefixes, localityFor, PRESETS, prefixOf, vendorFor } from './vendors';
+import { allVendors, baseURLFor, handlesFor, isLoopbackURL, knownPrefixes, localityFor, PRESETS, prefixOf, vendorFor } from './vendors';
 
 describe('the vendor catalog (providers spec §3)', () => {
   test('every direct vendor builds a model from a fake key and base URL, with no network', () => {
     for (const vendor of allVendors()) {
       if (vendor.kind !== 'direct') continue;
       const id = `${vendor.prefix}/some-model`;
-      const provider = directProviderFromId(id, { apiKey: 'k', baseURL: vendor.prefix === 'openai-compatible' ? 'http://127.0.0.1:1234/v1' : undefined });
+      const baseURL = vendor.prefix === 'openai-compatible' ? 'http://127.0.0.1:1234/v1' : vendor.baseURLFields === undefined ? undefined : vendor.defaultBaseURL!.replace('{account_id}', 'x');
+      const provider = directProviderFromId(id, { apiKey: 'k', ...(baseURL === undefined ? {} : { baseURL }) });
       expect(provider.id).toBe(id);
       expect(provider.kind).toBe('direct');
       expect(provider.capabilities.auth).toBe(vendor.auth);
-      expect(provider.capabilities.locality).toBe(localityFor(vendor, vendor.prefix === 'openai-compatible' ? 'http://127.0.0.1:1234/v1' : undefined));
+      expect(provider.capabilities.locality).toBe(localityFor(vendor, baseURL));
     }
   });
 
   test('the new prefixes are known; an unknown one is not', () => {
-    for (const p of ['google', 'mistral', 'groq', 'xai', 'openrouter', 'anthropic', 'openai', 'ollama', 'openai-compatible', 'claude-sub', 'codex-sub']) {
+    for (const p of ['google', 'mistral', 'groq', 'xai', 'deepseek', 'cohere', 'perplexity', 'togetherai', 'fireworks', 'deepinfra', 'cerebras', 'openrouter', 'anthropic', 'openai', 'ollama', 'openai-compatible', 'claude-sub', 'codex-sub', 'moonshot', 'huggingface', 'lmstudio', 'vllm']) {
       expect(knownPrefixes()).toContain(p);
     }
     expect(vendorFor('nope')).toBeUndefined();
@@ -57,17 +58,45 @@ describe('the vendor catalog (providers spec §3)', () => {
     expect(vendorFor('claude-sub')!.models).toBe('none');
   });
 
-  test('every API-key vendor names its usual environment variable', () => {
+  test('every API-key vendor names its usual environment variable (uppercase, the vendor’s own spelling)', () => {
     for (const vendor of allVendors()) {
       if (vendor.auth !== 'apikey' || vendor.prefix === 'openai-compatible') continue;
-      expect(vendor.keyEnv).toMatch(/_API_KEY$/);
+      expect(vendor.keyEnv).toMatch(/^[A-Z][A-Z0-9_]+$/);
     }
   });
 
-  test('the LM Studio preset is the OpenAI-compatible shape on a loopback port', () => {
-    const lm = PRESETS.find(p => p.key === 'lmstudio')!;
-    expect(lm.prefix).toBe('openai-compatible');
+  test('presets (layer B) are data rows over the OpenAI-compatible shape', () => {
+    const lm = PRESETS.find(p => p.prefix === 'lmstudio')!;
     expect(isLoopbackURL(lm.baseURL)).toBe(true);
+    const v = vendorFor('lmstudio')!;
+    expect(v.layer).toBe('preset');
+    expect(v.locality).toBe('local');
+    expect(v.defaultBaseURL).toBe('http://127.0.0.1:1234/v1');
+    // A preset id builds a provider at the preset's URL with no baseURL on the entry.
+    const p = directProviderFromId('lmstudio/qwen3');
+    expect(p.baseURL).toBe('http://127.0.0.1:1234/v1');
+    expect(p.capabilities.locality).toBe('local');
+    // A hosted preset: cloud, keyed, the company named.
+    const kimi = directProviderFromId('moonshot/kimi-k2', { apiKey: 'k' });
+    expect(kimi.baseURL).toBe('https://api.moonshot.ai/v1');
+    expect(kimi.capabilities.locality).toBe('cloud');
+    expect(vendorFor('moonshot')!.handles?.company).toBe('Moonshot AI');
+    expect(vendorFor('moonshot')!.keyEnv).toBe('MOONSHOT_API_KEY');
+    // The entry's own base URL wins over the preset's.
+    expect(directProviderFromId('zhipu/glm-4.5', { apiKey: 'k', baseURL: 'https://open.bigmodel.cn/api/paas/v4' }).baseURL).toBe('https://open.bigmodel.cn/api/paas/v4');
+  });
+
+  test('a template preset must be completed; unverified rows say so', () => {
+    expect(() => directProviderFromId('cloudflare/@cf/meta/llama-3.1-8b-instruct', { apiKey: 'k' })).toThrow(/\{account_id\}/);
+    expect(directProviderFromId('cloudflare/@cf/meta/llama-3.1-8b-instruct', { apiKey: 'k', baseURL: 'https://api.cloudflare.com/client/v4/accounts/abc/ai/v1' }).baseURL).toContain('/accounts/abc/');
+    expect(vendorFor('sambanova')!.unverified).toBe(true);
+    expect(vendorFor('baseten')!.unverified).toBeUndefined();
+    for (const p of PRESETS) expect(baseURLFor(vendorFor(p.prefix)!, p.baseURLFields === undefined ? undefined : p.baseURL.replace('{account_id}', 'x'), `${p.prefix}/m`)).toBeTruthy();
+  });
+
+  test('the Ollama row carries the open-model starting points', () => {
+    const families = vendorFor('ollama')!.openModels!.map(m => m.family);
+    expect(families).toEqual(['Qwen3', 'Llama 4', 'gpt-oss', 'Gemma', 'DeepSeek-R1 distills', 'Mistral Small']);
   });
 
   test('an entry cannot claim a cloud endpoint is local', () => {
