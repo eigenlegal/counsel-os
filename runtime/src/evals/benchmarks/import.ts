@@ -66,16 +66,21 @@ function readCache(rawDir: string, tasks: string[] | undefined): BenchmarkFile[]
   if (!existsSync(rawDir)) return null;
   const files = walk(rawDir).filter(p => p !== CACHE_INDEX);
   if (files.length === 0) return null;
-  let held: string[] | null = null;
+  let index: unknown;
   try {
-    held = (JSON.parse(readFileSync(join(rawDir, CACHE_INDEX), 'utf8')) as { tasks: string[] | null }).tasks;
+    index = JSON.parse(readFileSync(join(rawDir, CACHE_INDEX), 'utf8'));
   } catch {
-    // No index (an older cache): its coverage is unknown, so only a
-    // download of everything can be reused for everything.
-    return tasks === undefined ? null : null;
+    // No index, or an unreadable one: the coverage of these files is
+    // unknown, and a cache of unknown coverage is not a cache. One
+    // re-download writes an index and the next import reuses it.
+    return null;
   }
-  // `null` held means the download covered every task.
-  if (held !== null && (tasks === undefined || tasks.some(t => !held!.includes(t)))) return null;
+  const raw = (index as { tasks?: unknown }).tasks;
+  // `null` means the download covered every task; a list means those.
+  // Anything else is an index this version cannot read.
+  const held: string[] | null = raw === null ? null : Array.isArray(raw) && raw.every(t => typeof t === 'string') ? (raw as string[]) : undefined!;
+  if (held === undefined) return null;
+  if (held !== null && (tasks === undefined || tasks.some(t => !held.includes(t)))) return null;
   return files.map(path => ({ path, bytes: new Uint8Array(readFileSync(join(rawDir, path))) }));
 }
 
@@ -129,17 +134,28 @@ export async function importBenchmark(opts: ImportOptions): Promise<ImportReport
       if (f.path.startsWith('/') || f.path.split('/').some(seg => seg === '..' || seg === '')) throw new Error(`${loader.name}: refusing to cache outside ${rawDir}: ${f.path}`);
       writeFile(join(rawDir, f.path), f.bytes);
     }
-    writeFile(join(rawDir, CACHE_INDEX), `${JSON.stringify({ tasks: opts.tasks ?? null })}\n`);
+    // What the download COVERS, which is every task for a set that pulls one
+    // file whatever you ask for. Recording the request instead would make
+    // the cache useless for exactly the biggest downloads.
+    writeFile(join(rawDir, CACHE_INDEX), `${JSON.stringify({ tasks: loader.downloadsWholeSet === true ? null : (opts.tasks ?? null) })}\n`);
     log(`cached ${files.length} file${files.length === 1 ? '' : 's'} under ${rawDir}`);
   } else {
     log(`using the cached download under ${rawDir} (pass --refresh to fetch again)`);
   }
 
-  const built = loader.toFixtures(files, { ...(opts.subset === undefined ? {} : { subset: opts.subset }), ...(opts.tasks === undefined ? {} : { tasks: opts.tasks }) });
+  const built = loader.toFixtures(files, { ...(opts.subset === undefined ? {} : { subset: opts.subset }), ...(opts.tasks === undefined ? {} : { tasks: opts.tasks }), log });
   const fixtures = built.fixtures.map(raw => parseFixture(raw, `${loader.id} fixture ${String((raw as { id?: unknown }).id ?? '?')}`));
   if (fixtures.length === 0) throw new Error(`${loader.name}: nothing to import${opts.tasks === undefined ? '' : ` for tasks ${opts.tasks.join(', ')}`}`);
   for (const f of fixtures) if (f.vault !== loader.id) throw new Error(`${loader.name}: fixture ${f.id} names vault ${String(f.vault)}, expected ${loader.id}`);
 
+  const ids = new Set<string>();
+  for (const f of fixtures) {
+    // An id is a filename AND the key every result line is recorded under.
+    // Two fixtures sharing one would write over each other and report a
+    // count that included both.
+    if (ids.has(f.id)) throw new Error(`${loader.name}: two fixtures share the id ${f.id}`);
+    ids.add(f.id);
+  }
   rmSync(fixturesDir, { recursive: true, force: true });
   for (const f of fixtures) writeFile(join(fixturesDir, `${f.id}.json`), `${JSON.stringify(f, null, 2)}\n`);
 

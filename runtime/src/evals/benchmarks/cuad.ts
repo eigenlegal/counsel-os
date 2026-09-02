@@ -53,6 +53,8 @@ export const cuad: BenchmarkLoader = {
   license: 'CC BY 4.0',
   attribution: 'Hendrycks, Burns, Chen, Ball, "CUAD: An Expert-Annotated NLP Dataset for Legal Contract Review" (NeurIPS 2021 Datasets and Benchmarks). The Atticus Project.',
   redistributable: true,
+  // One file, whatever `--tasks` asks for: the cache covers everything.
+  downloadsWholeSet: true,
   // CUAD imports whole: one extraction fixture over all 41 clause
   // categories. `--tasks` is refused rather than accepted and ignored.
   tasks: ['clauses'],

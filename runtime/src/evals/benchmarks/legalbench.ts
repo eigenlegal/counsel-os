@@ -38,8 +38,11 @@ export function licenseLineOf(readme: string): string | null {
   const linked = /\*\*License\*\*:\s*\[([^\]]+)\]\(([^)]+)\)/.exec(readme);
   if (linked !== null) return `${linked[1]!.trim()} (${linked[2]!.trim()})`;
   const plain = /\*\*License\*\*:\s*([^\n[]+)/.exec(readme);
-  const text = plain?.[1]?.trim();
-  return text === undefined || text === '' ? null : text;
+  const text = plain?.[1]?.trim().replace(/[.,;]+$/, '') ?? '';
+  // Only a string that READS as a license. The line can be prose ("See the
+  // LICENSE file"), and prose recorded as a license is worse than saying
+  // the README does not state one.
+  return /^(?:CC[ -]?(?:BY|0)[\w.\- ]*|MIT|Apache[\w.\- ]*|BSD[\w.\- ]*|GPL[\w.\- ]*|ODC[\w.\- ]*|Public Domain|Unlicense)$/i.test(text) ? text : null;
 }
 
 /** What a fixture records when the task's README does not say. Never the
@@ -88,12 +91,17 @@ export const legalbench: BenchmarkLoader = {
       const promptText = textOf(prompt.bytes);
       let rows = parseTsv(textOf(tsv.bytes));
       if (opts.subset !== undefined) rows = rows.slice(0, opts.subset);
-      // Every LegalBench task's test split has an `answer` column. One that
-      // does not would import as a fixture whose every expected answer is
-      // the empty string — which the classification scorer accepts and then
-      // scores zero on for ever.
-      const missing = rows.findIndex(row => (row.answer ?? '').trim() === '');
-      if (missing !== -1) throw new Error(`legalbench: task ${task} has no answer on row ${missing + 1}; its test split is not in the expected shape`);
+      // A row with no answer would expect the empty string, which the
+      // classification scorer accepts and then scores zero on for ever. The
+      // row goes; a task with no rows left goes too — one odd split must
+      // not discard the other thirty-three tasks of the import.
+      const answered = rows.filter(row => (row.answer ?? '').trim() !== '');
+      if (answered.length < rows.length) opts.log?.(`legalbench: ${task}: skipping ${rows.length - answered.length} row(s) with no answer`);
+      if (answered.length === 0) {
+        opts.log?.(`legalbench: ${task}: no row carries an answer; skipping the task`);
+        continue;
+      }
+      rows = answered;
       fixtures.push({
         id: fixtureId('legalbench', task),
         title: `LegalBench · ${task}`,

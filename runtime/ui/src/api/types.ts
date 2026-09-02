@@ -579,9 +579,12 @@ export interface Scoreboard {
 export interface EvalEstimate {
   task: string;
   providerId: string;
+  /** Model calls, not fixtures: a benchmark fixture holds many documents. */
   count: number;
   estimateUsd: number | null;
   needsConfirm: boolean;
+  /** Why there is nothing to run, when there is nothing to run. */
+  reason?: string;
 }
 
 /** The frames `POST /evals/run` streams. */

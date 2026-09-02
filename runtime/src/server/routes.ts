@@ -981,6 +981,9 @@ export function createApp(deps: ServerDeps): App {
     // The calls the run makes, not the files it reads: one benchmark fixture
     // can hold hundreds of documents.
     const count = runCount(selected.fixtures);
+    // The selector's own words when there is nothing to run — "0 fixtures ·
+    // cost unknown" says nothing about why.
+    if (selected.error !== undefined) return json({ task, providerId, count: 0, estimateUsd: 0, needsConfirm: false, skipped: selected.skipped, reason: selected.error });
     const estimateUsd = estimateCost(count, deps.evals?.pricing?.(providerId) ?? null);
     // With the count, as the run itself does: a provider whose price is
     // unknown needs confirming for anything but a single call, and this line

@@ -4,7 +4,7 @@
  * vault) are never selected by `all` or a task — they can only be scored
  * from a saved output — and are listed so the caller can say so.
  */
-import { taskForScorer, type FixtureSet, type LoadedFixture } from './fixture';
+import { sourceKindOf, taskForScorer, type FixtureSet, type LoadedFixture } from './fixture';
 import type { EvalResult } from './results';
 import type { SetSummary } from './runner';
 
@@ -43,7 +43,10 @@ export function runCount(fixtures: LoadedFixture[]): number {
 
 export function selectFixtures(all: LoadedFixture[], sel: Selection): Selected {
   const skipped: Selected['skipped'] = [];
-  const loaded = sel.set === undefined ? all : all.filter(l => l.set === sel.set);
+  // The same bucketing the scoreboard uses (`sourceKindOf`): a fixture that
+  // declares its own `source.kind` shows on that tab, and has to run from
+  // it too, or the tab offers a score the run then refuses.
+  const loaded = sel.set === undefined ? all : all.filter(l => sourceKindOf(l) === sel.set);
   if (sel.set !== undefined && loaded.length === 0) {
     return { fixtures: [], skipped, error: sel.set === 'benchmark' ? 'no benchmark is imported — run `counsel-os eval import <set>` first' : `no ${sel.set} fixtures` };
   }

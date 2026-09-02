@@ -33,9 +33,13 @@ export function runCost(usd: number): string {
 }
 
 export function confirmLine(providerId: string, task: string, estimate: EvalEstimate): string {
-  const fixtures = `${estimate.count} fixture${estimate.count === 1 ? '' : 's'}`;
+  // Runs, not fixtures: the row above says "1 fixture" for an imported
+  // benchmark that holds hundreds of contracts, and this line is the one
+  // that has to be honest about what will be spent.
+  const runs = `${estimate.count} run${estimate.count === 1 ? '' : 's'}`;
   const cost = estimate.estimateUsd === null ? 'cost unknown' : `about $${estimate.estimateUsd.toFixed(2)}`;
-  return `Score ${providerId} on ${task} · ${fixtures} · ${cost}`;
+  const reason = estimate.reason === undefined ? '' : ` · ${estimate.reason}`;
+  return `Score ${providerId} on ${task} · ${runs} · ${cost}${reason}`;
 }
 
 function hasRows(board: Scoreboard): boolean {

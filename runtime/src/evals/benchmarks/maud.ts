@@ -41,6 +41,14 @@ function questionKey(r: MaudRow): string {
   return r.subquestion === '' || r.subquestion === '<NONE>' ? r.question : `${r.question} — ${r.subquestion}`;
 }
 
+/** `id`, or `id-2`, `id-3`… — one document id, whatever the split repeats. */
+function unique(id: string, seen: Set<string>): string {
+  let out = id;
+  for (let n = 2; seen.has(out); n++) out = `${id}-${n}`;
+  seen.add(out);
+  return out;
+}
+
 export const maud: BenchmarkLoader = {
   id: 'maud',
   name: 'MAUD',
@@ -48,6 +56,8 @@ export const maud: BenchmarkLoader = {
   license: 'CC BY 4.0',
   attribution: 'Wang, Hendrycks, et al., "MAUD: An Expert-Annotated Legal NLP Dataset for Merger Agreement Understanding" (EMNLP 2023). The Atticus Project.',
   redistributable: true,
+  // One file, whatever `--tasks` asks for: the cache covers everything.
+  downloadsWholeSet: true,
   tasks: [...MAUD_CATEGORIES],
 
   async fetch(opts: FetchOptions = {}): Promise<BenchmarkFile[]> {
@@ -71,18 +81,22 @@ export const maud: BenchmarkLoader = {
       const choices = [...new Set(all.map(r => r.answer))].sort();
       const items = opts.subset === undefined ? all : all.slice(0, opts.subset);
       const first = all[0]!;
+      // Per fixture: a document id only has to be unique inside its own.
+      const seen = new Set<string>();
       fixtures.push({
         id: fixtureId('maud', `${first.category} ${question}`),
         title: `MAUD · ${first.category} · ${question}`,
         vault: 'maud',
         scorer: 'classification',
         source: sourceOf(this),
-        documents: items.map(r => ({
+        documents: items.map((r, i) => ({
           // The contract, not MAUD's `id` column — that is the question's
           // index, the same value on every row of this fixture. The
           // scoreboard keys a cell on `<fixture>#<document>`, so identical
-          // ids would collapse a 20-contract fixture into one cell.
-          id: slug(r.contract_name),
+          // ids would collapse a 20-contract fixture into one cell. Two
+          // rows of one contract (a second annotated span) keep their
+          // order as the tie-break.
+          id: unique(slug(r.contract_name) === '' ? `row-${i + 1}` : slug(r.contract_name), seen),
           task: [
             'The following provision is from a public company merger agreement.',
             '',

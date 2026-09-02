@@ -2045,7 +2045,7 @@ Rationale: see practice/standards/acme-special-terms.md.
     const app = appWith([new FakeModelProvider([{ output: sample('law-beats-practice') }, { output: sample('law-beats-practice') }])], { evals: evalsDeps() });
     const refused = await call(app, 'POST', '/evals/run', { body: { all: true } });
     expect(refused.status).toBe(409);
-    expect(await refused.json()).toMatchObject({ error: 'confirm-cost', estimateUsd: null, count: 8, providerId: 'fake/fake', message: '8 fixtures on fake/fake with no known price — confirm to run them.' });
+    expect(await refused.json()).toMatchObject({ error: 'confirm-cost', estimateUsd: null, count: 8, providerId: 'fake/fake', message: '8 runs on fake/fake with no known price — confirm to run them.' });
     expect((await call(app, 'POST', '/evals/run', { body: { fixtures: ['law-beats-practice'] } })).status).toBe(200);
   });
 

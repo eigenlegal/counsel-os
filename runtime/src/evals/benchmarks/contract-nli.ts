@@ -38,6 +38,8 @@ export const contractNli: BenchmarkLoader = {
   license: 'CC BY 4.0',
   attribution: 'Koreeda & Manning, "ContractNLI: A Dataset for Document-level Natural Language Inference for Contracts" (Findings of EMNLP 2021).',
   redistributable: true,
+  // One file, whatever `--tasks` asks for: the cache covers everything.
+  downloadsWholeSet: true,
   tasks: Array.from({ length: 17 }, (_, i) => `nda-${i + 1}`),
 
   async fetch(opts: FetchOptions = {}): Promise<BenchmarkFile[]> {

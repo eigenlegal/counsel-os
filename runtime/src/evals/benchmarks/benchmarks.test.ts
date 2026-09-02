@@ -416,6 +416,25 @@ describe('import', () => {
 describe('what an import refuses and what it caches', () => {
   const scratch = (): string => mkdtempSync(join(tmpdir(), 'counsel-bench-'));
 
+  test('two fixtures with one id stop the import rather than overwrite each other', async () => {
+    const dest = scratch();
+    try {
+      const twin = { ...maud, toFixtures: () => ({ fixtures: [{ id: 'maud-twin', vault: 'maud', scorer: 'classification', expected: { answer: 'a' } }, { id: 'maud-twin', vault: 'maud', scorer: 'classification', expected: { answer: 'b' } }], documents: {} }) };
+      const { fetchImpl } = scriptedFetch({ [MAUD_URL]: read('maud/MAUD_test.csv') });
+      await expect(importBenchmark({ loader: twin, dest, content: fakeContent, fetchImpl })).rejects.toThrow(/two fixtures share the id maud-twin/);
+    } finally {
+      rmSync(dest, { recursive: true, force: true });
+    }
+  });
+
+  test('a license line that is prose is recorded as unknown, never as the set default', () => {
+    expect(licenseLineOf('**License**: [CC BY-SA 4.0](https://x)')).toBe('CC BY-SA 4.0 (https://x)');
+    expect(licenseLineOf('**License**: CC BY-SA 4.0')).toBe('CC BY-SA 4.0');
+    expect(licenseLineOf('**License**: See the LICENSE file.')).toBeNull();
+    expect(licenseLineOf('**License**:\n\n## Attribution')).toBeNull();
+    expect(licenseLineOf('no license line here')).toBeNull();
+  });
+
   test('an unknown --tasks value is refused before anything is fetched or written', async () => {
     const dest = join(scratch(), 'benchmarks');
     try {
@@ -429,6 +448,38 @@ describe('what an import refuses and what it caches', () => {
       await expect(importBenchmark({ loader: cuad, dest, content: fakeContent, fetchImpl, tasks: ['governing_law'] })).rejects.toThrow(/imports as one set/);
       expect(fetched).toBe(0);
       expect(existsSync(dest)).toBe(false);
+    } finally {
+      rmSync(dest, { recursive: true, force: true });
+    }
+  });
+
+  test('a set that downloads whole caches every task, whatever was asked for', async () => {
+    const dest = scratch();
+    try {
+      const { fetchImpl, calls } = scriptedFetch({ [MAUD_URL]: read('maud/MAUD_test.csv') });
+      await importBenchmark({ loader: maud, dest, content: fakeContent, fetchImpl, tasks: ['General Information'] });
+      expect(calls).toHaveLength(1);
+      // The download was the whole CSV, so a later import of another
+      // category is already covered.
+      const second = await importBenchmark({ loader: maud, dest, content: fakeContent, fetchImpl });
+      expect(second.fromCache).toBe(true);
+      expect(calls).toHaveLength(1);
+    } finally {
+      rmSync(dest, { recursive: true, force: true });
+    }
+  });
+
+  test('a cache whose index cannot be read is not a cache', async () => {
+    const dest = scratch();
+    try {
+      const { fetchImpl, calls } = scriptedFetch({ [MAUD_URL]: read('maud/MAUD_test.csv') });
+      await importBenchmark({ loader: maud, dest, content: fakeContent, fetchImpl });
+      for (const index of ['{"version":2}', 'not json at all']) {
+        writeFileSync(join(dest, 'maud', 'raw', '.import.json'), index);
+        const again = await importBenchmark({ loader: maud, dest, content: fakeContent, fetchImpl });
+        expect(again.fromCache).toBe(false);
+      }
+      expect(calls).toHaveLength(3);
     } finally {
       rmSync(dest, { recursive: true, force: true });
     }

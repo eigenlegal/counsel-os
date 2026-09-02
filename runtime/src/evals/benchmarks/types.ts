@@ -32,6 +32,8 @@ export interface ToFixturesOptions {
   subset?: number;
   /** Which of the loader's tasks to build; all present in the files by default. */
   tasks?: string[];
+  /** Where a loader says what it skipped and why. */
+  log?: (line: string) => void;
 }
 
 /** What a loader produces: fixture records (validated by `parseFixture`
@@ -59,6 +61,9 @@ export interface BenchmarkLoader {
   /** `false` for a set that imports whole and cannot be narrowed: `--tasks`
    * is then refused rather than accepted and ignored. */
   tasksSelectable?: boolean;
+  /** `true` when `fetch` pulls the whole set whatever `tasks` says — the
+   * raw cache then covers every task, however narrow the request was. */
+  downloadsWholeSet?: boolean;
   fetch(opts?: FetchOptions): Promise<BenchmarkFile[]>;
   toFixtures(files: BenchmarkFile[], opts?: ToFixturesOptions): BenchmarkFixtures;
 }
