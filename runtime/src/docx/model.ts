@@ -192,6 +192,19 @@ function numberingOf(p: Element): Numbering | null {
   return null;
 }
 
+/** `w:tcPr/w:gridSpan/@w:val`, at least 1. */
+function gridSpanOf(tc: Element): number {
+  for (const tcPr of children(tc)) {
+    if (!isW(tcPr, 'tcPr')) continue;
+    for (const c of children(tcPr)) {
+      if (!isW(c, 'gridSpan')) continue;
+      const n = Number(attr(c, 'val') ?? '1');
+      return Number.isInteger(n) && n > 1 ? n : 1;
+    }
+  }
+  return 1;
+}
+
 function commentIdsOf(p: Element): string[] {
   const ids = new Set<string>();
   for (const node of descendants(p)) {
@@ -340,7 +353,11 @@ export class DocxModel {
               const paras: number[] = [];
               walkBlocks(tc, { table: tableIndex, row: rowIndex, cell: cellIndex }, paras);
               row.push(paras);
-              cellIndex += 1;
+              // python-docx numbers cells by GRID column: a cell spanning two
+              // columns occupies two indices, so the cell after it is
+              // `cell[2]`. The location grammar follows that, or a
+              // `match.location` written for the Python script would miss.
+              cellIndex += gridSpanOf(tc);
             }
             table.rows.push(row);
             rowIndex += 1;

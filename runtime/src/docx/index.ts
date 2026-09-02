@@ -9,6 +9,9 @@ export { docxToMarkdown, type ChangesMode, type MarkdownOptions, type MarkdownRe
 export { commentsOf, modelOf, textOf, type DocxComment, type DocxModel, type DocxParagraph, type DocxRun } from './model';
 export { DocxPackage, NotADocxError, openDocx } from './package';
 export { MalformedXmlError, UnsafeXmlError } from './safety';
+export { applyRedlines, redlineExitCode, redlineOutputName, type ApplyOptions, type MatchSpec, type RedlineItem, type RedlineResult } from './redline';
+export { computeReplacementRegions, type Region } from './diff';
+export { addComment, commentCount } from './comments';
 
 /** `.docx`, in any casing. */
 export function isDocxPath(path: string): boolean {

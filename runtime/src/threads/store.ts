@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import type { StepEvent, Tenant } from '../core/types';
+import type { StepEvent, Tenant, ArtifactKind, ArtifactSummary } from '../core/types';
 
 /**
  * Threads live under `<vaultRoot>/.counsel/threads/`, which `FsVaultStore.abs()`
@@ -46,6 +46,21 @@ export type ThreadEvent =
       rationale: string;
       status: 'pending' | 'approved' | 'rejected';
       expectedVersion: string | null;
+    }
+  // A document the step produced (`apply_redlines`): where it was written,
+  // what it was made from, and the counts the slip shows. Appended by the
+  // tool itself, like a proposal; the loop synthesizes the matching
+  // `artifact` StepEvent for live clients and never logs that one.
+  | {
+      t: 'artifact';
+      at: string;
+      id: string;
+      kind: ArtifactKind;
+      path: string;
+      source: string;
+      author: string;
+      tracked: boolean;
+      summary: ArtifactSummary;
     };
 
 export interface ThreadStoreOptions {

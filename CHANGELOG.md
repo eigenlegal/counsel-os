@@ -8,6 +8,13 @@ reconstructed from git history. New entries are prepended automatically by
 
 ## [Unreleased]
 
+Word documents in TypeScript, stage 2 — the write path (spec `docs/superpowers/specs/2026-09-01-docx-in-typescript-design.md` §4.7–4.8, §5, §6)
+
+- `apply_redlines` runs inside the runtime (`runtime/src/docx/redline.ts`): the same selectors, two-phase back-to-front apply, plain and native tracked-changes modes, Word comments, result JSON and refusal strings as `scripts/apply_redlines.py` — cross-checked identical on the demo NDA — with no Python. The script and its Python-gated tests are gone.
+- The redlined document is written beside its source as `<original>-redline-<date>.docx` (never overwriting; `-2`, `-3` … when the name is taken) and recorded on the thread as an `artifact` event; the web UI shows it as a slip under the answer — filename, changes · comments · clauses touched · size, Download, Open in reader, Show the changes, the author and date of the revision marks — and the strip counts documents produced.
+- `bun runtime/src/cli.ts docx apply <file.docx> <redlines.json> [--out] [--track] [--author]` for the plugin path; `primitives/draft.md` and `primitives/redline-output.md` describe one tier (the runtime always writes native redlines; attribution comes from `profile.md`).
+- Table cell locations count grid columns the way python-docx did (`gridSpan`), so a `match.location` written for the Python script still resolves.
+
 Runtime-owned setup, stage 1 (spec `docs/superpowers/specs/2026-09-01-runtime-owned-setup-design.md`)
 
 - The runtime carries the shipped content behind one content source (`runtime/src/content/`): the law areas, the practice seed, the memory template, the primitives, and the counsel skill, with a generated manifest of per-file hashes (`bun run content:manifest`). The prompt and `read_primitive` read through it.

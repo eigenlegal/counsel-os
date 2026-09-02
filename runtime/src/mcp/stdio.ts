@@ -41,7 +41,13 @@ const threadId = process.env.COUNSEL_THREAD_ID;
 const store = new FsVaultStore(vault, { search: fsSearch() });
 
 const registry = new ToolRegistry();
-for (const t of builtinTools({ vaultRoot: vault, repoRoot: pluginRoot })) registry.register(t);
+const threads = new ThreadStore(vault);
+for (const t of builtinTools({
+  vaultRoot: vault,
+  repoRoot: pluginRoot,
+  vault: store,
+  ...(threadId ? { thread: { store: threads, threadId, tenant } } : {}),
+})) registry.register(t);
 
 // The same tool set the in-process loop assembles (`counsel-loop.ts`'s
 // `stepTools`), so the Codex tier is not a second-class citizen: the guarded
@@ -50,7 +56,7 @@ for (const t of builtinTools({ vaultRoot: vault, repoRoot: pluginRoot })) regist
 const tools: ToolDef[] = [
   ...guardedVaultTools(store, readVaultConfig(vault)),
   readPrimitiveTool(pluginRoot) as ToolDef,
-  ...(threadId ? [proposeUpdateTool(new ThreadStore(vault), store, threadId, tenant) as ToolDef] : []),
+  ...(threadId ? [proposeUpdateTool(threads, store, threadId, tenant) as ToolDef] : []),
   ...registry.available(),
 ];
 

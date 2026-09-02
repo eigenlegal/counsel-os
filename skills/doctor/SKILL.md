@@ -131,7 +131,7 @@ One table row per dependency. What each one unlocks, and its install one-liner a
 
 | Dependency | Unlocks | Fix when missing |
 |------------|---------|------------------|
-| python3 + python-docx | The Word WRITE path only (apply_redlines, clean_format) until the TypeScript port lands; reading, extraction and checks need nothing | `python3 -m pip install python-docx` |
+| python3 + python-docx | Only `diff_rounds` and `clean_format` until they move into the runtime; reading, extraction, checks and redlines need nothing | `python3 -m pip install python-docx` |
 | bun | Reading Word documents outside the runtime (`bun runtime/src/cli.ts docx read`), and building browse from source (the prebuilt binary auto-downloads on first use) | `curl -fsSL https://bun.sh/install \| bash` |
 | Playwright Chromium | The browse skill's headless browser | `cd "${CLAUDE_PLUGIN_ROOT}" && bunx playwright install chromium` |
 | qmd CLI | Vault index maintenance (`qmd update`; `qmd embed` is opt-in) | see https://github.com/tobi/qmd (optional — filesystem search is the fallback) |

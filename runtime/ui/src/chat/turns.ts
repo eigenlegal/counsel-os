@@ -11,7 +11,7 @@
  * of the exercise: a provider may run several tools before any of them
  * answers, and the card has to show the call and its result together.
  */
-import type { ProposalStatus, StepEvent, ThreadEvent } from '../api/types';
+import type { ArtifactKind, ArtifactSummary, ProposalStatus, StepEvent, ThreadEvent } from '../api/types';
 
 export interface ToolCallView {
   id: string;
@@ -33,6 +33,20 @@ export interface ProposalView {
    * content on the next load. */
   content?: string;
   status: ProposalStatus;
+}
+
+/** A document the step produced. The stream's `artifact` event carries the
+ * path and summary; the log's carries the rest (source, author, tracked,
+ * time), so a live slip fills in on the next load. */
+export interface ArtifactView {
+  id: string;
+  kind: ArtifactKind;
+  path: string;
+  summary: ArtifactSummary;
+  source?: string;
+  author?: string;
+  tracked: boolean;
+  at?: string;
 }
 
 export interface UserTurn {
@@ -57,6 +71,7 @@ export interface AssistantTurn {
   toolBreak?: boolean;
   tools: ToolCallView[];
   proposals: ProposalView[];
+  artifacts: ArtifactView[];
   warnings: string[];
   error?: { message: string; text?: string };
   status: 'streaming' | 'done' | 'error';
@@ -70,6 +85,7 @@ export function emptyAssistantTurn(init: Partial<AssistantTurn> = {}): Assistant
     text: '',
     tools: [],
     proposals: [],
+    artifacts: [],
     warnings: [],
     status: 'streaming',
     ...init,
@@ -123,6 +139,12 @@ export function applyStepEvent(turn: AssistantTurn, ev: StepEvent): AssistantTur
       return turn.proposals.some(p => p.id === ev.id)
         ? turn
         : { ...turn, proposals: [...turn.proposals, { id: ev.id, path: ev.path, rationale: ev.rationale, status: 'pending' }] };
+    case 'artifact':
+      // The live event says less than the log's (no author, no source);
+      // whichever arrives first stands, the log's version replaces it.
+      return turn.artifacts.some(a => a.id === ev.id)
+        ? turn
+        : { ...turn, artifacts: [...turn.artifacts, { id: ev.id, kind: ev.kind, path: ev.path, summary: ev.summary, tracked: true }] };
     case 'done':
       return { ...turn, status: 'done' };
     case 'error':
@@ -167,16 +189,23 @@ export function buildTurns(events: ThreadEvent[]): Turn[] {
         continue;
       }
       const open: AssistantTurn = current ?? emptyAssistantTurn();
-      current =
-        ev.t === 'warning'
-          ? { ...open, warnings: [...open.warnings, ev.message] }
-          : {
-              ...open,
-              proposals: [
-                ...open.proposals.filter(p => p.id !== ev.id),
-                { id: ev.id, path: ev.path, rationale: ev.rationale, content: ev.content, status: ev.status },
-              ],
-            };
+      if (ev.t === 'warning') current = { ...open, warnings: [...open.warnings, ev.message] };
+      else if (ev.t === 'artifact')
+        current = {
+          ...open,
+          artifacts: [
+            ...open.artifacts.filter(a => a.id !== ev.id),
+            { id: ev.id, kind: ev.kind, path: ev.path, summary: ev.summary, source: ev.source, author: ev.author, tracked: ev.tracked, at: ev.at },
+          ],
+        };
+      else
+        current = {
+          ...open,
+          proposals: [
+            ...open.proposals.filter(p => p.id !== ev.id),
+            { id: ev.id, path: ev.path, rationale: ev.rationale, content: ev.content, status: ev.status },
+          ],
+        };
       continue;
     }
     current = applyStepEvent(current ?? emptyAssistantTurn(), ev);

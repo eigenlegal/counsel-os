@@ -209,12 +209,12 @@ export function Chat({
     return () => globalThis.removeEventListener('hashchange', onHash);
   }, []);
 
-  useEffect(() => {
-    if (thread === null || anchor === null) return;
-    // happy-dom does not implement scrollIntoView; the optional call keeps
-    // the tests honest rather than mocking the whole element.
-    document.getElementById(`proposal-${anchor}`)?.scrollIntoView?.({ block: 'start' });
-  }, [thread, anchor]);
+  // The scroll itself lives in ProposalCard: the card whose id the anchor
+  // names scrolls into view in a layout effect when it mounts and whenever
+  // the anchor changes to it. That is what makes a deep link land whatever
+  // order the transcript and the hash arrive in — an effect here keyed on
+  // `thread` ran before the slips were committed on a slow runner and
+  // never ran again (CI, 2026-09-01).
 
   useEffect(() => () => abort.current?.abort(), []);
 
@@ -509,14 +509,15 @@ export function Chat({
             onOpenFile={onOpenFile}
             vaultPaths={vaultPaths}
             {...(i === turns.length - 1 && turn.kind === 'assistant' && turn.error !== undefined && !streaming ? { onRetry: retryLast } : {})}
+            anchor={anchor}
           />
         ))}
         {frozen.map((turn, i) => (
-          <TurnView key={`frozen-${i}`} turn={turn} threadId={threadId} onReload={reload} onDecided={decided} onOpenFile={onOpenFile} vaultPaths={vaultPaths} />
+          <TurnView key={`frozen-${i}`} turn={turn} threadId={threadId} onReload={reload} onDecided={decided} onOpenFile={onOpenFile} vaultPaths={vaultPaths} anchor={anchor} />
         ))}
         {pending === null ? null : <TurnView turn={{ kind: 'user', content: pending }} threadId={threadId} onReload={reload} />}
         {live === null ? null : (
-          <TurnView turn={live} threadId={threadId} live liveMs={liveMs} onReload={reload} onDecided={decided} onOpenFile={onOpenFile} vaultPaths={vaultPaths} />
+          <TurnView turn={live} threadId={threadId} live liveMs={liveMs} onReload={reload} onDecided={decided} onOpenFile={onOpenFile} vaultPaths={vaultPaths} anchor={anchor} />
         )}
       </div>
 

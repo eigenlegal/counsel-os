@@ -48,8 +48,8 @@ const SCRIPT_TOOL_MAPPINGS: ScriptToolMapping[] = [
   },
   {
     name: 'apply_redlines',
-    invocation: 'python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply_redlines.py" [--track] <original.docx> <redlines.json> <output.docx>',
-    fields: '`original`, `edits`, `output`, `track` (optional)',
+    invocation: 'bun runtime/src/cli.ts docx apply <original.docx> <redlines.json> [--out <file>] [--track] [--author <name>]',
+    fields: '`original` (vault-relative .docx), `items` (the redline JSON array inline) or `edits` (vault path of a JSON file), `track` (true for a redline), `author`, `output` (optional; default `<original>-redline-<date>.docx` beside the source)',
   },
   {
     name: 'word_compare',

@@ -23,6 +23,7 @@ const TABLE: Record<string, string> = {
   docx_read: 'Read',
   extract_redlines: 'Extracted changes from',
   check_document: 'Checked',
+  apply_redlines: 'Redlined',
 };
 
 /** The platform's script tools (`runtime/src/tools/builtin.ts`) — the one
@@ -31,19 +32,18 @@ const TABLE: Record<string, string> = {
 const SCRIPT_TOOLS: ReadonlySet<string> = new Set([
   'docket_sweep',
   'clean_format',
-  'apply_redlines',
   'word_compare',
 ]);
 
 const SEARCH_LIKE = /grep|search|find/i;
 
 /** The verbs whose object is a vault path a drawer can open. */
-const FILE_VERBS: ReadonlySet<string> = new Set(['Read', 'Proposed', 'Wrote', 'Extracted changes from', 'Checked']);
+const FILE_VERBS: ReadonlySet<string> = new Set(['Read', 'Proposed', 'Wrote', 'Extracted changes from', 'Checked', 'Redlined']);
 
 function objectOf(input: unknown): string | undefined {
   if (typeof input !== 'object' || input === null) return undefined;
   const record = input as Record<string, unknown>;
-  for (const key of ['path', 'name', 'query', 'dir']) {
+  for (const key of ['path', 'original', 'name', 'query', 'dir']) {
     const value = record[key];
     if (typeof value === 'string' && value !== '') return value;
   }
@@ -73,7 +73,9 @@ export function pathOf(tool: ToolCallView): string | null {
   const { verb } = verbFor(tool);
   if (!FILE_VERBS.has(verb)) return null;
   if (typeof tool.input !== 'object' || tool.input === null) return null;
-  const path = (tool.input as Record<string, unknown>)['path'];
+  const input = tool.input as Record<string, unknown>;
+  // `apply_redlines` names its file `original`; the step line opens that.
+  const path = input['path'] ?? input['original'];
   return typeof path === 'string' && path !== '' ? path : null;
 }
 

@@ -256,9 +256,9 @@ Applies whenever you change text inside a .docx that already exists — revised 
 
 ### Instructions
 
-1. **Default to `apply_redlines.py` WITHOUT `--track` for text replacements.** Silent mode applies the same word-level minimal-region matching as the redline path — including its handling of run-level formatting — so replacements inherit the correct formatting from the text they replace:
+1. **Default to the `apply_redlines` tool WITHOUT `track` for text replacements.** Silent mode applies the same word-level minimal-region matching as the redline path — including its handling of run-level formatting — so replacements inherit the correct formatting from the text they replace. In the runtime call the tool with the items inline: `apply_redlines { original: "<vault path>.docx", items: [...] }` — it writes `<original>-redline-<date>.docx` beside the source (pass `output` to name it). Outside the runtime:
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply_redlines.py" "{original.docx}" "{edits.json}" "{output.docx}"
+bun runtime/src/cli.ts docx apply "{original.docx}" "{edits.json}" --out "{output.docx}"
 ```
 2. **Direct python-docx surgery is for structure only** (deleting paragraphs, inserting new ones, reordering) — and before doing any of it, read `primitives/redline-output.md` → "How to detect bold-leading paragraphs". Its run-formatting rules apply to every in-place edit, not just redlines.
 
@@ -291,26 +291,18 @@ Generate tracked changes against the original document. This is the full documen
 - Source document must be a .docx file
 - Findings and proposed revisions must be available (from evaluate + draft --counter-language)
 
-### Capability detection
+### Attribution
 
-Check what's available:
+The redline pipeline runs inside the runtime (TypeScript) on every platform — no Python, no Microsoft Word. The one thing to check is **who the revisions are attributed to**: `profile.md` with a real name (not a bracket placeholder) → that name; otherwise "Counsel OS", and tell the user attribution becomes personal once profile.md has their name.
 
-1. **python-docx available:** `python3 -c "import docx"` — exits 0
-2. **User name available:** profile.md contains a real name (not a bracket placeholder)
-
-Tracked changes are generated natively (`apply_redlines.py --track` writes
+Tracked changes are generated natively (`apply_redlines` with `track: true` writes
 `w:ins`/`w:del` revision markup directly), so Microsoft Word is NOT required
 to produce a redline — and in the counsel-os app the reader shows the result
 with its strikes, inserts and comments, so the answer names the redline's
-vault path rather than asking the lawyer to open Word to check it.
+vault path (and the document slip, when present) rather than asking the
+lawyer to open Word to check it.
 
-| Tier | Requirements | Action |
-|---|---|---|
-| Full | Both | Generate tracked changes .docx with comments, attributed to user |
-| Partial | python-docx only | Same tracked changes, attributed to "Counsel OS"; tell the user attribution becomes personal once profile.md has their name |
-| Markdown | Neither | Output markdown redline package only |
-
-### Pipeline execution (Full or Partial tier)
+### Pipeline execution
 
 **1. Collect revision pairs.** From the counter-language output, gather all Current/Proposed pairs and rationale. Write to a JSON file in the same directory as the original document:
 
@@ -339,25 +331,28 @@ Supported selectors:
 - `before` / `after` — text immediately before or after the intended match
 - `context` — additional text that must appear in the same paragraph or cell
 
-**Important:** Write the JSON file alongside the original document (`{original_dir}/counsel-os-redlines-{timestamp}.json`), NOT in `/tmp`. macOS sandboxing prevents Word from accessing `/tmp`.
+In the runtime you need not write the file at all: pass the array as `items` to the tool. Outside the runtime, write it alongside the original document (`{original_dir}/counsel-os-redlines-{timestamp}.json`), NOT in `/tmp`.
 
-**2. Apply changes as tracked changes:**
+**2. Apply changes as tracked changes:** call the `apply_redlines` tool with `track: true` (`original`, `items` or `edits`, `author`; `output` only to override the name):
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply_redlines.py" --track "{original.docx}" "{redlines.json}" "{output_path}"
+# outside the runtime
+bun runtime/src/cli.ts docx apply --track --author "{author_name}" "{original.docx}" "{redlines.json}"
 ```
-Default output: `{original_dir}/{original_name}-redline-{YYYY-MM-DD}.docx`
-Parse the JSON output. Report skipped items — including any refused because the
+Default output: `{original_dir}/{original_name}-redline-{YYYY-MM-DD}.docx`, never overwriting (`-2`, `-3` … when the name is taken).
+Read the result: `applied`, `skipped` (with `matches` when a selector is needed) and `warnings`. Report skipped items — including any refused because the
 changed text lies inside an existing tracked insertion or hyperlink (nested
-revision markup is not supported; resolve the earlier revision first).
+revision markup is not supported; resolve the earlier revision first). In the
+runtime the produced document appears in the conversation as a slip with a
+download; say where it was written all the same.
 
 The output IS the redline: native `w:ins`/`w:del` revisions plus comments, in
 one step. Only the changed core of each edit is marked (common prefix/suffix
 trimmed at word boundaries), and deleted text keeps its original formatting.
 There is no intermediate modified.docx — accepting all changes in Word yields
-the clean version. Drop `--track` only when the user explicitly wants a
+the clean version. Drop `track` only when the user explicitly wants a
 silently-edited copy with no revision marks.
 
-**3. Word Compare (alternative engine, optional):**
+**3. Word Compare (alternative engine, optional; being replaced by the runtime's `docx_compare`):**
 ```bash
 "${CLAUDE_PLUGIN_ROOT}/scripts/word_compare.sh" "{original.docx}" "{modified.docx}" "{author_name}" "{output_path}"
 ```

@@ -63,3 +63,33 @@ describe('applyStepEvent tool names (cou-93 item 2)', () => {
     expect(turn.tools[0]!.name).toBe('vault_list');
   });
 });
+
+describe('artifacts (a document the step produced)', () => {
+  const summary = { changes: 14, comments: 3, applied: 5, skipped: 0, clauses: 5, bytes: 42_000 };
+
+  test('the live artifact event folds into the turn once, tracked by default', () => {
+    const turn = run([
+      { type: 'artifact', id: 'a-1', path: 'matters/acme/nda-redline-2026-09-01.docx', kind: 'docx-redline', summary },
+      { type: 'artifact', id: 'a-1', path: 'matters/acme/nda-redline-2026-09-01.docx', kind: 'docx-redline', summary },
+    ]);
+    expect(turn.artifacts).toEqual([{ id: 'a-1', kind: 'docx-redline', path: 'matters/acme/nda-redline-2026-09-01.docx', summary, tracked: true }]);
+  });
+
+  test("the log's artifact event carries the rest and replaces the live one", () => {
+    const { buildTurns } = require('./turns') as typeof import('./turns');
+    const at = '2026-09-01T12:00:00.000Z';
+    const turns = buildTurns([
+      { t: 'user', at, content: 'redline it' },
+      { t: 'step', at, runId: 'r-1', provider: 'fake/fake' },
+      { type: 'artifact', at, id: 'a-1', path: 'matters/acme/nda-redline-2026-09-01.docx', kind: 'docx-redline', summary },
+      { t: 'artifact', at, id: 'a-1', kind: 'docx-redline', path: 'matters/acme/nda-redline-2026-09-01.docx', source: 'matters/acme/nda.docx', author: 'Jack Wang', tracked: true, summary },
+      { type: 'done', at, output: null, usage: { inputTokens: 1, outputTokens: 1 } },
+    ]);
+    const assistant = turns[1]!;
+    expect(assistant.kind).toBe('assistant');
+    if (assistant.kind !== 'assistant') return;
+    expect(assistant.artifacts).toEqual([
+      { id: 'a-1', kind: 'docx-redline', path: 'matters/acme/nda-redline-2026-09-01.docx', summary, source: 'matters/acme/nda.docx', author: 'Jack Wang', tracked: true, at },
+    ]);
+  });
+});

@@ -44,6 +44,20 @@ export interface Usage {
   costUsd?: number;
 }
 
+/** What a produced document reports about itself (spec §5 / §6). */
+export interface ArtifactSummary {
+  /** Tracked-change regions written (plain mode: replacements made). */
+  changes: number;
+  comments: number;
+  applied: number;
+  skipped: number;
+  /** Distinct paragraphs touched — "clauses touched" on the slip. */
+  clauses: number;
+  bytes: number;
+}
+
+export type ArtifactKind = 'docx-redline';
+
 export type StepEvent =
   | { type: 'text'; text: string }
   | { type: 'tool_call'; id: string; name: string; input: unknown }
@@ -54,6 +68,10 @@ export type StepEvent =
   // thread log — the `proposal` ThreadEvent the tool itself writes is the
   // durable record.
   | { type: 'proposal'; id: string; path: string; rationale: string }
+  // Synthesized the same way after a successful `apply_redlines`
+  // tool_result: the tool wrote the redlined document and appended the
+  // durable `artifact` ThreadEvent; this is the live signal for the slip.
+  | { type: 'artifact'; id: string; path: string; kind: ArtifactKind; summary: ArtifactSummary }
   | { type: 'done'; output: unknown; usage: Usage; sessionId?: string }
   // `text` is the model's RAW answer when a typed step could not honor its
   // schema (web-ui spec §4.3): the request failed, so this is an `error`, but

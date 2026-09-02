@@ -35,7 +35,7 @@ yourself. Pass the tool's arguments as named fields, not as a command line.
 | \`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/extract_redlines.py" <file> --format json  (or bun runtime/src/cli.ts docx extract <file>)\` | \`extract_redlines\` | \`docx\` (vault-relative .docx) |
 | \`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/check_document.py" <file> --json  (or bun runtime/src/cli.ts docx check <file>)\` | \`check_document\` | \`file\` (vault-relative) — accepts .docx, .md, or .txt; the result is already the JSON report |
 | \`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/clean_format.py" <input.docx> <output.docx>\` | \`clean_format\` | \`input\`, \`output\` |
-| \`python3 "\${CLAUDE_PLUGIN_ROOT}/scripts/apply_redlines.py" [--track] <original.docx> <redlines.json> <output.docx>\` | \`apply_redlines\` | \`original\`, \`edits\`, \`output\`, \`track\` (optional) |
+| \`bun runtime/src/cli.ts docx apply <original.docx> <redlines.json> [--out <file>] [--track] [--author <name>]\` | \`apply_redlines\` | \`original\` (vault-relative .docx), \`items\` (the redline JSON array inline) or \`edits\` (vault path of a JSON file), \`track\` (true for a redline), \`author\`, \`output\` (optional; default \`<original>-redline-<date>.docx\` beside the source) |
 | \`"\${CLAUDE_PLUGIN_ROOT}/scripts/word_compare.sh" <original.docx> <modified.docx> <author> <output.docx>\` | \`word_compare\` | \`original\`, \`modified\`, \`author\`, \`output\` |
 
 If a methodology step calls for a script or shell command with no tool

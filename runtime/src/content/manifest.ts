@@ -854,7 +854,7 @@ export const MANIFEST: ContentManifest = {
       "hash": "e1fdfa347fd6c588cb80a82cb3f8976bca16230a2c58767ab4ce3ff9c16da987"
     },
     "primitives/draft.md": {
-      "hash": "70ca0c8ef201df8c5bb9f33dc76a65e2cf05e03d142ab31effabe48bef67fc36"
+      "hash": "0a2b9f935a91c29eea7c1864aaa19b298339d7b2409a26a3131293571969beb8"
     },
     "primitives/evaluate.md": {
       "hash": "2d832826117b04e90197a054aad436389a5e7233fe8061f6f0460dd6564a39a4"
@@ -863,7 +863,7 @@ export const MANIFEST: ContentManifest = {
       "hash": "b5450cb972146345e732e52ce4a3e31c180059ae65c7485a81a604fac2cc8dfd"
     },
     "primitives/redline-output.md": {
-      "hash": "3ba8a24311a8410e4075b6b518d2f58af2b20a88940acd8bff1c610fa86b64f8"
+      "hash": "7009e713971a97a36b95d1a856b530bc3eea06978e8a65a3614f3956fe453eff"
     },
     "primitives/remember.md": {
       "hash": "2125beb53f6072aca69a8bb720b7ed5478abc15951f911e6ab36c9ddeaafab66"

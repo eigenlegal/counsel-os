@@ -10,10 +10,17 @@ describe('builtinTools', () => {
     expect([...sweep!.platforms].sort()).toEqual(['hosted', 'linux', 'macos', 'windows']);
   });
 
-  test('the three TypeScript docx tools plus the three Python write-path scripts', () => {
+  test('the four TypeScript docx tools plus the two remaining scripts', () => {
     const tools = builtinTools({ vaultRoot: '/tmp/v', repoRoot: '/tmp/repo' });
     const names = tools.map(t => t.name).sort();
     expect(names).toEqual(['apply_redlines', 'check_document', 'clean_format', 'docket_sweep', 'docx_read', 'extract_redlines', 'word_compare']);
+  });
+
+  test('apply_redlines is the TypeScript tool: vault-relative paths, items or edits, no subprocess', () => {
+    const t = builtinTools({ vaultRoot: '/tmp/v', repoRoot: '/tmp/repo' }).find(x => x.name === 'apply_redlines')!;
+    expect(t.inputSchema.parse({ original: 'a.docx', items: [{ current: 'x', proposed: 'y' }], track: true })).toMatchObject({ original: 'a.docx', track: true });
+    expect(t.description).toContain('never overwriting');
+    expect(t.description).not.toContain('local file paths');
   });
 
   test('docx_read, extract_redlines, check_document, clean_format, apply_redlines run on all four platforms', () => {
