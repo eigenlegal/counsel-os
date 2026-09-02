@@ -8,6 +8,12 @@ reconstructed from git history. New entries are prepended automatically by
 
 ## [Unreleased]
 
+Your edits to what counsel wrote (routing-and-evals spec §7)
+
+- When counsel writes a file — an approved proposal, a redline or comparison it produced, a note into a matter — the runtime keeps that version. When you later change the file yourself, that difference is recorded once a day as `file.edited-after-counsel`, with the line counts and the diff, in the same local `.counsel/outcomes.jsonl` as your other decisions. Word files compare their text with the changes accepted.
+- Where it shows: `counsel-os doctor` counts the files you have edited since counsel wrote them, and the retro's evidence carries them into the review. `outcomes: off` in `config.md` stops the whole record, as before.
+- Nothing leaves the machine, and nothing is sent to a model: the record is the practice's own history of what it did with counsel's work.
+
 Routing from the scoreboard (routing-and-evals spec §6)
 
 - The scoreboard picks the model for a task: candidates clear the task's bar on the practice's own fixtures, or the shipped suite until the practice has its own; a pin wins among them; `cost` and `latency` choose only among peers within 0.05 of the best score, so a cheaper model never displaces a materially better answer.

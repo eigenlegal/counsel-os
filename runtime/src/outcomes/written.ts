@@ -97,12 +97,17 @@ export interface RecordWrittenInput {
 
 /**
  * Records what is on disk at `path` right now as counsel's version. Returns
- * the entry, or `null` when nothing was recorded: the record is off, the
- * path is outside the matters folder, or the file is not there.
+ * the entry, or `null` when nothing was recorded: the record is off, or the
+ * file is not there.
+ *
+ * Every file counsel actually wrote is recorded, matter or knowledge. Only
+ * three callers reach here — an approved proposal, a produced document, a
+ * `vault_write` — so this can never sweep in a file the lawyer wrote alone;
+ * and an approved standard is precisely counsel's text, so rewriting it
+ * after approving it is the signal this record exists to keep.
  */
 export function recordWritten(vaultRoot: string, cfg: Pick<VaultConfig, 'mattersPath' | 'outcomes'>, input: RecordWrittenInput): WrittenEntry | null {
   if (!outcomesEnabled(cfg)) return null;
-  if (!inMatters(cfg, input.path)) return null;
   const abs = join(vaultRoot, input.path);
   if (!existsSync(abs)) return null;
   const bytes = readFileSync(abs);

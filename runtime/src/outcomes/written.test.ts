@@ -42,15 +42,24 @@ describe('the written-file record (routing-and-evals spec §7, lawyer edits)', (
     expect(textOfFile(bytes, 'matters/acme/nda.docx')).toBe('Term of five years.\nGoverning law: Delaware.\n');
   });
 
-  test('only files under the matters folder are recorded; the record is off with `outcomes: off`; a missing file records nothing', () => {
+  test('the record is off with `outcomes: off`, and a missing file records nothing', () => {
     const r = root();
-    mkdirSync(join(r, 'entities'), { recursive: true });
-    writeFileSync(join(r, 'entities', 'acme.md'), '# Acme\n');
-    expect(recordWritten(r, CFG, { path: 'entities/acme.md', kind: 'proposal' })).toBeNull();
     writeFileSync(join(r, 'matters', 'acme', 'x.md'), 'x\n');
     expect(recordWritten(r, { ...CFG, outcomes: false }, { path: 'matters/acme/x.md', kind: 'write' })).toBeNull();
     expect(recordWritten(r, CFG, { path: 'matters/acme/none.md', kind: 'write' })).toBeNull();
     expect(existsSync(writtenPath(r))).toBe(false);
+  });
+
+  test('a knowledge file counsel wrote is recorded too — an approved standard is counsel’s text', () => {
+    // The only callers are the three write hooks, so this can never sweep in
+    // a file the lawyer wrote alone; and rewriting a standard just after
+    // approving it is exactly the signal the record is for.
+    const r = root();
+    mkdirSync(join(r, 'practice', 'standards'), { recursive: true });
+    writeFileSync(join(r, 'practice', 'standards', 'nda.md'), '# NDA\nTerm: 3 years\n');
+    const entry = recordWritten(r, CFG, { path: 'practice/standards/nda.md', kind: 'proposal' });
+    expect(entry).not.toBeNull();
+    expect(readWritten(r).files['practice/standards/nda.md']).toBeTruthy();
   });
 
   test('re-recording a path replaces its entry and removes the old snapshot; dropping removes both', () => {
