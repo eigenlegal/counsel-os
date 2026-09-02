@@ -1829,6 +1829,96 @@ describe('the eval runner over HTTP (routing-and-evals spec §4.2)', () => {
   const sample = (id: string): unknown => JSON.parse(readFileSync(join(repoRoot, 'evals', 'sample-outputs', `${id}.json`), 'utf8'));
   const evalsDeps = (extra: NonNullable<ServerDeps['evals']> = {}): NonNullable<ServerDeps['evals']> => ({ repoRoot, tmpDir: mkdtempSync(join(tmpdir(), 'routes-evals-')), ...extra });
 
+  // ── Fixtures from a matter (spec §8) ──────────────────────────────────
+  const REVIEW = `Here is what I found.
+
+## RED
+
+**Liability cap (Section 5)** — the cap is far below the fees
+Current language: "Vendor's aggregate liability shall not exceed $50,000"
+Rationale: A cap this size does not survive one incident.
+`;
+
+  /** A thread that reviewed a document in the vault, as the composer leaves
+   * it: the path as a chip in the message, counsel's answer in the log. */
+  async function reviewedThread(app: App): Promise<string> {
+    mkdirSync(join(vaultRoot, 'matters'), { recursive: true });
+    writeFileSync(join(vaultRoot, 'matters', 'services.md'), "Acme Holdings, Inc. and Bytecraft Labs LLC agree.\n\nVendor's aggregate liability shall not exceed $50,000.\n");
+    const id = await newThread(app);
+    const { res } = await step(app, id, { message: 'Review this.\n\n`matters/services.md`', task: 'review' });
+    expect(res.status).toBe(200);
+    return id;
+  }
+
+  test('POST /fixtures/draft anonymizes the document and offers each finding', async () => {
+    const app = appWith([new FakeModelProvider([{ text: REVIEW }])], { evals: evalsDeps() });
+    const id = await reviewedThread(app);
+
+    const res = await call(app, 'POST', '/fixtures/draft', { body: { threadId: id } });
+    expect(res.status).toBe(200);
+    const draft = (await res.json()) as {
+      id: string; text: string; original: string; documentPath: string;
+      catches: Array<{ id: string; severity: string; clause: string }>;
+      replacements: Array<{ kind: string; from: string; to: string }>;
+    };
+    expect(draft.documentPath).toBe('matters/services.md');
+    expect(draft.text).not.toContain('Acme');
+    expect(draft.text).not.toContain('$50,000');
+    expect(draft.original).toContain('Acme');
+    expect(draft.catches).toHaveLength(1);
+    expect(draft.catches[0]!.severity).toBe('red');
+    expect(draft.replacements.some(r => r.kind === 'money')).toBe(true);
+    // Nothing was written: a draft is a proposal.
+    expect(existsSync(join(vaultRoot, 'practice', 'evals'))).toBe(false);
+  });
+
+  test('POST /fixtures/save writes the fixture the loader can run, once', async () => {
+    const app = appWith([new FakeModelProvider([{ text: REVIEW }])], { evals: evalsDeps() });
+    const id = await reviewedThread(app);
+    const draft = (await (await call(app, 'POST', '/fixtures/draft', { body: { threadId: id } })).json()) as { catches: Array<{ id: string }> };
+
+    const saved = await call(app, 'POST', '/fixtures/save', { body: { threadId: id, keep: [draft.catches[0]!.id], id: 'acme-services' } });
+    expect(saved.status).toBe(200);
+    expect(await saved.json()).toMatchObject({ path: 'practice/evals/acme-services.json', id: 'acme-services', expected: 1, negative: 0 });
+
+    const written = JSON.parse(readFileSync(join(vaultRoot, 'practice', 'evals', 'acme-services.json'), 'utf8')) as Record<string, unknown>;
+    expect(String(JSON.stringify(written))).not.toContain('Acme');
+    // The suite picks it up, and its id is now taken.
+    const { fixtures } = (await (await call(app, 'GET', '/evals/fixtures')).json()) as { fixtures: Array<{ id: string; source: string; runnable: boolean }> };
+    // Runnable, not merely listed: the save wrote the mini-vault beside it.
+    expect(fixtures.find(f => f.id === 'acme-services')).toMatchObject({ source: 'practice', runnable: true });
+    expect(readFileSync(join(vaultRoot, 'practice', 'evals', 'vaults', 'acme-services', 'matters', 'document.md'), 'utf8')).not.toContain('Acme');
+    expect(existsSync(join(vaultRoot, 'practice', 'evals', 'vaults', 'acme-services', 'config.md'))).toBe(true);
+    expect((await call(app, 'POST', '/fixtures/save', { body: { threadId: id, keep: [], id: 'acme-services' } })).status).toBe(409);
+    expect((await call(app, 'POST', '/fixtures/save', { body: { threadId: id, keep: [], id: 'acme-services', overwrite: true } })).status).toBe(200);
+  });
+
+  test('a rejected finding becomes a negative check, and the lawyer’s edited text is what is saved', async () => {
+    const app = appWith([new FakeModelProvider([{ text: REVIEW }])], { evals: evalsDeps() });
+    const id = await reviewedThread(app);
+    const draft = (await (await call(app, 'POST', '/fixtures/draft', { body: { threadId: id } })).json()) as { catches: Array<{ id: string }> };
+    const res = await call(app, 'POST', '/fixtures/save', { body: { threadId: id, keep: [], reject: [draft.catches[0]!.id], id: 'acme-neg', text: 'A shorter agreement.' } });
+    expect(await res.json()).toMatchObject({ expected: 0, negative: 1 });
+    const written = JSON.parse(readFileSync(join(vaultRoot, 'practice', 'evals', 'acme-neg.json'), 'utf8')) as { input: { contract_text: string } };
+    expect(written.input.contract_text).toBe('A shorter agreement.');
+  });
+
+  test('a conversation with nothing to make a fixture from says why, and both routes need the token', async () => {
+    const app = appWith([new FakeModelProvider([{ text: 'Looks fine to me.' }])], { evals: evalsDeps() });
+    const bare = await newThread(app);
+    const empty = await call(app, 'POST', '/fixtures/draft', { body: { threadId: bare } });
+    expect(empty.status).toBe(422);
+    expect(((await empty.json()) as { error: string }).error).toMatch(/finished review/);
+
+    const id = await newThread(app);
+    await step(app, id, { message: 'Review this.\n\n`matters/nowhere.md`', task: 'review' });
+    const missing = await call(app, 'POST', '/fixtures/draft', { body: { threadId: id } });
+    expect(missing.status).toBe(422);
+
+    expect((await call(app, 'POST', '/fixtures/draft', { token: null, body: { threadId: id } })).status).toBe(401);
+    expect((await call(app, 'POST', '/fixtures/save', { token: null, body: { threadId: id, keep: [] } })).status).toBe(401);
+  });
+
   test('the routes need the bearer token', async () => {
     const app = appWithFake();
     expect((await call(app, 'GET', '/evals/fixtures', { token: null })).status).toBe(401);

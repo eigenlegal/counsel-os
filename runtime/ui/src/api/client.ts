@@ -9,7 +9,7 @@
 import { parseSseChunk } from './sse';
 import { clearToken, readToken } from './token';
 import { reportUnauthorized } from './unauthorized';
-import type { EvalStreamEvent, RoutingView, RunMark, StepBody, StreamEvent, TaskSource } from './types';
+import type { EvalStreamEvent, FixtureDraft, RoutingView, RunMark, SavedFixture, StepBody, StreamEvent, TaskSource } from './types';
 
 /** A request that came back with a status the caller has to reason about.
  * `body` is the parsed JSON when there was any — 409 on approve carries the
@@ -332,6 +332,25 @@ const FRAME_TERMINATOR = '\n\n';
 /** How each task is routed, and who that picks (routing-and-evals spec §6). */
 export async function readRouting(): Promise<RoutingView> {
   return fetchJson<RoutingView>('/routing');
+}
+
+/** The draft behind "make this a fixture" (routing-and-evals spec §8):
+ * built fresh each time, and nothing is written until `saveFixture`. */
+export async function draftFixture(input: { threadId: string; runId?: string; names?: { name: string; kind?: 'org' | 'person' }[] }): Promise<FixtureDraft> {
+  return fetchJson<FixtureDraft>('/fixtures/draft', { method: 'POST', body: JSON.stringify(input) });
+}
+
+export async function saveFixture(input: {
+  threadId: string;
+  runId?: string;
+  keep: string[];
+  reject?: string[];
+  id?: string;
+  title?: string;
+  text?: string;
+  overwrite?: boolean;
+}): Promise<SavedFixture> {
+  return fetchJson<SavedFixture>('/fixtures/save', { method: 'POST', body: JSON.stringify(input) });
 }
 
 /** Change one task's bar, preference or pin; the answer is the fresh view. */

@@ -308,3 +308,28 @@ describe('why this model answered', () => {
     expect(document.querySelector('.v2-record-route')).toBeNull();
   });
 });
+
+describe('make this a fixture', () => {
+  test('offered on a finished review inside its thread, and nowhere else', async () => {
+    const { rerender } = render(<Strip turn={turn} run={{ ...run, task: 'review' }} ms={{}} threadId="t-1" />);
+    expect(screen.getByRole('button', { name: 'make this a fixture' })).toBeTruthy();
+
+    // A redline has no findings to expect.
+    rerender(<Strip turn={turn} run={{ ...run, task: 'redline' }} ms={{}} threadId="t-1" />);
+    expect(screen.queryByRole('button', { name: 'make this a fixture' })).toBeNull();
+
+    // And outside a thread there is nothing to post against.
+    rerender(<Strip turn={turn} run={{ ...run, task: 'review' }} ms={{}} />);
+    expect(screen.queryByRole('button', { name: 'make this a fixture' })).toBeNull();
+  });
+
+  test('the review screen opens under the answer, not over it', async () => {
+    install(() => json({ error: 'nothing here' }, 422));
+    render(<Strip turn={turn} run={{ ...run, task: 'review' }} ms={{}} threadId="t-1" />);
+    await userEvent.click(screen.getByRole('button', { name: 'make this a fixture' }));
+    await waitFor(() => expect(screen.getByRole('region', { name: 'Make this a fixture' })).toBeTruthy());
+    // The answer it was made from is still on screen.
+    expect(screen.getByRole('button', { name: 'useful' })).toBeTruthy();
+  });
+});
+

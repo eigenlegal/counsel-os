@@ -8,6 +8,7 @@ import { Chevron } from '../icons';
 import { stateOf } from '../verbs';
 import { readPathsOf } from './cite';
 import { Steps } from './Steps';
+import { FixturePanel } from './FixturePanel';
 
 export interface StripProps {
   turn: AssistantTurn;
@@ -97,6 +98,9 @@ export function Strip({ turn, run, ms, threadId = null, onOpenFile }: StripProps
   const [task, setTask] = useState<{ task: string; source: TaskSource | undefined } | undefined>(run?.task === undefined ? undefined : { task: run.task, source: run.taskSource });
   const [busy, setBusy] = useState(false);
   const [postFailed, setPostFailed] = useState<string | null>(null);
+  // The review screen behind "make this a fixture" opens under the strip,
+  // never over the answer it was made from.
+  const [fixturing, setFixturing] = useState(false);
   const [synced, setSynced] = useState(run);
   if (run !== synced) {
     setSynced(run);
@@ -249,6 +253,16 @@ export function Strip({ turn, run, ms, threadId = null, onOpenFile }: StripProps
         <button type="button" className="v2-link" aria-pressed={mark?.mark === 'not-right'} disabled={busy} onClick={() => doMark('not-right')}>
           not right
         </button>
+        {/* A review is the one answer that can become a fixture: it has
+            findings to expect and a document to score them against. */}
+        {(task?.task ?? 'chat') === 'review' ? (
+          <>
+            {' · '}
+            <button type="button" className="v2-link" aria-expanded={fixturing} disabled={busy} onClick={() => setFixturing(f => !f)}>
+              make this a fixture
+            </button>
+          </>
+        ) : null}
         {postFailed === null ? null : (
           <span className="v2-marks-failed" role="alert">
             {' — '}
@@ -256,6 +270,9 @@ export function Strip({ turn, run, ms, threadId = null, onOpenFile }: StripProps
           </span>
         )}
       </p>
+    ) : null}
+    {canAct && fixturing && run !== undefined && threadId !== null ? (
+      <FixturePanel threadId={threadId} runId={run.runId} onClose={() => setFixturing(false)} />
     ) : null}
     </>
   );
