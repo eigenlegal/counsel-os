@@ -160,7 +160,17 @@ export function Rail({
                     <>
                       <button type="button" className="v2-thread-open" onClick={() => onSelect(thread.id)}>
                         <span className="v2-thread-title">
-                          {running.includes(thread.id) ? <span className="v2-thread-running" aria-label="still running" title="still running" /> : null}
+                          {/* The dot is decoration; the words are what a
+                              screen reader hears, and they fold into the
+                              button's own name rather than sitting on an
+                              empty labelled span that may not be announced
+                              at all. */}
+                          {running.includes(thread.id) ? (
+                            <>
+                              <span className="v2-thread-running" aria-hidden="true" />
+                              <span className="v2-sr">still running: </span>
+                            </>
+                          ) : null}
                           {railLabel(thread)}
                         </span>
                         {matter === null ? null : (

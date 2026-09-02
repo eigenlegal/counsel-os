@@ -392,6 +392,10 @@ export function Shell(): JSX.Element {
     setBusy(true);
     setError(null);
     try {
+      // Stop its step first: a deleted conversation's step would otherwise
+      // run to completion against a thread that no longer exists — real
+      // money on a cloud provider, with no screen left that could stop it.
+      streams.cancel(id);
       await fetchJson<void>(`/threads/${encodeURIComponent(id)}`, { method: 'DELETE' });
       const { threads: list } = await loadThreads();
       if (selected === id) {
@@ -462,6 +466,16 @@ export function Shell(): JSX.Element {
                 threadId={draft ? null : selected}
                 health={health}
                 onThreadCreated={header => {
+                  // The create can land after the reader moved on: the step
+                  // is no longer aborted on unmount, so this fires for a
+                  // pane that is gone. Taking the selection then would put
+                  // the rail, the URL and the pane on three different
+                  // conversations. The row still appears — `loadThreads`
+                  // below — and a click opens it.
+                  if (!draftRef.current) {
+                    void loadThreads();
+                    return;
+                  }
                   setSelected(header.id);
                   setDraft(false);
                   // The fragment now names the thread — replaceState, so no

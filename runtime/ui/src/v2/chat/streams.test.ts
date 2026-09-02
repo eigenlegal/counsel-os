@@ -103,10 +103,11 @@ describe('a step that outlives the pane that started it', () => {
   });
 
   test('a draft keeps its answer when the thread it created gets its id', async () => {
-    streams.open(null, 'A new one.');
-    expect(streams.streamOf(null)?.pending).toBe('A new one.');
-    streams.rename('t-9');
-    expect(streams.streamOf(null)).toBeNull();
+    const key = streams.draftKey();
+    streams.open(key, 'A new one.');
+    expect(streams.streamOf(key)?.pending).toBe('A new one.');
+    streams.rename(key, 't-9');
+    expect(streams.streamOf(key)).toBeNull();
     expect(streams.streamOf('t-9')?.pending).toBe('A new one.');
 
     const run = streams.run('t-9', 'A new one.', 'fake/fake');
@@ -142,5 +143,53 @@ describe('a step that outlives the pane that started it', () => {
   test('running a thread with no entry does nothing at all', async () => {
     await streams.run('t-nope', 'Ask.', 'fake/fake');
     expect(streams.streamOf('t-nope')).toBeNull();
+  });
+});
+
+describe('the edges the UI guards but the module must not assume', () => {
+  test('two draft panes never share a slot', () => {
+    // Home's ask box remounts the chat on a fresh draft while another
+    // draft's create is still in flight. One shared slot made the new pane
+    // read the old one's stream — and swallow its ask.
+    const a = streams.draftKey();
+    const b = streams.draftKey();
+    expect(a).not.toBe(b);
+    streams.open(a, 'The first.');
+    expect(streams.streamOf(b)).toBeNull();
+    streams.open(b, 'The second.');
+    expect(streams.streamOf(a)?.pending).toBe('The first.');
+    expect(streams.streamOf(b)?.pending).toBe('The second.');
+  });
+
+  test('opening twice on one key stops the first rather than orphaning it', async () => {
+    streams.open('t-1', 'First.');
+    const first = streams.run('t-1', 'First.', 'fake/fake');
+    streams.open('t-1', 'Second.');
+    open();
+    await first;
+    // The first controller was aborted, so its stream ended; the entry on
+    // screen is the second send's.
+    expect(streams.streamOf('t-1')?.pending).toBe('Second.');
+  });
+
+  test('cancel stops the step as well as dropping it', async () => {
+    streams.open('t-1', 'Ask.');
+    const run = streams.run('t-1', 'Ask.', 'fake/fake');
+    streams.cancel('t-1');
+    expect(streams.streamOf('t-1')).toBeNull();
+    expect(streams.running()).toEqual([]);
+    open();
+    await run;
+    // Nothing came back to a thread that is gone.
+    expect(streams.streamOf('t-1')).toBeNull();
+  });
+
+  test('forgetting mid-stream leaves nothing behind for the events to land on', async () => {
+    streams.open('t-1', 'Ask.');
+    const run = streams.run('t-1', 'Ask.', 'fake/fake');
+    streams.forget('t-1');
+    open();
+    await run;
+    expect(streams.streamOf('t-1')).toBeNull();
   });
 });

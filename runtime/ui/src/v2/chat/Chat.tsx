@@ -131,7 +131,12 @@ export function Chat({
    * ninety-second review thrown away because you looked at something else
    * while it worked. The registry owns it; this reads it.
    */
-  const stream = useSyncExternalStore(streams.subscribe, () => streams.streamOf(idRef.current));
+  /** This pane's own draft slot until its thread exists. Per pane, because
+   * Home's ask box remounts the chat on a fresh draft: one shared slot would
+   * make the new pane read the old one's stream and swallow the ask. */
+  const draftKey = useRef(streams.draftKey());
+  const keyOf = (): string => idRef.current ?? draftKey.current;
+  const stream = useSyncExternalStore(streams.subscribe, () => streams.streamOf(keyOf()));
   const live = stream === null ? null : stream.turn;
   const pending = stream === null ? null : stream.pending;
   const liveMs = stream?.ms ?? EMPTY_MS;
@@ -148,12 +153,12 @@ export function Chat({
    * the load failed and the transcript on screen does not have it). Does
    * nothing while a step is running — the registry owns the turn then. */
   const settle = (keep: boolean): void => {
-    const current = streams.streamOf(idRef.current);
+    const current = streams.streamOf(keyOf());
     if (current === null || current.status === 'running') return;
     if (keep) {
       setFrozen(rest => [...rest, { kind: 'user', content: current.pending } as Turn, current.turn]);
     }
-    streams.forget(idRef.current);
+    streams.forget(keyOf());
   };
 
   const load = useCallback(async (): Promise<void> => {
@@ -228,7 +233,7 @@ export function Chat({
     // One send at a time IN THIS THREAD. The composer is locked for the whole
     // of it, so this only catches a caller that got past the UI. Another
     // thread sending at the same time is the point of the registry.
-    if (streams.streamOf(idRef.current) !== null) return;
+    if (streams.streamOf(keyOf()) !== null) return;
 
     // The entry is opened BEFORE the create is awaited, and the create runs
     // on its signal. The entry is what disables the box and arms Stop, so
@@ -236,8 +241,8 @@ export function Chat({
     // would leave the composer wide open: a second ⌘⏎ in that window would
     // take the create branch again and open a second thread, with the first
     // orphaned and never stepped.
-    streams.open(idRef.current, message);
-    const signal = streams.signalOf(idRef.current);
+    streams.open(keyOf(), message);
+    const signal = streams.signalOf(keyOf());
     retry.current = null;
     setError(null);
     setRefused(false);
@@ -246,7 +251,7 @@ export function Chat({
     if (idRef.current === null) {
       try {
         const header = await createThread({ title: titleFor(message) }, signal);
-        streams.rename(header.id);
+        streams.rename(draftKey.current, header.id);
         idRef.current = header.id;
         setThreadId(header.id);
         onThreadCreated?.(header);
@@ -254,7 +259,7 @@ export function Chat({
         // No step ran and there may be no thread, so there is nothing for
         // `load` to fetch: this is the one path that retires its own turn.
         const aborted = signal?.aborted === true;
-        streams.forget(null);
+        streams.forget(draftKey.current);
         if (aborted) return; // Stop during creation: nothing was created, nothing sent.
         if (!(err instanceof ApiError && err.status === 401)) setError(`could not start the thread: ${detail(err)}`);
         // The message stays on screen (frozen) and the box is free; `retry`
@@ -266,24 +271,36 @@ export function Chat({
     }
     const id = idRef.current;
 
-    // From here the registry owns the step. It finishes whether or not this
-    // pane is still mounted; what follows only runs if it is.
+    // From here the registry owns the step, and so does the ENDING: this
+    // pane may be gone by then, and the pane that is mounted has to be the
+    // one that reloads. Doing it here dropped the entry under a returning
+    // pane's feet, blanking a transcript it had never reloaded.
     await streams.run(id, message, provider);
-    const ended = streams.streamOf(id);
-    if (ended?.refused === true) {
+  };
+
+  /**
+   * The step for this thread ended — reload, whoever sent it. Runs in the
+   * mounted pane, which is the only one that can show the result.
+   */
+  useEffect(() => {
+    if (stream === null || stream.status === 'running') return;
+    if (stream.refused) {
       // The runtime refused the step for the matter's privacy policy
       // (409 matter-stays-local): nothing ran, nothing to retry into — the
       // sentence is the whole answer, without a Retry into cloud.
-      setError(ended.error);
+      setError(stream.error);
       setRefused(true);
       refusedRef.current = true;
-      streams.forget(id);
+      streams.forget(keyOf());
       return;
     }
-    if (ended?.error != null) setError(ended.error);
-    await load();
-    onThreadTouched?.();
-  };
+    if (stream.error !== null) setError(stream.error);
+    void (async () => {
+      await load();
+      onThreadTouched?.();
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stream?.status]);
 
   /**
    * Home's ask box, sent (spec §3.2). The nonce is recorded BEFORE the send,
@@ -302,7 +319,7 @@ export function Chat({
     void send(initialAsk.text, defaultProviderId(health));
   }, [initialAsk]);
 
-  const stop = (): void => streams.stop(idRef.current);
+  const stop = (): void => streams.stop(keyOf());
   const reload = (): void => void load();
 
   /** A card settled a proposal. The thread is refetched so its proposals

@@ -64,8 +64,8 @@ export function subscribe(fn: () => void): () => void {
   return () => listeners.delete(fn);
 }
 
-export function streamOf(threadId: string | null): Stream | null {
-  return threadId === null ? (entries.get(DRAFT) ?? null) : (entries.get(threadId) ?? null);
+export function streamOf(key: string): Stream | null {
+  return entries.get(key) ?? null;
 }
 
 /** The threads with a step in flight — the rail's running marks. */
@@ -74,14 +74,23 @@ export function running(): readonly string[] {
 }
 
 /**
- * Where a send lands before its thread exists. `POST /threads` and the step
- * are one act to the reader, and the composer has to lock for both, so the
- * entry is opened under this key and moved once the id comes back.
+ * A key for a pane that has no thread yet. `POST /threads` and the step are
+ * one act to the reader and the composer locks for both, so the entry opens
+ * under this key and is renamed once the id comes back.
+ *
+ * Per PANE, not one global slot: Home's ask box remounts the chat on a
+ * fresh draft, so two drafts can be alive at once, and a shared key would
+ * make the second one read the first one's stream — and swallow its send.
  */
-export const DRAFT = '@draft';
+export function draftKey(): string {
+  return `@draft-${Math.random().toString(36).slice(2)}`;
+}
 
-export function open(threadId: string | null, message: string): void {
-  const key = threadId ?? DRAFT;
+export function open(key: string, message: string): void {
+  // A second open on a live key would orphan the first controller — the
+  // first stream could never be stopped, and its events would land on the
+  // new entry's turn. The UI locks the composer, so this is a backstop.
+  entries.get(key)?.controller.abort();
   entries.set(key, {
     threadId: key,
     pending: message,
@@ -97,26 +106,34 @@ export function open(threadId: string | null, message: string): void {
 }
 
 /** The draft's entry becomes the new thread's. */
-export function rename(threadId: string): void {
-  const draft = entries.get(DRAFT);
-  if (draft === undefined) return;
-  entries.delete(DRAFT);
+export function rename(key: string, threadId: string): void {
+  const draft = entries.get(key);
+  if (draft === undefined || key === threadId) return;
+  entries.delete(key);
   entries.set(threadId, { ...draft, threadId });
   announce();
 }
 
-export function signalOf(threadId: string | null): AbortSignal | undefined {
-  return entries.get(threadId ?? DRAFT)?.controller.signal;
+export function signalOf(key: string): AbortSignal | undefined {
+  return entries.get(key)?.controller.signal;
 }
 
-export function stop(threadId: string | null): void {
-  entries.get(threadId ?? DRAFT)?.controller.abort();
+export function stop(key: string): void {
+  entries.get(key)?.controller.abort();
 }
 
 /** Drop the entry — the pane has reloaded the thread and the server's
- * transcript is now the record. */
-export function forget(threadId: string | null): void {
-  if (entries.delete(threadId ?? DRAFT)) announce();
+ * transcript is now the record. Does NOT abort: by here the step is over. */
+export function forget(key: string): void {
+  if (entries.delete(key)) announce();
+}
+
+/** Stop the step AND drop it: the conversation is gone. Without this a
+ * deleted thread's step runs to completion against a thread that no longer
+ * exists — real money on a cloud provider, with no screen left to stop it. */
+export function cancel(key: string): void {
+  entries.get(key)?.controller.abort();
+  forget(key);
 }
 
 function patch(key: string, change: Partial<Entry>): void {
