@@ -193,10 +193,13 @@ describe('SettingsPage', () => {
 
     // Meta sells no API; every vendor that serves Llama has to answer to it,
     // or the maker looks absent from the app.
-    const offered = screen.getAllByRole('option').map(o => o.textContent ?? '');
-    expect(offered.some(o => o.includes('Together AI'))).toBe(true);
-    expect(offered.some(o => o.includes('Ollama'))).toBe(true);
-    expect(offered.every(o => o.toLowerCase().includes('llama'))).toBe(false);
+    // Annotated throughout: the late-bound `screen` (test/dom.ts) is a Proxy
+    // whose queries come back untyped, so every callback below would be an
+    // implicit `any`.
+    const offered: string[] = screen.getAllByRole('option').map((o: HTMLElement) => o.textContent ?? '');
+    expect(offered.some((o: string) => o.includes('Together AI'))).toBe(true);
+    expect(offered.some((o: string) => o.includes('Ollama'))).toBe(true);
+    expect(offered.every((o: string) => o.toLowerCase().includes('llama'))).toBe(false);
     // And the line under the box says WHY each one matched. The open popup
     // aria-hides the rest of the form, so close it the way a keyboard user
     // would before reading anything outside.
