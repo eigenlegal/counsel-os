@@ -54,6 +54,14 @@ export interface VendorRow {
   note?: string;
   /** The base URL was not confirmed against the vendor's docs. */
   unverified?: boolean;
+  /**
+   * The model families this vendor serves, for the picker's search.
+   *
+   * A lawyer looks for "Llama" or "Gemini", not for "Together AI" — and
+   * Meta in particular sells no API at all, so without this the maker whose
+   * models half these vendors serve appears nowhere in the app.
+   */
+  makes?: string[];
 }
 
 const S = 'subscription' as const;
@@ -85,45 +93,45 @@ export const VERTEX_FIELDS: VendorFieldRow[] = [
 
 export const VENDORS: readonly VendorRow[] = [
   // subscriptions
-  { prefix: 'claude-sub', name: 'Claude', group: S, connection: 'subscription', locality: 'cloud', company: 'Anthropic', termsUrl: 'https://www.anthropic.com/legal/consumer-terms' },
-  { prefix: 'codex-sub', name: 'ChatGPT', group: S, connection: 'subscription', locality: 'cloud', company: 'OpenAI', termsUrl: 'https://openai.com/policies/terms-of-use' },
-  { prefix: 'codex', name: 'ChatGPT', group: S, connection: 'subscription', locality: 'cloud', company: 'OpenAI', termsUrl: 'https://openai.com/policies/terms-of-use' },
+  { prefix: 'claude-sub', name: 'Claude', group: S, connection: 'subscription', locality: 'cloud', company: 'Anthropic', termsUrl: 'https://www.anthropic.com/legal/consumer-terms', makes: ['Claude', 'Anthropic'] },
+  { prefix: 'codex-sub', name: 'ChatGPT', group: S, connection: 'subscription', locality: 'cloud', company: 'OpenAI', termsUrl: 'https://openai.com/policies/terms-of-use', makes: ['GPT', 'OpenAI', 'ChatGPT'] },
+  { prefix: 'codex', name: 'ChatGPT', group: S, connection: 'subscription', locality: 'cloud', company: 'OpenAI', termsUrl: 'https://openai.com/policies/terms-of-use', makes: ['GPT', 'OpenAI', 'ChatGPT'] },
   // local runners
-  { prefix: 'ollama', name: 'Ollama', group: L, connection: 'local', locality: 'local', note: 'Finish the id with a model from `ollama list`.' },
-  { prefix: 'lmstudio', name: 'LM Studio', group: L, connection: 'local', locality: 'local', baseURL: 'http://127.0.0.1:1234/v1' },
-  { prefix: 'llamacpp', name: 'llama.cpp server', group: L, connection: 'local', locality: 'local', baseURL: 'http://127.0.0.1:8080/v1' },
-  { prefix: 'vllm', name: 'vLLM', group: L, connection: 'local', locality: 'local', baseURL: 'http://127.0.0.1:8000/v1' },
-  { prefix: 'mlx', name: 'MLX (mlx_lm.server)', group: L, connection: 'local', locality: 'local', baseURL: 'http://127.0.0.1:8080/v1' },
-  { prefix: 'jan', name: 'Jan', group: L, connection: 'local', locality: 'local', baseURL: 'http://127.0.0.1:1337/v1' },
-  { prefix: 'gpt4all', name: 'GPT4All', group: L, connection: 'local', locality: 'local', baseURL: 'http://127.0.0.1:4891/v1' },
+  { prefix: 'ollama', name: 'Ollama', group: L, connection: 'local', locality: 'local', note: 'Finish the id with a model from `ollama list`.', makes: ['Llama', 'Meta', 'Qwen', 'Gemma', 'Google', 'DeepSeek', 'Mistral', 'gpt-oss', 'Phi'] },
+  { prefix: 'lmstudio', name: 'LM Studio', group: L, connection: 'local', locality: 'local', baseURL: 'http://127.0.0.1:1234/v1', makes: ['Llama', 'Meta', 'Qwen', 'Gemma', 'DeepSeek', 'Mistral', 'gpt-oss'] },
+  { prefix: 'llamacpp', name: 'llama.cpp server', group: L, connection: 'local', locality: 'local', baseURL: 'http://127.0.0.1:8080/v1', makes: ['Llama', 'Meta', 'Qwen', 'Gemma', 'DeepSeek', 'Mistral', 'gpt-oss'] },
+  { prefix: 'vllm', name: 'vLLM', group: L, connection: 'local', locality: 'local', baseURL: 'http://127.0.0.1:8000/v1', makes: ['Llama', 'Meta', 'Qwen', 'DeepSeek', 'Mistral', 'gpt-oss'] },
+  { prefix: 'mlx', name: 'MLX (mlx_lm.server)', group: L, connection: 'local', locality: 'local', baseURL: 'http://127.0.0.1:8080/v1', makes: ['Llama', 'Meta', 'Qwen', 'Gemma', 'Mistral'] },
+  { prefix: 'jan', name: 'Jan', group: L, connection: 'local', locality: 'local', baseURL: 'http://127.0.0.1:1337/v1', makes: ['Llama', 'Meta', 'Qwen', 'Gemma', 'Mistral'] },
+  { prefix: 'gpt4all', name: 'GPT4All', group: L, connection: 'local', locality: 'local', baseURL: 'http://127.0.0.1:4891/v1', makes: ['Llama', 'Meta', 'Qwen', 'Mistral'] },
   { prefix: 'openai-compatible', name: 'OpenAI-compatible', label: 'Other OpenAI-compatible server', group: L, connection: 'API key', locality: 'by-baseURL', note: 'Any server that speaks the OpenAI API; give its base URL.' },
   // hosted API
-  { prefix: 'anthropic', name: 'Claude', label: 'Claude (API key)', group: H, connection: 'API key', locality: 'cloud', company: 'Anthropic', termsUrl: 'https://www.anthropic.com/legal/commercial-terms', keyEnv: 'ANTHROPIC_API_KEY', getKey: 'https://console.anthropic.com/settings/keys' },
-  { prefix: 'openai', name: 'OpenAI', group: H, connection: 'API key', locality: 'cloud', company: 'OpenAI', termsUrl: 'https://openai.com/policies/business-terms', keyEnv: 'OPENAI_API_KEY', getKey: 'https://platform.openai.com/api-keys' },
-  { prefix: 'google', name: 'Google', label: 'Google Gemini', group: H, connection: 'API key', locality: 'cloud', company: 'Google', termsUrl: 'https://ai.google.dev/gemini-api/terms', keyEnv: 'GOOGLE_GENERATIVE_AI_API_KEY', getKey: 'https://aistudio.google.com/apikey' },
-  { prefix: 'mistral', name: 'Mistral', group: H, connection: 'API key', locality: 'cloud', company: 'Mistral AI', termsUrl: 'https://mistral.ai/terms', keyEnv: 'MISTRAL_API_KEY', getKey: 'https://console.mistral.ai/api-keys' },
-  { prefix: 'groq', name: 'Groq', group: H, connection: 'API key', locality: 'cloud', company: 'Groq', termsUrl: 'https://groq.com/terms-of-use', keyEnv: 'GROQ_API_KEY', getKey: 'https://console.groq.com/keys' },
-  { prefix: 'xai', name: 'xAI', group: H, connection: 'API key', locality: 'cloud', company: 'xAI', termsUrl: 'https://x.ai/legal/terms-of-service-enterprise', keyEnv: 'XAI_API_KEY', getKey: 'https://console.x.ai' },
-  { prefix: 'deepseek', name: 'DeepSeek', group: H, connection: 'API key', locality: 'cloud', company: 'DeepSeek', termsUrl: 'https://platform.deepseek.com/', keyEnv: 'DEEPSEEK_API_KEY', getKey: 'https://platform.deepseek.com/api_keys' },
-  { prefix: 'cohere', name: 'Cohere', group: H, connection: 'API key', locality: 'cloud', company: 'Cohere', termsUrl: 'https://cohere.com/terms-of-use', keyEnv: 'COHERE_API_KEY', getKey: 'https://dashboard.cohere.com/api-keys' },
-  { prefix: 'perplexity', name: 'Perplexity', group: H, connection: 'API key', locality: 'cloud', company: 'Perplexity', termsUrl: 'https://www.perplexity.ai/hub/legal/terms-of-service', keyEnv: 'PERPLEXITY_API_KEY', getKey: 'https://www.perplexity.ai/settings/api' },
-  { prefix: 'togetherai', name: 'Together AI', group: H, connection: 'API key', locality: 'cloud', company: 'Together AI', termsUrl: 'https://www.together.ai/terms-of-service', keyEnv: 'TOGETHER_AI_API_KEY', getKey: 'https://api.together.ai/settings/api-keys' },
-  { prefix: 'fireworks', name: 'Fireworks', group: H, connection: 'API key', locality: 'cloud', company: 'Fireworks AI', termsUrl: 'https://fireworks.ai/terms-of-service', keyEnv: 'FIREWORKS_API_KEY', getKey: 'https://fireworks.ai/account/api-keys' },
-  { prefix: 'deepinfra', name: 'DeepInfra', group: H, connection: 'API key', locality: 'cloud', company: 'DeepInfra', termsUrl: 'https://deepinfra.com/terms', keyEnv: 'DEEPINFRA_API_KEY', getKey: 'https://deepinfra.com/dash/api_keys' },
-  { prefix: 'cerebras', name: 'Cerebras', group: H, connection: 'API key', locality: 'cloud', company: 'Cerebras', termsUrl: 'https://www.cerebras.ai/terms-of-service', keyEnv: 'CEREBRAS_API_KEY', getKey: 'https://cloud.cerebras.ai/platform' },
-  { prefix: 'openrouter', name: 'OpenRouter', group: H, connection: 'API key', locality: 'cloud', company: 'OpenRouter (and the model’s vendor)', termsUrl: 'https://openrouter.ai/terms', keyEnv: 'OPENROUTER_API_KEY', getKey: 'https://openrouter.ai/keys', note: 'One key, many models.' },
-  { prefix: 'moonshot', name: 'Kimi (Moonshot)', group: H, connection: 'API key', locality: 'cloud', company: 'Moonshot AI', termsUrl: 'https://platform.kimi.ai/', keyEnv: 'MOONSHOT_API_KEY', getKey: 'https://platform.kimi.ai/console/api-keys', baseURL: 'https://api.moonshot.ai/v1' },
-  { prefix: 'zhipu', name: 'GLM (Z.ai / Zhipu)', group: H, connection: 'API key', locality: 'cloud', company: 'Z.ai (Zhipu)', termsUrl: 'https://docs.z.ai/', keyEnv: 'ZAI_API_KEY', getKey: 'https://z.ai/manage-apikey/apikey-list', baseURL: 'https://api.z.ai/api/paas/v4/', note: 'International endpoint; China keys use https://open.bigmodel.cn/api/paas/v4.' },
-  { prefix: 'dashscope', name: 'Qwen (Alibaba Model Studio)', group: H, connection: 'API key', locality: 'cloud', company: 'Alibaba Cloud', termsUrl: 'https://www.alibabacloud.com/help/en/model-studio/', keyEnv: 'DASHSCOPE_API_KEY', getKey: 'https://modelstudio.console.alibabacloud.com/', baseURL: 'https://dashscope-us.aliyuncs.com/compatible-mode/v1', note: 'US region; keys are per region.' },
-  { prefix: 'sambanova', name: 'SambaNova', group: H, connection: 'API key', locality: 'cloud', company: 'SambaNova', termsUrl: 'https://sambanova.ai/terms', keyEnv: 'SAMBANOVA_API_KEY', getKey: 'https://cloud.sambanova.ai/', baseURL: 'https://api.sambanova.ai/v1', unverified: true },
-  { prefix: 'baseten', name: 'Baseten', group: H, connection: 'API key', locality: 'cloud', company: 'Baseten', termsUrl: 'https://www.baseten.co/terms-of-service', keyEnv: 'BASETEN_API_KEY', getKey: 'https://app.baseten.co/settings/api_keys', baseURL: 'https://inference.baseten.co/v1' },
-  { prefix: 'huggingface', name: 'Hugging Face', group: H, connection: 'API key', locality: 'cloud', company: 'Hugging Face (and the inference provider it routes to)', termsUrl: 'https://huggingface.co/terms-of-service', keyEnv: 'HF_TOKEN', keyLabel: 'Access token', getKey: 'https://huggingface.co/settings/tokens', baseURL: 'https://router.huggingface.co/v1', note: 'One token, many open models.' },
-  { prefix: 'cloudflare', name: 'Cloudflare Workers AI', group: H, connection: 'API key', locality: 'cloud', company: 'Cloudflare', termsUrl: 'https://www.cloudflare.com/terms/', keyEnv: 'CLOUDFLARE_API_TOKEN', keyLabel: 'API token', getKey: 'https://dash.cloudflare.com/profile/api-tokens', baseURL: 'https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1', baseURLFields: ['account_id'] },
-  { prefix: 'replicate', name: 'Replicate', group: H, connection: 'API key', locality: 'cloud', company: 'Replicate', termsUrl: 'https://replicate.com/terms', keyEnv: 'REPLICATE_API_TOKEN', keyLabel: 'API token', getKey: 'https://replicate.com/account/api-tokens', baseURL: 'https://api.replicate.com/v1', unverified: true },
+  { prefix: 'anthropic', name: 'Claude', label: 'Claude (API key)', group: H, connection: 'API key', locality: 'cloud', company: 'Anthropic', termsUrl: 'https://www.anthropic.com/legal/commercial-terms', keyEnv: 'ANTHROPIC_API_KEY', getKey: 'https://console.anthropic.com/settings/keys', makes: ['Claude'] },
+  { prefix: 'openai', name: 'OpenAI', group: H, connection: 'API key', locality: 'cloud', company: 'OpenAI', termsUrl: 'https://openai.com/policies/business-terms', keyEnv: 'OPENAI_API_KEY', getKey: 'https://platform.openai.com/api-keys', makes: ['GPT', 'o-series', 'ChatGPT'] },
+  { prefix: 'google', name: 'Google', label: 'Google Gemini', group: H, connection: 'API key', locality: 'cloud', company: 'Google', termsUrl: 'https://ai.google.dev/gemini-api/terms', keyEnv: 'GOOGLE_GENERATIVE_AI_API_KEY', getKey: 'https://aistudio.google.com/apikey', makes: ['Gemini', 'Gemma'] },
+  { prefix: 'mistral', name: 'Mistral', group: H, connection: 'API key', locality: 'cloud', company: 'Mistral AI', termsUrl: 'https://mistral.ai/terms', keyEnv: 'MISTRAL_API_KEY', getKey: 'https://console.mistral.ai/api-keys', makes: ['Mistral', 'Magistral', 'Codestral'] },
+  { prefix: 'groq', name: 'Groq', group: H, connection: 'API key', locality: 'cloud', company: 'Groq', termsUrl: 'https://groq.com/terms-of-use', keyEnv: 'GROQ_API_KEY', getKey: 'https://console.groq.com/keys', makes: ['Llama', 'Meta', 'Qwen', 'Gemma', 'Google', 'gpt-oss', 'Kimi'] },
+  { prefix: 'xai', name: 'xAI', group: H, connection: 'API key', locality: 'cloud', company: 'xAI', termsUrl: 'https://x.ai/legal/terms-of-service-enterprise', keyEnv: 'XAI_API_KEY', getKey: 'https://console.x.ai', makes: ['Grok'] },
+  { prefix: 'deepseek', name: 'DeepSeek', group: H, connection: 'API key', locality: 'cloud', company: 'DeepSeek', termsUrl: 'https://platform.deepseek.com/', keyEnv: 'DEEPSEEK_API_KEY', getKey: 'https://platform.deepseek.com/api_keys', makes: ['DeepSeek'] },
+  { prefix: 'cohere', name: 'Cohere', group: H, connection: 'API key', locality: 'cloud', company: 'Cohere', termsUrl: 'https://cohere.com/terms-of-use', keyEnv: 'COHERE_API_KEY', getKey: 'https://dashboard.cohere.com/api-keys', makes: ['Command', 'Aya'] },
+  { prefix: 'perplexity', name: 'Perplexity', group: H, connection: 'API key', locality: 'cloud', company: 'Perplexity', termsUrl: 'https://www.perplexity.ai/hub/legal/terms-of-service', keyEnv: 'PERPLEXITY_API_KEY', getKey: 'https://www.perplexity.ai/settings/api', makes: ['Sonar'] },
+  { prefix: 'togetherai', name: 'Together AI', group: H, connection: 'API key', locality: 'cloud', company: 'Together AI', termsUrl: 'https://www.together.ai/terms-of-service', keyEnv: 'TOGETHER_AI_API_KEY', getKey: 'https://api.together.ai/settings/api-keys', makes: ['Llama', 'Meta', 'Qwen', 'DeepSeek', 'Mistral', 'gpt-oss', 'Gemma', 'Google'] },
+  { prefix: 'fireworks', name: 'Fireworks', group: H, connection: 'API key', locality: 'cloud', company: 'Fireworks AI', termsUrl: 'https://fireworks.ai/terms-of-service', keyEnv: 'FIREWORKS_API_KEY', getKey: 'https://fireworks.ai/account/api-keys', makes: ['Llama', 'Meta', 'Qwen', 'DeepSeek', 'Mistral', 'gpt-oss'] },
+  { prefix: 'deepinfra', name: 'DeepInfra', group: H, connection: 'API key', locality: 'cloud', company: 'DeepInfra', termsUrl: 'https://deepinfra.com/terms', keyEnv: 'DEEPINFRA_API_KEY', getKey: 'https://deepinfra.com/dash/api_keys', makes: ['Llama', 'Meta', 'Qwen', 'DeepSeek', 'Mistral', 'gpt-oss'] },
+  { prefix: 'cerebras', name: 'Cerebras', group: H, connection: 'API key', locality: 'cloud', company: 'Cerebras', termsUrl: 'https://www.cerebras.ai/terms-of-service', keyEnv: 'CEREBRAS_API_KEY', getKey: 'https://cloud.cerebras.ai/platform', makes: ['Llama', 'Meta', 'Qwen', 'gpt-oss'] },
+  { prefix: 'openrouter', name: 'OpenRouter', group: H, connection: 'API key', locality: 'cloud', company: 'OpenRouter (and the model’s vendor)', termsUrl: 'https://openrouter.ai/terms', keyEnv: 'OPENROUTER_API_KEY', getKey: 'https://openrouter.ai/keys', note: 'One key, many models.', makes: ['Claude', 'GPT', 'Gemini', 'Google', 'Llama', 'Meta', 'Qwen', 'DeepSeek', 'Mistral', 'Grok'] },
+  { prefix: 'moonshot', name: 'Kimi (Moonshot)', group: H, connection: 'API key', locality: 'cloud', company: 'Moonshot AI', termsUrl: 'https://platform.kimi.ai/', keyEnv: 'MOONSHOT_API_KEY', getKey: 'https://platform.kimi.ai/console/api-keys', baseURL: 'https://api.moonshot.ai/v1', makes: ['Kimi'] },
+  { prefix: 'zhipu', name: 'GLM (Z.ai / Zhipu)', group: H, connection: 'API key', locality: 'cloud', company: 'Z.ai (Zhipu)', termsUrl: 'https://docs.z.ai/', keyEnv: 'ZAI_API_KEY', getKey: 'https://z.ai/manage-apikey/apikey-list', baseURL: 'https://api.z.ai/api/paas/v4/', note: 'International endpoint; China keys use https://open.bigmodel.cn/api/paas/v4.', makes: ['GLM'] },
+  { prefix: 'dashscope', name: 'Qwen (Alibaba Model Studio)', group: H, connection: 'API key', locality: 'cloud', company: 'Alibaba Cloud', termsUrl: 'https://www.alibabacloud.com/help/en/model-studio/', keyEnv: 'DASHSCOPE_API_KEY', getKey: 'https://modelstudio.console.alibabacloud.com/', baseURL: 'https://dashscope-us.aliyuncs.com/compatible-mode/v1', note: 'US region; keys are per region.', makes: ['Qwen', 'Alibaba'] },
+  { prefix: 'sambanova', name: 'SambaNova', group: H, connection: 'API key', locality: 'cloud', company: 'SambaNova', termsUrl: 'https://sambanova.ai/terms', keyEnv: 'SAMBANOVA_API_KEY', getKey: 'https://cloud.sambanova.ai/', baseURL: 'https://api.sambanova.ai/v1', unverified: true, makes: ['Llama', 'Meta', 'Qwen', 'DeepSeek'] },
+  { prefix: 'baseten', name: 'Baseten', group: H, connection: 'API key', locality: 'cloud', company: 'Baseten', termsUrl: 'https://www.baseten.co/terms-of-service', keyEnv: 'BASETEN_API_KEY', getKey: 'https://app.baseten.co/settings/api_keys', baseURL: 'https://inference.baseten.co/v1', makes: ['Llama', 'Meta', 'Qwen', 'DeepSeek', 'gpt-oss'] },
+  { prefix: 'huggingface', name: 'Hugging Face', group: H, connection: 'API key', locality: 'cloud', company: 'Hugging Face (and the inference provider it routes to)', termsUrl: 'https://huggingface.co/terms-of-service', keyEnv: 'HF_TOKEN', keyLabel: 'Access token', getKey: 'https://huggingface.co/settings/tokens', baseURL: 'https://router.huggingface.co/v1', note: 'One token, many open models.', makes: ['Llama', 'Meta', 'Qwen', 'DeepSeek', 'Mistral', 'Gemma', 'gpt-oss'] },
+  { prefix: 'cloudflare', name: 'Cloudflare Workers AI', group: H, connection: 'API key', locality: 'cloud', company: 'Cloudflare', termsUrl: 'https://www.cloudflare.com/terms/', keyEnv: 'CLOUDFLARE_API_TOKEN', keyLabel: 'API token', getKey: 'https://dash.cloudflare.com/profile/api-tokens', baseURL: 'https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1', baseURLFields: ['account_id'], makes: ['Llama', 'Meta', 'Qwen', 'Mistral', 'Gemma'] },
+  { prefix: 'replicate', name: 'Replicate', group: H, connection: 'API key', locality: 'cloud', company: 'Replicate', termsUrl: 'https://replicate.com/terms', keyEnv: 'REPLICATE_API_TOKEN', keyLabel: 'API token', getKey: 'https://replicate.com/account/api-tokens', baseURL: 'https://api.replicate.com/v1', unverified: true, makes: ['Llama', 'Meta', 'Qwen', 'DeepSeek'] },
   // enterprise: credentials that are not one API key (providers spec §3 step 5)
-  { prefix: 'azure', name: 'Azure OpenAI', group: E, connection: 'fields', locality: 'cloud', company: 'Microsoft (Azure OpenAI)', termsUrl: 'https://learn.microsoft.com/legal/cognitive-services/openai/data-privacy', fields: AZURE_FIELDS, setup: 'https://learn.microsoft.com/azure/ai-services/openai/how-to/create-resource', note: 'Your firm’s Azure OpenAI resource: the model id is your deployment name, and the key comes from the Azure portal.' },
-  { prefix: 'bedrock', name: 'Amazon Bedrock', group: E, connection: 'fields', locality: 'cloud', company: 'Amazon Web Services (Bedrock)', termsUrl: 'https://docs.aws.amazon.com/bedrock/latest/userguide/data-protection.html', fields: BEDROCK_FIELDS, setup: 'https://docs.aws.amazon.com/bedrock/latest/userguide/getting-started.html', note: 'Models in your firm’s AWS account: name the region, then paste access keys, name an AWS profile, or leave both empty to use the credentials already on this machine.' },
-  { prefix: 'vertex', name: 'Google Vertex AI', group: E, connection: 'fields', locality: 'cloud', company: 'Google Cloud (Vertex AI)', termsUrl: 'https://cloud.google.com/vertex-ai/generative-ai/docs/data-governance', fields: VERTEX_FIELDS, setup: 'https://cloud.google.com/vertex-ai/generative-ai/docs/start/quickstarts/quickstart', note: 'Gemini and Claude in your firm’s Google Cloud project: name the project and location, then paste a service account key or leave it empty to use gcloud’s own credentials.' },
+  { prefix: 'azure', name: 'Azure OpenAI', group: E, connection: 'fields', locality: 'cloud', company: 'Microsoft (Azure OpenAI)', termsUrl: 'https://learn.microsoft.com/legal/cognitive-services/openai/data-privacy', fields: AZURE_FIELDS, setup: 'https://learn.microsoft.com/azure/ai-services/openai/how-to/create-resource', note: 'Your firm’s Azure OpenAI resource: the model id is your deployment name, and the key comes from the Azure portal.', makes: ['GPT', 'OpenAI', 'o-series'] },
+  { prefix: 'bedrock', name: 'Amazon Bedrock', group: E, connection: 'fields', locality: 'cloud', company: 'Amazon Web Services (Bedrock)', termsUrl: 'https://docs.aws.amazon.com/bedrock/latest/userguide/data-protection.html', fields: BEDROCK_FIELDS, setup: 'https://docs.aws.amazon.com/bedrock/latest/userguide/getting-started.html', note: 'Models in your firm’s AWS account: name the region, then paste access keys, name an AWS profile, or leave both empty to use the credentials already on this machine.', makes: ['Claude', 'Anthropic', 'Llama', 'Meta', 'Nova', 'Amazon', 'Mistral'] },
+  { prefix: 'vertex', name: 'Google Vertex AI', group: E, connection: 'fields', locality: 'cloud', company: 'Google Cloud (Vertex AI)', termsUrl: 'https://cloud.google.com/vertex-ai/generative-ai/docs/data-governance', fields: VERTEX_FIELDS, setup: 'https://cloud.google.com/vertex-ai/generative-ai/docs/start/quickstarts/quickstart', note: 'Gemini and Claude in your firm’s Google Cloud project: name the project and location, then paste a service account key or leave it empty to use gcloud’s own credentials.', makes: ['Gemini', 'Google', 'Claude', 'Anthropic'] },
 ];
 
 /** Good starting points for a local model; the scoreboard (phase 2) will
@@ -168,6 +176,38 @@ export function vendorFor(prefix: string): VendorRow | undefined {
  * and never added; `codex` is a legacy spelling). */
 export function addableVendors(): VendorRow[] {
   return VENDORS.filter(v => v.group !== 'subscription');
+}
+
+/**
+ * What a vendor answers to. The name and the group, and the model families
+ * it serves — a lawyer looks for "Llama" or "Gemini", and Meta sells no API
+ * at all, so a picker that only knows vendor names hides half the catalog
+ * behind names nobody searches for.
+ */
+export function vendorMatches(v: VendorRow, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (q === '') return true;
+  const hay = [v.name, v.label ?? '', v.prefix, v.company ?? '', GROUP_LABELS[v.group], ...(v.makes ?? [])].join(' ').toLowerCase();
+  // Every word has to land somewhere: "google gemini" and "meta llama" are
+  // both one intent, not two.
+  return q.split(/\s+/).every(word => hay.includes(word));
+}
+
+/** The vendors a query finds, in catalog order (subscriptions first, then
+ * local, hosted, enterprise). */
+export function searchVendors(query: string): VendorRow[] {
+  return addableVendors().filter(v => vendorMatches(v, query));
+}
+
+/** What the picker says a vendor will get you, when the query found it by a
+ * family rather than by name: `Together AI · Llama, Qwen, DeepSeek…`. */
+export function makesLine(v: VendorRow, query: string): string | null {
+  const q = query.trim().toLowerCase();
+  if (q === '' || v.makes === undefined) return null;
+  const hit = v.makes.filter(m => q.split(/\s+/).some(word => m.toLowerCase().includes(word)));
+  if (hit.length === 0) return null;
+  const rest = v.makes.filter(m => !hit.includes(m));
+  return [...hit, ...rest].slice(0, 4).join(', ');
 }
 
 /** The picker's option text: `<Group> · <Name>`, so typing either finds it. */

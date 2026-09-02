@@ -6,9 +6,10 @@ import { ModelCombo } from '../../settings/ModelCombo';
 import { ProviderCombo } from '../../settings/ProviderCombo';
 import { useModels } from '../../settings/useModels';
 import { ProviderTest } from '../../settings/ProviderTest';
-import { addableVendors, dataLineFor, isEnterpriseVendor, pickerLabel, prefixOf, vendorByPickerLabel, vendorFor } from '../vendors';
+import { addableVendors, dataLineFor, isEnterpriseVendor, makesLine, pickerLabel, prefixOf, searchVendors, vendorByPickerLabel, vendorFor } from '../vendors';
 import { EnterpriseFields } from './EnterpriseFields';
 import { KeyControl } from './KeyControl';
+import { YourModels } from './YourModels';
 import { ContentGroup } from './ContentGroup';
 import { TASK_IDS } from '../../tasks';
 import { DoctorLedger } from './DoctorLedger';
@@ -130,6 +131,16 @@ function seedDefault(form: FormState, view: SettingsView): FormState {
   return { ...form, default: effective };
 }
 
+/**
+ * The picker's options for a query. The catalog is thirty-odd vendors; a
+ * search that finds nothing should still leave the whole list reachable,
+ * so an empty result falls back to everything rather than to a dead box.
+ */
+function searchOptions(query: string): string[] {
+  const hits = searchVendors(query);
+  return (hits.length === 0 ? addableVendors() : hits).map(pickerLabel);
+}
+
 function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: SettingsView): void }): JSX.Element {
   const [form, setForm] = useState<FormState>(() => seedDefault(formFromRegistry(view.registry), view));
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -178,9 +189,14 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
     }
   };
 
-  const save = async (): Promise<void> => {
+  const save = async (change: Partial<FormState> = {}): Promise<void> => {
     setSaved(false);
-    const built = registryFromForm(form);
+    // The change rides IN rather than through `setForm`: "use this one" is a
+    // click that saves, and reading the default back out of state in the
+    // same tick would save the old one.
+    const edited = { ...form, ...change };
+    if (Object.keys(change).length > 0) setForm(edited);
+    const built = registryFromForm(edited);
     if (!built.ok) {
       // Never sent: these are the failures the page can see for itself.
       setErrors(built.errors);
@@ -192,7 +208,8 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
     setBusy(true);
     try {
       // `undefined` drops out of the JSON — the file keeps having no default.
-      const body = showingBuiltin ? { ...built.registry, default: undefined } : built.registry;
+      const stillBuiltin = !fileHasDefault && edited.default.trim() !== '' && edited.default.trim() === (view.effective.default ?? '');
+      const body = stillBuiltin ? { ...built.registry, default: undefined } : built.registry;
       const next = await fetchJson<SettingsView>('/settings', { method: 'PUT', body: JSON.stringify(body) });
       setForm(seedDefault(formFromRegistry(next.registry), next));
       setSaved(true);
@@ -227,23 +244,126 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
       }}
     >
       <section className="v2-group">
-        <h2>Providers</h2>
+        <h2>Models you can use</h2>
         <p className="muted">
-          The models this runtime can call. Your Claude subscription, your Codex subscription, and a local Ollama model are built in and always loaded. Add one here to use a hosted API with a key, another local model, or a different endpoint. Paste a key on its row after you save; it is kept in your Keychain, never in a file in your vault (a key from the environment still works for headless use). The row itself is saved to your providers file (its path is under Runtime, below); the built-ins are never written there.
+          Everything this runtime has loaded, and which one answers when nothing more specific applies. Your Claude and ChatGPT subscriptions and a local
+          Ollama model are built in; anything else you add here.
         </p>
-        {form.providers.length === 0 ? <p className="muted">None added — the built-ins are doing all the work.</p> : null}
+        <YourModels
+          providers={view.effective.providers}
+          defaultId={form.default}
+          builtinDefault={showingBuiltin}
+          busy={busy}
+          onMakeDefault={id => void save({ default: id })}
+        />
+        <FieldError message={errors['default']} />
+        {defaultIsKnown ? null : (
+          <p className="v2-notice v2-notice-warn" role="status">
+            No loaded model is called <code>{form.default.trim()}</code>. Saving will leave every step falling back to the router.
+          </p>
+        )}
+
+        {/* One field over every vendor and preset — searched by NAME and by
+            the families it serves, so "llama" and "gemini" find something.
+            Picking prefills a row; nothing is saved until the one Save. */}
+        <div className="v2-add-model">
+          <h3 className="runin">Add a model</h3>
+          <div className="v2-add-provider-row">
+            <ProviderCombo
+              id="v2-add-provider"
+              label="Search by model, maker or vendor"
+              value={pick}
+              options={searchOptions(pick)}
+              placeholder="llama · gemini · a vendor's name"
+              // The options ARE the search result; matching them against the
+              // typed text again would hide every vendor found by a family
+              // rather than by its own name, which is the point.
+              filter={() => true}
+              onChange={setPick}
+            />
+            <button
+              type="button"
+              disabled={vendorByPickerLabel(pick) === undefined}
+              onClick={() => {
+                const v = vendorByPickerLabel(pick);
+                if (v === undefined) return;
+                patch({ providers: [...form.providers, catalogRow(v)] });
+                setPick('');
+              }}
+            >
+              Add
+            </button>
+            <button type="button" className="v2-link" onClick={() => patch({ providers: [...form.providers, emptyRow()] })}>
+              or add a blank row
+            </button>
+          </div>
+          {(() => {
+            const v = vendorByPickerLabel(pick);
+            if (v === undefined) {
+              const hits = searchVendors(pick).slice(0, 4);
+              if (pick.trim() === '' || hits.length === 0) return null;
+              return (
+                <p className="muted v2-add-provider-note" role="note">
+                  {hits.map(h => `${h.label ?? h.name}${makesLine(h, pick) === null ? '' : ` (${makesLine(h, pick)})`}`).join(' · ')}
+                </p>
+              );
+            }
+            return (
+              <p className="muted v2-add-provider-note" role="note">
+                {v.note === undefined ? null : <>{v.note} </>}
+                {v.connection === 'API key' ? <>Add the row, save, then paste the key on it — it goes to your Keychain. </> : null}
+                {v.connection === 'fields' ? <>Add the row, fill in its fields, save, then paste the credentials on it — they go to your Keychain as one item. </> : null}
+                {v.getKey === undefined ? null : (
+                  <a href={v.getKey} target="_blank" rel="noreferrer">
+                    Get a key
+                  </a>
+                )}
+                {v.setup === undefined ? null : (
+                  <a href={v.setup} target="_blank" rel="noreferrer">
+                    How to set up {v.name}
+                  </a>
+                )}
+                {v.baseURLFields === undefined ? null : <> Fill in {v.baseURLFields.map(f => `{${f}}`).join(', ')} in the base URL.</>}
+                {v.unverified === true ? <> The base URL was not verified against the vendor’s docs; check it.</> : null}
+              </p>
+            );
+          })()}
+        </div>
+
+        {form.providers.length === 0 ? null : (
+          <>
+            <h3 className="runin v2-added-head">Rows you added</h3>
+            <p className="muted">
+              Saved to your providers file (its path is under Runtime, below). A key pasted on a row goes to your Keychain, never into the vault.
+            </p>
+          </>
+        )}
         {form.providers.map((row, index) => {
           const rowVendor = vendorFor(prefixOf(row.id.trim()));
           const enterprise = isEnterpriseVendor(rowVendor);
           return (
           <div className="v2-provider" key={row.key}>
+            {/* What this row IS, before what it is made of: the vendor and
+                the model are the two things a lawyer sets, and the rest is
+                a config file rendered as a form. */}
+            <p className="v2-provider-head">
+              <strong>{rowVendor?.label ?? rowVendor?.name ?? 'A model'}</strong>
+              <span className="muted">
+                {' — '}
+                {row.id.trim() === '' ? 'give it an id below' : <code>{row.id.trim()}</code>}
+              </span>
+            </p>
+            <div className="v2-provider-main">
+              <ModelField rowKey={row.key} id={row.id} baseURL={row.baseURL} extra={enterprise ? row.extra : undefined} onPick={model => patchRow(index, { id: `${prefixOf(row.id.trim())}/${model}` })} />
+            </div>
+            <details className="v2-provider-advanced">
+              <summary>the rest of this row</summary>
             <div className="v2-provider-grid">
               <div className="field">
                 <label htmlFor={`v2-${row.key}-id`}>Id</label>
                 <input id={`v2-${row.key}-id`} value={row.id} placeholder="openai/gpt-5.6" onChange={e => patchRow(index, { id: e.target.value })} />
                 <FieldError message={errors[`providers.${index}.id`]} />
               </div>
-              <ModelField rowKey={row.key} id={row.id} baseURL={row.baseURL} extra={enterprise ? row.extra : undefined} onPick={model => patchRow(index, { id: `${prefixOf(row.id.trim())}/${model}` })} />
               <div className="field">
                 <label htmlFor={`v2-${row.key}-baseurl`}>baseURL</label>
                 <input id={`v2-${row.key}-baseurl`} value={row.baseURL} placeholder={enterprise ? 'optional — a private endpoint' : 'https://…'} onChange={e => patchRow(index, { baseURL: e.target.value })} />
@@ -276,6 +396,7 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
                 </select>
               </div>
             </div>
+            </details>
             {/* Where this row's text goes (providers spec §6): from the id's
                 prefix and, for an OpenAI-compatible server, its base URL. */}
             {(() => {
@@ -350,111 +471,6 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
           </div>
           );
         })}
-        {/* The guided starts (cou-84): each names a thing the operator is
-            trying to do and prefills a row for it — nothing is saved until
-            the one Save at the bottom. */}
-        <div className="v2-guided-starts">
-          {effectiveIds.includes(CLAUDE_BUILTIN) ? (
-            <div className="v2-guided-start">
-              <p>
-                <strong>Claude subscription</strong>
-                <span className="muted">
-                  {' '}
-                  — already loaded as <code>{CLAUDE_BUILTIN}</code>. There is nothing to add.
-                </span>
-              </p>
-              {/* Hidden when it already IS the effective default — offering
-                  to make the default the default reads as "it is not". */}
-              {form.default.trim() === CLAUDE_BUILTIN ? null : (
-                <button type="button" onClick={() => patch({ default: CLAUDE_BUILTIN })}>
-                  Make it the default
-                </button>
-              )}
-            </div>
-          ) : null}
-          {/* The catalog picker (providers spec §3): one field over every
-              vendor and preset, grouped as Subscriptions · Local runners ·
-              Hosted API — thirty rows do not become thirty buttons. Picking
-              prefills a row; nothing is saved until the one Save. */}
-          <div className="v2-guided-start v2-add-provider">
-            <p>
-              <strong>Add a provider</strong>
-              <span className="muted"> — a hosted API (a key from the vendor), a model server on this machine, or any OpenAI-compatible endpoint. Type to search; the row's second line says where your text goes.</span>
-            </p>
-            <div className="v2-add-provider-row">
-              <ProviderCombo id="v2-add-provider" label="Provider to add" value={pick} options={addableVendors().map(pickerLabel)} placeholder="Hosted API · Google Gemini" onChange={setPick} />
-              <button
-                type="button"
-                disabled={vendorByPickerLabel(pick) === undefined}
-                onClick={() => {
-                  const v = vendorByPickerLabel(pick);
-                  if (v === undefined) return;
-                  patch({ providers: [...form.providers, catalogRow(v)] });
-                  setPick('');
-                }}
-              >
-                Add
-              </button>
-            </div>
-            {(() => {
-              const v = vendorByPickerLabel(pick);
-              if (v === undefined) return null;
-              return (
-                <p className="muted v2-add-provider-note" role="note">
-                  {v.note === undefined ? null : <>{v.note} </>}
-                  {v.connection === 'API key' ? <>Add the row, save, then paste the key on it — it goes to your Keychain. </> : null}
-                  {v.connection === 'fields' ? <>Add the row, fill in its fields, save, then paste the credentials on it — they go to your Keychain as one item. </> : null}
-                  {v.getKey === undefined ? null : (
-                    <a href={v.getKey} target="_blank" rel="noreferrer">
-                      Get a key
-                    </a>
-                  )}
-                  {v.setup === undefined ? null : (
-                    <a href={v.setup} target="_blank" rel="noreferrer">
-                      How to set up {v.name}
-                    </a>
-                  )}
-                  {v.baseURLFields === undefined ? null : <> Fill in {v.baseURLFields.map(f => `{${f}}`).join(', ')} in the base URL.</>}
-                  {v.unverified === true ? <> The base URL was not verified against the vendor’s docs; check it.</> : null}
-                </p>
-              );
-            })()}
-          </div>
-          <div className="v2-guided-start">
-            <p>
-              <strong>Something else</strong>
-              <span className="muted"> — a blank row, when the picker above does not have it. Any OpenAI-compatible endpoint works with its base URL.</span>
-            </p>
-            <button type="button" onClick={() => patch({ providers: [...form.providers, emptyRow()] })}>
-              Add provider
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section className="v2-group">
-        <h2>Default provider</h2>
-        <p className="muted">The model that answers when nothing more specific applies. Every step runs on it, unless a task route below picks a different one.</p>
-        <div className="field">
-          <ProviderCombo
-            id="v2-default"
-            label="Default provider"
-            value={form.default}
-            options={effectiveIds}
-            onChange={value => patch({ default: value })}
-          />
-          {showingBuiltin ? (
-            <p className="muted" role="note">
-              Built-in default — nothing saved yet. Pick a provider to save it as yours.
-            </p>
-          ) : null}
-          <FieldError message={errors['default']} />
-          {defaultIsKnown ? null : (
-            <p className="v2-notice v2-notice-warn" role="status">
-              No loaded provider is called <code>{form.default.trim()}</code>. Saving will leave every step falling back to the router.
-            </p>
-          )}
-        </div>
       </section>
 
       <section className="v2-group">

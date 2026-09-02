@@ -17,6 +17,14 @@ export interface ProviderComboProps {
   /** The toggle's own accessible name. Default `Show providers`; a field
    * that lists something else (the task taxonomy) names it itself. */
   toggleLabel?: string;
+  /**
+   * Whether an option survives what has been typed. The default matches the
+   * option's own text, which is right when the options ARE the answers —
+   * but a caller whose options are already the result of a search (the
+   * model picker, where "llama" finds Together AI) has to be able to say
+   * that everything it handed over is a match.
+   */
+  filter?(option: string, input: string): boolean;
   onChange(value: string): void;
 }
 
@@ -30,7 +38,7 @@ export interface ProviderComboProps {
  * positioned sibling of the input, which keeps it inside the form's DOM for
  * tests and screen readers alike.
  */
-export function ProviderCombo({ id, label, value, options, placeholder, onChange, toggleLabel }: ProviderComboProps): JSX.Element {
+export function ProviderCombo({ id, label, value, options, placeholder, onChange, toggleLabel, filter }: ProviderComboProps): JSX.Element {
   const { contains } = useFilter({ sensitivity: 'base' });
   const items = options.map(option => ({ id: option }));
   const children = (item: { id: string }): JSX.Element => <Item textValue={item.id}>{item.id}</Item>;
@@ -45,7 +53,7 @@ export function ProviderCombo({ id, label, value, options, placeholder, onChange
     items,
     children,
   };
-  const state = useComboBoxState({ ...props, defaultFilter: contains });
+  const state = useComboBoxState({ ...props, defaultFilter: filter ?? contains });
 
   const inputRef = useRef<HTMLInputElement | null>(null);
   const listBoxRef = useRef<HTMLUListElement | null>(null);

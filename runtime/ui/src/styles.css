@@ -1143,3 +1143,24 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   .v2-thread-running { animation: v2-thread-pulse 1.8s ease-in-out infinite; }
 }
 @keyframes v2-thread-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+/* The models you can use: one list, the default marked on its own row. */
+.v2-yours { width: 100%; border-collapse: collapse; font: 13.5px/1.7 var(--sans); margin: 0.2rem 0 0.6rem; }
+.v2-yours th, .v2-yours td { text-align: left; font-weight: 400; padding: 3px 0.9rem 3px 0; border-bottom: 1px solid var(--rule); vertical-align: baseline; }
+.v2-yours th { color: var(--fg); }
+.v2-yours-model { color: var(--fg-muted); font-family: var(--mono, ui-monospace, monospace); font-size: 12.5px; }
+.v2-yours-how { color: var(--fg-muted); white-space: nowrap; }
+.v2-yours-act { text-align: right; white-space: nowrap; }
+.v2-yours-default { color: var(--accent); }
+.v2-yours-note { color: var(--fg-faint); }
+.v2-yours-on th { font-weight: 600; }
+
+/* Adding one: a search box over the whole catalog. */
+.v2-add-model { margin-top: var(--s3); }
+.v2-add-model .v2-add-provider-row { margin-top: 4px; }
+.v2-added-head { margin-top: var(--s4); }
+
+/* A row leads with what it is; the file's own fields fold away. */
+.v2-provider-head { margin: 0 0 4px; }
+.v2-provider-main { margin-bottom: 6px; }
+.v2-provider-advanced > summary { cursor: pointer; color: var(--fg-muted); font-size: 12.5px; margin-bottom: 6px; }

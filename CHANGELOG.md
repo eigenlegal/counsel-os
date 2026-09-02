@@ -8,6 +8,12 @@ reconstructed from git history. New entries are prepended automatically by
 
 ## [Unreleased]
 
+Settings, reorganized around the models you have
+
+- **Models you can use** replaces Providers and Default provider. One list of everything the runtime has loaded — your subscriptions, your local model, anything you added — saying what each one is, how it is reached, and which one answers. Switching is *use this one* on the row, rather than reading an id out of one group and typing it into another.
+- **Add a model** is one search box over the whole catalog, and it searches by MAKER and model family as well as by vendor: "llama" finds Together AI, Groq, Ollama, Bedrock and the rest; "gemini" finds Google and Vertex; "qwen" finds Alibaba and the open hosts. Meta sells no API of its own, so without this the maker whose models half these vendors serve appeared nowhere in the app.
+- A row you added now leads with what it is — the vendor and the model — and folds its id, base URL, capability flags and auth into *the rest of this row*. Those are a config file rendered as a form, and they were the first thing you saw.
+
 Models, its own page (routing-and-evals spec §6, §10)
 
 - The scoreboard, the routing bar for each task, and the ledger of what ran have left the bottom of Settings for a **Models** page in the rail. None of them were settings: a scoreboard is a measurement, a bar is a standing decision about quality, and a ledger is a record. Settings is where you configure the runtime; this is where you see how it is doing.
