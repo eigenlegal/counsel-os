@@ -224,7 +224,11 @@ describe('ModelsGroup', () => {
     await waitFor(() => expect(screen.getByRole('status').textContent).toBe('scoring 1 of 8 · law-beats-practice'));
     release();
     await waitFor(() => expect(screen.queryByRole('status')).toBeNull());
-  });
+    // 20s, not the default 5: this test renders the ledger, opens the cost
+    // line, runs a stream and waits for four states, and on a loaded
+    // two-core CI box the sum of those waits is what times out — the
+    // assertions themselves have always held.
+  }, 20_000);
 
   test('cost unknown reads as such; cancel closes the line; a refused run says why on the cell', async () => {
     board = nothing;
