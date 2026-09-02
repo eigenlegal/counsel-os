@@ -239,6 +239,10 @@ export function FixturePanel({ threadId, runId, onClose }: FixturePanelProps): J
                 <span className="v2-fixture-sev">{c.severity}</span> {c.title}
               </p>
               {c.clause === '' ? null : <p className="v2-fixture-quote">{c.clause}</p>}
+              {/* The rationale is written into the fixture, so it is read
+                  here too: it is model prose, and prose can name a person,
+                  a street or a third party the pass has no pattern for. */}
+              {c.why === '' ? null : <p className="v2-fixture-why">{c.why}</p>}
               <p className="v2-fixture-verdicts" role="group" aria-label={`Verdict on ${c.title}`}>
                 {VERDICTS.map(v => (
                   <button

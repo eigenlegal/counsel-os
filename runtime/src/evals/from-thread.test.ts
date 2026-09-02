@@ -129,6 +129,20 @@ describe('the draft', () => {
     expect(draft.notes).toEqual([]);
   });
 
+  test('a title keeps its punctuation, because the answer does', () => {
+    // A scorer only lowercases and collapses spaces, so a term rebuilt from
+    // split tokens ("auto renewal") never matches an answer that wrote
+    // "auto-renewal".
+    for (const [title, term] of [
+      ['Auto-renewal', 'auto-renewal'],
+      ['Non-compete is overbroad', 'non-compete is overbroad'],
+      ['Customer’s indemnity is uncapped', 'customer’s indemnity is uncapped'],
+    ] as const) {
+      const answer = { findings: [{ title, severity: 'red', clause: '', rationale: 'x', citations: [] }], citations: [] };
+      expect(draftFromThread({ ...deps, runs: [run({ output: answer })] }).catches[0]!.match_any).toEqual([term]);
+    }
+  });
+
   test('a scorer matches on phrases, never on a bare word', () => {
     // `containsAny` is an `or`: one bare word marks a catch found in any
     // answer that happens to use it, and on a rejected finding it zeroes a
@@ -333,6 +347,39 @@ describe('the fixture the lawyer saves', () => {
     }
   });
 
+  test('an ordinary word that leaves the document does not take a finding with it', () => {
+    // The rule is about a NAME the pass missed and the lawyer removed, not
+    // about vocabulary: deleting an insurance clause makes "there is no
+    // insurance floor" more true, not less.
+    const missing = {
+      findings: [{ title: 'No insurance floor for the vendor', severity: 'yellow', clause: '', rationale: 'The agreement sets no minimum insurance limits.', citations: [] }],
+      citations: [],
+    };
+    const draft = draftFromThread({ ...deps, readDocument: () => `${DOC}\n9. Insurance. Vendor keeps insurance with the Whitfield Mutual office.\n`, runs: [run({ output: missing })] });
+    const withoutTheClause = draft.text.split('\n').filter(l => !l.includes('Insurance')).join('\n');
+    const { fixture, dropped } = fixtureFromDraft(draft, { keep: draft.catches.map(c => c.id), text: withoutTheClause });
+    expect(dropped).toEqual([]);
+    expect(fixture.expected_catches).toHaveLength(1);
+  });
+
+  test('a rejected finding needs a phrase to penalize, never a bare word', () => {
+    const bare = {
+      findings: [{ title: 'No cap', severity: 'yellow', clause: '', rationale: 'There is none.', citations: [] }],
+      citations: [],
+    };
+    const draft = draftFromThread({ ...deps, runs: [run({ output: bare })] });
+    // A short leading word stays in the phrase rather than being skipped
+    // past: the term is "no cap", not the bare "cap" that would zero the
+    // precision guard against "storage capacity is adequate".
+    expect(draft.catches[0]!.match_any).toEqual(['no cap']);
+
+    const single = { findings: [{ title: 'Indemnity', severity: 'yellow', clause: '', rationale: 'One word.', citations: [] }], citations: [] };
+    const one = draftFromThread({ ...deps, runs: [run({ output: single })] });
+    const { fixture, dropped } = fixtureFromDraft(one, { keep: [], reject: one.catches.map(c => c.id) });
+    expect(fixture.negative_checks).toEqual([]);
+    expect(dropped).toEqual(['Indemnity']);
+  });
+
   test('a finding about a missing provision survives, quote or no quote', () => {
     // The commonest review finding of all: something the contract does NOT
     // say. It quotes nothing, so a rule that required every term to appear
@@ -346,7 +393,7 @@ describe('the fixture the lawyer saves', () => {
     const { fixture, dropped } = fixtureFromDraft(draft, { keep: draft.catches.map(c => c.id) });
     expect(dropped).toEqual([]);
     expect(fixture.expected_catches).toHaveLength(1);
-    expect(fixture.expected_catches[0]!.match_any).toEqual(['limitation of liability at']);
+    expect(fixture.expected_catches[0]!.match_any).toEqual(['no limitation of liability']);
   });
 
   test('a rejected finding counsel invented still penalizes it, though nothing in the document says it', () => {
@@ -383,8 +430,27 @@ describe('the fixture the lawyer saves', () => {
     expect(draft.catches[0]!.id).toContain('zephyr');
 
     const scrubbed = draft.text.replace(/Zephyr Robotics/g, 'the vendor');
-    const { fixture, dropped } = fixtureFromDraft(draft, { keep: draft.catches.map(c => c.id), text: scrubbed });
-    expect(dropped).toHaveLength(1);
+    // Every finding was about the name they removed, so there is nothing
+    // left to expect — and a fixture that expects nothing scores 1.00
+    // against any answer for ever.
+    expect(() => fixtureFromDraft(draft, { keep: draft.catches.map(c => c.id), text: scrubbed })).toThrow(/nothing left for this fixture to expect/);
+  });
+
+  test('the finding about a scrubbed name goes; the others stay', () => {
+    const both = {
+      findings: [
+        { title: 'Zephyr Robotics carries the whole risk', severity: 'red', clause: '', rationale: 'Zephyr Robotics carries it.', citations: [] },
+        { title: 'Liability cap is too low', severity: 'red', clause: "Vendor's aggregate liability shall not exceed $50,000", rationale: 'Too low.', citations: [] },
+      ],
+      citations: [],
+    };
+    const draft = draftFromThread({ ...deps, readDocument: () => `${DOC}\n9. Zephyr Robotics carries the risk.\n`, runs: [run({ output: both })] });
+    const { fixture, dropped } = fixtureFromDraft(draft, {
+      keep: draft.catches.map(c => c.id),
+      text: draft.text.replace(/Zephyr Robotics/g, 'the vendor'),
+    });
+    expect(dropped).toEqual(['Zephyr Robotics carries the whole risk']);
+    expect(fixture.expected_catches).toHaveLength(1);
     expect(JSON.stringify(fixture)).not.toContain('Zephyr');
   });
 

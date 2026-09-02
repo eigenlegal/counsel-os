@@ -82,9 +82,25 @@ function words(s: string): Set<string> {
   return new Set(
     s
       .toLowerCase()
-      .split(/[^\da-z']+/)
+      .split(/[^\da-z]+/)
       .filter(w => w.length > 2),
   );
+}
+
+/**
+ * The words worth treating as a NAME the lawyer took out: capitalized
+ * somewhere other than the start of a sentence, or carrying a digit.
+ *
+ * The scrub reacts to what the lawyer removed, and it must react to the
+ * thing it exists for — a party the pass missed — without reacting to
+ * ordinary vocabulary. "The agreement sets no minimum insurance limits" is
+ * a finding that survives deleting an insurance clause; "Whitfield" is not.
+ */
+function namelike(text: string): Set<string> {
+  const out = new Set<string>();
+  for (const m of text.matchAll(/(^|[^.!?\n]\s+|["“(\[])([A-Z][\w'’-]{2,})/g)) out.add((m[2] ?? '').toLowerCase().replace(/[^\da-z]/g, ''));
+  for (const m of text.matchAll(/\b[\w'@.-]*\d[\w'@.-]*\b/g)) out.add(m[0].toLowerCase().replace(/[^\da-z]/g, ''));
+  return out;
 }
 
 /** FNV-1a, for a short stable mark on a fixture's default name. */
@@ -297,18 +313,23 @@ function matchTerms(title: string, clause: string): string[] {
   // The quote, as much of it as reads as one phrase.
   if (quote.length > 0) terms.push(quote.slice(0, 8).join(' ').toLowerCase());
 
-  // And a CONTIGUOUS phrase from the title. Joining the surviving words of a
-  // stop-word filter makes a string no answer can contain ("liability cap
-  // low"); the words have to stay in the order and company they were
-  // written in, starting at the first one that carries meaning.
-  const words = title
-    .replace(/\([^)]*\)/g, ' ')
-    .toLowerCase()
-    .split(/[^\da-z']+/)
-    .filter(w => w !== '');
-  const from = words.findIndex(w => w.length > 2 && !stop.has(w));
+  // And a CONTIGUOUS phrase from the title, AS WRITTEN. Two things break a
+  // term here: joining the survivors of a stop-word filter makes a string
+  // no answer contains ("liability cap low"), and re-joining split tokens
+  // drops the punctuation the answer keeps — "auto-renewal" is not "auto
+  // renewal", and a scorer only lowercases and collapses spaces.
+  const head = title.replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();
+  const written = head.split(' ').filter(w => w !== '');
+  const meaningful = (w: string): boolean => {
+    const bare = w.toLowerCase().replace(/[^\da-z]/g, '');
+    return bare.length > 2 && !stop.has(bare);
+  };
+  const from = written.findIndex(meaningful);
   if (from !== -1) {
-    const phrase = words.slice(from, from + 4).join(' ').trim();
+    // Keep a leading short word rather than start on the word after it:
+    // "No cap" has to stay two words, or the term is the bare "cap".
+    const start = from === 1 ? 0 : from;
+    const phrase = written.slice(start, start + 4).join(' ').toLowerCase().replace(/[.,;:]+$/, '');
     if (phrase !== '' && !terms.includes(phrase)) terms.push(phrase);
   }
   return terms;
@@ -399,7 +420,13 @@ export function draftFromThread(opts: DraftOptions): FixtureDraft {
   // just this run's: a message that chips two files would otherwise carry
   // the other matter's real path.
   let message = a.apply(run.message);
-  for (const p of new Set([path, ...pathsInMessage(run.message)])) message = message.replaceAll(p, FIXTURE_DOCUMENT);
+  // Every matter path becomes the fixture's own copy; a knowledge path
+  // stays as it is, because the fixture's vault holds that file at that
+  // path — rewriting it would make the prompt nonsense and stop the fixture
+  // exercising the citation it scores.
+  for (const p of new Set([path, ...pathsInMessage(run.message)])) {
+    if (!isKnowledgePath(p)) message = message.replaceAll(p, FIXTURE_DOCUMENT);
+  }
 
   const knowledge: { path: string; text: string }[] = [];
   for (const from of citations.map(c => c.aliases[0] ?? '').filter(isKnowledgePath)) {
@@ -495,7 +522,9 @@ export function fixtureFromDraft(draft: FixtureDraft, decisions: SaveDecisions):
   // quote nothing at all; requiring every term to appear in the text would
   // delete exactly those findings, and would delete every negative check
   // too, since a hallucinated finding quotes text that was never there.
-  const removed = new Set([...words(draft.text)].filter(w => !words(text).has(w)));
+  const kept_words = words(text);
+  const names = namelike(draft.text);
+  const removed = new Set([...words(draft.text)].filter(w => !kept_words.has(w) && names.has(w)));
   const carries = (s: string): boolean => [...words(s)].some(w => removed.has(w));
   const dropped: string[] = [];
   const scrub = (c: DraftCatch): DraftCatch | null => {
@@ -509,6 +538,22 @@ export function fixtureFromDraft(draft: FixtureDraft, decisions: SaveDecisions):
     return { ...c, clause };
   };
   const decided = (ids: Set<string>): DraftCatch[] => draft.catches.filter(c => ids.has(c.id)).map(scrub).filter((c): c is DraftCatch => c !== null);
+  const expected = decided(kept);
+  const penalized = decided(rejected)
+    // A negative check needs a PHRASE. One bare word — a title like "No
+    // cap" — penalizes every answer that happens to contain it, for ever.
+    .map(c => ({ ...c, match_any: c.match_any.filter(t => t.includes(' ')) }))
+    .filter(c => {
+      if (c.match_any.length > 0) return true;
+      dropped.push(c.title);
+      return false;
+    });
+  // Every finding gone: the lawyer's edit removed what all of them were
+  // about. Saved, this fixture expects nothing, and a fixture that expects
+  // nothing scores 1.00 against any answer for ever.
+  if (kept.size > 0 && expected.length === 0) {
+    throw new NoFixtureHere(`Your edit removed what every finding was about (${dropped.join('; ')}), so there is nothing left for this fixture to expect.`);
+  }
 
   const fixture = {
     id,
@@ -518,8 +563,8 @@ export function fixtureFromDraft(draft: FixtureDraft, decisions: SaveDecisions):
     task: decisions.message ?? draft.message,
     source: { kind: 'practice', name: `thread ${draft.from.threadId}` },
     input: { contract_text: text },
-    expected_catches: decided(kept).map(c => ({ id: c.id, severity: c.severity, clause: c.clause, why: c.why, match_any: c.match_any })),
-    negative_checks: decided(rejected).map(c => ({ id: c.id, description: `Counsel raised this and the lawyer rejected it: ${c.title}`, match_any: c.match_any })),
+    expected_catches: expected.map(c => ({ id: c.id, severity: c.severity, clause: c.clause, why: c.why, match_any: c.match_any })),
+    negative_checks: penalized.map(c => ({ id: c.id, description: `Counsel raised this and the lawyer rejected it: ${c.title}`, match_any: c.match_any })),
     expected_citations: draft.citations,
     // What the review cited IS the allowed set: the scorer counts a citation
     // outside it as a hallucinated source, and every one of these came from

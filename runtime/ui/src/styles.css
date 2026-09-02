@@ -1113,3 +1113,4 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .v2-fixture-files { list-style: none; margin: 0; padding: 0; color: var(--fg-muted); }
 .v2-fixture-files > li { padding: 1px 0; }
 .v2-fixture-dropped { text-decoration: line-through; color: var(--fg-faint); }
+.v2-fixture-why { margin: 0.1rem 0; color: var(--fg-faint); }

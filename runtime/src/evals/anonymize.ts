@@ -266,7 +266,10 @@ export function anonymize(text: string, options: AnonymizeOptions = {}): Anonymi
     if (words.length === 0) continue;
     const whole = m[0].slice(lead.indexOf(words[0]!, cut));
     const suffix = m[2] ?? '';
-    const s = hash32(whole);
+    // Seeded on the name with its spacing normalized, so `Acme  Holdings`
+    // and `Acme Holdings` are one party with one fake name. The KEY stays
+    // the literal text, because that is what has to be replaced.
+    const s = hash32(whole.replace(/\s+/g, ' '));
     const stem = pick(ORG_STEMS, s, takenOrg);
     takenOrg.add(stem);
     // `Acme Holdings, Inc.` keeps its comma; `Bytecraft Labs LLC` has none.
@@ -276,7 +279,9 @@ export function anonymize(text: string, options: AnonymizeOptions = {}): Anonymi
     // becomes `Acme Holdings` in one clause and plain `Acme` in the next, so
     // both shorter forms map to the same stem — otherwise the name the
     // anonymizer was meant to remove survives in most of the document.
-    const bare = words.join(' ').replace(/,$/, '');
+    // The short form as WRITTEN — the slice minus its suffix — so a
+    // double-spaced name is replaced whole rather than half.
+    const bare = whole.slice(0, whole.length - suffix.length - (whole.endsWith('.') ? 1 : 0)).replace(/[\s,]+$/, '');
     if (bare !== '' && !NOT_A_NAME.has(bare)) add('org', bare, stem);
     const first = bare.split(/\s+/)[0] ?? '';
     if (first !== bare && first.length >= 4 && !NOT_A_NAME.has(first) && !GENERIC_IN_A_NAME.has(first)) add('org', first, stem);
