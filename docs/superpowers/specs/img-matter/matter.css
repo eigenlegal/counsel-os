@@ -1,0 +1,84 @@
+/* The matter page — shared rules on top of ../img-standalone/mock.css. */
+.page { flex: 1; min-width: 0; overflow-y: auto; position: relative; }
+.wrap { max-width: 920px; margin: 0 auto; padding: 40px 40px 120px; }
+.crumbs { font: 12.5px var(--mono); color: var(--fg-faint); margin-bottom: 10px; display: flex; gap: 6px; align-items: baseline; }
+.crumbs a { color: var(--fg-muted); text-decoration: none; border-bottom: 1px solid var(--border-strong); }
+.crumbs .sp { margin-left: auto; }
+.head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin-bottom: 14px; }
+.head h1 { font: 500 26px/1.25 var(--serif); flex: 1 1 24ch; min-width: 0; }
+.head .meta { margin-left: auto; font-size: 12.5px; color: var(--fg-faint); white-space: nowrap; display: flex; gap: 8px; align-items: baseline; }
+.head .meta .status { font-size: 13px; }
+
+/* the next action: the one thing a lawyer reads first — serif, one sentence,
+   a run-in, no box */
+.next { border-top: 3px double var(--border-strong); padding: 14px 0 16px; display: grid; grid-template-columns: 8.5em minmax(0, 1fr); column-gap: 12px; align-items: baseline; }
+.next .runin { line-height: 1.8; }
+.next .runin em { color: var(--accent); }
+.next p { font: 400 16px/1.55 var(--serif); color: var(--fg); }
+.next .acts { grid-column: 2; display: flex; gap: 16px; margin-top: 6px; font-size: 13px; }
+.next .acts a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.next .acts a.quiet { color: var(--fg-muted); font-weight: 500; border-bottom: 1px solid var(--border-strong); }
+
+/* facts: the reader's ledger — label column, value left-aligned, two
+   independent column flows, one column below ~300px each */
+.facts { columns: 300px 2; column-gap: 48px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 12px 0; margin-bottom: 26px; }
+.facts .row { display: grid; grid-template-columns: 8.5em minmax(0, 1fr); column-gap: 12px; align-items: baseline; font-size: 13px; padding: 3px 0; break-inside: avoid; }
+.facts dt { font: 600 10.5px/1.8 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--fg-faint); white-space: nowrap; }
+.facts dd { color: var(--fg); line-height: 1.5; overflow-wrap: break-word; }
+
+/* sections: a run-in header with a hairline, rows as ledger lines */
+.sec { margin: 0 0 28px; }
+.sec .hd { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--border-strong); padding-bottom: 7px; margin-bottom: 4px; }
+.sec .hd .runin { line-height: 1; }
+.sec .hd a, .sec .hd span.q { color: var(--fg-faint); font-size: 12px; text-decoration: none; }
+.sec .row { display: flex; align-items: baseline; gap: 10px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 13.5px; min-width: 0; }
+.sec .row:first-of-type { border-top: none; }
+.sec .row .nm { color: var(--fg); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sec .row .nm.doc { font: 12.5px var(--mono); }
+.sec .row .kind { font: 600 9.5px/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--fg-faint); white-space: nowrap; }
+.sec .row .when { color: var(--fg-faint); font-size: 12px; white-space: nowrap; }
+.sec .row .acts { display: flex; gap: 12px; white-space: nowrap; font-size: 12.5px; }
+.sec .row .acts a { color: var(--fg-muted); text-decoration: none; border-bottom: 1px solid var(--border-strong); }
+.sec .row .acts a.primary { color: var(--accent); border-bottom: none; font-weight: 600; }
+.sec .row.child { padding-left: 22px; border-top: none; padding-top: 0; }
+.sec .row.child .nm::before { content: "↳ "; color: var(--fg-faint); }
+.sec .row .date { font: 500 12.5px var(--sans); color: var(--fg-muted); width: 5.2em; flex-shrink: 0; }
+.sec .row .date.hot { color: var(--amber); font-weight: 600; }
+.sec .row .line { color: var(--fg); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sec .row .line .sub-l { color: var(--fg-faint); }
+.sec .empty { font: italic 13.5px/1.5 var(--serif); color: var(--fg-faint); padding: 8px 0 4px; }
+.sec .empty a { color: var(--fg-muted); }
+.sec .more { font-size: 12px; color: var(--fg-faint); padding-top: 8px; }
+.sec .more a { color: var(--fg-muted); text-decoration: none; border-bottom: 1px solid var(--border-strong); }
+
+/* the note: the reader body with its outline */
+.note { border-top: 3px double var(--border-strong); padding-top: 22px; position: relative; }
+.note .hd { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
+.note .hd .runin { line-height: 1; }
+.note .hd a { color: var(--fg-faint); font-size: 12px; text-decoration: none; }
+.md { font: 400 15.5px/1.65 var(--serif); color: var(--fg); max-width: 68ch; }
+.md h2 { font: 500 17px/1.3 var(--serif); margin: 26px 0 8px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
+.md p, .md li { margin-bottom: 8px; }
+.md ul { padding-left: 20px; }
+.md b { font-weight: 600; }
+.md code { font: .88em var(--mono); color: var(--fg-muted); }
+.outline { position: fixed; right: 26px; top: 120px; width: 160px; font-size: 11.5px; color: var(--fg-faint); border-left: 1px solid var(--border); padding-left: 10px; }
+.outline div { padding: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.outline .on { color: var(--fg); }
+@media (max-width: 1240px) { .outline { display: none; } }
+
+/* the matter-scoped ask box, sticky at the bottom of the page */
+.askwrap { position: sticky; bottom: 0; padding: 18px 0 20px; background: linear-gradient(to bottom, transparent, var(--bg) 24px); }
+.askwrap .ask { padding: 12px 16px 10px; }
+.askwrap .row { margin-top: 8px; }
+.askwrap .scope { font-size: 12px; color: var(--fg-faint); display: flex; gap: 8px; align-items: baseline; }
+.askwrap .scope .tag { font-size: 9.5px; }
+.askwrap .local { font-size: 12px; color: var(--fg-faint); margin: 6px 4px 0; }
+.askwrap .local b { color: var(--fg-muted); font-weight: 500; }
+
+@media (max-width: 1000px) {
+  .wrap { padding: 28px 24px 110px; }
+  .sec .row { flex-wrap: wrap; }
+  .sec .row .acts { width: 100%; padding-left: 0; margin-top: 2px; }
+  .head .meta { margin-left: 0; }
+}
