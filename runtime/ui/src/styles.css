@@ -949,6 +949,36 @@ a { color: var(--accent); }
 .v2-doctor-fix { color: var(--fg-faint); font: 12px var(--mono); margin-top: 2px; word-break: break-all; }
 .v2-doctor-verdict { margin-top: 8px; font: italic 500 13.5px/1.4 var(--serif); color: var(--fg); }
 
+/* ── Settings: Models (routing-and-evals spec §10) ─────────────────────
+   The scoreboard as a ledger: small-caps tabs for the three fixture sets,
+   a task × provider table ruled with hairlines, scores set as text. No
+   pills, no bars; the actions are quiet links on the cell itself. */
+.v2-models-tabs { margin: 0 0 10px; display: flex; align-items: baseline; }
+.v2-models-tab { background: none; border: none; padding: 0; cursor: pointer; }
+.v2-models-tab[aria-selected="true"] { color: var(--fg); border-bottom: 1px solid var(--border-strong); }
+.v2-models-dot { color: var(--fg-faint); margin: 0 6px; font-size: 11px; }
+.v2-models-empty { margin: 0 0 10px; font: italic 13.5px/1.4 var(--serif); }
+.v2-models-scroll { overflow-x: auto; }
+.v2-models-table { border-collapse: collapse; width: 100%; font-size: 13px; }
+.v2-models-table th, .v2-models-table td { text-align: left; vertical-align: top; padding: 7px 10px 7px 0; border-bottom: 1px solid var(--border); }
+.v2-models-table thead th { border-bottom: 1px solid var(--border-strong); }
+.v2-models-table tbody tr:last-child th, .v2-models-table tbody tr:last-child td { border-bottom: none; }
+.v2-models-provider { font: 12.5px var(--mono); color: var(--fg-muted); font-weight: 400; }
+.v2-models-task { font: 500 13.5px var(--serif); color: var(--fg); white-space: nowrap; }
+.v2-models-count { display: block; font: 11.5px var(--sans); color: var(--fg-faint); margin-top: 2px; }
+.v2-models-cell { min-width: 11rem; }
+.v2-models-row { display: flex; flex-direction: column; gap: 1px; margin-bottom: 4px; }
+.v2-models-score { font: 500 15px/1.2 var(--serif); font-variant-numeric: tabular-nums; color: var(--fg); }
+.v2-models-score.v2-models-failed { font-style: italic; color: var(--error); font-size: 13px; }
+.v2-models-version { font: 11.5px var(--mono); color: var(--fg-faint); }
+.v2-models-facts { font-size: 11.5px; color: var(--fg-faint); }
+.v2-models-reason { font: italic 12px/1.4 var(--serif); color: var(--fg-muted); }
+.v2-models-acts, .v2-models-confirm, .v2-models-progress { display: block; font-size: 12px; }
+.v2-models-confirm { font: italic 12.5px/1.5 var(--serif); color: var(--fg); }
+.v2-models-progress { font: italic 12.5px/1.5 var(--serif); color: var(--accent); }
+.v2-models .v2-link.v2-models-act { font: 600 12px var(--sans); color: var(--fg-muted); text-decoration: none; border-bottom: 1px solid var(--border-strong); margin-right: 8px; }
+.v2-models .v2-link.v2-models-act:disabled { color: var(--fg-faint); border-bottom-color: var(--border); cursor: default; }
+
 /* The Runtime group's sign-out: one sentence, the action as a quiet link. */
 .settings-signout { margin: 10px 0 18px; font-size: 13px; }
 

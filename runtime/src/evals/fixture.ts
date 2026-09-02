@@ -12,6 +12,8 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
+import { repoContentSource } from '../content/repo';
+import type { ContentSource } from '../content/source';
 
 export const SCORERS = ['findings', 'extraction', 'classification', 'redline', 'rubric'] as const;
 export type ScorerKind = (typeof SCORERS)[number];
@@ -138,15 +140,23 @@ export function parseFixture(raw: unknown, where = 'fixture'): Fixture {
   return r.data;
 }
 
+/** Where a fixture's `vault` name resolves: a directory on disk (the
+ * practice's own fixtures) or a prefix in the shipped content (the shipped
+ * suite, so the compiled binary runs it too). */
+export type FixtureVaults = { kind: 'dir'; dir: string } | { kind: 'content'; content: ContentSource; prefix: string };
+
 export interface LoadedFixture {
   fixture: Fixture;
   /** Where the file came from, for the results record. `source.kind` on the
    * fixture wins when it says so. */
   set: 'shipped' | 'practice';
+  /** The fixture file: a path on disk, or the content path for the shipped set. */
   file: string;
-  /** The directory the fixture's `vault` name is resolved under. */
-  vaultsDir: string;
+  vaults: FixtureVaults;
 }
+
+export const SHIPPED_FIXTURES_PREFIX = 'evals/fixtures';
+export const SHIPPED_VAULTS_PREFIX = 'evals/vaults';
 
 function readDir(dir: string): string[] {
   try {
@@ -157,16 +167,20 @@ function readDir(dir: string): string[] {
   return readdirSync(dir).filter(f => f.endsWith('.json')).sort();
 }
 
-/** The shipped suite: `<repoRoot>/evals/fixtures/*.json` with vaults under
- * `<repoRoot>/evals/vaults/`. */
-export function loadShippedFixtures(repoRoot: string): LoadedFixture[] {
-  const dir = join(repoRoot, 'evals', 'fixtures');
-  return readDir(dir).map(f => ({
-    fixture: parseFixture(JSON.parse(readFileSync(join(dir, f), 'utf8')), `evals/fixtures/${f}`),
-    set: 'shipped' as const,
-    file: join(dir, f),
-    vaultsDir: join(repoRoot, 'evals', 'vaults'),
-  }));
+/** The shipped suite, read through the content source: `evals/fixtures/
+ * *.json` with vaults under `evals/vaults/`. A repo root stands in for the
+ * checkout's source (tests, the self-test). */
+export function loadShippedFixtures(source: ContentSource | string): LoadedFixture[] {
+  const content = typeof source === 'string' ? repoContentSource(source) : source;
+  return content
+    .list(SHIPPED_FIXTURES_PREFIX)
+    .filter(p => p.endsWith('.json'))
+    .map(p => ({
+      fixture: parseFixture(JSON.parse(content.read(p)), p),
+      set: 'shipped' as const,
+      file: p,
+      vaults: { kind: 'content' as const, content, prefix: SHIPPED_VAULTS_PREFIX },
+    }));
 }
 
 /** The practice's own fixtures: `<vault>/practice/evals/*.json` with vaults
@@ -177,12 +191,12 @@ export function loadPracticeFixtures(vaultRoot: string): LoadedFixture[] {
     fixture: parseFixture(JSON.parse(readFileSync(join(dir, f), 'utf8')), `practice/evals/${f}`),
     set: 'practice' as const,
     file: join(dir, f),
-    vaultsDir: join(dir, 'vaults'),
+    vaults: { kind: 'dir' as const, dir: join(dir, 'vaults') },
   }));
 }
 
-export function loadFixtures(opts: { repoRoot: string; vaultRoot?: string }): LoadedFixture[] {
-  return [...loadShippedFixtures(opts.repoRoot), ...(opts.vaultRoot === undefined ? [] : loadPracticeFixtures(opts.vaultRoot))];
+export function loadFixtures(opts: { content: ContentSource | string; vaultRoot?: string }): LoadedFixture[] {
+  return [...loadShippedFixtures(opts.content), ...(opts.vaultRoot === undefined ? [] : loadPracticeFixtures(opts.vaultRoot))];
 }
 
 export function sourceKindOf(loaded: LoadedFixture): FixtureSource['kind'] {

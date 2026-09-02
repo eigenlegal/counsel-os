@@ -75,3 +75,16 @@ bun runtime/src/cli.ts eval --fixture law-beats-practice       # a single fixtur
 ```
 
 Run before cutting a release and whenever the underlying model changes — scoring is deterministic, so regressions are attributable to the content or the model, not the harness. End users never need this; CI runs the scorer self-test on every push.
+
+`--save` appends each line to `<vault>/.counsel/evals/results.jsonl`. The scoreboard folds that record per task and provider:
+
+```bash
+bun runtime/src/cli.ts eval --scoreboard            # the ledger: task, then a line per fixture set, a row per provider
+bun runtime/src/cli.ts eval --scoreboard --json     # the same board as JSON (GET /evals/scoreboard serves it)
+```
+
+Three rules hold everywhere the board appears (the CLI, `GET /evals/scoreboard`, Settings › Models): the latest line per fixture wins, so a re-run replaces rather than accumulates; the `practice`, `shipped` and `benchmark` sets are never averaged together; a `score: null` line is a failed cell with its reason, never a zero in the mean. Each row carries how many fixtures it scored, the sample size (every line behind it), the median latency, the mean cost per run and how many days old it is.
+
+The shipped fixtures and their mini-vaults (`evals/fixtures`, `evals/vaults`) ship through the content source like the law areas do, so the compiled binary lists and runs the same suite as a checkout. The practice's own fixtures live under `<vault>/practice/evals/` and never ship.
+
+In the app, Settings › Models shows the board with the three sets as tabs. Each cell's *score* (or *retry* / *again*) asks once — how many fixtures, roughly what it costs, or *cost unknown* when the vendor publishes no price the runtime knows — then runs `POST /evals/run` with `save: true` and reports progress on the same line.

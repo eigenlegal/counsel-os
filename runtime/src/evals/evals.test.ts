@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { repoContentSource } from '../content/repo';
 import { simpleDocx } from '../docx/test/builder';
 import { estimateCost, needsConfirmation } from './cost';
 import { loadFixtures, loadPracticeFixtures, loadShippedFixtures, parseFixture, taskForScorer, type LoadedFixture } from './fixture';
@@ -43,10 +44,26 @@ describe('fixture v2', () => {
     expect(taskForScorer(f.scorer)).toBe('review');
   });
 
-  test('every shipped fixture parses', () => {
+  test('every shipped fixture parses, read through the content source', () => {
     const all = loadShippedFixtures(repoRoot);
     expect(all.length).toBeGreaterThanOrEqual(13);
     expect(all.every(l => l.fixture.scorer === 'findings')).toBe(true);
+    expect(all[0]!.file).toMatch(/^evals\/fixtures\/[a-z0-9-]+\.json$/);
+    expect(all[0]!.vaults).toMatchObject({ kind: 'content', prefix: 'evals/vaults' });
+  });
+
+  test('the content source lists every fixture file and every vault file the checkout holds (parity)', () => {
+    const source = repoContentSource(repoRoot);
+    const onDisk = readdirSync(join(repoRoot, 'evals', 'fixtures')).filter(f => f.endsWith('.json')).sort();
+    expect(source.list('evals/fixtures').map(p => p.slice('evals/fixtures/'.length))).toEqual(onDisk);
+    expect(loadShippedFixtures(source).map(l => l.fixture.id)).toEqual(loadShippedFixtures(repoRoot).map(l => l.fixture.id));
+    const walk = (dir: string, rel: string): string[] =>
+      readdirSync(join(dir, rel), { withFileTypes: true })
+        .filter(e => !e.name.startsWith('.'))
+        .flatMap(e => (e.isDirectory() ? walk(dir, `${rel}/${e.name}`) : [`${rel}/${e.name}`]))
+        .sort();
+    expect(source.list('evals/vaults')).toEqual(walk(repoRoot, 'evals/vaults'));
+    expect(source.list('evals/vaults').length).toBeGreaterThan(40);
   });
 
   test('a v2 extraction fixture parses; a rubric fixture without criteria does not', () => {
@@ -69,8 +86,8 @@ describe('fixture v2', () => {
     const practice = loadPracticeFixtures(vaultRoot);
     expect(practice).toHaveLength(1);
     expect(practice[0]!.set).toBe('practice');
-    expect(practice[0]!.vaultsDir).toBe(join(vaultRoot, 'practice', 'evals', 'vaults'));
-    expect(loadFixtures({ repoRoot, vaultRoot }).map(l => l.fixture.id)).toContain('mine');
+    expect(practice[0]!.vaults).toEqual({ kind: 'dir', dir: join(vaultRoot, 'practice', 'evals', 'vaults') });
+    expect(loadFixtures({ content: repoRoot, vaultRoot }).map(l => l.fixture.id)).toContain('mine');
     expect(loadPracticeFixtures(mkdtempSync(join(tmpdir(), 'evals-empty-')))).toEqual([]);
   });
 });
@@ -244,8 +261,9 @@ describe('output schemas', () => {
 });
 
 describe('vault prep', () => {
-  test('copies the fixture vault to a temp dir and rewrites __VAULT_PATH__', () => {
+  test('writes a shipped fixture vault out of the content source into a temp dir and rewrites __VAULT_PATH__', () => {
     const loaded = loadShippedFixtures(repoRoot).find(l => l.fixture.id === 'law-beats-practice')!;
+    expect(loaded.vaults.kind).toBe('content');
     const tmpDir = mkdtempSync(join(tmpdir(), 'evals-prep-'));
     const p = prepareFixtureVault(loaded, { tmpDir });
     expect(p.vault).toBe(join(p.tmp, 'vault'));
@@ -253,15 +271,38 @@ describe('vault prep', () => {
     expect(cfg).not.toContain('__VAULT_PATH__');
     expect(cfg).toContain(p.vault);
     expect(existsSync(join(p.vault, 'law'))).toBe(true);
+    expect(existsSync(join(p.vault, 'practice', 'standards'))).toBe(true);
+    // `matters/.gitkeep` is a dotfile the content walk skips; the folder is made anyway.
+    expect(existsSync(join(p.vault, 'matters'))).toBe(true);
+    // Byte-for-byte what the checkout holds.
+    expect(readFileSync(join(p.vault, 'practice', 'standards', readdirSync(join(p.vault, 'practice', 'standards'))[0]!), 'utf8')).toBe(
+      readFileSync(join(repoRoot, 'evals', 'vaults', 'law-beats-practice', 'practice', 'standards', readdirSync(join(p.vault, 'practice', 'standards'))[0]!), 'utf8'),
+    );
     p.remove();
     expect(existsSync(p.tmp)).toBe(false);
   });
 
-  test('a legacy fixture with no vault cannot be prepared', () => {
-    const loaded: LoadedFixture = { fixture: parseFixture({ id: 'demo-nda', task: 'x' }), set: 'shipped', file: 'x', vaultsDir: join(repoRoot, 'evals', 'vaults') };
+  test('copies a practice fixture vault from its directory', () => {
+    const vaultRoot = mkdtempSync(join(tmpdir(), 'evals-practice-'));
+    const src = join(vaultRoot, 'practice', 'evals', 'vaults', 'mine');
+    mkdirSync(join(src, 'law'), { recursive: true });
+    writeFileSync(join(src, 'config.md'), '---\nlegal_root: __VAULT_PATH__\n---\n', 'utf8');
+    writeFileSync(join(src, 'law', 'x.md'), '# x\n', 'utf8');
+    const loaded: LoadedFixture = { fixture: parseFixture({ id: 'mine', vault: 'mine', task: 'x' }), set: 'practice', file: 'x', vaults: { kind: 'dir', dir: join(vaultRoot, 'practice', 'evals', 'vaults') } };
+    const p = prepareFixtureVault(loaded, { tmpDir: mkdtempSync(join(tmpdir(), 'evals-prep-')) });
+    expect(readFileSync(join(p.vault, 'config.md'), 'utf8')).toContain(p.vault);
+    expect(existsSync(join(p.vault, 'law', 'x.md'))).toBe(true);
+    expect(existsSync(join(p.vault, 'matters'))).toBe(true);
+    p.remove();
+  });
+
+  test('a legacy fixture with no vault cannot be prepared; a missing vault says so for either kind', () => {
+    const loaded: LoadedFixture = { fixture: parseFixture({ id: 'demo-nda', task: 'x' }), set: 'shipped', file: 'x', vaults: { kind: 'dir', dir: join(repoRoot, 'evals', 'vaults') } };
     expect(() => prepareFixtureVault(loaded)).toThrow(/has no vault/);
     const missing: LoadedFixture = { ...loaded, fixture: parseFixture({ id: 'ghost', vault: 'nope', task: 'x' }) };
     expect(() => prepareFixtureVault(missing)).toThrow(/vault not found/);
+    const missingContent: LoadedFixture = { ...missing, vaults: { kind: 'content', content: repoContentSource(repoRoot), prefix: 'evals/vaults' } };
+    expect(() => prepareFixtureVault(missingContent)).toThrow(/vault not found/);
   });
 });
 
