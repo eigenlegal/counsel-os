@@ -160,7 +160,19 @@ export function Strip({ turn, run, ms, threadId = null, onOpenFile }: StripProps
                 and the duration live HERE, where a reader who opened the
                 record came looking for them. */}
             <dt>Model</dt>
-            <dd>{provider === '' ? 'no provider' : <code>{provider}</code>}</dd>
+            <dd>
+              {provider === '' ? 'no provider' : <code>{provider}</code>}
+              {/* Why this model and not another (routing-and-evals spec §6):
+                  the scoreboard's pick, a pin, the route, or the default —
+                  and whether the matter's policy bound the choice. */}
+              {run.routeReason === undefined ? null : (
+                <span className="v2-record-route">
+                  {' · '}
+                  {run.routeReason.text}
+                  {run.policy === 'stays-local' && run.routeReason.kind !== 'stays-local' ? ' · stays on this machine' : ''}
+                </span>
+              )}
+            </dd>
             {run.durationMs === undefined ? null : (
               <>
                 <dt>Duration</dt>

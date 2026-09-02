@@ -136,6 +136,11 @@ export interface RunRecord {
   task?: string;
   taskSource?: TaskSource;
   mark?: RunMark;
+  /** Why this model answered (routing-and-evals spec §6). COPIED from
+   * `runtime/src/router/router.ts`; a change there is a change here. */
+  routeReason?: { kind: string; text: string };
+  /** `stays-local` when the matter's privacy policy chose the model. */
+  policy?: 'stays-local';
   primitivesRead: string[];
   toolCalls: ToolCallLog[];
   proposals: string[];

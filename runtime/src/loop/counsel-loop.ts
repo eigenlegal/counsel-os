@@ -2,12 +2,14 @@ import { randomUUID } from 'node:crypto';
 import type { ZodType } from 'zod';
 import type { Message, ModelProvider, Platform, StepEvent, StepRequest, Tenant, ToolDef, Usage, VaultStore, ArtifactSummary } from '../core/types';
 import { currentPlatform } from '../core/types';
-import type { Router } from '../router/router';
+import type { Routed, RouteReason, Router } from '../router/router';
 import { ThreadStore, type ThreadEvent, type ThreadHeader } from '../threads/store';
 import { window } from '../threads/window';
 import { readVaultConfig, type VaultConfig } from '../vault/resolve-root';
 import { policyForStep, readerOver, type StepPolicy } from '../vault/policy';
 import { isLocal } from '../router/router';
+import { taskPolicy, type RoutingPolicy } from '../router/policy';
+import type { RouteScores } from '../router/scores';
 import { MatterStaysLocalError } from '../core/types';
 import { guardedVaultTools } from '../vault/vault-tools';
 import { builtinTools } from '../tools/builtin';
@@ -73,6 +75,10 @@ export interface CounselLoopDeps {
    * when neither the caller nor the thread named a task and no rule fired.
    * Absent → rules then `chat`; serve wires `modelClassifier`. */
   classifier?: ModelClassifier;
+  /** What the scoreboard measured and how this practice wants each task
+   * routed (routing-and-evals spec §6). Absent → the configured route and
+   * the default decide, exactly as before scoring existed. */
+  routing?: () => { scores: RouteScores; policy: RoutingPolicy };
 }
 
 export interface RunStepOptions {
@@ -142,16 +148,22 @@ export async function policyForOptions(
  * that is not local is refused outright under `localOnly` (never a silent
  * swap), and the router's local-only path picks among what is loaded.
  */
-export function resolveStepProvider(deps: CounselLoopDeps, opts: RunStepOptions, policy: StepPolicy): ModelProvider {
+export function resolveStepProvider(deps: CounselLoopDeps, opts: RunStepOptions, policy: StepPolicy): Routed {
   if (opts.providerId) {
     const found = deps.providers.find(p => p.id === opts.providerId);
     if (!found) throw new Error(`unknown provider: ${opts.providerId}`);
     if (policy.localOnly && !isLocal(found.capabilities)) {
       throw new MatterStaysLocalError(`This matter stays on this machine; ${found.id} is not a local model.`);
     }
-    return found;
+    return { provider: found, reason: { kind: 'default', text: 'you chose this model' } };
   }
-  return deps.router.resolve(opts.task, { localOnly: policy.localOnly });
+  const routing = deps.routing?.();
+  return deps.router.route(opts.task, {
+    localOnly: policy.localOnly,
+    ...(routing === undefined || opts.task === undefined
+      ? {}
+      : { scores: routing.scores[opts.task] ?? [], policy: taskPolicy(routing.policy, opts.task) }),
+  });
 }
 
 
@@ -274,14 +286,18 @@ export async function* runStep(
     // or no local model at all) never ran, so the transcript must not show
     // a question nobody answered.
     let provider: ModelProvider;
+    // Why this step went where it did, for the record and the strip.
+    let routeReason: RouteReason | null = null;
     try {
-      provider = bindToThread(deps, resolveStepProvider(deps, opts, policy), threadId);
+      const routed = resolveStepProvider(deps, opts, policy);
+      routeReason = routed.reason;
+      provider = bindToThread(deps, routed.provider, threadId);
     } catch (err) {
       failRun(message(err));
       yield { type: 'error', message: message(err), runId };
       return;
     }
-    patchRun(deps, runId, { provider: provider.id, ...(policy.localOnly ? { policy: 'stays-local' as const } : {}) });
+    patchRun(deps, runId, { provider: provider.id, ...(routeReason === null ? {} : { routeReason }), ...(policy.localOnly ? { policy: 'stays-local' as const } : {}) });
 
     const userFailed = await tryPersist(() =>
       store.append(tenant, threadId, { t: 'user', at: nowIso(), content: opts.message }),
