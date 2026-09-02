@@ -994,3 +994,16 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .v2-add-provider-row { display: flex; gap: 10px; align-items: flex-end; }
 .v2-add-provider-row .v2-combo { flex: 1 1 24rem; }
 .v2-add-provider-note { margin: 6px 0 0; font-size: 12.5px; }
+
+/* A provider's key (providers spec §5): set text under the row; the paste
+   field shows the value only while it is typed. */
+.v2-key { margin: 2px 0 8px; font-size: 12.5px; color: var(--fg-muted); }
+.v2-key-line { margin: 0; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.v2-key .v2-tag { font-size: 9.5px; }
+.v2-key-state { font: italic 500 12.5px var(--serif); color: var(--fg-muted); }
+.v2-key-set { color: var(--ok); }
+.v2-key a { color: inherit; text-decoration: underline; text-decoration-color: var(--border-strong); }
+.v2-key-form { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.v2-key-form input { flex: 1 1 24ch; min-width: 0; font: 13px var(--mono); padding: 4px 8px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--bg-raised); color: var(--fg); }
+.v2-key-where { font-size: 11.5px; flex-basis: 100%; }
+.v2-key-error { margin: 4px 0 0; font-size: 12.5px; color: var(--error); }

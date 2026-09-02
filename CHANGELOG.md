@@ -29,6 +29,12 @@ The `counsel-os` binary (packaging spec §3, step 1)
 - `docket_sweep` is the TypeScript sweep Home's docket uses; `clean_format` (still Python) is registered only from a checkout.
 - Guard: `init` and `update-content` refuse a content source that ships zero (or fewer than the manifest's) files instead of seeding an empty vault.
 
+More providers and models, step 2 — keys in the app (providers spec §5)
+
+- Paste an API key on a provider's row in Settings; it is kept in the macOS Keychain (`security`), the Linux keyring (`secret-tool`) when present, or `~/.counsel-os/secrets.json` at 0600 — never in `providers.yaml`, the vault, a log, or a response. The registry asks the store before the environment, so a key from the environment still works for headless use (`COUNSEL_OS_SECRETS=file` forces the file store).
+- `PUT`/`DELETE /providers/<id>/key`; `/settings` and `/health` report `keySet` (`true`, `false`, or `env`) per provider and where keys live. Anthropic and OpenAI providers now honour an app-entered key (they read only the environment before).
+- Settings: a `key · set · replace · remove` line under each keyed row with the vendor's "get a key" link; the Runtime ledger's Keys fact; the Providers copy stops sending a lawyer to set environment variables.
+
 ## [0.12.0] — 2026-09-01
 
 Standalone foundations — Word documents in TypeScript, runtime-owned setup, drag-in intake, stay signed in, new theme

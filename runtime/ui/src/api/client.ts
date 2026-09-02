@@ -63,6 +63,20 @@ export async function signOut(): Promise<void> {
   }
 }
 
+/** `PUT /providers/<id>/key` (providers spec §5): the one request that
+ * carries a key. Slashes in the id are path segments. 204 on success. */
+export async function setProviderKey(id: string, value: string): Promise<void> {
+  await fetchJson<void>(`/providers/${id.split('/').map(encodeURIComponent).join('/')}/key`, {
+    method: 'PUT',
+    body: JSON.stringify({ value }),
+  });
+}
+
+/** `DELETE /providers/<id>/key` — idempotent. */
+export async function deleteProviderKey(id: string): Promise<void> {
+  await fetchJson<void>(`/providers/${id.split('/').map(encodeURIComponent).join('/')}/key`, { method: 'DELETE' });
+}
+
 /** Best-effort body parse. A failure here must not mask the status code —
  * that is the part the caller acts on. */
 async function readBody(res: Response): Promise<unknown> {
