@@ -5,7 +5,7 @@
 import type { ContentManifest } from './generate';
 
 export const MANIFEST: ContentManifest = {
-  "version": "0.11.3",
+  "version": "0.12.0",
   "files": {
     "knowledge/law/accessibility/_overview.md": {
       "hash": "36430c5756b08e9609b4d546b424c819c9c033a598f8df58713e2073c89bb595"
