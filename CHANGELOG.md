@@ -8,6 +8,10 @@ reconstructed from git history. New entries are prepended automatically by
 
 ## [Unreleased]
 
+Models, its own page (routing-and-evals spec §6, §10)
+
+- The scoreboard, the routing bar for each task, and the ledger of what ran have left the bottom of Settings for a **Models** page in the rail. None of them were settings: a scoreboard is a measurement, a bar is a standing decision about quality, and a ledger is a record. Settings is where you configure the runtime; this is where you see how it is doing.
+- Two questions in the order you ask them: how the models score, and what actually ran. Task routes stays in Settings, where it saves with the providers form.
 - Settings › Providers: the empty half-screen between "Add a provider" and the picker is gone. The guided-start rows lay a paragraph beside a button, and the paragraph's 24rem was being read as a HEIGHT in the one row that stacks — a 384px hole in the middle of the page.
 
 Conversations that keep working (web-ui spec §3.1)

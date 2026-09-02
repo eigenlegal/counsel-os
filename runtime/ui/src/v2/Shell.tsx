@@ -10,6 +10,7 @@ import { VAULT_CHANGED_EVENT } from './intake';
 import type { ComposerSeed } from './chat/Composer';
 import { Drawer } from './Drawer';
 import { HomePage } from './home/HomePage';
+import { ModelsPage } from './models/ModelsPage';
 import { Rail } from './Rail';
 import { SessionLost } from './SessionLost';
 import { SetupPage } from './SetupPage';
@@ -551,6 +552,12 @@ export function Shell(): JSX.Element {
               globalThis.location.hash = `#/vault?path=${encodeURIComponent(path)}`;
             }}
           />
+        ) : null}
+
+        {route === 'models' ? (
+          <main className="v2-page">
+            <ModelsPage health={health} />
+          </main>
         ) : null}
 
         {route === 'settings' && health !== null ? (

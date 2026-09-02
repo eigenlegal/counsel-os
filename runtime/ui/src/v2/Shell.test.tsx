@@ -413,6 +413,23 @@ describe('Shell', () => {
     await waitFor(() => expect(lists).toBeGreaterThan(before));
   });
 
+  test('#/models is the operator\u2019s page, and the chat keeps streaming underneath it', async () => {
+    render(<Shell />);
+    await waitFor(() => expect(chatNode()).toBeTruthy());
+
+    await act(async () => {
+      globalThis.location.hash = '#/models';
+      globalThis.dispatchEvent(new HashChangeEvent('hashchange'));
+      await Promise.resolve();
+    });
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'How they score' })).toBeTruthy());
+    // The keep-stream invariant holds on this route too: the workspace is
+    // hidden, never unmounted.
+    expect(chatNode()).toBeTruthy();
+    expect(document.querySelector('a[href="#/models"]')?.getAttribute('aria-current')).toBe('page');
+  });
+
   test('a stale empty list cannot reopen a draft over the thread just created', async () => {
     const fresh: ThreadHeader = {
       id: 't-9',

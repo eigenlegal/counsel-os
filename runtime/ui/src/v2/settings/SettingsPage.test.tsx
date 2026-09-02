@@ -79,8 +79,9 @@ describe('SettingsPage', () => {
     // Descendant, not child: `Health` draws its own heading inside its own
     // section, one level under the group card.
     const headings = Array.from(document.querySelectorAll('.v2-group h2'), el => el.textContent);
-    expect(headings).toEqual(['Providers', 'Default provider', 'Models', 'Task routes', 'Step timeout', 'Test', 'Content', 'Runtime']);
-    expect(screen.getByText(/How each provider scores on each kind of work/)).toBeTruthy();
+    // No Models: a scoreboard is a measurement and a bar is a standing
+    // decision, neither of which is a setting. They live on the Models page.
+    expect(headings).toEqual(['Providers', 'Default provider', 'Task routes', 'Step timeout', 'Test', 'Content', 'Runtime']);
     // The plain-language purpose lines (cou-84), one under each heading.
     expect(screen.getByText(/The models this runtime can call/)).toBeTruthy();
     expect(screen.getByText(/The model that answers when nothing more specific applies/)).toBeTruthy();

@@ -4,7 +4,7 @@
 
 import type { ReactNode } from 'react';
 
-function Icon({ children, round = false }: { children: ReactNode; round?: boolean }): JSX.Element {
+function Icon({ children, round = false, cap = false }: { children: ReactNode; round?: boolean; cap?: boolean }): JSX.Element {
   return (
     <svg
       className="v2-nav-icon"
@@ -15,6 +15,8 @@ function Icon({ children, round = false }: { children: ReactNode; round?: boolea
       // A many-cornered outline needs its joins rounded, or every tooth
       // grows a spike where two strokes meet at an acute angle.
       {...(round ? { strokeLinejoin: 'round' as const } : {})}
+      // Bars want rounded ends; a square cap on a 1.4 stroke reads as a nick.
+      {...(cap ? { strokeLinecap: 'round' as const } : {})}
       aria-hidden="true"
     >
       {children}
@@ -55,6 +57,15 @@ export function VaultIcon(): JSX.Element {
  * rail's other three icons are four-to-six-point outlines that a denser
  * gear would out-weigh.
  */
+/** Bars on a baseline: the scoreboard, which is what the page is. */
+export function ModelsIcon(): JSX.Element {
+  return (
+    <Icon cap>
+      <path d="M2.4 13.6h11.2M4.8 13.6V9.4M8 13.6V5.6M11.2 13.6V7.8" />
+    </Icon>
+  );
+}
+
 export function SettingsIcon(): JSX.Element {
   return (
     <Icon round>

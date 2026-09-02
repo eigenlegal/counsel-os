@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Health, ThreadHeader } from '../api/types';
 import type { Route } from '../app';
-import { ChatIcon, HomeIcon, SettingsIcon, VaultIcon } from './icons';
+import { ChatIcon, HomeIcon, ModelsIcon, SettingsIcon, VaultIcon } from './icons';
 import { ModelSwitcher } from './ModelSwitcher';
 import { prettifyName } from './vault/frontmatter';
 
@@ -101,6 +101,10 @@ export function Rail({
         <a href="#/vault" aria-current={route === 'vault' ? 'page' : undefined}>
           <VaultIcon />
           <span className="v2-lbl">Vault</span>
+        </a>
+        <a href="#/models" aria-current={route === 'models' ? 'page' : undefined}>
+          <ModelsIcon />
+          <span className="v2-lbl">Models</span>
         </a>
         <a href="#/settings" aria-current={route === 'settings' ? 'page' : undefined}>
           <SettingsIcon />
