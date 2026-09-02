@@ -8,6 +8,8 @@ reconstructed from git history. New entries are prepended automatically by
 
 ## [Unreleased]
 
+- Settings › Providers: the empty half-screen between "Add a provider" and the picker is gone. The guided-start rows lay a paragraph beside a button, and the paragraph's 24rem was being read as a HEIGHT in the one row that stacks — a 384px hole in the middle of the page.
+
 Conversations that keep working (web-ui spec §3.1)
 
 - A conversation no longer stops because you looked at something else. Switching to another conversation while counsel is still working used to abort the step — the answer thrown away and the run recorded `abandoned`, which is what two of the runs in this vault's own ledger are. The step now runs to the end whether or not you are watching, and its answer is there when you come back.

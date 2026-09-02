@@ -1049,7 +1049,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .v2-provider-data a { color: inherit; text-decoration: underline; text-decoration-color: var(--border-strong); }
 .providers-table .providers-data { color: var(--fg-muted); white-space: nowrap; }
 .v2-setup-more { margin: 10px 0 0; font-size: 12.5px; color: var(--fg-muted); }
+/* The guided-start rows are a ROW: the paragraph takes 24rem of width
+   beside the button (`.v2-guided-start p`). This one is a column, where
+   that same `flex-basis` is a HEIGHT — which left a 384px hole between the
+   sentence and the picker. */
 .v2-add-provider { flex-direction: column; align-items: stretch; }
+.v2-add-provider > p { flex: 0 0 auto; }
 .v2-add-provider-row { display: flex; gap: 10px; align-items: flex-end; }
 .v2-add-provider-row .v2-combo { flex: 1 1 24rem; }
 .v2-add-provider-note { margin: 6px 0 0; font-size: 12.5px; }
