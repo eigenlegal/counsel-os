@@ -132,7 +132,11 @@ export function ModelsGroup({ providerIds }: ModelsGroupProps): JSX.Element {
     setOutcome(null);
     setPending({ task, providerId, estimate: null, error: null });
     try {
-      const estimate = await fetchJson<EvalEstimate>(`/evals/estimate?task=${encodeURIComponent(task)}&providerId=${encodeURIComponent(providerId)}`);
+      // The tab is the set: scoring from the benchmark tab runs the
+      // benchmark, not the shipped fixtures of the same task.
+      const estimate = await fetchJson<EvalEstimate>(
+        `/evals/estimate?task=${encodeURIComponent(task)}&providerId=${encodeURIComponent(providerId)}${set === null ? '' : `&set=${encodeURIComponent(set)}`}`,
+      );
       setPending(p => (p === null || p.task !== task || p.providerId !== providerId ? p : { ...p, estimate }));
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) return;
@@ -148,7 +152,7 @@ export function ModelsGroup({ providerIds }: ModelsGroupProps): JSX.Element {
     let failure: string | null = null;
     try {
       await streamEvals(
-        { task, providerId, save: true, confirm: true },
+        { task, providerId, save: true, confirm: true, ...(set === null ? {} : { set }) },
         ev => {
           if (ev.event === 'progress') setRunning({ task, providerId, line: `${ev.data.index + 1} of ${ev.data.total} · ${ev.data.fixtureId}` });
           else if (ev.event === 'error') failure = ev.data.message;

@@ -10,7 +10,7 @@
  * `MAUD_v1/MAUD_test.csv`. `--tasks` names categories.
  */
 import { parseCsv } from './csv';
-import { download, fileNamed, fixtureId, sourceOf, textOf, type BenchmarkFile, type BenchmarkFixtures, type BenchmarkLoader, type FetchOptions, type ToFixturesOptions } from './types';
+import { download, fileNamed, fixtureId, slug, sourceOf, textOf, type BenchmarkFile, type BenchmarkFixtures, type BenchmarkLoader, type FetchOptions, type ToFixturesOptions } from './types';
 
 export const MAUD_URL = 'https://huggingface.co/datasets/theatticusproject/maud/resolve/main/MAUD_v1/MAUD_test.csv';
 export const MAUD_FILE = 'MAUD_test.csv';
@@ -78,7 +78,11 @@ export const maud: BenchmarkLoader = {
         scorer: 'classification',
         source: sourceOf(this),
         documents: items.map(r => ({
-          id: r.id,
+          // The contract, not MAUD's `id` column — that is the question's
+          // index, the same value on every row of this fixture. The
+          // scoreboard keys a cell on `<fixture>#<document>`, so identical
+          // ids would collapse a 20-contract fixture into one cell.
+          id: slug(r.contract_name),
           task: [
             'The following provision is from a public company merger agreement.',
             '',

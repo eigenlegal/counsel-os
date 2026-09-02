@@ -38,7 +38,7 @@ import {
   type SettingsDeps, providerView, keyContext, putProviderKey, deleteProviderKey, KeyBody } from './settings';
 import { sseFromEvents, type StreamEvent } from './sse';
 import { confirmationMessage, estimateCost, needsConfirmation, type Pricing } from '../evals/cost';
-import { FIXTURE_SETS, loadFixtures, sourceKindOf } from '../evals/fixture';
+import { defaultBenchmarksDir, FIXTURE_SETS, loadFixtures, sourceKindOf } from '../evals/fixture';
 import { citationsFor, documentFor, draftFromThread, fixtureFromDraft, NoFixtureHere, pickRun, type FixtureDraft } from '../evals/from-thread';
 import { pickJudge, providerJudge } from '../evals/judge';
 import { appendResult, readResults } from '../evals/results';
@@ -47,7 +47,7 @@ import { fixtureCounts, scoreboard } from '../evals/scoreboard';
 import { routeScores } from '../router/scores';
 import { DEFAULT_MIN_SCORE, DEFAULT_PREFERENCE, readRoutingPolicy, taskPolicy, writeRoutingPolicy, type RoutingPolicy } from '../router/policy';
 import type { Judge } from '../evals/scorers/types';
-import { runnable, selectFixtures, taskOf } from '../evals/select';
+import { runCount, runnable, selectFixtures, taskOf } from '../evals/select';
 import { serveStatic, type StaticSource } from './static';
 
 /**
@@ -82,7 +82,16 @@ export interface ServerDeps extends Omit<CounselLoopDeps, 'providers' | 'router'
    * lookup behind the cost guard (default: none known → no guard, and the
    * response says so), and the rubric judge (default: picked from the live
    * providers per spec §12). */
-  evals?: { repoRoot?: string; pricing?: (providerId: string) => Pricing | null; judge?: Judge; tmpDir?: string };
+  evals?: {
+    repoRoot?: string;
+    pricing?: (providerId: string) => Pricing | null;
+    judge?: Judge;
+    tmpDir?: string;
+    /** Where `counsel-os eval import` put the public benchmarks. Default:
+     * `evals/benchmarks/` under the checkout the shipped fixtures come from
+     * — without it an imported set is invisible to the app. */
+    benchmarksDir?: string;
+  };
 }
 
 export type App = (req: Request) => Promise<Response>;
@@ -691,7 +700,8 @@ export function createApp(deps: ServerDeps): App {
    * points at another checkout. */
   const evalContent = (): ContentSource =>
     deps.evals?.repoRoot !== undefined ? repoContentSource(deps.evals.repoRoot) : (deps.content ?? repoContentSource(deps.pluginRoot));
-  const evalLoaded = () => loadFixtures({ content: evalContent(), vaultRoot: deps.vaultRoot });
+  const evalBenchmarks = (): string => deps.evals?.benchmarksDir ?? defaultBenchmarksDir(deps.evals?.repoRoot ?? deps.pluginRoot);
+  const evalLoaded = () => loadFixtures({ content: evalContent(), vaultRoot: deps.vaultRoot, benchmarksDir: evalBenchmarks() });
 
   const evalFixtures = (): Response =>
     json({
@@ -965,10 +975,17 @@ export function createApp(deps: ServerDeps): App {
     if (providerId === null || providerId === '') return fail(400, 'providerId is required');
     const state = deps.state();
     if (!state.providers.some(p => p.id === providerId)) return fail(422, `unknown provider: ${providerId}`);
-    const selected = selectFixtures(evalLoaded(), { task });
-    const count = selected.fixtures.length;
+    const set = url.searchParams.get('set');
+    if (set !== null && !(FIXTURE_SETS as readonly string[]).includes(set)) return fail(400, `set must be one of ${FIXTURE_SETS.join(', ')}`);
+    const selected = selectFixtures(evalLoaded(), { task, ...(set === null ? {} : { set: set as (typeof FIXTURE_SETS)[number] }) });
+    // The calls the run makes, not the files it reads: one benchmark fixture
+    // can hold hundreds of documents.
+    const count = runCount(selected.fixtures);
     const estimateUsd = estimateCost(count, deps.evals?.pricing?.(providerId) ?? null);
-    return json({ task, providerId, count, estimateUsd, needsConfirm: needsConfirmation(estimateUsd), skipped: selected.skipped });
+    // With the count, as the run itself does: a provider whose price is
+    // unknown needs confirming for anything but a single call, and this line
+    // is what the screen asks with.
+    return json({ task, providerId, count, estimateUsd, needsConfirm: needsConfirmation(estimateUsd, count), skipped: selected.skipped });
   };
 
   /** One run at a time: a set is a queue of steps against the shared
@@ -989,9 +1006,10 @@ export function createApp(deps: ServerDeps): App {
     });
     if (selected.error !== undefined) throw new HttpError(400, selected.error);
     if (selected.fixtures.length === 0) throw new HttpError(400, 'nothing to run', { skipped: selected.skipped });
-    const estimateUsd = estimateCost(selected.fixtures.length, deps.evals?.pricing?.(providerId) ?? null);
-    if (needsConfirmation(estimateUsd, selected.fixtures.length) && input.confirm !== true) {
-      return fail(409, 'confirm-cost', { estimateUsd, count: selected.fixtures.length, providerId, message: confirmationMessage(estimateUsd, selected.fixtures.length, providerId) });
+    const runs = runCount(selected.fixtures);
+    const estimateUsd = estimateCost(runs, deps.evals?.pricing?.(providerId) ?? null);
+    if (needsConfirmation(estimateUsd, runs) && input.confirm !== true) {
+      return fail(409, 'confirm-cost', { estimateUsd, count: runs, providerId, message: confirmationMessage(estimateUsd, runs, providerId) });
     }
     if (evalRunning) return fail(409, 'eval-busy');
     evalRunning = true;

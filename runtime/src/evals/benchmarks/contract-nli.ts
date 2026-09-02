@@ -58,7 +58,7 @@ export const contractNli: BenchmarkLoader = {
     const documents: Record<string, string> = {};
     const pathOf = (d: NliDocument): string => `matters/contract-nli/${String(d.id)}-${slug(d.file_name.replace(/\.pdf$/i, ''))}.txt`;
     for (const d of docs) documents[pathOf(d)] = d.text;
-    const fixtures = wanted.map(key => {
+    const fixtures = wanted.flatMap(key => {
       const label = split.labels[key]!;
       const entries = docs.flatMap(d => {
         const ann = d.annotation_sets[0]?.annotations[key];
@@ -78,14 +78,21 @@ export const contractNli: BenchmarkLoader = {
           },
         ];
       });
-      return {
-        id: fixtureId('contract-nli', `${key} ${label.short_description}`),
-        title: `ContractNLI · ${key} · ${label.short_description}`,
-        vault: 'contract-nli',
-        scorer: 'classification',
-        source: sourceOf(this),
-        documents: entries,
-      };
+      // A hypothesis nobody annotated in this subset is no fixture at all.
+      // Built anyway, it has no `documents[]` and no `expected`, and the
+      // parser rejects it — which aborts the whole import, and `--subset n`
+      // makes that the common case rather than the odd one.
+      if (entries.length === 0) return [];
+      return [
+        {
+          id: fixtureId('contract-nli', `${key} ${label.short_description}`),
+          title: `ContractNLI · ${key} · ${label.short_description}`,
+          vault: 'contract-nli',
+          scorer: 'classification',
+          source: sourceOf(this),
+          documents: entries,
+        },
+      ];
     });
     return { fixtures, documents };
   },

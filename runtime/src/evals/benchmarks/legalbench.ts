@@ -24,11 +24,27 @@ export const LEGALBENCH_CONTRACT_TASKS: readonly string[] = [
   'maud_ability_to_consummate_concept_is_subject_to_mae_carveouts', 'maud_accuracy_of_fundamental_target_rws_bringdown_standard', 'maud_accuracy_of_target_capitalization_rw_(outstanding_shares)_bringdown_standard_answer', 'maud_accuracy_of_target_general_rw_bringdown_timing_answer', 'maud_additional_matching_rights_period_for_modifications_(cor)', 'maud_application_of_buyer_consent_requirement_(negative_interim_covenant)', 'maud_buyer_consent_requirement_(ordinary_course)', 'maud_change_in_law__subject_to_disproportionate_impact_modifier', 'maud_changes_in_gaap_or_other_accounting_principles__subject_to_disproportionate_impact_modifier', 'maud_cor_permitted_in_response_to_intervening_event', 'maud_cor_permitted_with_board_fiduciary_determination_only', 'maud_cor_standard_(intervening_event)', 'maud_cor_standard_(superior_offer)', 'maud_definition_contains_knowledge_requirement_-_answer', 'maud_definition_includes_asset_deals', 'maud_definition_includes_stock_deals', 'maud_fiduciary_exception__board_determination_standard', 'maud_fiduciary_exception_board_determination_trigger_(no_shop)', 'maud_financial_point_of_view_is_the_sole_consideration', 'maud_fls_(mae)_standard', 'maud_general_economic_and_financial_conditions_subject_to_disproportionate_impact_modifier', 'maud_includes_consistent_with_past_practice', 'maud_initial_matching_rights_period_(cor)', 'maud_initial_matching_rights_period_(ftr)', 'maud_intervening_event_-_required_to_occur_after_signing_-_answer', 'maud_knowledge_definition', 'maud_liability_standard_for_no-shop_breach_by_target_non-do_representatives', 'maud_ordinary_course_efforts_standard', 'maud_pandemic_or_other_public_health_event__subject_to_disproportionate_impact_modifier', 'maud_pandemic_or_other_public_health_event_specific_reference_to_pandemic-related_governmental_responses_or_measures', 'maud_relational_language_(mae)_applies_to', 'maud_specific_performance', 'maud_tail_period_length', 'maud_type_of_consideration',
 ];
 
-/** The `**License**: [CC By 4.0](…)` line of a task README, or `null`. */
+/**
+ * The `**License**:` line of a task README — a markdown link, or the plain
+ * text after the label.
+ *
+ * LegalBench is per-task: most tasks are CC BY 4.0 and at least one
+ * (`definition_classification`) is CC BY-SA 4.0. Reading the line is how a
+ * fixture records which, so a line this cannot read must never fall back to
+ * the permissive default — the one task whose README is formatted
+ * differently is exactly the one that would be recorded wrongly.
+ */
 export function licenseLineOf(readme: string): string | null {
-  const m = /\*\*License\*\*:\s*\[([^\]]+)\]\(([^)]+)\)/.exec(readme);
-  return m === null ? null : `${m[1]!.trim()} (${m[2]!.trim()})`;
+  const linked = /\*\*License\*\*:\s*\[([^\]]+)\]\(([^)]+)\)/.exec(readme);
+  if (linked !== null) return `${linked[1]!.trim()} (${linked[2]!.trim()})`;
+  const plain = /\*\*License\*\*:\s*([^\n[]+)/.exec(readme);
+  const text = plain?.[1]?.trim();
+  return text === undefined || text === '' ? null : text;
 }
+
+/** What a fixture records when the task's README does not say. Never the
+ * set's permissive default. */
+export const LICENSE_UNKNOWN = 'unknown — the task README does not state one; see the task page before relying on it';
 
 /** The base prompt with every `{{column}}` filled from the row. */
 export function fillPrompt(prompt: string, row: Record<string, string>): string {
@@ -72,12 +88,18 @@ export const legalbench: BenchmarkLoader = {
       const promptText = textOf(prompt.bytes);
       let rows = parseTsv(textOf(tsv.bytes));
       if (opts.subset !== undefined) rows = rows.slice(0, opts.subset);
+      // Every LegalBench task's test split has an `answer` column. One that
+      // does not would import as a fixture whose every expected answer is
+      // the empty string — which the classification scorer accepts and then
+      // scores zero on for ever.
+      const missing = rows.findIndex(row => (row.answer ?? '').trim() === '');
+      if (missing !== -1) throw new Error(`legalbench: task ${task} has no answer on row ${missing + 1}; its test split is not in the expected shape`);
       fixtures.push({
         id: fixtureId('legalbench', task),
         title: `LegalBench · ${task}`,
         vault: 'legalbench',
         scorer: 'classification',
-        source: sourceOf(this, license ?? undefined),
+        source: sourceOf(this, license ?? LICENSE_UNKNOWN),
         documents: rows.map(row => ({
           id: row.index ?? String(rows.indexOf(row)),
           task: `${fillPrompt(promptText, row)}\n\nAnswer with the label only.`,

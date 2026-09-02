@@ -37,7 +37,7 @@ import { pickJudge, providerJudge } from './evals/judge';
 import { appendResult, readResults } from './evals/results';
 import { runSet, summarize } from './evals/runner';
 import { fixtureCounts, renderScoreboard, scoreboard } from './evals/scoreboard';
-import { renderResult, renderSummary, runnable, selectFixtures, taskOf } from './evals/select';
+import { renderResult, renderSummary, runCount, runnable, selectFixtures, taskOf } from './evals/select';
 import { confirmationMessage, estimateCost, needsConfirmation } from './evals/cost';
 
 const { values, positionals } = parseArgs({
@@ -489,9 +489,12 @@ if (cmd === 'serve') {
   // Pricing is only known for vendors that publish it through discovery
   // (OpenRouter); the CLI has no live listing, so the estimate is null and
   // the run says so rather than pretending it is free.
-  const estimate = estimateCost(selected.fixtures.length, null);
-  if (needsConfirmation(estimate, selected.fixtures.length) && values.yes !== true) {
-    console.error(`${confirmationMessage(estimate, selected.fixtures.length, providerId)} Pass --yes to accept.`);
+  // The calls the run makes, not the files it reads: one imported benchmark
+  // fixture holds hundreds of documents.
+  const calls = runCount(selected.fixtures);
+  const estimate = estimateCost(calls, null);
+  if (needsConfirmation(estimate, calls) && values.yes !== true) {
+    console.error(`${confirmationMessage(estimate, calls, providerId)} Pass --yes to accept.`);
     process.exit(2);
   }
   const judge = pickJudge({ providers: registry.providers, router: registry.router, providerId, practiceSet: selected.fixtures.some(l => l.set === 'practice') });

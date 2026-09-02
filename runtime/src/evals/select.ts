@@ -31,6 +31,16 @@ export function runnable(l: LoadedFixture): boolean {
   return l.fixture.vault !== undefined;
 }
 
+/**
+ * How many model calls a set of fixtures makes: one per fixture, or one per
+ * entry of `documents[]`. The cost guard counts THESE, not files — an
+ * imported benchmark is one fixture holding hundreds of contracts, and
+ * counting files would wave a 510-call run through with no confirmation.
+ */
+export function runCount(fixtures: LoadedFixture[]): number {
+  return fixtures.reduce((n, l) => n + Math.max(1, l.fixture.documents?.length ?? 1), 0);
+}
+
 export function selectFixtures(all: LoadedFixture[], sel: Selection): Selected {
   const skipped: Selected['skipped'] = [];
   const loaded = sel.set === undefined ? all : all.filter(l => l.set === sel.set);

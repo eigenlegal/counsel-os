@@ -20,6 +20,7 @@ Public benchmarks (routing-and-evals spec §8)
 
 - `counsel-os eval import <set>` pulls a public legal benchmark — LegalBench, CUAD, MAUD, ContractNLI — into the same fixture format the runner already uses, and `counsel-os eval --set benchmark --all` runs it like anything else. `eval import` with no set lists what is available and each one's license.
 - Nothing is committed: imports land in a git-ignored folder, with the raw downloads cached beside them and every set's license written into `LICENSES.md`. BigLaw Bench publishes no license, so its loader refuses with the reason and where to ask.
+- The tab is the set: scoring from Settings › Models runs the fixtures of the set you are looking at, and the cost line counts the model calls a run makes rather than the files it reads — one imported benchmark fixture holds hundreds of contracts.
 - Benchmarks score under their own set. The scoreboard never averages them with the practice's own fixtures, and routing never chooses a model on them: a public set says how a model does at the benchmark's task, not at yours.
 
 Your edits to what counsel wrote (routing-and-evals spec §7)

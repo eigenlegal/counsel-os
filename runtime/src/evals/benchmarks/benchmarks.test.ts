@@ -78,9 +78,20 @@ describe('ids', () => {
   test('slug and fixtureId make lowercase dashed ids that parse as fixture ids', () => {
     expect(slug('Accuracy of Target "General" R&W: Bringdown Timing Answer')).toBe('accuracy-of-target-general-r-w-bringdown-timing-answer');
     const id = fixtureId('maud', 'Deal Protection and Related Provisions — Fiduciary exception:  Board determination (no-shop) — Approval', 40);
-    expect(id.length).toBeLessThanOrEqual(46);
+    expect(id.length).toBeLessThanOrEqual(51);
     expect(id.startsWith('maud-deal-protection')).toBe(true);
     expect(() => parseFixture({ id, scorer: 'classification', expected: { answer: 'x' } })).not.toThrow();
+  });
+
+  test('two long names that share a prefix are two ids', () => {
+    // Real MAUD questions. An id is a filename: one id would have written
+    // one fixture over the other and reported a count that included both.
+    const a = fixtureId('maud', 'Deal Protection and Related Provisions Fiduciary exception:  Board determination standard');
+    const b = fixtureId('maud', 'Deal Protection and Related Provisions Fiduciary exception: Board determination trigger (No Shop)');
+    expect(a).not.toBe(b);
+    // And an id is stable for the same name.
+    expect(fixtureId('maud', 'Deal Protection and Related Provisions Fiduciary exception:  Board determination standard')).toBe(a);
+    for (const id of [a, b]) expect(() => parseFixture({ id, scorer: 'classification', expected: { answer: 'x' } })).not.toThrow();
   });
 });
 
@@ -206,7 +217,10 @@ describe('maud', () => {
     expect(consideration!.scorer).toBe('classification');
     expect(consideration!.vault).toBe('maud');
     const d = consideration!.documents![0]!;
-    expect(d.id).toBe('3');
+    // The contract, not MAUD's question index: the scoreboard keys a cell on
+    // `<fixture>#<document>`, so one id for every row would collapse a
+    // whole benchmark fixture into a single cell.
+    expect(consideration!.documents!.map(x => x.id)).toEqual(['contract-141', 'contract-57', 'contract-9']);
     expect(d.task).toContain('Question: Type of Consideration-Answer');
     expect(d.task).toContain('Answer with exactly one of: All Cash');
     expect(d.task).toContain('Conversion of Company Common Stock');
@@ -398,3 +412,51 @@ describe('import', () => {
     }
   });
 });
+
+describe('what an import refuses and what it caches', () => {
+  const scratch = (): string => mkdtempSync(join(tmpdir(), 'counsel-bench-'));
+
+  test('an unknown --tasks value is refused before anything is fetched or written', async () => {
+    const dest = join(scratch(), 'benchmarks');
+    try {
+      let fetched = 0;
+      const fetchImpl = (async () => {
+        fetched += 1;
+        return new Response(new Uint8Array());
+      }) as unknown as typeof fetch;
+      // The value reaches a path in the raw cache, so it is checked first.
+      await expect(importBenchmark({ loader: legalbench, dest, content: fakeContent, fetchImpl, tasks: ['../../../../pwned'] })).rejects.toThrow(/no such task/);
+      await expect(importBenchmark({ loader: cuad, dest, content: fakeContent, fetchImpl, tasks: ['governing_law'] })).rejects.toThrow(/imports as one set/);
+      expect(fetched).toBe(0);
+      expect(existsSync(dest)).toBe(false);
+    } finally {
+      rmSync(dest, { recursive: true, force: true });
+    }
+  });
+
+  test('a wider import does not reuse a narrower download', async () => {
+    const dest = scratch();
+    try {
+      const answer = {
+        [`${LEGALBENCH_DATA}/cuad_governing_law/test.tsv`]: read('legalbench/cuad_governing_law/test.tsv'),
+        [`${LEGALBENCH_REPO}/cuad_governing_law/base_prompt.txt`]: read('legalbench/cuad_governing_law/base_prompt.txt'),
+        [`${LEGALBENCH_REPO}/cuad_governing_law/README.md`]: read('legalbench/cuad_governing_law/README.md'),
+        [`${LEGALBENCH_DATA}/cuad_effective_date/test.tsv`]: read('legalbench/cuad_governing_law/test.tsv'),
+        [`${LEGALBENCH_REPO}/cuad_effective_date/base_prompt.txt`]: read('legalbench/cuad_governing_law/base_prompt.txt'),
+        [`${LEGALBENCH_REPO}/cuad_effective_date/README.md`]: read('legalbench/cuad_governing_law/README.md'),
+      };
+      const { fetchImpl } = scriptedFetch(answer);
+      const first = await importBenchmark({ loader: legalbench, dest, content: fakeContent, fetchImpl, tasks: ['cuad_governing_law'] });
+      expect(first.fixtures).toBe(1);
+      const second = await importBenchmark({ loader: legalbench, dest, content: fakeContent, fetchImpl, tasks: ['cuad_governing_law', 'cuad_effective_date'] });
+      // The narrower cache held one task; asking for two has to fetch again.
+      expect(second.fromCache).toBe(false);
+      expect(second.fixtures).toBe(2);
+      // And asking for the same one again is served from the cache.
+      expect((await importBenchmark({ loader: legalbench, dest, content: fakeContent, fetchImpl, tasks: ['cuad_governing_law'] })).fromCache).toBe(true);
+    } finally {
+      rmSync(dest, { recursive: true, force: true });
+    }
+  });
+});
+

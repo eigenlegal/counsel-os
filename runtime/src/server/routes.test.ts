@@ -2142,6 +2142,35 @@ Rationale: see practice/standards/acme-special-terms.md.
     expect(readRoutingPolicy(vaultRoot).tasks['draft: memo']?.min_score).toBe(0.9);
   });
 
+  test('an imported benchmark is visible to the app, and the guard counts its documents', async () => {
+    // Two things this used to get wrong: the server never passed a
+    // benchmarks directory, so `set: benchmark` was dead in the API; and
+    // the cost guard counted FILES, so one fixture holding 40 contracts ran
+    // 40 model calls with no confirmation.
+    const dir = mkdtempSync(join(tmpdir(), 'routes-bench-'));
+    mkdirSync(join(dir, 'demo', 'fixtures'), { recursive: true });
+    mkdirSync(join(dir, 'demo', 'vaults', 'demo', 'matters'), { recursive: true });
+    writeFileSync(join(dir, 'demo', 'vaults', 'demo', 'config.md'), '# Counsel OS Configuration\n\ncounsel-os-config: true\nconfig_version: 1\nlegal_root: __VAULT_PATH__\n');
+    const documents = Array.from({ length: 40 }, (_, i) => ({ id: `doc-${i}`, task: `Is this clause governed by New York law? Clause ${i}.`, expected: { answer: 'Yes' } }));
+    writeFileSync(
+      join(dir, 'demo', 'fixtures', 'demo-set.json'),
+      JSON.stringify({ id: 'demo-set', vault: 'demo', scorer: 'classification', source: { kind: 'benchmark', name: 'Demo' }, documents }),
+    );
+    const app = appWith([new FakeModelProvider([{ text: 'Yes' }])], { evals: evalsDeps({ benchmarksDir: dir }) });
+
+    const { fixtures } = (await (await call(app, 'GET', '/evals/fixtures')).json()) as { fixtures: Array<{ id: string; source: string; task: string }> };
+    expect(fixtures.find(f => f.id === 'demo-set')).toMatchObject({ source: 'benchmark', task: 'review' });
+
+    const estimate = (await (await call(app, 'GET', '/evals/estimate?task=review&providerId=fake%2Ffake&set=benchmark')).json()) as { count: number; needsConfirm: boolean };
+    expect(estimate.count).toBe(40);
+    expect(estimate.needsConfirm).toBe(true);
+
+    // And a run for that set selects it, rather than the shipped suite.
+    const refused = await call(app, 'POST', '/evals/run', { body: { task: 'review', set: 'benchmark' } });
+    expect(refused.status).toBe(409);
+    expect(await refused.json()).toMatchObject({ error: 'confirm-cost', count: 40 });
+  });
+
   test('GET /evals/estimate says how many fixtures a task runs and what it may cost', async () => {
     const app = appWith([new FakeModelProvider([{ text: 'x' }])], { evals: evalsDeps({ pricing: () => ({ prompt: 3, completion: 15 }) }) });
     const res = await call(app, 'GET', '/evals/estimate?task=review&providerId=fake%2Ffake');
@@ -2153,8 +2182,11 @@ Rationale: see practice/standards/acme-special-terms.md.
     expect((await call(app, 'GET', '/evals/estimate?providerId=fake%2Ffake')).status).toBe(400);
     const noTask = await call(app, 'GET', '/evals/estimate?task=ghost&providerId=fake%2Ffake');
     expect(await noTask.json()).toMatchObject({ count: 0, estimateUsd: 0, needsConfirm: false });
+    // A provider with no published price still needs confirming for more
+    // than one call — which is what POST /evals/run does, so the line the
+    // screen asks with has to say the same.
     const free = appWith([new FakeModelProvider([{ text: 'x' }])], { evals: evalsDeps() });
-    expect(await (await call(free, 'GET', '/evals/estimate?task=review&providerId=fake%2Ffake')).json()).toMatchObject({ count: 8, estimateUsd: null, needsConfirm: false });
+    expect(await (await call(free, 'GET', '/evals/estimate?task=review&providerId=fake%2Ffake')).json()).toMatchObject({ count: 8, estimateUsd: null, needsConfirm: true });
   });
 
   test('one run at a time: a second POST while one streams is 409 eval-busy', async () => {

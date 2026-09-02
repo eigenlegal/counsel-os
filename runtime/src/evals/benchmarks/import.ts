@@ -58,10 +58,24 @@ function walk(dir: string, base = dir): string[] {
   return out;
 }
 
-function readCache(rawDir: string): BenchmarkFile[] | null {
+/** What a cached download covers, beside it. Without this, a later import
+ * of MORE tasks reuses the narrower download and silently builds less. */
+const CACHE_INDEX = '.import.json';
+
+function readCache(rawDir: string, tasks: string[] | undefined): BenchmarkFile[] | null {
   if (!existsSync(rawDir)) return null;
-  const files = walk(rawDir);
+  const files = walk(rawDir).filter(p => p !== CACHE_INDEX);
   if (files.length === 0) return null;
+  let held: string[] | null = null;
+  try {
+    held = (JSON.parse(readFileSync(join(rawDir, CACHE_INDEX), 'utf8')) as { tasks: string[] | null }).tasks;
+  } catch {
+    // No index (an older cache): its coverage is unknown, so only a
+    // download of everything can be reused for everything.
+    return tasks === undefined ? null : null;
+  }
+  // `null` held means the download covered every task.
+  if (held !== null && (tasks === undefined || tasks.some(t => !held!.includes(t)))) return null;
   return files.map(path => ({ path, bytes: new Uint8Array(readFileSync(join(rawDir, path))) }));
 }
 
@@ -92,12 +106,30 @@ export async function importBenchmark(opts: ImportOptions): Promise<ImportReport
   const fixturesDir = join(setDir, 'fixtures');
   const vaultDir = join(setDir, 'vaults', loader.id);
 
-  let files = opts.refresh === true ? null : readCache(rawDir);
+  // `--tasks` names tasks THIS loader has. It reaches a file path in the raw
+  // cache, so an unknown value is refused before anything is fetched or
+  // written, and a set that ignores the flag says so rather than quietly
+  // importing everything.
+  if (opts.tasks !== undefined && opts.tasks.length > 0) {
+    // The set that cannot be narrowed says so first: "no such task" would
+    // be a true but unhelpful answer to `--tasks governing_law` on CUAD.
+    if (loader.tasksSelectable === false) throw new Error(`${loader.name} imports as one set; --tasks does not apply to it.`);
+    const unknown = opts.tasks.filter(t => !loader.tasks.includes(t));
+    if (unknown.length > 0) throw new Error(`${loader.name}: no such task${unknown.length === 1 ? '' : 's'}: ${unknown.join(', ')}`);
+  }
+
+  let files = opts.refresh === true ? null : readCache(rawDir, opts.tasks);
   const fromCache = files !== null;
   if (files === null) {
     files = await loader.fetch({ ...(opts.tasks === undefined ? {} : { tasks: opts.tasks }), ...(opts.fetchImpl === undefined ? {} : { fetchImpl: opts.fetchImpl }), log });
     rmSync(rawDir, { recursive: true, force: true });
-    for (const f of files) writeFile(join(rawDir, f.path), f.bytes);
+    for (const f of files) {
+      // A downloaded file names its own path. Same guard as the vault write
+      // below: nothing lands outside the cache.
+      if (f.path.startsWith('/') || f.path.split('/').some(seg => seg === '..' || seg === '')) throw new Error(`${loader.name}: refusing to cache outside ${rawDir}: ${f.path}`);
+      writeFile(join(rawDir, f.path), f.bytes);
+    }
+    writeFile(join(rawDir, CACHE_INDEX), `${JSON.stringify({ tasks: opts.tasks ?? null })}\n`);
     log(`cached ${files.length} file${files.length === 1 ? '' : 's'} under ${rawDir}`);
   } else {
     log(`using the cached download under ${rawDir} (pass --refresh to fetch again)`);

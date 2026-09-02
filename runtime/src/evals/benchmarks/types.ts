@@ -56,6 +56,9 @@ export interface BenchmarkLoader {
   /** The tasks the loader can build — benchmark task names, categories, or
    * hypotheses; `fetch`/`toFixtures` accept a subset of these. */
   tasks: string[];
+  /** `false` for a set that imports whole and cannot be narrowed: `--tasks`
+   * is then refused rather than accepted and ignored. */
+  tasksSelectable?: boolean;
   fetch(opts?: FetchOptions): Promise<BenchmarkFile[]>;
   toFixtures(files: BenchmarkFile[], opts?: ToFixturesOptions): BenchmarkFixtures;
 }
@@ -90,12 +93,31 @@ export function slug(s: string): string {
     .replace(/-{2,}/g, '-');
 }
 
-/** A fixture id that fits: `<set>-<part>`, the part cut at `max` on a dash. */
+/** FNV-1a, so a cut id keeps something of what was cut. */
+function mark(s: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(16).padStart(8, '0').slice(0, 4);
+}
+
+/**
+ * A fixture id that fits: `<set>-<part>`, the part cut at `max` on a dash.
+ *
+ * A CUT id carries four characters of the whole part. Two MAUD questions in
+ * one category ("Fiduciary exception: Board determination standard" and
+ * "… trigger (No Shop)") slug to the same 60 characters, and an id is a
+ * filename: the second import would have written over the first and
+ * reported a count that included both.
+ */
 export function fixtureId(set: string, part: string, max = 60): string {
-  let p = slug(part);
+  const full = slug(part);
+  let p = full;
   if (p.length > max) {
     const cut = p.lastIndexOf('-', max);
-    p = p.slice(0, cut > 20 ? cut : max).replace(/-+$/, '');
+    p = `${p.slice(0, cut > 20 ? cut : max).replace(/-+$/, '')}-${mark(full)}`;
   }
   return p === '' ? set : `${set}-${p}`;
 }

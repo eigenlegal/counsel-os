@@ -183,7 +183,9 @@ describe('ModelsGroup', () => {
 
     board = scored;
     await userEvent.click(within(confirm).getByRole('button', { name: 'run' }));
-    expect(runs).toEqual([{ task: 'review', providerId: 'fake/fake', save: true, confirm: true }]);
+    // The tab is the set: scoring from the shipped tab runs the shipped
+    // fixtures, not the benchmark ones of the same task.
+    expect(runs).toEqual([{ task: 'review', providerId: 'fake/fake', save: true, confirm: true, set: 'shipped' }]);
     // The board reloads once the stream ends; the tab stays where it was.
     await waitFor(() => expect(screen.getByText('0.91')).toBeTruthy());
     expect(screen.getByRole('tab', { name: 'shipped' }).getAttribute('aria-selected')).toBe('true');

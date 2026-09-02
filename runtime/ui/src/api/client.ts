@@ -267,7 +267,7 @@ export async function streamStep(
  * `confirm: true`, 409 `eval-busy` while another run streams.
  */
 export async function streamEvals(
-  body: { task?: string; fixtures?: string[]; all?: boolean; providerId?: string; save?: boolean; confirm?: boolean },
+  body: { task?: string; fixtures?: string[]; all?: boolean; providerId?: string; save?: boolean; confirm?: boolean; set?: string },
   onEvent: (ev: EvalStreamEvent) => void,
   signal: AbortSignal,
 ): Promise<void> {
