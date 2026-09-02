@@ -215,12 +215,20 @@ export class ThreadStore {
     return this.presentHeader(tenant, header);
   }
 
-  /** The header alone, presented — for a caller that needs the thread's
-   * matter or task before it has any reason to read the log. */
-  async header(tenant: Tenant, id: string): Promise<ThreadHeader> {
+  /**
+   * The header alone, presented — for a caller that needs the thread's
+   * matter or task before it has any reason to read the log.
+   *
+   * `derive: false` returns the header AS STORED, so an untitled thread
+   * stays untitled rather than borrowing its first user message. A caller
+   * that shows titles somewhere the message itself would not belong wants
+   * that, and it costs no log read either.
+   */
+  async header(tenant: Tenant, id: string, opts: { derive?: boolean } = {}): Promise<ThreadHeader> {
     this.validateTenant(tenant);
     this.validateId(id);
-    return this.presentHeader(tenant, this.readHeader(tenant, id));
+    const header = this.readHeader(tenant, id);
+    return opts.derive === false ? header : this.presentHeader(tenant, header);
   }
 
   async get(tenant: Tenant, id: string): Promise<{ header: ThreadHeader; events: ThreadEvent[] }> {

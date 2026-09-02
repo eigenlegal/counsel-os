@@ -1114,3 +1114,18 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .v2-fixture-files > li { padding: 1px 0; }
 .v2-fixture-dropped { text-decoration: line-through; color: var(--fg-faint); }
 .v2-fixture-why { margin: 0.1rem 0; color: var(--fg-faint); }
+
+/* The routing ledger: what actually ran (routing-and-evals spec §6). Set
+   text and hairlines, like the scoreboard above it. */
+/* `.runin` already sets the small-caps run-in; this only spaces it. */
+.v2-models-sub { margin: 1.2rem 0 0.4rem; }
+.v2-ledger { width: 100%; border-collapse: collapse; font: 12.5px/1.7 var(--sans); }
+.v2-ledger th { text-align: left; font: 600 10.5px/1.6 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-faint); padding: 0 0.8rem 2px 0; border-bottom: 1px solid var(--rule); }
+.v2-ledger td { padding: 2px 0.8rem 2px 0; border-bottom: 1px solid var(--rule-faint, var(--rule)); vertical-align: baseline; }
+.v2-ledger-when { color: var(--fg-muted); white-space: nowrap; }
+.v2-ledger-thread { color: var(--fg-faint); }
+.v2-ledger td:nth-child(2) { max-width: 34ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v2-ledger-why { color: var(--fg-muted); }
+.v2-ledger-num { color: var(--fg-muted); white-space: nowrap; }
+.v2-ledger-unfinished td { color: var(--fg-faint); }
+.v2-ledger-quiet { font: 12.5px/1.7 var(--sans); color: var(--fg-faint); margin: 0.4rem 0 0; }

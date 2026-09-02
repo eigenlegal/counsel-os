@@ -1,4 +1,4 @@
-import { mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import type { Tenant, Usage } from '../core/types';
 import { runFilePath, runsDir, type ToolCallLog } from './run-log';
@@ -164,22 +164,7 @@ export function readRun(vaultRoot: string, tenant: Tenant, runId: string): RunRe
  * whole period, not one thread. Same file rules as `listRuns`.
  */
 export function listAllRuns(vaultRoot: string, tenant: Tenant): RunRecord[] {
-  const dir = runsDir(vaultRoot, tenant);
-  let names: string[];
-  try {
-    names = readdirSync(dir);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-  const runs: RunRecord[] = [];
-  for (const name of names) {
-    if (!name.endsWith('.json')) continue;
-    const rec = readRecordAt(join(dir, name));
-    if (rec !== null) runs.push(rec);
-  }
-  runs.sort((a, b) => b.startedAt.localeCompare(a.startedAt) || b.runId.localeCompare(a.runId));
-  return runs;
+  return readRuns(vaultRoot, tenant);
 }
 
 /**
@@ -188,6 +173,25 @@ export function listAllRuns(vaultRoot: string, tenant: Tenant): RunRecord[] {
  * of its own — an id that names no thread simply matches nothing.
  */
 export function listRuns(vaultRoot: string, tenant: Tenant, threadId: string): RunRecord[] {
+  return readRuns(vaultRoot, tenant, { threadId });
+}
+
+/**
+ * Every run this tenant has, newest first — one thread's, or all of them
+ * (the routing ledger).
+ *
+ * A record's name is its run id, which carries no date, so the newest
+ * cannot be picked by name. With a `limit` the file's mtime orders the
+ * CANDIDATES and only those are read: a `stat` is a syscall, a record is
+ * kilobytes of JSON, and this runs on the runtime's only thread while a
+ * step may be streaming in another tab. Without a limit every record is
+ * read, which is what the retro wants.
+ *
+ * The mtime is a proxy — a record is rewritten when its step finishes and
+ * when it is marked — so the candidate window is deliberately wider than
+ * the limit, and `startedAt` still decides the order that is returned.
+ */
+export function readRuns(vaultRoot: string, tenant: Tenant, opts: { threadId?: string; limit?: number } = {}): RunRecord[] {
   const dir = runsDir(vaultRoot, tenant);
   let names: string[];
   try {
@@ -196,17 +200,38 @@ export function listRuns(vaultRoot: string, tenant: Tenant, threadId: string): R
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
     throw err;
   }
+  // Records only: this leaves out `<runId>.log.jsonl` and any `.json.tmp`
+  // a crashed write left mid-rename.
+  let files = names.filter(name => name.endsWith('.json'));
+
+  if (opts.limit !== undefined && files.length > opts.limit) {
+    // Four times the limit, and never fewer than fifty: a run marked long
+    // after it finished, or one thread's runs among many, still has room to
+    // fall inside the window.
+    const window = Math.max(50, opts.limit * 4);
+    if (files.length > window) {
+      const stamped: Array<{ name: string; at: number }> = [];
+      for (const name of files) {
+        try {
+          stamped.push({ name, at: statSync(join(dir, name)).mtimeMs });
+        } catch {
+          // Gone between the readdir and the stat: not a run any more.
+        }
+      }
+      stamped.sort((a, b) => b.at - a.at);
+      files = stamped.slice(0, window).map(s => s.name);
+    }
+  }
 
   const runs: RunRecord[] = [];
-  for (const name of names) {
-    // Records only: this leaves out `<runId>.log.jsonl` and any `.json.tmp`
-    // a crashed write left mid-rename.
-    if (!name.endsWith('.json')) continue;
+  for (const name of files) {
     const rec = readRecordAt(join(dir, name));
-    if (rec !== null && rec.threadId === threadId) runs.push(rec);
+    if (rec === null) continue;
+    if (opts.threadId !== undefined && rec.threadId !== opts.threadId) continue;
+    runs.push(rec);
   }
   // Newest first. `startedAt` is an ISO string, so it sorts lexically; the
   // run id breaks ties so the order is stable rather than readdir's.
   runs.sort((a, b) => b.startedAt.localeCompare(a.startedAt) || b.runId.localeCompare(a.runId));
-  return runs;
+  return opts.limit === undefined ? runs : runs.slice(0, opts.limit);
 }
