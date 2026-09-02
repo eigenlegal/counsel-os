@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { ApiError, fetchJson } from '../api/client';
 import { bootstrapToken } from '../api/token';
 import { onUnauthorized } from '../api/unauthorized';
 import type { Health, RetroStart, SettingsView, ThreadHeader, ThreadPolicy, VaultOverview } from '../api/types';
 import { parseHash, threadFromHash, vaultPathFromHash, type Route } from '../app';
 import { Chat } from './chat/Chat';
+import * as streams from './chat/streams';
 import { VAULT_CHANGED_EVENT } from './intake';
 import type { ComposerSeed } from './chat/Composer';
 import { Drawer } from './Drawer';
@@ -53,6 +54,10 @@ export function Shell(): JSX.Element {
   const [selected, setSelected] = useState<string | null>(null);
   const [draft, setDraft] = useState(false);
   const [chatKey, setChatKey] = useState(0);
+  /** Which conversations are mid-step. A step outlives the pane that
+   * started it (chat/streams.ts), so this is the only way to see that one
+   * is still working while you read another. */
+  const runningThreads = useSyncExternalStore(streams.subscribe, streams.running, streams.running);
   const [listed, setListed] = useState(false);
   const [drawer, setDrawer] = useState<DrawerState>({ open: false, path: null });
   const [drawerRevision, setDrawerRevision] = useState(0);
@@ -419,6 +424,7 @@ export function Shell(): JSX.Element {
       <Rail
         route={route}
         threads={threads}
+        running={runningThreads}
         selected={selected}
         draft={draft}
         busy={busy}

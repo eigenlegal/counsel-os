@@ -8,6 +8,12 @@ reconstructed from git history. New entries are prepended automatically by
 
 ## [Unreleased]
 
+Conversations that keep working (web-ui spec §3.1)
+
+- A conversation no longer stops because you looked at something else. Switching to another conversation while counsel is still working used to abort the step — the answer thrown away and the run recorded `abandoned`, which is what two of the runs in this vault's own ledger are. The step now runs to the end whether or not you are watching, and its answer is there when you come back.
+- Several conversations can be working at once. The rail marks each one that still is, so you can send a review, start something else, and come back to the answer.
+- The runtime always allowed this: its step lock is per conversation, so only two steps in the SAME conversation queue. The limit was the screen.
+
 The routing ledger (routing-and-evals spec §6)
 
 - Settings › Models now ends with **what ran**: the last hundred steps, newest first, with the conversation it belongs to, the task, the model it got, why it got it, what it took and cost, and your mark. The scoreboard says how models do on fixtures and the line under each task says how that task is meant to route; this is the only place that says what actually happened.

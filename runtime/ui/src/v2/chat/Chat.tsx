@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { ApiError, fetchJson, streamStep } from '../../api/client';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import * as streams from './streams';
+import { ApiError, fetchJson } from '../../api/client';
 import type { Health, RunRecord, Thread, ThreadEvent, ThreadHeader, ThreadPolicy, VaultFile } from '../../api/types';
 import { proposalFromHash } from '../../app';
-import { applyStepEvent, buildTurns, emptyAssistantTurn, type AssistantTurn, type Turn } from '../../chat/turns';
+import { buildTurns, type Turn } from '../../chat/turns';
 import { createThread, defaultProviderId, titleFor } from '../threads';
 import { relTime } from '../time';
 import { prettifyName, readerModel } from '../vault/frontmatter';
@@ -92,6 +93,10 @@ function matterFallbackTitle(path: string): string {
  * paths, so any load that ends up owning a finished stream hands the
  * composer back.
  */
+/** One object, so `useSyncExternalStore` never sees a new identity for
+ * "no measurements yet". */
+const EMPTY_MS: Record<string, number> = {};
+
 export function Chat({
   threadId: initialThreadId,
   health,
@@ -117,50 +122,38 @@ export function Chat({
   const [runs, setRuns] = useState<RunRecord[]>([]);
   const [loading, setLoading] = useState(initialThreadId !== null);
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState<string | null>(null);
-  const [live, setLive] = useState<AssistantTurn | null>(null);
   const [frozen, setFrozen] = useState<Turn[]>([]);
-  /** Milliseconds per tool id for the live turn, measured call → result. */
-  const [liveMs, setLiveMs] = useState<Record<string, number>>({});
 
-  const abort = useRef<AbortController | null>(null);
+  /**
+   * The step in flight is NOT this component's (streams.ts). The shell
+   * re-keys this pane when you switch conversations, and anything held here
+   * went with it — the stream aborted, the run recorded `abandoned`, a
+   * ninety-second review thrown away because you looked at something else
+   * while it worked. The registry owns it; this reads it.
+   */
+  const stream = useSyncExternalStore(streams.subscribe, () => streams.streamOf(idRef.current));
+  const live = stream === null ? null : stream.turn;
+  const pending = stream === null ? null : stream.pending;
+  const liveMs = stream?.ms ?? EMPTY_MS;
   const transcript = useRef<HTMLDivElement | null>(null);
-  const liveRef = useRef<AssistantTurn | null>(null);
-  const pendingRef = useRef<string | null>(null);
-  const started = useRef<Map<string, number>>(new Map());
   const seq = useRef(0);
   /** The send that never reached the server, kept so Retry can run the whole
    * thing again — the create included. Only a draft whose `POST /threads`
    * failed can be in this state; every other error has a thread to reload. */
   const retry = useRef<{ message: string; provider: string } | null>(null);
 
-  const showLive = (next: AssistantTurn | null): void => {
-    liveRef.current = next;
-    setLive(next);
-  };
-  const showPending = (next: string | null): void => {
-    pendingRef.current = next;
-    setPending(next);
-  };
 
   /** Retires a finished stream's turn: dropped (`keep === false`, a load
    * installed a transcript containing it) or parked in `frozen` (`true`,
    * the load failed and the transcript on screen does not have it). Does
-   * nothing while a step is running — the stream owns `live` then. */
+   * nothing while a step is running — the registry owns the turn then. */
   const settle = (keep: boolean): void => {
-    if (abort.current !== null) return;
-    const streamed = liveRef.current;
-    const asked = pendingRef.current;
-    if (streamed === null && asked === null) return;
+    const current = streams.streamOf(idRef.current);
+    if (current === null || current.status === 'running') return;
     if (keep) {
-      setFrozen(current => [
-        ...current,
-        ...(asked === null ? [] : [{ kind: 'user', content: asked } as Turn]),
-        ...(streamed === null ? [] : [streamed]),
-      ]);
+      setFrozen(rest => [...rest, { kind: 'user', content: current.pending } as Turn, current.turn]);
     }
-    showLive(null);
-    showPending(null);
+    streams.forget(idRef.current);
   };
 
   const load = useCallback(async (): Promise<void> => {
@@ -222,7 +215,9 @@ export function Chat({
   // `thread` ran before the slips were committed on a slow runner and
   // never ran again (CI, 2026-09-01).
 
-  useEffect(() => () => abort.current?.abort(), []);
+  // NOT `abort()` on unmount. The pane is re-keyed on every conversation
+  // switch, and aborting here is what threw the answer away.
+
 
   useEffect(() => {
     const el = transcript.current;
@@ -230,99 +225,64 @@ export function Chat({
   }, [thread, live, pending, frozen]);
 
   const send = async (message: string, provider: string): Promise<void> => {
-    // One send at a time. The composer is locked for the whole of it, so this
-    // only catches a caller that got past the UI.
-    if (abort.current !== null) return;
+    // One send at a time IN THIS THREAD. The composer is locked for the whole
+    // of it, so this only catches a caller that got past the UI. Another
+    // thread sending at the same time is the point of the registry.
+    if (streams.streamOf(idRef.current) !== null) return;
 
-    // The controller and the live turn are armed BEFORE the create is
-    // awaited, and the create runs on the same controller. `live` is what
-    // disables the box and arms Stop, so setting it after a `POST /threads`
-    // that can take a network round trip would leave the composer wide open:
-    // a second ⌘⏎ in that window would take the create branch again and open
-    // a second thread, with the first orphaned and never stepped.
-    const controller = new AbortController();
-    abort.current = controller;
-    started.current = new Map();
+    // The entry is opened BEFORE the create is awaited, and the create runs
+    // on its signal. The entry is what disables the box and arms Stop, so
+    // opening it after a `POST /threads` that can take a network round trip
+    // would leave the composer wide open: a second ⌘⏎ in that window would
+    // take the create branch again and open a second thread, with the first
+    // orphaned and never stepped.
+    streams.open(idRef.current, message);
+    const signal = streams.signalOf(idRef.current);
     retry.current = null;
-    setLiveMs({});
     setError(null);
     setRefused(false);
     refusedRef.current = false;
-    showPending(message);
-    showLive(emptyAssistantTurn());
 
     if (idRef.current === null) {
       try {
-        const header = await createThread({ title: titleFor(message) }, controller.signal);
+        const header = await createThread({ title: titleFor(message) }, signal);
+        streams.rename(header.id);
         idRef.current = header.id;
         setThreadId(header.id);
         onThreadCreated?.(header);
       } catch (err) {
         // No step ran and there may be no thread, so there is nothing for
         // `load` to fetch: this is the one path that retires its own turn.
-        // `settle` no-ops while a controller is live, so clear it first.
-        abort.current = null;
-        // The empty assistant turn never became an answer; freezing it would
-        // park a blank bubble in the transcript for good.
-        showLive(null);
-        if (controller.signal.aborted) {
-          // Stop during creation. Nothing was created and nothing was sent,
-          // so nothing is left behind either.
-          showPending(null);
-          return;
-        }
+        const aborted = signal?.aborted === true;
+        streams.forget(null);
+        if (aborted) return; // Stop during creation: nothing was created, nothing sent.
         if (!(err instanceof ApiError && err.status === 401)) setError(`could not start the thread: ${detail(err)}`);
         // The message stays on screen (frozen) and the box is free; `retry`
         // remembers it so the notice's button can run the send again.
+        setFrozen(current => [...current, { kind: 'user', content: message } as Turn]);
         retry.current = { message, provider };
-        settle(true);
         return;
       }
     }
     const id = idRef.current;
 
-    try {
-      await streamStep(
-        id,
-        { message, provider },
-        event => {
-          if (event.type === 'tool_call') started.current.set(event.id, performance.now());
-          if (event.type === 'tool_result') {
-            const callId = event.id;
-            const t0 = started.current.get(callId);
-            if (t0 !== undefined) {
-              const ms = Math.round(performance.now() - t0);
-              setLiveMs(current => ({ ...current, [callId]: ms }));
-            }
-          }
-          const base = liveRef.current ?? emptyAssistantTurn();
-          const tagged = base.runId === undefined && event.runId !== undefined ? { ...base, runId: event.runId } : base;
-          showLive(applyStepEvent(tagged, event));
-        },
-        controller.signal,
-      );
-    } catch (err) {
-      if (!controller.signal.aborted) {
-        // The runtime refused the step for the matter's privacy policy
-        // (409 matter-stays-local): nothing ran, nothing to retry into —
-        // the sentence is the whole answer, without a Retry into cloud.
-        const body = err instanceof ApiError && err.status === 409 ? (err.body as { error?: string; message?: string } | null) : null;
-        if (body !== null && body?.error === 'matter-stays-local') {
-          showLive(null);
-          showPending(null);
-          setError(body.message ?? 'This matter stays on this machine.');
-          setRefused(true);
-          refusedRef.current = true;
-          return;
-        }
-        showLive(applyStepEvent(liveRef.current ?? emptyAssistantTurn(), { type: 'error', message: detail(err) }));
-        setError(detail(err));
-      }
-    } finally {
-      abort.current = null;
-      await load();
-      onThreadTouched?.();
+    // From here the registry owns the step. It finishes whether or not this
+    // pane is still mounted; what follows only runs if it is.
+    await streams.run(id, message, provider);
+    const ended = streams.streamOf(id);
+    if (ended?.refused === true) {
+      // The runtime refused the step for the matter's privacy policy
+      // (409 matter-stays-local): nothing ran, nothing to retry into — the
+      // sentence is the whole answer, without a Retry into cloud.
+      setError(ended.error);
+      setRefused(true);
+      refusedRef.current = true;
+      streams.forget(id);
+      return;
     }
+    if (ended?.error != null) setError(ended.error);
+    await load();
+    onThreadTouched?.();
   };
 
   /**
@@ -342,7 +302,7 @@ export function Chat({
     void send(initialAsk.text, defaultProviderId(health));
   }, [initialAsk]);
 
-  const stop = (): void => abort.current?.abort();
+  const stop = (): void => streams.stop(idRef.current);
   const reload = (): void => void load();
 
   /** A card settled a proposal. The thread is refetched so its proposals

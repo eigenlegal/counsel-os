@@ -20,6 +20,9 @@ export interface RailProps {
    * (spec §3.1). */
   collapsed: boolean;
   onSelect: (id: string) => void;
+  /** Threads with a step in flight — one dot each, so work you walked away
+   * from is visible from anywhere. */
+  running?: readonly string[];
   onNew: () => void;
   /** The draft row: navigate back to the draft already live in the chat
    * pane — never a reset. `onNew` starts a draft; this one returns to it. */
@@ -62,6 +65,7 @@ export function Rail({
   health,
   collapsed,
   onSelect,
+  running = [],
   onNew,
   onOpenDraft,
   onDelete,
@@ -155,7 +159,10 @@ export function Rail({
                   ) : (
                     <>
                       <button type="button" className="v2-thread-open" onClick={() => onSelect(thread.id)}>
-                        <span className="v2-thread-title">{railLabel(thread)}</span>
+                        <span className="v2-thread-title">
+                          {running.includes(thread.id) ? <span className="v2-thread-running" aria-label="still running" title="still running" /> : null}
+                          {railLabel(thread)}
+                        </span>
                         {matter === null ? null : (
                           <span className="v2-thread-sub" title={thread.matter}>
                             {matter}
