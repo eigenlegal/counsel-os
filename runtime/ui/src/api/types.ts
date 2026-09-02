@@ -607,3 +607,58 @@ export interface RoutingView {
   defaults: { minScore: number; prefer: string };
   tasks: Record<string, RoutingTask>;
 }
+
+/** One substitution the anonymizer made (routing-and-evals spec §8). */
+export interface FixtureReplacement {
+  kind: 'org' | 'person' | 'email' | 'money' | 'date' | 'phone';
+  from: string;
+  to: string;
+  count: number;
+}
+
+/** A finding as the draft offers it: kept, rejected, or dropped by the lawyer. */
+export interface DraftCatch {
+  id: string;
+  title: string;
+  severity: 'red' | 'yellow' | 'green';
+  clause: string;
+  why: string;
+  match_any: string[];
+}
+
+/** `POST /fixtures/draft` — what the review screen shows. Writes nothing. */
+export interface FixtureDraft {
+  id: string;
+  title: string;
+  scorer: 'findings';
+  task: string;
+  /** The anonymized document: what the fixture will carry. */
+  text: string;
+  /** The document as it stands in the vault, for the before/after read. */
+  original: string;
+  documentPath: string | null;
+  /** The lawyer's own words that started the review, anonymized, pointed at
+   * the document's copy inside the fixture's vault. */
+  message: string;
+  /** The practice files the answer cited: they travel into the fixture's
+   * vault so it keeps measuring against the standards this review used. */
+  knowledge: { path: string; text: string }[];
+  replacements: FixtureReplacement[];
+  catches: DraftCatch[];
+  citations: { id: string; aliases: string[] }[];
+  from: { threadId: string; runId: string; providerId: string; at: string };
+  notes: string[];
+}
+
+/** `POST /fixtures/save` — where it landed. */
+export interface SavedFixture {
+  path: string;
+  id: string;
+  expected: number;
+  negative: number;
+  /** How many files the fixture's own mini-vault holds. */
+  files: number;
+  /** Findings the save left out because the lawyer's edit removed what they
+   * were about. */
+  dropped: string[];
+}

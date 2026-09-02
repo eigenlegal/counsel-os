@@ -1088,3 +1088,29 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .v2-model-note.v2-model-note-error { color: var(--error); }
 .v2-model-note .v2-link { margin-left: 6px; }
 .v2-setup-models { margin: 4px 0 8px 2px; max-width: 28rem; }
+
+/* "Make this a fixture" — the review screen under a step (routing-and-evals
+   spec §8). A panel of set text and hairlines, not a dialog. */
+.v2-fixture { margin: 0.5rem 0 1rem; padding: 0.6rem 0 0; border-top: 1px solid var(--rule); font: 13px/1.6 var(--sans); }
+.v2-fixture-head { display: flex; justify-content: space-between; align-items: baseline; margin: 0 0 0.2rem; }
+.v2-fixture-quiet { color: var(--fg-faint); margin: 0 0 0.4rem; }
+.v2-fixture-note { color: var(--warn); margin: 0.2rem 0; }
+.v2-fixture-sub { font: 600 11px/1.6 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-muted); margin: 0.8rem 0 0.3rem; }
+.v2-fixture-table { width: 100%; border-collapse: collapse; }
+.v2-fixture-table th, .v2-fixture-table td { text-align: left; font-weight: 400; padding: 1px 0.6rem 1px 0; border-bottom: 1px solid var(--rule-faint, var(--rule)); }
+.v2-fixture-table th { color: var(--fg-muted); }
+.v2-fixture-text { width: 100%; box-sizing: border-box; font: 12px/1.6 var(--mono, ui-monospace, monospace); color: var(--fg); background: var(--bg); border: 1px solid var(--rule); border-radius: var(--radius); padding: 0.5rem; }
+.v2-fixture-catches { list-style: none; margin: 0; padding: 0; }
+.v2-fixture-catches > li { padding: 0.3rem 0; border-bottom: 1px solid var(--rule-faint, var(--rule)); }
+.v2-fixture-catch { margin: 0; }
+.v2-fixture-sev { font: 600 10.5px/1.6 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-muted); margin-right: 0.4rem; }
+.v2-fixture-quote { margin: 0.1rem 0; color: var(--fg-muted); font-style: italic; }
+.v2-fixture-verdicts { margin: 0.1rem 0 0; display: flex; gap: 0.8rem; }
+.v2-fixture-on { color: var(--fg); font-weight: 600; text-decoration: none; }
+.v2-fixture-save { margin: 0.8rem 0 0; display: flex; align-items: baseline; gap: 0.4rem; }
+.v2-fixture-name { font: 13px/1.6 var(--sans); color: var(--fg); background: var(--bg); border: 0; border-bottom: 1px solid var(--rule); padding: 1px 2px; min-width: 16ch; }
+.v2-fixture-message { font: 12px/1.6 var(--sans); }
+.v2-fixture-files { list-style: none; margin: 0; padding: 0; color: var(--fg-muted); }
+.v2-fixture-files > li { padding: 1px 0; }
+.v2-fixture-dropped { text-decoration: line-through; color: var(--fg-faint); }
+.v2-fixture-why { margin: 0.1rem 0; color: var(--fg-faint); }

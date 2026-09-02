@@ -103,11 +103,21 @@ export function scoreFindings(block: Block | Fixture | FixtureDocument, raw: unk
     if (containsAny(citationText, expected.aliases)) matchedCitations.push(expected.id);
     else missedCitations.push(expected.id);
   }
-  const allowed = (block.allowed_citation_aliases ?? []).map(normalize);
-  const unknown = citations.filter(c => {
-    const n = normalize(c);
-    return n !== '' && !allowed.some(alias => n.includes(alias));
-  });
+  // An EMPTY allowed list means the fixture says nothing about sources.
+  // Read as "nothing is allowed", every citation is unknown and the term is
+  // a standing zero — which is what a generated fixture whose review cited
+  // nothing would carry. An unconstrained fixture leaves the guard alone
+  // instead. A fixture that DOES name an allowed set keeps its own meaning:
+  // the shipped suite's lists are deliberately tighter than its expected
+  // citations.
+  const allowed = (block.allowed_citation_aliases ?? []).map(normalize).filter(a => a !== '');
+  const unknown =
+    allowed.length === 0
+      ? []
+      : citations.filter(c => {
+          const n = normalize(c);
+          return n !== '' && !allowed.some(alias => n.includes(alias));
+        });
 
   const expectedCount = (block.expected_catches ?? []).length;
   const citationCount = (block.expected_citations ?? []).length;
