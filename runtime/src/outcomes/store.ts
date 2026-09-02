@@ -17,7 +17,10 @@ export type OutcomeKind =
   | 'artifact.produced'
   | 'answer.marked'
   | 'task.corrected'
-  | 'thread.deleted';
+  | 'thread.deleted'
+  /** The lawyer changed a file after counsel wrote it (spec §7, "lawyer
+   * edits"): `detail` carries the diff stats and the unified diff. */
+  | 'file.edited-after-counsel';
 
 export interface OutcomeLine {
   at: string;
@@ -82,10 +85,23 @@ export interface OutcomeCounts {
   corrections: number;
   documents: number;
   deletedThreads: number;
+  /** Lawyer edits after counsel: how many lines, and the distinct files
+   * (first `EDIT_PATHS_CAP`, in order of first appearance). */
+  edits: { count: number; files: number; paths: string[] };
 }
 
+export const EDIT_PATHS_CAP = 10;
+
 export function countOutcomes(lines: OutcomeLine[]): OutcomeCounts {
-  const c: OutcomeCounts = { decisions: { approved: 0, rejected: 0, withReason: 0 }, marks: { useful: 0, notRight: 0 }, corrections: 0, documents: 0, deletedThreads: 0 };
+  const c: OutcomeCounts = {
+    decisions: { approved: 0, rejected: 0, withReason: 0 },
+    marks: { useful: 0, notRight: 0 },
+    corrections: 0,
+    documents: 0,
+    deletedThreads: 0,
+    edits: { count: 0, files: 0, paths: [] },
+  };
+  const edited = new Set<string>();
   for (const l of lines) {
     if (l.kind === 'proposal.decided') {
       if (l.detail['decision'] === 'approved') c.decisions.approved += 1;
@@ -97,6 +113,14 @@ export function countOutcomes(lines: OutcomeLine[]): OutcomeCounts {
     } else if (l.kind === 'task.corrected') c.corrections += 1;
     else if (l.kind === 'artifact.produced') c.documents += 1;
     else if (l.kind === 'thread.deleted') c.deletedThreads += 1;
+    else if (l.kind === 'file.edited-after-counsel') {
+      c.edits.count += 1;
+      if (typeof l.path === 'string' && !edited.has(l.path)) {
+        edited.add(l.path);
+        if (c.edits.paths.length < EDIT_PATHS_CAP) c.edits.paths.push(l.path);
+      }
+    }
   }
+  c.edits.files = edited.size;
   return c;
 }

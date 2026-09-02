@@ -8,6 +8,7 @@ import {
   acceptBand,
   addMonths,
   checkConsistency,
+  checkEditsAfterCounsel,
   checkGit,
   checkLawCurrency,
   checkLawImpact,
@@ -19,6 +20,8 @@ import {
   type DoctorContext,
 } from './checks';
 import { renderReport, runDoctor, verdictOf } from './index';
+import { readOutcomes } from '../outcomes/store';
+import { recordWritten } from '../outcomes/written';
 import { parseLawPolicy } from './policy';
 
 const POLICY = parseLawPolicy(JSON.stringify({ review_cadence_months: { default: 12, 'data-privacy': 6, employment: 6, corporate: 18 } }));
@@ -204,11 +207,31 @@ describe('law-impact', () => {
   });
 });
 
+describe('edits-after-counsel (routing-and-evals spec §7)', () => {
+  test('off, nothing written, nothing edited, and an edit — always ok, and the edit is recorded', () => {
+    seedHealthy();
+    expect(checkEditsAfterCounsel(ctx({ cfg: { ...CFG, outcomes: false } })).message).toContain('outcomes: off');
+    expect(checkEditsAfterCounsel(ctx()).message).toContain('no files written by counsel yet');
+    write('matters/acme/notes.md', '# Notes\n\nTerm: five years.\n');
+    recordWritten(vault, CFG, { path: 'matters/acme/notes.md', kind: 'write' });
+    expect(checkEditsAfterCounsel(ctx()).message).toBe('1 file written by counsel — none edited since the last look');
+    write('matters/acme/notes.md', '# Notes\n\nTerm: three years.\n');
+    const f = checkEditsAfterCounsel(ctx());
+    expect(f.severity).toBe('ok');
+    expect(f.message).toBe('1 file edited after counsel since the last look — recorded');
+    expect(f.paths).toEqual(['matters/acme/notes.md']);
+    expect(f.detail).toBe('matters/acme/notes.md (+1 −1)');
+    expect(readOutcomes(vault, { kind: 'file.edited-after-counsel' })).toHaveLength(1);
+    // The same day again: the record has moved forward and nothing is new.
+    expect(checkEditsAfterCounsel(ctx()).message).toContain('none edited since the last look');
+  });
+});
+
 describe('runDoctor + verdict', () => {
   test('a healthy vault is healthy; one warning names the check; an error is broken', () => {
     seedHealthy();
     const report = runDoctor({ vaultRoot: vault, pluginRoot: '/nowhere', policy: POLICY, git: null, now: () => NOW });
-    expect(report.findings.map(f => f.check)).toEqual(['root-config', 'structure', 'law-currency', 'git', 'consistency', 'law-impact']);
+    expect(report.findings.map(f => f.check)).toEqual(['root-config', 'structure', 'law-currency', 'git', 'consistency', 'law-impact', 'edits-after-counsel']);
     // git: null is the one warning on this seeded vault.
     expect(report.verdict).toBe('warnings');
     expect(report.summary).toContain('git');

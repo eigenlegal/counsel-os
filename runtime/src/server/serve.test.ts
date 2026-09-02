@@ -3,6 +3,8 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, 
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DEFAULT_STEP_TIMEOUT_MS } from '../loop/counsel-loop';
+import { readOutcomes } from '../outcomes/store';
+import { recordWritten } from '../outcomes/written';
 import {
   browserCommand,
   counselHome,
@@ -65,6 +67,21 @@ describe('startServer', () => {
     await running.stop();
     running = undefined;
     expect(existsSync(file)).toBe(false);
+  });
+
+  test('serve start scans for lawyer edits and keeps a watcher on the matters folder until stop (spec §7)', async () => {
+    const { vault, pluginRoot, env } = fixture();
+    mkdirSync(join(vault, 'matters', 'acme'), { recursive: true });
+    writeFileSync(join(vault, 'matters', 'acme', 'notes.md'), 'Term: five years.\n', 'utf8');
+    recordWritten(vault, { mattersPath: 'matters' }, { path: 'matters/acme/notes.md', kind: 'write' });
+    // Edited while the runtime was down.
+    writeFileSync(join(vault, 'matters', 'acme', 'notes.md'), 'Term: three years.\n', 'utf8');
+    running = await startServer({ vault, pluginRoot, port: 0, env, registryFile: join(vault, 'none.yaml') });
+    const lines = readOutcomes(vault, { kind: 'file.edited-after-counsel' });
+    expect(lines).toHaveLength(1);
+    expect(lines[0]!.path).toBe('matters/acme/notes.md');
+    await running.stop();
+    running = undefined;
   });
 
   test('COUNSEL_OS_HOME redirects the codex homes and the provider registry', async () => {

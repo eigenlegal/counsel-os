@@ -11,7 +11,8 @@ import { isLocal } from '../router/router';
 import { taskPolicy, type RoutingPolicy } from '../router/policy';
 import type { RouteScores } from '../router/scores';
 import { MatterStaysLocalError } from '../core/types';
-import { guardedVaultTools } from '../vault/vault-tools';
+import { guardedVaultTools, type VaultToolHooks } from '../vault/vault-tools';
+import { recordWritten } from '../outcomes/written';
 import { builtinTools } from '../tools/builtin';
 import { ToolRegistry } from '../tools/registry';
 import type { ContentSource } from '../content/source';
@@ -173,9 +174,9 @@ export function resolveStepProvider(deps: CounselLoopDeps, opts: RunStepOptions,
  * `propose_update` as the way through that gate, `read_primitive` for the
  * methodology's on-demand sections, and the platform's script tools.
  */
-function stepTools(deps: CounselLoopDeps, threadId: string, cfg: VaultConfig, scriptTools: ToolDef[]): ToolDef[] {
+function stepTools(deps: CounselLoopDeps, threadId: string, cfg: VaultConfig, scriptTools: ToolDef[], hooks: VaultToolHooks = {}): ToolDef[] {
   return [
-    ...guardedVaultTools(deps.vault, cfg),
+    ...guardedVaultTools(deps.vault, cfg, hooks),
     proposeUpdateTool(deps.store, deps.vault, threadId, deps.tenant) as ToolDef,
     readPrimitiveTool(deps.content ?? deps.pluginRoot) as ToolDef,
     ...scriptTools,
@@ -344,6 +345,11 @@ export async function* runStep(
           outcome: line => {
             try {
               appendOutcome(deps.vaultRoot, cfg, { ...line, threadId, runId, ...(opts.task ? { task: opts.task } : {}), providerId: provider.id });
+              // A produced document is counsel's version of that file from
+              // now on (spec §7, lawyer edits).
+              if (line.kind === 'artifact.produced' && typeof line.path === 'string') {
+                recordWritten(deps.vaultRoot, cfg, { path: line.path, kind: 'artifact', runId, threadId });
+              }
             } catch (err) {
               console.error(`counsel-loop: outcome write failed for ${runId}: ${message(err)}`);
             }
@@ -383,7 +389,11 @@ export async function* runStep(
         tenant,
         system,
         messages: [],
-        tools: stepTools(deps, threadId, cfg, scriptTools),
+        tools: stepTools(deps, threadId, cfg, scriptTools, {
+          onWrite: path => {
+            recordWritten(deps.vaultRoot, cfg, { path, kind: 'write', runId, threadId });
+          },
+        }),
         signal: cancel.signal,
         ...(opts.outputSchema ? { outputSchema: opts.outputSchema } : {}),
       };

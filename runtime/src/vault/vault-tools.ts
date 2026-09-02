@@ -68,7 +68,14 @@ function knowledgeDirsList(cfg: VaultConfig): string {
  * be used to dodge the knowledge-path check that a plain string-prefix test
  * would miss.
  */
-export function guardedVaultTools(store: VaultStore, cfg: VaultConfig): ToolDef[] {
+export interface VaultToolHooks {
+  /** Called after a `vault_write` landed, with the normalized path — the
+   * written-file record (routing-and-evals spec §7) hangs off it. A throw
+   * here is swallowed: bookkeeping never fails the model's write. */
+  onWrite?: (path: string) => void;
+}
+
+export function guardedVaultTools(store: VaultStore, cfg: VaultConfig, hooks: VaultToolHooks = {}): ToolDef[] {
   return vaultTools(store).map(tool => {
     if (tool.name === 'vault_write') {
       const write = tool as ToolDef<{ path: string; content: string; expectedVersion?: string }, { version: string }>;
@@ -80,7 +87,13 @@ export function guardedVaultTools(store: VaultStore, cfg: VaultConfig): ToolDef[
           if (isKnowledgePath(path, cfg)) {
             throw new Error(`${path} is a knowledge-system path (${knowledgeDirsList(cfg)}) — use propose_update instead of vault_write.`);
           }
-          return write.execute({ ...input, path }, ctx);
+          const result = await write.execute({ ...input, path }, ctx);
+          try {
+            hooks.onWrite?.(path);
+          } catch {
+            /* the write itself succeeded; the record is best effort */
+          }
+          return result;
         },
       };
     }

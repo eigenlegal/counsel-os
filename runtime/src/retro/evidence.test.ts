@@ -9,6 +9,7 @@ import { FsVaultStore } from '../vault/fs-store';
 import { readVaultConfig } from '../vault/resolve-root';
 import { gatherRetroEvidence, renderRetroEvidence } from './evidence';
 import { appendOutcome } from '../outcomes/store';
+import { recordWritten } from '../outcomes/written';
 
 const NOW = new Date('2026-09-01T12:00:00.000Z');
 const SINCE = '2026-07-01T00:00:00.000Z';
@@ -144,13 +145,26 @@ describe('gatherRetroEvidence outcomes (routing-and-evals spec §7)', () => {
     appendOutcome(vaultRoot, {}, { kind: 'answer.marked', at: '2026-05-01T00:00:00.000Z', detail: { mark: 'not-right' } });
 
     const e = await gatherRetroEvidence({ vaultRoot, tenant: 'default', store, vault, cfg: readVaultConfig(vaultRoot), since: SINCE, now: NOW });
-    expect(e.outcomes).toEqual({ decisions: { approved: 1, rejected: 1, withReason: 1 }, marks: { useful: 1, notRight: 0 }, corrections: 1, documents: 0, deletedThreads: 1 });
+    expect(e.outcomes).toEqual({ decisions: { approved: 1, rejected: 1, withReason: 1 }, marks: { useful: 1, notRight: 0 }, corrections: 1, documents: 0, deletedThreads: 1, edits: { count: 0, files: 0, paths: [] } });
     const text = renderRetroEvidence(e);
     expect(text).toContain('### Decisions and marks');
     expect(text).toContain('1 approved, 1 rejected (1 with a reason)');
     expect(text).toContain('1 useful, 0 not right; 1 task corrections; 1 conversations deleted');
+    expect(text).toContain('Files edited after counsel: 0 edits across 0 files.');
 
     const all = await gatherRetroEvidence({ vaultRoot, tenant: 'default', store, vault, cfg: readVaultConfig(vaultRoot), since: null, now: NOW });
     expect(all.outcomes.marks.notRight).toBe(1);
+  });
+
+  test('runs the edit scan first, so a file the lawyer changed since the last look is in this retro', async () => {
+    const { vaultRoot, store, vault } = await seed();
+    writeFileSync(join(vaultRoot, 'matters', 'acme-nda.md'), '# Acme\n\nTerm: five years.\n', 'utf8');
+    recordWritten(vaultRoot, { mattersPath: 'matters' }, { path: 'matters/acme-nda.md', kind: 'write', runId: 'r-1' });
+    writeFileSync(join(vaultRoot, 'matters', 'acme-nda.md'), '# Acme\n\nTerm: three years.\n', 'utf8');
+    const e = await gatherRetroEvidence({ vaultRoot, tenant: 'default', store, vault, cfg: readVaultConfig(vaultRoot), since: SINCE, now: NOW });
+    expect(e.outcomes.edits).toEqual({ count: 1, files: 1, paths: ['matters/acme-nda.md'] });
+    const text = renderRetroEvidence(e);
+    expect(text).toContain('Files edited after counsel: 1 edit across 1 file.');
+    expect(text).toContain('  - matters/acme-nda.md');
   });
 });

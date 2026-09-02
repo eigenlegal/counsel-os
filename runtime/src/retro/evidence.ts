@@ -6,7 +6,8 @@ import { listAllRuns, type RunRecord } from '../loop/run-record';
 import type { ThreadEvent, ThreadHeader, ThreadStore } from '../threads/store';
 import { vaultOverview, type MatterOverview } from '../vault/overview';
 import type { VaultConfig } from '../vault/resolve-root';
-import { countOutcomes, readOutcomes, type OutcomeCounts } from '../outcomes/store';
+import { detectEdits } from '../outcomes/edits';
+import { countOutcomes, readOutcomes, type OutcomeCounts, type OutcomeLine } from '../outcomes/store';
 
 /**
  * What the runtime knows about the period, gathered for the retro's system
@@ -114,6 +115,18 @@ function firstLine(text: string): string {
   return line.length > RATIONALE_CAP ? `${line.slice(0, RATIONALE_CAP - 1)}…` : line;
 }
 
+/** The outcomes record after the edit scan (spec §7): a file the lawyer
+ * changed since the last look is counted in this retro, not the next. A
+ * scan failure is not the retro's problem. */
+function outcomesAfterScan(deps: RetroEvidenceDeps, now: Date): OutcomeLine[] {
+  try {
+    detectEdits(deps.vaultRoot, deps.cfg, { now });
+  } catch {
+    /* the record as it stands */
+  }
+  return readOutcomes(deps.vaultRoot, { since: deps.since });
+}
+
 export async function gatherRetroEvidence(deps: RetroEvidenceDeps): Promise<RetroEvidence> {
   const now = deps.now ?? new Date();
   const to = now.toISOString();
@@ -183,7 +196,7 @@ export async function gatherRetroEvidence(deps: RetroEvidenceDeps): Promise<Retr
     runs,
     proposals,
     artifacts,
-    outcomes: countOutcomes(readOutcomes(deps.vaultRoot, { since }).filter(l => inPeriod(l.at, since, to))),
+    outcomes: countOutcomes(outcomesAfterScan(deps, now).filter(l => inPeriod(l.at, since, to))),
     matters,
     memory: readMemory(deps.vaultRoot),
     doctor: deps.doctor === undefined ? null : deps.doctor(),
@@ -265,6 +278,8 @@ export function renderRetroEvidence(e: RetroEvidence): string {
   lines.push('### Decisions and marks');
   lines.push(`- Proposals decided: ${e.outcomes.decisions.approved} approved, ${e.outcomes.decisions.rejected} rejected (${e.outcomes.decisions.withReason} with a reason).`);
   lines.push(`- Answers marked: ${e.outcomes.marks.useful} useful, ${e.outcomes.marks.notRight} not right; ${e.outcomes.corrections} task corrections; ${e.outcomes.deletedThreads} conversations deleted.`);
+  lines.push(`- Files edited after counsel: ${e.outcomes.edits.count} edit${e.outcomes.edits.count === 1 ? '' : 's'} across ${e.outcomes.edits.files} file${e.outcomes.edits.files === 1 ? '' : 's'}.`);
+  for (const p of e.outcomes.edits.paths) lines.push(`  - ${p}`);
   lines.push('');
   lines.push('### Matters');
   lines.push(`- ${e.matters.touched.length} of ${e.matters.total} matters touched in the period:`);
