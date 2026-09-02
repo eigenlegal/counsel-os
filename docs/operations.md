@@ -87,4 +87,27 @@ Three rules hold everywhere the board appears (the CLI, `GET /evals/scoreboard`,
 
 The shipped fixtures and their mini-vaults (`evals/fixtures`, `evals/vaults`) ship through the content source like the law areas do, so the compiled binary lists and runs the same suite as a checkout. The practice's own fixtures live under `<vault>/practice/evals/` and never ship.
 
+### Public benchmarks
+
+Four public legal benchmarks import into the same fixture format, so the runner scores them exactly as it scores everything else:
+
+```bash
+bun runtime/src/cli.ts eval import                       # what can be imported, and each set's license
+bun runtime/src/cli.ts eval import cuad --subset 20      # 20 items per task, into evals/benchmarks/ (git-ignored)
+bun runtime/src/cli.ts eval import legalbench --tasks cuad_governing_law
+bun runtime/src/cli.ts eval --set benchmark --all --save # run what is imported
+```
+
+An import writes `<dest>/<set>/fixtures/*.json`, one vault under `<dest>/<set>/vaults/`, the raw downloads under `<dest>/<set>/raw/` (reused unless `--refresh`), and the set's license into `<dest>/LICENSES.md`. The default destination is git-ignored: benchmark text is downloaded, never committed.
+
+| Set | License | Notes |
+|---|---|---|
+| LegalBench | CC BY 4.0 (per task; `definition_classification` is CC BY-SA 4.0) | the per-task license line is recorded on each fixture |
+| CUAD | CC BY 4.0 | 510 contracts × 41 clause categories, as extraction fixtures |
+| MAUD | CC BY 4.0 | merger-agreement questions, as classification fixtures |
+| ContractNLI | CC BY 4.0 | 123 NDAs × 17 hypotheses, as classification fixtures |
+| BigLaw Bench | not published | refuses at import with the reason and where to ask Harvey |
+
+Benchmarks score under the `benchmark` set, which the scoreboard keeps apart from the practice's own fixtures and never routes on: a public set says how a model does at the benchmark's task, not at yours.
+
 In the app, Settings › Models shows the board with the three sets as tabs. Each cell's *score* (or *retry* / *again*) asks once — how many fixtures, roughly what it costs, or *cost unknown* when the vendor publishes no price the runtime knows — then runs `POST /evals/run` with `save: true` and reports progress on the same line.

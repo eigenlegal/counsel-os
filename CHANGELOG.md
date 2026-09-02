@@ -16,6 +16,13 @@ Make this a fixture (routing-and-evals spec §8)
 - What else travels is yours to read: the prompt the fixture will run is shown and editable (the anonymizer's mapping comes from the document, so a name that appears only in your question would pass through it), and each practice file the review cited is listed by name and can be removed. A matter marked `stays_local` cannot become a fixture at all, because a fixture runs on whatever model scores best.
 - The fixture is runnable, not just readable: the save writes its own mini-vault with the anonymized document and an anonymized copy of every practice file the review cited, so the fixture keeps measuring against the standards that review used even after you edit them.
 
+Public benchmarks (routing-and-evals spec §8)
+
+- `counsel-os eval import <set>` pulls a public legal benchmark — LegalBench, CUAD, MAUD, ContractNLI — into the same fixture format the runner already uses, and `counsel-os eval --set benchmark --all` runs it like anything else. `eval import` with no set lists what is available and each one's license.
+- Nothing is committed: imports land in a git-ignored folder, with the raw downloads cached beside them and every set's license written into `LICENSES.md`. BigLaw Bench publishes no license, so its loader refuses with the reason and where to ask.
+- The tab is the set: scoring from Settings › Models runs the fixtures of the set you are looking at, and the cost line counts the model calls a run makes rather than the files it reads — one imported benchmark fixture holds hundreds of contracts.
+- Benchmarks score under their own set. The scoreboard never averages them with the practice's own fixtures, and routing never chooses a model on them: a public set says how a model does at the benchmark's task, not at yours.
+
 Your edits to what counsel wrote (routing-and-evals spec §7)
 
 - When counsel writes a file — an approved proposal, a redline or comparison it produced, a note into a matter — the runtime keeps that version. When you later change the file yourself, that difference is recorded once a day as `file.edited-after-counsel`, with the line counts and the diff, in the same local `.counsel/outcomes.jsonl` as your other decisions. Word files compare their text with the changes accepted.

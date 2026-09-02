@@ -33,9 +33,13 @@ export function runCost(usd: number): string {
 }
 
 export function confirmLine(providerId: string, task: string, estimate: EvalEstimate): string {
-  const fixtures = `${estimate.count} fixture${estimate.count === 1 ? '' : 's'}`;
+  // Runs, not fixtures: the row above says "1 fixture" for an imported
+  // benchmark that holds hundreds of contracts, and this line is the one
+  // that has to be honest about what will be spent.
+  const runs = `${estimate.count} run${estimate.count === 1 ? '' : 's'}`;
   const cost = estimate.estimateUsd === null ? 'cost unknown' : `about $${estimate.estimateUsd.toFixed(2)}`;
-  return `Score ${providerId} on ${task} · ${fixtures} · ${cost}`;
+  const reason = estimate.reason === undefined ? '' : ` · ${estimate.reason}`;
+  return `Score ${providerId} on ${task} · ${runs} · ${cost}${reason}`;
 }
 
 function hasRows(board: Scoreboard): boolean {
@@ -132,7 +136,11 @@ export function ModelsGroup({ providerIds }: ModelsGroupProps): JSX.Element {
     setOutcome(null);
     setPending({ task, providerId, estimate: null, error: null });
     try {
-      const estimate = await fetchJson<EvalEstimate>(`/evals/estimate?task=${encodeURIComponent(task)}&providerId=${encodeURIComponent(providerId)}`);
+      // The tab is the set: scoring from the benchmark tab runs the
+      // benchmark, not the shipped fixtures of the same task.
+      const estimate = await fetchJson<EvalEstimate>(
+        `/evals/estimate?task=${encodeURIComponent(task)}&providerId=${encodeURIComponent(providerId)}${set === null ? '' : `&set=${encodeURIComponent(set)}`}`,
+      );
       setPending(p => (p === null || p.task !== task || p.providerId !== providerId ? p : { ...p, estimate }));
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) return;
@@ -148,7 +156,7 @@ export function ModelsGroup({ providerIds }: ModelsGroupProps): JSX.Element {
     let failure: string | null = null;
     try {
       await streamEvals(
-        { task, providerId, save: true, confirm: true },
+        { task, providerId, save: true, confirm: true, ...(set === null ? {} : { set }) },
         ev => {
           if (ev.event === 'progress') setRunning({ task, providerId, line: `${ev.data.index + 1} of ${ev.data.total} · ${ev.data.fixtureId}` });
           else if (ev.event === 'error') failure = ev.data.message;

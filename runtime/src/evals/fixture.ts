@@ -141,15 +141,18 @@ export function parseFixture(raw: unknown, where = 'fixture'): Fixture {
 }
 
 /** Where a fixture's `vault` name resolves: a directory on disk (the
- * practice's own fixtures) or a prefix in the shipped content (the shipped
- * suite, so the compiled binary runs it too). */
+ * practice's own fixtures and imported benchmarks) or a prefix in the
+ * shipped content (the shipped suite, so the compiled binary runs it too). */
 export type FixtureVaults = { kind: 'dir'; dir: string } | { kind: 'content'; content: ContentSource; prefix: string };
+
+export const FIXTURE_SETS = ['shipped', 'practice', 'benchmark'] as const;
+export type FixtureSet = (typeof FIXTURE_SETS)[number];
 
 export interface LoadedFixture {
   fixture: Fixture;
   /** Where the file came from, for the results record. `source.kind` on the
    * fixture wins when it says so. */
-  set: 'shipped' | 'practice';
+  set: FixtureSet;
   /** The fixture file: a path on disk, or the content path for the shipped set. */
   file: string;
   vaults: FixtureVaults;
@@ -195,8 +198,43 @@ export function loadPracticeFixtures(vaultRoot: string): LoadedFixture[] {
   }));
 }
 
-export function loadFixtures(opts: { content: ContentSource | string; vaultRoot?: string }): LoadedFixture[] {
-  return [...loadShippedFixtures(opts.content), ...(opts.vaultRoot === undefined ? [] : loadPracticeFixtures(opts.vaultRoot))];
+/** Imported public benchmarks (`counsel-os eval import`): `<dir>/<set>/fixtures/
+ * *.json` with the set's vaults under `<dir>/<set>/vaults/`. Absent until
+ * something is imported — an unimported benchmark is no fixtures, never an
+ * error. */
+export function loadBenchmarkFixtures(dir: string): LoadedFixture[] {
+  let sets: string[];
+  try {
+    sets = statSync(dir).isDirectory() ? readdirSync(dir).sort() : [];
+  } catch {
+    return [];
+  }
+  const out: LoadedFixture[] = [];
+  for (const set of sets) {
+    const fixtures = join(dir, set, 'fixtures');
+    for (const f of readDir(fixtures)) {
+      out.push({
+        fixture: parseFixture(JSON.parse(readFileSync(join(fixtures, f), 'utf8')), `${set}/fixtures/${f}`),
+        set: 'benchmark',
+        file: join(fixtures, f),
+        vaults: { kind: 'dir', dir: join(dir, set, 'vaults') },
+      });
+    }
+  }
+  return out;
+}
+
+/** Where imports land: git-ignored, beside the shipped suite. */
+export function defaultBenchmarksDir(repoRoot: string): string {
+  return join(repoRoot, 'evals', 'benchmarks');
+}
+
+export function loadFixtures(opts: { content: ContentSource | string; vaultRoot?: string; benchmarksDir?: string }): LoadedFixture[] {
+  return [
+    ...loadShippedFixtures(opts.content),
+    ...(opts.vaultRoot === undefined ? [] : loadPracticeFixtures(opts.vaultRoot)),
+    ...(opts.benchmarksDir === undefined ? [] : loadBenchmarkFixtures(opts.benchmarksDir)),
+  ];
 }
 
 export function sourceKindOf(loaded: LoadedFixture): FixtureSource['kind'] {

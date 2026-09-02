@@ -34,7 +34,9 @@ export function needsConfirmation(estimateUsd: number | null, count = 1): boolea
 }
 
 export function confirmationMessage(estimateUsd: number | null, count: number, providerId: string): string {
-  const n = `${count} fixture${count === 1 ? '' : 's'}`;
+  // Runs, not fixtures: one imported benchmark fixture holds hundreds of
+  // documents, and each is its own call.
+  const n = `${count} run${count === 1 ? '' : 's'}`;
   return estimateUsd === null
     ? `${n} on ${providerId} with no known price — confirm to run them.`
     : `${n} on ${providerId}, about $${estimateUsd.toFixed(2)} — confirm to run them.`;

@@ -178,12 +178,14 @@ describe('ModelsGroup', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'score' })).toBeTruthy());
     await userEvent.click(screen.getByRole('button', { name: 'score' }));
     const confirm = await screen.findByRole('alertdialog', { name: 'Score fake/fake on review' });
-    await waitFor(() => expect(confirm.textContent).toContain('Score fake/fake on review · 8 fixtures · about $0.60'));
+    await waitFor(() => expect(confirm.textContent).toContain('Score fake/fake on review · 8 runs · about $0.60'));
     expect(runs).toHaveLength(0);
 
     board = scored;
     await userEvent.click(within(confirm).getByRole('button', { name: 'run' }));
-    expect(runs).toEqual([{ task: 'review', providerId: 'fake/fake', save: true, confirm: true }]);
+    // The tab is the set: scoring from the shipped tab runs the shipped
+    // fixtures, not the benchmark ones of the same task.
+    expect(runs).toEqual([{ task: 'review', providerId: 'fake/fake', save: true, confirm: true, set: 'shipped' }]);
     // The board reloads once the stream ends; the tab stays where it was.
     await waitFor(() => expect(screen.getByText('0.91')).toBeTruthy());
     expect(screen.getByRole('tab', { name: 'shipped' }).getAttribute('aria-selected')).toBe('true');
@@ -236,7 +238,7 @@ describe('ModelsGroup', () => {
     render(<ModelsGroup providerIds={['fake/fake']} />);
     await waitFor(() => expect(screen.getByRole('button', { name: 'score' })).toBeTruthy());
     await userEvent.click(screen.getByRole('button', { name: 'score' }));
-    await waitFor(() => expect(screen.getByRole('alertdialog').textContent).toContain('8 fixtures · cost unknown'));
+    await waitFor(() => expect(screen.getByRole('alertdialog').textContent).toContain('8 runs · cost unknown'));
     await userEvent.click(screen.getByRole('button', { name: 'cancel' }));
     expect(screen.queryByRole('alertdialog')).toBeNull();
     expect(runs).toHaveLength(0);
@@ -261,8 +263,11 @@ describe('ModelsGroup', () => {
   test('the words', () => {
     expect(staleness(0)).toBe('today');
     expect(staleness(3)).toBe('3d ago');
-    expect(confirmLine('claude-sub/claude-opus-5', 'review', { task: 'review', providerId: 'x', count: 8, estimateUsd: 0.6, needsConfirm: false })).toBe('Score claude-sub/claude-opus-5 on review · 8 fixtures · about $0.60');
-    expect(confirmLine('x', 'draft', { task: 'draft', providerId: 'x', count: 1, estimateUsd: null, needsConfirm: false })).toBe('Score x on draft · 1 fixture · cost unknown');
+    expect(confirmLine('claude-sub/claude-opus-5', 'review', { task: 'review', providerId: 'x', count: 8, estimateUsd: 0.6, needsConfirm: false })).toBe('Score claude-sub/claude-opus-5 on review · 8 runs · about $0.60');
+    expect(confirmLine('x', 'draft', { task: 'draft', providerId: 'x', count: 1, estimateUsd: null, needsConfirm: false })).toBe('Score x on draft · 1 run · cost unknown');
+    // One imported benchmark fixture is hundreds of calls: the row says
+    // "1 fixture" and this line has to say what it will cost.
+    expect(confirmLine('x', 'review', { task: 'review', providerId: 'x', count: 510, estimateUsd: null, needsConfirm: true })).toBe('Score x on review · 510 runs · cost unknown');
   });
 });
 
