@@ -1,4 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { readRouting, setRouting } from '../../api/client';
+import type { RoutingView } from '../../api/types';
+import { RoutingLine } from './RoutingLine';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, fetchJson, streamEvals } from '../../api/client';
 import { EVAL_SET_KINDS, type EvalEstimate, type EvalSetKind, type Scoreboard, type ScoreboardRow, type ScoreboardTask } from '../../api/types';
 
@@ -72,6 +75,10 @@ export function ModelsGroup({ providerIds }: ModelsGroupProps): JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
   const [running, setRunning] = useState<Running | null>(null);
+  // How each task is routed, and who that picks — read beside the scores and
+  // re-read after a change so the pick shown is the pick a step would get.
+  const [routing, setRoutingView] = useState<RoutingView | null>(null);
+  const [routingBusy, setRoutingBusy] = useState(false);
   const [outcome, setOutcome] = useState<{ task: string; providerId: string; line: string } | null>(null);
   const abort = useRef<AbortController | null>(null);
 
@@ -87,8 +94,30 @@ export function ModelsGroup({ providerIds }: ModelsGroupProps): JSX.Element {
     }
   };
 
+  const loadRouting = useCallback(async (): Promise<void> => {
+    try {
+      setRoutingView(await readRouting());
+    } catch (err) {
+      // The ledger still reads without it; an older runtime has no /routing.
+      if (!(err instanceof ApiError && err.status === 401)) setRoutingView(null);
+    }
+  }, []);
+
+  const changeRouting = async (task: string, change: { minScore?: number; prefer?: string; pinned?: string | null }): Promise<void> => {
+    setRoutingBusy(true);
+    try {
+      setRoutingView(await setRouting({ task, ...change }));
+    } catch (err) {
+      if (!(err instanceof ApiError && err.status === 401)) setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setRoutingBusy(false);
+    }
+  };
+
   useEffect(() => {
     void load();
+      void loadRouting();
+    void loadRouting();
     return () => abort.current?.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -129,6 +158,8 @@ export function ModelsGroup({ providerIds }: ModelsGroupProps): JSX.Element {
     }
     if (failure !== null) setOutcome({ task, providerId, line: `failed · ${failure}` });
     await load();
+    // A saved run moves the scoreboard, and the pick can move with it.
+    await loadRouting();
   };
 
   if (error !== null) {
@@ -238,8 +269,19 @@ export function ModelsGroup({ providerIds }: ModelsGroupProps): JSX.Element {
               {tasks.map(t => (
                 <tr key={t.task}>
                   <th scope="row" className="v2-models-task">
-                    {t.task}
-                    <span className="v2-models-count">{t.sets[set].fixtures} fixture{t.sets[set].fixtures === 1 ? '' : 's'}</span>
+                    <span className="v2-models-taskname">
+                      {t.task}
+                      <span className="v2-models-count">{t.sets[set].fixtures} fixture{t.sets[set].fixtures === 1 ? '' : 's'}</span>
+                    </span>
+                    {routing === null ? null : (
+                      <RoutingLine
+                        task={t.task}
+                        routing={routing.tasks[t.task]}
+                        defaults={routing.defaults}
+                        busy={routingBusy}
+                        onChange={change => void changeRouting(t.task, change)}
+                      />
+                    )}
                   </th>
                   {columns.map(id => cell(t, id))}
                 </tr>

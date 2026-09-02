@@ -1918,6 +1918,41 @@ describe('the eval runner over HTTP (routing-and-evals spec §4.2)', () => {
     expect(board.tasks.find(t => t.task === 'review')!.sets.practice!.rows).toEqual([]);
   });
 
+  test('GET /routing reports the bar, the preference and who that picks; PUT changes one task and the next step follows it', async () => {
+    const app = appWith([new FakeModelProvider([{ output: sample('law-beats-practice'), usage: { inputTokens: 10, outputTokens: 2, costUsd: 0.01 } }])], { evals: evalsDeps() });
+    // Nothing scored yet: the defaults stand and no task claims a pick.
+    const bare = (await (await call(app, 'GET', '/routing')).json()) as { defaults: { minScore: number; prefer: string }; tasks: Record<string, unknown> };
+    expect(bare.defaults).toEqual({ minScore: 0.7, prefer: 'quality' });
+
+    // Score the fake provider on `review`; it clears the default bar.
+    await (await call(app, 'POST', '/evals/run', { body: { fixtures: ['law-beats-practice'], save: true } })).text();
+    const scored = (await (await call(app, 'GET', '/routing')).json()) as {
+      tasks: Record<string, { minScore: number; prefer: string; pinned?: string; picked?: { providerId: string; reason: string } }>;
+    };
+    expect(scored.tasks['review']).toMatchObject({ minScore: 0.7, prefer: 'quality' });
+    expect(scored.tasks['review']?.picked).toEqual({ providerId: 'fake/fake', reason: 'review 1.00' });
+
+    // Raise the bar above what it scored: the same provider is no longer the
+    // scoreboard's pick, and the reason says so.
+    const raised = (await (await call(app, 'PUT', '/routing', { body: { task: 'review', minScore: 1 } })).json()) as typeof scored;
+    expect(raised.tasks['review']?.minScore).toBe(1);
+    const lowered = (await (await call(app, 'PUT', '/routing', { body: { task: 'review', minScore: 0.5, prefer: 'cost', pinned: 'fake/fake' } })).json()) as typeof scored;
+    expect(lowered.tasks['review']).toMatchObject({ minScore: 0.5, prefer: 'cost', pinned: 'fake/fake' });
+    expect(lowered.tasks['review']?.picked?.reason).toBe('pinned for review · 1.00');
+
+    // Unpinning leaves the rest of the task's policy alone.
+    const unpinned = (await (await call(app, 'PUT', '/routing', { body: { task: 'review', pinned: null } })).json()) as typeof scored;
+    expect(unpinned.tasks['review']?.pinned).toBeUndefined();
+    expect(unpinned.tasks['review']).toMatchObject({ minScore: 0.5, prefer: 'cost' });
+  });
+
+  test('PUT /routing refuses a body that is not a routing change', async () => {
+    const app = appWith([new FakeModelProvider([{ text: 'x' }])], { evals: evalsDeps() });
+    expect((await call(app, 'PUT', '/routing', { body: { task: '' } })).status).toBe(400);
+    expect((await call(app, 'PUT', '/routing', { body: { task: 'review', minScore: 2 } })).status).toBe(400);
+    expect((await call(app, 'PUT', '/routing', { body: { task: 'review', prefer: 'cheapest' } })).status).toBe(400);
+  });
+
   test('GET /evals/estimate says how many fixtures a task runs and what it may cost', async () => {
     const app = appWith([new FakeModelProvider([{ text: 'x' }])], { evals: evalsDeps({ pricing: () => ({ prompt: 3, completion: 15 }) }) });
     const res = await call(app, 'GET', '/evals/estimate?task=review&providerId=fake%2Ffake');

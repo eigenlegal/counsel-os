@@ -591,3 +591,19 @@ export type EvalStreamEvent =
   | { event: 'result'; data: { fixtureId: string; score: number | null; error?: string } }
   | { event: 'done'; data: { summary: { count: number; scored: number; failed: number; mean: number | null }; saved: boolean } }
   | { event: 'error'; data: { message: string } };
+
+/** One task's routing (routing-and-evals spec §6). COPIED from
+ * `runtime/src/router/policy.ts` and the `/routing` route; a change there is
+ * a change here. */
+export interface RoutingTask {
+  minScore: number;
+  prefer: string;
+  pinned?: string;
+  /** Who the router picks for this task today, and why. */
+  picked?: { providerId: string; reason: string };
+}
+
+export interface RoutingView {
+  defaults: { minScore: number; prefer: string };
+  tasks: Record<string, RoutingTask>;
+}

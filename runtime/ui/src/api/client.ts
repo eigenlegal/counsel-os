@@ -9,7 +9,7 @@
 import { parseSseChunk } from './sse';
 import { clearToken, readToken } from './token';
 import { reportUnauthorized } from './unauthorized';
-import type { EvalStreamEvent, RunMark, StepBody, StreamEvent, TaskSource } from './types';
+import type { EvalStreamEvent, RoutingView, RunMark, StepBody, StreamEvent, TaskSource } from './types';
 
 /** A request that came back with a status the caller has to reason about.
  * `body` is the parsed JSON when there was any — 409 on approve carries the
@@ -328,3 +328,13 @@ async function streamSse(path: string, body: unknown, onFrame: (frame: { event: 
 /** Fed in after the last chunk so a frame missing its terminator is still
  * delivered rather than silently dropped with the connection. */
 const FRAME_TERMINATOR = '\n\n';
+
+/** How each task is routed, and who that picks (routing-and-evals spec §6). */
+export async function readRouting(): Promise<RoutingView> {
+  return fetchJson<RoutingView>('/routing');
+}
+
+/** Change one task's bar, preference or pin; the answer is the fresh view. */
+export async function setRouting(change: { task: string; minScore?: number; prefer?: string; pinned?: string | null }): Promise<RoutingView> {
+  return fetchJson<RoutingView>('/routing', { method: 'PUT', body: JSON.stringify(change) });
+}
