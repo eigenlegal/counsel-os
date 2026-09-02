@@ -78,7 +78,10 @@ export function ModelsGroup({ providerIds }: ModelsGroupProps): JSX.Element {
   // How each task is routed, and who that picks — read beside the scores and
   // re-read after a change so the pick shown is the pick a step would get.
   const [routing, setRoutingView] = useState<RoutingView | null>(null);
-  const [routingBusy, setRoutingBusy] = useState(false);
+  // The task whose change is in flight, and the task whose change failed:
+  // both belong to one row, so neither disables nor blanks the other rows.
+  const [routingBusy, setRoutingBusy] = useState<string | null>(null);
+  const [routingError, setRoutingError] = useState<{ task: string; text: string } | null>(null);
   const [outcome, setOutcome] = useState<{ task: string; providerId: string; line: string } | null>(null);
   const abort = useRef<AbortController | null>(null);
 
@@ -104,19 +107,22 @@ export function ModelsGroup({ providerIds }: ModelsGroupProps): JSX.Element {
   }, []);
 
   const changeRouting = async (task: string, change: { minScore?: number; prefer?: string; pinned?: string | null }): Promise<void> => {
-    setRoutingBusy(true);
+    setRoutingBusy(task);
+    setRoutingError(null);
     try {
       setRoutingView(await setRouting({ task, ...change }));
     } catch (err) {
-      if (!(err instanceof ApiError && err.status === 401)) setError(err instanceof Error ? err.message : String(err));
+      // A failed change is that row's news. It must not replace the ledger:
+      // the only way back from the group-wide error is a button this screen
+      // would have just removed.
+      if (!(err instanceof ApiError && err.status === 401)) setRoutingError({ task, text: err instanceof Error ? err.message : String(err) });
     } finally {
-      setRoutingBusy(false);
+      setRoutingBusy(null);
     }
   };
 
   useEffect(() => {
     void load();
-      void loadRouting();
     void loadRouting();
     return () => abort.current?.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -278,7 +284,8 @@ export function ModelsGroup({ providerIds }: ModelsGroupProps): JSX.Element {
                         task={t.task}
                         routing={routing.tasks[t.task]}
                         defaults={routing.defaults}
-                        busy={routingBusy}
+                        busy={routingBusy === t.task}
+                        error={routingError?.task === t.task ? routingError.text : undefined}
                         onChange={change => void changeRouting(t.task, change)}
                       />
                     )}

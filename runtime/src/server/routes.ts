@@ -744,7 +744,9 @@ export function createApp(deps: ServerDeps): App {
   };
 
   const RoutingBody = z.object({
-    task: z.string().min(1),
+    /** A task name, not free text: it becomes a key in `practice/routing.yaml`
+     * and names a row of the ledger. */
+    task: z.string().regex(/^[a-z0-9][a-z0-9_.-]{0,63}$/, 'a task is a lowercase name'),
     minScore: z.number().min(0).max(1).optional(),
     prefer: z.enum(['quality', 'cost', 'latency']).optional(),
     /** `null` unpins; a string pins that provider. */
@@ -755,7 +757,11 @@ export function createApp(deps: ServerDeps): App {
    * and forgets the cached view so the next step routes by it. */
   const routingPut = async (req: Request): Promise<Response> => {
     const input = await body(req, RoutingBody);
-    if (input instanceof Response) return input;
+    // A pin names a provider this practice actually loaded. Anything else is
+    // a pin that can never be honoured, written into a file the lawyer reads.
+    if (typeof input.pinned === 'string' && !deps.state().providers.some(p => p.id === input.pinned)) {
+      return fail(422, `unknown provider: ${input.pinned}`);
+    }
     const release = await locks.acquire(SETTINGS_LOCK);
     try {
       const policy: RoutingPolicy = readRoutingPolicy(deps.vaultRoot);
@@ -769,10 +775,14 @@ export function createApp(deps: ServerDeps): App {
       policy.tasks[input.task] = entry;
       writeRoutingPolicy(deps.vaultRoot, policy);
       forgetRouting();
+      // Read back INSIDE the lock: two quick changes from the same screen
+      // would otherwise each answer with whatever the file held when they
+      // got round to reading it, and the later answer could be the older
+      // one.
+      return routingGet();
     } finally {
       release();
     }
-    return routingGet();
   };
 
   /** What scoring a task on a provider would run and roughly cost — the

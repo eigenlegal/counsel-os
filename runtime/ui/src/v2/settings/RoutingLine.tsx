@@ -15,6 +15,8 @@ export interface RoutingLineProps {
   routing: RoutingTask | undefined;
   defaults: { minScore: number; prefer: string };
   busy: boolean;
+  /** What went wrong with this task's last change, shown on its own line. */
+  error?: string | undefined;
   onChange(change: { minScore?: number; prefer?: string; pinned?: string | null }): void;
 }
 
@@ -22,7 +24,7 @@ export interface RoutingLineProps {
 export const BARS = [0.5, 0.6, 0.7, 0.8, 0.9] as const;
 export const PREFERENCES = ['quality', 'cost', 'latency'] as const;
 
-export function RoutingLine({ task, routing, defaults, busy, onChange }: RoutingLineProps): JSX.Element {
+export function RoutingLine({ task, routing, defaults, busy, error, onChange }: RoutingLineProps): JSX.Element {
   const [open, setOpen] = useState(false);
   const bar = routing?.minScore ?? defaults.minScore;
   const prefer = routing?.prefer ?? defaults.prefer;
@@ -83,6 +85,12 @@ export function RoutingLine({ task, routing, defaults, busy, onChange }: Routing
           )}
         </span>
       ) : null}
+      {error === undefined ? null : (
+        <span className="v2-routing-error" role="alert">
+          {' '}
+          not changed: {error}
+        </span>
+      )}
     </span>
   );
 }

@@ -13,6 +13,7 @@ const baseRouting: RoutingView = {
 };
 let routing: RoutingView = baseRouting;
 let routingPuts: Array<{ task: string; minScore?: number; prefer?: string; pinned?: string | null }> = [];
+let routingPutStatus = 200;
 
 function row(over: Partial<ScoreboardRow> & { providerId: string }): ScoreboardRow {
   return {
@@ -79,6 +80,7 @@ const json = (b: unknown, status = 200): Response => new Response(JSON.stringify
 beforeEach(() => {
   routing = baseRouting;
   routingPuts = [];
+  routingPutStatus = 200;
   board = scored;
   estimate = { count: 8, estimateUsd: 0.6 };
   runs = [];
@@ -99,6 +101,10 @@ beforeEach(() => {
     if (url === '/routing' && (init?.method ?? 'GET') === 'GET') return json(routing);
     if (url === '/routing' && init?.method === 'PUT') {
       const change = JSON.parse(String(init.body)) as { task: string; minScore?: number; prefer?: string; pinned?: string | null };
+      if (routingPutStatus !== 200) {
+        routingPuts.push(change);
+        return json({ error: 'the vault is read-only' }, routingPutStatus);
+      }
       routingPuts.push(change);
       const entry = { ...(routing.tasks[change.task] ?? { minScore: 0.7, prefer: 'quality' }) };
       if (change.minScore !== undefined) entry.minScore = change.minScore;
@@ -293,4 +299,18 @@ describe('how a task is routed', () => {
     await waitFor(() => expect(routingPuts).toEqual([{ task: 'review', pinned: null }]));
     await waitFor(() => expect(document.querySelector('.v2-routing')!.textContent).not.toContain('pinned'));
   });
+});
+
+test('a change that fails says so on its own line and leaves the ledger standing', async () => {
+  routingPutStatus = 500;
+  render(<ModelsGroup providerIds={['claude-sub/claude-opus-5', 'fake/fake']} />);
+  await waitFor(() => expect(screen.getByRole('table', { name: /scores/ })).toBeTruthy());
+  const line = document.querySelector('.v2-routing') as HTMLElement;
+  await userEvent.click(within(line).getByRole('button', { name: 'change' }));
+  await userEvent.click(within(line).getByRole('button', { name: '0.8' }));
+
+  await waitFor(() => expect(document.querySelector('.v2-routing-error')?.textContent).toContain('not changed'));
+  // The scores, the tabs and the score actions are all still there.
+  expect(screen.getByRole('table', { name: /scores/ })).toBeTruthy();
+  expect(document.querySelector('.v2-routing')!.textContent).toContain('bar 0.70');
 });

@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { FakeModelProvider, runToolDef } from '../core/fake-provider';
 import type { Capabilities, ModelProvider, StepEvent, StepRequest } from '../core/types';
+import { readRoutingPolicy, writeRoutingPolicy } from '../router/policy';
 import { Router } from '../router/router';
 import { ThreadStore, type ThreadEvent } from '../threads/store';
 import { FsVaultStore } from '../vault/fs-store';
@@ -1951,6 +1952,26 @@ describe('the eval runner over HTTP (routing-and-evals spec §4.2)', () => {
     expect((await call(app, 'PUT', '/routing', { body: { task: '' } })).status).toBe(400);
     expect((await call(app, 'PUT', '/routing', { body: { task: 'review', minScore: 2 } })).status).toBe(400);
     expect((await call(app, 'PUT', '/routing', { body: { task: 'review', prefer: 'cheapest' } })).status).toBe(400);
+    // A task name is a name, not free text: it becomes a key in the policy file.
+    expect((await call(app, 'PUT', '/routing', { body: { task: 'review: contracts', minScore: 0.5 } })).status).toBe(400);
+    expect((await call(app, 'PUT', '/routing', { body: { task: '#urgent', minScore: 0.5 } })).status).toBe(400);
+    // A pin names a provider this practice has loaded.
+    expect((await call(app, 'PUT', '/routing', { body: { task: 'review', pinned: 'ghost/ghost' } })).status).toBe(422);
+  });
+
+  test('a change to one task leaves every other task alone, whatever its name looks like in YAML', async () => {
+    const app = appWith([new FakeModelProvider([{ text: 'x' }])], { evals: evalsDeps() });
+    // A fixture may name any task, and that name reaches the policy file. A
+    // name that reads as YAML syntax must survive the write, or the file
+    // parses back as no policy at all and every bar in it is lost.
+    writeRoutingPolicy(vaultRoot, { tasks: { 'draft: memo': { min_score: 0.9 }, extract: { prefer: 'cost' } } });
+    const after = (await (await call(app, 'PUT', '/routing', { body: { task: 'review', minScore: 0.6 } })).json()) as {
+      tasks: Record<string, { minScore: number; prefer: string }>;
+    };
+    expect(after.tasks['review']).toMatchObject({ minScore: 0.6 });
+    expect(after.tasks['draft: memo']).toMatchObject({ minScore: 0.9 });
+    expect(after.tasks['extract']).toMatchObject({ prefer: 'cost' });
+    expect(readRoutingPolicy(vaultRoot).tasks['draft: memo']?.min_score).toBe(0.9);
   });
 
   test('GET /evals/estimate says how many fixtures a task runs and what it may cost', async () => {
