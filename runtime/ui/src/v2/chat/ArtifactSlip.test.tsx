@@ -50,12 +50,32 @@ describe('ArtifactSlip', () => {
   });
 
   test('Download fetches the bytes with the bearer and hands them to the browser', async () => {
-    render(<ArtifactSlip artifact={artifact} />);
-    await userEvent.click(screen.getByRole('button', { name: 'Download' }));
-    await waitFor(() => expect(fetched).toEqual([`/vault/download?path=${encodeURIComponent(artifact.path)}`]));
-    // Whether the test DOM can mint an object URL or not, the slip never
-    // throws: it either hands the file over or says it could not.
-    await waitFor(() => expect(document.querySelector('.v2-artifact')).toBeTruthy());
+    // `saveBlob` clicks a hidden `<a download href="blob:…">`. happy-dom
+    // treats that click as a NAVIGATION of the one shared window, which
+    // left `location`/`history` pointing at a blob URL for every test file
+    // that ran after this one — on the CI runner (whose file order differs
+    // from macOS) the docket-anchor tests in Chat.test.tsx then read an
+    // empty hash and never scrolled. Record the click instead of letting
+    // the window go anywhere.
+    const clicks: Array<{ download: string; href: string }> = [];
+    const realClick = HTMLAnchorElement.prototype.click;
+    HTMLAnchorElement.prototype.click = function click(this: HTMLAnchorElement): void {
+      clicks.push({ download: this.download, href: this.href });
+    };
+    try {
+      render(<ArtifactSlip artifact={artifact} />);
+      await userEvent.click(screen.getByRole('button', { name: 'Download' }));
+      await waitFor(() => expect(fetched).toEqual([`/vault/download?path=${encodeURIComponent(artifact.path)}`]));
+      // Whether the test DOM can mint an object URL or not, the slip never
+      // throws: it either hands the file over (one anchor click, named after
+      // the file) or says it could not.
+      await waitFor(() => expect(document.querySelector('.v2-artifact')).toBeTruthy());
+      if (typeof URL.createObjectURL === 'function') {
+        await waitFor(() => expect(clicks.map(c => c.download)).toEqual(['sample-mutual-nda-redline-2026-09-01.docx']));
+      }
+    } finally {
+      HTMLAnchorElement.prototype.click = realClick;
+    }
   });
 
   test('Open in reader and Show the changes open the produced file', async () => {
