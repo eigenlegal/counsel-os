@@ -273,3 +273,38 @@ describe('the task and the marks (routing-and-evals spec §3, §7)', () => {
     expect(document.querySelector('.v2-marks')).toBeNull();
   });
 });
+
+describe('why this model answered', () => {
+  test('the record names the reason beside the model, and the policy when it bound the choice', async () => {
+    render(
+      <Strip
+        turn={turn}
+        threadId="t-1"
+        run={{ ...run, provider: 'ollama/gemma4', routeReason: { kind: 'scored', text: 'review 0.82' }, policy: 'stays-local' }}
+        ms={{}}
+      />,
+    );
+    await userEvent.click(document.querySelector('summary') as HTMLElement);
+    const model = document.querySelector('.v2-record-route')!;
+    expect(model.textContent).toBe(' · review 0.82 · stays on this machine');
+  });
+
+  test('the stays-local reason is not repeated after itself', async () => {
+    render(
+      <Strip
+        turn={turn}
+        threadId="t-1"
+        run={{ ...run, routeReason: { kind: 'stays-local', text: 'stays on this machine' }, policy: 'stays-local' }}
+        ms={{}}
+      />,
+    );
+    await userEvent.click(document.querySelector('summary') as HTMLElement);
+    expect(document.querySelector('.v2-record-route')!.textContent).toBe(' · stays on this machine');
+  });
+
+  test('an older run with no reason recorded shows the model alone', async () => {
+    render(<Strip turn={turn} threadId="t-1" run={run} ms={{}} />);
+    await userEvent.click(document.querySelector('summary') as HTMLElement);
+    expect(document.querySelector('.v2-record-route')).toBeNull();
+  });
+});

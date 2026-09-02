@@ -457,6 +457,8 @@ a { color: var(--accent); }
 .v2-record dd { margin: 0; }
 .v2-record-id { margin-right: var(--s2); }
 .v2-record-source { color: var(--fg-faint); }
+/* Why this model answered, beside its name in the record. */
+.v2-record-route { color: var(--fg-faint); }
 .v2-task-pick { vertical-align: baseline; }
 .v2-task-pop { min-width: 160px; }
 /* The lawyer's mark (routing-and-evals spec §7): two words under the strip,

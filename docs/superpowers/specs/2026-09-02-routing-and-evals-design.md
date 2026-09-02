@@ -99,7 +99,7 @@ Keeps v1 (id, title, document_type, vault, task, input, expected_catches, negati
 1. Taxonomy, classification (rules + the small structured call), task picker in Settings' route rows, task on the step/strip with correction; outcome capture store + `proposal.decided` / `artifact.produced` / `answer.marked` / `task.corrected` / `thread.deleted`; the Settings switch.
 2. Eval runner in TypeScript with fixture v2 and the five scorers; the shipped fixtures ported; parity with the Python; CLI `counsel-os eval`; the results store; Python scripts retired; CI switched.
 3. Scoreboard API and the Models group in Settings; "score this provider" with the cost guard.
-4. Routing from the scoreboard with proposals and reasons; the strip line.
+4. Routing from the scoreboard with reasons; the record's line. **Split while building (2026-09-02):** the router, `practice/routing.yaml`, and the reason on every run shipped first; the editing surface (the bar and the preference per task in Settings) and the route-change proposal after a scoring run follow in 4b, because the proposal wants a thread to live on and that is a design question of its own — a route is configuration, not knowledge, so 4b may instead offer it in the Models group with an explicit "use it" rather than in the docket.
 5. `file.edited-after-counsel` (written hashes, doctor/retro/watcher comparison) and "make this a fixture" with the anonymization review.
 6. Benchmark loaders with license fields.
 

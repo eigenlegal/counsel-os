@@ -40,6 +40,8 @@ import { pickJudge, providerJudge } from '../evals/judge';
 import { appendResult, readResults } from '../evals/results';
 import { runSet, summarize } from '../evals/runner';
 import { fixtureCounts, scoreboard } from '../evals/scoreboard';
+import { routeScores } from '../router/scores';
+import { readRoutingPolicy } from '../router/policy';
 import type { Judge } from '../evals/scorers/types';
 import { runnable, selectFixtures, taskOf } from '../evals/select';
 import { serveStatic, type StaticSource } from './static';
@@ -407,6 +409,27 @@ export function createApp(deps: ServerDeps): App {
    * — a value captured once is exactly the staleness `RuntimeState` exists
    * to prevent.
    */
+  /**
+   * What the router needs from the scoreboard (routing-and-evals spec §6),
+   * read once and kept until a scoring run or a policy save moves it. The
+   * results file grows one line per fixture run, so re-reading it on every
+   * step would be work for nothing.
+   */
+  let routingCache: { scores: ReturnType<typeof routeScores>; policy: ReturnType<typeof readRoutingPolicy> } | null = null;
+  const routingView = (): { scores: ReturnType<typeof routeScores>; policy: ReturnType<typeof readRoutingPolicy> } => {
+    if (routingCache === null) {
+      const counts = fixtureCounts(evalLoaded().map(l => ({ task: taskOf(l), set: sourceKindOf(l), runnable: runnable(l) })));
+      routingCache = {
+        scores: routeScores(scoreboard(readResults(deps.vaultRoot, { since: null }), counts)),
+        policy: readRoutingPolicy(deps.vaultRoot),
+      };
+    }
+    return routingCache;
+  };
+  const forgetRouting = (): void => {
+    routingCache = null;
+  };
+
   const loopDeps = (): CounselLoopDeps => {
     const state = deps.state();
     return {
@@ -423,6 +446,7 @@ export function createApp(deps: ServerDeps): App {
       // The model classifier is opt-in (`classify: model` in config.md): a
       // scripted or metered provider must not spend a turn on it unasked.
       ...(readVaultConfig(deps.vaultRoot).classify === 'model' ? { classifier: modelClassifier(state.providers, state.router, deps.tenant) } : {}),
+      routing: routingView,
     };
   };
 
@@ -758,6 +782,7 @@ export function createApp(deps: ServerDeps): App {
               send('result', line);
             },
           });
+          if (input.save === true) forgetRouting();
           send('done', { summary: summarize(results), saved: input.save === true });
         } catch (err) {
           send('error', { message: err instanceof Error ? err.message : String(err) });

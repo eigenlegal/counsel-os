@@ -58,6 +58,9 @@ export interface RunRecord {
   /** `stays-local` when the matter's privacy policy chose the provider
    * (providers spec §7) — the record shows the policy was in force. */
   policy?: 'stays-local';
+  /** Why this provider (routing-and-evals spec §6): the scoreboard, a pin,
+   * the configured route, or the default. */
+  routeReason?: { kind: string; text: string };
 }
 
 /**
