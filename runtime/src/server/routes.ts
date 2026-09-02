@@ -743,8 +743,18 @@ export function createApp(deps: ServerDeps): App {
     const limit = raw === null ? 50 : Number(raw);
     if (!Number.isInteger(limit) || limit < 1 || limit > 500) throw new HttpError(400, 'limit must be a whole number from 1 to 500');
     const runs = readRuns(deps.vaultRoot, deps.tenant, { limit });
-    // The thread's title, so a row reads as work rather than as a uuid.
-    const titles = new Map((await deps.store.list(deps.tenant)).map(h => [h.id, h.title ?? ''] as const));
+    // The title of the threads in THIS page, not of every thread the vault
+    // holds — and as stored, never derived. An untitled thread's derived
+    // title is the first line of the lawyer's own message, which belongs in
+    // the conversation rail, not in a table of every matter at once.
+    const titles = new Map<string, string>();
+    for (const id of new Set(runs.map(r => r.threadId))) {
+      try {
+        titles.set(id, (await deps.store.header(deps.tenant, id, { derive: false })).title ?? '');
+      } catch {
+        // A thread deleted since its run: the row still says what ran.
+      }
+    }
     return json({
       runs: runs.map(r => ({
         runId: r.runId,

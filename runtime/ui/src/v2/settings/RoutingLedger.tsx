@@ -15,6 +15,9 @@ import { ApiError, readRoutingLedger } from '../../api/client';
 import type { LedgerRun } from '../../api/types';
 
 const SHOW = 20;
+/** How far back the ledger reads. Enough to answer "what happened lately"
+ * without turning a settings visit into a scan of the whole vault. */
+const PAGE = 100;
 
 /** "just now" · "14:05" today · "Sep 1" before that. */
 export function whenOf(at: string, now = new Date()): string {
@@ -57,11 +60,17 @@ export function RoutingLedger(): JSX.Element {
 
   const load = useCallback(async (): Promise<void> => {
     try {
-      setRuns(await readRoutingLedger(100));
+      setRuns(await readRoutingLedger(PAGE));
       setError(null);
     } catch (err) {
-      // An older runtime has no ledger; the group above still reads.
-      if (!(err instanceof ApiError && err.status === 401)) setError(err instanceof Error ? err.message : String(err));
+      // 401 is the session, reported once by the shell rather than in every
+      // panel. 404 is an older runtime with no ledger route: there is
+      // nothing to show and nothing wrong, so the group above just ends.
+      if (err instanceof ApiError && (err.status === 401 || err.status === 404)) {
+        setRuns([]);
+        return;
+      }
+      setError(err instanceof Error ? err.message : String(err));
     }
   }, []);
 
@@ -78,6 +87,7 @@ export function RoutingLedger(): JSX.Element {
   }
   if (runs === null) return <p className="v2-ledger-quiet">Reading the record…</p>;
   if (runs.length === 0) return <p className="v2-ledger-quiet">Nothing has run yet. Ask counsel something and it will show here.</p>;
+
 
   const shown = all ? runs : runs.slice(0, SHOW);
   return (

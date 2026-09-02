@@ -88,6 +88,13 @@ describe('the routing ledger', () => {
     status = 500;
     render(<RoutingLedger />);
     await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('could not be read'));
+    cleanup();
+
+    // An older runtime has no ledger route. Nothing to show, nothing wrong.
+    status = 404;
+    render(<RoutingLedger />);
+    await waitFor(() => expect(screen.getByText(/Nothing has run yet/)).toBeTruthy());
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   test('the words', () => {

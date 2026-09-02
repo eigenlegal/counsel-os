@@ -10,7 +10,7 @@ reconstructed from git history. New entries are prepended automatically by
 
 The routing ledger (routing-and-evals spec §6)
 
-- Settings › Models now ends with **what ran**: every step, newest first, with the conversation it belongs to, the task, the model it got, why it got it, what it took and cost, and your mark. The scoreboard says how models do on fixtures and the line under each task says how that task is meant to route; this is the only place that says what actually happened.
+- Settings › Models now ends with **what ran**: the last hundred steps, newest first, with the conversation it belongs to, the task, the model it got, why it got it, what it took and cost, and your mark. The scoreboard says how models do on fixtures and the line under each task says how that task is meant to route; this is the only place that says what actually happened.
 - `GET /routing/ledger?limit=` serves it, reading the run records the runtime already keeps. A run from before routing recorded a reason shows none rather than a guess.
 
 ## [0.14.0] — 2026-09-02

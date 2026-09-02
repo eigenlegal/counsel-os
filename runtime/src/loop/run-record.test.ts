@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { writeRunLog } from './run-log';
-import { finishRun, listRuns, readRun, runRecordPath, startRun, type RunRecord } from './run-record';
+import { finishRun, listRuns, readRun, readRuns, runRecordPath, startRun, type RunRecord } from './run-record';
 
 let vaultRoot: string;
 
@@ -193,5 +193,37 @@ describe('listRuns', () => {
 
   test('a tenant that would escape the runs directory is refused', () => {
     expect(() => listRuns(vaultRoot, '../../etc', randomUUID())).toThrow('invalid tenant');
+  });
+});
+
+describe('readRuns', () => {
+  test('every thread, newest first, and `limit` takes the NEWEST that many', () => {
+    // The slice has to happen after the sort. Slicing first would keep every
+    // other assertion here green while the ledger showed an arbitrary page.
+    const ids = ['10:00', '10:04', '10:01', '10:03', '10:02'].map(hm => {
+      const rec = record({ startedAt: `2026-08-29T${hm}:00.000Z`, message: hm });
+      startRun(vaultRoot, rec);
+      return rec;
+    });
+    expect(readRuns(vaultRoot, 'default').map(r => r.message)).toEqual(['10:04', '10:03', '10:02', '10:01', '10:00']);
+    expect(readRuns(vaultRoot, 'default', { limit: 2 }).map(r => r.message)).toEqual(['10:04', '10:03']);
+    expect(readRuns(vaultRoot, 'default', { limit: 99 })).toHaveLength(5);
+    // And one thread's, still newest first.
+    expect(readRuns(vaultRoot, 'default', { threadId: ids[1]!.threadId }).map(r => r.message)).toEqual(['10:04']);
+  });
+
+  test('a limit reads only a window of the directory, not all of it', () => {
+    // 200 records, a limit of 1: the newest is still returned, and the read
+    // is bounded — this runs on the runtime's only thread while a step may
+    // be streaming.
+    for (let i = 0; i < 200; i++) {
+      startRun(vaultRoot, record({ startedAt: `2026-08-29T10:${String(i % 60).padStart(2, '0')}:${String(Math.floor(i / 60)).padStart(2, '0')}.000Z`, message: `run-${i}` }));
+    }
+    const newest = readRuns(vaultRoot, 'default')[0]!;
+    expect(readRuns(vaultRoot, 'default', { limit: 1 })).toEqual([newest]);
+  });
+
+  test('a tenant with no runs at all is an empty list', () => {
+    expect(readRuns(vaultRoot, 'default')).toEqual([]);
   });
 });

@@ -308,7 +308,7 @@ export function ModelsGroup({ providerIds }: ModelsGroupProps): JSX.Element {
       )}
       {/* What actually ran. The board above is how models do on
           fixtures; this is what the practice got. */}
-      <h4 className="v2-models-sub">what ran</h4>
+      <h3 className="runin v2-models-sub">what ran</h3>
       <RoutingLedger />
     </div>
   );

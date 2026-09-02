@@ -2143,7 +2143,33 @@ Rationale: see practice/standards/acme-special-terms.md.
 
     expect((await call(app, 'GET', '/routing/ledger?limit=0')).status).toBe(400);
     expect((await call(app, 'GET', '/routing/ledger?limit=x')).status).toBe(400);
+    expect((await call(app, 'GET', '/routing/ledger?limit=501')).status).toBe(400);
+    expect((await call(app, 'GET', '/routing/ledger')).status).toBe(200);
     expect((await call(app, 'GET', '/routing/ledger', { token: null })).status).toBe(401);
+  });
+
+  test('the ledger carries what ran, never what was said', async () => {
+    // The omission IS the feature: this is one table over every matter in
+    // the vault, and Settings is the pane most likely to be on a screen
+    // someone else can see.
+    const app = appWith([new FakeModelProvider([{ text: 'The cap is far below the fees.' }])], { evals: evalsDeps() });
+    // Untitled on purpose: an untitled thread's derived title is the first
+    // line of the lawyer's own message.
+    const created = await call(app, 'POST', '/threads', { body: {} });
+    const id = ((await created.json()) as { id: string }).id;
+    await step(app, id, { message: 'Zephyr Robotics wants a $50,000 cap on the Acme deal.', task: 'review' });
+
+    const body = await (await call(app, 'GET', '/routing/ledger')).text();
+    for (const secret of ['Zephyr', 'Acme', '$50,000', 'far below the fees']) expect(body).not.toContain(secret);
+    const { runs } = JSON.parse(body) as { runs: Array<Record<string, unknown>> };
+    expect(Object.keys(runs[0]!).sort()).toEqual(['at', 'durationMs', 'provider', 'routeReason', 'runId', 'status', 'task', 'taskSource', 'thread', 'threadId']);
+    expect(runs[0]!.thread).toBe('');
+
+    // A thread the lawyer named does show its name.
+    const named = await newThread(app);
+    await step(app, named, { message: 'And this.' });
+    const after = (await (await call(app, 'GET', '/routing/ledger')).json()) as { runs: Array<{ thread: string }> };
+    expect(after.runs[0]!.thread).toBe('a thread');
   });
 
   test('PUT /routing refuses a body that is not a routing change', async () => {
