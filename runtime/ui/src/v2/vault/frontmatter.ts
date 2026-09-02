@@ -24,7 +24,13 @@ export function splitFrontmatter(source: string): { rows: FmRow[]; body: string 
   const rows: FmRow[] = [];
   for (const line of lines.slice(1, end)) {
     const m = /^([A-Za-z0-9_-]+):\s*(.+)$/.exec(line);
-    if (m !== null && !m[1]!.startsWith('counsel-os')) rows.push({ key: m[1]!.replace(/[-_]/g, ' '), value: m[2]!.trim() });
+    if (m !== null && !m[1]!.startsWith('counsel-os')) {
+      const key = m[1]!.replace(/[-_]/g, ' ');
+      let value = m[2]!.trim();
+      // The privacy flag reads as a fact, not a boolean (providers spec §7).
+      if (key === 'stays local') value = /^(true|yes|on)$/i.test(value) ? 'yes' : /^(false|no|off)$/i.test(value) ? 'no' : value;
+      rows.push({ key, value });
+    }
   }
   return { rows, body: lines.slice(end + 1).join('\n') };
 }

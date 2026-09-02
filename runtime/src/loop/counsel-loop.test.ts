@@ -404,7 +404,7 @@ describe('runStep', () => {
     expect(events[0]!.type).toBe('error');
   });
 
-  test('(f) a router hard error yields a single error, with only the user event appended', async () => {
+  test('(f) a router hard error yields a single error, with nothing appended — the provider is chosen before the user turn is written', async () => {
     const fake = new FakeModelProvider([{ text: 'never' }]);
     const router = new Router(
       { default: 'fake/fake', tasks: { classify: { prefer: 'nope/nope', require: { contextTokens: 10_000_000 } } } },
@@ -417,7 +417,7 @@ describe('runStep', () => {
     expect(events).toHaveLength(1);
     expect(events[0]!.type).toBe('error');
     expect((events[0] as Extract<StepEvent, { type: 'error' }>).message).toContain('classify');
-    expect(await logKinds(id)).toEqual(['user']);
+    expect(await logKinds(id)).toEqual([]);
     expect(fake.lastRequest).toBeUndefined();
   });
 
@@ -429,7 +429,7 @@ describe('runStep', () => {
 
     expect(events).toHaveLength(1);
     expect(events[0]!.type).toBe('error');
-    expect(await logKinds(id)).toEqual(['user']);
+    expect(await logKinds(id)).toEqual([]);
   });
 
   test('a resume failure drops the stored session and replays the log once', async () => {
@@ -1588,5 +1588,76 @@ describe('runStep — the run record', () => {
     const second = await collect(runStep(deps([fake]), { threadId: id, message: 'second' }));
 
     expect(listRuns(vaultRoot, 'default', id).map(r => r.runId)).toEqual([second[0]!.runId, first[0]!.runId]);
+  });
+});
+
+describe('the matter privacy policy (providers spec §7)', () => {
+  function cloud(id = 'anthropic/cloud'): ModelProvider {
+    const fake = new FakeModelProvider([{ text: 'from the cloud' }]);
+    return { id, kind: 'direct', capabilities: { ...fake.capabilities, auth: 'apikey' }, run: req => fake.run(req) };
+  }
+  function local(id = 'ollama/local'): ModelProvider {
+    const fake = new FakeModelProvider([{ text: 'from this machine' }]);
+    return { id, kind: 'direct', capabilities: { ...fake.capabilities, auth: 'local' }, run: req => fake.run(req) };
+  }
+
+  test('a linked matter that stays local runs on the best local provider, and the record says so', async () => {
+    await vault.write('default', 'matters/acme.md', '---\nstays_local: true\n---\n# Acme\n');
+    const providers = [cloud(), local()];
+    const { id } = await store.create('default', { matter: 'matters/acme.md' });
+    const events = await collect(runStep(deps(providers), { threadId: id, message: 'review it' }));
+    expect(events.map(e => e.type)).toContain('done');
+    const { events: log } = await store.get('default', id);
+    const stepEv = log.find(e => 't' in e && e.t === 'step') as { provider: string };
+    expect(stepEv.provider).toBe('ollama/local');
+    const [rec] = listRuns(vaultRoot, 'default', id);
+    expect(rec!.policy).toBe('stays-local');
+    expect(rec!.provider).toBe('ollama/local');
+  });
+
+  test('an explicit cloud provider for such a matter is refused before the user turn is appended', async () => {
+    await vault.write('default', 'matters/acme.md', '---\nstays_local: true\n---\n# Acme\n');
+    const { id } = await store.create('default', { matter: 'matters/acme.md' });
+    const events = await collect(runStep(deps([cloud(), local()]), { threadId: id, message: 'review it', providerId: 'anthropic/cloud' }));
+    expect(events.map(e => e.type)).toEqual(['error']);
+    expect((events[0] as { message: string }).message).toContain('stays on this machine');
+    const { events: log } = await store.get('default', id);
+    expect(log.filter(e => 't' in e && e.t === 'user')).toHaveLength(0);
+    const [rec] = listRuns(vaultRoot, 'default', id);
+    expect(rec!.status).toBe('error');
+  });
+
+  test('no local provider at all: the step never runs, the sentence is the founder\'s', async () => {
+    await vault.write('default', 'matters/acme.md', '---\nstays_local: true\n---\n# Acme\n');
+    const { id } = await store.create('default', { matter: 'matters/acme.md' });
+    const events = await collect(runStep(deps([cloud()]), { threadId: id, message: 'review it' }));
+    expect(events.map(e => e.type)).toEqual(['error']);
+    expect((events[0] as { message: string }).message).toBe('This matter stays on this machine, and no local model is loaded.');
+    const { events: log } = await store.get('default', id);
+    expect(log).toHaveLength(0);
+  });
+
+  test('an attached document under a stays-local matter decides for an unlinked thread; an inferred matter never does', async () => {
+    await vault.write('default', 'matters/acme/matter.md', '---\nstays_local: true\n---\n# Acme\n');
+    const providers = [cloud(), local()];
+    const { id } = await store.create('default', {});
+    await collect(runStep(deps(providers), { threadId: id, message: 'Review this.\n\n`matters/acme/nda.docx`' }));
+    let { events: log } = await store.get('default', id);
+    expect((log.find(e => 't' in e && e.t === 'step') as { provider: string }).provider).toBe('ollama/local');
+
+    // The same thread, a plain message, still unlinked: the header carries
+    // no matter, so the policy is the vault's (none) — cloud is fine.
+    await collect(runStep(deps(providers), { threadId: id, message: 'and now a general question' }));
+    ({ events: log } = await store.get('default', id));
+    const steps = log.filter(e => 't' in e && e.t === 'step') as Array<{ provider: string }>;
+    expect(steps[1]!.provider).toBe('anthropic/cloud');
+  });
+
+  test('the vault default applies to every unlinked thread', async () => {
+    writeFileSync(join(vaultRoot, 'config.md'), 'counsel-os-config: true\nlegal_root: x\ndefault_locality: local\n', 'utf8');
+    const { id } = await store.create('default', {});
+    await collect(runStep(deps([cloud(), local()]), { threadId: id, message: 'hello' }));
+    const { events: log } = await store.get('default', id);
+    expect((log.find(e => 't' in e && e.t === 'step') as { provider: string }).provider).toBe('ollama/local');
   });
 });

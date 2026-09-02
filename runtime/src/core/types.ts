@@ -170,3 +170,11 @@ export class RouterError extends Error {
   readonly code = 'router';
 }
 
+/** A matter's privacy policy could not be honoured (providers spec §7): the
+ * caller named a cloud provider for a matter that stays local, or no local
+ * model is loaded. The route answers 409 `matter-stays-local`; the step never
+ * runs. */
+export class MatterStaysLocalError extends Error {
+  readonly code = 'matter-stays-local';
+}
+

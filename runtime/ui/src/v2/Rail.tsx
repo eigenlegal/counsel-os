@@ -30,6 +30,9 @@ export interface RailProps {
   /** The footer switcher picked a loaded provider: save it as the default
    * (the settings round-trip lives in the Shell). */
   onSetDefault: (id: string) => void;
+  /** The open thread's matter stays local (providers spec §7): the
+   * switcher greys its cloud rows. */
+  localOnly?: boolean;
   /** Matter path → title (from `/vault/overview`), for the faint second
    * line under a thread with an EXPLICIT matter link. Absent or missing a
    * path, the row falls back to the prettified filename. */
@@ -64,6 +67,7 @@ export function Rail({
   onDelete,
   onSetDefault,
   matterTitles,
+  localOnly = false,
 }: RailProps): JSX.Element {
   /** The row whose × was clicked: it reads "Delete this? ·
    * Delete · Keep" in set text until answered — no `window.confirm`, no
@@ -180,7 +184,7 @@ export function Rail({
               empty on its own. */}
         </>
       )}
-      <ModelSwitcher health={health} collapsed={collapsed} onSetDefault={onSetDefault} />
+      <ModelSwitcher health={health} collapsed={collapsed} onSetDefault={onSetDefault} localOnly={localOnly} />
     </aside>
   );
 }

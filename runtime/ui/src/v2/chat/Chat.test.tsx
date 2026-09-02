@@ -564,3 +564,74 @@ describe('v2 Chat, rename and matter link', () => {
     await waitFor(() => expect(screen.getByText('inferred')).toBeTruthy());
   });
 });
+
+describe('v2 Chat, the matter privacy policy (providers spec §7)', () => {
+  const localHealth: Health = {
+    ...health,
+    default: 'ollama/gemma4',
+    providers: [
+      { id: 'ollama/gemma4', kind: 'direct', auth: 'local', capabilities: { tools: true, caching: false, thinking: false, contextTokens: 32_000, auth: 'local' } },
+      ...health.providers,
+    ],
+  };
+  const events: ThreadEvent[] = [
+    { t: 'user', at, content: 'check it' },
+    { t: 'step', at, runId: 'r-1', provider: 'fake/fake' },
+    { type: 'tool_call', at, id: 'c2', name: 'vault_read', input: { path: 'matters/acme-nda.md' } },
+    { type: 'done', at, output: null, usage: { inputTokens: 1, outputTokens: 1 } },
+  ];
+
+  function installPolicy(thread: Thread & { policy?: { localOnly: boolean; source: 'matter' | 'vault' | 'none' } }, opts: { matterContent?: string; steps?: () => Response } = {}): void {
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+      calls.push({ method, url, body: init?.body === undefined ? undefined : JSON.parse(String(init.body)) });
+      if (url.startsWith('/runs')) return json([]);
+      if (url.startsWith('/vault/read')) return json({ path: 'matters/acme-nda.md', content: opts.matterContent ?? '---\ntitle: Acme NDA\nstays_local: true\n---\n# Acme\n', version: 'v1', mtimeMs: 1 });
+      if (method === 'PATCH' && url.startsWith('/threads/')) return json({ ...thread.header, matter: (JSON.parse(String(init?.body)) as { matter: string }).matter });
+      if (url.endsWith('/steps')) return opts.steps === undefined ? stream(SSE) : opts.steps();
+      if (url.startsWith('/threads/')) return json(thread);
+      throw new Error(`unexpected fetch: ${method} ${url}`);
+    }) as unknown as typeof fetch;
+  }
+
+  test('an explicit stays-local matter reads beside the MATTER line, and the shell hears the policy', async () => {
+    const heard: unknown[] = [];
+    installPolicy({ header: { id: 't-1', matter: 'matters/acme-nda.md', createdAt: at, updatedAt: at, sessions: {} }, events, policy: { localOnly: true, source: 'matter' } });
+    render(<Chat threadId="t-1" health={localHealth} onPolicy={p => heard.push(p)} />);
+    await waitFor(() => expect(document.querySelector('.v2-thread-local')?.textContent).toBe('· stays local'));
+    expect(heard).toContainEqual({ localOnly: true, source: 'matter' });
+    // The composer says which local model answers — before the reader sends.
+    expect(document.querySelector('.v2-policy-notice')?.textContent).toContain('answering on Ollama (gemma4)');
+  });
+
+  test('an INFERRED stays-local matter offers the link and never takes it', async () => {
+    installPolicy({ header: { id: 't-1', createdAt: at, updatedAt: at, sessions: {} }, events, policy: { localOnly: false, source: 'none' } });
+    render(<Chat threadId="t-1" health={localHealth} />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'stays local — link it' })).toBeTruthy());
+    expect(document.querySelector('.v2-thread-local')).toBeNull();
+    expect(document.querySelector('.v2-policy-notice')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'stays local — link it' }));
+    await waitFor(() => expect(calls.some(c => c.method === 'PATCH' && c.url === '/threads/t-1' && (c.body as { matter: string }).matter === 'matters/acme-nda.md')).toBe(true));
+  });
+
+  test('a matter that does not stay local offers nothing', async () => {
+    installPolicy({ header: { id: 't-1', createdAt: at, updatedAt: at, sessions: {} }, events, policy: { localOnly: false, source: 'none' } }, { matterContent: '---\ntitle: Open\n---\n# Open\n' });
+    render(<Chat threadId="t-1" health={localHealth} />);
+    await waitFor(() => expect(document.querySelector('.v2-thread-matter-name')?.textContent).toBe('Open'));
+    expect(screen.queryByRole('button', { name: 'stays local — link it' })).toBeNull();
+  });
+
+  test('a refused step (409 matter-stays-local) is the sentence, with no Retry into cloud', async () => {
+    installPolicy(
+      { header: { id: 't-1', matter: 'matters/acme-nda.md', createdAt: at, updatedAt: at, sessions: {} }, events, policy: { localOnly: true, source: 'matter' } },
+      { steps: () => json({ error: 'matter-stays-local', message: 'This matter stays on this machine, and no local model is loaded.' }, 409) },
+    );
+    render(<Chat threadId="t-1" health={health} />);
+    await waitFor(() => expect(document.querySelector('.v2-thread-local')).toBeTruthy());
+    await ask();
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('no local model is loaded'));
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+    composerIsUsable();
+  });
+});

@@ -89,9 +89,19 @@ export interface ThreadHeader {
   sessions: Record<string, string>;
 }
 
+/** The privacy policy a thread's EXPLICIT matter (or the vault default)
+ * implies (providers spec §7). COPIED from `runtime/src/vault/policy.ts`'s
+ * `StepPolicy` minus the matter path. */
+export interface ThreadPolicy {
+  localOnly: boolean;
+  source: 'matter' | 'vault' | 'none';
+}
+
 export interface Thread {
   header: ThreadHeader;
   events: ThreadEvent[];
+  /** Present on `GET /threads/:id`; absent on older runtimes. */
+  policy?: ThreadPolicy;
 }
 
 export interface ToolCallLog {
@@ -369,6 +379,9 @@ export interface SetupPlanBody {
   sampleMatter: boolean;
   defaultProvider?: string;
   git: boolean;
+  /** "Keep every matter on this machine unless I say otherwise" →
+   * `default_locality: local` (providers spec §7). */
+  staysLocalDefault?: boolean;
 }
 
 /** `POST /setup` — 200. `result.groups` mirrors `SetupResult` in

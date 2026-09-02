@@ -206,3 +206,15 @@ describe('readVaultConfig law flags', () => {
     expect(cfg.lawManagement).toBe('plugin');
   });
 });
+
+describe('readVaultConfig default_locality (providers spec §7)', () => {
+  test('local is read; anything else is absent', () => {
+    const root = mkdtempSync(join(tmpdir(), 'cfg-'));
+    writeFileSync(join(root, 'config.md'), 'counsel-os-config: true\nlegal_root: x\ndefault_locality: local\n', 'utf8');
+    expect(readVaultConfig(root).defaultLocality).toBe('local');
+    writeFileSync(join(root, 'config.md'), 'counsel-os-config: true\nlegal_root: x\ndefault_locality: any\n', 'utf8');
+    expect(readVaultConfig(root).defaultLocality).toBeUndefined();
+    writeFileSync(join(root, 'config.md'), 'counsel-os-config: true\nlegal_root: x\n', 'utf8');
+    expect(readVaultConfig(root).defaultLocality).toBeUndefined();
+  });
+});

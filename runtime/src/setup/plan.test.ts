@@ -62,3 +62,17 @@ describe('configFor', () => {
     expect(text).toContain("# law_management: plugin");
   });
 });
+
+describe('configFor and the vault-wide locality (providers spec §7)', () => {
+  test('the default is a commented line; the first-run checkbox writes it live', () => {
+    expect(configFor('/v')).toContain('# default_locality: any');
+    expect(configFor('/v', { defaultLocality: 'local' })).toContain('\ndefault_locality: local');
+    expect(configFor('/v', { defaultLocality: 'local' })).not.toContain('# default_locality');
+  });
+
+  test('the plan carries staysLocalDefault, off unless asked', () => {
+    const plan = SetupPlan.parse({ vault: '/v', identity: { name: 'J', role: 'solo' } });
+    expect(plan.staysLocalDefault).toBe(false);
+    expect(SetupPlan.parse({ vault: '/v', identity: { name: 'J', role: 'solo' }, staysLocalDefault: true }).staysLocalDefault).toBe(true);
+  });
+});

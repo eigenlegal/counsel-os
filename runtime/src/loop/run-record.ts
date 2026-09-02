@@ -48,6 +48,9 @@ export interface RunRecord {
    * (web-ui spec §4.3): `error` says what went wrong, this says what the
    * model actually wrote. Unset for every other kind of failure. */
   errorText?: string;
+  /** `stays-local` when the matter's privacy policy chose the provider
+   * (providers spec §7) — the record shows the policy was in force. */
+  policy?: 'stays-local';
 }
 
 /**
