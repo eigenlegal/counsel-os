@@ -1,25 +1,24 @@
 # Eval Baselines
 
-Per-model score snapshots, written by `scripts/run_evals.py --save-baseline <model-id>`
-and consumed by `--compare-baseline <model-id>`. One file per model; slashes and
-colons in the model id become dashes in the filename
-(`anthropic/claude-opus-4:beta` → `anthropic-claude-opus-4-beta.json`).
+Per-model score snapshots from the retired Python scorer (`scripts/run_evals.py
+--save-baseline`, gone as of routing-and-evals step 2). One file per model;
+slashes and colons in the model id became dashes in the filename.
 
 ```json
 {
-  "model": "claude-opus-4-8",
-  "date": "2026-06-11",
-  "scores": { "<fixture-id>": 0.9525, "...": 1.0 },
-  "mean": 0.9881
+  "model": "claude-fable-5",
+  "date": "2026-08-29",
+  "scores": { "<fixture-id>": 1.0, "...": 1.0 },
+  "mean": 1.0
 }
 ```
 
-- `--save-baseline` refuses to write a partial baseline — every fixture must have
-  a scored output first. `--date YYYY-MM-DD` overrides the recorded date.
-- `--compare-baseline` prints a per-fixture delta table (to stderr; stdout stays
-  JSON) and exits 1 when any fixture drops by more than 0.1 vs the baseline,
-  falls below its pass threshold (optional fixture `pass_threshold`, default
-  0.80), or has a baseline score but no current output.
+`claude-fable-5.json` is kept as the **parity anchor**: the TypeScript findings
+scorer (`runtime/src/evals/scorers/findings.ts`) must reproduce these numbers
+on `evals/sample-outputs/` exactly, and `runtime/src/evals/runner.test.ts`
+checks that on every push. Do not edit it.
 
-Baselines are committed (unlike `evals/outputs/`, which is gitignored) so model
-comparisons survive across machines and CI can gate on them.
+Going forward, per-model scores are not snapshotted here. Every run appends one
+line per fixture to `<vault>/.counsel/evals/results.jsonl` (spec §5), and the
+scoreboard (step 3) reads those lines — three result sets (shipped fixtures,
+practice fixtures, outcomes), never averaged together.

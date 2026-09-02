@@ -13,7 +13,7 @@ git clone https://github.com/eigenlegal/counsel-os
 cd counsel-os
 bun install                 # browse helper + tooling deps
 bun test                    # the test suite
-python3 scripts/run_evals.py --self-test   # eval-harness self-test
+bun run evals:self-test     # eval scorer self-test
 ```
 
 Useful scripts (see `package.json`):
@@ -33,7 +33,7 @@ These are only relevant if you are developing Counsel OS itself. Users never run
 | `scripts/lint_knowledge.py [--check-versions]` | Lints `knowledge/` conventions (no checkboxes, no H2-before-H1, frontmatter present) and, with the flag, verifies the four manifests agree. Runs in CI. | Before committing knowledge content changes. |
 | `scripts/bump_content_versions.py [--date YYYY-MM-DD]` | Hashes each content group and bumps `content-version` frontmatter for groups that changed. This is what lets `/counsel-os:update` detect upstream law/practice changes. | After editing anything under `knowledge/law/` or `knowledge/practice-seed/`. |
 | `scripts/validate_law_frontmatter.py` | Validates law-area frontmatter against `knowledge/law/frontmatter-policy.json`; reports attestations coming due. Runs in CI. | After editing law frontmatter; periodically to see attestation debt. |
-| `scripts/run_evals.py [--generate] [--model <id>] [--only <fixture>] [--self-test] [--save-baseline <id>] [--compare-baseline <id>]` | Scores eval outputs in `evals/`; `--generate` runs the counsel agent headlessly against each fixture's mini-vault first (costs API tokens); `--self-test` validates the scorer (free, runs in CI); baselines snapshot per-model scores and gate on regressions. | Full generate+score before releases and when qualifying a new model; see `evals/README.md`. |
+| `bun runtime/src/cli.ts eval (--fixture <id> \| --task <task> \| --all) [--provider <id>] [--save]` | Runs the eval fixtures in `evals/` (and the practice's own under `<vault>/practice/evals/`) through the runtime on one provider and scores them; `--save` appends the lines to `<vault>/.counsel/evals/results.jsonl`. `bun run evals:self-test` scores the committed sample outputs (free, runs in CI). | Full run before releases and when qualifying a new model; see `evals/README.md`. |
 | `scripts/gen_browse_reference.py [--check]` | Regenerates the browse skill's command reference from the source command registry; `--check` fails on drift instead of rewriting. CI regenerates and fails on any resulting `git diff`. | After adding or changing a browse CLI command. |
 
 ## Ground rules

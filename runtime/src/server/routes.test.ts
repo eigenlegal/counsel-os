@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test } from 'bun:test';
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { FakeModelProvider, runToolDef } from '../core/fake-provider';
 import type { Capabilities, ModelProvider, StepEvent, StepRequest } from '../core/types';
 import { Router } from '../router/router';
@@ -1806,5 +1806,111 @@ describe('the outcomes record (routing-and-evals spec §7)', () => {
     const on = await call(app, 'PATCH', '/settings/vault', { body: { outcomes: true } });
     expect(await on.json()).toEqual({ outcomes: true });
     expect((await call(app, 'PATCH', '/settings/vault', { body: { outcomes: 'yes' } })).status).toBe(400);
+  });
+});
+
+describe('the eval runner over HTTP (routing-and-evals spec §4.2)', () => {
+  const repoRoot = resolve(import.meta.dir, '..', '..', '..');
+  const sample = (id: string): unknown => JSON.parse(readFileSync(join(repoRoot, 'evals', 'sample-outputs', `${id}.json`), 'utf8'));
+  const evalsDeps = (extra: NonNullable<ServerDeps['evals']> = {}): NonNullable<ServerDeps['evals']> => ({ repoRoot, tmpDir: mkdtempSync(join(tmpdir(), 'routes-evals-')), ...extra });
+
+  test('the routes need the bearer token', async () => {
+    const app = appWithFake();
+    expect((await call(app, 'GET', '/evals/fixtures', { token: null })).status).toBe(401);
+    expect((await call(app, 'POST', '/evals/run', { token: null, body: { all: true } })).status).toBe(401);
+  });
+
+  test('GET /evals/fixtures lists the shipped set with scorer, task, source and whether it can run', async () => {
+    const app = appWith([new FakeModelProvider([{ text: "x" }])], { evals: evalsDeps() });
+    const res = await call(app, 'GET', '/evals/fixtures');
+    expect(res.status).toBe(200);
+    const { fixtures } = (await res.json()) as { fixtures: Array<{ id: string; scorer: string; task: string; source: string; runnable: boolean }> };
+    expect(fixtures.length).toBeGreaterThanOrEqual(13);
+    const lbp = fixtures.find(f => f.id === 'law-beats-practice')!;
+    expect(lbp).toMatchObject({ scorer: 'findings', task: 'review', source: 'shipped', runnable: true });
+    expect(fixtures.find(f => f.id === 'demo-nda')!.runnable).toBe(false);
+  });
+
+  test('POST /evals/run streams plan, progress, result and done; --save lands in results.jsonl and GET /evals/results reads it', async () => {
+    const app = appWith([new FakeModelProvider([{ output: sample('law-beats-practice'), usage: { inputTokens: 10, outputTokens: 2, costUsd: 0.01 } }])], { evals: evalsDeps() });
+    const res = await call(app, 'POST', '/evals/run', { body: { fixtures: ['law-beats-practice'], save: true } });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toBe('text/event-stream');
+    const frames = parseSse(await res.text());
+    expect(frames.map(f => f.event)).toEqual(['plan', 'progress', 'result', 'done']);
+    expect(frames[0]!.data).toMatchObject({ count: 1, providerId: 'fake/fake', estimateUsd: null, skipped: [] });
+    expect(frames[1]!.data).toEqual({ index: 0, total: 1, fixtureId: 'law-beats-practice' });
+    expect(frames[2]!.data).toMatchObject({ fixtureId: 'law-beats-practice', score: 1, providerId: 'fake/fake', task: 'review', costUsd: 0.01 });
+    expect(frames[3]!.data).toMatchObject({ summary: { count: 1, scored: 1, failed: 0, mean: 1, costUsd: 0.01 }, saved: true });
+
+    const all = await call(app, 'GET', '/evals/results');
+    expect(((await all.json()) as { results: unknown[] }).results).toHaveLength(1);
+    const none = await call(app, 'GET', '/evals/results?since=2999-01-01');
+    expect(((await none.json()) as { results: unknown[] }).results).toHaveLength(0);
+    expect((await call(app, 'GET', '/evals/results?since=yesterday')).status).toBe(400);
+  });
+
+  test('a run without save leaves no results; a step error is a null-score line, and the set still finishes', async () => {
+    const app = appWith([new FakeModelProvider([{ error: 'no model' }])], { evals: evalsDeps() });
+    const frames = parseSse(await (await call(app, 'POST', '/evals/run', { body: { fixtures: ['law-beats-practice'] } })).text());
+    expect(frames.find(f => f.event === 'result')!.data).toMatchObject({ score: null, error: 'no model' });
+    expect(frames.at(-1)!.data).toMatchObject({ summary: { count: 1, scored: 0, failed: 1, mean: null }, saved: false });
+    expect(((await (await call(app, 'GET', '/evals/results')).json()) as { results: unknown[] }).results).toEqual([]);
+  });
+
+  test('the cost guard: a set on a provider with no known price needs confirm: true; one fixture does not', async () => {
+    const app = appWith([new FakeModelProvider([{ output: sample('law-beats-practice') }, { output: sample('law-beats-practice') }])], { evals: evalsDeps() });
+    const refused = await call(app, 'POST', '/evals/run', { body: { all: true } });
+    expect(refused.status).toBe(409);
+    expect(await refused.json()).toMatchObject({ error: 'confirm-cost', estimateUsd: null, count: 8, providerId: 'fake/fake', message: '8 fixtures on fake/fake with no known price — confirm to run them.' });
+    expect((await call(app, 'POST', '/evals/run', { body: { fixtures: ['law-beats-practice'] } })).status).toBe(200);
+  });
+
+  test('the cost guard: over $1 estimated needs confirm: true', async () => {
+    const pricing = () => ({ prompt: 3, completion: 15 });
+    const app = appWith([new FakeModelProvider([{ output: sample('law-beats-practice') }])], { evals: evalsDeps({ pricing }) });
+    const refused = await call(app, 'POST', '/evals/run', { body: { all: true } });
+    expect(refused.status).toBe(409);
+    expect(await refused.json()).toMatchObject({ error: 'confirm-cost', estimateUsd: 1.32, count: 8, providerId: 'fake/fake' });
+    const one = await call(app, 'POST', '/evals/run', { body: { fixtures: ['law-beats-practice'] } });
+    expect(one.status).toBe(200);
+    const frames = parseSse(await one.text());
+    expect(frames[0]!.data).toMatchObject({ estimateUsd: 0.17 });
+  });
+
+  test('bad selections: unknown fixture, unknown provider, nothing runnable', async () => {
+    const app = appWith([new FakeModelProvider([{ text: "x" }])], { evals: evalsDeps() });
+    expect((await call(app, 'POST', '/evals/run', { body: { fixtures: ['ghost'] } })).status).toBe(400);
+    expect((await call(app, 'POST', '/evals/run', { body: {} })).status).toBe(400);
+    expect((await call(app, 'POST', '/evals/run', { body: { fixtures: ['law-beats-practice'], providerId: 'nope/nope' } })).status).toBe(422);
+    const legacy = await call(app, 'POST', '/evals/run', { body: { fixtures: ['demo-nda'] } });
+    expect(legacy.status).toBe(400);
+    expect(await legacy.json()).toMatchObject({ error: 'nothing to run', skipped: [{ id: 'demo-nda' }] });
+  });
+
+  test('one run at a time: a second POST while one streams is 409 eval-busy', async () => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>(r => (release = r));
+    const fake = new FakeModelProvider([{ output: sample('law-beats-practice') }]);
+    const slow: ModelProvider = {
+      id: fake.id,
+      kind: fake.kind,
+      capabilities: fake.capabilities,
+      run: async function* (req) {
+        await gate;
+        yield* fake.run(req);
+      },
+    };
+    const app = appWith([slow], { evals: evalsDeps() });
+    const first = call(app, 'POST', '/evals/run', { body: { fixtures: ['law-beats-practice'] } });
+    await new Promise(r => setTimeout(r, 20));
+    const second = await call(app, 'POST', '/evals/run', { body: { fixtures: ['law-beats-practice'] } });
+    expect(second.status).toBe(409);
+    expect(await second.json()).toEqual({ error: 'eval-busy' });
+    release();
+    const frames = parseSse(await (await first).text());
+    expect(frames.at(-1)!.event).toBe('done');
+    // And free again once the stream has ended.
+    expect((await call(app, 'POST', '/evals/run', { body: { fixtures: ['law-beats-practice'] } })).status).toBe(200);
   });
 });

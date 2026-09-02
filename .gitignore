@@ -7,7 +7,6 @@ runtime/ui/dist/
 dist/
 runtime/src/generated/
 backups/
-evals/outputs/
 *.bun-build
 config.local.md
 

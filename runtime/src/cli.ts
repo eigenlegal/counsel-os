@@ -29,6 +29,12 @@ import { ThreadStore } from './threads/store';
 import { startRetro } from './retro/index';
 import { runStep } from './loop/counsel-loop';
 import { loadRegistry } from './providers/registry';
+import { loadFixtures } from './evals/fixture';
+import { pickJudge, providerJudge } from './evals/judge';
+import { appendResult } from './evals/results';
+import { runSet, summarize } from './evals/runner';
+import { renderResult, renderSummary, selectFixtures } from './evals/select';
+import { confirmationMessage, estimateCost, needsConfirmation } from './evals/cost';
 
 const { values, positionals } = parseArgs({
   args: Bun.argv.slice(2),
@@ -67,6 +73,11 @@ const { values, positionals } = parseArgs({
     out: { type: 'string' },          // `docx apply`: where to write (default <original>-redline-<date>.docx)
     track: { type: 'boolean' },       // `docx apply`: native tracked changes
     author: { type: 'string' },       // `docx apply|compare`: the revision author
+    fixture: { type: 'string', multiple: true }, // `eval`: one fixture id (repeatable)
+    all: { type: 'boolean' },              // `eval`: every runnable fixture
+    save: { type: 'boolean' },             // `eval`: append the lines to <vault>/.counsel/evals/results.jsonl
+    json: { type: 'boolean' },             // `eval`: one JSON line per result instead of the text table
+    repo: { type: 'string' },              // `eval`: the checkout the shipped fixtures live in (default: the plugin root)
     ours: { type: 'string' },         // `docx rounds`
     theirs: { type: 'string' },       // `docx rounds`
     base: { type: 'string' },         // `docx rounds`: the round N-1 baseline
@@ -93,6 +104,8 @@ function usage(): never {
   console.error('         compares the shipped law and practice content with the vault; applies law updates (never a file you changed)');
   console.error('       bun runtime/src/cli.ts retro [--vault <dir>] [--since <YYYY-MM-DD>] [--provider <id>]');
   console.error('         opens a retro thread over the runtime\'s record of the period and runs its first step; knowledge changes come back as proposals');
+  console.error('       bun runtime/src/cli.ts eval (--fixture <id> [--fixture <id>…] | --task <task> | --all) [--provider <id>] [--vault <dir>] [--save] [--yes] [--json] [--step-timeout <ms>]');
+  console.error('         runs eval fixtures (the shipped set plus <vault>/practice/evals) through the loop on one provider and scores them; --yes accepts a run estimated over $1');
   console.error('       bun runtime/src/cli.ts doctor [--vault <dir>]');
   console.error('         read-only vault health: root config, structure, law currency, git, standards/library consistency, matter law impact');
   console.error('       bun runtime/src/cli.ts docx apply <file.docx> <redlines.json> [--out <file>] [--track] [--author <name>] (the redline; result JSON to stdout, exit 2 on any skip)');
@@ -368,6 +381,65 @@ if (cmd === 'serve') {
   // re-exec itself (packaging spec §3.3). The module serves until stdin
   // closes; nothing here returns.
   await import('./mcp/stdio');
+} else if (cmd === 'eval') {
+  const vaultRoot = vaultForMaintenance();
+  const pluginRoot = defaultPluginRoot();
+  const repoRoot = values.repo === undefined ? pluginRoot : resolve(values.repo);
+  const loaded = loadFixtures({ repoRoot, vaultRoot });
+  const selected = selectFixtures(loaded, { ...(values.fixture === undefined ? {} : { fixtures: values.fixture }), ...(values.task === undefined ? {} : { task: values.task }), ...(values.all === undefined ? {} : { all: values.all }) });
+  if (selected.error !== undefined) {
+    console.error(selected.error);
+    process.exit(2);
+  }
+  for (const s of selected.skipped) console.error(`skipping ${s.id}: ${s.reason}`);
+  if (selected.fixtures.length === 0) {
+    console.error('nothing to run');
+    process.exit(2);
+  }
+  let registry: ReturnType<typeof loadRegistry>;
+  try {
+    registry = loadRegistry({ vaultRoot });
+  } catch (err) {
+    console.error(`no provider to run the evals on: ${err instanceof Error ? err.message : String(err)}`);
+    process.exit(2);
+  }
+  const providerId = values.provider ?? registry.router.resolve().id;
+  if (!registry.providers.some(p => p.id === providerId)) {
+    console.error(`unknown provider: ${providerId}`);
+    process.exit(2);
+  }
+  // Pricing is only known for vendors that publish it through discovery
+  // (OpenRouter); the CLI has no live listing, so the estimate is null and
+  // the run says so rather than pretending it is free.
+  const estimate = estimateCost(selected.fixtures.length, null);
+  if (needsConfirmation(estimate, selected.fixtures.length) && values.yes !== true) {
+    console.error(`${confirmationMessage(estimate, selected.fixtures.length, providerId)} Pass --yes to accept.`);
+    process.exit(2);
+  }
+  const judge = pickJudge({ providers: registry.providers, router: registry.router, providerId, practiceSet: selected.fixtures.some(l => l.set === 'practice') });
+  if (judge?.note !== undefined) console.error(judge.note);
+  console.error(`running ${selected.fixtures.length} fixture${selected.fixtures.length === 1 ? '' : 's'} on ${providerId}${estimate === null ? ' (no price known for this provider)' : ` (~$${estimate.toFixed(2)})`}`);
+  const results = await runSet({
+    fixtures: selected.fixtures,
+    providerId,
+    deps: {
+      pluginRoot,
+      content: shippedContent(pluginRoot),
+      providers: registry.providers,
+      router: registry.router,
+      ...(stepTimeoutMs === undefined ? {} : { stepTimeoutMs }),
+      ...(judge === null ? {} : { judge: providerJudge(judge.provider) }),
+    },
+    onResult: line => {
+      if (values.save === true) appendResult(vaultRoot, line);
+      console.log(values.json === true ? JSON.stringify(line) : renderResult(line));
+    },
+  });
+  const summary = summarize(results);
+  if (values.json === true) console.log(JSON.stringify({ summary }));
+  else console.log(renderSummary(summary));
+  if (values.save === true) console.error(`saved ${results.length} line${results.length === 1 ? '' : 's'} to ${vaultRoot}/.counsel/evals/results.jsonl`);
+  process.exit(summary.failed === 0 ? 0 : 1);
 } else if (cmd === 'doctor') {
   const vaultRoot = vaultForMaintenance();
   const report = runDoctor({ vaultRoot, pluginRoot: defaultPluginRoot() });
