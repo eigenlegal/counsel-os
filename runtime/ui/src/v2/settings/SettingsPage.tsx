@@ -630,7 +630,13 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
           <button type="submit" className="v2-primary" disabled={busy}>
             {busy ? 'Saving…' : 'Save'}
           </button>
-          <span className="muted">Saves your models, the task routes and the step timeout together.</span>
+          {/* Say which of the two rules this button is. Choosing a model
+              or pasting a key writes at once — they are one act each, and
+              waiting for a button would be the surprise. A row you added,
+              a route and the timeout are edits you may not have finished,
+              so they wait here. The caption used to claim it saved the
+              models too, which it does not. */}
+          <span className="muted">Saves the providers you added, the task routes and the step timeout. Choosing a model or pasting a key applies at once.</span>
         </div>
       </footer>
     </form>

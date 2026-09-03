@@ -247,7 +247,13 @@ describe('SettingsPage', () => {
     // The button belongs to the form's footer, not to any one group.
     expect(save.closest('.v2-group')).toBeNull();
     expect(save.closest('.v2-save')).not.toBeNull();
-    expect(screen.getByText(/Saves your models, the task routes and the step timeout/)).toBeTruthy();
+    // The caption names which of the page's two rules this button is:
+    // choosing a model or pasting a key writes at once, so the button does
+    // not claim them.
+    const caption = screen.getByText(/Saves the providers you added/).textContent ?? '';
+    expect(caption).toContain('task routes');
+    expect(caption).toContain('step timeout');
+    expect(caption).toContain('applies at once');
 
     await userEvent.click(save);
     await waitFor(() => expect(screen.getByText(/^Saved\./)).toBeTruthy());
