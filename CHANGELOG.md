@@ -8,6 +8,10 @@ reconstructed from git history. New entries are prepended automatically by
 
 ## [Unreleased]
 
+- **A short thread sits against the composer.** One question and its answer used to leave four hundred pixels of nothing between the last word and the box you type in. The conversation now grows upward from where you are working.
+- **The reading size has a name.** Two places set 15.5px serif by hand — an answer, and a document in the reader. It is the one size that is for reading rather than for using, and it is a token now like the rest.
+- **The Save button says what it saves.** The page has two rules: choosing a model or pasting a key writes at once, while a provider you just added, a task route and the timeout wait for Save. The caption claimed it saved your models, which by then are already on disk.
+
 A design pass: a scale, a measure, and one control
 
 - **Five type sizes instead of twelve.** The sheet had 9.5, 10.5, 11, 11.5, 12, 12.5, 13, 13.5, 14, 14.5, 15 and 30px — and 12.5/13/13.5 alone accounted for a hundred uses while being indistinguishable on screen. Twelve sizes is not a scale, and it is most of why every page read flat: when everything is nearly the same size, nothing recedes and every paragraph shouts equally.
