@@ -1310,3 +1310,18 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 /* A task nobody has set is on the defaults; it reads as quiet, not absent. */
 .v2-routing-untouched tbody th, .v2-routing-untouched > th { color: var(--fg-muted); }
 .v2-routing-why { color: var(--fg-faint); font-family: var(--sans); margin-left: 0.4rem; }
+.v2-strip-meaning { color: var(--fg-faint); font-size: var(--t-small); }
+
+/* What a score is made of, opened from the number itself. */
+.v2-score-open { background: none; border: none; padding: 0; min-height: unset; cursor: pointer; color: inherit; font: inherit; text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 3px; }
+.v2-score-open:hover { text-decoration-color: var(--accent); }
+.v2-score-detail { margin-top: var(--s4); padding-top: var(--s3); border-top: 1px solid var(--border); }
+.v2-score-detail-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3); margin: 0 0 var(--s2); }
+.v2-score-table { width: 100%; border-collapse: collapse; font-size: var(--t-body); }
+.v2-score-table th, .v2-score-table td { text-align: left; font-weight: 400; padding: 3px 0.9rem 3px 0; border-bottom: 1px solid var(--border); vertical-align: baseline; }
+.v2-score-table thead th { font: 600 var(--t-micro)/1.6 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-faint); }
+.v2-score-table tbody th { color: var(--fg); overflow-wrap: anywhere; }
+.v2-score-failed { color: var(--warn); }
+.v2-score-terms { color: var(--fg-muted); font-size: var(--t-small); }
+.v2-score-term { margin-right: var(--s3); font-family: var(--mono); }
+.v2-score-note { color: var(--fg-faint); }

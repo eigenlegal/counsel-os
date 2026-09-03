@@ -89,6 +89,9 @@ describe('pillFor', () => {
     const pill = document.querySelector('summary .v2-pill');
     // Set in small caps on the line, so the word itself is uppercase.
     expect(pill?.textContent).toBe('DISCONNECTED');
+    // And the page SAYS what that means. It used to live in a `title`,
+    // which is a tooltip nobody hovers on a word that looks like a failure.
+    expect(screen.getByText('the page disconnected mid-step; the answer may still have completed')).toBeTruthy();
     expect(pill?.getAttribute('title')).toBe('the page disconnected mid-step; the answer may still have completed');
     // The class still carries the status the runtime recorded, so the
     // styling — and anything reading the DOM — sees the real thing.

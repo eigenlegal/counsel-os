@@ -1,6 +1,7 @@
 import { readRouting, setRouting } from '../../api/client';
 import type { RoutingView } from '../../api/types';
 import { RoutingLine } from './RoutingLine';
+import { ScoreDetail } from './ScoreDetail';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, fetchJson, streamEvals } from '../../api/client';
 import { EVAL_SET_KINDS, type EvalEstimate, type EvalSetKind, type Scoreboard, type ScoreboardRow, type ScoreboardTask } from '../../api/types';
@@ -78,6 +79,8 @@ export function ModelsGroup({ providerIds }: ModelsGroupProps): JSX.Element {
   const [set, setSet] = useState<EvalSetKind | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
+  /** Which cell's detail is open, if any. */
+  const [detail, setDetail] = useState<{ task: string; providerId: string } | null>(null);
   const [running, setRunning] = useState<Running | null>(null);
   // How each task is routed, and who that picks — read beside the scores and
   // re-read after a change so the pick shown is the pick a step would get.
@@ -204,7 +207,18 @@ export function ModelsGroup({ providerIds }: ModelsGroupProps): JSX.Element {
       <td key={providerId} className="v2-models-cell">
         {rows.map((r: ScoreboardRow) => (
           <div key={r.modelVersion} className="v2-models-row">
-            <span className={`v2-models-score${r.score === null ? ' v2-models-failed' : ''}`}>{r.score === null ? 'failed' : r.score.toFixed(2)}</span>
+            {/* The number is the way in to what it is made of: which
+                documents it got right, which it missed, what the scorer
+                counted. A board cell used to be a number with nothing
+                behind it. */}
+            <button
+              type="button"
+              className={`v2-models-score v2-score-open${r.score === null ? ' v2-models-failed' : ''}`}
+              aria-expanded={detail?.task === t.task && detail.providerId === providerId}
+              onClick={() => setDetail(d => (d !== null && d.task === t.task && d.providerId === providerId ? null : { task: t.task, providerId }))}
+            >
+              {r.score === null ? 'failed' : r.score.toFixed(2)}
+            </button>
             {rows.length > 1 || r.modelVersion !== providerId.slice(providerId.indexOf('/') + 1) ? <span className="v2-models-version">{r.modelVersion}</span> : null}
             <span className="v2-models-facts">
               {scoredLabel(r.scored, fixtures)} · {staleness(r.staleDays)}
@@ -305,6 +319,7 @@ export function ModelsGroup({ providerIds }: ModelsGroupProps): JSX.Element {
           </table>
         </div>
       )}
+      {detail === null ? null : <ScoreDetail task={detail.task} providerId={detail.providerId} onClose={() => setDetail(null)} />}
     </div>
   );
 }
