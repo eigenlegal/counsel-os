@@ -109,14 +109,32 @@ describe('the vendor catalog (providers spec §3)', () => {
     expect(anthropic.models).toBe('list');
     expect(anthropic.discovery?.shape).toBe('anthropic');
     expect(anthropic.curated!.length).toBeGreaterThan(0);
-    for (const m of anthropic.curated!) expect(m.contextTokens).toBeGreaterThan(0);
+    // A window we know is a real number; one we do not is absent rather
+    // than guessed — the router compares it against a task's bar.
+    for (const m of anthropic.curated!) if (m.contextTokens !== undefined) expect(m.contextTokens).toBeGreaterThan(0);
+    expect(anthropic.curated!.some(m => m.contextTokens === undefined)).toBe(true);
     expect(vendorFor('openrouter')!.models).toBe('list');
     // The Claude subscription carries the same curated list: its harness
     // takes a model, so it is switchable like any other provider.
     expect(vendorFor('claude-sub')!.models).toBe('curated');
     expect(vendorFor('claude-sub')!.curated).toEqual(anthropic.curated);
-    // Codex publishes no list and we will not invent one.
-    expect(vendorFor('codex-sub')!.models).toBe('none');
+    // So does Codex. Its CLI documents the models it answers to
+    // (learn.chatgpt.com/docs/models); "ChatGPT does not publish a model
+    // list" was us never having looked.
+    expect(vendorFor('codex-sub')!.models).toBe('curated');
+    expect(vendorFor('codex-sub')!.curated!.map(m => m.id)).toContain('gpt-5.6-terra');
+  });
+
+  test('every vendor can say what models it has', () => {
+    // A provider you cannot choose a model for is a provider you cannot
+    // finish setting up. Every one either lists live or ships the ids it
+    // answers to. (When a live listing fails, `discoverModels` falls back
+    // to the curated ids where there are any, and otherwise returns the
+    // reason — the field still takes a model id typed by hand.)
+    for (const vendor of allVendors()) {
+      const has = vendor.models === 'list' || (vendor.curated ?? []).length > 0;
+      expect(has, `${vendor.prefix} offers no way to choose a model`).toBe(true);
+    }
   });
 
   test('every API-key vendor names its usual environment variable (uppercase, the vendor’s own spelling)', () => {

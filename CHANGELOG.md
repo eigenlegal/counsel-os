@@ -8,6 +8,12 @@ reconstructed from git history. New entries are prepended automatically by
 
 ## [Unreleased]
 
+A simpler Settings page, and the model lists we never asked for
+
+- **ChatGPT and Claude list their models.** The Codex CLI documents the models it answers to, and so does Claude's; we had never looked, and the page said "ChatGPT does not publish a model list". It does. Claude gained Fable too.
+- **Adding a provider is clicking the one you want.** It was a search box with a placeholder and a greyed-out button — you had to know to type something, that a list would appear, to pick from it, and then to press Add. Four unsignposted steps to do the thing the page most wants you to do. The common providers are now named and clicked; the whole catalog is still there, behind *Someone else*.
+- **A provider appears once.** Every provider used to be written twice — a block at the top you could use, and a row further down you had to understand. Its id, address and capability flags now fold away inside its own block, and the second list is gone. One block per provider **entry**: two rows of the same vendor are two blocks, each editable and removable, rather than one silently hiding the other.
+
 Adding a provider actually works now
 
 - A provider you add gets its **block straight away**, with its key and its model picker on it. Before this it appeared only as a stub down in "Rows you added", and the two things it needed were impossible to do in either order: the row would not save without a model, and the vendor would not list its models without a key.

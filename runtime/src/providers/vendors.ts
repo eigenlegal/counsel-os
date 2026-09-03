@@ -53,7 +53,9 @@ export interface VendorHandles {
 
 export interface VendorModel {
   id: string;
-  contextTokens: number;
+  /** Absent where the vendor does not publish one. Never guessed: the
+   * router compares a task's bar against this number. */
+  contextTokens?: number;
 }
 
 /** An open model worth trying locally, and why — a starting point, not a
@@ -164,7 +166,21 @@ const LOCAL_CAPS = { tools: true, caching: false, thinking: false, contextTokens
 const ANTHROPIC_MODELS: VendorModel[] = [
   { id: 'claude-opus-5', contextTokens: 200_000 },
   { id: 'claude-sonnet-5', contextTokens: 200_000 },
+  { id: 'claude-fable-5-1' },
   { id: 'claude-haiku-4-5-20251001', contextTokens: 200_000 },
+];
+
+/**
+ * What the Codex CLI answers to (`codex --model`), from OpenAI's own docs:
+ * https://learn.chatgpt.com/docs/models. It publishes no listing endpoint,
+ * so this is the list — and it IS a list. Saying "ChatGPT does not publish
+ * a model list" was us never having looked.
+ */
+const CODEX_MODELS: VendorModel[] = [
+  { id: 'gpt-5.6-sol' },
+  { id: 'gpt-5.6-terra' },
+  { id: 'gpt-5.6-luna' },
+  { id: 'gpt-5.5' },
 ];
 
 /** xAI documents no listing endpoint; the ids from its models page. */
@@ -288,7 +304,7 @@ const SDK_VENDORS: Vendor[] = [
   {
     prefix: 'codex-sub', name: 'ChatGPT', kind: 'harness', layer: 'sdk', group: 'subscription', auth: 'subscription', locality: 'cloud',
     handles: { company: 'OpenAI', termsUrl: 'https://openai.com/policies/terms-of-use' },
-    help: { install: 'https://developers.openai.com/codex' }, models: 'none', capabilities: CLOUD_CAPS,
+    help: { install: 'https://developers.openai.com/codex' }, models: 'curated', curated: CODEX_MODELS, capabilities: CLOUD_CAPS,
   },
   {
     prefix: 'anthropic', name: 'Claude', kind: 'direct', layer: 'sdk', group: 'hosted', auth: 'apikey', locality: 'cloud',

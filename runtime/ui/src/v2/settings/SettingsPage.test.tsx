@@ -74,6 +74,25 @@ afterEach(() => {
   sessionStorage.clear();
 });
 
+/** The model field of the block showing `model`. Two rows of one vendor are
+ * two blocks now, so a label alone is ambiguous. */
+function modelField(label: string, value: string): HTMLInputElement {
+  const found = (screen.getAllByLabelText(label) as HTMLInputElement[]).find(el => el.value === value);
+  if (found === undefined) throw new Error(`no ${label} field showing ${value}`);
+  return found;
+}
+
+/** The full catalog now sits behind "Someone else" — the common providers
+ * are named and clicked directly. Tests that search it open it first. */
+async function openCatalog(): Promise<HTMLElement> {
+  const open = screen.queryByRole('combobox', { name: 'Search by maker or vendor' });
+  if (open !== null) return open;
+  // The page may still be loading its settings, so wait for the link
+  // rather than deciding it is absent.
+  await userEvent.click(await waitFor(() => screen.getByRole('button', { name: 'Someone else' })));
+  return await waitFor(() => screen.getByRole('combobox', { name: 'Search by maker or vendor' }));
+}
+
 describe('SettingsPage', () => {
   test('is grouped by what the operator came to do, each group with a purpose line', async () => {
     install(() => json(view));
@@ -127,6 +146,7 @@ describe('SettingsPage', () => {
     // A blank row makes the form invalid. Clicking "use this one" then used
     // to flip the table to the new default and send nothing — and the only
     // message said so from inside a collapsed disclosure.
+    await openCatalog();
     await userEvent.click(screen.getByRole('button', { name: 'or add a blank row' }));
     await userEvent.click(screen.getByRole('button', { name: 'Use Ollama' }));
 
@@ -154,7 +174,7 @@ describe('SettingsPage', () => {
     const before = screen.getAllByLabelText('Id').length;
 
     const user = userEvent.setup({ document });
-    await user.type(screen.getByRole('combobox', { name: 'Search by maker or vendor' }), 'Local runners · Ollama');
+    await user.type(await openCatalog(), 'Local runners · Ollama');
     await user.keyboard('{Escape}');
     await userEvent.click(screen.getByRole('button', { name: 'Add' }));
 
@@ -162,25 +182,28 @@ describe('SettingsPage', () => {
     expect(screen.getAllByLabelText('Id')).toHaveLength(before);
   });
 
-  test('a blank row leads with the one field it needs', async () => {
+  test('a blank row shows the one field it needs, without moving it', async () => {
     install(() => json(view));
     render(<SettingsPage health={health} />);
     await waitFor(() => expect(screen.getByRole('list', { name: 'Providers you can use' })).toBeTruthy());
 
     const before = screen.getAllByLabelText('Id').length;
+    await openCatalog();
     await userEvent.click(screen.getByRole('button', { name: 'or add a blank row' }));
     const ids = screen.getAllByLabelText('Id');
     expect(ids).toHaveLength(before + 1);
 
-    // There is no vendor to list models for, so the Id field takes the lead
-    // instead of hiding under "the rest of this row" — which left the row
-    // saying "name it below" and pointing at nothing.
+    // Visible because its fold is OPEN, not because the field lives
+    // somewhere else while the vendor is unknown. Moving it once the id
+    // became recognisable remounted the input and dropped focus mid-word.
     const added = ids[ids.length - 1] as HTMLElement;
-    expect(added.closest('.v2-provider-main')).not.toBeNull();
-    expect(added.closest('details')).toBeNull();
-    // A row that DOES name a vendor keeps its id folded away, where it was.
+    const fold = added.closest('details');
+    expect(fold).not.toBeNull();
+    expect((fold as HTMLDetailsElement).open).toBe(true);
+    // A row that names a known vendor keeps its id folded away, where the
+    // rest of its settings are.
     const known = ids[0] as HTMLElement;
-    expect(known.closest('details')).not.toBeNull();
+    expect((known.closest('details') as HTMLDetailsElement).open).toBe(false);
   });
 
   test('a search nobody serves says so, instead of offering everything', async () => {
@@ -189,7 +212,7 @@ describe('SettingsPage', () => {
     await waitFor(() => expect(screen.getByRole('list', { name: 'Providers you can use' })).toBeTruthy());
 
     const user = userEvent.setup({ document });
-    const box = screen.getByRole('combobox', { name: 'Search by maker or vendor' });
+    const box = await openCatalog();
     // This field's own list: `queryAllByRole('option')` is document-wide,
     // and every other combobox on the page has one too.
     const list = (): HTMLElement[] => Array.from(box.closest('.v2-combo')?.querySelectorAll('[role="option"]') ?? []) as HTMLElement[];
@@ -280,7 +303,7 @@ describe('SettingsPage', () => {
     // `userEvent.setup({ document })`: the direct API infers its document
     // from the element it is handed, and `keyboard` is given none.
     const user = userEvent.setup({ document });
-    await user.type(screen.getByRole('combobox', { name: 'Search by maker or vendor' }), 'llama');
+    await user.type(await openCatalog(), 'llama');
 
     // Meta sells no API; every vendor that serves Llama has to answer to it,
     // or the maker looks absent from the app.
@@ -301,10 +324,10 @@ describe('SettingsPage', () => {
   test('the catalog picker prefills a provider row without saving anything', async () => {
     install(() => json(view));
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Search by maker or vendor' })).toBeTruthy());
+    await openCatalog();
     const user = userEvent.setup({ document });
     const before = (screen.getAllByLabelText('Id') as HTMLInputElement[]).length;
-    await user.type(screen.getByRole('combobox', { name: 'Search by maker or vendor' }), 'Ollama');
+    await user.type(await openCatalog(), 'Ollama');
     await user.keyboard('{Escape}');
     await userEvent.click(screen.getByRole('button', { name: 'Add' }));
     const ids = screen.getAllByLabelText('Id') as HTMLInputElement[];
@@ -394,8 +417,8 @@ describe('SettingsPage, signing out', () => {
 describe('SettingsPage, the vendor catalog (providers spec §3, §6)', () => {
   async function pick(text: string): Promise<void> {
     const user = userEvent.setup({ document });
-    await user.clear(screen.getByRole('combobox', { name: 'Search by maker or vendor' }));
-    await user.type(screen.getByRole('combobox', { name: 'Search by maker or vendor' }), text);
+    await user.clear(await openCatalog());
+    await user.type(await openCatalog(), text);
     await user.keyboard('{Escape}');
     await userEvent.click(screen.getByRole('button', { name: 'Add' }));
   }
@@ -403,7 +426,7 @@ describe('SettingsPage, the vendor catalog (providers spec §3, §6)', () => {
   test('the picker covers the catalog in three groups and prefills prefix, key variable and a preset base URL', async () => {
     install(() => json(view));
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Search by maker or vendor' })).toBeTruthy());
+    await openCatalog();
     // No button per vendor: one field, one Add.
     expect(screen.queryByRole('button', { name: 'Add Google Gemini' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Add' })).toBeTruthy();
@@ -423,7 +446,7 @@ describe('SettingsPage, the vendor catalog (providers spec §3, §6)', () => {
   test('each provider row says where its text goes, from its id and base URL', async () => {
     install(() => json(view));
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Search by maker or vendor' })).toBeTruthy());
+    await openCatalog();
     // The fixture's row is an OpenAI-compatible loopback server: local.
     expect(screen.getAllByRole('note').some((el: Element) => el.textContent?.includes('local · nothing leaves this machine'))).toBe(true);
     await pick('Google Gemini');
@@ -435,9 +458,9 @@ describe('SettingsPage, the vendor catalog (providers spec §3, §6)', () => {
   test('an unverified preset says so before it is added', async () => {
     install(() => json(view));
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Search by maker or vendor' })).toBeTruthy());
+    await openCatalog();
     const user = userEvent.setup({ document });
-    await user.type(screen.getByRole('combobox', { name: 'Search by maker or vendor' }), 'SambaNova');
+    await user.type(await openCatalog(), 'SambaNova');
     await user.keyboard('{Escape}');
     expect(screen.getAllByRole('note').some((el: Element) => el.textContent?.includes('not verified'))).toBe(true);
   });
@@ -462,12 +485,12 @@ describe('SettingsPage, provider keys (providers spec §5)', () => {
     expect(screen.getByRole('link', { name: 'get a key' })).toBeTruthy();
     // The ledger's Keys fact.
     expect(screen.getByText('Keychain')).toBeTruthy();
-    // Copy: the purpose line names the Keychain, and mentions the environment once, for headless use only.
-    // The Keychain sentence sits with the rows it is about, not in a
-    // paragraph over the whole group.
-    const added = screen.getByText(/Saved to your providers file/).textContent ?? '';
-    expect(added).toContain('Keychain');
-    expect(added).not.toContain('OPENAI_API_KEY');
+    // Copy: the group's opening line says where providers are saved and
+    // where a key goes, and never sends a lawyer to an environment
+    // variable — that is for headless use only.
+    const opening = screen.getByText(/One key per provider/).textContent ?? '';
+    expect(opening).toContain('Keychain');
+    expect(opening).not.toContain('OPENAI_API_KEY');
   });
 
   test('a runtime without a store: the ledger says so and the row offers no paste', async () => {
@@ -510,14 +533,14 @@ describe('SettingsPage, the model picker on a provider row (providers spec §4)'
   test("the row lists the vendor's models with context sizes; a pick rewrites the id; refresh asks again", async () => {
     const { listed } = installWithModels(() => json({ models: [{ id: 'gpt-5.6', contextTokens: 400000 }, { id: 'gpt-5.6-mini', contextTokens: 128000 }], source: 'list' }));
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByLabelText('OpenAI model')).toBeTruthy());
-    expect((screen.getByLabelText('OpenAI model') as HTMLInputElement).value).toBe('gpt-5.6');
-    await waitFor(() => expect(screen.getByText(/2 models listed/)).toBeTruthy());
+    await waitFor(() => expect(screen.getAllByLabelText('OpenAI model').length).toBeGreaterThan(0));
+    expect(modelField('OpenAI model', 'gpt-5.6')).toBeTruthy();
+    await waitFor(() => expect(screen.getAllByText(/2 models listed/).length).toBeGreaterThan(0));
     expect(listed).toEqual(['/providers/openai/models']);
 
     // Every provider has a block, so each control is reached through its
     // own — not by document-wide role.
-    const block = screen.getByLabelText('OpenAI model').closest('.v2-yours-model') as HTMLElement;
+    const block = modelField('OpenAI model', 'gpt-5.6').closest('.v2-yours-model') as HTMLElement;
 
     // Choosing from the list applies at once — no separate Save, and no
     // id to retype.
@@ -526,9 +549,13 @@ describe('SettingsPage, the model picker on a provider row (providers spec §4)'
     await waitFor(() => expect(puts).toHaveLength(1));
     expect((puts[0] as { providers: { id: string }[] }).providers[0]!.id).toBe('openai/gpt-5.6-mini');
 
-    await userEvent.click(within(block).getByRole('button', { name: 'refresh' }));
-    await waitFor(() => expect(listed).toHaveLength(2));
-    expect(listed[1]).toBe('/providers/openai/models?refresh=1');
+    // Re-query: a save rebuilds the form from the response, which mints new
+    // row keys and so remounts the blocks — the node captured above is
+    // detached, and clicking it would do nothing. Asking again is what
+    // matters here, not the exact number of listings.
+    const after = modelField('OpenAI model', 'gpt-5.6').closest('.v2-yours-model') as HTMLElement;
+    await userEvent.click(within(after).getByRole('button', { name: 'refresh' }));
+    await waitFor(() => expect(listed.some(u => u === '/providers/openai/models?refresh=1')).toBe(true));
   });
 
   test('only the row that is showing is rewritten, never every row of the vendor', async () => {
@@ -542,9 +569,9 @@ describe('SettingsPage, the model picker on a provider row (providers spec §4)'
     };
     installWithModels(() => json({ models: [{ id: 'gpt-5.6' }, { id: 'gpt-5.6-mini' }], source: 'list' }), two);
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByLabelText('OpenAI model')).toBeTruthy());
+    await waitFor(() => expect(screen.getAllByLabelText('OpenAI model').length).toBeGreaterThan(0));
 
-    const block = screen.getByLabelText('OpenAI model').closest('.v2-yours-model') as HTMLElement;
+    const block = modelField('OpenAI model', 'gpt-5.6').closest('.v2-yours-model') as HTMLElement;
     await userEvent.click(within(block).getByRole('button', { name: 'Show models' }));
     await userEvent.click(screen.getByText('gpt-5.6-mini'));
 
@@ -573,10 +600,9 @@ describe('SettingsPage, the model picker on a provider row (providers spec §4)'
     };
     installWithModels(() => json({ models: [{ id: 'gpt-5.6' }, { id: 'gpt-5.6-mini' }], source: 'list' }), defaulted);
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByLabelText('OpenAI model')).toBeTruthy());
-    expect((screen.getByLabelText('OpenAI model') as HTMLInputElement).value).toBe('gpt-4o-mini');
-
-    const block = screen.getByLabelText('OpenAI model').closest('.v2-yours-model') as HTMLElement;
+    await waitFor(() => expect(screen.getAllByLabelText('OpenAI model').length).toBeGreaterThan(0));
+    // The row the file names is the one with a block to edit.
+    const block = modelField('OpenAI model', 'gpt-4o-mini').closest('.v2-yours-model') as HTMLElement;
     await userEvent.click(within(block).getByRole('button', { name: 'Show models' }));
     await userEvent.click(screen.getByText('gpt-5.6-mini'));
 
@@ -624,12 +650,11 @@ describe('the enterprise vendors in Settings (providers spec §3 step 5)', () =>
   test('the picker lists them under Hosted API · enterprise; adding one prefills the row with its field set and defaults, no key variable', async () => {
     install(() => json(view));
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Search by maker or vendor' })).toBeTruthy());
+    await openCatalog();
     const user = userEvent.setup({ document });
-    await user.type(screen.getByRole('combobox', { name: 'Search by maker or vendor' }), 'Hosted API · enterprise · Google Vertex AI');
+    await user.type(await openCatalog(), 'Hosted API · enterprise · Google Vertex AI');
     await user.keyboard('{Escape}');
     expect(screen.getByRole('link', { name: 'How to set up Google Vertex AI' })).toBeTruthy();
-    expect(screen.getByText(/they go to your Keychain as one item/)).toBeTruthy();
     await userEvent.click(screen.getByRole('button', { name: 'Add' }));
     const ids = screen.getAllByLabelText('Id') as HTMLInputElement[];
     expect(ids.map(el => el.value)).toContain('vertex/');
@@ -670,5 +695,67 @@ describe('the Task field (routing-and-evals spec §3)', () => {
     await user.clear(field);
     await user.type(field, 'classify');
     expect(field.value).toBe('classify');
+  });
+});
+
+describe('SettingsPage, adding a provider (the founder’s "it’s unclear what to do")', () => {
+  test('the common providers are named, and one click adds one', async () => {
+    install(() => json(view));
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByRole('list', { name: 'Providers you can use' })).toBeTruthy());
+    const before = screen.getAllByLabelText('Id').length;
+
+    // No typing, no second button: the thing the page most wants you to do
+    // is one click.
+    await userEvent.click(screen.getByRole('button', { name: /OpenAI/ }));
+
+    const ids = (screen.getAllByLabelText('Id') as HTMLInputElement[]).map(el => el.value);
+    expect(ids).toHaveLength(before + 1);
+    expect(ids).toContain('openai/');
+    // Nothing was saved: a provider is set up on its block first.
+    expect(puts).toHaveLength(0);
+    // And it drops off the offer list, so every remaining choice is one you
+    // can actually make.
+    expect(screen.queryByRole('button', { name: /^OpenAI/ })).toBeNull();
+  });
+
+  test('a blank row can be TYPED into, one field, one focus', async () => {
+    // The block used to be keyed on the row's prefix, which changes with
+    // every keystroke in an Id field — so the block remounted and dropped
+    // focus after each character. Setting the value in one go hid it, which
+    // is why the suite missed it.
+    install(() => json(view));
+    render(<SettingsPage health={health} />);
+    await openCatalog();
+    await userEvent.click(screen.getByRole('button', { name: 'or add a blank row' }));
+
+    const user = userEvent.setup({ document });
+    const ids = screen.getAllByLabelText('Id') as HTMLInputElement[];
+    const blank = ids[ids.length - 1]!;
+    await user.click(blank);
+    await user.keyboard('openai/gpt-5.6');
+
+    const after = screen.getAllByLabelText('Id') as HTMLInputElement[];
+    expect(after[after.length - 1]!.value).toBe('openai/gpt-5.6');
+    expect(document.activeElement).toBe(after[after.length - 1]!);
+  });
+
+  test('a second row of a vendor you have is still editable and removable', async () => {
+    // Folding by vendor hid it entirely: no fields, no Remove, and its
+    // errors had nowhere to render — Save refused with nothing marked.
+    install(() => json(view));
+    render(<SettingsPage health={health} />);
+    await openCatalog();
+    await userEvent.click(screen.getByRole('button', { name: 'or add a blank row' }));
+    await userEvent.click(screen.getByRole('button', { name: 'or add a blank row' }));
+
+    expect(screen.getAllByLabelText('Id')).toHaveLength(3);
+    // Scoped to the providers: a task route has a Remove of its own.
+    const list = screen.getByRole('list', { name: 'Providers you can use' });
+    expect(within(list).getAllByRole('button', { name: /^Remove / })).toHaveLength(3);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(screen.getAllByText('id is required')).toHaveLength(2));
+    expect(puts).toHaveLength(0);
   });
 });
