@@ -131,6 +131,8 @@ export function resolveEnterprise(vendor: Vendor & { fields: VendorField[] }, op
 
   const secretFields = vendor.fields.filter(f => f.secret);
   // 1. The store.
+  // An enterprise vendor always has `fields`, so `keyIdFor` files it per
+  // ROW — this row IS the account. No `baseURL` needed to decide that.
   const stored = readSecretFields(opts.store, opts.id);
   if (stored !== null && secretFields.some(f => (stored[f.name] ?? '') !== '')) {
     const secrets: Record<string, string> = {};

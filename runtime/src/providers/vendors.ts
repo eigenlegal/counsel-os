@@ -283,7 +283,7 @@ const SDK_VENDORS: Vendor[] = [
   {
     prefix: 'claude-sub', name: 'Claude', kind: 'harness', layer: 'sdk', group: 'subscription', auth: 'subscription', locality: 'cloud',
     handles: { company: 'Anthropic', termsUrl: 'https://www.anthropic.com/legal/consumer-terms' },
-    help: { install: 'https://claude.ai/code' }, models: 'none', capabilities: CLOUD_CAPS,
+    help: { install: 'https://claude.ai/code' }, models: 'curated', curated: ANTHROPIC_MODELS, capabilities: CLOUD_CAPS,
   },
   {
     prefix: 'codex-sub', name: 'ChatGPT', kind: 'harness', layer: 'sdk', group: 'subscription', auth: 'subscription', locality: 'cloud',
@@ -294,7 +294,10 @@ const SDK_VENDORS: Vendor[] = [
     prefix: 'anthropic', name: 'Claude', kind: 'direct', layer: 'sdk', group: 'hosted', auth: 'apikey', locality: 'cloud',
     handles: { company: 'Anthropic', termsUrl: 'https://www.anthropic.com/legal/commercial-terms' },
     keyEnv: 'ANTHROPIC_API_KEY', keyLabel: 'API key', help: { getKey: 'https://console.anthropic.com/settings/keys' },
-    models: 'curated', curated: ANTHROPIC_MODELS, capabilities: CLOUD_CAPS,
+    // Anthropic publishes `/v1/models`, so the list is whatever the account
+    // can actually call — every Claude, not the three we happened to write
+    // down. The curated set stands in when the call fails.
+    models: 'list', discovery: { shape: 'anthropic' }, curated: ANTHROPIC_MODELS, capabilities: CLOUD_CAPS,
     make: ({ model, apiKey, baseURL }) => createAnthropic(keyed(apiKey, baseURL))(model),
   },
   {

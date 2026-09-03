@@ -7,7 +7,9 @@ import {
   defaultRunner,
   encodeSecretFields,
   fileStore,
+  keyIdFor,
   keyStateFor,
+  readKey,
   readSecretFields,
   writeSecretFields,
   keychainStore,
@@ -210,15 +212,66 @@ describe('redact and keyStateFor', () => {
 });
 
 describe('secret fields — several secrets as ONE store item (providers spec §3 step 5)', () => {
-  test('round trip through a store: one item under the id, the empty fields dropped', () => {
+  test('round trip through a store: one item under the ROW, the empty fields dropped', () => {
     const store = memoryStore();
     writeSecretFields(store, 'bedrock/m', { accessKeyId: 'A', secretAccessKey: 'B', sessionToken: '' });
     expect(readSecretFields(store, 'bedrock/m')).toEqual({ accessKeyId: 'A', secretAccessKey: 'B' });
-    // One item, and it is the envelope — never a keychain entry per field.
+    // Per ROW, not per vendor: an enterprise row carries its own account —
+    // an AWS region and keys, an Azure resource, a GCP project — so two
+    // rows are two accounts and must never share one item.
     expect(store.get('bedrock/m')).toBe('{"v":1,"fields":{"accessKeyId":"A","secretAccessKey":"B"}}');
+    expect(store.get('bedrock')).toBeNull();
     expect(store.get('bedrock/m/accessKeyId')).toBeNull();
+    expect(readSecretFields(store, 'bedrock/anthropic.claude-3')).toBeNull();
     store.delete('bedrock/m');
     expect(readSecretFields(store, 'bedrock/m')).toBeNull();
+  });
+
+  test('a key is filed under the vendor only when the row cannot move the endpoint', () => {
+    // Shared: the catalog fixes where OpenAI is, so one key opens every
+    // model it sells.
+    expect(keyIdFor('openai/gpt-5.6')).toBe('openai');
+    expect(keyIdFor('groq/llama-3.3-70b')).toBe('groq');
+    expect(keyIdFor('openrouter/anthropic/claude-x')).toBe('openrouter');
+
+    // Per row, because the ROW decides where the key goes or whose account
+    // it is. Sharing these would send one tenant's credential to another
+    // tenant's host.
+    expect(keyIdFor('openai-compatible/llama-70b')).toBe('openai-compatible/llama-70b');
+    expect(keyIdFor('cloudflare/llama')).toBe('cloudflare/llama');
+    expect(keyIdFor('bedrock/m')).toBe('bedrock/m');
+    expect(keyIdFor('azure/deployment')).toBe('azure/deployment');
+    expect(keyIdFor('vertex/gemini-3-pro')).toBe('vertex/gemini-3-pro');
+    // And any row that overrides the endpoint at all: a region, a proxy, a
+    // private gateway. DashScope's own note says its keys are per region.
+    expect(keyIdFor('dashscope/qwen-max', { baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1' })).toBe('dashscope/qwen-max');
+    expect(keyIdFor('openai/gpt-5.6', { baseURL: '' })).toBe('openai');
+  });
+
+  test('two OpenAI-compatible rows on different hosts never share a key', () => {
+    // The failure this guards: paste the firm's key on one row, a vendor's
+    // key on the other, and a shared item would send the firm's key to the
+    // vendor — or the vendor's to the firm.
+    const store = memoryStore();
+    const firm = { baseURL: 'https://llm.myfirm.example/v1' };
+    const other = { baseURL: 'https://api.vendor-b.example/v1' };
+    store.set(keyIdFor('openai-compatible/a', firm), 'sk-firm');
+    store.set(keyIdFor('openai-compatible/b', other), 'sk-vendor');
+    expect(readKey(store, 'openai-compatible/a', firm)).toBe('sk-firm');
+    expect(readKey(store, 'openai-compatible/b', other)).toBe('sk-vendor');
+  });
+
+  test('a key an older install filed under the model is still found', () => {
+    // Keys were filed under `<vendor>/<model>` before providers became
+    // provider-shaped. Nobody re-pastes a key because we changed our minds.
+    const store = memoryStore({ 'openai/gpt-5.6': 'sk-old' });
+    expect(readKey(store, 'openai/gpt-5.6')).toBe('sk-old');
+    // The vendor's own item wins once it exists.
+    store.set('openai', 'sk-new');
+    expect(readKey(store, 'openai/gpt-5.6')).toBe('sk-new');
+    // And it answers for a model that never had an item of its own.
+    expect(readKey(store, 'openai/gpt-5.6-mini')).toBe('sk-new');
+    expect(readKey(undefined, 'openai/gpt-5.6')).toBeNull();
   });
 
   test('a plain key is not fields; a malformed envelope reads as none; no store reads as none', () => {

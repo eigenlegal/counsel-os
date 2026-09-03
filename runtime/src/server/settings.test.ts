@@ -363,7 +363,10 @@ describe('provider keys (providers spec §5)', () => {
     const put = await call(h.app, 'PUT', '/providers/google/gemini-2.5-pro/key', { value: '  AIza-test-value-1  ' });
     expect(put.status).toBe(204);
     expect(await put.text()).toBe('');
-    expect(h.secrets?.get('google/gemini-2.5-pro')).toBe('AIza-test-value-1');
+    // Filed under the VENDOR: one key opens every model Google sells, so a
+    // second Gemini model never asks for it again.
+    expect(h.secrets?.get('google')).toBe('AIza-test-value-1');
+    expect(h.secrets?.get('google/gemini-2.5-pro')).toBeNull();
 
     const after = await settings(h.app);
     const text = JSON.stringify(after);
@@ -396,8 +399,10 @@ describe('provider keys (providers spec §5)', () => {
     expect((await call(h.app, 'PUT', '/providers/claude-sub/claude-opus-5/key', { value: 'k' })).status).toBe(404);
     expect((await call(h.app, 'PUT', '/providers/ollama/gemma4:e4b/key', { value: 'k' })).status).toBe(404);
     expect((await call(h.app, 'PUT', '/providers/nope/x/key', { value: 'k' })).status).toBe(404);
+    // A slashed model name resolves to its vendor, not to the first two
+    // segments: OpenRouter's ids carry the upstream vendor in them.
     expect((await call(h.app, 'PUT', '/providers/openrouter/anthropic/claude-x/key', { value: 'or-key' })).status).toBe(204);
-    expect(h.secrets?.get('openrouter/anthropic/claude-x')).toBe('or-key');
+    expect(h.secrets?.get('openrouter')).toBe('or-key');
   });
 
   test('a runtime with no store answers 503 and reports secrets: null', async () => {
@@ -428,7 +433,10 @@ describe('enterprise credentials (providers spec §3 step 5)', () => {
     const put = await call(h.app, 'PUT', `/providers/${id}/key`, { fields: { accessKeyId: 'AKIA-test-1', secretAccessKey: 'wJalr-test-2', sessionToken: '' } });
     expect(put.status).toBe(204);
     expect(await put.text()).toBe('');
+    // Per ROW: an enterprise row carries its own AWS account, so two rows
+    // are two accounts and never share an item.
     expect(h.secrets?.get(id)).toBe('{"v":1,"fields":{"accessKeyId":"AKIA-test-1","secretAccessKey":"wJalr-test-2"}}');
+    expect(h.secrets?.get('bedrock')).toBeNull();
     expect(h.secrets?.get(`${id}/accessKeyId`)).toBeNull();
 
     const after = await settings(h.app);

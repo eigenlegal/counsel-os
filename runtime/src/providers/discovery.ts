@@ -18,7 +18,7 @@ import type { Vendor } from './vendors';
 
 /** `azure` lists a resource's deployments; `bedrock` is the SigV4-signed
  * ListFoundationModels (providers spec §3 step 5). */
-export type DiscoveryShape = 'openai' | 'google' | 'openrouter' | 'ollama' | 'cohere' | 'together' | 'azure' | 'bedrock';
+export type DiscoveryShape = 'openai' | 'anthropic' | 'google' | 'openrouter' | 'ollama' | 'cohere' | 'together' | 'azure' | 'bedrock';
 
 export interface Discovery {
   shape: DiscoveryShape;
@@ -64,6 +64,7 @@ export const AZURE_DEPLOYMENTS_API_VERSION = '2023-03-15-preview';
 /** The vendor's own API root, for a vendor whose entry names no base URL. */
 export const API_ROOTS: Readonly<Record<string, string>> = {
   openai: 'https://api.openai.com/v1',
+  anthropic: 'https://api.anthropic.com/v1',
   mistral: 'https://api.mistral.ai/v1',
   groq: 'https://api.groq.com/openai/v1',
   deepseek: 'https://api.deepseek.com',
@@ -132,6 +133,10 @@ export function parseListing(shape: DiscoveryShape, body: unknown): DiscoveredMo
   const out: DiscoveredModel[] = [];
   const obj = (body ?? {}) as Record<string, unknown>;
   switch (shape) {
+    // Anthropic's `/v1/models` is OpenAI's envelope with different fields:
+    // `{ data: [{ type, id, display_name, created_at }] }`. No window in it,
+    // which `withKnownContexts` fills from the catalog where we know one.
+    case 'anthropic':
     case 'openai': {
       const data = Array.isArray(obj['data']) ? (obj['data'] as Array<Record<string, unknown>>) : [];
       for (const m of data) {
@@ -223,9 +228,31 @@ function authHeaders(vendor: Vendor, apiKey: string | undefined, url: string): R
   // Azure takes an `api-key` header; everything else is a bearer.
   if (vendor.discovery?.shape === 'google') return {};
   if (vendor.discovery?.shape === 'azure') return { 'api-key': apiKey };
+  // Anthropic takes the key in its own header and requires a version.
+  if (vendor.discovery?.shape === 'anthropic') return { 'x-api-key': apiKey, 'anthropic-version': ANTHROPIC_VERSION };
   void url;
   return { authorization: `Bearer ${apiKey}` };
 }
+
+/**
+ * The context size the catalog knows, for a listing that does not say.
+ * Anthropic's `/v1/models` returns ids and display names and no window, and
+ * the window is the one number the router compares a task's bar against.
+ */
+function withKnownContexts(vendor: Vendor, listed: DiscoveredModel[]): DiscoveredModel[] {
+  const known = new Map((vendor.curated ?? []).map(m => [m.id, m.contextTokens]));
+  return listed.map(m => {
+    // Only an exact id we already wrote down. NEVER the vendor's default:
+    // the router compares a task's bar against this number, and a model
+    // claiming a window it does not have would take work it cannot hold.
+    if (m.contextTokens !== undefined) return m;
+    const exact = known.get(m.id);
+    return exact === undefined ? m : { ...m, contextTokens: exact };
+  });
+}
+
+/** The version every Anthropic API request carries. */
+const ANTHROPIC_VERSION = '2023-06-01';
 
 /** The curated list as a result, for a vendor that could not be asked. */
 function curated(vendor: Vendor, error?: string): DiscoveryResult {
@@ -304,12 +331,15 @@ export async function discoverModels(vendor: Vendor, opts: DiscoveryOptions = {}
     }
     if (!res.ok) {
       const why = res.status === 401 || res.status === 403 ? `the ${enterprise ? 'credentials were' : 'key was'} refused by ${vendor.name}` : `${vendor.name} answered ${res.status}`;
-      if (vendor.discovery.shape === 'bedrock') return curated(vendor, `Could not list models: ${why}. Showing the known ones.`);
+      if ((vendor.curated ?? []).length > 0) return curated(vendor, `Could not list models: ${why}. Showing the known ones.`);
       return { models: [], source: 'list', error: `Could not list models: ${why}.` };
     }
     const bodyJson: unknown = await res.json();
-    const models = parseListing(vendor.discovery.shape, bodyJson);
-    if (models.length === 0) return { models, source: 'list', error: `Could not list models: ${vendor.name} returned none.` };
+    const models = withKnownContexts(vendor, parseListing(vendor.discovery.shape, bodyJson));
+    if (models.length === 0) {
+      const why = `Could not list models: ${vendor.name} returned none.`;
+      return (vendor.curated ?? []).length > 0 ? curated(vendor, `${why} Showing the known ones.`) : { models, source: 'list', error: why };
+    }
     return { models, source: 'list' };
   } catch (err) {
     const timedOut = err instanceof Error && (err.name === 'TimeoutError' || err.name === 'AbortError');
@@ -317,7 +347,7 @@ export async function discoverModels(vendor: Vendor, opts: DiscoveryOptions = {}
     // A transport error can echo the request; nothing secret leaves here.
     for (const v of Object.values(opts.secrets ?? {})) if (v !== '') reason = reason.split(v).join('[redacted]');
     if (opts.apiKey !== undefined && opts.apiKey !== '') reason = reason.split(opts.apiKey).join('[redacted]');
-    if (vendor.discovery.shape === 'bedrock') return curated(vendor, `Could not list models: ${reason}. Showing the known ones.`);
+    if ((vendor.curated ?? []).length > 0) return curated(vendor, `Could not list models: ${reason}. Showing the known ones.`);
     return { models: [], source: 'list', error: `Could not list models: ${reason}.` };
   }
 }

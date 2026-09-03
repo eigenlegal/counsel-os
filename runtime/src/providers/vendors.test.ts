@@ -104,11 +104,19 @@ describe('the vendor catalog (providers spec §3)', () => {
 
   test('Anthropic ships a curated model list; the others list or have none', () => {
     const anthropic = vendorFor('anthropic')!;
-    expect(anthropic.models).toBe('curated');
+    // Anthropic publishes `/v1/models`, so it LISTS — the curated set is
+    // only what stands in when the call fails.
+    expect(anthropic.models).toBe('list');
+    expect(anthropic.discovery?.shape).toBe('anthropic');
     expect(anthropic.curated!.length).toBeGreaterThan(0);
     for (const m of anthropic.curated!) expect(m.contextTokens).toBeGreaterThan(0);
     expect(vendorFor('openrouter')!.models).toBe('list');
-    expect(vendorFor('claude-sub')!.models).toBe('none');
+    // The Claude subscription carries the same curated list: its harness
+    // takes a model, so it is switchable like any other provider.
+    expect(vendorFor('claude-sub')!.models).toBe('curated');
+    expect(vendorFor('claude-sub')!.curated).toEqual(anthropic.curated);
+    // Codex publishes no list and we will not invent one.
+    expect(vendorFor('codex-sub')!.models).toBe('none');
   });
 
   test('every API-key vendor names its usual environment variable (uppercase, the vendor’s own spelling)', () => {

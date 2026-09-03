@@ -15,6 +15,15 @@ export interface ModelComboProps {
   models: DiscoveredModel[];
   placeholder?: string;
   onChange(value: string): void;
+  /**
+   * A model was CHOSEN from the list, as opposed to typed.
+   *
+   * `onChange` fires per keystroke, so it cannot tell the two apart — and
+   * acting on a keystroke that happens to spell a listed model commits the
+   * wrong one: typing `grok-4-fast` passes through `grok-4`, and typing
+   * `gpt-5.6-mini` passes through `gpt-5.6`. Both are real models.
+   */
+  onSelect?(id: string): void;
 }
 
 /** `1,048,576` → `1M`; `131072` → `131k`: the context size as set text. */
@@ -30,7 +39,7 @@ export function contextLabel(tokens: number | undefined): string | null {
  * provider picker, over the vendor's own list, each row with its context
  * size in set text. The typed text is the value; the list is a shortcut.
  */
-export function ModelCombo({ id, label, value, models, placeholder, onChange }: ModelComboProps): JSX.Element {
+export function ModelCombo({ id, label, value, models, placeholder, onChange, onSelect }: ModelComboProps): JSX.Element {
   const { contains } = useFilter({ sensitivity: 'base' });
   const items = models.map(m => ({ id: m.id, context: contextLabel(m.contextTokens) }));
   const children = (item: { id: string; context: string | null }): JSX.Element => (
@@ -40,7 +49,15 @@ export function ModelCombo({ id, label, value, models, placeholder, onChange }: 
     </Item>
   );
   const props = { id, label, inputValue: value, onInputChange: onChange, allowsCustomValue: true, menuTrigger: 'focus' as const, items, children };
-  const state = useComboBoxState({ ...props, defaultFilter: contains });
+  const state = useComboBoxState({
+    ...props,
+    defaultFilter: contains,
+    // Null on clear, and the typed text itself when a custom value is
+    // committed; only a real key from the collection is a choice.
+    onSelectionChange: key => {
+      if (key !== null && key !== undefined && models.some(m => m.id === String(key))) onSelect?.(String(key));
+    },
+  });
 
   const inputRef = useRef<HTMLInputElement | null>(null);
   const listBoxRef = useRef<HTMLUListElement | null>(null);

@@ -28,6 +28,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { writeFileAtomic } from '../core/atomic-write';
 import { counselHome } from '../core/home';
+import { prefixOf, vendorFor } from './vendors';
 
 export type SecretStoreKind = 'keychain' | 'libsecret' | 'file';
 
@@ -237,17 +238,15 @@ export function decodeSecretFields(value: string | null): Record<string, string>
   }
 }
 
-export function readSecretFields(store: SecretStore | undefined, id: string): Record<string, string> | null {
-  if (store === undefined) return null;
-  try {
-    return decodeSecretFields(store.get(id));
-  } catch {
-    return null;
-  }
+export function readSecretFields(store: SecretStore | undefined, id: string, entry: { baseURL?: string } = {}): Record<string, string> | null {
+  // An enterprise row IS the account — a Bedrock region and its keys, a
+  // Vertex project — so `keyIdFor` files these per row, and this is the
+  // same item `writeSecretFields` wrote.
+  return decodeSecretFields(readKey(store, id, entry));
 }
 
-export function writeSecretFields(store: SecretStore, id: string, fields: Record<string, string>): void {
-  store.set(id, encodeSecretFields(fields));
+export function writeSecretFields(store: SecretStore, id: string, fields: Record<string, string>, entry: { baseURL?: string } = {}): void {
+  store.set(keyIdFor(id, entry), encodeSecretFields(fields));
 }
 
 /** What `/settings` and `/health` say about a provider's key: set in the
@@ -256,15 +255,62 @@ export function writeSecretFields(store: SecretStore, id: string, fields: Record
  * Credentials), or absent. Never the value. */
 export type KeyState = true | false | 'env' | 'default-chain';
 
-export function keyStateFor(id: string, keyEnv: string | undefined, store: SecretStore | undefined, env: NodeJS.ProcessEnv): KeyState {
-  if (store !== undefined) {
-    try {
-      if (store.get(id) !== null) return true;
-    } catch {
-      // An unreadable store reads as "not set": the page then offers to
-      // paste a key, which is the right next step either way.
-    }
-  }
+export function keyStateFor(id: string, keyEnv: string | undefined, store: SecretStore | undefined, env: NodeJS.ProcessEnv, entry: { baseURL?: string } = {}): KeyState {
+  // An unreadable store reads as "not set": the page then offers to paste a
+  // key, which is the right next step either way.
+  if (readKey(store, id, entry) !== null) return true;
   if (keyEnv !== undefined && env[keyEnv] !== undefined && env[keyEnv] !== '') return 'env';
   return false;
+}
+
+/**
+ * What a key is filed under.
+ *
+ * The VENDOR, where one key really does open every model it sells: OpenAI,
+ * Anthropic, Groq. Filed under the full id, a second OpenAI model asked for
+ * the OpenAI key again as if it were a different account.
+ *
+ * But the ROW, wherever the row itself decides where the key goes or whose
+ * account it is — and several vendors are exactly that:
+ *
+ * - `openai-compatible` is the bare shape. Its prefix is shared by every
+ *   unknown OpenAI-API host, and the host is `entry.baseURL`. Two rows —
+ *   the firm's own server and some vendor's — would share one item, and
+ *   pasting the second key would send it to the first row's host.
+ * - `cloudflare` puts `{account_id}` in its base URL; the token is per
+ *   account. `azure`, `bedrock` and `vertex` carry a resource, an AWS
+ *   account and a GCP project on the row.
+ * - Any row that overrides `baseURL` at all: a region (DashScope's keys are
+ *   per region), a proxy, a private endpoint.
+ *
+ * Getting this wrong sends one tenant's credential to another tenant's
+ * host, so the default is the narrow one: share a key only where the
+ * catalog fixes the endpoint and the row cannot move it.
+ */
+export function keyIdFor(id: string, entry: { baseURL?: string } = {}): string {
+  const vendor = vendorFor(prefixOf(id));
+  if (vendor === undefined) return id;
+  const rowDecidesWhere =
+    vendor.fields !== undefined ||
+    vendor.baseURLFields !== undefined ||
+    vendor.locality === 'by-baseURL' ||
+    (entry.baseURL !== undefined && entry.baseURL.trim() !== '');
+  return rowDecidesWhere ? id : prefixOf(id);
+}
+
+/**
+ * A provider's key: what it is filed under, then the per-model item an older
+ * install wrote. The fallback keeps a key pasted before this change working,
+ * and costs one store read on a miss.
+ */
+export function readKey(store: SecretStore | undefined, id: string, entry: { baseURL?: string } = {}): string | null {
+  if (store === undefined) return null;
+  const filed = keyIdFor(id, entry);
+  try {
+    const own = store.get(filed);
+    if (own !== null) return own;
+    return filed === id ? null : store.get(id);
+  } catch {
+    return null;
+  }
 }

@@ -2,9 +2,7 @@ import { useEffect, useState } from 'react';
 import { ApiError, fetchJson } from '../../api/client';
 import type { Health as HealthData, SettingsErrorBody, SettingsView } from '../../api/types';
 import { Health } from '../../settings/Health';
-import { ModelCombo } from '../../settings/ModelCombo';
 import { ProviderCombo } from '../../settings/ProviderCombo';
-import { useModels } from '../../settings/useModels';
 import { ProviderTest } from '../../settings/ProviderTest';
 import { dataLineFor, isEnterpriseVendor, makesLine, pickerLabel, prefixOf, searchVendors, vendorByPickerLabel, vendorFor } from '../vendors';
 import { EnterpriseFields } from './EnterpriseFields';
@@ -38,7 +36,7 @@ export interface SettingsPageProps {
 
 /**
  * Settings, ordered by what the operator came to do (cou-84): the models you
- * have and which one answers (Models you can use) → the exceptions (Task
+ * have and the model each runs (Providers and models) → the exceptions (Task
  * routes) → how long an answer may take (Step timeout) — then Test, then
  * Runtime, read-only. Each group opens with a plain line saying what it is
  * for.
@@ -192,7 +190,9 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
     }
   };
 
-  const save = async (change: Partial<FormState> = {}): Promise<void> => {
+  /** True when the change reached the file. False when the page refused it
+   * or the server did — the caller may have a field to put back. */
+  const save = async (change: Partial<FormState> = {}): Promise<boolean> => {
     setSaved(false);
     // The change rides IN rather than through `setForm`: "use this one" is a
     // click that saves, and reading the default back out of state in the
@@ -207,7 +207,7 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
       // A row's own message can sit inside a collapsed disclosure, so say it
       // here too, by the Save button, where it cannot be missed.
       setGeneral(['Nothing was saved. Correct the fields marked above.']);
-      return;
+      return false;
     }
     if (Object.keys(change).length > 0) setForm(edited);
     setErrors({});
@@ -221,8 +221,9 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
       setForm(seedDefault(formFromRegistry(next.registry), next));
       setSaved(true);
       onSaved(next);
+      return true;
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) return;
+      if (err instanceof ApiError && err.status === 401) return false;
       if (err instanceof ApiError && (err.status === 400 || err.status === 422)) {
         const body = err.body as SettingsErrorBody | null;
         const mapped = mapIssues(body?.issues ?? []);
@@ -234,6 +235,47 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
     } finally {
       setBusy(false);
     }
+    return false;
+  };
+
+  /** A saved row's base URL for a vendor, so a local runner's model list is
+   * asked for at the address that row names rather than the preset. */
+  const baseURLOf = (prefix: string): string | undefined => {
+    const row = form.providers.find(r => prefixOf(r.id.trim()) === prefix && r.baseURL.trim() !== '');
+    return row?.baseURL.trim();
+  };
+
+  /**
+   * Run a provider on a different model.
+   *
+   * The id a provider is known by carries its model (`anthropic/claude-opus-5`),
+   * so changing the model changes the id — and the id is named in up to three
+   * places. All of them move together, or the default and the routes would go
+   * on pointing at the model you just replaced.
+   *
+   * A built-in has no row in the file; overriding its model writes the first
+   * one. The built-in stays loaded under its own id, which is what keeps a
+   * task route that names it working.
+   *
+   * `oldId` comes from the block that was clicked. Deriving it here instead
+   * — the first loaded model of the vendor — disagreed with the block
+   * whenever the default was some OTHER model of the same vendor, and then
+   * the default was left naming a model that had just been renamed away.
+   */
+  const pickModel = async (oldId: string, model: string): Promise<boolean> => {
+    const newId = `${prefixOf(oldId)}/${model}`;
+    if (newId === oldId) return true;
+    // The ROW that is showing, not every row of the vendor: a practice with
+    // both `openai/gpt-5.6` and `openai/gpt-4o-mini` would otherwise have
+    // both rewritten to the same id, and the second row's own settings lost.
+    const owned = form.providers.some(r => r.id.trim() === oldId);
+    return await save({
+      providers: owned
+        ? form.providers.map(r => (r.id.trim() === oldId ? { ...r, id: newId } : r))
+        : [...form.providers, { ...emptyRow(), id: newId }],
+      routes: form.routes.map(r => (r.prefer.trim() === oldId ? { ...r, prefer: newId } : r)),
+      ...(form.default.trim() === oldId ? { default: newId } : {}),
+    });
   };
 
   // A `tasks.*` message with no row to sit on still has to be shown; it
@@ -251,17 +293,20 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
       }}
     >
       <section className="v2-group">
-        <h2>Models you can use</h2>
+        <h2>Providers and models</h2>
         <p className="muted">
-          Everything this runtime has loaded, and which one answers when nothing more specific applies. Your Claude and ChatGPT subscriptions and a local
-          Ollama model are built in; anything else you add here.
+          The providers this runtime can call, and the model each one runs. Your Claude and ChatGPT subscriptions and a local Ollama model are set up
+          already; add any others below. One key per provider — every model it sells opens with the same one.
         </p>
         <YourModels
           providers={view.effective.providers}
           defaultId={form.default}
           builtinDefault={showingBuiltin}
           busy={busy}
+          baseURLOf={baseURLOf}
           onMakeDefault={id => void save({ default: id })}
+          fileIds={new Set(form.providers.map(r => r.id.trim()))}
+          onPickModel={pickModel}
         />
         <FieldError message={errors['default']} />
         {defaultIsKnown ? null : (
@@ -274,7 +319,7 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
             the families it serves, so "llama" and "gemini" find something.
             Picking prefills a row; nothing is saved until the one Save. */}
         <div className="v2-add-model">
-          <h3 className="runin">Add a model</h3>
+          <h3 className="runin">Add a provider</h3>
           <div className="v2-add-provider-row">
             <ProviderCombo
               id="v2-add-provider"
@@ -370,9 +415,11 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
           );
           return (
           <div className="v2-provider" key={row.key}>
-            {/* What this row IS, before what it is made of: the vendor and
-                the model are the two things a lawyer sets, and the rest is
-                a config file rendered as a form. */}
+            {/* What this row IS, before what it is made of. The MODEL is
+                not set here any more — it belongs to the provider block
+                above, which is the one place a model gets chosen. What is
+                left is the connection: where to reach it and how to sign
+                in. */}
             <p className="v2-provider-head">
               <strong>{rowVendor?.label ?? rowVendor?.name ?? 'A model'}</strong>
               <span className="muted">
@@ -380,13 +427,7 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
                 {row.id.trim() === '' ? 'name it below' : <code>{row.id.trim()}</code>}
               </span>
             </p>
-            <div className="v2-provider-main">
-              {rowVendor === undefined ? (
-                idField
-              ) : (
-                <ModelField rowKey={row.key} id={row.id} baseURL={row.baseURL} extra={enterprise ? row.extra : undefined} onPick={model => patchRow(index, { id: `${prefixOf(row.id.trim())}/${model}` })} />
-              )}
-            </div>
+            {rowVendor === undefined ? <div className="v2-provider-main">{idField}</div> : null}
             <details className="v2-provider-advanced" open={rowHasError}>
               <summary>the rest of this row</summary>
             <div className="v2-provider-grid">
@@ -664,43 +705,6 @@ function TriField({ id, label, value, error, onChange }: { id: string; label: st
         ))}
       </select>
       <FieldError message={error} />
-    </div>
-  );
-}
-
-/**
- * The row's Model picker (providers spec §4): the vendor's own list for the
- * id's prefix, the row's base URL considered (a local runner lists from
- * there), a custom id still typeable, the runtime's sentence under the
- * field when the list could not be had, and "refresh" as a quiet link.
- * Nothing shows until the id names a vendor that has models to list.
- */
-function ModelField({ rowKey, id, baseURL, extra, onPick }: { rowKey: string; id: string; baseURL: string; extra?: Record<string, string> | undefined; onPick(model: string): void }): JSX.Element | null {
-  const trimmed = id.trim();
-  const prefix = trimmed === '' ? null : prefixOf(trimmed);
-  const vendor = prefix === null ? undefined : vendorFor(prefix);
-  const listable = vendor !== undefined && vendor.group !== 'subscription';
-  const { result, loading, refresh } = useModels(listable ? prefix : null, baseURL.trim() === '' ? undefined : baseURL, extra ?? {});
-  if (!listable || prefix === null) return null;
-  const model = trimmed.slice(prefix.length + 1);
-  return (
-    <div className="field v2-model-field">
-      <ModelCombo id={`v2-${rowKey}-model`} label="Model" value={model} models={result?.models ?? []} placeholder={loading ? 'listing…' : 'pick or type a model'} onChange={onPick} />
-      {result === null ? null : result.error !== undefined ? (
-        <p className="v2-model-note v2-model-note-error" role="status">
-          {result.error}
-          <button type="button" className="v2-link" onClick={refresh}>
-            refresh
-          </button>
-        </p>
-      ) : (
-        <p className="v2-model-note" role="note">
-          {result.models.length} model{result.models.length === 1 ? '' : 's'} {result.source === 'curated' ? 'known' : 'listed'}
-          <button type="button" className="v2-link" onClick={refresh}>
-            refresh
-          </button>
-        </p>
-      )}
     </div>
   );
 }

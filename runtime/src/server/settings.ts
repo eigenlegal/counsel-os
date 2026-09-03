@@ -6,7 +6,7 @@ import { handlesFor, prefixOf, vendorFor, type VendorHandles } from '../provider
 import { isEnterprise, resolveEnterprise, validateFields } from '../providers/enterprise';
 import { DEFAULT_STEP_TIMEOUT_MS, runStep, type CounselLoopDeps } from '../loop/counsel-loop';
 import { readRegistry, writeRegistry, REGISTRY_WRITE, type RegistryFileData } from '../providers/registry';
-import { keyStateFor, redact, writeSecretFields, type KeyState, type SecretStore, type SecretStoreKind } from '../providers/secrets';
+import { keyIdFor, keyStateFor, redact, writeSecretFields, type KeyState, type SecretStore, type SecretStoreKind } from '../providers/secrets';
 import type { Router } from '../router/router';
 
 /**
@@ -45,8 +45,26 @@ export interface SettingsDeps {
   home?: string;
 }
 
+/** The row a key belongs to. Its `baseURL` decides whether the key is filed
+ * under the vendor or under this row (`keyIdFor`), so every key path has to
+ * read it from the same place. */
+function entryFor(ctx: SettingsContext, id: string): { baseURL?: string } {
+  try {
+    const row = readRegistry(ctx.settings.file).providers?.find(e => e.id === id);
+    return row?.baseURL === undefined ? {} : { baseURL: row.baseURL };
+  } catch {
+    // A file that does not parse is `/settings`' problem, not this key's.
+    return {};
+  }
+}
+
 /** The registry entry's key variable for a provider: the entry's own, else
  * the vendor's usual one. `undefined` for the subscription and local tiers. */
+function rowOf(id: string, registry: RegistryFileData | null): { baseURL?: string } {
+  const row = registry?.providers?.find(e => e.id === id);
+  return row?.baseURL === undefined ? {} : { baseURL: row.baseURL };
+}
+
 function keyEnvFor(id: string, registry: RegistryFileData | null): string | undefined {
   const vendor = vendorFor(prefixOf(id));
   if (vendor === undefined || vendor.auth !== 'apikey') return undefined;
@@ -96,7 +114,7 @@ export function putProviderKey(ctx: SettingsContext, id: string, input: KeyBodyD
     if (!checked.ok) return Response.json({ error: `the ${vendor.name} credentials are incomplete`, issues: checked.issues }, { status: 400 });
     secrets = Object.values(checked.fields);
     try {
-      writeSecretFields(store, id, checked.fields);
+      writeSecretFields(store, id, checked.fields, entryFor(ctx, id));
     } catch (err) {
       return Response.json({ error: redactAll(message(err), secrets) }, { status: 500 });
     }
@@ -107,7 +125,9 @@ export function putProviderKey(ctx: SettingsContext, id: string, input: KeyBodyD
     if (Buffer.byteLength(trimmed, 'utf8') > KEY_MAX_BYTES) return Response.json({ error: 'that is not an API key (too long)' }, { status: 400 });
     secrets = [trimmed];
     try {
-      store.set(id, trimmed);
+      // Under the vendor where one key opens every model it sells, and
+      // under this row where the row decides the endpoint (`keyIdFor`).
+      store.set(keyIdFor(id, entryFor(ctx, id)), trimmed);
     } catch (err) {
       return Response.json({ error: redact(message(err), trimmed) }, { status: 500 });
     }
@@ -118,6 +138,17 @@ export function putProviderKey(ctx: SettingsContext, id: string, input: KeyBodyD
     return Response.json({ error: redactAll(message(err), secrets) }, { status: 422 });
   }
   return new Response(null, { status: 204 });
+}
+
+/** Every OTHER row of this vendor whose key `readKey` would fall back to.
+ * Only for a vendor-filed key: a row-filed one is nobody else's. */
+function siblingIds(ctx: SettingsContext, id: string): string[] {
+  try {
+    const rows = readRegistry(ctx.settings.file).providers ?? [];
+    return rows.map(e => e.id).filter(other => other !== id && prefixOf(other) === prefixOf(id));
+  } catch {
+    return [];
+  }
 }
 
 function redactAll(text: string, values: string[]): string {
@@ -131,7 +162,15 @@ export function deleteProviderKey(ctx: SettingsContext, id: string): Response {
   if (store === undefined) return Response.json({ error: 'this runtime has no secret store' }, { status: 503 });
   if (!takesKey(id)) return Response.json({ error: `${id} does not take an API key` }, { status: 404 });
   try {
+    // "Remove the key" has to mean the key is gone. That is the item it is
+    // filed under, this row's own legacy item, AND the legacy item of every
+    // OTHER row that shares the vendor's key — `readKey` falls back to
+    // those, so leaving one behind would hand the key straight back on the
+    // next call, with the page still saying the key was removed.
+    const filed = keyIdFor(id, entryFor(ctx, id));
+    store.delete(filed);
     store.delete(id);
+    if (filed !== id) for (const sibling of siblingIds(ctx, id)) store.delete(sibling);
   } catch (err) {
     return Response.json({ error: message(err) }, { status: 500 });
   }
@@ -210,7 +249,7 @@ export function providerView(p: ModelProvider, keys?: KeyContext): ProviderView 
   const handles = vendor === undefined ? null : handlesFor(vendor, baseURL);
   const view: ProviderView = { id: p.id, kind: p.kind, auth: p.capabilities.auth, capabilities: p.capabilities, locality, handles: locality === 'local' ? null : handles };
   if (keys !== undefined && takesKey(p.id)) {
-    view.keySet = isEnterprise(vendor) ? enterpriseKeyState(p.id, keys) : keyStateFor(p.id, keyEnvFor(p.id, keys.registry), keys.store, keys.env);
+    view.keySet = isEnterprise(vendor) ? enterpriseKeyState(p.id, keys) : keyStateFor(p.id, keyEnvFor(p.id, keys.registry), keys.store, keys.env, rowOf(p.id, keys.registry));
   }
   return view;
 }
