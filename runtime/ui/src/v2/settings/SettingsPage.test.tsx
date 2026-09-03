@@ -47,6 +47,9 @@ function install(onPut: (body: unknown) => Response, getView: SettingsView = vie
     // The Models group reads the scoreboard; an empty one keeps these tests
     // about the registry form.
     if (url === '/evals/scoreboard') return json({ at: '2026-09-02T00:00:00.000Z', tasks: [] });
+    // Every provider block asks its vendor what models it has. A test that
+    // cares stubs its own; this is the quiet default.
+    if (url.startsWith('/providers/') && url.includes('/models')) return json({ models: [], source: 'curated' });
     if (url === '/content/status') {
       return json({ shippedVersion: '0.0.0', vaultVersion: '0.0.0', receivedAt: null, lawManagement: 'plugin', autoApplyLawUpdates: false, items: [], counts: { current: 0, 'update-available': 0, 'user-modified': 0, 'vault-only': 0, missing: 0, 'upstream-changed': 0 } });
     }
@@ -75,16 +78,16 @@ describe('SettingsPage', () => {
   test('is grouped by what the operator came to do, each group with a purpose line', async () => {
     install(() => json(view));
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByRole('table', { name: 'Models you can use' })).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('list', { name: 'Providers you can use' })).toBeTruthy());
     // Descendant, not child: `Health` draws its own heading inside its own
     // section, one level under the group card.
     const headings = Array.from(document.querySelectorAll('.v2-group h2'), el => el.textContent);
     // No Models: a scoreboard is a measurement and a bar is a standing
     // decision, neither of which is a setting. They live on the Models page.
-    expect(headings).toEqual(['Models you can use', 'Task routes', 'Step timeout', 'Test', 'Content', 'Runtime']);
+    expect(headings).toEqual(['Providers and models', 'Task routes', 'Step timeout', 'Test', 'Content', 'Runtime']);
     // The plain-language purpose lines (cou-84), one under each heading.
-    expect(screen.getByText(/Everything this runtime has loaded/)).toBeTruthy();
-    expect(screen.getByRole('table', { name: 'Models you can use' })).toBeTruthy();
+    expect(screen.getByText(/The providers this runtime can call/)).toBeTruthy();
+    expect(screen.getByRole('list', { name: 'Providers you can use' })).toBeTruthy();
     expect(screen.getByText(/Send one kind of work to a particular model/)).toBeTruthy();
     expect(screen.getByText(/before the runtime cancels it and reports a timeout/)).toBeTruthy();
     expect(screen.getByText(/What is actually running right now/)).toBeTruthy();
@@ -103,11 +106,11 @@ describe('SettingsPage', () => {
       { ...view, effective: { ...view.effective, providers: [fakeProvider, ollama] } },
     );
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByRole('table', { name: 'Models you can use' })).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('list', { name: 'Providers you can use' })).toBeTruthy());
 
     // "use this one" IS the save: the row carries the act that used to mean
     // reading an id off one group and typing it into another.
-    await userEvent.click(screen.getByRole('button', { name: 'Use Ollama gemma4:e4b' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Use Ollama' }));
 
     await waitFor(() => expect(screen.getByText('unknown provider ollama/gemma4:e4b')).toBeTruthy());
     expect(puts).toHaveLength(1);
@@ -119,22 +122,22 @@ describe('SettingsPage', () => {
     const ollama: ProviderInfo = { ...fakeProvider, id: 'ollama/gemma4:e4b', auth: 'local', locality: 'local' };
     install(() => json(view), { ...view, effective: { ...view.effective, providers: [fakeProvider, ollama] } });
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByRole('table', { name: 'Models you can use' })).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('list', { name: 'Providers you can use' })).toBeTruthy());
 
     // A blank row makes the form invalid. Clicking "use this one" then used
     // to flip the table to the new default and send nothing — and the only
     // message said so from inside a collapsed disclosure.
     await userEvent.click(screen.getByRole('button', { name: 'or add a blank row' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Use Ollama gemma4:e4b' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Use Ollama' }));
 
     await waitFor(() => expect(screen.getByText('Nothing was saved. Correct the fields marked above.')).toBeTruthy());
     expect(puts).toHaveLength(0);
     // The table still says what is true on disk: the row that was clicked
     // did NOT become the default.
-    const table = screen.getByRole('table', { name: 'Models you can use' });
-    const clicked = within(table).getByRole('row', { name: /gemma4/ });
+    const table = screen.getByRole('list', { name: 'Providers you can use' });
+    const clicked = within(table).getAllByRole('listitem').find(r => (r.textContent ?? '').includes('Ollama'))!;
     expect(within(clicked).queryByText(/answers by default/)).toBeNull();
-    expect(within(clicked).getByRole('button', { name: 'Use Ollama gemma4:e4b' })).toBeTruthy();
+    expect(within(clicked).getByRole('button', { name: 'Use Ollama' })).toBeTruthy();
     // And the field it wants is on screen, not folded away.
     expect(screen.getByText('id is required')).toBeTruthy();
   });
@@ -142,7 +145,7 @@ describe('SettingsPage', () => {
   test('a blank row leads with the one field it needs', async () => {
     install(() => json(view));
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByRole('table', { name: 'Models you can use' })).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('list', { name: 'Providers you can use' })).toBeTruthy());
 
     const before = screen.getAllByLabelText('Id').length;
     await userEvent.click(screen.getByRole('button', { name: 'or add a blank row' }));
@@ -163,7 +166,7 @@ describe('SettingsPage', () => {
   test('a search nobody serves says so, instead of offering everything', async () => {
     install(() => json(view));
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByRole('table', { name: 'Models you can use' })).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('list', { name: 'Providers you can use' })).toBeTruthy());
 
     const user = userEvent.setup({ document });
     const box = screen.getByRole('combobox', { name: 'Search by maker or vendor' });
@@ -252,7 +255,7 @@ describe('SettingsPage', () => {
   test('a maker finds the vendors that serve it — the founder’s "meta and google aren’t here"', async () => {
     install(() => json(view));
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByRole('table', { name: 'Models you can use' })).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('list', { name: 'Providers you can use' })).toBeTruthy());
 
     // `userEvent.setup({ document })`: the direct API infers its document
     // from the element it is handed, and `keyboard` is given none.
@@ -300,11 +303,11 @@ describe('SettingsPage', () => {
     // the file now naming the one that answers.
     install(() => json({ ...both, registry: { ...view.registry, default: 'claude-sub/claude-opus-5' } }), both);
     render(<SettingsPage health={health} />);
-    const table = await waitFor(() => screen.getByRole('table', { name: 'Models you can use' }));
-    const rows = within(table).getAllByRole('row').map(r => r.textContent ?? '');
+    const table = await waitFor(() => screen.getByRole('list', { name: 'Providers you can use' }));
+    const rows = within(table).getAllByRole('listitem').map(r => r.textContent ?? '');
     expect(rows.some(r => r.includes('Claude') && r.includes('your subscription'))).toBe(true);
 
-    const claudeRow = within(table).getAllByRole('row').find(r => (r.textContent ?? '').includes('claude-opus-5'))!;
+    const claudeRow = within(table).getAllByRole('listitem').find(r => (r.textContent ?? '').includes('Claude'))!;
     await userEvent.click(within(claudeRow).getByRole('button', { name: /^Use / }));
     await waitFor(() => expect((puts[0] as { default: string }).default).toBe('claude-sub/claude-opus-5'));
     // And the row it is on says so, rather than offering the act again.
@@ -332,10 +335,10 @@ describe('SettingsPage, the default provider field (cou-93 item 3)', () => {
       { file: view.file, registry: {}, effective: { default: 'claude-sub/claude-opus-5', stepTimeoutMs: 600000, providers: [claude] } },
     );
     render(<SettingsPage health={health} />);
-    const table = await waitFor(() => screen.getByRole('table', { name: 'Models you can use' }));
+    const table = await waitFor(() => screen.getByRole('list', { name: 'Providers you can use' }));
     // The row that answers says so, and says the choice is the runtime's
     // rather than one the practice saved.
-    const row = within(table).getAllByRole('row').find(r => (r.textContent ?? '').includes('claude-opus-5'))!;
+    const row = within(table).getAllByRole('listitem').find(r => (r.textContent ?? '').includes('Claude'))!;
     expect(within(row).getByText(/answers by default/)).toBeTruthy();
     expect(within(row).getByText(/built in, not yet saved/)).toBeTruthy();
     expect(within(row).queryByRole('button', { name: /^Use / })).toBeNull();
@@ -457,9 +460,11 @@ describe('SettingsPage, provider keys (providers spec §5)', () => {
 });
 
 describe('SettingsPage, the model picker on a provider row (providers spec §4)', () => {
+  const openai: ProviderInfo = { ...fakeProvider, id: 'openai/gpt-5.6', auth: 'apikey', locality: 'cloud', keySet: true };
   const withRow: SettingsView = {
     ...view,
     registry: { ...view.registry, providers: [{ id: 'openai/gpt-5.6', apiKeyEnv: 'OPENAI_API_KEY' }] },
+    effective: { ...view.effective, providers: [fakeProvider, openai] },
   };
 
   function installWithModels(answer: (url: string) => Response | null): { listed: string[] } {
@@ -468,6 +473,10 @@ describe('SettingsPage, the model picker on a provider row (providers spec §4)'
       const url = String(input);
       if (url === '/settings' && (init?.method ?? 'GET') === 'GET') return json(withRow);
       if (url === '/content/status') return json({ shippedVersion: '0.0.0', vaultVersion: '0.0.0', receivedAt: null, lawManagement: 'plugin', autoApplyLawUpdates: false, items: [], counts: { current: 0, 'update-available': 0, 'user-modified': 0, 'vault-only': 0, missing: 0, 'upstream-changed': 0 } });
+      if (url === '/settings' && init?.method === 'PUT') {
+        puts.push(JSON.parse(String(init.body)));
+        return json(withRow);
+      }
       if (url.startsWith('/providers/')) {
         listed.push(url);
         const r = answer(url);
@@ -481,16 +490,23 @@ describe('SettingsPage, the model picker on a provider row (providers spec §4)'
   test("the row lists the vendor's models with context sizes; a pick rewrites the id; refresh asks again", async () => {
     const { listed } = installWithModels(() => json({ models: [{ id: 'gpt-5.6', contextTokens: 400000 }, { id: 'gpt-5.6-mini', contextTokens: 128000 }], source: 'list' }));
     render(<SettingsPage health={health} />);
-    await waitFor(() => expect(screen.getByLabelText('Model')).toBeTruthy());
-    expect((screen.getByLabelText('Model') as HTMLInputElement).value).toBe('gpt-5.6');
+    await waitFor(() => expect(screen.getByLabelText('OpenAI model')).toBeTruthy());
+    expect((screen.getByLabelText('OpenAI model') as HTMLInputElement).value).toBe('gpt-5.6');
     await waitFor(() => expect(screen.getByText(/2 models listed/)).toBeTruthy());
     expect(listed).toEqual(['/providers/openai/models']);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Show models' }));
-    await userEvent.click(screen.getByText('gpt-5.6-mini'));
-    expect((screen.getByLabelText('Id') as HTMLInputElement).value).toBe('openai/gpt-5.6-mini');
+    // Every provider has a block, so each control is reached through its
+    // own — not by document-wide role.
+    const block = screen.getByLabelText('OpenAI model').closest('.v2-yours-model') as HTMLElement;
 
-    await userEvent.click(screen.getByRole('button', { name: 'refresh' }));
+    // Choosing from the list applies at once — no separate Save, and no
+    // id to retype.
+    await userEvent.click(within(block).getByRole('button', { name: 'Show models' }));
+    await userEvent.click(screen.getByText('gpt-5.6-mini'));
+    await waitFor(() => expect(puts).toHaveLength(1));
+    expect((puts[0] as { providers: { id: string }[] }).providers[0]!.id).toBe('openai/gpt-5.6-mini');
+
+    await userEvent.click(within(block).getByRole('button', { name: 'refresh' }));
     await waitFor(() => expect(listed).toHaveLength(2));
     expect(listed[1]).toBe('/providers/openai/models?refresh=1');
   });
@@ -500,15 +516,25 @@ describe('SettingsPage, the model picker on a provider row (providers spec §4)'
     render(<SettingsPage health={health} />);
     await waitFor(() => expect(screen.getByText('No key for OpenAI yet.')).toBeTruthy());
     const user = userEvent.setup({ document });
-    const model = screen.getByLabelText('Model') as HTMLInputElement;
+    const model = screen.getByLabelText('OpenAI model') as HTMLInputElement;
     await user.clear(model);
     await user.type(model, 'gpt-7');
-    expect((screen.getByLabelText('Id') as HTMLInputElement).value).toBe('openai/gpt-7');
+    // A model the list does not carry is committed when the field is left,
+    // not on every keystroke — one save, and it says `gpt-7`.
+    expect(puts).toHaveLength(0);
+    await user.click(screen.getByRole('heading', { name: 'Task routes' }));
+    await waitFor(() => expect(puts).toHaveLength(1));
+    expect((puts[0] as { providers: { id: string }[] }).providers[0]!.id).toBe('openai/gpt-7');
   });
 
   test('a local runner row lists from its base URL', async () => {
     const { listed } = installWithModels(() => json({ models: [{ id: 'qwen3:32b' }], source: 'list' }));
-    const local: SettingsView = { ...view, registry: { ...view.registry, providers: [{ id: 'lmstudio/qwen3:32b', baseURL: 'http://127.0.0.1:1234/v1' }] } };
+    const lmstudio: ProviderInfo = { ...fakeProvider, id: 'lmstudio/qwen3:32b', auth: 'apikey', locality: 'local' };
+    const local: SettingsView = {
+      ...view,
+      registry: { ...view.registry, providers: [{ id: 'lmstudio/qwen3:32b', baseURL: 'http://127.0.0.1:1234/v1' }] },
+      effective: { ...view.effective, providers: [fakeProvider, lmstudio] },
+    };
     globalThis.fetch = ((orig: typeof fetch) => (async (input: RequestInfo | URL, init?: RequestInit) => {
       if (String(input) === '/settings' && (init?.method ?? 'GET') === 'GET') return json(local);
       return orig(input, init);

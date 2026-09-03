@@ -8,6 +8,14 @@ reconstructed from git history. New entries are prepended automatically by
 
 ## [Unreleased]
 
+Providers, and the model each one runs
+
+- Settings now shows one block per **provider** — Claude, ChatGPT, Ollama, anything you add — with the model as a picker on that block. You choose a provider, then you choose a model. The list comes from the provider itself, so it is what they offer today rather than a list we hard-coded.
+- **One key per provider.** A key used to be filed under the vendor AND the model, so a second OpenAI model asked for the OpenAI key a second time, as if it were a different account. It is filed under the vendor now. A key pasted before this change is still found, and removing a key removes both.
+- A key now opens a provider's model list even before any model is chosen, which is the order the work actually happens in: pick the vendor, paste the key, choose from what comes back.
+- The Claude subscription lists its models like any other provider. Its harness always passed a model through — there was simply nothing to choose from. (The Codex CLI publishes no list, and says so rather than offering names we would be guessing at.)
+- The model picker is gone from the raw provider row, where it was a second place to do the same thing.
+
 Settings, reorganized around the models you have
 
 - **Models you can use** replaces Providers and Default provider. One list of everything the runtime has loaded — your subscriptions, your local model, anything you added — saying what each one is, how it is reached, and which one answers. Switching is *use this one* on the row, rather than reading an id out of one group and typing it into another.

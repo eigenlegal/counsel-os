@@ -120,9 +120,22 @@ describe('discoverModels', () => {
   });
 
   test('a vendor with no list and no curated ids says to type the id', async () => {
-    const r = await discoverModels(vendorFor('claude-sub')!, {});
+    // `codex-sub`: the Codex CLI publishes no list, and we know one model
+    // name for certain, which is not a list worth inventing.
+    const r = await discoverModels(vendorFor('codex-sub')!, {});
     expect(r.models).toEqual([]);
     expect(r.error).toContain('type the model id');
+  });
+
+  test('the Claude subscription lists its models, with no key and no call', async () => {
+    // The harness passes the model straight through
+    // (`claude-harness.ts` buildQueryOptions), so a subscription can be
+    // switched between models like any other provider — it just had no list
+    // to switch from.
+    const r = await discoverModels(vendorFor('claude-sub')!, {});
+    expect(r.source).toBe('curated');
+    expect(r.models.map(m => m.id)).toContain('claude-opus-5');
+    expect(r.error).toBeUndefined();
   });
 
   test('the bare OpenAI-compatible shape needs a base URL first', async () => {

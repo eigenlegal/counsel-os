@@ -2,7 +2,7 @@ import { cleanup, render, screen } from '../../test/dom';
 
 import { afterEach, describe, expect, test } from 'bun:test';
 import type { KeyState, ProviderInfo } from '../../api/types';
-import { nameOf, reachOf, YourModels } from './YourModels';
+import { groupProviders, nameOf, reachOf } from './YourModels';
 
 afterEach(cleanup);
 
@@ -71,33 +71,37 @@ describe('the name a lawyer reads', () => {
   });
 });
 
-describe('the list itself', () => {
+describe('one block per provider', () => {
   const rows = [
     provider({ id: 'claude-sub/claude-opus-5', auth: 'subscription' }),
+    provider({ id: 'claude-sub/claude-sonnet-5', auth: 'subscription' }),
     provider({ id: 'ollama/gemma4:e4b', auth: 'local', locality: 'local' }),
-    provider({ id: 'openai/gpt-5.6', auth: 'apikey', locality: 'cloud', keySet: false }),
   ];
 
-  test('each row can be told apart by a screen reader', () => {
-    render(<YourModels providers={rows} defaultId="claude-sub/claude-opus-5" builtinDefault={false} busy={false} onMakeDefault={() => {}} />);
-    // Not three buttons all called "use this one".
-    expect(screen.getByRole('button', { name: 'Use Ollama gemma4:e4b' })).toBeDefined();
-    expect(screen.queryByRole('button', { name: 'Use Claude claude-opus-5' })).toBeNull();
+  test('the models of one vendor fold into one block', () => {
+    // Two Claude models loaded is not two providers to read past. It is
+    // Claude, running one of them.
+    const groups = groupProviders(rows, 'claude-sub/claude-opus-5');
+    expect(groups.map(g => g.prefix)).toEqual(['claude-sub', 'ollama']);
+    expect(groups[0]!.name).toBe('Claude');
+    expect(groups[0]!.model).toBe('claude-opus-5');
   });
 
-  test('a blocked row states its reason as text, not as a disabled button', () => {
-    render(<YourModels providers={rows} defaultId="claude-sub/claude-opus-5" builtinDefault={false} busy={false} onMakeDefault={() => {}} />);
-    // `disabled` takes a button out of the accessibility tree, which would
-    // hide the one thing the row has to say.
-    expect(screen.queryByRole('button', { name: /Use OpenAI/ })).toBeNull();
-    expect(screen.getByText('needs a key first')).toBeDefined();
+  test('the block shows the model that actually answers, wherever it sits', () => {
+    // The default is the SECOND Claude loaded; the block must show that one,
+    // not the first it happened to meet.
+    const groups = groupProviders(rows, 'claude-sub/claude-sonnet-5');
+    expect(groups[0]!.model).toBe('claude-sonnet-5');
+    expect(groups[0]!.id).toBe('claude-sub/claude-sonnet-5');
   });
 
-  test('the same id twice is one row', () => {
-    // `loadRegistry` appends the built-ins and then the file, and a file may
-    // re-declare one — adding `ollama/gemma4:e4b` does exactly that.
-    const doubled = [...rows, provider({ id: 'ollama/gemma4:e4b', auth: 'local', locality: 'local' })];
-    render(<YourModels providers={doubled} defaultId="" builtinDefault={false} busy={false} onMakeDefault={() => {}} />);
-    expect(screen.getAllByRole('row').length).toBe(3);
+  test('with no default, the first loaded model stands for its provider', () => {
+    expect(groupProviders(rows, '').map(g => g.model)).toEqual(['claude-opus-5', 'gemma4:e4b']);
+  });
+
+  test('an unknown prefix still gets a block, under its own name', () => {
+    const groups = groupProviders([provider({ id: 'mystery/m', auth: 'apikey', keySet: true })], '');
+    expect(groups).toHaveLength(1);
+    expect(groups[0]!.name).toBe('mystery');
   });
 });

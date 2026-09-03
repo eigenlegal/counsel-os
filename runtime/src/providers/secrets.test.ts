@@ -8,6 +8,7 @@ import {
   encodeSecretFields,
   fileStore,
   keyStateFor,
+  readKey,
   readSecretFields,
   writeSecretFields,
   keychainStore,
@@ -210,15 +211,33 @@ describe('redact and keyStateFor', () => {
 });
 
 describe('secret fields — several secrets as ONE store item (providers spec §3 step 5)', () => {
-  test('round trip through a store: one item under the id, the empty fields dropped', () => {
+  test('round trip through a store: one item under the VENDOR, the empty fields dropped', () => {
     const store = memoryStore();
     writeSecretFields(store, 'bedrock/m', { accessKeyId: 'A', secretAccessKey: 'B', sessionToken: '' });
     expect(readSecretFields(store, 'bedrock/m')).toEqual({ accessKeyId: 'A', secretAccessKey: 'B' });
-    // One item, and it is the envelope — never a keychain entry per field.
-    expect(store.get('bedrock/m')).toBe('{"v":1,"fields":{"accessKeyId":"A","secretAccessKey":"B"}}');
-    expect(store.get('bedrock/m/accessKeyId')).toBeNull();
-    store.delete('bedrock/m');
+    // One item, under the vendor — one AWS account, not one per model — and
+    // it is the envelope, never a keychain entry per field.
+    expect(store.get('bedrock')).toBe('{"v":1,"fields":{"accessKeyId":"A","secretAccessKey":"B"}}');
+    expect(store.get('bedrock/m')).toBeNull();
+    expect(store.get('bedrock/accessKeyId')).toBeNull();
+    // So a SECOND Bedrock model reads the same credentials, with nothing
+    // more pasted.
+    expect(readSecretFields(store, 'bedrock/anthropic.claude-3')).toEqual({ accessKeyId: 'A', secretAccessKey: 'B' });
+    store.delete('bedrock');
     expect(readSecretFields(store, 'bedrock/m')).toBeNull();
+  });
+
+  test('a key an older install filed under the model is still found', () => {
+    // Keys were filed under `<vendor>/<model>` before providers became
+    // provider-shaped. Nobody re-pastes a key because we changed our minds.
+    const store = memoryStore({ 'openai/gpt-5.6': 'sk-old' });
+    expect(readKey(store, 'openai/gpt-5.6')).toBe('sk-old');
+    // The vendor's own item wins once it exists.
+    store.set('openai', 'sk-new');
+    expect(readKey(store, 'openai/gpt-5.6')).toBe('sk-new');
+    // And it answers for a model that never had an item of its own.
+    expect(readKey(store, 'openai/gpt-5.6-mini')).toBe('sk-new');
+    expect(readKey(undefined, 'openai/gpt-5.6')).toBeNull();
   });
 
   test('a plain key is not fields; a malformed envelope reads as none; no store reads as none', () => {

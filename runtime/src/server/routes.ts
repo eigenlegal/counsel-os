@@ -11,6 +11,7 @@ import { assertSafeXml } from '../docx/safety';
 import { BASE_URL_RULE, isAllowedBaseURL, readRegistry, RegistryFile } from '../providers/registry';
 import { DiscoveryCache, discoverModels } from '../providers/discovery';
 import { prefixOf, vendorFor } from '../providers/vendors';
+import { readKey } from '../providers/secrets';
 import { isEnterprise, resolveEnterprise } from '../providers/enterprise';
 import type { ThreadEvent, ThreadHeader } from '../threads/store';
 import { vaultDocket } from '../vault/docket';
@@ -600,11 +601,13 @@ export function createApp(deps: ServerDeps): App {
       return json(result);
     }
     // The key, the way the registry resolves it (providers spec §5): the
-    // secret store for the entry's id first, then the entry's variable,
-    // then the vendor's usual one.
+    // secret store first, then the entry's variable, then the vendor's usual
+    // one. `readKey` asks for the VENDOR's key, so a key pasted against a
+    // provider that has no row yet still lists its models — which is the
+    // order a lawyer works in: pick the vendor, paste the key, choose a
+    // model from what comes back.
     const keyEnv = entry?.apiKeyEnv ?? vendor.keyEnv;
-    const secretId = entry?.id ?? (id === prefix ? undefined : id);
-    const stored = secretId === undefined ? null : (deps.settings.secrets?.get(secretId) ?? null);
+    const stored = readKey(deps.settings.secrets, entry?.id ?? id);
     const apiKey = stored ?? (keyEnv === undefined ? undefined : env[keyEnv]);
     const cacheKey = discoveryCache.key(prefix, baseURL);
     if (url.searchParams.get('refresh') !== '1') {

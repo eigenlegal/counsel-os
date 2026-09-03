@@ -9,7 +9,7 @@ import { buildProviders } from './index';
 import { directProviderFromId } from './direct';
 import { isEnterprise, resolveEnterprise } from './enterprise';
 import { withRetry } from './retry';
-import type { SecretStore } from './secrets';
+import { readKey, type SecretStore } from './secrets';
 import { knownPrefixes, prefixOf, vendorFor } from './vendors';
 
 export const BUILTIN_DEFAULT = 'claude-sub/claude-opus-5';
@@ -147,14 +147,9 @@ export function loadRegistry(opts: {
   const env = opts.env ?? process.env; const file = opts.file ?? defaultRegistryFile(env);
   /** The store's value for `id`, or `null` — including when the store cannot
    * be read: a locked keychain must not stop the runtime from starting, and
-   * the page's `keySet: false` is how the operator finds out. */
-  const stored = (id: string): string | null => {
-    try {
-      return opts.secrets?.get(id) ?? null;
-    } catch {
-      return null;
-    }
-  };
+   * the page's `keySet: false` is how the operator finds out. Filed under
+   * the vendor, so one key opens every model it sells. */
+  const stored = (id: string): string | null => readKey(opts.secrets, id);
   const raw = readRegistry(file);
   const providers: ModelProvider[] = buildProviders({ ids: BUILTIN_IDS, vaultRoot: opts.vaultRoot });
   for (const e of raw.providers ?? []) {

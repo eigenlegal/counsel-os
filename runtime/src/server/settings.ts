@@ -6,7 +6,7 @@ import { handlesFor, prefixOf, vendorFor, type VendorHandles } from '../provider
 import { isEnterprise, resolveEnterprise, validateFields } from '../providers/enterprise';
 import { DEFAULT_STEP_TIMEOUT_MS, runStep, type CounselLoopDeps } from '../loop/counsel-loop';
 import { readRegistry, writeRegistry, REGISTRY_WRITE, type RegistryFileData } from '../providers/registry';
-import { keyStateFor, redact, writeSecretFields, type KeyState, type SecretStore, type SecretStoreKind } from '../providers/secrets';
+import { keyIdFor, keyStateFor, redact, writeSecretFields, type KeyState, type SecretStore, type SecretStoreKind } from '../providers/secrets';
 import type { Router } from '../router/router';
 
 /**
@@ -107,7 +107,8 @@ export function putProviderKey(ctx: SettingsContext, id: string, input: KeyBodyD
     if (Buffer.byteLength(trimmed, 'utf8') > KEY_MAX_BYTES) return Response.json({ error: 'that is not an API key (too long)' }, { status: 400 });
     secrets = [trimmed];
     try {
-      store.set(id, trimmed);
+      // Under the vendor: one key opens every model it sells.
+      store.set(keyIdFor(id), trimmed);
     } catch (err) {
       return Response.json({ error: redact(message(err), trimmed) }, { status: 500 });
     }
@@ -131,7 +132,11 @@ export function deleteProviderKey(ctx: SettingsContext, id: string): Response {
   if (store === undefined) return Response.json({ error: 'this runtime has no secret store' }, { status: 503 });
   if (!takesKey(id)) return Response.json({ error: `${id} does not take an API key` }, { status: 404 });
   try {
-    store.delete(id);
+    // Both: the vendor's item, and the per-model item an older install
+    // wrote. "Remove the key" has to mean the key is gone, or the fallback
+    // read in `readKey` would hand it straight back.
+    store.delete(keyIdFor(id));
+    if (keyIdFor(id) !== id) store.delete(id);
   } catch (err) {
     return Response.json({ error: message(err) }, { status: 500 });
   }

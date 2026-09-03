@@ -283,7 +283,7 @@ const SDK_VENDORS: Vendor[] = [
   {
     prefix: 'claude-sub', name: 'Claude', kind: 'harness', layer: 'sdk', group: 'subscription', auth: 'subscription', locality: 'cloud',
     handles: { company: 'Anthropic', termsUrl: 'https://www.anthropic.com/legal/consumer-terms' },
-    help: { install: 'https://claude.ai/code' }, models: 'none', capabilities: CLOUD_CAPS,
+    help: { install: 'https://claude.ai/code' }, models: 'curated', curated: ANTHROPIC_MODELS, capabilities: CLOUD_CAPS,
   },
   {
     prefix: 'codex-sub', name: 'ChatGPT', kind: 'harness', layer: 'sdk', group: 'subscription', auth: 'subscription', locality: 'cloud',

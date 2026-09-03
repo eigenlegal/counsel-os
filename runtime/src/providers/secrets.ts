@@ -28,6 +28,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { writeFileAtomic } from '../core/atomic-write';
 import { counselHome } from '../core/home';
+import { prefixOf } from './vendors';
 
 export type SecretStoreKind = 'keychain' | 'libsecret' | 'file';
 
@@ -238,16 +239,13 @@ export function decodeSecretFields(value: string | null): Record<string, string>
 }
 
 export function readSecretFields(store: SecretStore | undefined, id: string): Record<string, string> | null {
-  if (store === undefined) return null;
-  try {
-    return decodeSecretFields(store.get(id));
-  } catch {
-    return null;
-  }
+  // Filed under the vendor, like a single key — one AWS account, one Azure
+  // resource. The full-id read is the fallback for an older install.
+  return decodeSecretFields(readKey(store, id));
 }
 
 export function writeSecretFields(store: SecretStore, id: string, fields: Record<string, string>): void {
-  store.set(id, encodeSecretFields(fields));
+  store.set(keyIdFor(id), encodeSecretFields(fields));
 }
 
 /** What `/settings` and `/health` say about a provider's key: set in the
@@ -257,14 +255,38 @@ export function writeSecretFields(store: SecretStore, id: string, fields: Record
 export type KeyState = true | false | 'env' | 'default-chain';
 
 export function keyStateFor(id: string, keyEnv: string | undefined, store: SecretStore | undefined, env: NodeJS.ProcessEnv): KeyState {
-  if (store !== undefined) {
-    try {
-      if (store.get(id) !== null) return true;
-    } catch {
-      // An unreadable store reads as "not set": the page then offers to
-      // paste a key, which is the right next step either way.
-    }
-  }
+  // An unreadable store reads as "not set": the page then offers to paste a
+  // key, which is the right next step either way.
+  if (readKey(store, id) !== null) return true;
   if (keyEnv !== undefined && env[keyEnv] !== undefined && env[keyEnv] !== '') return 'env';
   return false;
+}
+
+/**
+ * What a key is filed under: the VENDOR, never the vendor and the model.
+ *
+ * One key opens every model a vendor sells. Filed under the full id, a
+ * second OpenAI model asked for the OpenAI key a second time, as if it were
+ * a different account — and deleting one model's key left the other's
+ * behind. `prefixOf` is the same split the ids use everywhere else.
+ */
+export function keyIdFor(id: string): string {
+  return prefixOf(id);
+}
+
+/**
+ * A provider's key: the vendor's item, then the per-model item an older
+ * install wrote. The fallback is what keeps a key pasted before this change
+ * working, and it costs one keychain read on a miss.
+ */
+export function readKey(store: SecretStore | undefined, id: string): string | null {
+  if (store === undefined) return null;
+  const vendorId = keyIdFor(id);
+  try {
+    const own = store.get(vendorId);
+    if (own !== null) return own;
+    return vendorId === id ? null : store.get(id);
+  } catch {
+    return null;
+  }
 }

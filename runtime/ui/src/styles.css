@@ -1144,25 +1144,25 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 }
 @keyframes v2-thread-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
-/* The models you can use: one list, the default marked on its own row. */
-.v2-yours { width: 100%; border-collapse: collapse; font: 13.5px/1.7 var(--sans); margin: 0.2rem 0 0.6rem; }
-.v2-yours th, .v2-yours td { text-align: left; font-weight: 400; padding: 3px 0.9rem 3px 0; border-bottom: 1px solid var(--border); vertical-align: baseline; }
-.v2-yours th { color: var(--fg); }
-/* A model id never breaks inside itself: squeezed, `claude-opus-5` split at
-   its hyphens and read as a different model. It wraps onto its own line
-   under the vendor instead, and an id too long even for that scrolls the
-   table in its own box rather than pushing the card sideways. */
-.v2-yours-wrap { overflow-x: auto; }
-.v2-yours-model { color: var(--fg-muted); font-family: var(--mono); font-size: 12.5px; white-space: nowrap; }
-.v2-yours-how { color: var(--fg-muted); white-space: nowrap; }
-/* Wraps, so the longest row's aside ("· built in, not yet saved") takes a
-   second line rather than scrolling the table. The action itself never
-   breaks in half. */
-.v2-yours-act { text-align: right; }
+/* The providers you can use: one block each, with the model on it. */
+.v2-yours { list-style: none; margin: 0.2rem 0 0.6rem; padding: 0; font: 13.5px/1.7 var(--sans); }
+.v2-yours-row { padding: 0.45rem 0; border-bottom: 1px solid var(--border); }
+.v2-yours-row:last-child { border-bottom: 0; }
+.v2-yours-head { display: flex; align-items: baseline; gap: 0.9rem; margin: 0; }
+.v2-yours-head > strong { min-width: 6.5rem; }
+.v2-yours-how { color: var(--fg-muted); }
+/* The action sits at the end of the line, whatever the name lengths. */
+.v2-yours-act { margin-left: auto; text-align: right; }
 .v2-yours-act button { white-space: nowrap; }
 .v2-yours-default { color: var(--accent); }
 .v2-yours-note { color: var(--fg-faint); }
-.v2-yours-on th { font-weight: 600; }
+.v2-yours-on > .v2-yours-head > strong { font-weight: 600; }
+/* The model line: the picker, then what the vendor answered. */
+.v2-yours-model { display: flex; align-items: baseline; gap: 0.6rem; margin: 0.2rem 0 0 0; padding-left: 0; }
+.v2-yours-model > label { color: var(--fg-muted); font-size: 12.5px; white-space: nowrap; }
+.v2-yours-model .v2-combo { flex: 0 1 18rem; min-width: 9rem; }
+.v2-yours-count { color: var(--fg-faint); font-size: 12.5px; margin: 0; }
+.v2-yours-count .v2-link { margin-left: 0.4rem; }
 
 /* Adding one: a search box over the whole catalog. */
 .v2-add-model { margin-top: var(--s3); }
