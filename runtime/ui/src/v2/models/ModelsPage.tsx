@@ -15,6 +15,7 @@
  */
 import type { Health } from '../../api/types';
 import { ModelsGroup } from './ModelsGroup';
+import { FixtureSet } from './FixtureSet';
 import { RoutingLedger } from './RoutingLedger';
 
 export interface ModelsPageProps {
@@ -39,6 +40,15 @@ export function ModelsPage({ health }: ModelsPageProps): JSX.Element {
           calls.
         </p>
         <ModelsGroup providerIds={providerIds} />
+      </section>
+
+      <section className="v2-group" aria-labelledby="models-set">
+        <h2 id="models-set">Your eval set</h2>
+        <p className="muted">
+          What the board above is scored against. A fixture is a document and what a good answer would have caught in it; a score you cannot trace back to
+          one is a number taken on faith.
+        </p>
+        <FixtureSet />
       </section>
 
       <section className="v2-group" aria-labelledby="models-ran">

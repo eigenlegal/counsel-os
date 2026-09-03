@@ -145,10 +145,12 @@ export function VaultTree({ overview, root, selected, onOpen }: VaultTreeProps):
               <button
                 key={matter.path}
                 type="button"
-                className={folder === null ? 'v2-vrow v2-vrow-ind' : 'v2-vrow'}
+                className={folder === null ? 'v2-vrow v2-vmatter-item v2-vrow-ind' : 'v2-vrow v2-vmatter-item'}
                 aria-current={selected === matter.path ? 'page' : undefined}
-                // The 300px pane clips most matter titles; the whole title
-                // is one hover away (cou-93 item 5).
+                // A matter's name is a sentence, so it wraps to two lines
+                // rather than being cut at about 28 characters — the list
+                // was a column of ellipses you could not tell apart. The
+                // title stays for the rare name longer than two lines.
                 title={matter.title}
                 onClick={() => onOpen(matter.path)}
               >

@@ -549,7 +549,7 @@ a { color: var(--accent); }
 /* ── The vault surface (mock-vault.html) ─────────────────────────────── */
 
 .v2-vault { display: flex; flex: 1; min-height: 0; }
-.v2-vtree { width: 300px; flex-shrink: 0; border-right: 1px solid var(--border); background: var(--bg); display: flex; flex-direction: column; }
+.v2-vtree { width: 340px; flex-shrink: 0; border-right: 1px solid var(--border); background: var(--bg); display: flex; flex-direction: column; }
 .v2-vsearch {
   margin: 14px 12px 10px;
   background: var(--bg-raised);
@@ -585,6 +585,22 @@ a { color: var(--accent); }
 /* A folder matter: chevron beside the title row; its documents indent under it. */
 .v2-vmatter-row { display: flex; align-items: center; }
 .v2-vmatter-row .v2-vrow { flex: 1; min-width: 0; }
+/*
+ * A matter's name is a sentence — "Sinai × Lerner — K-12 AI Education
+ * Platform Partnership" — and `nowrap` cut every one at about 28
+ * characters, so the list read as a column of ellipses with no way to tell
+ * two matters apart. File rows keep `nowrap`: a path is short, and
+ * wrapping one would be worse.
+ */
+.v2-vrow.v2-vmatter-item { white-space: normal; align-items: flex-start; }
+.v2-vrow.v2-vmatter-item .v2-vname {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.v2-vrow.v2-vmatter-item .v2-vmonth { padding-top: 1px; }
 .v2-vfold { background: none; border: none; padding: 4px 4px 4px 8px; cursor: pointer; color: var(--fg-faint); display: flex; align-items: center; flex-shrink: 0; }
 .v2-vmatter .v2-vrow-ind { padding-left: 32px; }
 .v2-vdir { font-weight: 500; }
@@ -1260,3 +1276,26 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 
 /* The runtime has been up long enough to have drifted from the code on disk. */
 .v2-stale { color: var(--warn); }
+
+/* The eval set: what the board is scored against. */
+.v2-fixtures-count { font-size: var(--t-small); color: var(--fg-muted); margin: 0 0 var(--s3); max-width: var(--measure); }
+.v2-fixture-set { margin-bottom: var(--s4); }
+.v2-fixture-set > .muted { max-width: var(--measure); margin: 2px 0 6px; font-size: var(--t-small); }
+.v2-fixture-set > h3 { text-transform: uppercase; letter-spacing: 0.08em; font: 600 var(--t-micro)/1.6 var(--sans); color: var(--fg-faint); margin: 0; }
+.v2-fixture-list { list-style: none; margin: 0; padding: 0; }
+.v2-fixture-list > li {
+  display: grid;
+  grid-template-columns: minmax(0, 22rem) 12rem 1fr;
+  column-gap: var(--s4);
+  align-items: baseline;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--t-body);
+}
+.v2-fixture-list > li:last-child { border-bottom: 0; }
+.v2-fixture-id { overflow-wrap: anywhere; }
+.v2-fixture-kind { color: var(--fg-muted); font-size: var(--t-small); }
+/* A fixture with no documents cannot be scored; it reads as inactive
+   rather than as a failure, because it is neither. */
+.v2-fixture-idle .v2-fixture-id { color: var(--fg-muted); }
+.v2-fixture-why { color: var(--fg-faint); font-size: var(--t-small); }
