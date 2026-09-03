@@ -8,6 +8,15 @@ reconstructed from git history. New entries are prepended automatically by
 
 ## [Unreleased]
 
+Fixes to the design pass, from a review of it
+
+- **A button that is a word is not a 30px box.** The shared control rule gave every `button` a minimum height, which is right for a thing you click and wrong for a thing you read: `.v2-link` alone has 57 call sites, each of which became a 30px block sitting in an 11px line. Where the affordance was an underline, the box pushed the rule below the word.
+- **A checkbox is not a text field.** The same rule made every checkbox 13×30, so it no longer sat on its label's line.
+- **A failure reads as a failure again.** A group's prose rule out-specified the error notice, so every failed fetch in Settings and on the Models page rendered in body-grey — border and all, since the notice draws its border in `currentColor`.
+- **A board number keeps its face.** Making the score a button let a later rule flatten it to UI type and centre it in the cell, while the lines beneath stayed left.
+- **A score opens the runs behind THAT cell.** A cell is one set, one provider, one model version; the detail filtered on task and provider alone, so the shipped suite mixed into "how does this model do on my matters".
+- **A rule nothing clears says so.** A task with a rule and no pick means the router could not resolve it — the step would fail. It said "the default", naming a model that would not run.
+
 - **A short thread sits against the composer.** One question and its answer used to leave four hundred pixels of nothing between the last word and the box you type in. The conversation now grows upward from where you are working.
 - **The reading size has a name.** Two places set 15.5px serif by hand — an answer, and a document in the reader. It is the one size that is for reading rather than for using, and it is a token now like the rest.
 - **The Save button says what it saves.** The page has two rules: choosing a model or pasting a key writes at once, while a provider you just added, a task route and the timeout wait for Save. The caption claimed it saved your models, which by then are already on disk.

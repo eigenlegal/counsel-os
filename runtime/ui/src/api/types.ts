@@ -220,6 +220,9 @@ export interface EvalResult {
   fixtureId: string;
   documentId?: string;
   task: string;
+  /** Which set the fixture came from. A board cell is one (set, provider,
+   * model) triple, so the detail behind it has to filter on all three. */
+  source: string;
   providerId: string;
   modelVersion: string;
   score: number | null;

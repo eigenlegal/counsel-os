@@ -81,6 +81,9 @@ export function ModelsGroup({ providerIds }: ModelsGroupProps): JSX.Element {
   const [pending, setPending] = useState<Pending | null>(null);
   /** Which cell's detail is open, if any. */
   const [detail, setDetail] = useState<{ task: string; providerId: string } | null>(null);
+  // A cell belongs to the tab it was opened on; changing tabs closes it
+  // rather than silently re-pointing it at another set's numbers.
+  useEffect(() => setDetail(null), [set]);
   const [running, setRunning] = useState<Running | null>(null);
   // How each task is routed, and who that picks — read beside the scores and
   // re-read after a change so the pick shown is the pick a step would get.
@@ -319,7 +322,7 @@ export function ModelsGroup({ providerIds }: ModelsGroupProps): JSX.Element {
           </table>
         </div>
       )}
-      {detail === null ? null : <ScoreDetail task={detail.task} providerId={detail.providerId} onClose={() => setDetail(null)} />}
+      {detail === null || set === null ? null : <ScoreDetail task={detail.task} set={set} providerId={detail.providerId} onClose={() => setDetail(null)} />}
     </div>
   );
 }

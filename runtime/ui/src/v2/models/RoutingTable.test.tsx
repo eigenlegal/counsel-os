@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '../../test/dom';
+import { cleanup, render, screen, userEvent, waitFor, within } from '../../test/dom';
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { TOKEN_KEY } from '../../api/token';
@@ -7,8 +7,18 @@ import { RoutingTable } from './RoutingTable';
 
 const realFetch = globalThis.fetch;
 
-function install(tasks: Record<string, unknown>): void {
-  globalThis.fetch = (async (input: RequestInfo | URL) => {
+let puts: unknown[] = [];
+
+function install(tasks: Record<string, unknown>, onPut?: (body: unknown) => Response): void {
+  puts = [];
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    if (String(input) === '/routing' && init?.method === 'PUT') {
+      const body: unknown = JSON.parse(String(init.body));
+      puts.push(body);
+      return onPut === undefined
+        ? new Response(JSON.stringify({ defaults: { minScore: 0.7, prefer: 'quality' }, tasks }), { headers: { 'content-type': 'application/json' } })
+        : onPut(body);
+    }
     if (String(input) === '/routing') {
       return new Response(JSON.stringify({ defaults: { minScore: 0.7, prefer: 'quality' }, tasks }), {
         headers: { 'content-type': 'application/json' },
@@ -51,6 +61,42 @@ describe('how work is routed', () => {
     render(<RoutingTable fallback="claude-sub/claude-opus-5" />);
     await waitFor(() => expect(screen.getByText('ollama/gemma4:e4b')).toBeTruthy());
     expect(screen.getByText(/bar 0\.80 · by cost/)).toBeTruthy();
+  });
+
+  test('a rule that nothing clears says so, rather than naming the default', async () => {
+    // The server swallows the router's throw, so a task WITH a rule and no
+    // pick means nothing cleared the bar — the step would fail. Saying "the
+    // default" there names a model that will not run.
+    install({ review: { minScore: 0.9, prefer: 'quality' } });
+    render(<RoutingTable fallback="claude-sub/claude-opus-5" />);
+    await waitFor(() => expect(screen.getByText(/nothing clears this bar/)).toBeTruthy());
+  });
+
+  test('changing a bar writes it, for that task alone', async () => {
+    install({});
+    render(<RoutingTable fallback="claude-sub/claude-opus-5" />);
+    await waitFor(() => expect(screen.getAllByRole('rowheader').length).toBeGreaterThan(1));
+
+    const redline = (screen.getAllByRole('row') as HTMLElement[]).find((r: HTMLElement) => (r.textContent ?? '').startsWith('redline'))!;
+    await userEvent.click(within(redline).getByRole('button', { name: 'change' }));
+    await userEvent.click(within(redline).getByRole('button', { name: '0.9' }));
+
+    await waitFor(() => expect(puts).toHaveLength(1));
+    expect(puts[0]).toEqual({ task: 'redline', minScore: 0.9 });
+  });
+
+  test('a change the server refuses is reported on its own row', async () => {
+    install({}, () => new Response(JSON.stringify({ error: 'unknown provider: nope/nope' }), { status: 422, headers: { 'content-type': 'application/json' } }));
+    render(<RoutingTable fallback="claude-sub/claude-opus-5" />);
+    await waitFor(() => expect(screen.getAllByRole('rowheader').length).toBeGreaterThan(1));
+
+    const draft = (screen.getAllByRole('row') as HTMLElement[]).find((r: HTMLElement) => (r.textContent ?? '').startsWith('draft'))!;
+    await userEvent.click(within(draft).getByRole('button', { name: 'change' }));
+    await userEvent.click(within(draft).getByRole('button', { name: '0.5' }));
+
+    await waitFor(() => expect(within(draft).getByText(/unknown provider/)).toBeTruthy());
+    // And only that row: ten other tasks are untouched by one task's failure.
+    expect(screen.getAllByText(/unknown provider/)).toHaveLength(1);
   });
 
   test('a task the taxonomy does not know is still shown', async () => {
