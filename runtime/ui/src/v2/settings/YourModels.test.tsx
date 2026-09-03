@@ -71,152 +71,65 @@ describe('the name a lawyer reads', () => {
   });
 });
 
-describe('one block per provider', () => {
-  const rows = [
-    provider({ id: 'claude-sub/claude-opus-5', auth: 'subscription' }),
-    provider({ id: 'claude-sub/claude-sonnet-5', auth: 'subscription' }),
-    provider({ id: 'ollama/gemma4:e4b', auth: 'local', locality: 'local' }),
-  ];
+describe('one block per provider entry', () => {
+  const claude = provider({ id: 'claude-sub/claude-opus-5', auth: 'subscription' });
+  const sonnet = provider({ id: 'claude-sub/claude-sonnet-5', auth: 'subscription' });
+  const ollama = provider({ id: 'ollama/gemma4:e4b', auth: 'local', locality: 'local' });
 
-  test('the models of one vendor fold into one block', () => {
-    // Two Claude models loaded is not two providers to read past. It is
-    // Claude, running one of them.
-    const groups = groupProviders(rows, 'claude-sub/claude-opus-5');
-    expect(groups.map(g => g.prefix)).toEqual(['claude-sub', 'ollama']);
-    expect(groups[0]!.name).toBe('Claude');
-    expect(groups[0]!.model).toBe('claude-opus-5');
+  test('a row and the provider it produces are ONE block', () => {
+    const groups = groupProviders([claude, ollama], '', [{ key: 'r1', id: 'ollama/gemma4:e4b' }]);
+    expect(groups).toHaveLength(2);
+    // The row's block is the editable one; the built-in Claude has none.
+    expect(groups.find(g => g.prefix === 'ollama')!.rowKey).toBe('r1');
+    expect(groups.find(g => g.prefix === 'claude-sub')!.rowKey).toBeUndefined();
   });
 
-  test('the block shows the model that actually answers, wherever it sits', () => {
-    // The default is the SECOND Claude loaded; the block must show that one,
-    // not the first it happened to meet.
-    const groups = groupProviders(rows, 'claude-sub/claude-sonnet-5');
-    expect(groups[0]!.model).toBe('claude-sonnet-5');
-    expect(groups[0]!.id).toBe('claude-sub/claude-sonnet-5');
+  test('two rows of one vendor are two blocks, each with its own identity', () => {
+    // Folding them into one made the second invisible: no fields, no
+    // Remove, and its validation errors had nowhere to render — Save
+    // refused with nothing marked.
+    const groups = groupProviders([], '', [
+      { key: 'r1', id: 'openai/gpt-5.6' },
+      { key: 'r2', id: 'openai/gpt-4o-mini' },
+    ]);
+    expect(groups).toHaveLength(2);
+    expect(groups.map(g => g.rowKey)).toEqual(['r1', 'r2']);
+    expect(new Set(groups.map(g => g.key)).size).toBe(2);
   });
 
-  test('with no default, the first loaded model stands for its provider', () => {
-    expect(groupProviders(rows, '').map(g => g.model)).toEqual(['claude-opus-5', 'gemma4:e4b']);
+  test("a block's key does not change when its id does", () => {
+    // The block is keyed on this. Keyed on the prefix, every keystroke in
+    // an Id field remounted the block and dropped focus — one character
+    // per click.
+    const before = groupProviders([], '', [{ key: 'r1', id: '' }])[0]!.key;
+    const after = groupProviders([], '', [{ key: 'r1', id: 'openai/gpt-5.6' }])[0]!.key;
+    expect(before).toBe(after);
   });
 
-  test('an unknown prefix still gets a block, under its own name', () => {
-    const groups = groupProviders([provider({ id: 'mystery/m', auth: 'apikey', keySet: true })], '');
-    expect(groups).toHaveLength(1);
-    expect(groups[0]!.name).toBe('mystery');
-  });
-});
-
-describe('choosing a model on a provider block', () => {
-  const rows = [provider({ id: 'xai/grok-4', auth: 'apikey', locality: 'cloud', keySet: true })];
-  const realFetch = globalThis.fetch;
-  let picks: Array<{ id: string; model: string }> = [];
-
-  function show(opts: { models: string[]; saves?: boolean } = { models: [] }): void {
-    picks = [];
-    globalThis.fetch = (async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.startsWith('/providers/') && url.includes('/models')) {
-        return new Response(JSON.stringify({ models: opts.models.map(id => ({ id })), source: 'list' }), { headers: { 'content-type': 'application/json' } });
-      }
-      throw new Error(`unexpected fetch: ${url}`);
-    }) as unknown as typeof fetch;
-    render(
-      <YourModels
-        providers={rows}
-        defaultId="xai/grok-4"
-        builtinDefault={false}
-        busy={false}
-        baseURLOf={() => undefined}
-        fileIds={new Set(['xai/grok-4'])}
-        pendingIds={[]}
-        onMakeDefault={() => {}}
-        onPickModel={async (id, model) => {
-          picks.push({ id, model });
-          return opts.saves ?? true;
-        }}
-      />,
-    );
-  }
-
-  afterEach(() => {
-    globalThis.fetch = realFetch;
+  test('a loaded provider no row accounts for still gets a block', () => {
+    const groups = groupProviders([claude, sonnet], '', []);
+    expect(groups.map(g => g.model)).toEqual(['claude-opus-5', 'claude-sonnet-5']);
+    expect(groups.every(g => g.rowKey === undefined)).toBe(true);
   });
 
-  test('typing a model that PASSES THROUGH another one saves only what was chosen', async () => {
-    // xAI really sells both `grok-4` and `grok-4-fast`, and OpenAI both
-    // `gpt-5.6` and `gpt-5.6-mini`. Saving whenever the text spelled a
-    // listed model committed `grok-4` at the sixth keystroke and then reset
-    // the field to it, under the hand still typing `-fast`.
-    show({ models: ['grok-4', 'grok-4-fast'] });
-    await waitFor(() => expect(screen.getByText(/2 models listed/)).toBeTruthy());
-    const user = userEvent.setup({ document });
-    const box = screen.getByLabelText('xAI model');
-    await user.clear(box);
-    await user.type(box, 'grok-4-fast');
-    expect(picks).toEqual([]);
-    expect((box as HTMLInputElement).value).toBe('grok-4-fast');
-  });
-
-  test('a model the list does not carry is saved once, when the field is left', async () => {
-    show({ models: [] });
-    // Let the listing land first: it re-renders the field, and a keystroke
-    // racing that re-render is a test artefact, not a behaviour.
-    await waitFor(() => expect(screen.getByText(/0 models listed/)).toBeTruthy());
-    const user = userEvent.setup({ document });
-    const box = screen.getByLabelText('xAI model');
-    await user.clear(box);
-    await user.type(box, 'grok-5-unreleased');
-    expect(picks).toEqual([]);
-    // The first tab lands on the combo's own toggle, which is still inside
-    // the block — that is not leaving it, and must not save.
-    await user.tab();
-    expect(picks).toEqual([]);
-    await user.tab();
-    await waitFor(() => expect(picks).toEqual([{ id: 'xai/grok-4', model: 'grok-5-unreleased' }]));
-    // Once. `group.model` only catches up when the save returns, so the
-    // guard has to remember what it already sent.
-    await user.tab();
-    expect(picks).toHaveLength(1);
-  });
-
-  test('a save the page refused puts the field back', async () => {
-    // Another row on the page is incomplete, so nothing was written. The
-    // field must not go on showing a model the file does not have.
-    show({ models: [], saves: false });
-    await waitFor(() => expect(screen.getByText(/0 models listed/)).toBeTruthy());
-    const user = userEvent.setup({ document });
-    const box = screen.getByLabelText('xAI model');
-    await user.clear(box);
-    await user.type(box, 'grok-5-unreleased');
-    await user.tab();
-    await user.tab();
-    await waitFor(() => expect(picks).toHaveLength(1));
-    await waitFor(() => expect((box as HTMLInputElement).value).toBe('grok-4'));
-  });
-
-  test('leaving the field having changed nothing saves nothing', async () => {
-    show({ models: ['grok-4'] });
-    await waitFor(() => expect(screen.getByText(/1 model listed/)).toBeTruthy());
-    const user = userEvent.setup({ document });
-    await user.click(screen.getByLabelText('xAI model'));
-    await user.tab();
-    await user.tab();
-    expect(picks).toEqual([]);
+  test('the one that answers leads, then your own rows, then the built-ins', () => {
+    const groups = groupProviders([claude, ollama], 'ollama/gemma4:e4b', [{ key: 'r1', id: 'ollama/gemma4:e4b' }]);
+    expect(groups[0]!.id).toBe('ollama/gemma4:e4b');
   });
 });
 
 describe('which model a block stands for', () => {
-  test('your own row beats a built-in of the same vendor', () => {
-    // `loadRegistry` loads the built-ins FIRST. Without this rule, picking
-    // `qwen3:32b` on the Ollama block saved correctly and then re-rendered
-    // as the built-in `gemma4:e4b` — the pick looked refused.
+  test('your own row leads the built-in of the same vendor', () => {
+    // Both are genuinely loaded, so both are shown — but the one you can
+    // edit comes first. Picking `qwen3:32b` used to save correctly and then
+    // re-render as the built-in `gemma4:e4b`, so the pick looked refused.
     const loaded = [
       provider({ id: 'ollama/gemma4:e4b', auth: 'local', locality: 'local' }),
       provider({ id: 'ollama/qwen3:32b', auth: 'local', locality: 'local' }),
     ];
-    const groups = groupProviders(loaded, 'claude-sub/claude-opus-5', new Set(['ollama/qwen3:32b']));
-    expect(groups).toHaveLength(1);
-    expect(groups[0]!.model).toBe('qwen3:32b');
+    const groups = groupProviders(loaded, 'claude-sub/claude-opus-5', [{ key: 'r1', id: 'ollama/qwen3:32b' }]);
+    expect(groups.map(g => g.model)).toEqual(['qwen3:32b', 'gemma4:e4b']);
+    expect(groups[0]!.rowKey).toBe('r1');
   });
 
   test('the model that answers beats even your own row', () => {
@@ -224,7 +137,7 @@ describe('which model a block stands for', () => {
       provider({ id: 'ollama/gemma4:e4b', auth: 'local', locality: 'local' }),
       provider({ id: 'ollama/qwen3:32b', auth: 'local', locality: 'local' }),
     ];
-    const groups = groupProviders(loaded, 'ollama/gemma4:e4b', new Set(['ollama/qwen3:32b']));
+    const groups = groupProviders(loaded, 'ollama/gemma4:e4b', [{ key: 'r1', id: 'ollama/qwen3:32b' }]);
     expect(groups[0]!.model).toBe('gemma4:e4b');
   });
 
@@ -236,7 +149,7 @@ describe('which model a block stands for', () => {
       provider({ id: 'claude-sub/claude-opus-5', auth: 'subscription' }),
       provider({ id: 'anthropic/claude-opus-5', auth: 'apikey', locality: 'cloud', keySet: true }),
     ];
-    const names = groupProviders(loaded, '', new Set()).map(g => g.name);
+    const names = groupProviders(loaded, '').map(g => g.name);
     expect(new Set(names).size).toBe(2);
   });
 });
@@ -247,7 +160,7 @@ describe('a provider you have added but not saved', () => {
     // model picker and no key — and neither could be supplied in either
     // order: the row will not save without a model, and the vendor will not
     // list models without a key.
-    const groups = groupProviders([], '', new Set(), ['openai/']);
+    const groups = groupProviders([], '', [{ key: 'r1', id: 'openai/' }]);
     expect(groups).toHaveLength(1);
     expect(groups[0]!.prefix).toBe('openai');
     expect(groups[0]!.pending).toBe(true);
@@ -259,27 +172,31 @@ describe('a provider you have added but not saved', () => {
 
   test('a provider already loaded does not get a second block', () => {
     const loaded = [provider({ id: 'openai/gpt-5.6', auth: 'apikey', locality: 'cloud', keySet: true })];
-    const groups = groupProviders(loaded, '', new Set(['openai/gpt-5.6']), ['openai/']);
+    const groups = groupProviders(loaded, '', [{ key: 'r1', id: 'openai/gpt-5.6' }]);
     expect(groups).toHaveLength(1);
     expect(groups[0]!.model).toBe('gpt-5.6');
     expect(groups[0]!.pending).toBeUndefined();
   });
 
   test('a local provider says where it runs even before it is saved', () => {
-    expect(groupProviders([], '', new Set(), ['ollama/'])[0]!.reach.how).toBe('on this machine');
-    expect(groupProviders([], '', new Set(), ['openai/'])[0]!.reach.how).toBe('not set up yet');
+    expect(groupProviders([], '', [{ key: 'r1', id: 'ollama/' }])[0]!.reach.how).toBe('on this machine');
+    expect(groupProviders([], '', [{ key: 'r1', id: 'openai/' }])[0]!.reach.how).toBe('not set up yet');
   });
 
   test('a row with no id yet is still a block — that is where its Id field lives', () => {
     // Added and then invisible was the alternative: the row's only usable
     // control renders inside its block.
-    const [blank] = groupProviders([], '', new Set(), ['']);
+    const [blank] = groupProviders([], '', [{ key: 'r1', id: '' }]);
     expect(blank!.name).toBe('A model');
     expect(blank!.pending).toBe(true);
     expect(blank!.reach.blocked).toBe('give it an id below');
   });
 
-  test('the same pending vendor twice is still one block', () => {
-    expect(groupProviders([], '', new Set(), ['openai/', 'openai/'])).toHaveLength(1);
+  test('two rows of one vendor are two blocks — neither is hidden', () => {
+    const groups = groupProviders([], '', [
+      { key: 'r1', id: 'openai/' },
+      { key: 'r2', id: 'openai/' },
+    ]);
+    expect(groups.map(g => g.rowKey)).toEqual(['r1', 'r2']);
   });
 });

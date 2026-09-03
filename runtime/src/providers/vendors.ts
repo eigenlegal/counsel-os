@@ -166,7 +166,7 @@ const LOCAL_CAPS = { tools: true, caching: false, thinking: false, contextTokens
 const ANTHROPIC_MODELS: VendorModel[] = [
   { id: 'claude-opus-5', contextTokens: 200_000 },
   { id: 'claude-sonnet-5', contextTokens: 200_000 },
-  { id: 'claude-fable-5-1', contextTokens: 200_000 },
+  { id: 'claude-fable-5-1' },
   { id: 'claude-haiku-4-5-20251001', contextTokens: 200_000 },
 ];
 

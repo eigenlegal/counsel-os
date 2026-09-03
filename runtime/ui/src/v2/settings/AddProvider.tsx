@@ -43,7 +43,17 @@ export function AddProvider({ have, onAdd, onAddBlank }: AddProviderProps): JSX.
           {offer.map(v => (
             <li key={v.prefix}>
               {/* One click, one provider. No second button to press. */}
-              <button type="button" className="v2-add-one" onClick={() => onAdd(v)}>
+              <button
+                type="button"
+                className="v2-add-one"
+                onClick={() => {
+                  // Clear any half-typed search: it would otherwise sit
+                  // there with another vendor's "Get a key" link beside the
+                  // provider that was just added.
+                  setPick('');
+                  onAdd(v);
+                }}
+              >
                 <span className="v2-add-name">{v.label ?? v.name}</span>
                 <span className="v2-add-what">{blurb(v)}</span>
               </button>

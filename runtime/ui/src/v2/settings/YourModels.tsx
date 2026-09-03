@@ -26,21 +26,9 @@ export interface YourModelsProps {
    * the practice saved. */
   builtinDefault: boolean;
   busy: boolean;
-  /** A saved row's base URL for this vendor, so a local runner's model list
-   * is asked for at the right address. */
-  baseURLOf(prefix: string): string | undefined;
-  /** An enterprise row's non-secret fields (a Bedrock region, an Azure
-   * resource). They name WHERE to ask, so without them that vendor's
-   * listing can only answer with an error. */
-  extraOf?(prefix: string): Record<string, string> | undefined;
-  /** The ids this practice's own file names, so a saved row is shown over a
-   * built-in of the same vendor. */
-  fileIds: ReadonlySet<string>;
-  /** Rows added but not saved yet. A provider you just picked gets its
-   * block AT ONCE — its key and its model are chosen on the block, and
-   * before this it had neither: the row could not be saved without a model,
-   * and the vendor would not list models without a key. */
-  pendingIds: readonly string[];
+  /** The practice's own rows, in file order. Each gets a block; a loaded
+   * provider no row accounts for gets one too. */
+  rows: readonly ProviderEntry[];
   /** The key control for a provider, supplied by the page (this component
    * knows nothing about the settings view). */
   renderKey?(group: ProviderGroup): JSX.Element | null;
@@ -122,8 +110,14 @@ export function reachOf(p: ProviderInfo): Reach {
   }
 }
 
-/** One provider, and every model of it the runtime has loaded. */
+/** One provider entry: a row of the practice's file, or a loaded built-in. */
 export interface ProviderGroup {
+  /** Stable across every edit to the row — what React keys the block on,
+   * and what the page looks the row up by. */
+  key: string;
+  /** The form row this block edits. Absent for a built-in, which the
+   * practice's file does not name. */
+  rowKey?: string;
   prefix: string;
   name: string;
   reach: Reach;
@@ -138,50 +132,70 @@ export interface ProviderGroup {
 }
 
 /**
- * The loaded ids, folded into one block per provider.
+ * One block per PROVIDER ENTRY: every row of the practice's own file, plus
+ * every loaded provider no row accounts for (the built-ins).
  *
- * A vendor can hold more than one loaded model — the built-in Ollama plus
- * the Ollama row you saved. The block shows the one in play, in this order:
+ * It used to fold by vendor prefix, and three things went wrong at once,
+ * all of them the same mistake — addressing a row by something that is not
+ * its identity:
  *
- *   1. the model that answers, if it is this vendor's;
- *   2. the model YOUR FILE names, over a built-in;
- *   3. whatever loaded first.
+ * - Two rows of one vendor collapsed into one block. The second became
+ *   invisible: no fields, no Remove, and its validation errors had nowhere
+ *   to render, so Save refused with nothing marked.
+ * - The block showed one row's model over another row's fields, because
+ *   the block picked its identity by rank and its details by "first row
+ *   with this prefix". Remove then deleted the provider you were not
+ *   looking at.
+ * - The block was KEYED on the prefix, which changes with every keystroke
+ *   in an Id field — so typing remounted the block and dropped focus after
+ *   each character.
  *
- * Rule 2 is not a nicety. `loadRegistry` puts the built-ins ahead of the
- * file, so without it, picking `qwen3:32b` on the Ollama block saved
- * correctly and then re-rendered as `gemma4:e4b` — the built-in, still
- * first, still not the default. The pick looked like it had been refused.
- * The others stay loaded and stay nameable by a task route; they are just
- * not a second block to read past.
+ * A row's `key` is stable for its lifetime. That is the identity.
  */
-export function groupProviders(
-  providers: ProviderInfo[],
-  defaultId: string,
-  fileIds: ReadonlySet<string> = new Set(),
-  pendingIds: readonly string[] = [],
-): ProviderGroup[] {
-  const groups = new Map<string, { group: ProviderGroup; rank: number }>();
-  for (const p of providers) {
-    const prefix = prefixOf(p.id);
-    const { vendor, model } = nameOf(p.id);
-    const rank = p.id === defaultId.trim() ? 0 : fileIds.has(p.id) ? 1 : 2;
-    const existing = groups.get(prefix);
-    if (existing !== undefined && existing.rank <= rank) continue;
-    groups.set(prefix, { rank, group: { prefix, name: vendor, reach: reachOf(p), model, id: p.id } });
-  }
-  // A provider added but not saved has no loaded model to speak for it. It
-  // still gets a block: the block is where its key and its model are set,
-  // and both have to happen before there is anything to save.
-  for (const id of pendingIds) {
-    const prefix = prefixOf(id);
-    if (groups.has(prefix)) continue;
+export interface ProviderEntry {
+  /** Stable for the row's life, across every edit to its id. */
+  key: string;
+  id: string;
+  baseURL?: string;
+  extra?: Record<string, string>;
+}
+
+export function groupProviders(providers: ProviderInfo[], defaultId: string, rows: readonly ProviderEntry[] = []): ProviderGroup[] {
+  const groups: ProviderGroup[] = [];
+  const claimed = new Set<string>();
+  for (const row of rows) {
+    const id = row.id.trim();
+    const live = providers.find(p => p.id === id);
+    if (live !== undefined) claimed.add(live.id);
     const { vendor, model } = nameOf(id);
-    // A row with no id at all still needs a block: it is where its own Id
-    // field lives, and without one the row was added and then invisible.
-    const name = prefix === '' ? 'A model' : vendor;
-    groups.set(prefix, { rank: 3, group: { prefix, name, reach: pendingReach(prefix), model, id, pending: true } });
+    groups.push({
+      key: `row:${row.key}`,
+      rowKey: row.key,
+      prefix: prefixOf(id),
+      // A row with no id yet is still a block: it is where its own Id field
+      // lives, and without one the row was added and then invisible.
+      name: id === '' ? 'A model' : vendor,
+      reach: live === undefined ? pendingReach(prefixOf(id)) : reachOf(live),
+      model,
+      id,
+      ...(live === undefined ? { pending: true } : {}),
+    });
   }
-  return [...groups.values()].map(entry => entry.group);
+  // The built-ins, and anything `serve --fake` added: loaded, real, and
+  // not the practice's to edit.
+  for (const p of providers) {
+    if (claimed.has(p.id)) continue;
+    const { vendor, model } = nameOf(p.id);
+    groups.push({ key: `id:${p.id}`, prefix: prefixOf(p.id), name: vendor, reach: reachOf(p), model, id: p.id });
+  }
+  // The one that answers leads; a row you saved before a built-in.
+  return groups.sort((a, b) => rank(a, defaultId) - rank(b, defaultId));
+}
+
+function rank(g: ProviderGroup, defaultId: string): number {
+  if (g.id !== '' && g.id === defaultId.trim()) return 0;
+  if (g.rowKey !== undefined) return 1;
+  return 2;
 }
 
 /** What an unsaved provider still needs, from the catalog alone. */
@@ -192,8 +206,9 @@ function pendingReach(prefix: string): Reach {
   return { how, usable: false, blocked: 'pick a model to finish' };
 }
 
-export function YourModels({ providers, defaultId, builtinDefault, busy, baseURLOf, extraOf, fileIds, pendingIds, renderKey, renderDetails, relist, onMakeDefault, onPickModel }: YourModelsProps): JSX.Element {
-  const groups = groupProviders(providers, defaultId, fileIds, pendingIds);
+export function YourModels({ providers, defaultId, builtinDefault, busy, rows, renderKey, renderDetails, relist, onMakeDefault, onPickModel }: YourModelsProps): JSX.Element {
+  const groups = groupProviders(providers, defaultId, rows);
+  const rowOf = (group: ProviderGroup): ProviderEntry | undefined => rows.find(r => r.key === group.rowKey);
   if (groups.length === 0) {
     return <p className="muted">No provider is set up. Add one below.</p>;
   }
@@ -201,13 +216,13 @@ export function YourModels({ providers, defaultId, builtinDefault, busy, baseURL
     <ul className="v2-yours" aria-label="Providers you can use">
       {groups.map(group => (
         <ProviderBlock
-          key={group.prefix}
+          key={group.key}
           group={group}
           isDefault={group.id === defaultId.trim()}
           builtinDefault={builtinDefault}
           busy={busy}
-          baseURL={baseURLOf(group.prefix)}
-          extra={extraOf?.(group.prefix)}
+          baseURL={rowOf(group)?.baseURL}
+          extra={rowOf(group)?.extra}
           {...(renderKey === undefined ? {} : { renderKey })}
           {...(renderDetails === undefined ? {} : { renderDetails })}
           relistN={relist != null && relist.prefix === group.prefix ? relist.n : 0}
@@ -318,8 +333,8 @@ function ProviderBlock({ group, isDefault, builtinDefault, busy, baseURL, extra,
         }}
       >
         <ModelCombo
-          id={`v2-model-${group.prefix}`}
-          label={`${group.name} model`}
+          id={`v2-model-${group.key.replace(/[^A-Za-z0-9_-]/g, '-')}`}
+          label={group.name === 'A model' ? 'Model' : `${group.name} model`}
           value={text}
           models={models}
           placeholder={loading ? 'listing…' : 'pick or type a model'}

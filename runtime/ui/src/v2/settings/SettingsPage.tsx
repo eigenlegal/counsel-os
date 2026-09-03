@@ -4,7 +4,7 @@ import type { Health as HealthData, SettingsErrorBody, SettingsView } from '../.
 import { Health } from '../../settings/Health';
 import { ProviderCombo } from '../../settings/ProviderCombo';
 import { ProviderTest } from '../../settings/ProviderTest';
-import { dataLineFor, isEnterpriseVendor, keyBelongsToRow, makesLine, pickerLabel, prefixOf, searchVendors, vendorByPickerLabel, vendorFor } from '../vendors';
+import { dataLineFor, isEnterpriseVendor, keyBelongsToRow, prefixOf, vendorFor } from '../vendors';
 import { EnterpriseFields } from './EnterpriseFields';
 import { KeyControl } from './KeyControl';
 import { AddProvider } from './AddProvider';
@@ -131,26 +131,12 @@ function seedDefault(form: FormState, view: SettingsView): FormState {
   return { ...form, default: effective };
 }
 
-/**
- * The picker's options for a query.
- *
- * An empty box offers the whole catalog. A query that finds nothing offers
- * NOTHING — falling back to everything looked like thirty-odd matches: type
- * `gemini pro` (no vendor's text holds `pro`) and the list answered with
- * every vendor there is, as if all of them served it.
- */
-function searchOptions(query: string): string[] {
-  return searchVendors(query).map(pickerLabel);
-}
-
 function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: SettingsView): void }): JSX.Element {
   const [form, setForm] = useState<FormState>(() => seedDefault(formFromRegistry(view.registry), view));
   const [errors, setErrors] = useState<FieldErrors>({});
   const [general, setGeneral] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
-  /** The catalog picker's text (providers spec §3). */
-  const [pick, setPick] = useState('');
   /** The provider whose key last changed, so its model list is re-asked. */
   const [relist, setRelist] = useState<{ prefix: string; n: number } | null>(null);
 
@@ -245,13 +231,6 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
    * be saved. */
   const haveVendor = (prefix: string): boolean =>
     effectiveIds.some(id => prefixOf(id) === prefix) || form.providers.some(r => prefixOf(r.id.trim()) === prefix);
-
-  /** A saved row's base URL for a vendor, so a local runner's model list is
-   * asked for at the address that row names rather than the preset. */
-  const baseURLOf = (prefix: string): string | undefined => {
-    const row = form.providers.find(r => prefixOf(r.id.trim()) === prefix && r.baseURL.trim() !== '');
-    return row?.baseURL.trim();
-  };
 
   /**
    * Run a provider on a different model.
@@ -395,11 +374,15 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
       {row.id.trim() === '' ? 'name it below' : <code>{row.id.trim()}</code>}
     </span>
       </p>
-      {rowVendor === undefined ? <div className="v2-provider-main">{idField}</div> : null}
-      <details className="v2-provider-advanced" open={rowHasError}>
+      {/* The Id field NEVER moves. It used to render outside the fold while
+          the vendor was unrecognised and inside it once it was — so typing
+          `openai` into a blank row moved the input to a new parent at the
+          sixth character, remounting it and dropping focus mid-word. The
+          fold just opens instead. */}
+      <details className="v2-provider-advanced" open={rowHasError || rowVendor === undefined}>
     <summary>the rest of this row</summary>
       <div className="v2-provider-grid">
-    {rowVendor === undefined ? null : idField}
+    {idField}
     <div className="field">
       <label htmlFor={`v2-${row.key}-baseurl`}>baseURL</label>
       <input id={`v2-${row.key}-baseurl`} value={row.baseURL} placeholder={enterprise ? 'optional — a private endpoint' : 'https://…'} onChange={e => patchRow(index, { baseURL: e.target.value })} />
@@ -454,12 +437,15 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
       <button
     type="button"
     className="v2-link v2-remove"
+    // Named for the provider, not for its position in the file: this sits
+    // on that provider's own block, where "provider 2" means nothing.
+    aria-label={`Remove ${row.id.trim() === '' ? 'this provider' : row.id.trim()}`}
     onClick={() => {
       patch({ providers: form.providers.filter((_, i) => i !== index) });
       setErrors({});
     }}
       >
-    Remove provider {index + 1}
+    remove this provider
       </button>
     </div>
     );
@@ -490,15 +476,16 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
           defaultId={form.default}
           builtinDefault={showingBuiltin}
           busy={busy}
-          baseURLOf={baseURLOf}
           onMakeDefault={id => void save({ default: id })}
-          fileIds={new Set(form.providers.map(r => r.id.trim()))}
-          // A provider you just added is not loaded yet, so nothing in
-          // `effective` speaks for it. Its block comes from the form row.
-          pendingIds={form.providers.map(r => r.id.trim()).filter(id => !effectiveIds.includes(id))}
-          extraOf={prefix => form.providers.find(r => prefixOf(r.id.trim()) === prefix)?.extra}
+          // Every row of the practice's file gets a block — including one
+          // added a moment ago, which nothing in `effective` speaks for yet.
+          rows={form.providers.map(r => ({ key: r.key, id: r.id, baseURL: r.baseURL.trim() === '' ? undefined : r.baseURL, extra: r.extra }))}
+          // BY THE ROW'S KEY, never by its prefix: two rows can share a
+          // vendor, and a block was showing one row's model over another
+          // row's fields — with a Remove button that deleted the provider
+          // you were not looking at.
           renderKey={group => keyControlFor(group.id)}
-          renderDetails={group => providerDetails(form.providers.findIndex(r => prefixOf(r.id.trim()) === group.prefix))}
+          renderDetails={group => providerDetails(form.providers.findIndex(r => r.key === group.rowKey))}
           relist={relist}
           onPickModel={pickModel}
         />
