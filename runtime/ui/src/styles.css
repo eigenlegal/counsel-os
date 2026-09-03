@@ -674,7 +674,7 @@ a { color: var(--accent); }
 .v2-outline .on { color: var(--fg); }
 @media (max-width: 1200px) { .v2-outline { display: none; } }
 .v2-askbar { position: sticky; bottom: 24px; display: flex; justify-content: center; margin-top: 40px; }
-.v2-askbar button { background: var(--bg-hover); border: 1px solid var(--border-strong); color: var(--fg); border-radius: 999px; padding: 9px 18px; font-size: var(--t-body); box-shadow: var(--shadow); }
+.v2-askbar button { background: var(--bg-hover); border: 1px solid var(--border-strong); color: var(--fg); border-radius: var(--radius); padding: 0 18px; font-size: var(--t-body); box-shadow: var(--shadow); }
 .v2-askbar b { color: var(--accent); }
 
 /* ── v2 settings ──────────────────────────────────────────────────────── */
@@ -740,7 +740,7 @@ a { color: var(--accent); }
 .v2-ask textarea { width: 100%; background: none; border: none; color: var(--fg); font: var(--t-body)/1.5 var(--sans); resize: none; outline: none; padding: 0; }
 .v2-ask textarea::placeholder { color: var(--fg-faint); }
 .v2-ask-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
-.v2-ask-chip { font-size: var(--t-small); color: var(--fg-muted); border: 1px solid var(--border-strong); border-radius: 999px; padding: 3px 10px; background: var(--bg); cursor: pointer; }
+.v2-ask-chip { font-size: var(--t-small); color: var(--fg-muted); border: 1px solid var(--border); border-radius: var(--radius); padding: 3px 10px; background: var(--bg); cursor: pointer; min-height: unset; }
 .v2-ask-attached { font-family: var(--mono); }
 .v2-ask-attached::after { content: " ×"; color: var(--fg-faint); }
 /* Document intake (docx spec §6): the drop zone is a dashed inset drawn
@@ -754,7 +754,7 @@ a { color: var(--accent); }
 .v2-composer-matter .v2-tag { font-size: var(--t-micro); }
 .v2-composer-matter-title { color: var(--fg); }
 .v2-composer-actions .v2-ask-chip { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.v2-ask-go { margin-left: auto; background: var(--accent); color: var(--accent-ink); border: none; border-radius: 9px; padding: 7px 16px; font-weight: 600; font-size: var(--t-body); cursor: pointer; }
+.v2-ask-go { margin-left: auto; padding: 0 16px; }
 .v2-ask-go:disabled { opacity: 0.5; cursor: default; }
 .v2-ask-picker { margin-top: 10px; max-height: 16rem; overflow-y: auto; border-top: 1px solid var(--border); }
 .v2-ask-picker .vault-tree { border-right: none; background: transparent; }
@@ -787,7 +787,7 @@ a { color: var(--accent); }
 .v2-home-card .v2-notice { margin: 10px 0 0; font-size: var(--t-body); }
 
 .v2-starters { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 26px; }
-.v2-starters button { background: none; border: 1px solid var(--border); color: var(--fg-muted); border-radius: 999px; padding: 6px 13px; font-size: var(--t-small); cursor: pointer; }
+.v2-starters button { background: none; border: 1px solid var(--border); color: var(--fg-muted); border-radius: var(--radius); padding: 0 13px; font-size: var(--t-small); cursor: pointer; }
 
 .v2-home-cols { display: grid; grid-template-columns: 1.5fr 1fr; gap: 36px; }
 .v2-home-card { min-width: 0; }
@@ -906,7 +906,8 @@ a { color: var(--accent); }
 .v2-composer-box textarea { width: 100%; background: none; border: none; color: var(--fg); font: var(--t-body)/1.5 var(--sans); resize: none; outline: none; padding: 0; }
 .v2-composer-actions { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
 .v2-composer-hint { margin-left: auto; font-size: var(--t-small); }
-.v2-primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.v2-primary, .v2-ask-go { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.v2-primary:hover, .v2-ask-go:hover { background: var(--accent-2); border-color: var(--accent-2); }
 
 /* The transcript column narrows to the mock's 720px measure. */
 .v2-turn { max-width: 720px; }
