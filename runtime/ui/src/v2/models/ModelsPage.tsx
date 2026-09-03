@@ -17,6 +17,7 @@ import type { Health } from '../../api/types';
 import { ModelsGroup } from './ModelsGroup';
 import { FixtureSet } from './FixtureSet';
 import { RoutingLedger } from './RoutingLedger';
+import { RoutingTable } from './RoutingTable';
 
 export interface ModelsPageProps {
   /** Never null: the shell holds this page back until `/health` answers, the
@@ -40,6 +41,15 @@ export function ModelsPage({ health }: ModelsPageProps): JSX.Element {
           calls.
         </p>
         <ModelsGroup providerIds={providerIds} />
+      </section>
+
+      <section className="v2-group" aria-labelledby="models-routing">
+        <h2 id="models-routing">How work is routed</h2>
+        <p className="muted">
+          Every kind of work, and the rule that picks a model for it: the score a model has to clear, what breaks a tie between models that clear it, and a
+          pin when you want one model regardless. A task nobody has set routes on the defaults.
+        </p>
+        <RoutingTable fallback={health.default} />
       </section>
 
       <section className="v2-group" aria-labelledby="models-set">

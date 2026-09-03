@@ -1299,3 +1299,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
    rather than as a failure, because it is neither. */
 .v2-fixture-idle .v2-fixture-id { color: var(--fg-muted); }
 .v2-fixture-why { color: var(--fg-faint); font-size: var(--t-small); }
+
+/* How work is routed: one row per task in the taxonomy. */
+.v2-routing-table { width: 100%; border-collapse: collapse; font-size: var(--t-body); }
+.v2-routing-table th, .v2-routing-table td { text-align: left; font-weight: 400; padding: 5px 0.9rem 5px 0; border-bottom: 1px solid var(--border); vertical-align: baseline; }
+.v2-routing-table thead th { font: 600 var(--t-micro)/1.6 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-faint); }
+.v2-routing-table tbody th { color: var(--fg); width: 7rem; }
+.v2-routing-picks { color: var(--fg-muted); font-family: var(--mono); font-size: var(--t-small); }
+/* A task nobody has set is on the defaults; it reads as quiet, not absent. */
+.v2-routing-untouched tbody th, .v2-routing-untouched > th { color: var(--fg-muted); }
+.v2-routing-why { color: var(--fg-faint); font-family: var(--sans); margin-left: 0.4rem; }
