@@ -1188,3 +1188,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .v2-provider-advanced > summary { cursor: pointer; color: var(--fg-faint); font-size: 12.5px; margin: 4px 0 6px; }
 .v2-yours-row .v2-provider { margin: 0; }
 .v2-yours-row .v2-provider-head { display: none; }
+
+/* The runtime has been up long enough to have drifted from the code on disk. */
+.v2-stale { color: var(--warn); }

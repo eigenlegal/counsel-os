@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ApiError, setVaultOutcomes, signOut } from '../api/client';
 import { dataLineOf } from '../v2/vendors';
-import type { Health as HealthData, SettingsView } from '../api/types';
+import type { Health as HealthData, RuntimeBuild, SettingsView } from '../api/types';
 
 export interface HealthProps {
   /** `GET /health` — where the vault and the tenant come from. `null` while
@@ -70,6 +70,13 @@ export function Health({ health, effective, file, secrets }: HealthProps): JSX.E
       <h2>Runtime</h2>
       <p className="muted">What is actually running right now — the file above plus the built-ins. Read-only; when a setting does not seem to take, compare it against this.</p>
       <dl className="facts">
+        <div className="fact">
+          <dt>
+            Running
+            <span className="leader" aria-hidden="true" />
+          </dt>
+          <dd>{health === null ? '…' : <RunningBuild build={health.runtime} />}</dd>
+        </div>
         <div className="fact">
           <dt>
             Vault
@@ -181,4 +188,45 @@ export function Health({ health, effective, file, secrets }: HealthProps): JSX.E
       )}
     </section>
   );
+}
+
+/**
+ * What the server process is running, and how long it has been running it.
+ *
+ * The age is the point. `serve` reads its code once, at startup, and then
+ * keeps answering from it while the checkout moves on — but it serves the
+ * UI from disk, so the page in front of you can be hours newer than the
+ * runtime behind it. That mismatch cost a morning: the page said "ChatGPT
+ * does not publish a model list" long after it did.
+ */
+function RunningBuild({ build }: { build: RuntimeBuild | undefined }): JSX.Element {
+  // Absent is itself the answer: a runtime too old to say.
+  if (build === undefined) return <span className="muted">an older runtime — restart it to see which</span>;
+  const started = new Date(build.startedAt);
+  const hours = (Date.now() - started.getTime()) / 3_600_000;
+  return (
+    <>
+      <code>{build.version}</code>
+      {build.commit === undefined ? null : (
+        <>
+          {' · '}
+          <code>{build.commit}</code>
+        </>
+      )}
+      {' · '}
+      {ageOf(hours)}
+      {/* Only from a checkout: a binary runs what it was compiled with and
+          cannot drift from it. */}
+      {build.source === 'source' && hours >= 1 ? (
+        <span className="v2-stale"> · restart to pick up changes made since</span>
+      ) : null}
+    </>
+  );
+}
+
+function ageOf(hours: number): string {
+  if (hours < 1 / 60) return 'started just now';
+  if (hours < 1) return `started ${Math.round(hours * 60)} minutes ago`;
+  if (hours < 24) return `started ${Math.round(hours)} hour${Math.round(hours) === 1 ? '' : 's'} ago`;
+  return `started ${Math.round(hours / 24)} day${Math.round(hours / 24) === 1 ? '' : 's'} ago`;
 }

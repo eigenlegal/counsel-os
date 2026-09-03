@@ -66,3 +66,52 @@ describe('the Decisions and marks switch (routing-and-evals spec §7)', () => {
     expect(screen.getByText(/kept locally · on/)).toBeTruthy();
   });
 });
+
+describe('what the running process is', () => {
+  const withBuild = (over: Partial<NonNullable<HealthData['runtime']>>): HealthData => ({
+    ...health,
+    runtime: { version: '0.14.0', startedAt: new Date().toISOString(), source: 'source', ...over },
+  });
+
+  test('names the version and the commit the process read', () => {
+    install(() => json({ outcomes: true }));
+    render(<Health health={withBuild({ commit: 'abc1234' })} effective={effective} file="/f.yaml" />);
+    const running = screen.getByText('Running').closest('.fact')!;
+    expect(running.textContent).toContain('0.14.0');
+    expect(running.textContent).toContain('abc1234');
+    expect(running.textContent).toMatch(/started .* ago|started just now/);
+  });
+
+  test('a process older than an hour says to restart it', () => {
+    // The actual failure: a serve left up overnight kept answering from the
+    // catalog it was born with, while handing the browser a UI rebuilt that
+    // morning. Nothing on screen said so.
+    install(() => json({ outcomes: true }));
+    const yesterday = new Date(Date.now() - 19 * 3_600_000).toISOString();
+    render(<Health health={withBuild({ startedAt: yesterday })} effective={effective} file="/f.yaml" />);
+    const running = screen.getByText('Running').closest('.fact')!;
+    expect(running.textContent).toContain('19 hours ago');
+    expect(running.textContent).toContain('restart to pick up changes made since');
+  });
+
+  test('a fresh process does not nag', () => {
+    install(() => json({ outcomes: true }));
+    render(<Health health={withBuild({})} effective={effective} file="/f.yaml" />);
+    expect(screen.getByText('Running').closest('.fact')!.textContent).not.toContain('restart to pick up');
+  });
+
+  test('a compiled binary is never called stale — it cannot drift', () => {
+    install(() => json({ outcomes: true }));
+    const old = new Date(Date.now() - 40 * 3_600_000).toISOString();
+    render(<Health health={withBuild({ source: 'binary', startedAt: old })} effective={effective} file="/f.yaml" />);
+    const running = screen.getByText('Running').closest('.fact')!;
+    expect(running.textContent).toContain('2 days ago');
+    expect(running.textContent).not.toContain('restart to pick up');
+  });
+
+  test('a runtime too old to say so says that', () => {
+    install(() => json({ outcomes: true }));
+    render(<Health health={health} effective={effective} file="/f.yaml" />);
+    expect(screen.getByText(/an older runtime — restart it to see which/)).toBeTruthy();
+  });
+});

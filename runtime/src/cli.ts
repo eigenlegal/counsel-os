@@ -58,6 +58,7 @@ const { values, positionals } = parseArgs({
     'fake-script': { type: 'string' }, // `serve`: a JSON array of FakeScript steps for --fake
     open: { type: 'boolean' },        // `serve`: open the printed token URL in the browser
     'new-token': { type: 'boolean' }, // `serve`: mint a fresh bearer (signs every browser out)
+    watch: { type: 'boolean' },       // `serve`: restart when the runtime's own source changes
     dist: { type: 'string' },         // `serve`: the built UI to serve (default runtime/ui/dist)
     // `init` — the first-run answers as flags (spec 2026-09-01 §4); a
     // missing one is asked on stdin unless `--yes`.
@@ -103,7 +104,7 @@ const SELF = isCompiled() ? 'counsel-os' : 'bun runtime/src/cli.ts';
 
 function usage(): never {
   console.error('usage: bun runtime/src/cli.ts step --vault <dir> --provider <id> [--task <name>] [--schema <json>] [--session <id>] [--codex-home <dir>] [--cwd <dir>] [--step-timeout <ms>] "<prompt>"');
-  console.error('       bun runtime/src/cli.ts serve [--port <n>] [--vault <dir>] [--step-timeout <ms>] [--dist <dir>] [--open] [--new-token] [--fake [--fake-script <file.json>]]');
+  console.error('       bun runtime/src/cli.ts serve [--port <n>] [--vault <dir>] [--step-timeout <ms>] [--dist <dir>] [--open] [--new-token] [--watch] [--fake [--fake-script <file.json>]]');
   console.error('         --dist <dir> is the built UI; everything in it is served WITHOUT a token, so it must not overlap the vault');
   console.error('       bun runtime/src/cli.ts init [--vault <dir>] [--name <n> --org <o> --role in-house|outside|solo --jurisdiction <j> --practice "<one line>"] [--default-provider <id>] [--no-git] [--yes]');
   console.error('         creates a Counsel OS vault (default ~/Documents/Counsel OS) and seeds it; asks for anything missing unless --yes');
@@ -268,6 +269,34 @@ function fakeScript(file: string | undefined): FakeScript[] {
 // keeps the process alive, and the signal handlers startServer installs are
 // what remove ~/.counsel-os/runtime.json on the way out.
 if (cmd === 'serve') {
+  /**
+   * `--watch`: restart when the runtime's own source changes.
+   *
+   * A serve reads its code ONCE, at startup, and then keeps answering from
+   * it — while serving the UI from disk, which a rebuild updates underneath.
+   * A server left up overnight therefore hands you a new page driven by an
+   * old runtime, with nothing on screen to say so. (There is something on
+   * screen now: Settings › Runtime reports what the process is running and
+   * how long it has been running it.)
+   *
+   * Bun already has a watcher, and it is a flag to `bun` rather than
+   * anything a running script can switch on for itself — so re-exec once,
+   * under it, and let it own the restarts.
+   */
+  if (values.watch) {
+    if (isCompiled()) {
+      console.error('--watch needs a source checkout: a compiled binary runs what it was built with and cannot reload.');
+      process.exit(2);
+    }
+    // `Bun.argv` is [bun, entry, ...args]; keep the entry and drop the flag
+    // so the child does not re-exec forever.
+    const passthrough = Bun.argv.slice(1).filter(a => a !== '--watch');
+    const child = Bun.spawn(['bun', '--watch', ...passthrough], { stdio: ['inherit', 'inherit', 'inherit'] });
+    // Ctrl-C reaches the child through the terminal's process group; this
+    // waits on it so the parent does not exit out from under it.
+    process.exit(await child.exited);
+  }
+
   // A script with no `--fake` is a mistake worth naming: the file would be
   // read, ignored, and the real providers used.
   if (values['fake-script'] !== undefined && !values.fake) {
