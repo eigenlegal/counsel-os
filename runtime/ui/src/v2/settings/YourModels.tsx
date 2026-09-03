@@ -32,6 +32,18 @@ export interface YourModelsProps {
   /** The ids this practice's own file names, so a saved row is shown over a
    * built-in of the same vendor. */
   fileIds: ReadonlySet<string>;
+  /** Rows added but not saved yet. A provider you just picked gets its
+   * block AT ONCE — its key and its model are chosen on the block, and
+   * before this it had neither: the row could not be saved without a model,
+   * and the vendor would not list models without a key. */
+  pendingIds: readonly string[];
+  /** The key control for a provider, supplied by the page (this component
+   * knows nothing about the settings view). */
+  renderKey?(group: ProviderGroup): JSX.Element | null;
+  /** A provider whose key just changed, and a counter so the same provider
+   * twice still counts. Its model list is re-asked: the key is usually the
+   * whole reason the vendor would not answer. */
+  relist?: { prefix: string; n: number } | null;
   onMakeDefault(id: string): void;
   /**
    * Run a provider on a different model. `id` is the block's OWN current id,
@@ -113,6 +125,8 @@ export interface ProviderGroup {
   /** The full id of that model, which is what the default and the routes
    * actually name. */
   id: string;
+  /** Added, not saved. It cannot answer or be the default yet. */
+  pending?: boolean;
 }
 
 /**
@@ -132,7 +146,12 @@ export interface ProviderGroup {
  * The others stay loaded and stay nameable by a task route; they are just
  * not a second block to read past.
  */
-export function groupProviders(providers: ProviderInfo[], defaultId: string, fileIds: ReadonlySet<string> = new Set()): ProviderGroup[] {
+export function groupProviders(
+  providers: ProviderInfo[],
+  defaultId: string,
+  fileIds: ReadonlySet<string> = new Set(),
+  pendingIds: readonly string[] = [],
+): ProviderGroup[] {
   const groups = new Map<string, { group: ProviderGroup; rank: number }>();
   for (const p of providers) {
     const prefix = prefixOf(p.id);
@@ -142,16 +161,33 @@ export function groupProviders(providers: ProviderInfo[], defaultId: string, fil
     if (existing !== undefined && existing.rank <= rank) continue;
     groups.set(prefix, { rank, group: { prefix, name: vendor, reach: reachOf(p), model, id: p.id } });
   }
+  // A provider added but not saved has no loaded model to speak for it. It
+  // still gets a block: the block is where its key and its model are set,
+  // and both have to happen before there is anything to save.
+  for (const id of pendingIds) {
+    const prefix = prefixOf(id);
+    if (prefix === '' || groups.has(prefix)) continue;
+    const { vendor, model } = nameOf(id);
+    groups.set(prefix, { rank: 3, group: { prefix, name: vendor, reach: pendingReach(prefix), model, id, pending: true } });
+  }
   return [...groups.values()].map(entry => entry.group);
 }
 
-export function YourModels({ providers, defaultId, builtinDefault, busy, baseURLOf, fileIds, onMakeDefault, onPickModel }: YourModelsProps): JSX.Element {
-  if (providers.length === 0) {
+/** What an unsaved provider still needs, from the catalog alone. */
+function pendingReach(prefix: string): Reach {
+  const connection = vendorFor(prefix)?.connection;
+  const how = connection === 'local' ? 'on this machine' : connection === 'subscription' ? 'your subscription' : 'not set up yet';
+  return { how, usable: false, blocked: 'pick a model to finish' };
+}
+
+export function YourModels({ providers, defaultId, builtinDefault, busy, baseURLOf, fileIds, pendingIds, renderKey, relist, onMakeDefault, onPickModel }: YourModelsProps): JSX.Element {
+  const groups = groupProviders(providers, defaultId, fileIds, pendingIds);
+  if (groups.length === 0) {
     return <p className="muted">No provider is set up. Add one below.</p>;
   }
   return (
     <ul className="v2-yours" aria-label="Providers you can use">
-      {groupProviders(providers, defaultId, fileIds).map(group => (
+      {groups.map(group => (
         <ProviderBlock
           key={group.prefix}
           group={group}
@@ -159,6 +195,8 @@ export function YourModels({ providers, defaultId, builtinDefault, busy, baseURL
           builtinDefault={builtinDefault}
           busy={busy}
           baseURL={baseURLOf(group.prefix)}
+          {...(renderKey === undefined ? {} : { renderKey })}
+          relistN={relist != null && relist.prefix === group.prefix ? relist.n : 0}
           onMakeDefault={onMakeDefault}
           onPickModel={onPickModel}
         />
@@ -173,16 +211,27 @@ interface ProviderBlockProps {
   builtinDefault: boolean;
   busy: boolean;
   baseURL: string | undefined;
+  renderKey?(group: ProviderGroup): JSX.Element | null;
+  relistN: number;
   onMakeDefault(id: string): void;
   onPickModel(id: string, model: string): Promise<boolean>;
 }
 
-function ProviderBlock({ group, isDefault, builtinDefault, busy, baseURL, onMakeDefault, onPickModel }: ProviderBlockProps): JSX.Element {
+function ProviderBlock({ group, isDefault, builtinDefault, busy, baseURL, renderKey, relistN, onMakeDefault, onPickModel }: ProviderBlockProps): JSX.Element {
   // A prefix the catalog does not know (`serve --fake`, a hand-edited id)
   // has nowhere to ask, so do not ask.
   const known = vendorFor(group.prefix) !== undefined;
   const { result, loading, refresh } = useModels(known ? group.prefix : null, baseURL);
   const models = result?.models ?? [];
+  // Ask again when this provider's key changes: "No key for OpenAI yet" is
+  // the commonest reason the list is empty, and having pasted one, nobody
+  // should have to find a `refresh` link to see the models it just bought.
+  useEffect(() => {
+    if (relistN > 0) refresh();
+    // `refresh` is stable for a given prefix; re-running on its identity
+    // would re-ask on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [relistN]);
   // The combo reports every KEYSTROKE, so the text is held here and saved
   // only when it is really chosen: `onSelect` (picked from the list) or the
   // field being left (a model the list does not carry).
@@ -267,6 +316,10 @@ function ProviderBlock({ group, isDefault, builtinDefault, busy, baseURL, onMake
           </button>
         </p>
       </div>
+      {/* The key belongs to the PROVIDER, so it belongs on the provider's
+          block — and it has to come before the model, because most vendors
+          will not list their models without it. */}
+      {renderKey?.(group) ?? null}
     </li>
   );
 }

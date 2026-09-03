@@ -128,6 +128,7 @@ describe('choosing a model on a provider block', () => {
         busy={false}
         baseURLOf={() => undefined}
         fileIds={new Set(['xai/grok-4'])}
+        pendingIds={[]}
         onMakeDefault={() => {}}
         onPickModel={async (id, model) => {
           picks.push({ id, model });

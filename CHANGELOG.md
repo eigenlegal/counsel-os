@@ -8,6 +8,13 @@ reconstructed from git history. New entries are prepended automatically by
 
 ## [Unreleased]
 
+Adding a provider actually works now
+
+- A provider you add gets its **block straight away**, with its key and its model picker on it. Before this it appeared only as a stub down in "Rows you added", and the two things it needed were impossible to do in either order: the row would not save without a model, and the vendor would not list its models without a key.
+- **The key moved onto the provider block**, above the model. It is the first thing a hosted provider needs and the reason its model list can answer, so it sits where the provider is rather than folded inside a row.
+- A key can be pasted before anything is saved. It used to say "save the row, then paste the key here" — advice that could not be followed.
+- Pasting a key re-asks that provider for its models, instead of leaving you to find the `refresh` link.
+
 Providers, and the model each one runs
 
 - Settings now shows one block per **provider** — Claude, ChatGPT, Ollama, anything you add — with the model as a picker on that block. You choose a provider, then you choose a model. The list comes from the provider itself, so it is what they offer today rather than a list we hard-coded.

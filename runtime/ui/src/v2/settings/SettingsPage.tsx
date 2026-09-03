@@ -150,6 +150,8 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
   const [busy, setBusy] = useState(false);
   /** The catalog picker's text (providers spec §3). */
   const [pick, setPick] = useState('');
+  /** The provider whose key last changed, so its model list is re-asked. */
+  const [relist, setRelist] = useState<{ prefix: string; n: number } | null>(null);
 
   // The one the runtime is running, which is not always the one in the file.
   const effectiveIds = view.effective.providers.map(p => p.id);
@@ -278,6 +280,33 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
     });
   };
 
+  /**
+   * A provider's key, on its block.
+   *
+   * It used to sit in the raw row, under the fold, and said "save the row,
+   * then paste the key" — which could not be done: the row would not save
+   * without a model, and the vendor would not list models without the key.
+   * The key is the FIRST thing a hosted provider needs, so it belongs where
+   * the provider is.
+   */
+  const keyControlFor = (id: string): JSX.Element | null => {
+    const vendor = vendorFor(prefixOf(id));
+    if (vendor === undefined || vendor.connection !== 'API key') return null;
+    const live = view.effective.providers.find(p => p.id === id);
+    return (
+      <KeyControl
+        id={id}
+        keySet={live === undefined ? undefined : (live.keySet ?? false)}
+        {...(vendor.getKey === undefined ? {} : { getKey: vendor.getKey })}
+        where={view.secrets === undefined || view.secrets === null ? null : view.secrets.where}
+        onChanged={() => {
+          setRelist(prev => ({ prefix: prefixOf(id), n: (prev?.n ?? 0) + 1 }));
+          void refresh();
+        }}
+      />
+    );
+  };
+
   // A `tasks.*` message with no row to sit on still has to be shown; it
   // joins the general notices by the Save button.
   const orphanedTaskMessages = unplacedTaskMessages(errors, form.routes);
@@ -306,6 +335,11 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
           baseURLOf={baseURLOf}
           onMakeDefault={id => void save({ default: id })}
           fileIds={new Set(form.providers.map(r => r.id.trim()))}
+          // A provider you just added is not loaded yet, so nothing in
+          // `effective` speaks for it. Its block comes from the form row.
+          pendingIds={form.providers.map(r => r.id.trim()).filter(id => id !== '' && !effectiveIds.includes(id))}
+          renderKey={group => keyControlFor(group.id)}
+          relist={relist}
           onPickModel={pickModel}
         />
         <FieldError message={errors['default']} />
@@ -503,24 +537,6 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
                   errors={fieldErrors}
                   keySet={live === undefined ? undefined : (live.keySet ?? false)}
                   {...(rowVendor.setup === undefined ? {} : { setup: rowVendor.setup })}
-                  where={view.secrets === undefined || view.secrets === null ? null : view.secrets.where}
-                  onChanged={() => void refresh()}
-                />
-              );
-            })()}
-            {/* The key itself (providers spec §5): set text under the row,
-                for vendors that take one. It is never part of the form —
-                the row saves the endpoint, the key goes to the store. */}
-            {(() => {
-              const id = row.id.trim();
-              const vendor = vendorFor(prefixOf(id));
-              if (vendor === undefined || vendor.connection !== 'API key') return null;
-              const live = view.effective.providers.find(p => p.id === id);
-              return (
-                <KeyControl
-                  id={id}
-                  keySet={live === undefined ? undefined : (live.keySet ?? false)}
-                  {...(vendor.getKey === undefined ? {} : { getKey: vendor.getKey })}
                   where={view.secrets === undefined || view.secrets === null ? null : view.secrets.where}
                   onChanged={() => void refresh()}
                 />

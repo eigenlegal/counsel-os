@@ -33,14 +33,19 @@ export function KeyControl({ id, keySet, getKey, where, onChanged }: KeyControlP
   const [value, setValue] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // A key pasted against a provider that is not loaded yet IS stored — it is
+  // filed under the provider, not under the row — but `/settings` speaks
+  // only for loaded providers, so `keySet` stays absent and the line would
+  // go on reading "not set" straight after a successful save.
+  const [justSet, setJustSet] = useState(false);
 
-  if (keySet === undefined) {
-    return (
-      <p className="v2-key muted" role="note">
-        <span className="v2-tag">key</span> save the row, then paste the key here.
-      </p>
-    );
-  }
+  // `keySet` is absent while the provider is not loaded yet — a row you
+  // just added. It used to say "save the row, then paste the key here",
+  // which could not be done: the row would not save without a model, and
+  // the vendor would not list its models without the key. The key is filed
+  // under the provider, not under the row, so it can be pasted first — and
+  // it has to be, because it is what makes the model list answer.
+  const unsaved = keySet === undefined;
   if (where === null) {
     return (
       <p className="v2-key muted" role="note">
@@ -58,6 +63,7 @@ export function KeyControl({ id, keySet, getKey, where, onChanged }: KeyControlP
       await setProviderKey(id, trimmed);
       setValue('');
       setEditing(false);
+      setJustSet(true);
       onChanged();
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) return;
@@ -72,6 +78,7 @@ export function KeyControl({ id, keySet, getKey, where, onChanged }: KeyControlP
     setError(null);
     try {
       await deleteProviderKey(id);
+      setJustSet(false);
       onChanged();
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) return;
@@ -81,20 +88,21 @@ export function KeyControl({ id, keySet, getKey, where, onChanged }: KeyControlP
     }
   };
 
-  const status = keySet === true ? 'set' : keySet === 'env' ? 'from the environment' : 'not set';
+  const isSet = keySet === true || (unsaved && justSet);
+  const status = isSet ? 'set' : keySet === 'env' ? 'from the environment' : 'not set';
 
   return (
     <div className="v2-key" role="group" aria-label={`Key for ${id}`}>
       <p className="v2-key-line">
         <span className="v2-tag">key</span>
-        <span className={keySet === true ? 'v2-key-state v2-key-set' : 'v2-key-state'}>{status}</span>
+        <span className={isSet ? 'v2-key-state v2-key-set' : 'v2-key-state'}>{status}</span>
         {editing ? null : (
           <>
             {' · '}
             <button type="button" className="v2-link" onClick={() => setEditing(true)} disabled={busy}>
-              {keySet === true ? 'replace' : 'paste a key'}
+              {isSet ? 'replace' : 'paste a key'}
             </button>
-            {keySet === true ? (
+            {isSet ? (
               <>
                 {' · '}
                 <button type="button" className="v2-link" onClick={() => void remove()} disabled={busy}>
