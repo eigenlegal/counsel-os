@@ -12,6 +12,7 @@ import { BASE_URL_RULE, isAllowedBaseURL, readRegistry, RegistryFile } from '../
 import { DiscoveryCache, discoverModels } from '../providers/discovery';
 import { prefixOf, vendorFor } from '../providers/vendors';
 import { readKey } from '../providers/secrets';
+import { buildInfo } from '../core/build-info';
 import { isEnterprise, resolveEnterprise } from '../providers/enterprise';
 import type { ThreadEvent, ThreadHeader } from '../threads/store';
 import { vaultDocket } from '../vault/docket';
@@ -503,6 +504,11 @@ export function createApp(deps: ServerDeps): App {
       // Whether this vault keeps the local record of decisions and marks
       // (routing-and-evals spec §7).
       outcomes: readVaultConfig(deps.vaultRoot).outcomes !== false,
+      // What this PROCESS is running. `serve` reads its code once, at
+      // startup, so a server left up while the checkout moves goes on
+      // answering with the catalog it was born with — and hands the browser
+      // a freshly built UI at the same time. The page says so now.
+      runtime: buildInfo(),
     });
   };
 

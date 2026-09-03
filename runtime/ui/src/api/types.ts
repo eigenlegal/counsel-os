@@ -209,6 +209,18 @@ export interface Health {
   /** Whether the vault keeps its local record of decisions and marks
    * (routing-and-evals spec §7). Absent on an older runtime. */
   outcomes?: boolean;
+  /** What the running process is, as opposed to what is on disk. Absent on
+   * an older runtime — which is itself the case this exists to reveal. */
+  runtime?: RuntimeBuild;
+}
+
+export interface RuntimeBuild {
+  version: string;
+  /** ISO 8601, frozen when the process read its code. */
+  startedAt: string;
+  source: 'binary' | 'source';
+  /** The commit the process read, from a source checkout. */
+  commit?: string;
 }
 
 /** The body of `POST /threads/:id/steps`. */

@@ -166,6 +166,21 @@ describe('GET /health', () => {
     expect(body.providers[0]!.auth).toBe('local');
     expect(body.providers[0]!.capabilities.tools).toBe(true);
   });
+
+  test('says what the running process is, so a stale one can be spotted', async () => {
+    // A serve reads its code once and then keeps answering from it while
+    // the checkout moves on — and serves the UI from disk, which a rebuild
+    // updates underneath. The page needs a way to tell.
+    const res = await call(appWithFake(), 'GET', '/health');
+    const body = (await res.json()) as { runtime?: { version: string; startedAt: string; source: string; commit?: string } };
+    expect(body.runtime).toBeDefined();
+    expect(body.runtime!.version).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(body.runtime!.source).toBe('source');
+    expect(new Date(body.runtime!.startedAt).getTime()).toBeLessThanOrEqual(Date.now());
+    // Never the value of anything secret, and never the checkout's CURRENT
+    // head — the commit this process READ.
+    expect(body.runtime!.commit).toMatch(/^[0-9a-f]{7}$/);
+  });
 });
 
 describe('threads', () => {
