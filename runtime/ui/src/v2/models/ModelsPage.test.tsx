@@ -73,14 +73,14 @@ afterEach(() => {
 });
 
 describe('the Models page', () => {
-  test('asks the operator’s three questions in order: how they score, what against, and what ran', async () => {
+  test('asks the operator’s four questions in order: how they score, how work routes, what against, and what ran', async () => {
     render(<ModelsPage health={health} />);
     await waitFor(() => expect(screen.getByRole('table', { name: /scores/ })).toBeTruthy());
 
     const headings = Array.from(document.querySelectorAll('.v2-group h2'), el => el.textContent);
     // The set sits between the board and the ledger: a score you cannot
     // trace back to a document is a number taken on faith.
-    expect(headings).toEqual(['How they score', 'Your eval set', 'What ran']);
+    expect(headings).toEqual(['How they score', 'How work is routed', 'Your eval set', 'What ran']);
 
     // The board's columns are the providers the runtime actually loaded.
     const table = screen.getByRole('table', { name: /scores/ });
