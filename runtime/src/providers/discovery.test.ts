@@ -74,10 +74,46 @@ describe('listingURL', () => {
 describe('discoverModels', () => {
   test('a curated vendor answers from the catalog without a request', async () => {
     let called = false;
-    const r = await discoverModels(vendorFor('anthropic')!, { fetch: (async () => { called = true; return new Response('{}'); }) as unknown as typeof fetch });
+    const r = await discoverModels(vendorFor('perplexity')!, { fetch: (async () => { called = true; return new Response('{}'); }) as unknown as typeof fetch });
+    expect(r.source).toBe('curated');
+    expect(r.models.map(m => m.id)).toContain('sonar');
+    expect(called).toBe(false);
+  });
+
+  test('Anthropic lists live, in its own header, and is not three names we wrote down', async () => {
+    // The founder, on seeing a list of three: "Claude has way more than
+    // just 3 models though." It always did — we had never implemented
+    // `/v1/models`, so the catalog's stand-in list was the whole world.
+    let seen: { url: string; headers: Record<string, string> } | null = null;
+    const r = await discoverModels(vendorFor('anthropic')!, {
+      apiKey: 'sk-ant-test',
+      fetch: (async (url: string, init: RequestInit) => {
+        seen = { url: String(url), headers: init.headers as Record<string, string> };
+        return new Response(JSON.stringify({ data: [{ id: 'claude-opus-5' }, { id: 'claude-3-5-haiku-20241022' }, { id: 'claude-sonnet-5' }] }));
+      }) as unknown as typeof fetch,
+    });
+    expect(r.source).toBe('list');
+    expect(r.models.map(m => m.id)).toEqual(['claude-3-5-haiku-20241022', 'claude-opus-5', 'claude-sonnet-5']);
+    expect(seen!.url).toBe('https://api.anthropic.com/v1/models');
+    // Anthropic takes `x-api-key`, not a bearer, and requires a version.
+    expect(seen!.headers['x-api-key']).toBe('sk-ant-test');
+    expect(seen!.headers['anthropic-version']).toBe('2023-06-01');
+    expect(seen!.headers['authorization']).toBeUndefined();
+    // The listing carries no window; the ones we know keep theirs.
+    expect(r.models.find(m => m.id === 'claude-opus-5')!.contextTokens).toBe(200_000);
+    // A model we have never written down claims no window rather than the
+    // vendor's default — the router compares real numbers against a bar.
+    expect(r.models.find(m => m.id === 'claude-3-5-haiku-20241022')!.contextTokens).toBeUndefined();
+  });
+
+  test('a listing that fails falls back to the names we do know', async () => {
+    const r = await discoverModels(vendorFor('anthropic')!, {
+      apiKey: 'sk-ant-test',
+      fetch: (async () => new Response('nope', { status: 500 })) as unknown as typeof fetch,
+    });
     expect(r.source).toBe('curated');
     expect(r.models.map(m => m.id)).toContain('claude-opus-5');
-    expect(called).toBe(false);
+    expect(r.error).toContain('Showing the known ones');
   });
 
   test('a keyed vendor is not called without a key', async () => {

@@ -11,7 +11,7 @@
  * the provider itself, so it is what they offer today rather than what we
  * hard-coded — and the key is filed under the vendor, so you paste it once.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ProviderInfo } from '../../api/types';
 import { ModelCombo } from '../../settings/ModelCombo';
 import { useModels } from '../../settings/useModels';
@@ -29,9 +29,18 @@ export interface YourModelsProps {
   /** A saved row's base URL for this vendor, so a local runner's model list
    * is asked for at the right address. */
   baseURLOf(prefix: string): string | undefined;
+  /** The ids this practice's own file names, so a saved row is shown over a
+   * built-in of the same vendor. */
+  fileIds: ReadonlySet<string>;
   onMakeDefault(id: string): void;
-  /** Run this provider on a different model. Saves. */
-  onPickModel(prefix: string, model: string): void;
+  /**
+   * Run a provider on a different model. `id` is the block's OWN current id,
+   * never re-derived from the prefix: with two models of one vendor loaded,
+   * the block shows one and "the vendor's first" is a different one.
+   *
+   * Answers whether the save went — a refused one has to put the field back.
+   */
+  onPickModel(id: string, model: string): Promise<boolean>;
 }
 
 /** `claude-sub/claude-opus-5` → `Claude` + `claude-opus-5`. The vendor's own
@@ -40,7 +49,12 @@ export function nameOf(id: string): { vendor: string; model: string } {
   const cut = id.indexOf('/');
   const prefix = cut === -1 ? id : id.slice(0, cut);
   const model = cut === -1 ? '' : id.slice(cut + 1);
-  return { vendor: vendorFor(prefix)?.name ?? prefix, model };
+  // `label` before `name`, because two vendors answer to "Claude" — the
+  // subscription and the API row. Two blocks called Claude, with two buttons
+  // called "Use Claude", is the very ambiguity these labels exist to remove;
+  // `label` is the catalog's own longer spelling ("Claude (API key)").
+  const vendor = vendorFor(prefix);
+  return { vendor: vendor?.label ?? vendor?.name ?? prefix, model };
 }
 
 /** How a model is reached, and whether it can answer at all. */
@@ -104,32 +118,40 @@ export interface ProviderGroup {
 /**
  * The loaded ids, folded into one block per provider.
  *
- * A vendor CAN hold more than one loaded model — the built-in Claude plus a
- * Claude row you saved. The block shows the one in play: whichever is the
- * default, else the first. The others stay loaded and stay nameable by a
- * task route; they are just not a second row to read past.
+ * A vendor can hold more than one loaded model — the built-in Ollama plus
+ * the Ollama row you saved. The block shows the one in play, in this order:
+ *
+ *   1. the model that answers, if it is this vendor's;
+ *   2. the model YOUR FILE names, over a built-in;
+ *   3. whatever loaded first.
+ *
+ * Rule 2 is not a nicety. `loadRegistry` puts the built-ins ahead of the
+ * file, so without it, picking `qwen3:32b` on the Ollama block saved
+ * correctly and then re-rendered as `gemma4:e4b` — the built-in, still
+ * first, still not the default. The pick looked like it had been refused.
+ * The others stay loaded and stay nameable by a task route; they are just
+ * not a second block to read past.
  */
-export function groupProviders(providers: ProviderInfo[], defaultId: string): ProviderGroup[] {
-  const groups = new Map<string, ProviderGroup>();
+export function groupProviders(providers: ProviderInfo[], defaultId: string, fileIds: ReadonlySet<string> = new Set()): ProviderGroup[] {
+  const groups = new Map<string, { group: ProviderGroup; rank: number }>();
   for (const p of providers) {
     const prefix = prefixOf(p.id);
     const { vendor, model } = nameOf(p.id);
-    const isDefault = p.id === defaultId.trim();
+    const rank = p.id === defaultId.trim() ? 0 : fileIds.has(p.id) ? 1 : 2;
     const existing = groups.get(prefix);
-    // First wins, unless a later one is the model that actually answers.
-    if (existing !== undefined && !isDefault) continue;
-    groups.set(prefix, { prefix, name: vendor, reach: reachOf(p), model, id: p.id });
+    if (existing !== undefined && existing.rank <= rank) continue;
+    groups.set(prefix, { rank, group: { prefix, name: vendor, reach: reachOf(p), model, id: p.id } });
   }
-  return [...groups.values()];
+  return [...groups.values()].map(entry => entry.group);
 }
 
-export function YourModels({ providers, defaultId, builtinDefault, busy, baseURLOf, onMakeDefault, onPickModel }: YourModelsProps): JSX.Element {
+export function YourModels({ providers, defaultId, builtinDefault, busy, baseURLOf, fileIds, onMakeDefault, onPickModel }: YourModelsProps): JSX.Element {
   if (providers.length === 0) {
     return <p className="muted">No provider is set up. Add one below.</p>;
   }
   return (
     <ul className="v2-yours" aria-label="Providers you can use">
-      {groupProviders(providers, defaultId).map(group => (
+      {groupProviders(providers, defaultId, fileIds).map(group => (
         <ProviderBlock
           key={group.prefix}
           group={group}
@@ -152,7 +174,7 @@ interface ProviderBlockProps {
   busy: boolean;
   baseURL: string | undefined;
   onMakeDefault(id: string): void;
-  onPickModel(prefix: string, model: string): void;
+  onPickModel(id: string, model: string): Promise<boolean>;
 }
 
 function ProviderBlock({ group, isDefault, builtinDefault, busy, baseURL, onMakeDefault, onPickModel }: ProviderBlockProps): JSX.Element {
@@ -161,17 +183,36 @@ function ProviderBlock({ group, isDefault, builtinDefault, busy, baseURL, onMake
   const known = vendorFor(group.prefix) !== undefined;
   const { result, loading, refresh } = useModels(known ? group.prefix : null, baseURL);
   const models = result?.models ?? [];
-  // The combo reports every KEYSTROKE (`onInputChange`), and a save per
-  // keystroke would be a save per letter. So the text is held here and
-  // committed twice over: the moment it is one of the listed models — which
-  // is what choosing from the list does, and it has to apply at once — and
-  // otherwise when the field is left, for a model the list does not carry.
+  // The combo reports every KEYSTROKE, so the text is held here and saved
+  // only when it is really chosen: `onSelect` (picked from the list) or the
+  // field being left (a model the list does not carry).
+  //
+  // NEVER on a keystroke that happens to spell a listed model. `grok-4-fast`
+  // passes through `grok-4` and `gpt-5.6-mini` passes through `gpt-5.6`;
+  // both are real models, so that rule saved the wrong one halfway through
+  // the word and then reset the field to it under the typing hand.
   const [text, setText] = useState(group.model);
   useEffect(() => setText(group.model), [group.model]);
+  // What has already been sent. `group.model` only catches up when the save
+  // comes back, so without this, selecting and then clicking away sends the
+  // same change twice.
+  const sent = useRef(group.model);
+  useEffect(() => {
+    sent.current = group.model;
+  }, [group.model]);
   const commit = (value: string): void => {
     const next = value.trim();
-    if (next === '' || next === group.model) return;
-    onPickModel(group.prefix, next);
+    if (next === '' || next === group.model || next === sent.current) return;
+    sent.current = next;
+    void onPickModel(group.id, next).then(saved => {
+      // A save the page refused (some other row is incomplete) leaves the
+      // file unchanged, so the field must not go on showing the new model
+      // as though it had taken.
+      if (!saved) {
+        sent.current = group.model;
+        setText(group.model);
+      }
+    });
   };
   return (
     <li className={isDefault ? 'v2-yours-row v2-yours-on' : 'v2-yours-row'}>
@@ -210,10 +251,8 @@ function ProviderBlock({ group, isDefault, builtinDefault, busy, baseURL, onMake
           value={text}
           models={models}
           placeholder={loading ? 'listing…' : 'pick or type a model'}
-          onChange={value => {
-            setText(value);
-            if (models.some(m => m.id === value.trim())) commit(value);
-          }}
+          onChange={setText}
+          onSelect={commit}
         />
         <p className="v2-yours-count" role="note">
           {result === null

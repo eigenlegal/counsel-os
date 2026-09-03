@@ -602,13 +602,20 @@ export function createApp(deps: ServerDeps): App {
     }
     // The key, the way the registry resolves it (providers spec §5): the
     // secret store first, then the entry's variable, then the vendor's usual
-    // one. `readKey` asks for the VENDOR's key, so a key pasted against a
-    // provider that has no row yet still lists its models — which is the
-    // order a lawyer works in: pick the vendor, paste the key, choose a
-    // model from what comes back.
+    // one. `readKey` asks for the key the way the registry files it, so a
+    // key pasted against a provider that has no row yet still lists its
+    // models — which is the order a lawyer works in: pick the vendor, paste
+    // the key, choose a model from what comes back.
+    //
+    // But NEVER to an address the caller made up. `baseURL` here is a query
+    // parameter, `isAllowedBaseURL` admits any https host, and this is the
+    // one route that would then put a bearer token on the request. A base
+    // URL that does not match the saved row's goes out unauthenticated: it
+    // is a row being typed, which has no key yet anyway.
     const keyEnv = entry?.apiKeyEnv ?? vendor.keyEnv;
-    const stored = readKey(deps.settings.secrets, entry?.id ?? id);
-    const apiKey = stored ?? (keyEnv === undefined ? undefined : env[keyEnv]);
+    const madeUp = queryBase !== null && queryBase.trim() !== '' && queryBase.trim() !== (entry?.baseURL ?? '').trim();
+    const stored = madeUp ? null : readKey(deps.settings.secrets, entry?.id ?? id, entry ?? {});
+    const apiKey = stored ?? (madeUp ? undefined : keyEnv === undefined ? undefined : env[keyEnv]);
     const cacheKey = discoveryCache.key(prefix, baseURL);
     if (url.searchParams.get('refresh') !== '1') {
       const hit = discoveryCache.get(cacheKey);

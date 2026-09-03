@@ -433,8 +433,10 @@ describe('enterprise credentials (providers spec §3 step 5)', () => {
     const put = await call(h.app, 'PUT', `/providers/${id}/key`, { fields: { accessKeyId: 'AKIA-test-1', secretAccessKey: 'wJalr-test-2', sessionToken: '' } });
     expect(put.status).toBe(204);
     expect(await put.text()).toBe('');
-    expect(h.secrets?.get('bedrock')).toBe('{"v":1,"fields":{"accessKeyId":"AKIA-test-1","secretAccessKey":"wJalr-test-2"}}');
-    expect(h.secrets?.get(id)).toBeNull();
+    // Per ROW: an enterprise row carries its own AWS account, so two rows
+    // are two accounts and never share an item.
+    expect(h.secrets?.get(id)).toBe('{"v":1,"fields":{"accessKeyId":"AKIA-test-1","secretAccessKey":"wJalr-test-2"}}');
+    expect(h.secrets?.get('bedrock')).toBeNull();
     expect(h.secrets?.get(`${id}/accessKeyId`)).toBeNull();
 
     const after = await settings(h.app);

@@ -149,7 +149,7 @@ export function loadRegistry(opts: {
    * be read: a locked keychain must not stop the runtime from starting, and
    * the page's `keySet: false` is how the operator finds out. Filed under
    * the vendor, so one key opens every model it sells. */
-  const stored = (id: string): string | null => readKey(opts.secrets, id);
+  const stored = (id: string, entry: { baseURL?: string } = {}): string | null => readKey(opts.secrets, id, entry);
   const raw = readRegistry(file);
   const providers: ModelProvider[] = buildProviders({ ids: BUILTIN_IDS, vaultRoot: opts.vaultRoot });
   for (const e of raw.providers ?? []) {
@@ -167,7 +167,7 @@ export function loadRegistry(opts: {
     // variable, then the vendor's usual one — so a key pasted in Settings
     // wins, and a headless install with only the environment still works.
     const keyEnv = e.apiKeyEnv ?? vendor.keyEnv;
-    const apiKey = stored(e.id) ?? (keyEnv === undefined ? undefined : env[keyEnv]);
+    const apiKey = stored(e.id, e) ?? (keyEnv === undefined ? undefined : env[keyEnv]);
     providers.push(directProviderFromId(e.id, { baseURL: e.baseURL, apiKey, capabilities: e.capabilities as Partial<Capabilities> }));
   }
   const wrapped = [...providers.map(p => (p.kind === 'direct' ? withRetry(p) : p)), ...(opts.extraProviders ?? [])];

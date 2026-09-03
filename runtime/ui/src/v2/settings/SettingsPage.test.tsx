@@ -467,15 +467,15 @@ describe('SettingsPage, the model picker on a provider row (providers spec §4)'
     effective: { ...view.effective, providers: [fakeProvider, openai] },
   };
 
-  function installWithModels(answer: (url: string) => Response | null): { listed: string[] } {
+  function installWithModels(answer: (url: string) => Response | null, served: SettingsView = withRow): { listed: string[] } {
     const listed: string[] = [];
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
-      if (url === '/settings' && (init?.method ?? 'GET') === 'GET') return json(withRow);
+      if (url === '/settings' && (init?.method ?? 'GET') === 'GET') return json(served);
       if (url === '/content/status') return json({ shippedVersion: '0.0.0', vaultVersion: '0.0.0', receivedAt: null, lawManagement: 'plugin', autoApplyLawUpdates: false, items: [], counts: { current: 0, 'update-available': 0, 'user-modified': 0, 'vault-only': 0, missing: 0, 'upstream-changed': 0 } });
       if (url === '/settings' && init?.method === 'PUT') {
         puts.push(JSON.parse(String(init.body)));
-        return json(withRow);
+        return json(served);
       }
       if (url.startsWith('/providers/')) {
         listed.push(url);
@@ -509,6 +509,62 @@ describe('SettingsPage, the model picker on a provider row (providers spec §4)'
     await userEvent.click(within(block).getByRole('button', { name: 'refresh' }));
     await waitFor(() => expect(listed).toHaveLength(2));
     expect(listed[1]).toBe('/providers/openai/models?refresh=1');
+  });
+
+  test('only the row that is showing is rewritten, never every row of the vendor', async () => {
+    // A practice with two OpenAI models. Rewriting by PREFIX gave both rows
+    // the same id and lost the second row's own settings for good.
+    const mini: ProviderInfo = { ...openai, id: 'openai/gpt-4o-mini' };
+    const two: SettingsView = {
+      ...withRow,
+      registry: { ...view.registry, providers: [{ id: 'openai/gpt-5.6', apiKeyEnv: 'OPENAI_API_KEY' }, { id: 'openai/gpt-4o-mini', capabilities: { contextTokens: 128000 } }] },
+      effective: { ...view.effective, providers: [fakeProvider, openai, mini] },
+    };
+    installWithModels(() => json({ models: [{ id: 'gpt-5.6' }, { id: 'gpt-5.6-mini' }], source: 'list' }), two);
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByLabelText('OpenAI model')).toBeTruthy());
+
+    const block = screen.getByLabelText('OpenAI model').closest('.v2-yours-model') as HTMLElement;
+    await userEvent.click(within(block).getByRole('button', { name: 'Show models' }));
+    await userEvent.click(screen.getByText('gpt-5.6-mini'));
+
+    await waitFor(() => expect(puts).toHaveLength(1));
+    const sent = (puts[0] as { providers: { id: string; capabilities?: { contextTokens?: number } }[] }).providers;
+    expect(sent.map(r => r.id)).toEqual(['openai/gpt-5.6-mini', 'openai/gpt-4o-mini']);
+    // The other row is untouched, capabilities and all.
+    expect(sent[1]!.capabilities?.contextTokens).toBe(128000);
+  });
+
+  test('the default and the routes follow the model that was actually on the block', async () => {
+    // The block shows the model that ANSWERS. Deriving the old id here as
+    // "the vendor's first loaded" instead disagreed with it, and left the
+    // default naming a model that had just been renamed away.
+    const mini: ProviderInfo = { ...openai, id: 'openai/gpt-4o-mini' };
+    const defaulted: SettingsView = {
+      ...withRow,
+      registry: {
+        ...view.registry,
+        default: 'openai/gpt-4o-mini',
+        providers: [{ id: 'openai/gpt-4o-mini' }],
+        tasks: { review: { prefer: 'openai/gpt-4o-mini' } },
+      },
+      // `openai/gpt-5.6` loads FIRST and is not the default.
+      effective: { ...view.effective, default: 'openai/gpt-4o-mini', providers: [openai, mini] },
+    };
+    installWithModels(() => json({ models: [{ id: 'gpt-5.6' }, { id: 'gpt-5.6-mini' }], source: 'list' }), defaulted);
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByLabelText('OpenAI model')).toBeTruthy());
+    expect((screen.getByLabelText('OpenAI model') as HTMLInputElement).value).toBe('gpt-4o-mini');
+
+    const block = screen.getByLabelText('OpenAI model').closest('.v2-yours-model') as HTMLElement;
+    await userEvent.click(within(block).getByRole('button', { name: 'Show models' }));
+    await userEvent.click(screen.getByText('gpt-5.6-mini'));
+
+    await waitFor(() => expect(puts).toHaveLength(1));
+    const body = puts[0] as { default: string; providers: { id: string }[]; tasks: Record<string, { prefer?: string }> };
+    expect(body.providers.map(r => r.id)).toEqual(['openai/gpt-5.6-mini']);
+    expect(body.default).toBe('openai/gpt-5.6-mini');
+    expect(body.tasks['review']?.prefer).toBe('openai/gpt-5.6-mini');
   });
 
   test('a listing that failed is the runtime\'s sentence under the field, and the id is still typeable', async () => {

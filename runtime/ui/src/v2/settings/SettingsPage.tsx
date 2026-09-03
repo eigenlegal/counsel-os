@@ -190,7 +190,9 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
     }
   };
 
-  const save = async (change: Partial<FormState> = {}): Promise<void> => {
+  /** True when the change reached the file. False when the page refused it
+   * or the server did — the caller may have a field to put back. */
+  const save = async (change: Partial<FormState> = {}): Promise<boolean> => {
     setSaved(false);
     // The change rides IN rather than through `setForm`: "use this one" is a
     // click that saves, and reading the default back out of state in the
@@ -205,7 +207,7 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
       // A row's own message can sit inside a collapsed disclosure, so say it
       // here too, by the Save button, where it cannot be missed.
       setGeneral(['Nothing was saved. Correct the fields marked above.']);
-      return;
+      return false;
     }
     if (Object.keys(change).length > 0) setForm(edited);
     setErrors({});
@@ -219,8 +221,9 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
       setForm(seedDefault(formFromRegistry(next.registry), next));
       setSaved(true);
       onSaved(next);
+      return true;
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) return;
+      if (err instanceof ApiError && err.status === 401) return false;
       if (err instanceof ApiError && (err.status === 400 || err.status === 422)) {
         const body = err.body as SettingsErrorBody | null;
         const mapped = mapIssues(body?.issues ?? []);
@@ -232,6 +235,7 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
     } finally {
       setBusy(false);
     }
+    return false;
   };
 
   /** A saved row's base URL for a vendor, so a local runner's model list is
@@ -252,16 +256,22 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
    * A built-in has no row in the file; overriding its model writes the first
    * one. The built-in stays loaded under its own id, which is what keeps a
    * task route that names it working.
+   *
+   * `oldId` comes from the block that was clicked. Deriving it here instead
+   * — the first loaded model of the vendor — disagreed with the block
+   * whenever the default was some OTHER model of the same vendor, and then
+   * the default was left naming a model that had just been renamed away.
    */
-  const pickModel = (prefix: string, model: string): void => {
-    const current = view.effective.providers.find(p => prefixOf(p.id) === prefix);
-    const oldId = current?.id ?? '';
-    const newId = `${prefix}/${model}`;
-    if (newId === oldId) return;
-    const owned = form.providers.some(r => prefixOf(r.id.trim()) === prefix);
-    void save({
+  const pickModel = async (oldId: string, model: string): Promise<boolean> => {
+    const newId = `${prefixOf(oldId)}/${model}`;
+    if (newId === oldId) return true;
+    // The ROW that is showing, not every row of the vendor: a practice with
+    // both `openai/gpt-5.6` and `openai/gpt-4o-mini` would otherwise have
+    // both rewritten to the same id, and the second row's own settings lost.
+    const owned = form.providers.some(r => r.id.trim() === oldId);
+    return await save({
       providers: owned
-        ? form.providers.map(r => (prefixOf(r.id.trim()) === prefix ? { ...r, id: newId } : r))
+        ? form.providers.map(r => (r.id.trim() === oldId ? { ...r, id: newId } : r))
         : [...form.providers, { ...emptyRow(), id: newId }],
       routes: form.routes.map(r => (r.prefer.trim() === oldId ? { ...r, prefer: newId } : r)),
       ...(form.default.trim() === oldId ? { default: newId } : {}),
@@ -295,6 +305,7 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
           busy={busy}
           baseURLOf={baseURLOf}
           onMakeDefault={id => void save({ default: id })}
+          fileIds={new Set(form.providers.map(r => r.id.trim()))}
           onPickModel={pickModel}
         />
         <FieldError message={errors['default']} />

@@ -1645,9 +1645,9 @@ describe('model discovery (providers spec §4)', () => {
   test('a curated vendor answers from the catalog; an unknown prefix is 404; no token is 401', async () => {
     const rec = recording();
     const app = appWith([new FakeModelProvider([{ text: 'x' }])], { discovery: { fetch: rec.fetch, env: {} } });
-    const curated = (await (await call(app, 'GET', '/providers/anthropic/models')).json()) as { source: string; models: Array<{ id: string }> };
+    const curated = (await (await call(app, 'GET', '/providers/perplexity/models')).json()) as { source: string; models: Array<{ id: string }> };
     expect(curated.source).toBe('curated');
-    expect(curated.models.map((m: { id: string }) => m.id)).toContain('claude-opus-5');
+    expect(curated.models.map((m: { id: string }) => m.id)).toContain('sonar');
     expect(rec.urls).toEqual([]);
     expect((await call(app, 'GET', '/providers/nope/models')).status).toBe(404);
     expect((await call(app, 'GET', '/providers/openai/models', { token: null })).status).toBe(401);
