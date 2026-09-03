@@ -146,6 +146,12 @@ export function Strip({ turn, run, ms, threadId = null, onOpenFile }: StripProps
         <span className={`v2-pill v2-pill-${pill.kind} v2-strip-status`} title={pill.title}>
           {pill.label.toUpperCase()}
         </span>
+        {/* A state that LOOKS like a failure says on the page what it
+            means. `DISCONNECTED` in alarm colour, with the explanation
+            hidden in a `title`, told a lawyer something had gone wrong and
+            gave them no way to learn it probably had not — nobody hovers an
+            alarming word to find out it is benign. */}
+        {pill.title === undefined ? null : <span className="v2-strip-meaning">{pill.title}</span>}
         {stripLine(turn) === '' ? null : <span className="v2-strip-summary">{stripLine(turn)}</span>}
         {failed === 0 ? null : <span className="v2-strip-failed">{failed === 1 ? '1 failed' : `${failed} failed`}</span>}
         {empty === 0 ? null : <span className="v2-strip-empty">{empty === 1 ? '1 empty' : `${empty} empty`}</span>}

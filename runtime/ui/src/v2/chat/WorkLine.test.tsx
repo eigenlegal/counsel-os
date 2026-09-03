@@ -29,3 +29,14 @@ describe('WorkLine', () => {
     expect(document.querySelector('.v2-work-line')).toBeNull();
   });
 });
+
+test('many files are counted, not listed', async () => {
+  // A retro reads twenty. Twenty bordered monospace chips were the loudest
+  // thing on the page, for its least important content — and every one is
+  // still there when the line is opened.
+  const many = Array.from({ length: 20 }, (_, i) => `file-${i}.md`);
+  render(<WorkLine tools={many.map(path => ({ name: 'vault_read', input: { path }, ok: true }) as never)} ms={{}} />);
+  const chips = [...document.querySelectorAll('.v2-file-chip')].map(c => c.textContent);
+  expect(chips).toHaveLength(3);
+  expect(document.body.textContent).toContain('and 17 more');
+});

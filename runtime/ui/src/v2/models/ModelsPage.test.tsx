@@ -57,6 +57,10 @@ beforeEach(() => {
     if (url === '/evals/scoreboard') return json(board);
     if (url.startsWith('/routing/ledger')) return json({ runs: ledgerRuns });
     if (url === '/routing') return json({ defaults: { minScore: 0.7, prefer: 'quality' }, tasks: {} });
+    // The eval set the board is scored against.
+    if (url === '/evals/fixtures') {
+      return json({ fixtures: [{ id: 'demo-nda', scorer: 'findings', task: 'review', source: 'shipped', set: 'shipped', runnable: true }] });
+    }
     throw new Error(`unexpected fetch: ${url}`);
   }) as unknown as typeof fetch;
 });
@@ -69,12 +73,14 @@ afterEach(() => {
 });
 
 describe('the Models page', () => {
-  test('asks the operator’s two questions in order: how they score, and what ran', async () => {
+  test('asks the operator’s four questions in order: how they score, how work routes, what against, and what ran', async () => {
     render(<ModelsPage health={health} />);
     await waitFor(() => expect(screen.getByRole('table', { name: /scores/ })).toBeTruthy());
 
     const headings = Array.from(document.querySelectorAll('.v2-group h2'), el => el.textContent);
-    expect(headings).toEqual(['How they score', 'What ran']);
+    // The set sits between the board and the ledger: a score you cannot
+    // trace back to a document is a number taken on faith.
+    expect(headings).toEqual(['How they score', 'How work is routed', 'Your eval set', 'What ran']);
 
     // The board's columns are the providers the runtime actually loaded.
     const table = screen.getByRole('table', { name: /scores/ });

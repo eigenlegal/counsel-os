@@ -214,6 +214,35 @@ export interface Health {
   runtime?: RuntimeBuild;
 }
 
+/** One scored run (`GET /evals/results`) — what a board cell is made of. */
+export interface EvalResult {
+  at: string;
+  fixtureId: string;
+  documentId?: string;
+  task: string;
+  providerId: string;
+  modelVersion: string;
+  score: number | null;
+  /** What the scorer counted, per term. */
+  terms: Record<string, number>;
+  notes: string[];
+  costUsd?: number;
+  durationMs: number;
+}
+
+/** One fixture in the eval set (`GET /evals/fixtures`). */
+export interface EvalFixture {
+  id: string;
+  title?: string;
+  scorer: string;
+  task: string;
+  source: string;
+  set: string;
+  /** False when the fixture carries no mini-vault: there is nothing for a
+   * model to read, so it cannot be scored. */
+  runnable: boolean;
+}
+
 export interface RuntimeBuild {
   version: string;
   /** ISO 8601, frozen when the process read its code. */

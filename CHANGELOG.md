@@ -8,6 +8,20 @@ reconstructed from git history. New entries are prepended automatically by
 
 ## [Unreleased]
 
+A design pass: a scale, a measure, and one control
+
+- **Five type sizes instead of twelve.** The sheet had 9.5, 10.5, 11, 11.5, 12, 12.5, 13, 13.5, 14, 14.5, 15 and 30px — and 12.5/13/13.5 alone accounted for a hundred uses while being indistinguishable on screen. Twelve sizes is not a scale, and it is most of why every page read flat: when everything is nearly the same size, nothing recedes and every paragraph shouts equally.
+- **Prose stops at a measure.** Settings ran the full window — 120 characters a line at 1280px. That is the "wall of text" in one number: the eye loses the line it is on. Explanations now set at 68 characters and in the secondary size, because they are reference, not instruction.
+- **One control.** `input` was styled by neither of the two rules that governed the others, so a text field got the browser's own chrome while the select beside it got ours. Inputs, selects and buttons now share a height, a padding, a ground, a border and a hover.
+- **The provider rows sit on one grid.** Each row used to be its own flex line, so the columns landed wherever the text happened to end: "Claude model" and "ChatGPT model" are different widths, so no two selects began at the same x. The redundant per-row label is gone (kept for screen readers), and every control starts on the same axis.
+- **The eval set is visible.** `GET /evals/fixtures` had existed the whole time with nothing calling it, so you could read a board of scores with no way to see what produced them — or learn that five of your thirteen fixtures cannot run at all. The Models page now lists them by set, says what each set is for, and names the ones that carry no documents, because a score you cannot trace back to a document is a number taken on faith.
+- **Matter names are readable.** The vault list cut every one at about 28 characters — `Sinai × Lerner — K-12 AI Educatio…` — so it read as a column of ellipses with no way to tell two matters apart. They wrap to two lines now. File rows still do not: a path is short, and wrapping one would be worse.
+- **Every kind of work has a routing rule you can see and set.** `GET /routing` answers only for tasks that already carry a policy or a score, so a practice that had scored nothing saw one row and could not set a rule for the other ten kinds of work it does. All eleven are listed now, each saying what actually answers it — an untouched row used to read "nothing scored yet", which sounds like the work does not route. It does: it goes to the default, which the row now names.
+- **One primary button, and no pills.** The Ask button reimplemented the primary style with its own metrics, and four places used a 999px capsule — the house style of every AI product on the internet, in an app that has a ledger of its own to look like. Three variants now: primary, standard, quiet.
+- **A score opens to what it is made of.** `GET /evals/results` had existed all along with nothing calling it, so a board cell was a number with nothing behind it: 0.82 on review, and no way to ask which documents it got right, which it missed, or what the scorer counted. Click the number and it says — fixture by fixture, with each term and any note.
+- **A state that looks like a failure says what it means, on the page.** `DISCONNECTED` sat in alarm colour with its explanation in a `title`, and nobody hovers an alarming word to find out it is benign. It says on the line that the page dropped mid-step and the answer may well have finished.
+- **A turn names three files, then counts.** A retro reads twenty, and twenty bordered monospace chips were the loudest thing on the page — for its least important content. All of them are still one click away, in the step detail the line already opens.
+
 A simpler Settings page, and the model lists we never asked for
 
 - **ChatGPT and Claude list their models.** The Codex CLI documents the models it answers to, and so does Claude's; we had never looked, and the page said "ChatGPT does not publish a model list". It does. Claude gained Fable too.

@@ -15,6 +15,16 @@ export interface WorkLineProps {
  * `nda.md` `acme-nda.md`" plus a chevron — filename chips, expandable to the full step
  * detail (the existing Steps timeline, show/hide and all).
  */
+/**
+ * How many files the line NAMES before it starts counting.
+ *
+ * A retro reads twenty of them, and twenty bordered monospace chips were
+ * the loudest thing on the page — louder than the answer, for the least
+ * important content on it. Every one is still a click away, in the step
+ * detail this line already opens.
+ */
+const NAMED = 3;
+
 export function WorkLine({ tools, ms, onOpenFile }: WorkLineProps): JSX.Element | null {
   const [open, setOpen] = useState(false);
   if (tools.length === 0) return null;
@@ -29,11 +39,12 @@ export function WorkLine({ tools, ms, onOpenFile }: WorkLineProps): JSX.Element 
         {/* The separator travels with the word after it, so a wrapped line
             never opens with a lone middle dot. */}
         {parts.read.length > 0 ? <span className="v2-wl-seg">{lead !== '' ? ' · ' : ''}read </span> : lead === '' ? 'worked ' : ''}
-        {parts.read.map(base => (
+        {parts.read.slice(0, NAMED).map(base => (
           <span key={base} className="v2-file-chip">
             {base}
           </span>
         ))}
+        {parts.read.length > NAMED ? <span className="v2-wl-seg">{` and ${parts.read.length - NAMED} more`}</span> : null}
         {parts.other > 0 ? <span className="v2-wl-seg">{` · ran ${parts.other} tool${parts.other === 1 ? '' : 's'}`}</span> : ''}
         <span className="v2-chev" aria-hidden="true">
           <Chevron />

@@ -14,6 +14,10 @@ export interface ModelComboProps {
    * constraint: a model the list does not carry yet is still typeable. */
   models: DiscoveredModel[];
   placeholder?: string;
+  /** Keep the label for screen readers, take it off the screen. The block
+   * around the field already says which provider this is; repeating it
+   * beside the control pushed every select to a different x. */
+  hideLabel?: boolean;
   onChange(value: string): void;
   /**
    * A model was CHOSEN from the list, as opposed to typed.
@@ -39,7 +43,7 @@ export function contextLabel(tokens: number | undefined): string | null {
  * provider picker, over the vendor's own list, each row with its context
  * size in set text. The typed text is the value; the list is a shortcut.
  */
-export function ModelCombo({ id, label, value, models, placeholder, onChange, onSelect }: ModelComboProps): JSX.Element {
+export function ModelCombo({ id, label, value, models, placeholder, hideLabel, onChange, onSelect }: ModelComboProps): JSX.Element {
   const { contains } = useFilter({ sensitivity: 'base' });
   const items = models.map(m => ({ id: m.id, context: contextLabel(m.contextTokens) }));
   const children = (item: { id: string; context: string | null }): JSX.Element => (
@@ -68,7 +72,9 @@ export function ModelCombo({ id, label, value, models, placeholder, onChange, on
 
   return (
     <>
-      <label {...labelProps}>{label}</label>
+      <label {...labelProps} className={hideLabel === true ? 'sr-only' : undefined}>
+        {label}
+      </label>
       <div className="v2-combo">
         <input {...inputProps} ref={inputRef} placeholder={placeholder} />
         <button {...toggleProps} ref={buttonRef} type="button" className="v2-combo-toggle" aria-label="Show models" aria-labelledby={undefined}>
