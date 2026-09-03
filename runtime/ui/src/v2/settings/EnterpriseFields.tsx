@@ -126,13 +126,15 @@ export function EnterpriseFields({ id, vendorName, fields, extra, onExtraChange,
           </div>
         ))}
       </div>
-      {/* `keySet` is absent while the provider is not loaded — a row being
-          set up. It used to say "save the row, then paste the credentials
-          here", which could not be done: the row will not save without a
-          model, and the vendor will not list its models without credentials
-          to sign the request. Credentials are filed against the row, so
-          they can go first, and they have to. */}
-      {where === null ? (
+      {/* The FIELDS above are always editable — they are what this provider
+          is, and they have to be filled in first. The credentials are filed
+          against this row, so they can only be pasted once the row exists;
+          until then this says what to do, in that order. */}
+      {keySet === undefined ? (
+        <p className="v2-key muted" role="note">
+          <span className="v2-tag">credentials</span> fill in the fields above and save this provider, then paste the credentials.
+        </p>
+      ) : where === null ? (
         <p className="v2-key muted" role="note">
           <span className="v2-tag">credentials</span> {statusWord(keySet)} · this runtime has no key store; set them in the environment.
         </p>

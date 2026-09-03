@@ -645,7 +645,7 @@ describe('the enterprise vendors in Settings (providers spec §3 step 5)', () =>
       .find(li => (li.textContent ?? '').includes('Vertex'))!;
     expect(within(block).getByText(/not set up yet/)).toBeTruthy();
     expect(within(block).getByLabelText('Project')).toBeTruthy();
-    expect(within(block).getByText(/no key store; set them in the environment/)).toBeTruthy();
+    expect(within(block).getByText(/fill in the fields above and save this provider/)).toBeTruthy();
     // No secret input is drawn, and no key-variable field for this row.
     expect(screen.queryByLabelText('Service account JSON (optional)')).toBeNull();
     expect(puts).toHaveLength(0);

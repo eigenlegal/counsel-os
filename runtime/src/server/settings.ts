@@ -140,8 +140,7 @@ export function putProviderKey(ctx: SettingsContext, id: string, input: KeyBodyD
   return new Response(null, { status: 204 });
 }
 
-/** Every OTHER row of this vendor whose key `readKey` would fall back to.
- * Only for a vendor-filed key: a row-filed one is nobody else's. */
+/** Every OTHER row of this vendor whose key `readKey` could fall back to. */
 function siblingIds(ctx: SettingsContext, id: string): string[] {
   try {
     const rows = readRegistry(ctx.settings.file).providers ?? [];
@@ -186,10 +185,12 @@ export function deleteProviderKey(ctx: SettingsContext, id: string): Response {
     // OTHER row that shares the vendor's key — `readKey` falls back to
     // those, so leaving one behind would hand the key straight back on the
     // next call, with the page still saying the key was removed.
-    const filed = keyIdFor(id, entryFor(ctx, id));
-    store.delete(filed);
-    store.delete(id);
-    if (filed !== id) for (const sibling of siblingIds(ctx, id)) store.delete(sibling);
+    // Every place this provider's key could be: what it is filed under, the
+    // vendor item, this row's own legacy item, and every sibling row's
+    // legacy item that `readKey` could fall back to. A row-filed key used to
+    // leave the vendor item behind, where no later delete could reach it —
+    // the sweep only ran when the two differed the other way round.
+    for (const gone of new Set([keyIdFor(id, entryFor(ctx, id)), prefixOf(id), id, ...siblingIds(ctx, id)])) store.delete(gone);
   } catch (err) {
     return Response.json({ error: message(err) }, { status: 500 });
   }

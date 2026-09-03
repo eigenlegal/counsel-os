@@ -283,6 +283,22 @@ describe('secret fields — several secrets as ONE store item (providers spec §
     }
   });
 
+  test('a key pasted for one host is never handed to another', () => {
+    // A row pointed at a private gateway, credentialled, then pointed back
+    // at the vendor. The legacy full-id fallback would have handed the
+    // gateway's token to Moonshot.
+    const store = memoryStore();
+    const proxy = { baseURL: 'https://proxy.example/v1' };
+    store.set(keyIdFor('moonshot/kimi-k2', proxy), 'PROXY-TOKEN');
+    expect(readKey(store, 'moonshot/kimi-k2', proxy)).toBe('PROXY-TOKEN');
+    const preset = { baseURL: vendorFor('moonshot')!.defaultBaseURL! };
+    expect(readKey(store, 'moonshot/kimi-k2', preset)).toBeNull();
+    // A row that names no address of its own still migrates: that item
+    // cannot have been written for some other host.
+    const legacy = memoryStore({ 'openai/gpt-5.6': 'sk-old' });
+    expect(readKey(legacy, 'openai/gpt-5.6')).toBe('sk-old');
+  });
+
   test('two OpenAI-compatible rows on different hosts never share a key', () => {
     // The failure this guards: paste the firm's key on one row, a vendor's
     // key on the other, and a shared item would send the firm's key to the

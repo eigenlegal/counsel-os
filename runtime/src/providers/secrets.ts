@@ -318,7 +318,13 @@ export function readKey(store: SecretStore | undefined, id: string, entry: { bas
   try {
     const own = store.get(filed);
     if (own !== null) return own;
-    return filed === id ? null : store.get(id);
+    // The legacy item an older install wrote under the full id — but ONLY
+    // for a row that names no address of its own. A row that does may have
+    // been pointed at a private gateway when that key was pasted, and
+    // pointed back at the vendor since; handing the gateway's credential to
+    // the vendor is not a migration, it is a leak.
+    if (filed === id || (entry.baseURL ?? '').trim() !== '') return null;
+    return store.get(id);
   } catch {
     return null;
   }

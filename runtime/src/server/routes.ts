@@ -613,7 +613,14 @@ export function createApp(deps: ServerDeps): App {
     // URL that does not match the saved row's goes out unauthenticated: it
     // is a row being typed, which has no key yet anyway.
     const keyEnv = entry?.apiKeyEnv ?? vendor.keyEnv;
-    const madeUp = queryBase !== null && queryBase.trim() !== '' && queryBase.trim() !== (entry?.baseURL ?? '').trim();
+    // The vendor's OWN address is not made up. A provider still being set
+    // up has no registry row, and its row carries the preset the catalog
+    // prefilled — comparing against the row alone suppressed the key for
+    // every preset vendor, which is exactly the case a key was just pasted
+    // to unblock.
+    const known = [entry?.baseURL, vendor.defaultBaseURL].map(u => (u ?? '').trim().replace(/\/+$/, '')).filter(u => u !== '');
+    const asked = (queryBase ?? '').trim().replace(/\/+$/, '');
+    const madeUp = asked !== '' && !known.includes(asked);
     const stored = madeUp ? null : readKey(deps.settings.secrets, entry?.id ?? id, entry ?? {});
     const apiKey = stored ?? (madeUp ? undefined : keyEnv === undefined ? undefined : env[keyEnv]);
     const cacheKey = discoveryCache.key(prefix, baseURL);

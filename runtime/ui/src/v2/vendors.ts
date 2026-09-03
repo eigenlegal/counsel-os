@@ -168,6 +168,19 @@ export function prefixOf(id: string): string {
   return slash === -1 ? id : id.slice(0, slash);
 }
 
+/**
+ * Whether this vendor's key is filed against the ROW rather than the vendor.
+ *
+ * Mirrors `keyIdFor` in `runtime/src/providers/secrets.ts`, and is checked
+ * against it by a parity test. It matters here for one reason: a row-filed
+ * key cannot be pasted until the thing that decides where it is filed — the
+ * row's own address, or its account fields — is known and saved. Pasted
+ * before that, it lands in one place and is looked for in another.
+ */
+export function keyBelongsToRow(v: VendorRow): boolean {
+  return v.connection === 'fields' || v.baseURLFields !== undefined || v.prefix === 'openai-compatible';
+}
+
 export function vendorFor(prefix: string): VendorRow | undefined {
   return VENDORS.find(v => v.prefix === prefix);
 }

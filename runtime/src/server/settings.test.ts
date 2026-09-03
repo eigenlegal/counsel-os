@@ -429,6 +429,29 @@ describe('provider keys (providers spec §5)', () => {
     expect((await call(h.app, 'GET', '/providers/ollama/gemma4:e4b/key')).status).toBe(404);
   });
 
+  test('a row-filed key: set up after the row, and removed completely', async () => {
+    // `openai-compatible` shares its prefix with every unknown host, so its
+    // key is filed against the ROW. It can only be pasted once the row
+    // exists — otherwise it lands under the bare prefix and is looked for
+    // under the row, which stranded it where no delete could reach.
+    const h = harness({ contents: GOOGLE });
+    const id = 'openai-compatible/local-llm';
+    expect((await call(h.app, 'PUT', '/settings', { providers: [{ id, baseURL: 'https://llm.firm.internal/v1' }] })).status).toBe(200);
+    expect((await call(h.app, 'PUT', `/providers/${id}/key`, { value: 'sk-firm' })).status).toBe(204);
+    // Filed against the row, and the runtime reads it back there.
+    expect(h.secrets?.get(id)).toBe('sk-firm');
+    expect(h.secrets?.get('openai-compatible')).toBeNull();
+    const view = await settings(h.app);
+    expect((view.effective.providers.find(p => p.id === id) as { keySet?: unknown }).keySet).toBe(true);
+
+    // Remove takes every copy, including a vendor-level orphan an earlier
+    // version could leave behind.
+    h.secrets?.set('openai-compatible', 'sk-orphan');
+    expect((await call(h.app, 'DELETE', `/providers/${id}/key`)).status).toBe(204);
+    expect(h.secrets?.get(id)).toBeNull();
+    expect(h.secrets?.get('openai-compatible')).toBeNull();
+  });
+
   test('a runtime with no store answers 503 and reports secrets: null', async () => {
     const h = harness({ contents: GOOGLE, secrets: null });
     expect((await call(h.app, 'PUT', '/providers/google/gemini-2.5-pro/key', { value: 'k' })).status).toBe(503);

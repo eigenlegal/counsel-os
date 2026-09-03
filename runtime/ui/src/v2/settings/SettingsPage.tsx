@@ -4,7 +4,7 @@ import type { Health as HealthData, SettingsErrorBody, SettingsView } from '../.
 import { Health } from '../../settings/Health';
 import { ProviderCombo } from '../../settings/ProviderCombo';
 import { ProviderTest } from '../../settings/ProviderTest';
-import { dataLineFor, isEnterpriseVendor, makesLine, pickerLabel, prefixOf, searchVendors, vendorByPickerLabel, vendorFor } from '../vendors';
+import { dataLineFor, isEnterpriseVendor, keyBelongsToRow, makesLine, pickerLabel, prefixOf, searchVendors, vendorByPickerLabel, vendorFor } from '../vendors';
 import { EnterpriseFields } from './EnterpriseFields';
 import { KeyControl } from './KeyControl';
 import { YourModels } from './YourModels';
@@ -298,6 +298,22 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
     const vendor = vendorFor(prefixOf(id));
     if (vendor === undefined) return null;
     const live = view.effective.providers.find(p => p.id === id);
+    // A key filed against the ROW cannot be pasted before the row exists:
+    // the address or the account fields decide WHERE it is filed, and until
+    // they are saved it would land under the vendor and be looked for under
+    // the row. Pasted, accepted, and then unreadable. Everything else — the
+    // vendors whose address the catalog fixes, which is most of them — takes
+    // its key straight away.
+    // An enterprise vendor is row-filed too, but its FIELDS have to stay
+    // editable — they are what the provider is. `EnterpriseFields` shows
+    // them and says, in place of the paste, what has to happen first.
+    if (live === undefined && vendor.connection !== 'fields' && keyBelongsToRow(vendor)) {
+      return (
+        <p className="v2-key muted" role="note">
+          <span className="v2-tag">key</span> give this provider its address below and save it, then paste the key.
+        </p>
+      );
+    }
     // An enterprise vendor's credentials are a field set, not one key — and
     // its non-secret fields (a region, a resource) are what tell the listing
     // where to ask, so they belong on the block too.
