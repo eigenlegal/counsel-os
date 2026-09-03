@@ -115,8 +115,21 @@ describe('the vendor catalog (providers spec §3)', () => {
     // takes a model, so it is switchable like any other provider.
     expect(vendorFor('claude-sub')!.models).toBe('curated');
     expect(vendorFor('claude-sub')!.curated).toEqual(anthropic.curated);
-    // Codex publishes no list and we will not invent one.
-    expect(vendorFor('codex-sub')!.models).toBe('none');
+    // So does Codex. Its CLI documents the models it answers to
+    // (learn.chatgpt.com/docs/models); "ChatGPT does not publish a model
+    // list" was us never having looked.
+    expect(vendorFor('codex-sub')!.models).toBe('curated');
+    expect(vendorFor('codex-sub')!.curated!.map(m => m.id)).toContain('gpt-5.6-terra');
+  });
+
+  test('every vendor can say what models it has', () => {
+    // A provider you cannot choose a model for is a provider you cannot
+    // finish setting up. Every one either lists live or ships the ids it
+    // answers to.
+    for (const vendor of allVendors()) {
+      const has = vendor.models === 'list' || (vendor.curated ?? []).length > 0;
+      expect(has, `${vendor.prefix} offers no way to choose a model`).toBe(true);
+    }
   });
 
   test('every API-key vendor names its usual environment variable (uppercase, the vendor’s own spelling)', () => {

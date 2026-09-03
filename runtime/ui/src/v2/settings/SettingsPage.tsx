@@ -7,6 +7,7 @@ import { ProviderTest } from '../../settings/ProviderTest';
 import { dataLineFor, isEnterpriseVendor, keyBelongsToRow, makesLine, pickerLabel, prefixOf, searchVendors, vendorByPickerLabel, vendorFor } from '../vendors';
 import { EnterpriseFields } from './EnterpriseFields';
 import { KeyControl } from './KeyControl';
+import { AddProvider } from './AddProvider';
 import { YourModels } from './YourModels';
 import { ContentGroup } from './ContentGroup';
 import { TASK_IDS } from '../../tasks';
@@ -355,6 +356,115 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
     );
   };
 
+  /**
+   * One provider's own settings: its id, where to reach it, what it can do.
+   *
+   * These live INSIDE that provider's block now. They used to be a second
+   * list further down the page — every provider written twice, once as a
+   * block you could use and once as a row you had to understand — which is
+   * most of what made the page incoherent.
+   */
+  const providerDetails = (index: number): JSX.Element | null => {
+    const row = form.providers[index];
+    if (row === undefined) return null;
+          const rowVendor = vendorFor(prefixOf(row.id.trim()));
+    const enterprise = isEnterpriseVendor(rowVendor);
+    // A row nobody can fix is a row folded shut over its own error.
+    const rowHasError = Object.keys(errors).some(key => key.startsWith(`providers.${index}.`));
+    // The Id field leads the row when there is no vendor to name a
+    // model for: a blank row folded its only usable control away, and
+    // said "give it an id below" pointing at nothing.
+    const idField = (
+      <div className="field">
+    <label htmlFor={`v2-${row.key}-id`}>Id</label>
+    <input id={`v2-${row.key}-id`} value={row.id} placeholder="openai/gpt-5.6" onChange={e => patchRow(index, { id: e.target.value })} />
+    <FieldError message={errors[`providers.${index}.id`]} />
+      </div>
+    );
+    return (
+    <div className="v2-provider" key={row.key}>
+      {/* What this row IS, before what it is made of. The MODEL is
+      not set here any more — it belongs to the provider block
+      above, which is the one place a model gets chosen. What is
+      left is the connection: where to reach it and how to sign
+      in. */}
+      <p className="v2-provider-head">
+    <strong>{rowVendor?.label ?? rowVendor?.name ?? 'A model'}</strong>
+    <span className="muted">
+      {' — '}
+      {row.id.trim() === '' ? 'name it below' : <code>{row.id.trim()}</code>}
+    </span>
+      </p>
+      {rowVendor === undefined ? <div className="v2-provider-main">{idField}</div> : null}
+      <details className="v2-provider-advanced" open={rowHasError}>
+    <summary>the rest of this row</summary>
+      <div className="v2-provider-grid">
+    {rowVendor === undefined ? null : idField}
+    <div className="field">
+      <label htmlFor={`v2-${row.key}-baseurl`}>baseURL</label>
+      <input id={`v2-${row.key}-baseurl`} value={row.baseURL} placeholder={enterprise ? 'optional — a private endpoint' : 'https://…'} onChange={e => patchRow(index, { baseURL: e.target.value })} />
+      <FieldError message={errors[`providers.${index}.baseURL`]} />
+    </div>
+    {/* An enterprise vendor's credentials are fields, not one
+        variable; its field set below names the environment. */}
+    {enterprise ? null : (
+      <div className="field">
+        <label htmlFor={`v2-${row.key}-key`}>key variable (optional)</label>
+        <input id={`v2-${row.key}-key`} value={row.apiKeyEnv} placeholder="only for headless use" onChange={e => patchRow(index, { apiKeyEnv: e.target.value })} />
+        <FieldError message={errors[`providers.${index}.apiKeyEnv`]} />
+      </div>
+    )}
+    <TriField id={`v2-${row.key}-tools`} label="tools" value={row.tools} onChange={value => patchRow(index, { tools: value })} />
+    <TriField id={`v2-${row.key}-caching`} label="caching" value={row.caching} onChange={value => patchRow(index, { caching: value })} />
+    <TriField id={`v2-${row.key}-thinking`} label="thinking" value={row.thinking} onChange={value => patchRow(index, { thinking: value })} />
+    <div className="field">
+      <label htmlFor={`v2-${row.key}-context`}>contextTokens</label>
+      <input id={`v2-${row.key}-context`} type="number" min="1" step="1" value={row.contextTokens} onChange={e => patchRow(index, { contextTokens: e.target.value })} />
+      <FieldError message={errors[`providers.${index}.capabilities.contextTokens`]} />
+    </div>
+    <div className="field">
+      <label htmlFor={`v2-${row.key}-auth`}>auth</label>
+      <select id={`v2-${row.key}-auth`} value={row.auth} onChange={e => patchRow(index, { auth: e.target.value as ProviderRow['auth'] })}>
+        <option value="">default</option>
+        <option value="subscription">subscription</option>
+        <option value="apikey">apikey</option>
+        <option value="local">local</option>
+      </select>
+    </div>
+      </div>
+      </details>
+      {/* Where this row's text goes (providers spec §6): from the id's
+      prefix and, for an OpenAI-compatible server, its base URL. */}
+      {(() => {
+    const line = dataLineFor(row.id.trim(), row.baseURL.trim() === '' ? undefined : row.baseURL.trim());
+    return line === null ? null : (
+      <p className={line.locality === 'local' ? 'v2-provider-data v2-provider-data-local' : 'v2-provider-data'} role="note">
+        {line.text}
+        {line.termsUrl === null ? null : (
+          <>
+            {' · '}
+            <a href={line.termsUrl} target="_blank" rel="noreferrer">
+              their terms
+            </a>
+          </>
+        )}
+      </p>
+    );
+      })()}
+      <button
+    type="button"
+    className="v2-link v2-remove"
+    onClick={() => {
+      patch({ providers: form.providers.filter((_, i) => i !== index) });
+      setErrors({});
+    }}
+      >
+    Remove provider {index + 1}
+      </button>
+    </div>
+    );
+  };
+
   // A `tasks.*` message with no row to sit on still has to be shown; it
   // joins the general notices by the Save button.
   const orphanedTaskMessages = unplacedTaskMessages(errors, form.routes);
@@ -373,7 +483,7 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
         <h2>Providers and models</h2>
         <p className="muted">
           The providers this runtime can call, and the model each one runs. Your Claude and ChatGPT subscriptions and a local Ollama model are set up
-          already; add any others below. One key per provider — every model it sells opens with the same one.
+          already. One key per provider — every model it sells opens with the same one, and it goes to your Keychain, never into your vault.
         </p>
         <YourModels
           providers={view.effective.providers}
@@ -385,9 +495,10 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
           fileIds={new Set(form.providers.map(r => r.id.trim()))}
           // A provider you just added is not loaded yet, so nothing in
           // `effective` speaks for it. Its block comes from the form row.
-          pendingIds={form.providers.map(r => r.id.trim()).filter(id => id !== '' && !effectiveIds.includes(id))}
+          pendingIds={form.providers.map(r => r.id.trim()).filter(id => !effectiveIds.includes(id))}
           extraOf={prefix => form.providers.find(r => prefixOf(r.id.trim()) === prefix)?.extra}
           renderKey={group => keyControlFor(group.id)}
+          renderDetails={group => providerDetails(form.providers.findIndex(r => prefixOf(r.id.trim()) === group.prefix))}
           relist={relist}
           onPickModel={pickModel}
         />
@@ -398,198 +509,26 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
           </p>
         )}
 
-        {/* One field over every vendor and preset — searched by NAME and by
-            the families it serves, so "llama" and "gemini" find something.
-            Picking prefills a row; nothing is saved until the one Save. */}
-        <div className="v2-add-model">
-          <h3 className="runin">Add a provider</h3>
-          <div className="v2-add-provider-row">
-            <ProviderCombo
-              id="v2-add-provider"
-              label="Search by maker or vendor"
-              value={pick}
-              options={searchOptions(pick)}
-              placeholder="llama · gemini · a vendor's name"
-              // The options ARE the search result; matching them against the
-              // typed text again would hide every vendor found by a family
-              // rather than by its own name, which is the point.
-              filter={() => true}
-              onChange={setPick}
-            />
-            <button
-              type="button"
-              disabled={vendorByPickerLabel(pick) === undefined}
-              onClick={() => {
-                const v = vendorByPickerLabel(pick);
-                if (v === undefined) return;
-                // One block per provider means one row per provider. A
-                // second row of a vendor you already have was a stub with
-                // no block of its own (the block folds by vendor), no model
-                // picker and no key — nothing on it could be filled in, and
-                // saving it wrote an id with no model into the file.
-                if (haveVendor(v.prefix)) {
-                  setGeneral([`You already have ${v.label ?? v.name}. Choose its model on its own row above.`]);
-                  setPick('');
-                  return;
-                }
-                setGeneral([]);
-                patch({ providers: [...form.providers, catalogRow(v)] });
-                setPick('');
-              }}
-            >
-              Add
-            </button>
-            <button type="button" className="v2-link" onClick={() => patch({ providers: [...form.providers, emptyRow()] })}>
-              or add a blank row
-            </button>
-          </div>
-          {(() => {
-            const v = vendorByPickerLabel(pick);
-            if (v === undefined) {
-              const hits = searchVendors(pick).slice(0, 4);
-              if (pick.trim() === '') return null;
-              if (hits.length === 0) {
-                return (
-                  <p className="muted v2-add-provider-note" role="note">
-                    Nothing matches <strong>{pick.trim()}</strong>. Search for a maker or a family — <em>llama</em>, <em>gemini</em>, <em>qwen</em> — or the
-                    vendor you buy from. Any server that speaks the OpenAI API works from a blank row.
-                  </p>
-                );
-              }
-              return (
-                <p className="muted v2-add-provider-note" role="note">
-                  {hits.map(h => `${h.label ?? h.name}${makesLine(h, pick) === null ? '' : ` (${makesLine(h, pick)})`}`).join(' · ')}
-                </p>
-              );
+        {/* Click the provider you want. The whole catalog is behind
+            "Someone else" for a practice that buys elsewhere. */}
+        <AddProvider
+          have={haveVendor}
+          onAdd={v => {
+            // One block per provider means one row per provider: a second
+            // row of a vendor you have folds into the same block, so
+            // nothing on it could be filled in.
+            if (haveVendor(v.prefix)) {
+              setGeneral([`You already have ${v.label ?? v.name}. Choose its model on its own row above.`]);
+              return;
             }
-            return (
-              <p className="muted v2-add-provider-note" role="note">
-                {v.note === undefined ? null : <>{v.note} </>}
-                {v.connection === 'API key' ? <>Add the row, save, then paste the key on it — it goes to your Keychain. </> : null}
-                {v.connection === 'fields' ? <>Add the row, fill in its fields, save, then paste the credentials on it — they go to your Keychain as one item. </> : null}
-                {v.getKey === undefined ? null : (
-                  <a href={v.getKey} target="_blank" rel="noreferrer">
-                    Get a key
-                  </a>
-                )}
-                {v.setup === undefined ? null : (
-                  <a href={v.setup} target="_blank" rel="noreferrer">
-                    How to set up {v.name}
-                  </a>
-                )}
-                {v.baseURLFields === undefined ? null : <> Fill in {v.baseURLFields.map(f => `{${f}}`).join(', ')} in the base URL.</>}
-                {v.unverified === true ? <> The base URL was not verified against the vendor’s docs; check it.</> : null}
-              </p>
-            );
-          })()}
-        </div>
-
-        {form.providers.length === 0 ? null : (
-          <>
-            <h3 className="runin v2-added-head">Rows you added</h3>
-            <p className="muted">
-              Saved to your providers file (its path is under Runtime, below). A key pasted on a row goes to your Keychain, never into the vault.
-            </p>
-          </>
-        )}
-        {form.providers.map((row, index) => {
-          const rowVendor = vendorFor(prefixOf(row.id.trim()));
-          const enterprise = isEnterpriseVendor(rowVendor);
-          // A row nobody can fix is a row folded shut over its own error.
-          const rowHasError = Object.keys(errors).some(key => key.startsWith(`providers.${index}.`));
-          // The Id field leads the row when there is no vendor to name a
-          // model for: a blank row folded its only usable control away, and
-          // said "give it an id below" pointing at nothing.
-          const idField = (
-            <div className="field">
-              <label htmlFor={`v2-${row.key}-id`}>Id</label>
-              <input id={`v2-${row.key}-id`} value={row.id} placeholder="openai/gpt-5.6" onChange={e => patchRow(index, { id: e.target.value })} />
-              <FieldError message={errors[`providers.${index}.id`]} />
-            </div>
-          );
-          return (
-          <div className="v2-provider" key={row.key}>
-            {/* What this row IS, before what it is made of. The MODEL is
-                not set here any more — it belongs to the provider block
-                above, which is the one place a model gets chosen. What is
-                left is the connection: where to reach it and how to sign
-                in. */}
-            <p className="v2-provider-head">
-              <strong>{rowVendor?.label ?? rowVendor?.name ?? 'A model'}</strong>
-              <span className="muted">
-                {' — '}
-                {row.id.trim() === '' ? 'name it below' : <code>{row.id.trim()}</code>}
-              </span>
-            </p>
-            {rowVendor === undefined ? <div className="v2-provider-main">{idField}</div> : null}
-            <details className="v2-provider-advanced" open={rowHasError}>
-              <summary>the rest of this row</summary>
-            <div className="v2-provider-grid">
-              {rowVendor === undefined ? null : idField}
-              <div className="field">
-                <label htmlFor={`v2-${row.key}-baseurl`}>baseURL</label>
-                <input id={`v2-${row.key}-baseurl`} value={row.baseURL} placeholder={enterprise ? 'optional — a private endpoint' : 'https://…'} onChange={e => patchRow(index, { baseURL: e.target.value })} />
-                <FieldError message={errors[`providers.${index}.baseURL`]} />
-              </div>
-              {/* An enterprise vendor's credentials are fields, not one
-                  variable; its field set below names the environment. */}
-              {enterprise ? null : (
-                <div className="field">
-                  <label htmlFor={`v2-${row.key}-key`}>key variable (optional)</label>
-                  <input id={`v2-${row.key}-key`} value={row.apiKeyEnv} placeholder="only for headless use" onChange={e => patchRow(index, { apiKeyEnv: e.target.value })} />
-                  <FieldError message={errors[`providers.${index}.apiKeyEnv`]} />
-                </div>
-              )}
-              <TriField id={`v2-${row.key}-tools`} label="tools" value={row.tools} onChange={value => patchRow(index, { tools: value })} />
-              <TriField id={`v2-${row.key}-caching`} label="caching" value={row.caching} onChange={value => patchRow(index, { caching: value })} />
-              <TriField id={`v2-${row.key}-thinking`} label="thinking" value={row.thinking} onChange={value => patchRow(index, { thinking: value })} />
-              <div className="field">
-                <label htmlFor={`v2-${row.key}-context`}>contextTokens</label>
-                <input id={`v2-${row.key}-context`} type="number" min="1" step="1" value={row.contextTokens} onChange={e => patchRow(index, { contextTokens: e.target.value })} />
-                <FieldError message={errors[`providers.${index}.capabilities.contextTokens`]} />
-              </div>
-              <div className="field">
-                <label htmlFor={`v2-${row.key}-auth`}>auth</label>
-                <select id={`v2-${row.key}-auth`} value={row.auth} onChange={e => patchRow(index, { auth: e.target.value as ProviderRow['auth'] })}>
-                  <option value="">default</option>
-                  <option value="subscription">subscription</option>
-                  <option value="apikey">apikey</option>
-                  <option value="local">local</option>
-                </select>
-              </div>
-            </div>
-            </details>
-            {/* Where this row's text goes (providers spec §6): from the id's
-                prefix and, for an OpenAI-compatible server, its base URL. */}
-            {(() => {
-              const line = dataLineFor(row.id.trim(), row.baseURL.trim() === '' ? undefined : row.baseURL.trim());
-              return line === null ? null : (
-                <p className={line.locality === 'local' ? 'v2-provider-data v2-provider-data-local' : 'v2-provider-data'} role="note">
-                  {line.text}
-                  {line.termsUrl === null ? null : (
-                    <>
-                      {' · '}
-                      <a href={line.termsUrl} target="_blank" rel="noreferrer">
-                        their terms
-                      </a>
-                    </>
-                  )}
-                </p>
-              );
-            })()}
-            <button
-              type="button"
-              className="v2-link v2-remove"
-              onClick={() => {
-                patch({ providers: form.providers.filter((_, i) => i !== index) });
-                setErrors({});
-              }}
-            >
-              Remove provider {index + 1}
-            </button>
-          </div>
-          );
-        })}
+            setGeneral([]);
+            patch({ providers: [...form.providers, catalogRow(v)] });
+          }}
+          onAddBlank={() => {
+            setGeneral([]);
+            patch({ providers: [...form.providers, emptyRow()] });
+          }}
+        />
       </section>
 
       <section className="v2-group">

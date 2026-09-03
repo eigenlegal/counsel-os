@@ -44,6 +44,10 @@ export interface YourModelsProps {
   /** The key control for a provider, supplied by the page (this component
    * knows nothing about the settings view). */
   renderKey?(group: ProviderGroup): JSX.Element | null;
+  /** This provider's own settings — its id, address, and what it can do —
+   * rendered inside its block rather than as a second list of every
+   * provider further down the page. */
+  renderDetails?(group: ProviderGroup): JSX.Element | null;
   /** A provider whose key just changed, and a counter so the same provider
    * twice still counts. Its model list is re-asked: the key is usually the
    * whole reason the vendor would not answer. */
@@ -170,21 +174,25 @@ export function groupProviders(
   // and both have to happen before there is anything to save.
   for (const id of pendingIds) {
     const prefix = prefixOf(id);
-    if (prefix === '' || groups.has(prefix)) continue;
+    if (groups.has(prefix)) continue;
     const { vendor, model } = nameOf(id);
-    groups.set(prefix, { rank: 3, group: { prefix, name: vendor, reach: pendingReach(prefix), model, id, pending: true } });
+    // A row with no id at all still needs a block: it is where its own Id
+    // field lives, and without one the row was added and then invisible.
+    const name = prefix === '' ? 'A model' : vendor;
+    groups.set(prefix, { rank: 3, group: { prefix, name, reach: pendingReach(prefix), model, id, pending: true } });
   }
   return [...groups.values()].map(entry => entry.group);
 }
 
 /** What an unsaved provider still needs, from the catalog alone. */
 function pendingReach(prefix: string): Reach {
+  if (prefix === '') return { how: 'not set up yet', usable: false, blocked: 'give it an id below' };
   const connection = vendorFor(prefix)?.connection;
   const how = connection === 'local' ? 'on this machine' : connection === 'subscription' ? 'your subscription' : 'not set up yet';
   return { how, usable: false, blocked: 'pick a model to finish' };
 }
 
-export function YourModels({ providers, defaultId, builtinDefault, busy, baseURLOf, extraOf, fileIds, pendingIds, renderKey, relist, onMakeDefault, onPickModel }: YourModelsProps): JSX.Element {
+export function YourModels({ providers, defaultId, builtinDefault, busy, baseURLOf, extraOf, fileIds, pendingIds, renderKey, renderDetails, relist, onMakeDefault, onPickModel }: YourModelsProps): JSX.Element {
   const groups = groupProviders(providers, defaultId, fileIds, pendingIds);
   if (groups.length === 0) {
     return <p className="muted">No provider is set up. Add one below.</p>;
@@ -201,6 +209,7 @@ export function YourModels({ providers, defaultId, builtinDefault, busy, baseURL
           baseURL={baseURLOf(group.prefix)}
           extra={extraOf?.(group.prefix)}
           {...(renderKey === undefined ? {} : { renderKey })}
+          {...(renderDetails === undefined ? {} : { renderDetails })}
           relistN={relist != null && relist.prefix === group.prefix ? relist.n : 0}
           onMakeDefault={onMakeDefault}
           onPickModel={onPickModel}
@@ -218,12 +227,13 @@ interface ProviderBlockProps {
   baseURL: string | undefined;
   extra: Record<string, string> | undefined;
   renderKey?(group: ProviderGroup): JSX.Element | null;
+  renderDetails?(group: ProviderGroup): JSX.Element | null;
   relistN: number;
   onMakeDefault(id: string): void;
   onPickModel(id: string, model: string): Promise<boolean>;
 }
 
-function ProviderBlock({ group, isDefault, builtinDefault, busy, baseURL, extra, renderKey, relistN, onMakeDefault, onPickModel }: ProviderBlockProps): JSX.Element {
+function ProviderBlock({ group, isDefault, builtinDefault, busy, baseURL, extra, renderKey, renderDetails, relistN, onMakeDefault, onPickModel }: ProviderBlockProps): JSX.Element {
   // A prefix the catalog does not know (`serve --fake`, a hand-edited id)
   // has nowhere to ask, so do not ask.
   const known = vendorFor(group.prefix) !== undefined;
@@ -333,6 +343,7 @@ function ProviderBlock({ group, isDefault, builtinDefault, busy, baseURL, extra,
           block — and it has to come before the model, because most vendors
           will not list their models without it. */}
       {renderKey?.(group) ?? null}
+      {renderDetails?.(group) ?? null}
     </li>
   );
 }

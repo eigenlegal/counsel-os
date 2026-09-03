@@ -270,8 +270,13 @@ describe('a provider you have added but not saved', () => {
     expect(groupProviders([], '', new Set(), ['openai/'])[0]!.reach.how).toBe('not set up yet');
   });
 
-  test('an id that is only a slash is not a provider', () => {
-    expect(groupProviders([], '', new Set(), ['/x'])).toEqual([]);
+  test('a row with no id yet is still a block — that is where its Id field lives', () => {
+    // Added and then invisible was the alternative: the row's only usable
+    // control renders inside its block.
+    const [blank] = groupProviders([], '', new Set(), ['']);
+    expect(blank!.name).toBe('A model');
+    expect(blank!.pending).toBe(true);
+    expect(blank!.reach.blocked).toBe('give it an id below');
   });
 
   test('the same pending vendor twice is still one block', () => {

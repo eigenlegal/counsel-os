@@ -156,11 +156,19 @@ describe('discoverModels', () => {
   });
 
   test('a vendor with no list and no curated ids says to type the id', async () => {
-    // `codex-sub`: the Codex CLI publishes no list, and we know one model
-    // name for certain, which is not a list worth inventing.
-    const r = await discoverModels(vendorFor('codex-sub')!, {});
+    // No vendor in the catalog is in this state any more — every one lists
+    // or ships its ids — but the branch still has to answer sensibly if one
+    // is ever added that way.
+    const bare = { ...vendorFor('perplexity')!, models: 'none' as const, curated: undefined };
+    const r = await discoverModels(bare, {});
     expect(r.models).toEqual([]);
     expect(r.error).toContain('type the model id');
+  });
+
+  test('the Codex subscription lists its models too', async () => {
+    const r = await discoverModels(vendorFor('codex-sub')!, {});
+    expect(r.source).toBe('curated');
+    expect(r.models.map(m => m.id)).toContain('gpt-5.6-terra');
   });
 
   test('the Claude subscription lists its models, with no key and no call', async () => {
