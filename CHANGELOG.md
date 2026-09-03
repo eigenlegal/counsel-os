@@ -8,6 +8,17 @@ reconstructed from git history. New entries are prepended automatically by
 
 ## [Unreleased]
 
+Adding a provider actually works now
+
+- A provider you add gets its **block straight away**, with its key and its model picker on it. Before this it appeared only as a stub down in "Rows you added", and the two things it needed were impossible to do in either order: the row would not save without a model, and the vendor would not list its models without a key.
+- **The key moved onto the provider block**, above the model. It is the first thing a hosted provider needs and the reason its model list can answer, so it sits where the provider is rather than folded inside a row.
+- A key can be pasted before anything is saved. It used to say "save the row, then paste the key here" — advice that could not be followed.
+- Pasting a key re-asks that provider for its models, instead of leaving you to find the `refresh` link.
+- **A key set up on a new provider is still there after you save it.** The catalog prefills every row with the vendor's own address, and that was being read as "this row points somewhere else" — so the key was filed one way while the provider was being set up and looked for another way the moment it saved. It was accepted and then unreadable, and the same key had to be pasted twice. Nine vendors were affected, Moonshot and Cloudflare and Hugging Face among them.
+- The page can now see a key it stored for a provider that has no model yet, so it says so and offers to remove it, rather than reading "not set" and inviting a second paste.
+- Adding a provider you already have says so, instead of making a second row that could not be filled in.
+- Azure, Bedrock and Vertex get their block too, with their region or project on it — those fields are what tell the listing where to ask.
+
 Providers, and the model each one runs
 
 - Settings now shows one block per **provider** — Claude, ChatGPT, Ollama, anything you add — with the model as a picker on that block. You choose a provider, then you choose a model. The list comes from the provider itself, so it is what they offer today rather than a list we hard-coded.

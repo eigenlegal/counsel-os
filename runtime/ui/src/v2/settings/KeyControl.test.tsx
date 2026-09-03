@@ -62,10 +62,54 @@ describe('KeyControl', () => {
     await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('refused'));
   });
 
-  test('an unsaved row and a runtime with no store each say what to do instead', () => {
-    render(<KeyControl id="google/gemini-2.5-pro" keySet={undefined} where="keychain" onChanged={() => {}} />);
-    expect(screen.getByText(/save the row, then paste the key here/)).toBeTruthy();
-    cleanup();
+  test('a provider not saved yet can still take its key — that is the order the work happens in', async () => {
+    // It used to say "save the row, then paste the key here", which could
+    // not be done: the row would not save without a model, and the vendor
+    // would not list its models without the key.
+    const calls: Array<{ url: string; method: string }> = [];
+    const realFetch = globalThis.fetch;
+    let stored = false;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+      calls.push({ url, method });
+      if (method === 'GET') return new Response(JSON.stringify({ keySet: stored }), { headers: { 'content-type': 'application/json' } });
+      if (method === 'PUT') stored = true;
+      if (method === 'DELETE') stored = false;
+      return new Response(null, { status: 204 });
+    }) as unknown as typeof fetch;
+
+    let changed = 0;
+    render(<KeyControl id="google/" keySet={undefined} where="keychain" onChanged={() => (changed += 1)} />);
+    // It ASKS the runtime rather than guessing: a key set on an earlier
+    // visit has to show, or it can never be removed.
+    await waitFor(() => expect(calls.some(c => c.method === 'GET')).toBe(true));
+    // No empty path segment: `openai/` must not build `/providers/openai//key`.
+    expect(calls[0]!.url).toBe('/providers/google/key');
+
+    await userEvent.click(screen.getByRole('button', { name: 'paste a key' }));
+    const user = userEvent.setup({ document });
+    await user.type(screen.getByLabelText('Paste the key for google'), 'AIza-test');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(changed).toBe(1));
+    expect(calls.some(c => c.method === 'PUT' && c.url === '/providers/google/key')).toBe(true);
+
+    // And now it reads as set, with a way to take it back off again.
+    await waitFor(() => expect(screen.getByText('set')).toBeTruthy());
+    expect(screen.getByRole('button', { name: 'remove' })).toBeTruthy();
+    globalThis.fetch = realFetch;
+  });
+
+  test('a key already stored for a provider being set up is shown, not asked for again', async () => {
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (async () => new Response(JSON.stringify({ keySet: true }), { headers: { 'content-type': 'application/json' } })) as unknown as typeof fetch;
+    render(<KeyControl id="google/" keySet={undefined} where="keychain" onChanged={() => {}} />);
+    await waitFor(() => expect(screen.getByText('set')).toBeTruthy());
+    expect(screen.getByRole('button', { name: 'remove' })).toBeTruthy();
+    globalThis.fetch = realFetch;
+  });
+
+  test('a runtime with no store says what to do instead', () => {
     render(<KeyControl id="google/gemini-2.5-pro" keySet={false} where={null} onChanged={() => {}} />);
     expect(screen.getByText(/no key store; set it in the environment/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'paste a key' })).toBeNull();

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { allVendors, vendorFor } from './vendors';
 import {
   decodeSecretFields,
   defaultRunner,
@@ -242,10 +243,60 @@ describe('secret fields — several secrets as ONE store item (providers spec §
     expect(keyIdFor('bedrock/m')).toBe('bedrock/m');
     expect(keyIdFor('azure/deployment')).toBe('azure/deployment');
     expect(keyIdFor('vertex/gemini-3-pro')).toBe('vertex/gemini-3-pro');
-    // And any row that overrides the endpoint at all: a region, a proxy, a
-    // private gateway. DashScope's own note says its keys are per region.
+    // A row pointing somewhere ELSE: a region, a proxy, a private gateway.
+    // DashScope's own note says its keys are per region.
     expect(keyIdFor('dashscope/qwen-max', { baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1' })).toBe('dashscope/qwen-max');
     expect(keyIdFor('openai/gpt-5.6', { baseURL: '' })).toBe('openai');
+  });
+
+  test('the preset URL the catalog prefills is not an override — a key set up on a row is still there after it saves', () => {
+    // `catalogRow` prefills every preset row with the vendor's OWN address.
+    // Counting that as "the row moved the endpoint" filed the key under the
+    // bare prefix while the row was pending and under the full id the moment
+    // it saved: pasted, accepted, then unreadable, and the same key had to
+    // be pasted again.
+    const preset = vendorFor('moonshot')!.defaultBaseURL!;
+    expect(preset).not.toBe('');
+    expect(keyIdFor('moonshot/', {})).toBe('moonshot');
+    expect(keyIdFor('moonshot/kimi-k2', { baseURL: preset })).toBe('moonshot');
+    // Trailing slashes are the same address.
+    expect(keyIdFor('moonshot/kimi-k2', { baseURL: `${preset}/` })).toBe('moonshot');
+    // Somewhere else really is somewhere else.
+    expect(keyIdFor('moonshot/kimi-k2', { baseURL: 'https://proxy.example/v1' })).toBe('moonshot/kimi-k2');
+
+    // The round trip a lawyer actually makes: paste on the pending row,
+    // then save the row.
+    const store = memoryStore();
+    store.set(keyIdFor('moonshot/', {}), 'sk-moonshot');
+    expect(readKey(store, 'moonshot/kimi-k2', { baseURL: preset })).toBe('sk-moonshot');
+  });
+
+  test('every preset the catalog prefills survives that round trip', () => {
+    // One test rather than nine: any preset vendor whose row is created with
+    // its own base URL must read its key back after the save.
+    const store = memoryStore();
+    for (const vendor of allVendors()) {
+      if (vendor.defaultBaseURL === undefined || vendor.auth !== 'apikey') continue;
+      if (vendor.fields !== undefined || vendor.baseURLFields !== undefined || vendor.locality === 'by-baseURL') continue;
+      store.set(keyIdFor(`${vendor.prefix}/`, {}), `sk-${vendor.prefix}`);
+      expect(readKey(store, `${vendor.prefix}/a-model`, { baseURL: vendor.defaultBaseURL })).toBe(`sk-${vendor.prefix}`);
+    }
+  });
+
+  test('a key pasted for one host is never handed to another', () => {
+    // A row pointed at a private gateway, credentialled, then pointed back
+    // at the vendor. The legacy full-id fallback would have handed the
+    // gateway's token to Moonshot.
+    const store = memoryStore();
+    const proxy = { baseURL: 'https://proxy.example/v1' };
+    store.set(keyIdFor('moonshot/kimi-k2', proxy), 'PROXY-TOKEN');
+    expect(readKey(store, 'moonshot/kimi-k2', proxy)).toBe('PROXY-TOKEN');
+    const preset = { baseURL: vendorFor('moonshot')!.defaultBaseURL! };
+    expect(readKey(store, 'moonshot/kimi-k2', preset)).toBeNull();
+    // A row that names no address of its own still migrates: that item
+    // cannot have been written for some other host.
+    const legacy = memoryStore({ 'openai/gpt-5.6': 'sk-old' });
+    expect(readKey(legacy, 'openai/gpt-5.6')).toBe('sk-old');
   });
 
   test('two OpenAI-compatible rows on different hosts never share a key', () => {

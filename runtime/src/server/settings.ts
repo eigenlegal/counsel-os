@@ -140,8 +140,7 @@ export function putProviderKey(ctx: SettingsContext, id: string, input: KeyBodyD
   return new Response(null, { status: 204 });
 }
 
-/** Every OTHER row of this vendor whose key `readKey` would fall back to.
- * Only for a vendor-filed key: a row-filed one is nobody else's. */
+/** Every OTHER row of this vendor whose key `readKey` could fall back to. */
 function siblingIds(ctx: SettingsContext, id: string): string[] {
   try {
     const rows = readRegistry(ctx.settings.file).providers ?? [];
@@ -153,6 +152,25 @@ function siblingIds(ctx: SettingsContext, id: string): string[] {
 
 function redactAll(text: string, values: string[]): string {
   return values.reduce((t, v) => redact(t, v), text);
+}
+
+/**
+ * `GET /providers/:id/key` — whether there IS one. Never the value.
+ *
+ * `/settings` speaks only for LOADED providers, and a provider being set up
+ * has no model yet, so nothing is loaded for it. Without this, a key pasted
+ * on a new provider was stored and then invisible: the page went on saying
+ * "not set", offered no way to remove it, and invited the same key to be
+ * pasted a second time.
+ */
+export function providerKeyState(ctx: SettingsContext, id: string): Response {
+  if (!takesKey(id)) return Response.json({ error: `${id} does not take an API key` }, { status: 404 });
+  const vendor = vendorFor(prefixOf(id));
+  const keys = keyContext(ctx);
+  const keySet = isEnterprise(vendor)
+    ? enterpriseKeyState(id, keys)
+    : keyStateFor(id, keyEnvFor(id, keys.registry), keys.store, keys.env, rowOf(id, keys.registry));
+  return Response.json({ keySet });
 }
 
 /** `DELETE /providers/:id/key` — idempotent; the registry reloads so the
@@ -167,10 +185,12 @@ export function deleteProviderKey(ctx: SettingsContext, id: string): Response {
     // OTHER row that shares the vendor's key — `readKey` falls back to
     // those, so leaving one behind would hand the key straight back on the
     // next call, with the page still saying the key was removed.
-    const filed = keyIdFor(id, entryFor(ctx, id));
-    store.delete(filed);
-    store.delete(id);
-    if (filed !== id) for (const sibling of siblingIds(ctx, id)) store.delete(sibling);
+    // Every place this provider's key could be: what it is filed under, the
+    // vendor item, this row's own legacy item, and every sibling row's
+    // legacy item that `readKey` could fall back to. A row-filed key used to
+    // leave the vendor item behind, where no later delete could reach it —
+    // the sweep only ran when the two differed the other way round.
+    for (const gone of new Set([keyIdFor(id, entryFor(ctx, id)), prefixOf(id), id, ...siblingIds(ctx, id)])) store.delete(gone);
   } catch (err) {
     return Response.json({ error: message(err) }, { status: 500 });
   }

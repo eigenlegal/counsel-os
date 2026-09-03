@@ -34,7 +34,7 @@ function whereWord(where: EnterpriseFieldsProps['where']): string {
   return 'a file only you can read';
 }
 
-function statusWord(keySet: KeyState): string {
+function statusWord(keySet: KeyState | undefined): string {
   if (keySet === true) return 'set';
   if (keySet === 'env') return 'from the environment';
   if (keySet === 'default-chain') return 'default credentials on this machine';
@@ -126,9 +126,13 @@ export function EnterpriseFields({ id, vendorName, fields, extra, onExtraChange,
           </div>
         ))}
       </div>
+      {/* The FIELDS above are always editable — they are what this provider
+          is, and they have to be filled in first. The credentials are filed
+          against this row, so they can only be pasted once the row exists;
+          until then this says what to do, in that order. */}
       {keySet === undefined ? (
         <p className="v2-key muted" role="note">
-          <span className="v2-tag">credentials</span> save the row, then paste the credentials here.
+          <span className="v2-tag">credentials</span> fill in the fields above and save this provider, then paste the credentials.
         </p>
       ) : where === null ? (
         <p className="v2-key muted" role="note">

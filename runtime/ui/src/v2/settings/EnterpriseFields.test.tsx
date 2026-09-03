@@ -118,10 +118,15 @@ describe('EnterpriseFields (providers spec §3 step 5)', () => {
     await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('go together'));
   });
 
-  test('an unsaved row and a runtime with no store each say what to do instead', () => {
-    render(<EnterpriseFields id="azure/dep" rowKey="r5" vendorName="Azure OpenAI" fields={[{ name: 'resourceName', label: 'Resource name', secret: false, required: true }, { name: 'apiKey', label: 'API key', secret: true, required: true }]} extra={{}} onExtraChange={() => {}} keySet={undefined} where="keychain" onChanged={() => {}} />);
-    expect(screen.getByText(/save the row, then paste the credentials here/)).toBeTruthy();
+  test('a provider being set up shows its fields, and says what has to happen before the credentials', () => {
+    // The fields are what the provider IS, so they are always editable. The
+    // credentials are filed against this row and can only be pasted once it
+    // exists — so the note says the order, rather than "save the row" with
+    // no way to save it.
+    render(<EnterpriseFields id="azure/" rowKey="r5" vendorName="Azure OpenAI" fields={[{ name: 'resourceName', label: 'Resource name', secret: false, required: true }, { name: 'apiKey', label: 'API key', secret: true, required: true }]} extra={{}} onExtraChange={() => {}} keySet={undefined} where="keychain" onChanged={() => {}} />);
     expect(screen.getByLabelText('Resource name')).toBeTruthy();
+    expect(screen.getByText(/fill in the fields above and save this provider/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'paste credentials' })).toBeNull();
     cleanup();
     render(<EnterpriseFields id="azure/dep" rowKey="r6" vendorName="Azure OpenAI" fields={[]} extra={{}} onExtraChange={() => {}} keySet={false} where={null} onChanged={() => {}} />);
     expect(screen.getByText(/no key store; set them in the environment/)).toBeTruthy();

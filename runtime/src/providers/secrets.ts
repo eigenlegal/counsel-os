@@ -280,8 +280,13 @@ export function keyStateFor(id: string, keyEnv: string | undefined, store: Secre
  * - `cloudflare` puts `{account_id}` in its base URL; the token is per
  *   account. `azure`, `bedrock` and `vertex` carry a resource, an AWS
  *   account and a GCP project on the row.
- * - Any row that overrides `baseURL` at all: a region (DashScope's keys are
- *   per region), a proxy, a private endpoint.
+ * - Any row that points somewhere OTHER than the vendor's own address: a
+ *   region (DashScope's keys are per region), a proxy, a private endpoint.
+ *   Carrying the vendor's own preset URL is not pointing elsewhere — the
+ *   catalog prefills it on every row it creates, and treating that as an
+ *   override filed the key under the bare prefix while the row was still
+ *   being set up and under the full id the moment it saved. The key was
+ *   stranded: pasted, accepted, and then unreadable.
  *
  * Getting this wrong sends one tenant's credential to another tenant's
  * host, so the default is the narrow one: share a key only where the
@@ -291,11 +296,15 @@ export function keyIdFor(id: string, entry: { baseURL?: string } = {}): string {
   const vendor = vendorFor(prefixOf(id));
   if (vendor === undefined) return id;
   const rowDecidesWhere =
-    vendor.fields !== undefined ||
-    vendor.baseURLFields !== undefined ||
-    vendor.locality === 'by-baseURL' ||
-    (entry.baseURL !== undefined && entry.baseURL.trim() !== '');
+    vendor.fields !== undefined || vendor.baseURLFields !== undefined || vendor.locality === 'by-baseURL' || movedElsewhere(vendor, entry.baseURL);
   return rowDecidesWhere ? id : prefixOf(id);
+}
+
+/** Whether a row's base URL points somewhere other than the vendor's own. */
+function movedElsewhere(vendor: { defaultBaseURL?: string }, baseURL: string | undefined): boolean {
+  const given = (baseURL ?? '').trim().replace(/\/+$/, '');
+  if (given === '') return false;
+  return given !== (vendor.defaultBaseURL ?? '').trim().replace(/\/+$/, '');
 }
 
 /**
@@ -309,7 +318,13 @@ export function readKey(store: SecretStore | undefined, id: string, entry: { bas
   try {
     const own = store.get(filed);
     if (own !== null) return own;
-    return filed === id ? null : store.get(id);
+    // The legacy item an older install wrote under the full id — but ONLY
+    // for a row that names no address of its own. A row that does may have
+    // been pointed at a private gateway when that key was pasted, and
+    // pointed back at the vendor since; handing the gateway's credential to
+    // the vendor is not a migration, it is a leak.
+    if (filed === id || (entry.baseURL ?? '').trim() !== '') return null;
+    return store.get(id);
   } catch {
     return null;
   }
