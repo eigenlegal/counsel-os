@@ -29,6 +29,10 @@ export interface YourModelsProps {
   /** A saved row's base URL for this vendor, so a local runner's model list
    * is asked for at the right address. */
   baseURLOf(prefix: string): string | undefined;
+  /** An enterprise row's non-secret fields (a Bedrock region, an Azure
+   * resource). They name WHERE to ask, so without them that vendor's
+   * listing can only answer with an error. */
+  extraOf?(prefix: string): Record<string, string> | undefined;
   /** The ids this practice's own file names, so a saved row is shown over a
    * built-in of the same vendor. */
   fileIds: ReadonlySet<string>;
@@ -180,7 +184,7 @@ function pendingReach(prefix: string): Reach {
   return { how, usable: false, blocked: 'pick a model to finish' };
 }
 
-export function YourModels({ providers, defaultId, builtinDefault, busy, baseURLOf, fileIds, pendingIds, renderKey, relist, onMakeDefault, onPickModel }: YourModelsProps): JSX.Element {
+export function YourModels({ providers, defaultId, builtinDefault, busy, baseURLOf, extraOf, fileIds, pendingIds, renderKey, relist, onMakeDefault, onPickModel }: YourModelsProps): JSX.Element {
   const groups = groupProviders(providers, defaultId, fileIds, pendingIds);
   if (groups.length === 0) {
     return <p className="muted">No provider is set up. Add one below.</p>;
@@ -195,6 +199,7 @@ export function YourModels({ providers, defaultId, builtinDefault, busy, baseURL
           builtinDefault={builtinDefault}
           busy={busy}
           baseURL={baseURLOf(group.prefix)}
+          extra={extraOf?.(group.prefix)}
           {...(renderKey === undefined ? {} : { renderKey })}
           relistN={relist != null && relist.prefix === group.prefix ? relist.n : 0}
           onMakeDefault={onMakeDefault}
@@ -211,25 +216,33 @@ interface ProviderBlockProps {
   builtinDefault: boolean;
   busy: boolean;
   baseURL: string | undefined;
+  extra: Record<string, string> | undefined;
   renderKey?(group: ProviderGroup): JSX.Element | null;
   relistN: number;
   onMakeDefault(id: string): void;
   onPickModel(id: string, model: string): Promise<boolean>;
 }
 
-function ProviderBlock({ group, isDefault, builtinDefault, busy, baseURL, renderKey, relistN, onMakeDefault, onPickModel }: ProviderBlockProps): JSX.Element {
+function ProviderBlock({ group, isDefault, builtinDefault, busy, baseURL, extra, renderKey, relistN, onMakeDefault, onPickModel }: ProviderBlockProps): JSX.Element {
   // A prefix the catalog does not know (`serve --fake`, a hand-edited id)
   // has nowhere to ask, so do not ask.
   const known = vendorFor(group.prefix) !== undefined;
-  const { result, loading, refresh } = useModels(known ? group.prefix : null, baseURL);
+  const { result, loading, refresh } = useModels(known ? group.prefix : null, baseURL, extra ?? {});
   const models = result?.models ?? [];
   // Ask again when this provider's key changes: "No key for OpenAI yet" is
   // the commonest reason the list is empty, and having pasted one, nobody
   // should have to find a `refresh` link to see the models it just bought.
+  // Seeded with what it is mounted at, so a block re-mounted after a key
+  // change does not fire an extra listing on top of `useModels`' own first
+  // load — the counter lives on the page and outlives any one block.
+  const seenRelist = useRef(relistN);
   useEffect(() => {
-    if (relistN > 0) refresh();
-    // `refresh` is stable for a given prefix; re-running on its identity
-    // would re-ask on every render.
+    if (relistN === seenRelist.current) return;
+    seenRelist.current = relistN;
+    refresh();
+    // `refresh` is EXCLUDED deliberately: `useModels` returns a new closure
+    // on every render, so listing it here is an endless fetch loop. This
+    // effect is driven by the counter alone.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [relistN]);
   // The combo reports every KEYSTROKE, so the text is held here and saved

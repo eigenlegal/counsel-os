@@ -142,6 +142,26 @@ describe('SettingsPage', () => {
     expect(screen.getByText('id is required')).toBeTruthy();
   });
 
+  test('a provider you already have is not added twice', async () => {
+    // One block per provider means one row per provider. A second row of a
+    // vendor you have folds into the same block, so it had no model picker
+    // and no key of its own — nothing on it could be filled in, and saving
+    // it wrote an id with no model into the file.
+    const ollama: ProviderInfo = { ...fakeProvider, id: 'ollama/gemma4:e4b', auth: 'local', locality: 'local' };
+    install(() => json(view), { ...view, effective: { ...view.effective, providers: [fakeProvider, ollama] } });
+    render(<SettingsPage health={health} />);
+    await waitFor(() => expect(screen.getByRole('list', { name: 'Providers you can use' })).toBeTruthy());
+    const before = screen.getAllByLabelText('Id').length;
+
+    const user = userEvent.setup({ document });
+    await user.type(screen.getByRole('combobox', { name: 'Search by maker or vendor' }), 'Local runners · Ollama');
+    await user.keyboard('{Escape}');
+    await userEvent.click(screen.getByRole('button', { name: 'Add' }));
+
+    await waitFor(() => expect(screen.getByText(/You already have Ollama/)).toBeTruthy());
+    expect(screen.getAllByLabelText('Id')).toHaveLength(before);
+  });
+
   test('a blank row leads with the one field it needs', async () => {
     install(() => json(view));
     render(<SettingsPage health={health} />);
@@ -616,7 +636,16 @@ describe('the enterprise vendors in Settings (providers spec §3 step 5)', () =>
     // The field set sits under the row: project empty, location defaulted.
     expect((screen.getByLabelText('Project') as HTMLInputElement).value).toBe('');
     expect((screen.getByLabelText('Location') as HTMLInputElement).value).toBe('us-central1');
-    expect(screen.getByText(/save the row, then paste the credentials here/)).toBeTruthy();
+    // The provider gets its block at once, with its field set on it — the
+    // fields are what tell the listing where to ask, so they come before
+    // the model. (This runtime has no secret store, so the credentials line
+    // says so rather than offering a paste.)
+    const block = within(screen.getByRole('list', { name: 'Providers you can use' }))
+      .getAllByRole('listitem')
+      .find(li => (li.textContent ?? '').includes('Vertex'))!;
+    expect(within(block).getByText(/not set up yet/)).toBeTruthy();
+    expect(within(block).getByLabelText('Project')).toBeTruthy();
+    expect(within(block).getByText(/no key store; set them in the environment/)).toBeTruthy();
     // No secret input is drawn, and no key-variable field for this row.
     expect(screen.queryByLabelText('Service account JSON (optional)')).toBeNull();
     expect(puts).toHaveLength(0);

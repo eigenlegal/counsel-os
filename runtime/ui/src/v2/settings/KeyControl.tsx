@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ApiError, deleteProviderKey, setProviderKey } from '../../api/client';
+import { useCallback, useEffect, useState } from 'react';
+import { ApiError, deleteProviderKey, getProviderKeyState, setProviderKey } from '../../api/client';
 import type { KeyState } from '../../api/types';
 
 export interface KeyControlProps {
@@ -33,19 +33,27 @@ export function KeyControl({ id, keySet, getKey, where, onChanged }: KeyControlP
   const [value, setValue] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // A key pasted against a provider that is not loaded yet IS stored — it is
-  // filed under the provider, not under the row — but `/settings` speaks
-  // only for loaded providers, so `keySet` stays absent and the line would
-  // go on reading "not set" straight after a successful save.
-  const [justSet, setJustSet] = useState(false);
-
-  // `keySet` is absent while the provider is not loaded yet — a row you
-  // just added. It used to say "save the row, then paste the key here",
-  // which could not be done: the row would not save without a model, and
-  // the vendor would not list its models without the key. The key is filed
-  // under the provider, not under the row, so it can be pasted first — and
-  // it has to be, because it is what makes the model list answer.
+  // `/settings` speaks only for LOADED providers, and one being set up has
+  // no model yet, so `keySet` is absent for it. Ask the runtime directly:
+  // guessing from what this component itself just did was a lie the moment
+  // the block re-mounted — a key it had accepted read as "not set", with no
+  // way offered to remove it.
+  const [asked, setAsked] = useState<KeyState | undefined>(undefined);
   const unsaved = keySet === undefined;
+  const reask = useCallback((): void => {
+    if (!unsaved) return;
+    void getProviderKeyState(id)
+      .then(setAsked)
+      .catch(() => setAsked(undefined));
+  }, [id, unsaved]);
+  useEffect(reask, [reask]);
+
+  // It used to say "save the row, then paste the key here", which could not
+  // be done: the row would not save without a model, and the vendor would
+  // not list its models without the key. The key is filed under the
+  // provider, so it can be pasted first — and it has to be, because it is
+  // what makes the model list answer.
+  const state = unsaved ? asked : keySet;
   if (where === null) {
     return (
       <p className="v2-key muted" role="note">
@@ -63,7 +71,7 @@ export function KeyControl({ id, keySet, getKey, where, onChanged }: KeyControlP
       await setProviderKey(id, trimmed);
       setValue('');
       setEditing(false);
-      setJustSet(true);
+      reask();
       onChanged();
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) return;
@@ -78,7 +86,7 @@ export function KeyControl({ id, keySet, getKey, where, onChanged }: KeyControlP
     setError(null);
     try {
       await deleteProviderKey(id);
-      setJustSet(false);
+      reask();
       onChanged();
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) return;
@@ -88,11 +96,11 @@ export function KeyControl({ id, keySet, getKey, where, onChanged }: KeyControlP
     }
   };
 
-  const isSet = keySet === true || (unsaved && justSet);
-  const status = isSet ? 'set' : keySet === 'env' ? 'from the environment' : 'not set';
+  const isSet = state === true;
+  const status = isSet ? 'set' : state === 'env' ? 'from the environment' : state === 'default-chain' ? 'from this machine' : 'not set';
 
   return (
-    <div className="v2-key" role="group" aria-label={`Key for ${id}`}>
+    <div className="v2-key" role="group" aria-label={`Key for ${id.replace(/\/$/, "")}`}>
       <p className="v2-key-line">
         <span className="v2-tag">key</span>
         <span className={isSet ? 'v2-key-state v2-key-set' : 'v2-key-state'}>{status}</span>
@@ -133,7 +141,7 @@ export function KeyControl({ id, keySet, getKey, where, onChanged }: KeyControlP
             type="password"
             autoComplete="off"
             spellCheck={false}
-            aria-label={`Paste the key for ${id}`}
+            aria-label={`Paste the key for ${id.replace(/\/$/, "")}`}
             placeholder="paste the key"
             value={value}
             onChange={event => setValue(event.target.value)}

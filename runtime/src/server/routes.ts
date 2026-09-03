@@ -36,7 +36,7 @@ import {
   testProvider,
   TestBody,
   type RuntimeState,
-  type SettingsDeps, providerView, keyContext, putProviderKey, deleteProviderKey, KeyBody } from './settings';
+  type SettingsDeps, providerView, keyContext, putProviderKey, deleteProviderKey, providerKeyState, KeyBody } from './settings';
 import { sseFromEvents, type StreamEvent } from './sse';
 import { confirmationMessage, estimateCost, needsConfirmation, type Pricing } from '../evals/cost';
 import { defaultBenchmarksDir, FIXTURE_SETS, loadFixtures, sourceKindOf } from '../evals/fixture';
@@ -1631,6 +1631,7 @@ export function createApp(deps: ServerDeps): App {
 
       if (segments.length >= 3 && first === 'providers' && segments[segments.length - 1] === 'key') {
         const id = segments.slice(1, -1).map(s => decodeURIComponent(s)).join('/');
+        if (method === 'GET') return providerKeyState(deps, id);
         if (method === 'PUT') return await putKey(req, id);
         if (method === 'DELETE') return await deleteKey(id);
       }

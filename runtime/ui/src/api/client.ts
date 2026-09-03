@@ -6,6 +6,7 @@
  * call carries the bearer token; a 401 is reported once, centrally, so the
  * app can show the spec §5 message instead of each caller inventing its own.
  */
+import type { KeyState } from './types';
 import { parseSseChunk } from './sse';
 import { clearToken, readToken } from './token';
 import { reportUnauthorized } from './unauthorized';
@@ -66,7 +67,7 @@ export async function signOut(): Promise<void> {
 /** `PUT /providers/<id>/key` (providers spec §5): the one request that
  * carries a key. Slashes in the id are path segments. 204 on success. */
 export async function setProviderKey(id: string, value: string): Promise<void> {
-  await fetchJson<void>(`/providers/${id.split('/').map(encodeURIComponent).join('/')}/key`, {
+  await fetchJson<void>(`${keyPath(id)}`, {
     method: 'PUT',
     body: JSON.stringify({ value }),
   });
@@ -110,7 +111,26 @@ export async function setVaultOutcomes(outcomes: boolean): Promise<boolean> {
 }
 
 export async function deleteProviderKey(id: string): Promise<void> {
-  await fetchJson<void>(`/providers/${id.split('/').map(encodeURIComponent).join('/')}/key`, { method: 'DELETE' });
+  await fetchJson<void>(keyPath(id), { method: 'DELETE' });
+}
+
+/** Whether a provider has a key, without loading it. Used while a provider
+ * is being set up: `/settings` speaks only for loaded ones. */
+export async function getProviderKeyState(id: string): Promise<KeyState> {
+  return (await fetchJson<{ keySet: KeyState }>(keyPath(id))).keySet;
+}
+
+/**
+ * `/providers/<id>/key`. Empty segments are DROPPED: a provider being set
+ * up is `openai/`, which would otherwise build `/providers/openai//key` —
+ * the server tolerates it, and any proxy or router in front of it need not.
+ */
+function keyPath(id: string): string {
+  const segments = id
+    .split('/')
+    .filter(s => s !== '')
+    .map(encodeURIComponent);
+  return `/providers/${segments.join('/')}/key`;
 }
 
 /** Best-effort body parse. A failure here must not mask the status code —

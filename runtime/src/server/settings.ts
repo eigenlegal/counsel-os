@@ -155,6 +155,25 @@ function redactAll(text: string, values: string[]): string {
   return values.reduce((t, v) => redact(t, v), text);
 }
 
+/**
+ * `GET /providers/:id/key` — whether there IS one. Never the value.
+ *
+ * `/settings` speaks only for LOADED providers, and a provider being set up
+ * has no model yet, so nothing is loaded for it. Without this, a key pasted
+ * on a new provider was stored and then invisible: the page went on saying
+ * "not set", offered no way to remove it, and invited the same key to be
+ * pasted a second time.
+ */
+export function providerKeyState(ctx: SettingsContext, id: string): Response {
+  if (!takesKey(id)) return Response.json({ error: `${id} does not take an API key` }, { status: 404 });
+  const vendor = vendorFor(prefixOf(id));
+  const keys = keyContext(ctx);
+  const keySet = isEnterprise(vendor)
+    ? enterpriseKeyState(id, keys)
+    : keyStateFor(id, keyEnvFor(id, keys.registry), keys.store, keys.env, rowOf(id, keys.registry));
+  return Response.json({ keySet });
+}
+
 /** `DELETE /providers/:id/key` — idempotent; the registry reloads so the
  * provider falls back to the environment or to no key. */
 export function deleteProviderKey(ctx: SettingsContext, id: string): Response {

@@ -118,9 +118,14 @@ describe('EnterpriseFields (providers spec §3 step 5)', () => {
     await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('go together'));
   });
 
-  test('an unsaved row and a runtime with no store each say what to do instead', () => {
-    render(<EnterpriseFields id="azure/dep" rowKey="r5" vendorName="Azure OpenAI" fields={[{ name: 'resourceName', label: 'Resource name', secret: false, required: true }, { name: 'apiKey', label: 'API key', secret: true, required: true }]} extra={{}} onExtraChange={() => {}} keySet={undefined} where="keychain" onChanged={() => {}} />);
-    expect(screen.getByText(/save the row, then paste the credentials here/)).toBeTruthy();
+  test('a provider not set up yet can still take its credentials — that is the order the work happens in', () => {
+    // It used to say "save the row, then paste the credentials here", which
+    // could not be done: the row will not save without a model, and the
+    // vendor will not list its models without credentials to sign the
+    // request with.
+    render(<EnterpriseFields id="azure/" rowKey="r5" vendorName="Azure OpenAI" fields={[{ name: 'resourceName', label: 'Resource name', secret: false, required: true }, { name: 'apiKey', label: 'API key', secret: true, required: true }]} extra={{}} onExtraChange={() => {}} keySet={undefined} where="keychain" onChanged={() => {}} />);
+    expect(screen.getByRole('button', { name: 'paste credentials' })).toBeTruthy();
+    expect(screen.getByText('not set')).toBeTruthy();
     expect(screen.getByLabelText('Resource name')).toBeTruthy();
     cleanup();
     render(<EnterpriseFields id="azure/dep" rowKey="r6" vendorName="Azure OpenAI" fields={[]} extra={{}} onExtraChange={() => {}} keySet={false} where={null} onChanged={() => {}} />);

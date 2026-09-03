@@ -240,6 +240,11 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
     return false;
   };
 
+  /** Whether this vendor already has a block — loaded, or a row waiting to
+   * be saved. */
+  const haveVendor = (prefix: string): boolean =>
+    effectiveIds.some(id => prefixOf(id) === prefix) || form.providers.some(r => prefixOf(r.id.trim()) === prefix);
+
   /** A saved row's base URL for a vendor, so a local runner's model list is
    * asked for at the address that row names rather than the preset. */
   const baseURLOf = (prefix: string): string | undefined => {
@@ -291,8 +296,35 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
    */
   const keyControlFor = (id: string): JSX.Element | null => {
     const vendor = vendorFor(prefixOf(id));
-    if (vendor === undefined || vendor.connection !== 'API key') return null;
+    if (vendor === undefined) return null;
     const live = view.effective.providers.find(p => p.id === id);
+    // An enterprise vendor's credentials are a field set, not one key — and
+    // its non-secret fields (a region, a resource) are what tell the listing
+    // where to ask, so they belong on the block too.
+    if (vendor.connection === 'fields' && vendor.fields !== undefined) {
+      const index = form.providers.findIndex(r => prefixOf(r.id.trim()) === prefixOf(id));
+      if (index === -1) return null;
+      const row = form.providers[index]!;
+      return (
+        <EnterpriseFields
+          id={id}
+          rowKey={row.key}
+          vendorName={vendor.name}
+          fields={vendor.fields}
+          extra={row.extra}
+          onExtraChange={(name, value) => patchRowExtra(index, name, value)}
+          errors={Object.fromEntries(vendor.fields.map(f => [f.name, errors[`providers.${index}.extra.${f.name}`]]))}
+          keySet={live === undefined ? undefined : (live.keySet ?? false)}
+          {...(vendor.setup === undefined ? {} : { setup: vendor.setup })}
+          where={view.secrets === undefined || view.secrets === null ? null : view.secrets.where}
+          onChanged={() => {
+            setRelist(prev => ({ prefix: prefixOf(id), n: (prev?.n ?? 0) + 1 }));
+            void refresh();
+          }}
+        />
+      );
+    }
+    if (vendor.connection !== 'API key') return null;
     return (
       <KeyControl
         id={id}
@@ -338,6 +370,7 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
           // A provider you just added is not loaded yet, so nothing in
           // `effective` speaks for it. Its block comes from the form row.
           pendingIds={form.providers.map(r => r.id.trim()).filter(id => id !== '' && !effectiveIds.includes(id))}
+          extraOf={prefix => form.providers.find(r => prefixOf(r.id.trim()) === prefix)?.extra}
           renderKey={group => keyControlFor(group.id)}
           relist={relist}
           onPickModel={pickModel}
@@ -373,6 +406,17 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
               onClick={() => {
                 const v = vendorByPickerLabel(pick);
                 if (v === undefined) return;
+                // One block per provider means one row per provider. A
+                // second row of a vendor you already have was a stub with
+                // no block of its own (the block folds by vendor), no model
+                // picker and no key — nothing on it could be filled in, and
+                // saving it wrote an id with no model into the file.
+                if (haveVendor(v.prefix)) {
+                  setGeneral([`You already have ${v.label ?? v.name}. Choose its model on its own row above.`]);
+                  setPick('');
+                  return;
+                }
+                setGeneral([]);
                 patch({ providers: [...form.providers, catalogRow(v)] });
                 setPick('');
               }}
@@ -515,31 +559,6 @@ function RegistryForm({ view, onSaved }: { view: SettingsView; onSaved(next: Set
                     </>
                   )}
                 </p>
-              );
-            })()}
-            {/* An enterprise vendor's field set (providers spec §3 step 5):
-                the non-secret fields save with the row; the secret ones go
-                to the store as one item, never through the form. */}
-            {(() => {
-              if (!isEnterpriseVendor(rowVendor)) return null;
-              const id = row.id.trim();
-              const live = view.effective.providers.find(p => p.id === id);
-              const fieldErrors: Record<string, string | undefined> = {};
-              for (const f of rowVendor.fields) fieldErrors[f.name] = errors[`providers.${index}.extra.${f.name}`];
-              return (
-                <EnterpriseFields
-                  id={id}
-                  rowKey={row.key}
-                  vendorName={rowVendor.name}
-                  fields={rowVendor.fields}
-                  extra={row.extra}
-                  onExtraChange={(name, value) => patchRowExtra(index, name, value)}
-                  errors={fieldErrors}
-                  keySet={live === undefined ? undefined : (live.keySet ?? false)}
-                  {...(rowVendor.setup === undefined ? {} : { setup: rowVendor.setup })}
-                  where={view.secrets === undefined || view.secrets === null ? null : view.secrets.where}
-                  onChanged={() => void refresh()}
-                />
               );
             })()}
             <button

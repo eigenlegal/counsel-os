@@ -405,6 +405,30 @@ describe('provider keys (providers spec §5)', () => {
     expect(h.secrets?.get('openrouter')).toBe('or-key');
   });
 
+  test('GET asks whether a provider has a key, for one that is not loaded yet', async () => {
+    // `/settings` speaks only for LOADED providers, and one being set up has
+    // no model, so nothing there speaks for it. Without this the page could
+    // not see a key it had just stored: it read "not set", offered no way to
+    // remove it, and invited the same key to be pasted again.
+    const h = harness({ contents: GOOGLE });
+    const state = async (id: string): Promise<unknown> => (await (await call(h.app, 'GET', `/providers/${id}/key`)).json());
+    expect(await state('google')).toEqual({ keySet: false });
+
+    expect((await call(h.app, 'PUT', '/providers/google/key', { value: 'AIza-1' })).status).toBe(204);
+    expect(await state('google')).toEqual({ keySet: true });
+    // The same answer for a model of that vendor, since the key is filed
+    // under the vendor.
+    expect(await state('google/gemini-2.5-pro')).toEqual({ keySet: true });
+    // Never the value itself.
+    expect(JSON.stringify(await state('google'))).not.toContain('AIza-1');
+
+    expect((await call(h.app, 'DELETE', '/providers/google/key')).status).toBe(204);
+    expect(await state('google')).toEqual({ keySet: false });
+
+    // A provider that takes no key has no key state to report.
+    expect((await call(h.app, 'GET', '/providers/ollama/gemma4:e4b/key')).status).toBe(404);
+  });
+
   test('a runtime with no store answers 503 and reports secrets: null', async () => {
     const h = harness({ contents: GOOGLE, secrets: null });
     expect((await call(h.app, 'PUT', '/providers/google/gemini-2.5-pro/key', { value: 'k' })).status).toBe(503);

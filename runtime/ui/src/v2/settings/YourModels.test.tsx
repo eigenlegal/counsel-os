@@ -240,3 +240,41 @@ describe('which model a block stands for', () => {
     expect(new Set(names).size).toBe(2);
   });
 });
+
+describe('a provider you have added but not saved', () => {
+  test('gets a block of its own, so its key and model have somewhere to go', () => {
+    // Without this it appeared only as a stub in "Rows you added", with no
+    // model picker and no key — and neither could be supplied in either
+    // order: the row will not save without a model, and the vendor will not
+    // list models without a key.
+    const groups = groupProviders([], '', new Set(), ['openai/']);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]!.prefix).toBe('openai');
+    expect(groups[0]!.pending).toBe(true);
+    expect(groups[0]!.model).toBe('');
+    // It cannot answer yet, so it is never offered as the one that does.
+    expect(groups[0]!.reach.usable).toBe(false);
+    expect(groups[0]!.reach.blocked).toBe('pick a model to finish');
+  });
+
+  test('a provider already loaded does not get a second block', () => {
+    const loaded = [provider({ id: 'openai/gpt-5.6', auth: 'apikey', locality: 'cloud', keySet: true })];
+    const groups = groupProviders(loaded, '', new Set(['openai/gpt-5.6']), ['openai/']);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]!.model).toBe('gpt-5.6');
+    expect(groups[0]!.pending).toBeUndefined();
+  });
+
+  test('a local provider says where it runs even before it is saved', () => {
+    expect(groupProviders([], '', new Set(), ['ollama/'])[0]!.reach.how).toBe('on this machine');
+    expect(groupProviders([], '', new Set(), ['openai/'])[0]!.reach.how).toBe('not set up yet');
+  });
+
+  test('an id that is only a slash is not a provider', () => {
+    expect(groupProviders([], '', new Set(), ['/x'])).toEqual([]);
+  });
+
+  test('the same pending vendor twice is still one block', () => {
+    expect(groupProviders([], '', new Set(), ['openai/', 'openai/'])).toHaveLength(1);
+  });
+});

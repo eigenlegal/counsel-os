@@ -34,7 +34,7 @@ function whereWord(where: EnterpriseFieldsProps['where']): string {
   return 'a file only you can read';
 }
 
-function statusWord(keySet: KeyState): string {
+function statusWord(keySet: KeyState | undefined): string {
   if (keySet === true) return 'set';
   if (keySet === 'env') return 'from the environment';
   if (keySet === 'default-chain') return 'default credentials on this machine';
@@ -126,11 +126,13 @@ export function EnterpriseFields({ id, vendorName, fields, extra, onExtraChange,
           </div>
         ))}
       </div>
-      {keySet === undefined ? (
-        <p className="v2-key muted" role="note">
-          <span className="v2-tag">credentials</span> save the row, then paste the credentials here.
-        </p>
-      ) : where === null ? (
+      {/* `keySet` is absent while the provider is not loaded — a row being
+          set up. It used to say "save the row, then paste the credentials
+          here", which could not be done: the row will not save without a
+          model, and the vendor will not list its models without credentials
+          to sign the request. Credentials are filed against the row, so
+          they can go first, and they have to. */}
+      {where === null ? (
         <p className="v2-key muted" role="note">
           <span className="v2-tag">credentials</span> {statusWord(keySet)} · this runtime has no key store; set them in the environment.
         </p>
