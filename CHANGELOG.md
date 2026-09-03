@@ -8,6 +8,14 @@ reconstructed from git history. New entries are prepended automatically by
 
 ## [Unreleased]
 
+A design pass: a scale, a measure, and one control
+
+- **Five type sizes instead of twelve.** The sheet had 9.5, 10.5, 11, 11.5, 12, 12.5, 13, 13.5, 14, 14.5, 15 and 30px — and 12.5/13/13.5 alone accounted for a hundred uses while being indistinguishable on screen. Twelve sizes is not a scale, and it is most of why every page read flat: when everything is nearly the same size, nothing recedes and every paragraph shouts equally.
+- **Prose stops at a measure.** Settings ran the full window — 120 characters a line at 1280px. That is the "wall of text" in one number: the eye loses the line it is on. Explanations now set at 68 characters and in the secondary size, because they are reference, not instruction.
+- **One control.** `input` was styled by neither of the two rules that governed the others, so a text field got the browser's own chrome while the select beside it got ours. Inputs, selects and buttons now share a height, a padding, a ground, a border and a hover.
+- **The provider rows sit on one grid.** Each row used to be its own flex line, so the columns landed wherever the text happened to end: "Claude model" and "ChatGPT model" are different widths, so no two selects began at the same x. The redundant per-row label is gone (kept for screen readers), and every control starts on the same axis.
+- **A turn names three files, then counts.** A retro reads twenty, and twenty bordered monospace chips were the loudest thing on the page — for its least important content. All of them are still one click away, in the step detail the line already opens.
+
 A simpler Settings page, and the model lists we never asked for
 
 - **ChatGPT and Claude list their models.** The Codex CLI documents the models it answers to, and so does Claude's; we had never looked, and the page said "ChatGPT does not publish a model list". It does. Claude gained Fable too.

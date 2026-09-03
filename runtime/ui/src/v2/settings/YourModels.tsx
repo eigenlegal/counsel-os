@@ -337,6 +337,7 @@ function ProviderBlock({ group, isDefault, builtinDefault, busy, baseURL, extra,
           label={group.name === 'A model' ? 'Model' : `${group.name} model`}
           value={text}
           models={models}
+          hideLabel
           placeholder={loading ? 'listing…' : 'pick or type a model'}
           onChange={setText}
           onSelect={commit}
