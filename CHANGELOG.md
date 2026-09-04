@@ -6,7 +6,14 @@ All notable changes to Counsel OS are documented in this file. The format follow
 reconstructed from git history. New entries are prepended automatically by
 `scripts/release.sh`.
 
-## [Unreleased]
+## [0.15.0] — 2026-09-04
+
+Providers you can actually set up, and a page that reads like one
+
+- The provider and model surface, rebuilt: one block per provider with its model picked from the vendor's own list, one key per provider rather than one per model, and click-to-add from a named list. Claude and ChatGPT list their real models; Anthropic's are fetched live.
+- The Models page answers four questions instead of two — how models score, how each kind of work routes, what they are scored against, and what actually ran. Three endpoints that had shipped with nothing calling them now have surfaces: your eval set (and which fixtures cannot run), routing for every task rather than only scored ones, and the runs behind any score.
+- A design pass across the whole app: five type sizes where there were twelve, a measure on prose that ran 120 characters a line, one control idiom where inputs were unstyled beside styled selects, and no pills.
+- And the runtime says what it is running — version, commit and how long it has been up — with 'serve --watch' so a server left up overnight cannot answer from yesterday's code.
 
 Fixes to the design pass, from a review of it
 
