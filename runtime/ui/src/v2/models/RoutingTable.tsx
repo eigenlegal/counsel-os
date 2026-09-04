@@ -91,18 +91,34 @@ export function RoutingTable({ fallback }: RoutingTableProps): JSX.Element {
                   onChange={patch => void change(task, patch)}
                 />
               </td>
-              <td className="v2-routing-picks">
-                {routing?.picked?.providerId ?? (
-                  <>
-                    {fallback ?? <span className="muted">no model loaded</span>}
-                    {fallback === null ? null : <span className="v2-routing-why"> the default</span>}
-                  </>
-                )}
-              </td>
+              <td className="v2-routing-picks">{picks(routing, fallback)}</td>
             </tr>
           );
         })}
       </tbody>
     </table>
+  );
+}
+
+/**
+ * Who answers this task today.
+ *
+ * Three states, not two. A task with no rule falls through to the default,
+ * which is fine to say. But a task that HAS a rule and no pick is the
+ * router failing to resolve — `routes.ts` swallows that throw — and it
+ * happens when nothing clears the bar the operator set. Saying "the
+ * default" there names a model that will not run: the step errors.
+ */
+function picks(routing: RoutingTask | undefined, fallback: string | null): JSX.Element {
+  if (routing?.picked !== undefined) return <>{routing.picked.providerId}</>;
+  if (routing !== undefined) {
+    return <span className="v2-routing-unresolved">nothing clears this bar — a step would fail</span>;
+  }
+  if (fallback === null) return <span className="muted">no model loaded</span>;
+  return (
+    <>
+      {fallback}
+      <span className="v2-routing-why">the default</span>
+    </>
   );
 }
