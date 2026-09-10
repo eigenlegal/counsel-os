@@ -124,7 +124,7 @@ export function packagedUiIdentity(root: string, embedded: Array<{name:string;sh
   const visit = (dir:string) => { for (const item of readdirSync(dir,{withFileTypes:true})) {
     if(item.isSymbolicLink()) throw new Error('UI build contains a symlink.');
     const path=join(dir,item.name); if(item.isDirectory()) visit(path);
-    else if(!item.name.endsWith('.map') && relative(root,path)!=='index.html') files.push(relative(root,path));
+    else if(!item.name.endsWith('.map') && !['index.html', 'bundled-modules.json'].includes(relative(root,path))) files.push(relative(root,path));
   }}; visit(root);
   const identity=(items:Array<{name:string;sha256:string}>):Fingerprint => ({files:items.length,sha256:createHash('sha256').update(JSON.stringify([...items].sort((a,b)=>a.name.localeCompare(b.name)))).digest('hex')});
   const fresh=files.map(name=>({name,sha256:createHash('sha256').update(readFileSync(join(root,name))).digest('hex')}));

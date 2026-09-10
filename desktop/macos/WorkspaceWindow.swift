@@ -2,7 +2,7 @@ import AppKit
 import WebKit
 
 /// The only page allowed in the app is its own authenticated loopback UI.
-/// The page gets no filesystem, process-execution or native-message bridge.
+/// Only allowlisted, user-clicked native actions leave the page; none accepts arguments.
 final class WorkspaceWindow: NSWindowController, NSWindowDelegate, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate {
     let engine: EngineProcess
     private(set) var webView: WKWebView!
@@ -18,6 +18,7 @@ final class WorkspaceWindow: NSWindowController, NSWindowDelegate, WKNavigationD
     var onDownloaded: ((URL) -> Void)?
     var confirmMessage: ((String) -> Bool)?
     var onClose: (() -> Void)?
+    var onNativeAction: ((DesktopAction) -> Void)?
     var openExternal: (URL) -> Void = { NSWorkspace.shared.open($0) }
 
     init(engine: EngineProcess) {
@@ -71,7 +72,7 @@ final class WorkspaceWindow: NSWindowController, NSWindowDelegate, WKNavigationD
             switch result { case .success(let value): finish((value as? Bool) == true); case .failure: finish(false) }
         }
     }
-    func starting() { status.isHidden = false; webView.isHidden = true; heading.stringValue = "Opening your workspace…"; detail.stringValue = "Your saved work stays on this device."; retry.isHidden = true; spinner.startAnimation(nil) }
+    func starting() { status.isHidden = false; webView.isHidden = true; heading.stringValue = "Opening your workspace…"; detail.stringValue = "Your saved work stays on this device. An upgrade may take longer while Counsel verifies a recovery backup."; retry.isHidden = true; spinner.startAnimation(nil) }
     @objc func restart() {
         if let ready = engine.ready { starting(); load(ready); return }
         guard engine.process == nil else { return }; session = nil; starting(); engine.start()
@@ -101,6 +102,9 @@ final class WorkspaceWindow: NSWindowController, NSWindowDelegate, WKNavigationD
     }
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         guard let url = action.request.url else { decisionHandler(.cancel); return }
+        if action.navigationType == .linkActivated, action.sourceFrame.isMainFrame, owns(action.sourceFrame), owns(webView.url), let native = DesktopAction.parse(url) {
+            decisionHandler(.cancel); onNativeAction?(native); return
+        }
         let blob = session.map { url.absoluteString.hasPrefix("blob:\($0.origin)/") } ?? false
         if action.shouldPerformDownload && (owns(url) || blob) && owns(action.sourceFrame) { decisionHandler(.download); return }
         if owns(url) {

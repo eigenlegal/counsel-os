@@ -29,7 +29,8 @@ import { TemplateCreate, TemplateUpdate } from './templates';
 import { BACKUP_MAX_BYTES, BACKUP_MEDIA_TYPE } from './backup-format';
 import { createWorkspaceBackupFile, inspectWorkspaceBackup, type WorkspaceBackupFile } from './backups';
 import { ConnectionInput, type WorkspaceConnection, type ConnectionStatus } from './connection';
-import { ConnectionKind, ModelPreferenceInput, sameConnection } from './model-choice';
+import { ConnectionKind, ModelChoice, ModelPreferenceInput, sameConnection } from './model-choice';
+import { desktopUpdateStatus, checkDesktopUpdate, downloadDesktopUpdate, type UpdateManifest } from './desktop-updates';
 import { ImportCreate, ImportEdit, ImportCommit, ImportQueueAction, ImportQuery, ImportSelection, ImportBulkEdit, ImportChoiceEdits, IMPORT_MAX_MANIFEST_BYTES } from './import-types';
 import { ImportOrganizeInput } from './import-organization';
 import { ImportLinkApply, ImportLinkQuery } from './import-links';
@@ -125,7 +126,8 @@ function backupBody(req: Request): ReadableStream<Uint8Array> {
   return req.body;
 }
 
-function backupResponse(file: WorkspaceBackupFile): Response {
+type DownloadFile = Pick<WorkspaceBackupFile, 'path' | 'name' | 'byteCount' | 'dispose'>;
+function backupResponse(file: DownloadFile, mediaType = BACKUP_MEDIA_TYPE): Response {
   const reader = Bun.file(file.path).stream().getReader();
   const body = new ReadableStream<Uint8Array>({
     async pull(controller) {
@@ -138,7 +140,7 @@ function backupResponse(file: WorkspaceBackupFile): Response {
     async cancel() { try { await reader.cancel(); } finally { file.dispose(); } },
   });
   return new Response(body, { headers: {
-    'content-type': BACKUP_MEDIA_TYPE,
+    'content-type': mediaType,
     'content-length': String(file.byteCount),
     'content-disposition': `attachment; filename="${file.name}"`,
     'cache-control': 'no-store',
@@ -168,7 +170,9 @@ export function workspaceHandler(
   const staticHandler = serveStatic(options.distDir);
   // Single-use, short-lived capabilities grant only one already-created backup,
   // never workspace API access. Native browser downloads cannot send Bearer headers.
-  const downloads = new Map<string, { file: WorkspaceBackupFile; timeout: ReturnType<typeof setTimeout> }>();
+  const downloads = new Map<string, { file: DownloadFile; timeout: ReturnType<typeof setTimeout>; mediaType?: string }>();
+  let checkedUpdate: { id: string; at: number; manifest: UpdateManifest } | null = null;
+  let updateBusy = false;
   async function route(req: Request): Promise<Response> {
     const url = new URL(req.url);
     if (
@@ -186,7 +190,7 @@ export function workspaceHandler(
       if (!item) return Response.json({ error: 'This backup download expired or was already used. Prepare another backup.' }, { status: 404 });
       downloads.delete(ticket);
       clearTimeout(item.timeout);
-      return backupResponse(item.file);
+      return backupResponse(item.file, item.mediaType);
     }
     if (!url.pathname.startsWith('/api/')) {
       // Vite builds both applications; this server's root is the new workspace.
@@ -213,6 +217,7 @@ export function workspaceHandler(
       return Response.json({ error: 'Unknown workspace route.' }, { status: 404 });
     const [, , collection, id, operation] = parts;
     if (req.method === 'GET') {
+      if (collection === 'updates' && parts.length === 3) return Response.json(desktopUpdateStatus());
       if (collection === 'drafts' && parts.length === 3)
         return Response.json(url.searchParams.has('key') ? store.drafts.get(url.searchParams.get('key')!) : store.drafts.list());
       if (collection === 'upkeep' && parts.length === 3)
@@ -582,6 +587,42 @@ export function workspaceHandler(
         return Response.json(store.saveOutput(Id.parse(id), OutputInput.parse(await body(req))));
       if (collection === 'templates' && id && operation === 'revisions' && parts.length === 5)
         return Response.json(store.templates.update(Id.parse(id), TemplateUpdate.parse(await body(req))));
+      if (collection === 'updates' && id === 'check' && parts.length === 4) {
+        z.object({}).strict().parse(await body(req));
+        if (!options.desktop || !desktopUpdateStatus().enabled) throw new HttpError(409, 'No approved signed update channel is connected to this test build.');
+        if (updateBusy) throw new HttpError(409, 'Finish the current update check or download first.');
+        updateBusy = true;
+        try {
+          const highest = z.number().int().nonnegative().parse(store.setting('highest-desktop-update') ?? 0);
+          const manifest = await checkDesktopUpdate(highest, req.signal);
+          if (!manifest) { checkedUpdate = null; return Response.json(null); }
+          store.setSetting('highest-desktop-update', Math.max(highest, manifest.build));
+          checkedUpdate = { id: randomBytes(32).toString('hex'), at: Date.now(), manifest };
+          return Response.json(checkedUpdate);
+        } finally { updateBusy = false; }
+      }
+      if (collection === 'updates' && id === 'download' && parts.length === 4) {
+        const input = z.object({ id: z.string(), consent: z.literal(true) }).strict().parse(await body(req));
+        if (!options.desktop || !checkedUpdate || checkedUpdate.id !== input.id || Date.now() - checkedUpdate.at > 600_000 || Date.parse(checkedUpdate.manifest.expiresAt) <= Date.now()) throw new HttpError(409, 'Check for an update again before downloading.');
+        if (updateBusy || downloads.size >= 2) throw new HttpError(409, 'Finish the current download first.');
+        updateBusy = true;
+        try {
+          const file = await downloadDesktopUpdate(checkedUpdate.manifest, req.signal), ticket = randomBytes(32).toString('hex');
+          const timeout = setTimeout(() => { downloads.delete(ticket); file.dispose(); }, 300_000);
+          downloads.set(ticket, { file, timeout, mediaType: 'application/x-apple-diskimage' });
+          return Response.json({ downloadUrl: `/api/workspace/backups/${ticket}/download` });
+        } finally { updateBusy = false; }
+      }
+      if (collection === 'connection' && id === 'check-sign-in' && parts.length === 4) {
+        const input = z.object({ kind: z.enum(['codex', 'claude-code']) }).strict().parse(await body(req));
+        if (!options.connection) throw new HttpError(503, 'Connection checks are unavailable.');
+        return Response.json(await options.connection.checkSignIn(input.kind));
+      }
+      if (collection === 'connection' && id === 'test' && parts.length === 4) {
+        const input = z.object({ choice: ModelChoice, consent: z.literal(true) }).strict().parse(await body(req));
+        if (!options.connection) throw new HttpError(503, 'Connection tests are unavailable.');
+        return Response.json(await options.connection.test(input.choice, req.signal));
+      }
       if (collection === 'connection' && id === 'check-claude' && parts.length === 4) {
         z.object({})
           .strict()

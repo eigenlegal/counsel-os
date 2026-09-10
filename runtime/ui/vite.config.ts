@@ -17,7 +17,12 @@ const RUNTIME_URL = process.env.RUNTIME_URL ?? 'http://127.0.0.1:7431';
 const API_PREFIXES = ['/health', '/threads', '/runs', '/vault', '/settings', '/proposals', '/docket', '/setup', '/content', '/doctor'];
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), {
+    name: 'counsel-bundled-module-inventory',
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'bundled-modules.json', source: JSON.stringify([...this.getModuleIds()].filter(id => id.includes('/node_modules/')).sort()) });
+    },
+  }],
   base: '/',
   build: { outDir: 'dist', emptyOutDir: true, sourcemap: true,
     rollupOptions: { input: { legacy: 'index.html', workspace: 'workspace.html' } },

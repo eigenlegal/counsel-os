@@ -3,6 +3,7 @@ import { Icon, type IconName } from './icons';
 import { href, type Snapshot } from './api';
 import { ConnectionCard } from './ConnectionCard';
 import { BackupCard } from './BackupCard';
+import { DesktopUpdates } from './DesktopUpdates';
 
 export function Settings({
   data,
@@ -28,7 +29,7 @@ export function Settings({
         {(data.interfaceVersion ?? 0) >= 29 && <section className="settings-section import-settings-card"><div><h2>Getting started</h2><p>Connect AI, add your optional profile, and bring in your files at your own pace.</p></div><a className="button" href={href('settings', {view:'setup'})}>Workspace setup</a></section>}
         <section className="settings-section import-settings-card"><div><h2>Profile &amp; preferences</h2><p>Your practice context, writing style, document-review instructions, and Word output preferences live in Practice.</p></div><a className="button" href={href('knowledge', { section: 'preferences' })}>Open practice preferences</a></section>
         <section className="settings-section import-settings-card"><div><h2>Bring in your existing files</h2><p>Drop a folder, review suggested organization, and build your workspace from your own material.</p></div><a className="button" href={href('imports')}>Import files & folders</a></section>
-        <ConnectionCard status={data.connection} onChanged={onChanged} />
+        <ConnectionCard status={data.connection} onChanged={onChanged} desktop={data.desktop} />
         <section className="settings-section">
           <div className="settings-title">
             <span className="record-icon">
@@ -51,7 +52,8 @@ export function Settings({
             <dd>Original plugin files stay separate. Importing creates a local snapshot; it does not modify or synchronize the plugin.</dd>
           </dl>
         </section>
-        <BackupCard />
+        <BackupCard desktop={data.desktop} />
+        {data.desktop && <DesktopUpdates />}
         <section className="settings-section">
           <div className="settings-title">
             <span className="record-icon">

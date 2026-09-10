@@ -45,14 +45,14 @@ export async function buildDesktop(args: string[]) {
   mkdirSync(macOS, { recursive: true }); mkdirSync(resources);
   copyFileSync(join(engineFolder, 'counsel-workspace'), join(macOS, 'counsel-workspace'));
   copyFileSync(join(engineFolder, 'manifest.json'), join(resources, 'engine-manifest.json'));
-  for (const file of ['LICENSE', 'PDFJS-LICENSE', 'README.txt']) copyFileSync(join(engineFolder, file), join(resources, file));
+  for (const file of ['LICENSE', 'PDFJS-LICENSE', 'README.txt', 'THIRD-PARTY-NOTICES.txt', 'dependency-inventory.json']) copyFileSync(join(engineFolder, file), join(resources, file));
   writeFileSync(join(app, 'Contents/Info.plist'), desktopPlist(readFileSync(join(repo, 'desktop/macos/Info.plist'), 'utf8'), release), { flag: 'wx' });
   const command = async (argv: string[]) => {
     const child = Bun.spawn(argv, { cwd: repo, stdin: 'ignore', stdout: 'inherit', stderr: 'inherit' });
     if (await child.exited) throw new Error(`Desktop build step failed: ${argv[0]}`);
   };
   await command(['/usr/bin/xcrun', 'swiftc', '-swift-version', '5', '-O', '-target', `${process.arch === 'arm64' ? 'arm64' : 'x86_64'}-apple-macosx13.0`,
-    'desktop/macos/EngineProcess.swift', 'desktop/macos/WorkspaceWindow.swift', 'desktop/macos/main.swift', '-o', join(macOS, 'Counsel')]);
+    'desktop/macos/EngineProcess.swift', 'desktop/macos/DesktopActions.swift', 'desktop/macos/WorkspaceWindow.swift', 'desktop/macos/main.swift', '-o', join(macOS, 'Counsel')]);
   const iconBuilder = join(output, 'icon-builder');
   await command(['/usr/bin/xcrun', 'swiftc', '-parse-as-library', 'desktop/macos/BuildIcon.swift', '-o', iconBuilder]);
   await command([iconBuilder, join(output, 'Counsel.iconset')]);
@@ -76,7 +76,7 @@ export async function buildDesktop(args: string[]) {
     engineSha256: signedEngineHash, originalEngineSha256: engine.executable.sha256,
     shellSha256: createHash('sha256').update(readFileSync(join(macOS, 'Counsel'))).digest('hex'),
     signing: 'Local ad-hoc signature only. Not a Developer ID signature or notarization.',
-    limitations: ['No installer, updater or clean-machine qualification.', 'Chat and working-preference drafts recover locally; other unsaved forms still need saving before quit.',
+    limitations: ['Local-test image only; signing, a trusted update channel and manual clean-machine acceptance remain release gates.', 'Chat and working-preference drafts recover locally; other unsaved forms still need saving before quit.',
       'First-run setup reuses existing connections; provider CLI installation/authentication remain external.', 'macOS only; deployment target is not a claim of tested OS-version coverage.'] }, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
   console.log(`Local desktop app: ${app}\nNot installed or opened. Local ad-hoc signature only; not notarized.`);
   return app;

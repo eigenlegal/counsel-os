@@ -14,6 +14,7 @@ import { FILE_MAX_REQUEST_BYTES } from './files';
 import { BACKUP_MAX_BYTES } from './backup-format';
 import { inspectWorkspaceBackup, restoreWorkspaceBackup, stopWorkspaceBackups } from './backups';
 import { workspaceDistribution } from './distribution';
+import { prepareWorkspaceUpgrade } from './upgrade-safety';
 
 export async function launchWorkspace(args = process.argv.slice(2)): Promise<void> {
   const distribution = workspaceDistribution();
@@ -105,12 +106,26 @@ export async function launchWorkspace(args = process.argv.slice(2)): Promise<voi
       `Restored a separate workspace from ${recovered.manifest.createdAt}.\nDatabase: ${databasePath}\nYour existing workspaces are unchanged. Reconnect AI in Settings before sending messages.\nTo reopen later, run ${invocation} --database followed by the quoted database path above.`,
     );
   const unlock = lockWorkspace(databasePath);
+  // The initial recovery archive can be large. Watch the parent before that
+  // work starts, not only after the HTTP server is ready.
+  let startupCancelled = false;
+  const cancelStartup = () => { startupCancelled = true; void stopWorkspaceBackups(); };
+  process.once('SIGINT', cancelStartup); process.once('SIGTERM', cancelStartup);
+  if (values.desktop) {
+    process.stdin.once('end', cancelStartup); process.stdin.once('error', cancelStartup); process.stdin.resume();
+  }
   let store: WorkspaceStore;
   try {
+    await prepareWorkspaceUpgrade(databasePath);
+    if (startupCancelled) throw new Error('Workspace startup cancelled before migration.');
     store = new WorkspaceStore({ databasePath });
   } catch (error) {
+    await stopWorkspaceBackups();
     unlock();
     throw error;
+  } finally {
+    process.removeListener('SIGINT', cancelStartup); process.removeListener('SIGTERM', cancelStartup);
+    if (values.desktop) { process.stdin.removeListener('end', cancelStartup); process.stdin.removeListener('error', cancelStartup); }
   }
   let chat: WorkspaceChat | undefined;
   let server: ReturnType<typeof Bun.serve>;

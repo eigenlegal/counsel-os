@@ -46,7 +46,7 @@ jobs:
           bun run repo:check
           bun run typecheck:runtime
           bun run typecheck:ui
-          bun test runtime/src/workspace runtime/src/docx scripts/build_workspace.test.ts scripts/build_desktop.test.ts scripts/package_desktop.test.ts scripts/desktop_release.test.ts scripts/repository_policy.test.ts
+          bun test runtime/src/workspace runtime/src/docx scripts/build_workspace.test.ts scripts/build_desktop.test.ts scripts/package_desktop.test.ts scripts/desktop_release.test.ts scripts/desktop_notices.test.ts scripts/sign_desktop.test.ts scripts/repository_policy.test.ts
           bun run ui:test
       - name: Build the current workspace and desktop shell
         run: bun run desktop:build --outdir "$RUNNER_TEMP/counsel-desktop-build"

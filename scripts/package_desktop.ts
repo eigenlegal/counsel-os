@@ -6,6 +6,7 @@ import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { buildDesktop } from './build_desktop';
 import { sourceFingerprint } from './workspace-release-check';
+import { verifyDesktopNotices } from './desktop_notices';
 
 export function packageOptions(args: string[]) {
   let app: string | undefined, output: string | undefined, help = false;
@@ -26,6 +27,7 @@ export async function packageDesktop(args: string[]) {
   if(process.platform!=='darwin') throw new Error('The desktop disk image currently builds on macOS only.');
   const repo=resolve(import.meta.dir,'..'), app=opts.app ?? await buildDesktop([]);
   if(!app) throw new Error('Desktop app was not built.');
+  verifyDesktopNotices(join(app, 'Contents/Resources'));
   const build=JSON.parse(readFileSync(join(dirname(app),'desktop-build.json'),'utf8'));
   if(build.source?.sha256!==(await sourceFingerprint(repo)).sha256) throw new Error('The desktop app does not match this source checkout. Rebuild before packaging.');
   const sha=(path:string)=>createHash('sha256').update(readFileSync(path)).digest('hex');

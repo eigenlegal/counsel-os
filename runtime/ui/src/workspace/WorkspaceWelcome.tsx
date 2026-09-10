@@ -20,7 +20,7 @@ export function WorkspaceWelcome({ data, changed, editProfile }: { data: Snapsho
       <div><h2>Connect your AI</h2><p>{data.connection.ready ? `Configured: ${data.connection.label}. Account access is checked when you use it.` : 'Use your own AI connection. Until then, you can import, organize, and read files locally.'}</p></div>
       <button type="button" className="button" aria-expanded={connect} onClick={() => setConnect(v => !v)}>{connect ? 'Close connection options' : data.connection.ready ? 'Review connection' : 'Choose a connection'}</button>
     </div>
-    {connect && <div className="welcome-connection"><ConnectionCard status={data.connection} onChanged={changed} /></div>}
+    {connect && <div className="welcome-connection"><ConnectionCard status={data.connection} onChanged={changed} desktop={data.desktop} /></div>}
     <div className="welcome-step"><div><h2>Make it yours <small>Optional</small></h2>
       <p>{data.profile ? `Profile saved for ${data.profile.name}.` : 'Add your name and practice context. In-house counsel can work without clients; smaller practices can group matters by client later.'}</p>
       <p>Review style, writing preferences, signing guidance, and Word attribution live in Practice. Import existing preferences or add them later.</p></div>

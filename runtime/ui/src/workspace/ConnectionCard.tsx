@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from 'react';
 import { request, type ConnectionConfig, type ConnectionStatus } from './api';
 import { Badge, ErrorNotice } from './components';
-import type { ClaudeSignIn, ClaudeBilling } from '../../../src/workspace/claude-code';
+import type { ClaudeBilling } from '../../../src/workspace/claude-code';
 import { ModelField } from './ModelPicker';
+import { ConnectionSetup, ConnectionTest } from './ConnectionSetup';
 
 const defaults = {
   'claude-code': 'sonnet',
@@ -13,9 +14,11 @@ const defaults = {
 export function ConnectionCard({
   status,
   onChanged,
+  desktop = false,
 }: {
   status: ConnectionStatus;
   onChanged: () => void;
+  desktop?: boolean;
 }): JSX.Element {
   const [kind, setKind] = useState<ConnectionConfig['kind']>(status.config?.kind ?? 'codex');
   const [model, setModel] = useState(status.config?.model ?? defaults.codex);
@@ -26,20 +29,6 @@ export function ConnectionCard({
   const [billing, setBilling] = useState<ClaudeBilling>(
     status.config?.claudeBilling ?? 'subscription',
   );
-  const [signIn, setSignIn] = useState<ClaudeSignIn | null>(null);
-  const [checking, setChecking] = useState(false);
-  async function checkSignIn() {
-    setChecking(true);
-    setError('');
-    setSignIn(null);
-    try {
-      setSignIn(await request<ClaudeSignIn>('/connection/check-claude', {}));
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setChecking(false);
-    }
-  }
   async function submit(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
@@ -84,7 +73,6 @@ export function ConnectionCard({
               setModel(defaults[value]);
               setKey('');
               setSaved(false);
-              setSignIn(null);
               setError('');
             }}
           >
@@ -129,22 +117,6 @@ export function ConnectionCard({
                 ? 'Uses your Claude subscription sign-in. Included limits and usage-credit charges depend on your plan and model. A different sign-in method blocks the response; it does not trigger API fallback.'
                 : 'Uses an API-billed sign-in managed by Claude Code. To select that account, run claude auth login --console in your terminal.'}
             </p>
-            <button
-              className="button"
-              type="button"
-              disabled={checking || busy}
-              onClick={() => void checkSignIn()}
-            >
-              {checking ? 'Checking…' : 'Check local sign-in'}
-            </button>
-            {signIn && (
-              <p role="status">
-                {signIn.message}
-                {signIn.loggedIn && signIn.billing !== billing
-                  ? ' This does not match the billing method selected above.'
-                  : ''}
-              </p>
-            )}
           </div>
         ) : kind === 'codex' ? (
           <div className="connection-explanation">
@@ -178,6 +150,7 @@ export function ConnectionCard({
           </label>
         )}
         <ModelField kind={kind} value={model} onChange={value => { setModel(value); setSaved(false); }} disabled={busy} />
+        {(kind === 'codex' || kind === 'claude-code') && <ConnectionSetup key={`${kind}:${billing}`} kind={kind} billing={kind === 'codex' ? 'subscription' : billing} desktop={desktop} changed={onChanged} />}
         <details className="model-detail">
           <summary>Model and connection details</summary>
           <p>
@@ -202,9 +175,10 @@ export function ConnectionCard({
           {saved && <span role="status">Saved. Send a message to use this connection.</span>}
         </div>
       </form>
+      <ConnectionTest config={status.config} />
       <p className="fine-print">
         Adapters are implemented but not yet live-qualified for legal work. Saving a connection does
-        not test model access or spend credits. Checking local Claude Code sign-in makes no model
+        not test model access or spend credits. Checking local sign-in makes no model
         call.
       </p>
     </section>
