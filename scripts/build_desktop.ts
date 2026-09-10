@@ -32,8 +32,8 @@ export function verifyEngine(folder: string) {
 export async function buildDesktop(args: string[]) {
   const opts = desktopOptions(args);
   if (opts.help) { console.log('bun run desktop:build [--outdir /new/folder] [--engine-dir /verified/engine/package]\nBuilds a local ad-hoc .app, not a signed/notarized release or installer. Default output is a new private temporary folder.'); return null }
-  if (process.platform !== 'darwin') throw new Error('The native shell currently builds on macOS only.');
   if (opts.output && existsSync(opts.output)) throw new Error('Choose a new output directory; existing builds are never overwritten.');
+  if (process.platform !== 'darwin') throw new Error('The native shell currently builds on macOS only.');
   const repo = resolve(import.meta.dir, '..'), sourceBefore = await sourceFingerprint(repo);
   const release = readDesktopRelease(repo);
   const engineFolder = opts.engine ?? await buildWorkspace([]); if (!engineFolder) throw new Error('Engine not built.');

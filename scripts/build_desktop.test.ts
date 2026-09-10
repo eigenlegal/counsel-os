@@ -8,7 +8,7 @@ test('desktop build options cannot install, publish or overwrite an existing out
   expect(desktopOptions(['--help']).help).toBe(true);
   for (const args of [['--outdir'], ['--install'], ['--sign', 'Developer ID'], ['--outdir', '/x', '--outdir', '/y']]) expect(() => desktopOptions(args)).toThrow();
   const root = mkdtempSync(join(tmpdir(), 'counsel-desktop-build-test-'));
-  try { await expect(buildDesktop(['--outdir', root])).rejects.toThrow(); }
+  try { await expect(buildDesktop(['--outdir', root])).rejects.toThrow('never overwritten'); }
   finally { rmSync(root, { recursive: true, force: true }); }
 });
 test('desktop wrapping rejects changed or unrecognized engines', () => {

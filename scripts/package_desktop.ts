@@ -22,8 +22,8 @@ export function packageOptions(args: string[]) {
 export async function packageDesktop(args: string[]) {
   const opts=packageOptions(args);
   if(opts.help) { console.log('bun run desktop:package [--app /current/build/Counsel.app] [--outdir /new/folder]\nCreates a local-test DMG, checksums and build receipt. Not notarized, published, installed or auto-updatable.'); return null; }
-  if(process.platform!=='darwin') throw new Error('The desktop disk image currently builds on macOS only.');
   if(opts.output && existsSync(opts.output)) throw new Error('Choose a new output directory. Existing outputs are never replaced.');
+  if(process.platform!=='darwin') throw new Error('The desktop disk image currently builds on macOS only.');
   const repo=resolve(import.meta.dir,'..'), app=opts.app ?? await buildDesktop([]);
   if(!app) throw new Error('Desktop app was not built.');
   const build=JSON.parse(readFileSync(join(dirname(app),'desktop-build.json'),'utf8'));

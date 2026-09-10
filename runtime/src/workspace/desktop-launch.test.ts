@@ -1,13 +1,25 @@
 import { expect, test } from 'bun:test';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
 test('desktop startup chooses its own port, enforces origin/auth and stops on parent EOF', async () => {
   const root = mkdtempSync(join(tmpdir(), 'counsel-desktop-lease-'));
   const launch = join(import.meta.dir, 'launch.ts'), database = join(root, 'workspace.sqlite3');
+  // This lifecycle test must not depend on an ignored runtime/ui/dist left by
+  // an earlier developer build. Full packaged UI coverage runs separately.
+  const html = '<!doctype html><title>Synthetic desktop lifecycle fixture</title>';
+  const uiFile = join(root, 'workspace.html');
+  writeFileSync(uiFile, html);
+  const entry = `
+    import { registerWorkspaceDistribution } from ${JSON.stringify(join(import.meta.dir, 'distribution.ts'))};
+    registerWorkspaceDistribution({ ui: { kind: 'embedded', files: { 'workspace.html': ${JSON.stringify(uiFile)} } },
+      pdfResources: {}, build: { id: 'desktop-lifecycle-fixture', sourceVersion: 'test', builtAt: 'test', target: 'test', bun: Bun.version } });
+    const { launchWorkspace } = await import(${JSON.stringify(launch)});
+    await launchWorkspace(['--desktop', '--database', ${JSON.stringify(database)}]);
+  `;
   const children: ReturnType<typeof Bun.spawn>[] = [];
-  const start = () => { const child = Bun.spawn([process.execPath, launch, '--desktop', '--skip-build', '--database', database], {
+  const start = () => { const child = Bun.spawn([process.execPath, '--eval', entry], {
     env: { HOME: root, PATH: '/usr/bin:/bin' }, stdin: 'pipe', stdout: 'pipe', stderr: 'pipe',
   }); children.push(child); return child; };
   try {
@@ -17,9 +29,12 @@ test('desktop startup chooses its own port, enforces origin/auth and stops on pa
       try {
         let text = '';
         while (!text.includes('\n')) { const chunk = await reader.read(); if (chunk.done) break; text += new TextDecoder().decode(chunk.value); }
+        if (!text.trim()) throw new Error(`Desktop exited before its ready message: ${await new Response(child.stderr).text()}`);
         const ready = JSON.parse(text.trim());
         expect(ready.protocol).toBe(1); expect(ready.pid).toBe(child.pid); expect(ready.databasePath).toBe(database);
+        expect(ready.buildId).toBe('desktop-lifecycle-fixture');
         expect(ready.origin).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/); expect(new URL(ready.origin).port).not.toBe('0');
+        expect(await (await fetch(ready.origin)).text()).toBe(html);
         const endpoint = ready.origin + '/api/workspace';
         expect((await fetch(endpoint)).status).toBe(401);
         expect((await fetch(endpoint, { headers: { Authorization: `Bearer ${ready.token}` } })).status).toBe(200);
