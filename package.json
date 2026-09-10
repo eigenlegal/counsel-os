@@ -22,6 +22,7 @@
     "workspace:build": "bun scripts/build_workspace.ts",
     "desktop:build": "bun scripts/build_desktop.ts",
     "desktop:package": "bun scripts/package_desktop.ts",
+    "repo:check": "bun scripts/repository_policy.ts",
     "test:server": "bun test browse/src",
     "typecheck": "tsc --noEmit -p browse/tsconfig.json",
     "typecheck:runtime": "tsc --noEmit -p runtime/tsconfig.json",

@@ -42,6 +42,7 @@ export async function packageDesktop(args: string[]) {
   await run(['/usr/bin/hdiutil','verify',image]);
   copyFileSync(join(dirname(app),'desktop-build.json'),join(output,'desktop-build.json'));
   writeFileSync(join(output,'package.json'),JSON.stringify({format:1,application:'Counsel desktop',channel:'local-test',artifact:image.split('/').at(-1),sha256:sha(image),source:build.source,
+    desktopRelease:build.desktopRelease,
     signing:'ad-hoc only',notarized:false,published:false,installed:false,updates:false,limitations:['Developer ID signing/notarization and a signed update channel are required before public distribution.','Full third-party notice review and clean-machine/manual native-panel qualification remain release gates.']},null,2)+'\n',{flag:'wx',mode:0o600});
   console.log(`Verified local-test disk image: ${image}\nNot installed, notarized, or published.`); return image;
 }

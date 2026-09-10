@@ -7,6 +7,7 @@ import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { buildWorkspace } from './build_workspace';
 import { sourceFingerprint } from './workspace-release-check';
+import { desktopPlist, readDesktopRelease } from './desktop_release';
 
 export function desktopOptions(args: string[]) {
   let output: string | undefined, engine: string | undefined, help = false;
@@ -34,6 +35,7 @@ export async function buildDesktop(args: string[]) {
   if (process.platform !== 'darwin') throw new Error('The native shell currently builds on macOS only.');
   if (opts.output && existsSync(opts.output)) throw new Error('Choose a new output directory; existing builds are never overwritten.');
   const repo = resolve(import.meta.dir, '..'), sourceBefore = await sourceFingerprint(repo);
+  const release = readDesktopRelease(repo);
   const engineFolder = opts.engine ?? await buildWorkspace([]); if (!engineFolder) throw new Error('Engine not built.');
   const engine = verifyEngine(engineFolder);
   if (engine.source?.sha256 !== sourceBefore.sha256) throw new Error('Engine source differs from this checkout. Rebuild it before wrapping it.');
@@ -44,7 +46,7 @@ export async function buildDesktop(args: string[]) {
   copyFileSync(join(engineFolder, 'counsel-workspace'), join(macOS, 'counsel-workspace'));
   copyFileSync(join(engineFolder, 'manifest.json'), join(resources, 'engine-manifest.json'));
   for (const file of ['LICENSE', 'PDFJS-LICENSE', 'README.txt']) copyFileSync(join(engineFolder, file), join(resources, file));
-  copyFileSync(join(repo, 'desktop/macos/Info.plist'), join(app, 'Contents/Info.plist'));
+  writeFileSync(join(app, 'Contents/Info.plist'), desktopPlist(readFileSync(join(repo, 'desktop/macos/Info.plist'), 'utf8'), release), { flag: 'wx' });
   const command = async (argv: string[]) => {
     const child = Bun.spawn(argv, { cwd: repo, stdin: 'ignore', stdout: 'inherit', stderr: 'inherit' });
     if (await child.exited) throw new Error(`Desktop build step failed: ${argv[0]}`);
@@ -69,6 +71,7 @@ export async function buildDesktop(args: string[]) {
   const sourceAfter = await sourceFingerprint(repo);
   if (sourceAfter.sha256 !== sourceBefore.sha256) throw new Error('Source changed during the desktop build. Rebuild before qualification.');
   writeFileSync(join(output, 'desktop-build.json'), JSON.stringify({ format: 1, application: 'Counsel desktop', channel: 'local-unreleased',
+    desktopRelease: release,
     builtAt: new Date().toISOString(), source: sourceAfter, engineBuild: engine.build,
     engineSha256: signedEngineHash, originalEngineSha256: engine.executable.sha256,
     shellSha256: createHash('sha256').update(readFileSync(join(macOS, 'Counsel'))).digest('hex'),

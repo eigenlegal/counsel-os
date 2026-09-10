@@ -138,7 +138,8 @@ export async function sourceFingerprint(repo: string): Promise<Fingerprint> {
   // builds, screenshots, node_modules and private vault data via .gitignore.
   const child = Bun.spawn(['git', 'ls-files', '-co', '--exclude-standard', '-z', '--',
     'runtime/src', 'runtime/ui/src', 'runtime/ui/*.html', 'runtime/ui/*.json', 'runtime/ui/bun.lock', 'runtime/ui/vite.config.ts',
-    'runtime/tsconfig.json', 'desktop', 'scripts', 'e2e/*.ts', 'e2e/*.py', 'e2e/fixtures', 'package.json', 'bun.lock', '.gitignore'], { cwd: repo, stdout: 'pipe', stderr: 'pipe' });
+    'runtime/tsconfig.json', 'desktop', 'scripts', 'e2e/*.ts', 'e2e/*.py', 'e2e/fixtures', 'package.json', 'bun.lock', '.gitignore',
+    '.github/workflows', '.gitleaks.toml', 'requirements-dev.txt'], { cwd: repo, stdout: 'pipe', stderr: 'pipe' });
   const [out, error, code] = await Promise.all([new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited]);
   if (code) throw new Error(`Cannot fingerprint source: ${sanitize(error)}`);
   const paths = out.split('\0').filter(Boolean).filter(path => existsSync(join(repo, path)));
@@ -229,7 +230,7 @@ export async function qualify(opts: Options, repo: string): Promise<string> {
     if (existsSync(join(repo,'runtime/ui/dist'))) receipt.liveBuildBefore=directoryFingerprint(join(repo,'runtime/ui/dist'));
     await run('runtime-types', [bun, 'run', 'typecheck:runtime']);
     await run('ui-types', [bun, 'run', 'typecheck:ui']);
-    await run('release-runner-tests', [bun, 'test', 'scripts/workspace-release-check.test.ts', 'scripts/build_workspace.test.ts', 'scripts/build_desktop.test.ts', 'scripts/package_desktop.test.ts']);
+    await run('release-runner-tests', [bun, 'test', 'scripts/workspace-release-check.test.ts', 'scripts/build_workspace.test.ts', 'scripts/build_desktop.test.ts', 'scripts/package_desktop.test.ts', 'scripts/desktop_release.test.ts', 'scripts/repository_policy.test.ts']);
     await run('backend-tests', [bun, 'test', 'runtime/src/workspace', 'runtime/src/docx', 'runtime/src/providers'], 180_000);
     await run('ui-tests', [bun, 'test'], 180_000, join(repo, 'runtime/ui'));
     const build = join(root, 'ui'); mkdirSync(build);

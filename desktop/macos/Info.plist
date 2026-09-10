@@ -7,8 +7,8 @@
   <key>CFBundleExecutable</key><string>Counsel</string>
   <key>CFBundleIconFile</key><string>Counsel</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>0.1.0</string>
-  <key>CFBundleVersion</key><string>1</string>
+  <key>CFBundleShortVersionString</key><string>__DESKTOP_VERSION__</string>
+  <key>CFBundleVersion</key><string>__DESKTOP_BUILD__</string>
   <key>LSMinimumSystemVersion</key><string>13.0</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>NSAppTransportSecurity</key><dict><key>NSAllowsLocalNetworking</key><true/></dict>

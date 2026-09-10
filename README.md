@@ -1,10 +1,17 @@
 # Counsel OS
 
-A free, open-source legal operating system for Claude. Review contracts, triage NDAs, negotiate redlines, and assess compliance, all grounded in the standards and reference materials you already own, running locally over your own markdown vault.
+A free, open-source legal workspace, with an existing Claude plugin and a standalone desktop app in development. Work from your own standards, reference materials and matter history.
 
 Built for solo practitioners, law firms, and in-house counsel. MIT-licensed. No telemetry.
 
-## What it does
+## Distributions
+
+- **Agent plugin:** the published plugin and its installation instructions are described below. It operates over your Markdown vault.
+- **Standalone desktop:** the primary development focus, using a local SQLite workspace and a chat-first interface. Current macOS builds are ad-hoc local tests, not notarized public installers. Start with [contributing](CONTRIBUTING.md), [repository layout](docs/repository-layout.md), and [desktop qualification](docs/desktop-release.md). Downloading the source does not import or migrate an existing vault.
+
+The products have separate release boundaries. The existing plugin release assets are not the new desktop app.
+
+## What the agent plugin does
 
 You describe what you need in plain language. The `/counsel-os:counsel` skill activates on its own and composes five primitives (`read`, `research`, `evaluate`, `draft`, `remember`) around your intent.
 
@@ -29,9 +36,11 @@ The full methodology, all 26 law areas, and your vault work everywhere. A few ca
 | **Ingest** a counterparty's `.docx` markup (change-by-change) | ✅ | ✅ | share as text / markdown |
 | `/counsel-os:browse` (headless browser for portals, EDGAR) | ✅ | ✅ | not available |
 
-Native Word redlines are written by the runtime itself (TypeScript, every platform): tracked changes with author, date and comments, and a compare of two independently edited documents — no Python and no Microsoft Word. Memos, summaries, and emails come back as formatted markdown everywhere.
+The shared document engine writes native Word tracked changes in TypeScript, including author, date, comments and comparison of independently edited documents, without Python or Microsoft Word. This engine capability is separate from plugin-host integration in the matrix above; it does not establish qualification of every host or packaged platform. The new desktop's qualification is described in its [release guide](docs/desktop-release.md). Memos, summaries, and emails come back as formatted Markdown in the plugin.
 
-## Quickstart
+<a id="quickstart"></a>
+
+## Plugin quickstart
 
 Counsel OS runs inside **Claude Code** (terminal) or **Claude Desktop / Cowork** (no terminal). Same skills either way.
 
@@ -58,7 +67,11 @@ Pick the path that matches the app you already use:
 - **Claude Desktop, Cowork**: no terminal required.
 - **Claude Code, local clone**: only if you are developing the plugin itself.
 
-### Standalone binary (preview)
+<a id="standalone-binary-preview"></a>
+
+### Legacy standalone runtime (preview)
+
+This is the older runtime, not the new SQLite workspace or desktop app. For current desktop development and qualification, use the [desktop guide](docs/desktop-release.md).
 
 The runtime — the web app, the Word tools, setup, and the shipped content — also ships as one file per platform on every [release](https://github.com/eigenlegal/counsel-os/releases): `counsel-os-darwin-arm64` (Apple silicon) and `counsel-os-linux-x64`, each with a `.sha256` beside it. No Bun, no clone, no build:
 

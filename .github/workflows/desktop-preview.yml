@@ -1,0 +1,15 @@
+name: Desktop local-test image
+
+# Manual development artifact only. No tags, GitHub Release, signing secrets,
+# notarization, updater feed, or public-release permissions are involved.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify-and-package:
+    uses: ./.github/workflows/desktop-ci.yml
+    with:
+      retain_local_test_image: true

@@ -1,0 +1,35 @@
+name: Repository safety
+
+on:
+  pull_request:
+  push:
+    branches: [main, work/standalone-desktop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  secrets:
+    name: Tracked source secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Install checksum-pinned Gitleaks
+        run: |
+          curl --fail --location --proto '=https' --tlsv1.2 \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz \
+            --output "$RUNNER_TEMP/gitleaks.tar.gz"
+          printf '%s  %s\n' 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb "$RUNNER_TEMP/gitleaks.tar.gz" | sha256sum --check
+          tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP" gitleaks
+      - name: Scan committed content, including hidden source files
+        run: |
+          mkdir "$RUNNER_TEMP/counsel-source"
+          git archive --format=tar HEAD | tar -x -C "$RUNNER_TEMP/counsel-source"
+          "$RUNNER_TEMP/gitleaks" dir "$RUNNER_TEMP/counsel-source" \
+            --config .gitleaks.toml --redact=100 --no-banner --log-level error --timeout 120
+          # The exact staged/committed snapshot is scanned, not ignored local data.
+          # Never upload a report containing candidate secrets or test workspaces.
