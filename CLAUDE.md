@@ -1,15 +1,22 @@
 # Counsel OS — Developer Guide
 
-This is the source repo for the Counsel OS plugin for Claude Code. It provides a primitives-based legal practice system.
+This is the source repo for the Counsel OS standalone app and agent plugin. Standalone development is the current priority: a general legal workspace using the five primitives, with matters, knowledge, references, documents, and automatic recordkeeping. The plugin may support a smaller feature set.
 
 ## Architecture
 
-5 primitives (read, research, evaluate, draft, remember) composed dynamically by the LLM based on user intent. No pipeline. The `/counsel-os:counsel` skill auto-invokes for legal work and contains the full orchestrator. See `docs/architecture/direction.md` for the design.
+5 primitives (read, research, evaluate, draft, remember) composed dynamically by the LLM based on user intent. No fixed pipeline or contract-review-only product scope.
+
+Standalone work follows [the workspace architecture](docs/architecture/standalone-workspace.md) and [the matter-and-knowledge implementation plan](docs/superpowers/plans/2026-09-04-standalone-workspace.md). The target uses SQLite for structured app state; the current runtime still uses legacy files, and existing user data must not be migrated incidentally. A shared core, plugin parity, and parallel Markdown/SQL implementations are not prerequisites.
+
+`bun run workspace --demo` builds and opens the chat-first SQLite workspace with synthetic records; `bun run workspace` opens an empty personal workspace. Its service is `runtime/src/workspace` and its UI is `runtime/ui/src/workspace`. Independent concurrent chats use scoped retrieval, exact citations, automatic draft-work records, inline knowledge review, and text uploads with retained originals. Claude Code, Codex subscription and Anthropic/OpenAI API adapters are wired but not live-qualified. Claude Code runs the user's unmodified CLI with CLI-owned sign-in, explicit billing selection and no copying of subscription credentials; do not reinstate the earlier blanket approval gate. Word/PDF workflows, updates, recovery, and packaging remain unfinished. The legacy `serve` command and UI remain unchanged for existing data.
+
+For the plugin, `/counsel-os:counsel` auto-invokes for legal work and contains its orchestrator. See [the plugin direction](docs/architecture/direction.md). Reuse content and document tooling where useful; the app's workflow and data model can evolve independently.
 
 ## Repository layout
 
 ```
 primitives/          — The 5 instruction files the LLM follows
+runtime/             — Standalone runtime, web UI, and reusable document tools
 skills/              — Plugin skills (counsel, browse, retro, setup, update, law-refresh)
 knowledge/law/       — 26 law area reference files (plugin-managed)
 knowledge/practice-seed/  — Starting content seeded to user vaults

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { directProviderFromId } from './direct';
-import { allVendors, baseURLFor, handlesFor, isLoopbackURL, isVertexAnthropicModel, knownPrefixes, localityFor, PRESETS, prefixOf, vendorFor } from './vendors';
+import { allVendors, baseURLFor, handlesFor, isLoopbackURL, isVertexAnthropicModel, knownPrefixes, localityFor, PRESETS, prefixOf, standaloneProviderSupport, standaloneVendors, vendorFor } from './vendors';
 
 describe('the vendor catalog (providers spec §3)', () => {
   test('every direct vendor builds a model from a fake key and base URL, with no network', () => {
@@ -76,6 +76,17 @@ describe('the vendor catalog (providers spec §3)', () => {
     expect(vendorFor('nope')).toBeUndefined();
     expect(prefixOf('google/gemini-2.5-pro')).toBe('google');
     expect(prefixOf('ollama/gemma4:e4b')).toBe('ollama');
+  });
+
+  test('the standalone support promise is deliberately smaller than the compatibility catalog', () => {
+    expect(standaloneVendors().map(v => v.prefix)).toEqual(['anthropic', 'openai', 'ollama']);
+    expect(standaloneVendors({ includePreview: false }).map(v => v.prefix)).toEqual(['anthropic', 'openai']);
+    expect(standaloneProviderSupport('anthropic/claude-opus-5')).toBe('supported');
+    expect(standaloneProviderSupport('openai/gpt-6')).toBe('supported');
+    expect(standaloneProviderSupport('ollama/qwen3')).toBe('preview');
+    for (const prefix of ['claude-sub', 'codex-sub', 'google', 'openrouter', 'openai-compatible', 'azure', 'bedrock', 'vertex']) {
+      expect(standaloneProviderSupport(prefix)).toBe('unsupported');
+    }
   });
 
   test('locality: cloud vendors are cloud, Ollama is local, openai-compatible follows its base URL', () => {

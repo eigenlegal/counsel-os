@@ -19,7 +19,9 @@ const API_PREFIXES = ['/health', '/threads', '/runs', '/vault', '/settings', '/p
 export default defineConfig({
   plugins: [react()],
   base: '/',
-  build: { outDir: 'dist', emptyOutDir: true, sourcemap: true },
+  build: { outDir: 'dist', emptyOutDir: true, sourcemap: true,
+    rollupOptions: { input: { legacy: 'index.html', workspace: 'workspace.html' } },
+  },
   server: {
     proxy: Object.fromEntries(API_PREFIXES.map(prefix => [prefix, { target: RUNTIME_URL, changeOrigin: false }])),
   },

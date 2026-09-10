@@ -1,6 +1,6 @@
 # More providers and models — design
 
-**Date:** 2026-09-01 · **Status:** approved by the founder 2026-09-01 (defaults on every open question) · **Phase 1 of two.** Phase 2 (model routing for legal tasks, the eval scoreboard, outcome capture) gets its own spec once this lands; §8 says what this phase leaves in place for it.
+**Date:** 2026-09-01 · **Status:** superseded for standalone product scope on 2026-09-04 by [Standalone legal workspace](../../architecture/standalone-workspace.md). The updated scope includes installed Claude Code/Codex CLI and direct API connections, with behavioral qualification required for each. Ollama and the broad catalog remain deferred. Existing configuration compatibility is not a support promise.
 
 ## 1. Why
 

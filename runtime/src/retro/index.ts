@@ -3,7 +3,7 @@ import type { ContentSource } from '../content/source';
 import type { Tenant, VaultStore } from '../core/types';
 import { runDoctor } from '../doctor/index';
 import { stripFrontmatter } from '../loop/prompt';
-import type { ThreadHeader, ThreadStore } from '../threads/store';
+import type { ThreadHeader, ThreadRepository } from '../threads/store';
 import type { VaultConfig } from '../vault/resolve-root';
 import { vaultOverview } from '../vault/overview';
 import { gatherRetroEvidence, renderRetroEvidence } from './evidence';
@@ -95,7 +95,7 @@ export function retroStatus(opts: {
 
 /** `retroStatus` with the counts read from the vault and the thread store —
  * what `GET /retro`, Home and Settings show. */
-export async function retroStatusFor(deps: { vaultRoot: string; tenant: Tenant; store: ThreadStore; vault: VaultStore; cfg: VaultConfig; now?: Date }): Promise<RetroStatus> {
+export async function retroStatusFor(deps: { vaultRoot: string; tenant: Tenant; store: ThreadRepository; vault: VaultStore; cfg: VaultConfig; now?: Date }): Promise<RetroStatus> {
   const [headers, overview] = await Promise.all([deps.store.list(deps.tenant), vaultOverview(deps.vault, deps.tenant, deps.cfg)]);
   return retroStatus({
     state: readRetroState(deps.vaultRoot),
@@ -115,7 +115,7 @@ export function periodLabel(from: string | null, to: Date): string {
 export interface StartRetroDeps {
   vaultRoot: string;
   tenant: Tenant;
-  store: ThreadStore;
+  store: ThreadRepository;
   now?: () => Date;
 }
 
@@ -161,7 +161,7 @@ function normalizeSince(raw: string | undefined): string | null {
 export interface RetroSectionsDeps {
   vaultRoot: string;
   tenant: Tenant;
-  store: ThreadStore;
+  store: ThreadRepository;
   vault: VaultStore;
   pluginRoot: string;
   content?: ContentSource;

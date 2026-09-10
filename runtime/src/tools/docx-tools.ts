@@ -14,7 +14,7 @@ import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { z } from 'zod';
 import type { ArtifactSummary, Tenant, Tool, VaultStore } from '../core/types';
 import { applyRedlines, checkDocx, checkText, compareDocuments, compareOutputName, detectFormat, diffRounds, docxToMarkdown, extractRedlines, isDocxPath, openDocx, redlineOutputName, roundsToMarkdown, type CompareResult, type RedlineItem, type RedlineResult, type RoundsResult } from '../docx';
-import type { ThreadStore } from '../threads/store';
+import type { ThreadRepository } from '../threads/store';
 import { RESERVED_DIR } from '../vault/fs-store';
 
 const ALL_PLATFORMS = ['macos', 'linux', 'windows', 'hosted'] as const;
@@ -62,7 +62,7 @@ export interface DocxToolOptions {
    * `vaultRoot` with the same never-overwrite flag. */
   vault?: VaultStore;
   /** The thread the step runs in: the `artifact` event is recorded there. */
-  thread?: { store: ThreadStore; threadId: string; tenant: Tenant; outcome?: (line: { kind: 'artifact.produced'; path: string; detail: Record<string, unknown> }) => void };
+  thread?: { store: ThreadRepository; threadId: string; tenant: Tenant; outcome?: (line: { kind: 'artifact.produced'; path: string; detail: Record<string, unknown> }) => void };
 }
 
 /** The redline JSON item, as the primitives specify it. `match` is kept

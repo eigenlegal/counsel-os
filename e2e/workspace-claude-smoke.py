@@ -1,0 +1,72 @@
+"""Claude connection UI + real child process/MCP; synthetic CLI, no model or user credentials."""
+from pathlib import Path
+from playwright.sync_api import sync_playwright, expect
+
+BASE = 'http://127.0.0.1:7462'
+TOKEN = 'workspace-browser-test-only'
+artifacts = Path(__file__).parent / '.tmp' / 'workspace'
+artifacts.mkdir(parents=True, exist_ok=True)
+
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=True)
+    context = browser.new_context(viewport={'width': 1440, 'height': 1000}, reduced_motion='reduce')
+    page = context.new_page()
+    errors, external = [], []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    context.on('request', lambda req: external.append(req.url) if not req.url.startswith(BASE) else None)
+    page.goto(BASE + '/#token=' + TOKEN)
+    page.wait_for_load_state('networkidle')
+    expect(page.get_by_role('heading', name='What are we working through?')).to_be_visible()
+    page.get_by_role('link', name='Settings', exact=True).click()
+    expect(page.get_by_role('heading', name='Your AI connection')).to_be_visible()
+    page.get_by_label('AI connection', exact=True).select_option('claude-code')
+    expect(page.get_by_text('Claude Code CLI found on this device')).to_be_visible()
+    expect(page.get_by_text('Turning off profile sharing does not remove that CLI context.', exact=False)).to_be_visible()
+    expect(page.get_by_label('API key', exact=True)).to_have_count(0)
+    expect(page.get_by_text('Anthropic requires prior approval', exact=False)).to_have_count(0)
+    page.get_by_role('button', name='Check local sign-in').click()
+    expect(page.get_by_text('Signed in through Claude Code · subscription usage.', exact=True)).to_be_visible()
+    page.get_by_label('Claude Code billing', exact=True).select_option('api')
+    expect(page.get_by_text('This does not match the billing method selected above.', exact=False)).to_be_visible()
+    page.get_by_label('Claude Code billing', exact=True).select_option('subscription')
+    page.get_by_role('button', name='Save connection', exact=True).click()
+    expect(page.get_by_text('Saved. Send a message to use this connection.')).to_be_visible()
+    page.reload()
+    page.wait_for_load_state('networkidle')
+    expect(page.get_by_label('AI connection', exact=True)).to_have_value('claude-code')
+    expect(page.get_by_label('Claude Code billing', exact=True)).to_have_value('subscription')
+    page.screenshot(path=str(artifacts / 'claude-settings.png'), full_page=True)
+    print('PASS: Claude connection, native sign-in check, explicit billing and persisted settings')
+
+    page.get_by_role('button', name='New chat', exact=True).click()
+    expect(page.get_by_role('heading', name='What are we working through?')).to_be_visible()
+    page.get_by_label('Conversation context', exact=True).click()
+    page.get_by_role('option', name='Internal investigation', exact=True).click()
+    page.get_by_role('textbox', name='Message Counsel', exact=True).fill('Assess the witness status')
+    page.get_by_role('button', name='Send message', exact=True).click()
+    expect(page.get_by_text('Saved in conversation', exact=True)).to_be_visible(timeout=15000)
+    expect(page.locator('.chat-answer')).to_contain_text('Completed Assess the witness status')
+    page.get_by_role('button', name='Source S1: Synthetic investigation note', exact=True).click()
+    panel = page.get_by_role('complementary', name='Source passage', exact=True)
+    expect(panel.locator('mark')).to_have_text('The witness interview remains outstanding.')
+    page.screenshot(path=str(artifacts / 'claude-source.png'), full_page=True)
+    print('PASS: configured CLI subprocess completes scoped retrieval, citation and durable draft')
+
+    page.get_by_role('button', name='Close context', exact=True).click()
+    page.get_by_role('link', name='Settings', exact=True).click()
+    page.get_by_label('AI connection', exact=True).select_option('anthropic-api')
+    expect(page.get_by_label('API key', exact=True)).to_be_visible()
+    page.get_by_label('API key', exact=True).fill('synthetic-never-real-key')
+    page.get_by_label('AI connection', exact=True).select_option('claude-code')
+    expect(page.get_by_label('API key', exact=True)).to_have_count(0)
+    page.get_by_label('AI connection', exact=True).select_option('anthropic-api')
+    expect(page.get_by_label('API key', exact=True)).to_have_value('')
+    page.get_by_label('AI connection', exact=True).select_option('claude-code')
+    page.set_viewport_size({'width': 390, 'height': 844})
+    expect(page.get_by_role('button', name='Check local sign-in')).to_be_visible()
+    assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth + 1')
+    page.screenshot(path=str(artifacts / 'claude-settings-mobile.png'), full_page=True)
+    assert not errors, errors
+    assert not external, external
+    print('PASS: API credentials do not leak across connection choices; mobile setup has no overflow')
+    browser.close()

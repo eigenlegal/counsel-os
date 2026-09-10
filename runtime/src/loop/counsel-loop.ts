@@ -3,7 +3,7 @@ import type { ZodType } from 'zod';
 import type { Message, ModelProvider, Platform, StepEvent, StepRequest, Tenant, ToolDef, Usage, VaultStore, ArtifactSummary } from '../core/types';
 import { currentPlatform } from '../core/types';
 import type { Routed, RouteReason, Router } from '../router/router';
-import { ThreadStore, type ThreadEvent, type ThreadHeader } from '../threads/store';
+import type { ThreadEvent, ThreadHeader, ThreadRepository } from '../threads/store';
 import { window } from '../threads/window';
 import { readVaultConfig, type VaultConfig } from '../vault/resolve-root';
 import { policyForStep, readerOver, type StepPolicy } from '../vault/policy';
@@ -66,7 +66,7 @@ export interface CounselLoopDeps {
    * repo source over `pluginRoot`, as it always was. */
   content?: ContentSource;
   vault: VaultStore;
-  store: ThreadStore;
+  store: ThreadRepository;
   providers: ModelProvider[];
   router: Router;
   platform?: Platform;

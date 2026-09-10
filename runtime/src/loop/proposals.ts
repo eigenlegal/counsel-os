@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { Tenant, ToolDef, VaultStore, Version } from '../core/types';
 import { VaultConflictError } from '../core/types';
-import type { ThreadEvent, ThreadStore } from '../threads/store';
+import type { ThreadEvent, ThreadRepository } from '../threads/store';
 import { normalizeVaultPath } from '../vault/knowledge-paths';
 
 export interface ProposeUpdateInput {
@@ -28,7 +28,7 @@ export interface ProposeUpdateInput {
  * model can see, rather than recording an unapprovable proposal.
  */
 export function proposeUpdateTool(
-  store: ThreadStore,
+  store: ThreadRepository,
   vault: VaultStore,
   threadId: string,
   tenant: Tenant,
@@ -85,7 +85,7 @@ export type ApplyProposalResult =
  * instead of silently clobbering the intervening edit.
  */
 export async function applyProposal(
-  store: ThreadStore,
+  store: ThreadRepository,
   vault: VaultStore,
   tenant: Tenant,
   threadId: string,

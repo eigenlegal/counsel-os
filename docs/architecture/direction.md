@@ -1,7 +1,7 @@
-# Counsel OS — Architecture Direction
+# Counsel OS — Agent-plugin Architecture Direction
 
 > **Date:** 2026-04-15, updated 2026-06-11
-> **Status:** Current as of v0.9.19 (June 2026)
+> **Status:** Direction for the agent-native plugin. Standalone development is governed by [Standalone legal workspace](standalone-workspace.md), which retains the five primitives without requiring shared orchestration or feature parity.
 
 ---
 

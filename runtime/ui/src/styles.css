@@ -207,7 +207,6 @@ input:not([type='checkbox']):not([type='radio']), select, textarea, button {
   padding: var(--control-pad);
 }
 textarea { padding: 6px 9px; min-height: unset; }
-select { padding-right: 4px; }
 input:hover, select:hover, textarea:hover { border-color: var(--border-strong); }
 button { cursor: pointer; }
 button:disabled, textarea:disabled, select:disabled { opacity: 0.55; cursor: not-allowed; }

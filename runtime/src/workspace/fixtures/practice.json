@@ -1,0 +1,119 @@
+{
+  "format": "counsel-workspace-seed",
+  "schemaVersion": 1,
+  "id": "synthetic-practice",
+  "version": 1,
+  "matters": [
+    { "key": "monitoring", "title": "Employee monitoring advice", "kind": "advisory", "summary": "Synthetic scenario: assess a proposed monitoring policy." },
+    { "key": "investigation", "title": "Internal investigation", "kind": "investigation", "summary": "Synthetic scenario: unresolved interview and evidence review." },
+    { "key": "agreement", "title": "Document assessment", "kind": "document", "summary": "Synthetic scenario: assess extracted agreement text." }
+  ],
+  "sources": [
+    {
+      "key": "monitoring-reference",
+      "kind": "reference",
+      "matterKeys": ["monitoring", "investigation"],
+      "revision": {
+        "title": "Synthetic monitoring reference",
+        "body": "Document the monitoring purpose and limit access. This fixture is an example, not a statement of law.",
+        "provenance": { "origin": "fixture:monitoring-reference", "author": "Synthetic author", "mediaType": "text/plain" }
+      }
+    },
+    {
+      "key": "interview",
+      "kind": "reference",
+      "matterKeys": ["investigation"],
+      "revision": {
+        "title": "Synthetic investigation note",
+        "body": "The witness interview remains outstanding. The available evidence does not resolve the disputed timing.",
+        "provenance": { "origin": "fixture:investigation-note", "mediaType": "text/plain" }
+      }
+    },
+    {
+      "key": "agreement-text",
+      "kind": "document",
+      "matterKeys": ["agreement"],
+      "revision": {
+        "title": "Synthetic agreement extraction",
+        "body": "Notices may be given orally. This is synthetic extracted text; no original document is registered by this fixture.",
+        "provenance": { "origin": "fixture:agreement-extraction", "mediaType": "text/plain" }
+      }
+    }
+  ],
+  "knowledge": [
+    {
+      "key": "monitoring-position",
+      "kind": "position",
+      "revision": {
+        "title": "Approved synthetic monitoring position",
+        "body": "Use approved monitoring purposes and limit access.",
+        "status": "approved",
+        "approvedBy": "fixture-reviewer"
+      }
+    },
+    {
+      "key": "notice-position",
+      "kind": "position",
+      "matterKey": "agreement",
+      "revision": {
+        "title": "Approved synthetic notice position",
+        "body": "Use written notices for this matter.",
+        "status": "approved",
+        "approvedBy": "fixture-reviewer"
+      }
+    },
+    {
+      "key": "unreviewed-pattern",
+      "kind": "pattern",
+      "revision": {
+        "title": "Unreviewed monitoring idea",
+        "body": "The proposed monitoring exception has not been approved."
+      }
+    }
+  ],
+  "work": [
+    {
+      "key": "advice",
+      "matterKey": "monitoring",
+      "title": "Initial monitoring advice",
+      "request": "What should we record before introducing monitoring?",
+      "answer": "Document the purpose and limit access. Confirm the outstanding facts before making a decision.",
+      "evidence": [
+        { "target": { "kind": "source", "key": "monitoring-reference" }, "quote": "Document the monitoring purpose and limit access.", "start": 0, "locator": "opening sentence" },
+        { "target": { "kind": "knowledge", "key": "monitoring-position" }, "quote": "Use approved monitoring purposes and limit access.", "start": 0 }
+      ]
+    },
+    {
+      "key": "investigation-status",
+      "matterKey": "investigation",
+      "title": "Investigation status",
+      "request": "What remains unresolved?",
+      "answer": "The witness interview remains outstanding; the timing is unresolved.",
+      "evidence": [
+        { "target": { "kind": "source", "key": "interview" }, "quote": "The witness interview remains outstanding.", "start": 0 }
+      ]
+    },
+    {
+      "key": "document-assessment",
+      "matterKey": "agreement",
+      "title": "Notice provision assessment",
+      "request": "Assess the notice provision.",
+      "answer": "The draft permits oral notices, while the approved matter position calls for written notices.",
+      "evidence": [
+        { "target": { "kind": "source", "key": "agreement-text" }, "quote": "Notices may be given orally.", "start": 0 },
+        { "target": { "kind": "knowledge", "key": "notice-position" }, "quote": "Use written notices for this matter.", "start": 0 }
+      ]
+    },
+    {
+      "key": "decision",
+      "matterKey": "monitoring",
+      "title": "Recorded monitoring decision",
+      "request": "Record my decision to defer implementation until facts are confirmed.",
+      "answer": "Defer implementation pending confirmation of the outstanding facts.",
+      "decisionBy": "fixture-lawyer",
+      "evidence": [
+        { "target": { "kind": "work", "key": "advice" }, "quote": "Document the purpose and limit access.", "start": 0 }
+      ]
+    }
+  ]
+}

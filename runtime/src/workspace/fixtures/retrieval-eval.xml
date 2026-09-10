@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Synthetic-practice v1 only. Each question is independent, with a fresh
+  workspace-scoped conversation, no prior history, and no attachments.
+  Answer from counsel_search_records and counsel_read_record only. Never
+  prepare knowledge or change a record to answer an evaluation question.
+  Expected answers were verified against actual local tool outputs; no live
+  model evaluation has been run. Exact-match answers omit citation markers;
+  citation quality is a separate live qualification requirement.
+-->
+<evaluation>
+  <qa_pair>
+    <question>Before treating the saved monitoring guidance as legal authority, compare the approved monitoring position with its separate supporting reference. Read the reference's full text and metadata. What evidence category does the reference actually have? Return only its category label.</question>
+    <answer>Reference</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Read both the initial monitoring advice and the later recorded monitoring decision. Did the lawyer authorize immediate implementation or defer it? Return the exact full sentence from the human decision, not the draft advice.</question>
+    <answer>Defer implementation pending confirmation of the outstanding facts.</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Locate the notice provision assessment, then independently read the extracted agreement text and approved notice position. What delivery method does the draft permit, and what method does the approved position require? Return exactly two lowercase words separated by ' / ', draft first.</question>
+    <answer>oral / written</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>The notice assessment refers to agreement text. Find and read the underlying extracted source before assuming we have its original document. Does that source say an original is registered? Return exactly the clause after the semicolon in its second sentence, including its final period.</question>
+    <answer>no original document is registered by this fixture.</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Compare the investigation status with the underlying investigation note. What outstanding evidence-gathering step do both identify? Return only the two-word name of that step, lowercase.</question>
+    <answer>witness interview</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Read the investigation status and the source note supporting its timing concern. Has the evidence resolved the timing dispute? Return the source note's complete sentence about that issue, not the status summary's phrasing.</question>
+    <answer>The available evidence does not resolve the disputed timing.</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Search the monitoring records and distinguish their work dispositions by reading both work records. Which title is draft advice and which is a recorded human decision? Return only the exact titles separated by ' / ', draft first.</question>
+    <answer>Initial monitoring advice / Recorded monitoring decision</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Compare the approved monitoring position with the monitoring reference, reading both full passages. Which two-word access-control directive appears in both? Return only those lowercase words.</question>
+    <answer>limit access</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Read the investigation status, then locate and read the source note that says the evidence does not resolve the disputed timing. Return only the origin string from that source's provenance, not the work title or record ID.</question>
+    <answer>fixture:investigation-note</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Compare the investigation status with the monitoring decision before treating either as a lawyer's decision. Read their metadata as well as their text. What category labels the investigation status? Return only that exact label.</question>
+    <answer>Prior draft advice</answer>
+  </qa_pair>
+</evaluation>
