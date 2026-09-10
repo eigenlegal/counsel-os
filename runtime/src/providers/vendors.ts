@@ -529,6 +529,36 @@ export function allVendors(): readonly Vendor[] {
   return VENDORS;
 }
 
+/**
+ * Product support policy for the first standalone release.
+ *
+ * The catalog remains broader for v0.15 configuration compatibility. A row
+ * existing in `VENDORS` therefore means only that the runtime knows how to
+ * parse it; it does not mean the packaged product promises that provider.
+ * Keep this small until each provider passes the standalone workflow and
+ * credential-isolation contract tests.
+ */
+export type StandaloneProviderSupport = 'supported' | 'preview' | 'unsupported';
+
+const STANDALONE_PROVIDER_SUPPORT: Readonly<Record<string, Exclude<StandaloneProviderSupport, 'unsupported'>>> = {
+  anthropic: 'supported',
+  openai: 'supported',
+  ollama: 'preview',
+};
+
+export function standaloneProviderSupport(idOrPrefix: string): StandaloneProviderSupport {
+  return STANDALONE_PROVIDER_SUPPORT[prefixOf(idOrPrefix)] ?? 'unsupported';
+}
+
+/** Providers the standalone UI may offer on a fresh install. */
+export function standaloneVendors(opts: { includePreview?: boolean } = {}): Vendor[] {
+  const includePreview = opts.includePreview ?? true;
+  return VENDORS.filter(vendor => {
+    const support = standaloneProviderSupport(vendor.prefix);
+    return support === 'supported' || (includePreview && support === 'preview');
+  });
+}
+
 /** The prefixes the registry accepts, for the "unknown prefix" sentence. */
 export function knownPrefixes(): string[] {
   return VENDORS.map(v => v.prefix);

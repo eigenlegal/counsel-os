@@ -1,0 +1,80 @@
+/* Shared native controls for BOTH app entry points. New selects and file
+   inputs inherit this treatment without an opt-in class or JS replacement.
+   Keep indicator geometry here, not in individual form/chat styles. */
+:root {
+  --select-caret-inset: 14px;
+  --select-caret-half: 5px;
+  --select-caret-gap: 10px;
+}
+
+/* Deliberately outranks contextual `label > select` / `.panel select`
+   shorthand padding/background rules. Preserve native menus and keyboards;
+   listboxes keep their native presentation and have no dropdown indicator. */
+select:not([multiple]):not([size]),
+select:not([multiple])[size='1'] {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-inline-end: calc(
+    var(--select-caret-inset) + 2 * var(--select-caret-half) + var(--select-caret-gap)
+  );
+  background-image:
+    linear-gradient(45deg, transparent 42%, currentColor 43%, currentColor 57%, transparent 58%),
+    linear-gradient(135deg, transparent 42%, currentColor 43%, currentColor 57%, transparent 58%);
+  background-position:
+    right calc(var(--select-caret-inset) + var(--select-caret-half)) center,
+    right var(--select-caret-inset) center;
+  background-size: var(--select-caret-half) var(--select-caret-half);
+  background-repeat: no-repeat;
+}
+select:not([multiple]):not([size]):dir(rtl),
+select:not([multiple])[size='1']:dir(rtl) {
+  background-position:
+    left var(--select-caret-inset) center,
+    left calc(var(--select-caret-inset) + var(--select-caret-half)) center;
+}
+
+input[type='file'] {
+  max-width: 100%;
+  min-width: 0;
+  padding: 6px;
+  color: var(--muted, var(--fg-muted));
+  font: inherit;
+}
+input[type='file']::file-selector-button {
+  appearance: none;
+  font: inherit;
+  font-weight: 500;
+  color: var(--ink, var(--fg));
+  background: var(--paper, var(--bg-raised));
+  border: 1px solid var(--control-file-border, #b7c6da);
+  border-radius: 6px;
+  padding: 9px 14px;
+  min-height: 38px;
+  margin-inline-end: 12px;
+  cursor: pointer;
+}
+input[type='file']:not(:disabled)::file-selector-button:hover {
+  color: var(--ink, var(--fg));
+  background: var(--surface, var(--bg-sunken));
+  border-color: var(--blue, var(--accent));
+}
+input[type='file']:disabled::file-selector-button {
+  color: var(--muted, var(--fg-muted));
+  background: var(--surface, var(--bg-sunken));
+  cursor: not-allowed;
+}
+
+/* Let the operating system draw its own indicator in high-contrast mode. */
+@media (forced-colors: active) {
+  select:not([multiple]):not([size]),
+  select:not([multiple])[size='1'] {
+    -webkit-appearance: auto;
+    appearance: auto;
+    background-image: none;
+  }
+  input[type='file']::file-selector-button {
+    color: ButtonText;
+    background: ButtonFace;
+    border-color: ButtonText;
+  }
+}

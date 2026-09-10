@@ -109,6 +109,14 @@ describe('diffRounds', () => {
     expect(roundsToMarkdown(data)).toContain('**0 findings**');
   });
 
+  test('a clean returned counterproposal is modified, not a reversion, when it differs from the known baseline', () => {
+    const spec = (text: string): DocxSpec => ({ blocks: [{ runs: [text] }] });
+    const ours = spec('Payment net 45.'), theirs = spec('Payment net 60.');
+    expect(rounds(ours, theirs, spec('Payment net 30.')).findings[0]?.classification).toBe('MODIFIED');
+    expect(rounds(ours, spec('Payment net 30.'), spec('Payment net 30.')).findings[0]?.classification).toBe('REVERTED');
+    expect(rounds(ours, theirs).findings[0]?.classification).toBe('UNMATCHED_CHANGE');
+  });
+
   test('classify is pure and stable on an empty comment map', () => {
     expect(classify([], [], null, new Map())).toEqual([]);
   });

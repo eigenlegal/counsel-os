@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import type { Tenant, VaultStore } from '../core/types';
 import type { DoctorReport } from '../doctor/index';
 import { listAllRuns, type RunRecord } from '../loop/run-record';
-import type { ThreadEvent, ThreadHeader, ThreadStore } from '../threads/store';
+import type { ThreadEvent, ThreadHeader, ThreadRepository } from '../threads/store';
 import { vaultOverview, type MatterOverview } from '../vault/overview';
 import type { VaultConfig } from '../vault/resolve-root';
 import { detectEdits } from '../outcomes/edits';
@@ -88,7 +88,7 @@ export interface MatterNote {
 export interface RetroEvidenceDeps {
   vaultRoot: string;
   tenant: Tenant;
-  store: ThreadStore;
+  store: ThreadRepository;
   vault: VaultStore;
   cfg: VaultConfig;
   /** The period start; `null` = all time. */

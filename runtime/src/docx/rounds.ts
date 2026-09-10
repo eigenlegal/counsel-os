@@ -242,7 +242,8 @@ export function classify(
       } else if (tRev === tOrig) {
         if (bText !== null && tRev === bText) add('REVERTED', 'silently restored the pre-round baseline', o, t, bText);
         else if (bText !== null && bText === oText) add('NEW', 'silent edit in a paragraph we never touched', o, t, bText);
-        else add('REVERTED', 'their text abandons ours for their own', o, t, bText);
+        else if (hasBase) add('MODIFIED', 'silent change replaces our proposal with different text, not the pre-round baseline', o, t, bText);
+        else add('UNMATCHED_CHANGE', 'silent change without a pre-round baseline; cannot distinguish a counterproposal from a reversion', o, t);
       } else if (bText !== null && tRev === bText) {
         add('REVERTED', 'tracked change restores the pre-round baseline', o, t, bText);
       } else {

@@ -1,15 +1,26 @@
 # Counsel OS — Developer Guide
 
-This is the source repo for the Counsel OS plugin for Claude Code. It provides a primitives-based legal practice system.
+This is the source repo for the Counsel OS standalone app and agent plugin. Standalone development is the current priority: a general legal workspace using the five primitives, with matters, knowledge, references, documents, and automatic recordkeeping. The plugin may support a smaller feature set.
 
 ## Architecture
 
-5 primitives (read, research, evaluate, draft, remember) composed dynamically by the LLM based on user intent. No pipeline. The `/counsel-os:counsel` skill auto-invokes for legal work and contains the full orchestrator. See `docs/architecture/direction.md` for the design.
+5 primitives (read, research, evaluate, draft, remember) composed dynamically by the LLM based on user intent. No fixed pipeline or contract-review-only product scope.
+
+Standalone work follows [the workspace architecture](docs/architecture/standalone-workspace.md) and [the matter-and-knowledge implementation plan](docs/superpowers/plans/2026-09-04-standalone-workspace.md). The target uses SQLite for structured app state; the current runtime still uses legacy files, and existing user data must not be migrated incidentally. A shared core, plugin parity, and parallel Markdown/SQL implementations are not prerequisites.
+
+`bun run workspace --demo` builds and opens the chat-first SQLite workspace with synthetic records; `bun run workspace` opens a personal workspace. Its service is `runtime/src/workspace` and its UI is `runtime/ui/src/workspace`. The native desktop bundles this engine and its document workers. Interface 29/schema 19 includes local chat/preference draft recovery and optional onboarding. Word/PDF operations and ad-hoc local packaging have bounded synthetic qualification; broader fidelity, provider/account qualification, signed distribution and updates remain open. Claude Code runs the user's unmodified CLI with CLI-owned sign-in, explicit billing selection and no copying of subscription credentials. The legacy `serve` command and UI remain available for existing data; never migrate it incidentally.
+
+For the plugin, `/counsel-os:counsel` auto-invokes for legal work and contains its orchestrator. See [the plugin direction](docs/architecture/direction.md). Reuse content and document tooling where useful; the app's workflow and data model can evolve independently.
 
 ## Repository layout
 
+See [the current map and target boundaries](docs/repository-layout.md) and
+[desktop release gates](docs/desktop-release.md). Keep directory migrations
+separate from product behavior changes. Do not force plugin/app core parity.
+
 ```
 primitives/          — The 5 instruction files the LLM follows
+runtime/             — Standalone runtime, web UI, and reusable document tools
 skills/              — Plugin skills (counsel, browse, retro, setup, update, law-refresh)
 knowledge/law/       — 26 law area reference files (plugin-managed)
 knowledge/practice-seed/  — Starting content seeded to user vaults
@@ -32,7 +43,9 @@ templates/memory/    — Seed template for patterns.md
 - **Positions/methods/library**: Edit in `knowledge/practice-seed/`. Users get these via `/counsel-os:setup` (initial) and `/counsel-os:update` (sync). Practice content is user-owned — update offers suggestions, never overwrites.
 - **Law areas**: Edit in `knowledge/law/`. These are plugin-managed — update overwrites the user's copies.
 - **Scripts**: Python/bash in `scripts/`. Test locally before pushing.
-- **Version / release**: Run `scripts/release.sh <X.Y.Z> -m "subject" [-b "body"]` — bumps all four manifests (VERSION, package.json, .claude-plugin/plugin.json, .claude-plugin/marketplace.json), prepends the CHANGELOG entry, runs the knowledge lint + version-sync check, commits the working tree as one release commit, tags `vX.Y.Z` (fires the release-binaries workflow), and pushes commit + tag. `--no-tag` skips tagging.
+- **Checkpoint**: Review for private data, run `bun run repo:check`, explicitly stage source/tests/docs, commit on a topic branch and push only to the authorized remote. Do not use a release helper for a checkpoint.
+- **Plugin version / release**: `scripts/release.sh <X.Y.Z> -m "subject" [-b "body"]` bumps the four legacy manifests, commits the working tree, tags `vX.Y.Z` and pushes. This is a publishing operation, not the desktop build path.
+- **Desktop version / release**: `desktop/release.json` is independent. `desktop:build` and `desktop:package` produce local-test artifacts only; future qualified desktop tags use `desktop-vX.Y.Z`. Do not publish or imply signing/notarization from an ad-hoc build.
 
 ## Testing
 

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { bootstrapToken } from './api/token';
 import { Root } from './app';
 import './styles.css';
+import './controls.css';
 
 // FIRST, before React renders anything: the app's very first effect asks
 // `/health`, and that request needs the token that is sitting in the URL

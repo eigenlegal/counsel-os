@@ -2,7 +2,7 @@ import { resolve } from 'node:path';
 import { z } from 'zod';
 import { isCompiled } from '../core/embedded';
 import type { Tenant, Tool, VaultStore } from '../core/types';
-import type { ThreadStore } from '../threads/store';
+import type { ThreadRepository } from '../threads/store';
 import { docketSweepTool } from './docket-tool';
 import { docxTools } from './docx-tools';
 import { pythonScriptTool } from './subprocess';
@@ -24,7 +24,7 @@ export interface BuiltinToolOptions {
   vault?: VaultStore;
   /** The thread a step runs in: `apply_redlines` records its `artifact`
    * event there. Absent outside a thread (the CLI's one-shot run). */
-  thread?: { store: ThreadStore; threadId: string; tenant: Tenant; outcome?: (line: { kind: 'artifact.produced'; path: string; detail: Record<string, unknown> }) => void };
+  thread?: { store: ThreadRepository; threadId: string; tenant: Tenant; outcome?: (line: { kind: 'artifact.produced'; path: string; detail: Record<string, unknown> }) => void };
   /** Tests: pretend to be (or not be) the compiled binary. */
   compiled?: boolean;
 }

@@ -19,6 +19,14 @@ const THREADS_DIR = join('.counsel', 'threads');
 const ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const TENANT_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 
+export function assertThreadId(id: string): void {
+  if (!ID_RE.test(id)) throw new Error('invalid thread id');
+}
+
+export function assertThreadTenant(tenant: Tenant): void {
+  if (!TENANT_RE.test(tenant)) throw new Error('invalid tenant');
+}
+
 export interface ThreadHeader {
   id: string;
   title?: string;
@@ -75,6 +83,32 @@ export interface ThreadStoreOptions {
 }
 
 /**
+ * Persistence contract for one conversation stream.
+ *
+ * The original runtime exposed `ThreadStore` itself throughout the
+ * application, which made its JSON/JSONL layout part of every caller's
+ * type. The standalone app needs a transactional store without changing
+ * the counsel loop, routes, or tools, so callers depend on this behavior
+ * instead. `ThreadStore` remains the filesystem implementation used by
+ * existing workspaces; `SqliteThreadStore` implements the same contract for
+ * new standalone workspaces.
+ */
+export interface ThreadRepository {
+  create(tenant: Tenant, init?: { title?: string; matter?: string; task?: string }): Promise<ThreadHeader>;
+  update(tenant: Tenant, id: string, patch: { title?: string; matter?: string | null }): Promise<ThreadHeader>;
+  header(tenant: Tenant, id: string, opts?: { derive?: boolean }): Promise<ThreadHeader>;
+  get(tenant: Tenant, id: string): Promise<{ header: ThreadHeader; events: ThreadEvent[] }>;
+  list(tenant: Tenant): Promise<ThreadHeader[]>;
+  append(tenant: Tenant, id: string, ev: ThreadEvent): Promise<void>;
+  setSession(tenant: Tenant, id: string, providerId: string, sessionId: string): Promise<void>;
+  clearSession(tenant: Tenant, id: string, providerId: string): Promise<void>;
+  updateProposal(tenant: Tenant, id: string, proposalId: string, status: 'pending' | 'approved' | 'rejected'): Promise<void>;
+  updateStep(tenant: Tenant, id: string, runId: string, patch: { task: string; taskSource: 'corrected' }): Promise<boolean>;
+  remove(tenant: Tenant, id: string): Promise<void>;
+  codexHomeFor(id: string): string;
+}
+
+/**
  * The title rule, server side: the first non-empty line, cut to 60
  * characters on a word boundary — the same rule the UI applies at creation
  * (`titleFor`, runtime/ui/src/v2/threads.ts; keep the two in step). It runs
@@ -84,7 +118,7 @@ export interface ThreadStoreOptions {
  */
 const TITLE_MAX = 60;
 
-function titleFrom(message: string): string {
+export function titleFromThreadMessage(message: string): string {
   const first = message.split('\n').find(line => line.trim() !== '') ?? '';
   const line = first.trim();
   if (line.length <= TITLE_MAX) return line;
@@ -94,7 +128,7 @@ function titleFrom(message: string): string {
   return `${(space > TITLE_MAX / 2 ? cut.slice(0, space) : cut).trimEnd()}…`;
 }
 
-export class ThreadStore {
+export class ThreadStore implements ThreadRepository {
   private readonly root: string;
   private readonly codexHomeRoot: string;
 
@@ -104,11 +138,11 @@ export class ThreadStore {
   }
 
   private validateTenant(tenant: Tenant): void {
-    if (!TENANT_RE.test(tenant)) throw new Error('invalid tenant');
+    assertThreadTenant(tenant);
   }
 
   private validateId(id: string): void {
-    if (!ID_RE.test(id)) throw new Error('invalid thread id');
+    assertThreadId(id);
   }
 
   private dir(tenant: Tenant): string {
@@ -153,7 +187,7 @@ export class ThreadStore {
         if (line === '') continue;
         const ev = JSON.parse(line) as ThreadEvent;
         if ('t' in ev && ev.t === 'user') {
-          title = titleFrom(ev.content);
+          title = titleFromThreadMessage(ev.content);
           break;
         }
       }

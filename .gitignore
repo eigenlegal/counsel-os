@@ -37,3 +37,28 @@ e2e/.tmp/
 # Imported public benchmarks (`counsel-os eval import`): local copies under
 # their own licenses, never part of the repo (routing-and-evals spec §8).
 evals/benchmarks/
+
+# Local runs, user workspaces, signing material and generated reports.
+# Synthetic test fixtures are source-built; never add imported client files.
+evals/outputs/
+.counsel/
+.env
+.env.*
+!.env.example
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3-wal
+*.sqlite3-shm
+*.db
+*.counsel-backup
+*.dmg
+*.app/
+*.p12
+*.pfx
+*.key
+*.pem
+.venv/
+playwright-report/
+test-results/

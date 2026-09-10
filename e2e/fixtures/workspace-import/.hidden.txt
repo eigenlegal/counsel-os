@@ -1,0 +1,1 @@
+Hidden synthetic fixture: do not index.

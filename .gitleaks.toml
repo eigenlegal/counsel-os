@@ -1,0 +1,20 @@
+title = "Counsel source secret checks"
+
+[extend]
+useDefault = true
+
+# These are existing public legal-reference strings, not credentials.
+# Match the entire line AND the reference directory; do not exempt files.
+[[allowlists]]
+description = "Uniform Law Commission public committee identifiers"
+condition = "AND"
+paths = ['''(^|/)knowledge/law/''']
+regexTarget = "line"
+regexes = ['''^\s*url: "https://www\.uniformlaws\.org/committees/community-home\?CommunityKey=[0-9a-f-]{36}"\s*$''']
+
+[[allowlists]]
+description = "An existing legal checklist sentence, not an API key"
+condition = "AND"
+paths = ['''(^|/)knowledge/law/data-privacy/cross-border-transfers\.md$''']
+regexTarget = "line"
+regexes = ['''^- Key laws to assess: surveillance/national security laws, law enforcement access laws, and sector-specific regulations$''']

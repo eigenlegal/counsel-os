@@ -1,5 +1,5 @@
 import type { Tenant } from '../core/types';
-import type { ThreadEvent, ThreadStore } from '../threads/store';
+import type { ThreadEvent, ThreadRepository } from '../threads/store';
 
 /**
  * `GET /proposals?status=pending` (redesign spec §4): every proposal still
@@ -35,7 +35,7 @@ export interface PendingProposalsResult {
 }
 
 export async function pendingProposals(
-  store: ThreadStore,
+  store: ThreadRepository,
   tenant: Tenant,
   opts: { limit?: number } = {},
 ): Promise<PendingProposalsResult> {

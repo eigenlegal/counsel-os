@@ -1,6 +1,6 @@
 # Runtime-owned setup and content — design
 
-**Date:** 2026-09-01 · **Status:** approved by the founder 2026-09-01 (defaults taken on every open question) · **Decision it implements:** founder ruling 2026-09-01: the runtime carries the knowledge content and owns first-run setup. The Claude Code plugin stays as a front end.
+**Date:** 2026-09-01 · **Status:** partially superseded on 2026-09-04 by [Standalone legal workspace](../../architecture/standalone-workspace.md). Content embedding and ownership-aware updates remain useful. Markdown as standalone canonical storage, shared-vault assumptions, and subscription-harness-first setup are superseded; setup must serve a general legal workspace.
 
 ## 1. Why
 

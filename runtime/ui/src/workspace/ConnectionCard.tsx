@@ -1,0 +1,212 @@
+import { useState, type FormEvent } from 'react';
+import { request, type ConnectionConfig, type ConnectionStatus } from './api';
+import { Badge, ErrorNotice } from './components';
+import type { ClaudeSignIn, ClaudeBilling } from '../../../src/workspace/claude-code';
+import { ModelField } from './ModelPicker';
+
+const defaults = {
+  'claude-code': 'sonnet',
+  codex: 'gpt-5.6-sol',
+  'anthropic-api': 'claude-sonnet-5',
+  'openai-api': 'gpt-5.6-sol',
+};
+export function ConnectionCard({
+  status,
+  onChanged,
+}: {
+  status: ConnectionStatus;
+  onChanged: () => void;
+}): JSX.Element {
+  const [kind, setKind] = useState<ConnectionConfig['kind']>(status.config?.kind ?? 'codex');
+  const [model, setModel] = useState(status.config?.model ?? defaults.codex);
+  const [key, setKey] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [saved, setSaved] = useState(false);
+  const [billing, setBilling] = useState<ClaudeBilling>(
+    status.config?.claudeBilling ?? 'subscription',
+  );
+  const [signIn, setSignIn] = useState<ClaudeSignIn | null>(null);
+  const [checking, setChecking] = useState(false);
+  async function checkSignIn() {
+    setChecking(true);
+    setError('');
+    setSignIn(null);
+    try {
+      setSignIn(await request<ClaudeSignIn>('/connection/check-claude', {}));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setChecking(false);
+    }
+  }
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError('');
+    setSaved(false);
+    try {
+      await request('/connection', {
+        kind,
+        model,
+        ...(key ? { apiKey: key } : {}),
+        ...(kind === 'claude-code' ? { claudeBilling: billing } : {}),
+      });
+      setKey('');
+      setSaved(true);
+      onChanged();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <section className="settings-section connection-card">
+      <div className="section-heading">
+        <div>
+          <h2>Your AI connection</h2>
+          <p>Choose how Counsel runs. Chats and records stay in this workspace.</p>
+        </div>
+        <Badge tone={status.ready ? 'green' : 'neutral'}>
+          {status.ready ? 'Configured' : 'Not configured'}
+        </Badge>
+      </div>
+      <form onSubmit={submit}>
+        <label>
+          Connection
+          <select
+            aria-label="AI connection"
+            value={kind}
+            onChange={(e) => {
+              const value = e.target.value as ConnectionConfig['kind'];
+              setKind(value);
+              setModel(defaults[value]);
+              setKey('');
+              setSaved(false);
+              setSignIn(null);
+              setError('');
+            }}
+          >
+            <option value="claude-code">Use Claude Code</option>
+            <option value="codex">Codex · ChatGPT subscription</option>
+            <option value="anthropic-api">Anthropic API</option>
+            <option value="openai-api">OpenAI API</option>
+          </select>
+        </label>
+        {kind === 'claude-code' ? (
+          <div className="connection-explanation">
+            <strong>
+              {status.claudeInstalled
+                ? 'Claude Code CLI found on this device'
+                : 'Claude Code CLI needs to be installed'}
+            </strong>
+            <p>
+              Runs your installed, unmodified Claude Code. Sign in through Claude Code itself with{' '}
+              <code>claude auth login</code>. Counsel does not collect or copy Claude login tokens.
+            </p>
+            <p>
+              Claude Code may add account information, including your login email, to model context
+              independently of Counsel. Turning off profile sharing does not remove that CLI context.
+              Account information is not your document-author identity.
+            </p>
+            <label>
+              Claude Code billing
+              <select
+                aria-label="Claude Code billing"
+                value={billing}
+                onChange={(e) => {
+                  setBilling(e.target.value as ClaudeBilling);
+                  setSaved(false);
+                }}
+              >
+                <option value="subscription">Claude subscription</option>
+                <option value="api">Claude Console · API-billed</option>
+              </select>
+            </label>
+            <p>
+              {billing === 'subscription'
+                ? 'Uses your Claude subscription sign-in. Included limits and usage-credit charges depend on your plan and model. A different sign-in method blocks the response; it does not trigger API fallback.'
+                : 'Uses an API-billed sign-in managed by Claude Code. To select that account, run claude auth login --console in your terminal.'}
+            </p>
+            <button
+              className="button"
+              type="button"
+              disabled={checking || busy}
+              onClick={() => void checkSignIn()}
+            >
+              {checking ? 'Checking…' : 'Check local sign-in'}
+            </button>
+            {signIn && (
+              <p role="status">
+                {signIn.message}
+                {signIn.loggedIn && signIn.billing !== billing
+                  ? ' This does not match the billing method selected above.'
+                  : ''}
+              </p>
+            )}
+          </div>
+        ) : kind === 'codex' ? (
+          <div className="connection-explanation">
+            <strong>
+              {status.codexInstalled
+                ? 'Codex CLI found on this device'
+                : 'Codex CLI needs to be installed'}
+            </strong>
+            <p>
+              Uses your local Codex ChatGPT login and its plan limits. Run <code>codex login</code>{' '}
+              first. This adapter requires file-backed CLI authentication; it does not use
+              API keys or silently fall back to API billing.
+            </p>
+            <p>Fresh sessions share only a private sign-in cache so CLI renewals can carry forward. Logging out or changing your CLI login takes precedence. Responses using this sign-in run one at a time.</p>
+          </div>
+        ) : (
+          <label>
+            API key
+            <input
+              aria-label="API key"
+              type="password"
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              autoComplete="off"
+              placeholder={
+                status.config?.kind === kind
+                  ? 'Leave blank to keep the saved key'
+                  : 'Paste your API key'
+              }
+            />
+          </label>
+        )}
+        <ModelField kind={kind} value={model} onChange={value => { setModel(value); setSaved(false); }} disabled={busy} />
+        <details className="model-detail">
+          <summary>Model and connection details</summary>
+          <p>
+            {kind === 'claude-code'
+              ? 'A fresh restricted CLI run receives only the explicit chat context and Counsel tools. Ambient API keys, custom hooks, skills, and other MCP servers are not inherited. This connection uses the CLI’s saved local sign-in, not custom gateway or apiKeyHelper configurations.'
+              : kind === 'codex'
+                ? 'Official local Codex CLI. A new isolated agent session receives each explicit conversation context.'
+                : `Official endpoint only: ${kind === 'anthropic-api' ? 'api.anthropic.com' : 'api.openai.com'}. Keys are kept in ${status.storage === 'keychain' ? 'macOS Keychain' : status.storage === 'libsecret' ? 'the system secret store' : 'a private local credentials file'}, separate from chat records.`}
+          </p>
+        </details>
+        <p className="connection-disclosure">
+          Sending a message shares that conversation’s included history, matter summary, and
+          retrieved or attached passages with the selected provider. Local storage does not mean
+          local inference. Changing this setting applies to future responses, not responses already
+          running.
+        </p>
+        {error && <ErrorNotice message={error} />}
+        <div className="connection-submit">
+          <button className="button button-primary" disabled={busy}>
+            {busy ? 'Saving…' : 'Save connection'}
+          </button>
+          {saved && <span role="status">Saved. Send a message to use this connection.</span>}
+        </div>
+      </form>
+      <p className="fine-print">
+        Adapters are implemented but not yet live-qualified for legal work. Saving a connection does
+        not test model access or spend credits. Checking local Claude Code sign-in makes no model
+        call.
+      </p>
+    </section>
+  );
+}
