@@ -81,7 +81,9 @@ final class EngineProcess {
             onFailure?("Counsel’s workspace engine could not start. Check that the app bundle is complete.")
             return
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 25) { [weak self] in
+        // An upgrade first makes and verifies a complete recovery archive. Do not
+        // interrupt a large workspace backup after an ordinary UI-load timeout.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1260) { [weak self] in
             guard let self, self.process === child, self.ready == nil, !self.stopping else { return }
             self.fail("The workspace took too long to start. Try again; saved work remains on this device.")
         }

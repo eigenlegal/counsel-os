@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import type { ModelProvider, StepEvent, StepRequest } from '../core/types';
 import { locateCli } from '../providers/cli-locate';
 import { transportEnv } from '../providers/env';
-import { mapClaudeMessage } from '../providers/claude-harness';
+import { mapClaudeMessage } from '../providers/claude-messages';
 import { openToolBridge } from './tool-bridge';
 
 export type ClaudeBilling = 'subscription' | 'api';

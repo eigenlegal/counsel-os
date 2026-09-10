@@ -7,6 +7,7 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { sourceFingerprint } from './workspace-release-check';
+import { createDesktopNotices } from './desktop_notices';
 
 export function buildOptions(args: string[]) {
   let output: string | undefined, target = `bun-${process.platform}-${process.arch}`, help = false;
@@ -80,7 +81,8 @@ export async function buildWorkspace(args: string[]): Promise<string | null> {
     builtAt: new Date().toISOString(), target: opts.target, bun: Bun.version };
   const uiRoot = join(stage, 'ui');
   await command([process.execPath, join(repo, 'runtime/ui/node_modules/vite/bin/vite.js'), 'build', '--outDir', uiRoot], join(repo, 'runtime/ui'));
-  const ui = regularFiles(uiRoot).filter(path => !path.endsWith('.map') && relative(uiRoot, path) !== 'index.html')
+  const uiInputs = JSON.parse(readFileSync(join(uiRoot, 'bundled-modules.json'), 'utf8')) as string[];
+  const ui = regularFiles(uiRoot).filter(path => !path.endsWith('.map') && !['index.html', 'bundled-modules.json'].includes(relative(uiRoot, path)))
     .map(path => ({ key: relative(uiRoot, path).split('\\').join('/'), path }));
   if (!ui.some(file => file.key === 'workspace.html')) throw new Error('Current workspace UI missing.');
   const pdfRoot = realpathSync(dirname(fileURLToPath(import.meta.resolve('pdfjs-dist/package.json'))));
@@ -93,8 +95,10 @@ export async function buildWorkspace(args: string[]): Promise<string | null> {
   const executable = join(output, 'counsel-workspace');
   await command([process.execPath, 'build', '--compile', `--target=${opts.target}`, '--env=disable',
     '--no-compile-autoload-dotenv', '--no-compile-autoload-bunfig', '--no-compile-autoload-tsconfig', '--no-compile-autoload-package-json',
-    entry, '--outfile', executable], repo);
+    entry, '--outfile', executable, `--metafile=${join(stage, 'engine-inputs.json')}`], repo);
   chmodSync(executable, 0o700);
+  const inputs = Object.keys(JSON.parse(readFileSync(join(stage, 'engine-inputs.json'), 'utf8')).inputs);
+  const notices = createDesktopNotices(repo, output, inputs, uiInputs, pdfRoot);
   const sourceAfter = await sourceFingerprint(repo);
   if (sourceBefore.sha256 !== sourceAfter.sha256) throw new Error('Source changed during compilation. This output is unqualified; build again in a new folder.');
   const sha256 = (path: string) => createHash('sha256').update(readFileSync(path)).digest('hex');
@@ -102,7 +106,7 @@ export async function buildWorkspace(args: string[]): Promise<string | null> {
     executable: { name: 'counsel-workspace', bytes: lstatSync(executable).size, sha256: sha256(executable) },
     embeddedUI: ui.map(file => ({ name: file.key, sha256: sha256(file.path) })),
     embeddedPdfResources: pdf.map(file => ({ name: file.key, sha256: sha256(file.path) })),
-    source: sourceAfter,
+    source: sourceAfter, notices,
     lockfiles: ['bun.lock', 'runtime/ui/bun.lock'].map(name => ({ name, sha256: sha256(join(repo, name)) })),
     externalConnections: ['Installed and separately authenticated Codex or Claude CLI, or an explicitly configured API connection.'],
     limitations: ['Unsigned local build; not notarized, a desktop shell or an installer.', 'No live-provider or target-platform qualification inferred from compilation.',

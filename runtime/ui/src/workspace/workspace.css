@@ -406,6 +406,13 @@
   --surface: #f5f7fa;
   --green: #236c56;
 }
+.connection-setup, .connection-test { border-top: 1px solid var(--line); margin-top: 24px; padding-top: 20px; }
+.connection-setup p, .connection-test p { max-width: 72ch; color: var(--muted); }
+.connection-setup-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.connection-command { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 20px 0; }
+.connection-command strong, .connection-command code { flex-basis: 100%; }
+.connection-command code { padding: 12px; background: var(--surface); border-radius: 6px; overflow-wrap: anywhere; user-select: all; }
+.connection-test > .button + .button { margin-left: 10px; }
 * {
   box-sizing: border-box;
 }

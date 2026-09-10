@@ -42,6 +42,14 @@ struct CheckError: Error { let message: String }
     }
     func stop(_ engine: EngineProcess) async { await withCheckedContinuation { continuation in engine.stop { continuation.resume() } } }
     func saveDrafts() async -> Bool { await withCheckedContinuation { continuation in controller.saveDrafts { continuation.resume(returning: $0) } } }
+    func backup(_ action: String, file: URL, parent: URL) async -> [String: Any]? {
+        let operation = NativeBackupOperation()
+        return await withCheckedContinuation { continuation in
+            operation.run(executable: app.appendingPathComponent("Contents/MacOS/counsel-workspace"), action: action, file: file, parent: parent) { value in
+                withExtendedLifetime(operation) { continuation.resume(returning: value) }
+            }
+        }
+    }
     func snapshot(_ name: String) async throws {
         let image = try await controller.webView.takeSnapshot(configuration: nil)
         let bitmap = NSBitmapImageRep(data: image.tiffRepresentation!)!
@@ -129,6 +137,26 @@ struct CheckError: Error { let message: String }
         """)
         try await awaitDownloads(2)
         try check((try Data(contentsOf: downloaded[1])).count > 1000, "streamed backup empty")
+        phase = "native backup restore"
+        let inspected = await backup("inspect", file: downloaded[1], parent: root)
+        try check((inspected?["manifest"] as? [String: Any]) != nil, "native backup inspection failed")
+        let restored = await backup("restore", file: downloaded[1], parent: root)
+        guard let restoredPath = restored?["databasePath"] as? String else { throw CheckError(message: "native backup restore failed") }
+        let recoveredDatabase = URL(fileURLWithPath: restoredPath).standardizedFileURL
+        try check(recoveredDatabase.deletingLastPathComponent().deletingLastPathComponent() == root.standardizedFileURL && recoveredDatabase.deletingLastPathComponent().lastPathComponent.hasPrefix("recovered-"), "restore escaped its separate workspace")
+        let brokenBackup = root.appendingPathComponent("broken.counsel-backup")
+        try "Not a backup".write(to: brokenBackup, atomically: true, encoding: .utf8)
+        let broken = await backup("inspect", file: brokenBackup, parent: root)
+        try check(broken == nil, "native worker accepted an invalid backup")
+        try check(DesktopAction.parse(URL(string: "counsel-desktop://restore")!) == .restore, "restore action unavailable")
+        for invalid in ["counsel-desktop://install-codex?command=anything", "counsel-desktop://restore/path", "counsel-desktop://restore#extra", "counsel-desktop://unknown", "https://restore"] {
+            try check(DesktopAction.parse(URL(string: invalid)!) == nil, "native action accepted untrusted arguments")
+        }
+        var actions: [DesktopAction] = []
+        controller.onNativeAction = { action in actions.append(action) }
+        _ = try await js("const a=document.createElement('a');a.href='counsel-desktop://restore';document.body.append(a);a.click();a.remove();return true;")
+        try await Task.sleep(nanoseconds: 300_000_000)
+        try check(actions == [.restore], "native restore link did not route its fixed action")
         phase = "import navigation"; controller.navigate("imports")
         try await waitJS("!!document.querySelector('input[type=file][webkitdirectory]')", label: "import route unavailable")
         phase = "file selection"
@@ -160,9 +188,21 @@ struct CheckError: Error { let message: String }
         try await waitJS("document.querySelector('textarea[aria-label=\"Message Counsel\"]')?.value==='Synthetic recovered draft — あ 🧭'", label: "draft not restored into fresh native window")
         try await snapshot("native-draft-recovered.png")
         await stop(engine)
+        phase = "restored workspace reopen"
+        controller.window?.orderOut(nil)
+        engine = EngineProcess(executable: app.appendingPathComponent("Contents/MacOS/counsel-workspace"), database: recoveredDatabase, home: home, buildID: build["id"] as! String)
+        controller = WorkspaceWindow(engine: engine); controller.start()
+        try await waitJS("document.body.textContent.includes('What are we working through?')", label: "recovered workspace did not open")
+        let recoveredMatters = try await js("return (await (await fetch('/api/workspace',{headers:{Authorization:'Bearer '+sessionStorage.getItem('counsel-os.token')}})).json()).totals.matters;") as? Int
+        try check(recoveredMatters == 1, "restored workspace lost saved records")
+        controller.navigate("settings")
+        try await waitJS("document.body.textContent.includes('Your AI connection')", label: "connection settings unavailable")
+        _ = try await js("document.querySelector('.connection-setup details').open=true; document.querySelector('.connection-card').scrollIntoView(); return true;")
+        try await snapshot("native-connection-setup.png")
+        await stop(engine)
         try check(!fm.fileExists(atPath: home.appendingPathComponent(".counsel/workspaces").path), "test opened a default workspace")
         let result: [String: Any] = ["status": "passed", "nativeWebKit": true, "pickerCalls": pickerCalls.count, "downloads": downloaded.count,
-            "checks": ["optional first-run setup", "authenticated startup", "no native-message bridge", "confirmation cancel/continue", "quit flush and draft recovery in a fresh window", "blob original download", "streaming backup download", "file/folder upload delegate", "external navigation", "graceful close and reopen"],
+            "checks": ["optional first-run setup", "authenticated startup", "no native-message bridge", "confirmation cancel/continue", "quit flush and draft recovery in a fresh window", "blob original download", "streaming backup download", "native backup inspection and separate restore", "invalid backup refused", "native action allowlist", "restored workspace reopened", "file/folder upload delegate", "external navigation", "graceful close and reopen"],
             "limits": ["File selection and save destinations supplied by isolated test delegates; manual native-panel interaction remains to qualify.", "No live AI, private workspace or installed-app launch."]]
         try JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted, .sortedKeys]).write(to: root.appendingPathComponent("native-result.json"))
     }

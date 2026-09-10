@@ -5,7 +5,7 @@ import { Icon } from './icons';
 
 const countLabel = (count: number, label: string) => `${count} ${label}${count === 1 ? '' : 's'}`;
 
-export function BackupCard(): JSX.Element {
+export function BackupCard({ desktop = false }: { desktop?: boolean }): JSX.Element {
   const [busy, setBusy] = useState<'download' | 'verify' | null>(null);
   const [error, setError] = useState(''),
     [downloaded, setDownloaded] = useState(false);
@@ -104,7 +104,7 @@ export function BackupCard(): JSX.Element {
         <p className="fine-print">
           Unencrypted: this file contains confidential workspace content. Save it somewhere
           protected, ideally on a separate device or backed-up drive. API keys, CLI sign-ins and
-          unsent browser drafts are not included. Staged import files and saved chat model preferences are included. Backups stream directly to your download folder, up to 10 GB; backups are not scheduled
+          text not yet autosaved are not included. Saved chat and working-preference recovery drafts, staged import files and chat model preferences are included. Backups stream directly to your download folder, up to 10 GB; backups are not scheduled
           automatically.
         </p>
         {busy && (
@@ -138,6 +138,7 @@ export function BackupCard(): JSX.Element {
         )}
         <details className="backup-restore">
           <summary>Restore a separate workspace</summary>
+          {desktop ? <><p>Choose a backup, review its contents, then restore a new workspace. Your current workspace is kept. Counsel remembers the workspace you open.</p><a className="button" href="counsel-desktop://restore">Restore workspace from backup</a><p>Use File → Open personal workspace to return, or File → Open workspace to choose another saved copy.</p></> : <>
           <p>
             For this development version, stop the workspace in its terminal, then run the command
             below with your backup’s full path. You can type the command through{' '}
@@ -151,6 +152,7 @@ export function BackupCard(): JSX.Element {
             never overwritten. Reconnect your AI in Settings; unfinished responses stay interrupted
             until you send a new request.
           </p>
+          </>}
         </details>
       </div>
     </section>

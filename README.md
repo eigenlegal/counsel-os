@@ -74,9 +74,22 @@ Both commands use fresh output directories by default and do not install/open th
 
 ### Get a GitHub Actions test image
 
-After these workflows are on `main`, a repository maintainer can open **Actions → [Desktop local-test image](https://github.com/eigenlegal/counsel-os/actions/workflows/desktop-preview.yml) → Run workflow**. A successful run retains the DMG and two build/hash receipts in its **Artifacts** section for seven days. Ordinary pull-request checks build and test the app but do not retain a downloadable image.
+The workflow is on `main`. A repository maintainer can open **Actions → [Desktop local-test image](https://github.com/eigenlegal/counsel-os/actions/workflows/desktop-preview.yml) → Run workflow**. A successful run retains the DMG and two build/hash receipts in its **Artifacts** section for seven days. Ordinary pull-request checks build and test the app but do not retain a downloadable image. If you are not a maintainer, ask one for the exact test run and artifact; there is not yet a general lawyer-facing download channel.
 
-This is an **ad-hoc-signed development build**, not a Developer ID-signed or notarized installer. macOS may refuse downloaded copies. No automatic updater or public desktop release is connected. Signing/notarization, redistribution notices, and clean-machine/manual qualification remain release gates.
+This is an **ad-hoc-signed development build**, not a Developer ID-signed or notarized installer. macOS may refuse downloaded copies. No automatic updater or public desktop release is connected. The app now includes dependency inventories/notices, guided AI connection setup, native backup restore, and verified pre-upgrade recovery backups. Signing/notarization tooling is prepared but has not been run; Bun's linked-library redistribution review and clean-machine/manual qualification remain open.
+
+For authorized developer testing, extract the Actions artifact, compare the DMG's SHA-256 with the downloaded `package.json` receipt, open the DMG, and drag **Counsel.app** into **Applications**. Quit any older Counsel app before replacing it; then eject the DMG and open the installed copy. If macOS refuses the image, stop and use an approved signed test image when available; do not disable Gatekeeper. Current builds target Apple silicon and macOS 13 or later, but that deployment target is **not** a tested support matrix. These images are development candidates, not cleared for general redistribution.
+
+### Bring your practice into the desktop
+
+Open Counsel and either connect AI or choose **Explore without AI**. Setup and Settings offer explicit provider installation/sign-in actions and an optional model-access test; nothing installs or spends a model call merely because setup is opened. Provider executables are installed separately. The native actions open Terminal after confirmation; provider authentication stays in the provider's own flow.
+
+- **Move an existing app workspace:** save a `.counsel-backup` in the old workspace's Settings, then use **File → Restore workspace from backup…** in the desktop. Inspect the summary, restore, and choose **Open workspace**. Recovery creates a separate copy with its records, links, retained originals and saved drafts; it does not overwrite or merge your old workspace. Reconnect AI afterward. Counsel remembers the last successfully opened workspace. **File → Open personal workspace** returns to the default one.
+- **Start from plugin folders or ordinary files:** use **Import files**. Drop your practice folders and company/matter documents, review the proposed organization, then import. AI assistance uses your chosen account and requires consent; imported instructions and practice positions still need review. This is file intake, not a silent migration of a plugin's executable skills or provider credentials.
+
+On the same computer, the non-demo developer launcher and desktop share the default personal-workspace location; the developer demo uses a separate folder. The backup/restore route is recommended when you want an independent test copy. Opening the original database instead uses the same data, not a copy, and only one process can hold it open. File import adds to the currently selected workspace rather than creating a clone; inspect the destination and duplicate/organization choices before committing. Reconnecting a recovered workspace can reuse an already installed, compatible signed-in CLI—you need not sign in again unless the local check says otherwise.
+
+Desktop workspaces live outside the app, initially under `~/.counsel/workspaces/personal/`. Replacing the app does not replace that folder. Keep a verified backup before an app update. [Recovery, update behavior and release limits](docs/desktop-release.md#recovery-and-updates) describe the exact boundaries.
 
 <a id="standalone-binary-preview"></a>
 
@@ -110,7 +123,8 @@ The plugin continues to work independently. Its slash commands, Markdown-vault l
 - [Contributing](CONTRIBUTING.md): setup, source checks, and privacy review before pushing.
 - [Repository layout](docs/repository-layout.md): current paths and incremental target structure.
 - [Desktop qualification and releases](docs/desktop-release.md): build steps, CI, artifacts, and public-release gates.
-- [Packaging follow-through](docs/desktop-roadmap.md): remaining onboarding, dependency notices, clean-machine, and update work.
+- [Packaging follow-through](docs/desktop-roadmap.md): implementation status and remaining release decisions.
+- [Manual Mac acceptance](docs/desktop-manual-acceptance.md): the clean-machine checklist still required before public release.
 - [Workspace implementation notes](runtime/src/workspace/README.md): detailed current and historical checkpoints, including limits.
 - [Agent plugin guide](docs/plugin-guide.md): published plugin installation and reference.
 - [Security policy](SECURITY.md): reporting a vulnerability.

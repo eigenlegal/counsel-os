@@ -73,6 +73,24 @@ function fixture(provider?: ModelProvider, syntheticClaude = false) {
 }
 
 describe('workspace HTTP boundary', () => {
+  test('desktop updates and connection tests require authentication and explicit model consent', async () => {
+    const { call, handler, store } = fixture(undefined, true);
+    for (const path of ['/updates/check', '/updates/download', '/connection/test', '/connection/check-sign-in']) {
+      expect((await handler(new Request(`${origin}/api/workspace${path}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }))).status).toBe(401);
+    }
+    expect(await json(call('/updates'))).toMatchObject({ enabled: false });
+    expect((await call('/updates/check', {})).status).toBe(409);
+    expect((await call('/updates/check', { url: 'https://example.invalid' })).status).toBe(400);
+    expect((await call('/updates/download', { id: 'unverified', consent: true })).status).toBe(409);
+    expect((await call('/updates/download', { id: 'unverified' })).status).toBe(400);
+    expect((await call('/connection/test', { choice: { kind: 'claude-code', model: 'sonnet' } })).status).toBe(400);
+    expect((await call('/connection/test', { choice: { kind: 'claude-code', model: 'sonnet' }, consent: false })).status).toBe(400);
+    expect((await call('/connection/check-sign-in', { kind: 'claude-code', command: 'arbitrary' })).status).toBe(400);
+    const result = await call('/connection/check-sign-in', { kind: 'claude-code' });
+    expect(result.status).toBe(200); expect(await result.text()).not.toMatch(/private@example|private-org|NEVER-EXPOSE/);
+    expect(store.conversations.list()).toHaveLength(0); expect(store.listWork()).toHaveLength(0);
+    expect(store.setting('highest-desktop-update')).toBeNull();
+  });
   test('recovery drafts require authentication and never change profile or sent work', async () => {
     const { store, call, handler } = fixture();
     expect((await handler(new Request(`${origin}/api/workspace/drafts`))).status).toBe(401);

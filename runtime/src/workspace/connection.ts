@@ -20,6 +20,7 @@ import {
   type ModelCatalog,
 } from "./model-choice";
 import { boundedText, bundledCodexModels, uniqueModels } from "./model-catalog";
+import { checkCodexSignIn, testModelConnection } from './connection-setup';
 
 export const ConnectionInput = z
   .object({
@@ -40,6 +41,7 @@ export interface ConnectionStatus {
   qualification: "not-live-qualified" | "test-fixture";
 }
 export class WorkspaceConnection {
+  private testing = false;
   private catalogs = new Map<
     string,
     { at: number; result: Promise<ModelCatalog> }
@@ -219,6 +221,17 @@ export class WorkspaceConnection {
   }
   checkClaudeSignIn() {
     return checkClaudeSignIn(this.options.claudeRuntime);
+  }
+  async checkSignIn(kind: 'codex' | 'claude-code') {
+    return kind === 'codex' ? checkCodexSignIn() : this.checkClaudeSignIn();
+  }
+  async test(choice: ModelChoice, signal: AbortSignal) {
+    if (this.testing) throw new WorkspaceConflictError('A connection test is already running. Cancel it or wait for it to finish.');
+    this.assertChoice(choice);
+    this.testing = true;
+    try { return await testModelConnection(this.resolve(choice), AbortSignal.any([signal, AbortSignal.timeout(60_000)])); }
+    catch { throw new WorkspaceConflictError('The selected model could not complete the test. Check your sign-in, model access and account limits. No fallback connection was used.'); }
+    finally { this.testing = false; }
   }
   resolve(choice?: ModelChoice): ModelProvider {
     const config = this.config();

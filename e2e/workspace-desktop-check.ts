@@ -16,7 +16,7 @@ assert.equal(build.source.sha256, (await sourceFingerprint(repo)).sha256, 'Build
 const root = realpathSync(mkdtempSync(join(tmpdir(), 'counsel-native-qualification-'))); chmodSync(root, 0o700);
 const qa = join(root, 'NativeSmoke');
 const compile = Bun.spawn(['/usr/bin/xcrun', 'swiftc', '-swift-version', '5', '-target', `${process.arch === 'arm64' ? 'arm64' : 'x86_64'}-apple-macosx13.0`,
-  'desktop/macos/EngineProcess.swift', 'desktop/macos/WorkspaceWindow.swift', 'desktop/macos/Smoke.swift', '-o', qa], { cwd: repo, stdout: 'pipe', stderr: 'pipe' });
+  'desktop/macos/EngineProcess.swift', 'desktop/macos/DesktopActions.swift', 'desktop/macos/WorkspaceWindow.swift', 'desktop/macos/Smoke.swift', '-o', qa], { cwd: repo, stdout: 'pipe', stderr: 'pipe' });
 const errors = await new Response(compile.stderr).text(); assert.equal(await compile.exited, 0, errors);
 const profile = `(version 1)(allow default)(deny file-read* (subpath ${JSON.stringify(realpathSync(repo))}))`;
 console.log(`Native synthetic qualification: ${root}`);

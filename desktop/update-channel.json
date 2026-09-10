@@ -1,0 +1,9 @@
+{
+  "enabled": false,
+  "channel": "stable",
+  "feedUrl": null,
+  "publicKey": null,
+  "bundleId": null,
+  "teamId": null,
+  "artifactOrigin": null
+}
