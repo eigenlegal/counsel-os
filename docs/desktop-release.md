@@ -2,6 +2,8 @@
 
 The macOS desktop is currently a local-test product, not a notarized public release. Core workspace and document operations are bundled; external AI connections are configured separately. No user workspace, documents, credentials or signing material may enter the build.
 
+The [packaging follow-through roadmap](desktop-roadmap.md) reconciles the older packaging proposal with the implemented app and orders the remaining onboarding, notice, clean-machine, and update work. The old Tauri/legacy-runtime proposal is not the current desktop architecture.
+
 ## Version ownership
 
 - `desktop/release.json` owns desktop `version`, numeric `build` and `channel`.
@@ -55,7 +57,7 @@ Workflow tokens are read-only for repository contents; checkout does not retain 
 
 ## Public release gate — still closed
 
-The preview workflow cannot create a GitHub Release, sign/notarize an app, register an updater, or publish an update feed. An ad-hoc signature and a valid DMG checksum do not make a downloaded app a trusted public release. macOS may refuse it.
+The preview workflow cannot create a GitHub Release, Developer ID-sign or notarize an app, register an updater, or publish an update feed. An ad-hoc signature and a valid DMG checksum do not make a downloaded app a trusted public release. macOS may refuse it.
 
 Before adding a public desktop release workflow, complete:
 

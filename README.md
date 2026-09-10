@@ -110,6 +110,7 @@ The plugin continues to work independently. Its slash commands, Markdown-vault l
 - [Contributing](CONTRIBUTING.md): setup, source checks, and privacy review before pushing.
 - [Repository layout](docs/repository-layout.md): current paths and incremental target structure.
 - [Desktop qualification and releases](docs/desktop-release.md): build steps, CI, artifacts, and public-release gates.
+- [Packaging follow-through](docs/desktop-roadmap.md): remaining onboarding, dependency notices, clean-machine, and update work.
 - [Workspace implementation notes](runtime/src/workspace/README.md): detailed current and historical checkpoints, including limits.
 - [Agent plugin guide](docs/plugin-guide.md): published plugin installation and reference.
 - [Security policy](SECURITY.md): reporting a vulnerability.
