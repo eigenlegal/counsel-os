@@ -94,6 +94,10 @@ with sync_playwright() as p:
                     expect(page.locator('.conversation-history-list > li')).to_have_count(30)
                 if name == 'your-practice':
                     expect(page.get_by_role('heading', name='About my practice', exact=True)).to_be_visible()
+                if name == 'settings':
+                    version = page.get_by_label('Application version')
+                    expect(version).to_contain_text('Development workspace')
+                    expect(version.get_by_role('link', name='Release notes')).to_have_attribute('href', re.compile(r'/releases/tag/desktop-v\d+\.\d+\.\d+-preview\.\d+$'))
                 if name.endswith('reader'):
                     expect(page.locator('.reading-sheet')).to_be_visible()
                 if name == 'matter-detail':

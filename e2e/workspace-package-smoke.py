@@ -36,6 +36,15 @@ with sync_playwright() as p:
         page.set_viewport_size({'width': width, 'height': height})
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
         page.screenshot(path=str(root / f'packaged-browser-{width}.png'), animations='disabled')
+    page.goto(base + '/#/settings')
+    page.wait_for_load_state('networkidle')
+    version = page.get_by_label('Application version')
+    expect(version).to_contain_text(f"Version {config['release']['version']} (build {config['release']['build']})")
+    expect(version.get_by_role('link', name='Release notes')).to_have_attribute('href', 'https://github.com/eigenlegal/counsel-os/releases/tag/' + config['releaseTag'])
+    for width, height in [(1440, 1000), (390, 844)]:
+        page.set_viewport_size({'width': width, 'height': height})
+        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+        page.screenshot(path=str(root / f'packaged-version-{width}.png'), animations='disabled')
     assert not errors, errors
     assert not external, external
     assert not sends, sends

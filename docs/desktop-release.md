@@ -14,7 +14,9 @@ Iteration is browser-first: implement and test in the local HTML workspace, then
 - Only `local-test` is accepted today. Setting `stable` fails; it does not bypass release gates.
 - Root `VERSION`, `package.json` and marketplace manifests remain the plugin/legacy product version. Do not use `scripts/release.sh` to publish the desktop or checkpoint arbitrary workspace changes: that older helper commits the working tree and pushes plugin release tags.
 
-Future desktop release tags use `desktop-vX.Y.Z`; existing plugin releases keep `vX.Y.Z`. No new tags or releases are created by this setup.
+Owner-approved desktop preview tags use `desktop-vX.Y.Z-preview.BUILD`; future stable desktop tags use `desktop-vX.Y.Z`. Existing plugin releases keep `vX.Y.Z`. Version/build, Settings release-note links, and package receipts derive their preview identity from the same manifest. The native About panel reads the generated Info.plist version/build. Browser Settings explicitly identify a development workspace, not an installed release.
+
+On the owner's explicit request, a qualified local-test image may be attached to a **GitHub prerelease**, not marked latest. Tag the exact reviewed source commit; publish only the verified DMG, SHA-256 checksums, and public build/package receipts. Verify uploaded asset hashes. Do not include test workspaces, raw logs, bootstrap links, credentials, or private files. The notes must identify the ad-hoc signature, lack of Apple notarization, supported architecture, manual installation, and outstanding public-release gates. This does not approve a stable release, enable an updater, or claim full clean-machine/redistribution qualification. Routine builds and CI still never publish automatically.
 
 ## Local development qualification
 

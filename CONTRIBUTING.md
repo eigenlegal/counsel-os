@@ -74,8 +74,11 @@ signing keys, generated eval runs and installers out of Git.
 The desktop version lives in `desktop/release.json`; root/plugin versions
 retain their existing lifecycle. Desktop test images come from the manual
 **Desktop local-test image** workflow after it reaches the default branch.
-They are Actions artifacts, not public releases. No signing secrets or AI
-accounts are needed for the standard CI checks.
+They are Actions artifacts, not public releases. On explicit owner request,
+a qualified image may also be published as a clearly labeled GitHub prerelease
+under `desktop-v<version>-preview.<build>`, tied to its exact source commit;
+see the desktop release guide for the asset and qualification boundaries.
+No signing secrets or AI accounts are needed for the standard CI checks.
 
 Useful scripts (see `package.json`):
 

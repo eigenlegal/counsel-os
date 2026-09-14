@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { buildDesktop } from './build_desktop';
 import { sourceFingerprint } from './workspace-release-check';
 import { verifyDesktopNotices } from './desktop_notices';
+import { desktopReleaseTag } from '../desktop/version';
 
 export function packageOptions(args: string[]) {
   let app: string | undefined, output: string | undefined, help = false;
@@ -29,6 +30,7 @@ export async function packageDesktop(args: string[]) {
   if(!app) throw new Error('Desktop app was not built.');
   verifyDesktopNotices(join(app, 'Contents/Resources'));
   const build=JSON.parse(readFileSync(join(dirname(app),'desktop-build.json'),'utf8'));
+  if(build.releaseTag!==desktopReleaseTag(build.desktopRelease)) throw new Error('Desktop release tag does not match its version/build. Rebuild before packaging.');
   if(build.source?.sha256!==(await sourceFingerprint(repo)).sha256) throw new Error('The desktop app does not match this source checkout. Rebuild before packaging.');
   const sha=(path:string)=>createHash('sha256').update(readFileSync(path)).digest('hex');
   if(build.engineSha256!==sha(join(app,'Contents/MacOS/counsel-workspace')) || build.shellSha256!==sha(join(app,'Contents/MacOS/Counsel')))
@@ -45,7 +47,7 @@ export async function packageDesktop(args: string[]) {
   await run(['/usr/bin/hdiutil','verify',image]);
   copyFileSync(join(dirname(app),'desktop-build.json'),join(output,'desktop-build.json'));
   writeFileSync(join(output,'package.json'),JSON.stringify({format:1,application:'Counsel desktop',channel:'local-test',artifact:image.split('/').at(-1),sha256:sha(image),source:build.source,
-    desktopRelease:build.desktopRelease,
+    desktopRelease:build.desktopRelease,releaseTag:build.releaseTag,
     signing:'ad-hoc only',notarized:false,published:false,installed:false,updates:false,limitations:['Developer ID signing/notarization and a signed update channel are required before public distribution.','Full third-party notice review and clean-machine/manual native-panel qualification remain release gates.']},null,2)+'\n',{flag:'wx',mode:0o600});
   console.log(`Verified local-test disk image: ${image}\nNot installed, notarized, or published.`); return image;
 }

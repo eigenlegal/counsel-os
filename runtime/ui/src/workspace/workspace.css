@@ -2364,6 +2364,22 @@ kbd {
 .settings-stack {
   max-width: var(--workspace-form-width);
 }
+.app-version {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.app-version-context {
+  color: var(--muted);
+}
+.app-version a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 .settings-section {
   border: 1px solid #e0e6ef;
   background: #fff;

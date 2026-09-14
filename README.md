@@ -63,6 +63,10 @@ Developer launches rebuild the checkout's UI assets. Do not run one under anothe
 
 **The source and build tools are in this repository. Compiled apps and installers are not stored in Git.**
 
+The owner-approved [Counsel OS 0.1.0 preview, build 9](https://github.com/eigenlegal/counsel-os/releases/tag/desktop-v0.1.0-preview.9) provides an Apple silicon Mac installer as a GitHub Release asset. This is an experimental, ad-hoc-signed preview, **not Apple-notarized**; macOS may refuse a downloaded copy. It is not the production release or an automatic update channel. See its release notes for installation, verification, and known limitations.
+
+Find the app version at the top of **Settings** or in **Counsel OS → About Counsel OS**. Preview tags use `desktop-v<version>-preview.<build>` and point to the exact source commit used for the installer. Plugin releases keep their separate `v<version>` tags.
+
 The Mac build bundles the native shell, workspace engine, browser interface, document worker modes, and required PDF resources. Lawyers do not need to run separate worker services. The packaged document operations do not require a separate Bun or Python installation; external AI connections remain a separate setup step.
 
 On an Apple silicon Mac with Bun, the Xcode command-line tools, and the locked dependencies installed above:
@@ -81,7 +85,7 @@ Both commands use fresh output directories by default and do not install/open th
 
 The workflow is on `main`. A repository maintainer can open **Actions → [Desktop local-test image](https://github.com/eigenlegal/counsel-os/actions/workflows/desktop-preview.yml) → Run workflow**. A successful run retains the DMG and two build/hash receipts in its **Artifacts** section for seven days. Ordinary pull-request checks build and test the app but do not retain a downloadable image. If you are not a maintainer, ask one for the exact test run and artifact; there is not yet a general lawyer-facing download channel.
 
-This is an **ad-hoc-signed development build**, not a Developer ID-signed or notarized installer. macOS may refuse downloaded copies. No automatic updater or public desktop release is connected. The app now includes dependency inventories/notices, guided AI connection setup, native backup restore, and verified pre-upgrade recovery backups. Signing/notarization tooling is prepared but has not been run; Bun's linked-library redistribution review and clean-machine/manual qualification remain open.
+This is an **ad-hoc-signed development build**, not a Developer ID-signed or notarized installer. macOS may refuse downloaded copies. No automatic updater or production desktop release is connected; the owner-approved GitHub prerelease above is a separate manual preview download. The app now includes dependency inventories/notices, guided AI connection setup, native backup restore, and verified pre-upgrade recovery backups. Signing/notarization tooling is prepared but has not been run; Bun's linked-library redistribution review and clean-machine/manual qualification remain open.
 
 For authorized developer testing, extract the Actions artifact, compare the DMG's SHA-256 with the downloaded `package.json` receipt, open the DMG, and drag **Counsel OS.app** into **Applications**. Quit any older Counsel OS app before replacing it; then eject the DMG and open the installed copy. If macOS refuses the image, stop and use an approved signed test image when available; do not disable Gatekeeper. Current builds target Apple silicon and macOS 13 or later, but that deployment target is **not** a tested support matrix. These images are development candidates, not cleared for general redistribution.
 
