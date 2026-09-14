@@ -68,16 +68,16 @@ jobs:
           security default-keychain -d user -s "$SIGNING_KEYCHAIN"
           SIGNING_TEAM="$(bun -e 'import i from "./desktop/release-identity.json"; console.log(i.teamId)')"
           xcrun notarytool store-credentials counsel-notary --apple-id "$COUNSEL_APPLE_ID" --team-id "$SIGNING_TEAM" --password "$COUNSEL_NOTARY_PASSWORD" --keychain "$SIGNING_KEYCHAIN" >/dev/null
-          bun scripts/sign_desktop.ts --app "$RUNNER_TEMP/counsel-signing-input/Counsel.app" --outdir "$RUNNER_TEMP/counsel-signed-test" --identity "$COUNSEL_SIGNING_IDENTITY" --notary-profile counsel-notary
+          bun scripts/sign_desktop.ts --app "$RUNNER_TEMP/counsel-signing-input/Counsel OS.app" --outdir "$RUNNER_TEMP/counsel-signed-test" --identity "$COUNSEL_SIGNING_IDENTITY" --notary-profile counsel-notary
       - name: Qualify signed nested engine and native shell without live accounts
         run: |
-          bun e2e/workspace-package-check.ts "$RUNNER_TEMP/counsel-signed-test/Counsel.app" --browser-python "$(command -v python)"
-          bun e2e/workspace-desktop-check.ts "$RUNNER_TEMP/counsel-signed-test/Counsel.app"
+          bun e2e/workspace-package-check.ts "$RUNNER_TEMP/counsel-signed-test/Counsel OS.app" --browser-python "$(command -v python)"
+          bun e2e/workspace-desktop-check.ts "$RUNNER_TEMP/counsel-signed-test/Counsel OS.app"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: Counsel-signed-test-${{ github.sha }}
+          name: Counsel-OS-signed-test-${{ github.sha }}
           path: |
-            ${{ runner.temp }}/counsel-signed-test/Counsel-signed-test-arm64.dmg
+            ${{ runner.temp }}/counsel-signed-test/Counsel-OS-signed-test-arm64.dmg
             ${{ runner.temp }}/counsel-signed-test/signed-test.json
             ${{ runner.temp }}/counsel-signed-test/desktop-build.json
           if-no-files-found: error

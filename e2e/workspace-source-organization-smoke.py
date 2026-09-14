@@ -52,7 +52,7 @@ with sync_playwright() as p:
     expect(page.get_by_text('3 files', exact=True)).to_be_visible()
     page.get_by_role('button', name='Select this page', exact=True).click()
     page.get_by_role('button', name='Suggest filing…', exact=True).click()
-    dialog = page.get_by_role('dialog', name='Review filing with Counsel', exact=True)
+    dialog = page.get_by_role('dialog', name='Review filing with Counsel OS', exact=True)
     expect(dialog).to_contain_text('Other matter contents, chats and your profile are not sent.')
     dialog.get_by_role('button', name='Generate suggestions', exact=True).click()
     expect(dialog.get_by_role('button', name='Organize 2 files', exact=True)).to_be_enabled()

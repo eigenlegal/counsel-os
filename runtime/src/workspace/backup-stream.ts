@@ -85,10 +85,10 @@ function readExactly(fd: number, offset: number, size: number): Buffer {
 
 export function readBackupHeader(fd: number, size: number): { manifest: BackupManifest; offset: number } {
   if (size > BACKUP_MAX_BYTES || size < BACKUP_MAGIC.length + 4)
-    throw new Error('Choose a supported Counsel .counsel-backup file.');
+    throw new Error('Choose a supported Counsel OS .counsel-backup file.');
   const header = readExactly(fd, 0, BACKUP_MAGIC.length + 4);
   if (!header.subarray(0, BACKUP_MAGIC.length).equals(BACKUP_MAGIC))
-    throw new Error('Choose a Counsel .counsel-backup file.');
+    throw new Error('Choose a Counsel OS .counsel-backup file.');
   const length = header.readUInt32BE(BACKUP_MAGIC.length);
   const offset = header.length + length;
   if (!length || length > BACKUP_MANIFEST_MAX_BYTES || offset > size)

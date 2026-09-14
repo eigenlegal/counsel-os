@@ -4,6 +4,7 @@ Run with workspace-server.ts on 7458 and --empty on 7459. No AI calls.
 """
 import argparse
 import json
+import re
 from pathlib import Path
 from playwright.sync_api import sync_playwright, expect
 
@@ -40,7 +41,7 @@ with sync_playwright() as p:
     context.on('request', lambda r: sends.append(r.url) if r.url.endswith(('/send', '/connection/test')) else None)
     page.goto(BASE + '/#token=' + TOKEN)
     page.wait_for_load_state('networkidle')
-    expect(page.get_by_role('textbox', name='Message Counsel', exact=True)).to_be_enabled()
+    expect(page.get_by_role('textbox', name='Message Counsel OS', exact=True)).to_be_enabled()
     snapshot = page.request.get(BASE + '/api/workspace', headers=HEADERS).json()
     current = page.request.get(BASE + '/api/workspace/practice-document', headers=HEADERS).json()
     response = page.request.post(BASE + '/api/workspace/practice-document', headers=HEADERS, data={
@@ -67,6 +68,11 @@ with sync_playwright() as p:
 
     def capture(name, width):
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), (name, width, 'overflow')
+        expect(page).to_have_title(re.compile(r' — Counsel OS$'))
+        expect(page.locator('.brand-name')).to_have_text('Counsel OS')
+        if width > 760:
+            wordmark, brand = bounds(page.locator('.brand-name')), bounds(page.locator('.brand'))
+            assert wordmark['right'] <= brand['right'] + 1, (name, width, 'clipped product name')
         page.screenshot(path=str(args.artifacts / f'{args.browser}-{name}-{width}.png'), animations='disabled')
 
     for width, height in [(1440, 1000), (1920, 1080), (1024, 768), (390, 844)]:
@@ -75,7 +81,7 @@ with sync_playwright() as p:
             visit(route)
             main = page.locator('#workspace-content')
             if name == 'chat':
-                expect(page.get_by_role('textbox', name='Message Counsel', exact=True)).to_be_enabled()
+                expect(page.get_by_role('textbox', name='Message Counsel OS', exact=True)).to_be_enabled()
                 expect(main).to_have_class('workspace-frame workspace-frame-canvas app-content page-home')
                 composer, canvas = bounds(page.locator('.composer-region')), bounds(main)
                 near(composer['x'] + composer['width'] / 2, canvas['x'] + canvas['width'] / 2, 'centered composer')

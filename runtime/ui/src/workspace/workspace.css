@@ -1,4 +1,4 @@
-/* Counsel workspace: midnight navigation, cool paper, blue ink.
+/* Counsel OS workspace: midnight navigation, cool paper, blue ink.
    One type family, readable prose, contextual color only. No remote assets. */
 .welcome-step > .welcome-practice-actions { flex:0 1 245px; display:grid; justify-items:start; gap:14px; }
 .welcome-practice-actions .button { white-space:normal; text-align:left; }
@@ -604,21 +604,22 @@ select:focus-visible {
 .brand {
   display: flex;
   align-items: center;
-  gap: 13px;
+  gap: 10px;
   color: #fff;
-  font-size: 30px;
+  font-size: 26px;
   font-weight: 600;
-  letter-spacing: -1.6px;
+  letter-spacing: -1px;
   margin: 0 14px 30px;
 }
-.brand-period {
-  color: #8dadf9;
+.brand-name {
+  white-space: nowrap;
 }
 .brand-mark {
   display: flex;
   align-items: center;
   gap: 3px;
   width: 27px;
+  flex: 0 0 27px;
   height: 32px;
 }
 .brand-mark i {

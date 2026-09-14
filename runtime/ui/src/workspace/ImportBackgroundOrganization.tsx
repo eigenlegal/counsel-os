@@ -63,11 +63,11 @@ export function ImportBackgroundOrganization({ batch, data, changed, onStateChan
   });
   return <section className={`import-ai ${running ? 'import-ai-running' : ''}`} aria-label="AI organization">
     <div className="import-ai-heading">
-      <div role="status"><h3>{unavailable ? 'Checking organization status' : !loaded ? 'Checking for saved organization…' : !job ? 'Let Counsel organize these files' : running ? 'Counsel is organizing your files' : job.status === 'complete' ? 'Organization ready to review' : job.status === 'failed' ? 'Organization needs attention' : 'AI organization paused'}</h3>
+      <div role="status"><h3>{unavailable ? 'Checking organization status' : !loaded ? 'Checking for saved organization…' : !job ? 'Let Counsel OS organize these files' : running ? 'Counsel OS is organizing your files' : job.status === 'complete' ? 'Organization ready to review' : job.status === 'failed' ? 'Organization needs attention' : 'AI organization paused'}</h3>
         <p>{job ? `${processed} of ${total} eligible files processed${job.skipped ? `; ${job.skipped} excluded, profile or unreadable files` : ''}.`
-          : 'Counsel reads document excerpts, connects related files and suggests where they belong. No special folder structure needed.'}</p></div>
+          : 'Counsel OS reads document excerpts, connects related files and suggests where they belong. No special folder structure needed.'}</p></div>
       <div className="import-queue-actions">
-        {!job ? <button className="button" disabled={busy || !loaded || unavailable || !data.connection.ready} onClick={() => { try { void act(base, organizationRequest(batch, data, instruction)); } catch (e) { setError((e as Error).message); } }}>Organize with Counsel</button>
+        {!job ? <button className="button" disabled={busy || !loaded || unavailable || !data.connection.ready} onClick={() => { try { void act(base, organizationRequest(batch, data, instruction)); } catch (e) { setError((e as Error).message); } }}>Organize with Counsel OS</button>
           : <>
             {job.status !== 'complete' && <button className="button" disabled={busy || unavailable} onClick={() => void act(`${base}-control`, { action: running ? 'pause' : 'resume', expectedRevisionId: job.revisionId })}>{running ? 'Pause and review manually' : 'Resume organization'}</button>}
             {!running && <button className="button" disabled={busy || unavailable || !job.total} onClick={() => { setAttention(job.attention > 0); setOffset(0); setReview(true); }}>{job.attention ? `Review ${job.attention} ${job.attention === 1 ? 'exception' : 'exceptions'}` : 'View filing details'}</button>}
@@ -84,14 +84,14 @@ export function ImportBackgroundOrganization({ batch, data, changed, onStateChan
       {!!job.retrying && <p className="fine-print">{job.retrying} {job.retrying === 1 ? 'file will get' : 'files will get'} one separate retry after the other files are processed.</p>}
       {!!job.failed && <p className="fine-print">{job.failed} {job.failed === 1 ? 'file could' : 'files could'} not be organized after a retry. The originals are kept; review their location or leave them unfiled.</p>}
       {job.status === 'failed' && <p role="alert">{job.message}</p>}
-      <details className="import-ai-details"><summary>Processing details</summary><p className="fine-print">{job.message}</p><p className="fine-print">Using {job.request.modelChoice.model}. Progress is saved locally. You can use other pages while Counsel is running. If you quit the app, resume organization when you reopen it.</p></details>
+      <details className="import-ai-details"><summary>Processing details</summary><p className="fine-print">{job.message}</p><p className="fine-print">Using {job.request.modelChoice.model}. Progress is saved locally. You can use other pages while Counsel OS is running. If you quit the app, resume organization when you reopen it.</p></details>
       {job.summary && <ImportFilingPreview summary={job.summary} />}
     </>
       : <><details><summary>Add guidance (optional)</summary><textarea aria-label="Background organization guidance" rows={2} maxLength={2000} value={instruction} onChange={e => setInstruction(e.target.value)} placeholder="For example: the Acme drafts concern two separate transactions…" /></details>
         <p className="fine-print">{data.connection.ready ? <>Uses {data.connection.label}{data.connection.config ? ` · ${data.connection.config.model}` : ''}, including your plan usage. Shares up to 6,000 extracted characters per file, names, filing choices, matching matter names and earlier filing suggestions from this import. Originals stay local. Review before importing.</>
           : 'Connect AI in Settings for organization help, or review and organize files manually below.'}</p></>}
     {error && <ErrorNotice message={error} />}
-    {review && job && <Modal title="Review Counsel’s organization" onClose={() => setReview(false)} busy={busy}>
+    {review && job && <Modal title="Review Counsel OS’s organization" onClose={() => setReview(false)} busy={busy}>
       <div className="record-form">
         <p>Clear filing choices are already prepared. Review exceptions here, or leave them unfiled for later. Nothing enters your workspace until you confirm the import.</p>
         <div className="import-queue-actions">

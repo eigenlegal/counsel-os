@@ -38,7 +38,7 @@ export function FormDraftAssist<T>({ value, apply, busyChanged, disabled = false
       setReceipt(result.receipt ?? null);
       if (result.question.trim()) { setMessage(result.question); return; }
       if (JSON.stringify(current.current) !== JSON.stringify(before)) {
-        setError('Your form changed while Counsel was drafting. It has not been overwritten. Try again using your latest text.'); return;
+        setError('Your form changed while Counsel OS was drafting. It has not been overwritten. Try again using your latest text.'); return;
       }
       apply(result.value); setUndo({ before, after: result.value });
       setMessage('Draft added to the form. Edit it below or give another instruction. Nothing has been saved.');

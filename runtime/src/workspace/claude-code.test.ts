@@ -148,7 +148,7 @@ describe('Claude Code CLI connection', () => {
     expect(state.args).not.toContain('--bare');
     expect(state.args).not.toContain('--resume');
     expect(state.system).toContain('PRIVATE APP CONTEXT');
-    expect(state.system).toContain('Counsel identity boundary:');
+    expect(state.system).toContain('Counsel OS identity boundary:');
     expect(state.system).toContain('must not be used for attribution');
     expect(JSON.stringify(state.args)).not.toContain('PRIVATE APP CONTEXT');
     expect(JSON.stringify(state.args)).not.toContain('Bearer');

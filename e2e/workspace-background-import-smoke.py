@@ -22,7 +22,7 @@ with sync_playwright() as p:
     page.goto(BASE+'/#token=workspace-browser-test-only')
     page.wait_for_load_state('networkidle')
     page.goto(BASE+'/#/imports')
-    expect(page.get_by_role('checkbox', name='Let Counsel organize my files after upload')).to_be_checked()
+    expect(page.get_by_role('checkbox', name='Let Counsel OS organize my files after upload')).to_be_checked()
     expect(page.get_by_text('Large imports can use substantial AI capacity.', exact=False)).to_be_visible()
     files = [{'name': f'file-{i}.txt', 'mimeType': 'text/plain', 'buffer': f'Background organization fixture. Aster NDA negotiation note {i}.'.encode()} for i in range(9)]
     files += [{'name': 'scan.txt', 'mimeType': 'text/plain', 'buffer': b'Background organization fixture. Aster employment dispute.'},
@@ -55,7 +55,7 @@ with sync_playwright() as p:
     assert len(api('')['sources']) == len(before['sources'])
     page.screenshot(path=str(OUT/'background-import-ready-1440.png'), full_page=True)
     page.get_by_role('button', name='Review 2 exceptions', exact=True).click()
-    dialog = page.get_by_role('dialog', name='Review Counsel’s organization')
+    dialog = page.get_by_role('dialog', name='Review Counsel OS’s organization')
     expect(dialog.get_by_text('failed.txt', exact=True)).to_be_visible()
     expect(dialog.get_by_text('The retry also failed.', exact=False)).to_be_visible()
     expect(dialog.get_by_role('button', name='Prepare 11 retained suggestions')).to_have_count(0)

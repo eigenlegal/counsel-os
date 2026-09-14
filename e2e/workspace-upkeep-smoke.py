@@ -55,7 +55,7 @@ with sync_playwright() as p:
     dialog.get_by_role('group', name='Organization findings').get_by_role('button', name='To review', exact=False).click()
     expect(source_rows).to_have_count(2)
     source_rows.filter(has=page.get_by_text('Choose a location', exact=True)).get_by_role('button', name='Suggest filing', exact=True).click()
-    filing = page.get_by_role('dialog', name='Review filing with Counsel')
+    filing = page.get_by_role('dialog', name='Review filing with Counsel OS')
     expect(filing.get_by_role('button', name='Generate suggestions', exact=True)).to_be_visible()
     assert not any('/suggest' in url for url in writes)
     filing.get_by_role('button', name='Cancel', exact=True).click()

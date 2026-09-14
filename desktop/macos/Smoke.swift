@@ -1,4 +1,4 @@
-// Compiled separately for qualification. Never included in Counsel.app.
+// Compiled separately for qualification. Never included in Counsel OS.app.
 import AppKit
 import WebKit
 
@@ -110,7 +110,7 @@ struct CheckError: Error { let message: String }
         try check(setupScrolls == true, "expanded first-run AI setup clips controls below the window")
         try await snapshot("native-onboarding-scrolled.png")
         _ = try await js("[...document.querySelectorAll('button')].find(b=>b.textContent==='Explore without AI').click(); return true;")
-        try await waitJS("!!document.querySelector('textarea[aria-label=\"Message Counsel\"]:not(:disabled)') && !document.querySelector('fieldset:disabled')", label: "setup did not open local workspace")
+        try await waitJS("!!document.querySelector('textarea[aria-label=\"Message Counsel OS\"]:not(:disabled)') && !document.querySelector('fieldset:disabled')", label: "setup did not open local workspace")
         try await waitJS("!document.querySelector('.sidebar-setup') && !document.querySelector('.workspace-welcome')", label: "completed onboarding remained in the navigation")
         controller.confirmMessage = { _ in false }
         let cancelled = try await js("return window.confirm('Synthetic cancel check');") as? Bool
@@ -119,9 +119,9 @@ struct CheckError: Error { let message: String }
         let confirmed = try await js("return window.confirm('Synthetic continue check');") as? Bool
         try check(confirmed == true, "native confirm did not continue")
         controller.confirmMessage = nil
-        _ = try await js("const f=document.querySelector('textarea[aria-label=\"Message Counsel\"]');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(f,'Synthetic recovered draft — あ 🧭');f.dispatchEvent(new Event('input',{bubbles:true}));return true;")
+        _ = try await js("const f=document.querySelector('textarea[aria-label=\"Message Counsel OS\"]');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(f,'Synthetic recovered draft — あ 🧭');f.dispatchEvent(new Event('input',{bubbles:true}));return true;")
         let draftSaved = await saveDrafts(); try check(draftSaved, "native quit flush did not save draft")
-        try await waitJS("document.querySelector('textarea[aria-label=\"Message Counsel\"]').value==='Synthetic recovered draft — あ 🧭'", label: "draft input not retained")
+        try await waitJS("document.querySelector('textarea[aria-label=\"Message Counsel OS\"]').value==='Synthetic recovered draft — あ 🧭'", label: "draft input not retained")
         try check(engine.ready != nil, "engine handshake absent")
         let firstPID = engine.ready!.pid
         try check(engine.ready!.validated(pid: firstPID, database: engine.database, build: engine.buildID), "valid handshake rejected")
@@ -198,7 +198,7 @@ struct CheckError: Error { let message: String }
         controller.navigate("home?view=history")
         try await waitJS("document.querySelector('.recovered-drafts')?.textContent.includes('Synthetic recovered draft')", label: "reopened window did not list saved draft")
         _ = try await js("document.querySelector('.recovered-drafts a').click();return true;")
-        try await waitJS("document.querySelector('textarea[aria-label=\"Message Counsel\"]')?.value==='Synthetic recovered draft — あ 🧭'", label: "draft not restored into fresh native window")
+        try await waitJS("document.querySelector('textarea[aria-label=\"Message Counsel OS\"]')?.value==='Synthetic recovered draft — あ 🧭'", label: "draft not restored into fresh native window")
         try await snapshot("native-draft-recovered.png")
         await stop(engine)
         phase = "restored workspace reopen"

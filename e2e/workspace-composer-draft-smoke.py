@@ -27,7 +27,7 @@ with sync_playwright() as playwright:
     page.route('**/api/workspace/drafts', draft_request)
     page.goto(BASE + '/#token=' + TOKEN)
     page.wait_for_load_state('networkidle')
-    field = page.get_by_role('textbox', name='Message Counsel', exact=True)
+    field = page.get_by_role('textbox', name='Message Counsel OS', exact=True)
     expect(field).to_be_enabled()
 
     def geometry():

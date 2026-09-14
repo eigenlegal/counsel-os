@@ -194,7 +194,7 @@ export function ContextPanel({
         <h4 className="context-section-label">Practice</h4>
         <p>Your saved working instructions are supplied automatically when set. Relevant approved and imported practice material, templates, and saved law can be retrieved as needed. This does not mean every file is read.</p>
         <p>Chats save automatically. Changes to reusable practice material require your approval.</p>
-        <p>Counsel can retrieve relevant public links from your request or documents it reads. Only the URL is sent to the site, without document text or browser login. Retrieved pages are saved in Sources and shown with the response; login-protected or interactive pages may still need an upload.</p>
+        <p>Counsel OS can retrieve relevant public links from your request or documents it reads. Only the URL is sent to the site, without document text or browser login. Retrieved pages are saved in Sources and shown with the response; login-protected or interactive pages may still need an upload.</p>
         <a href={href('knowledge', {section: 'preferences'})}>Manage profile &amp; preferences</a>
         <p className="fine-print">{current.entityRegistry?.availableToChats
           ? 'Your signing directory is available for lookup when relevant.'
@@ -268,7 +268,7 @@ export function ContextPanel({
         </details>
       )}
       {turn?.state.preparedContext?.retrieval?.plan && <details className="fine-print context-recall" aria-label="Search approach">
-        <summary>How Counsel searched</summary>
+        <summary>How Counsel OS searched</summary>
         <p>{turn.state.preparedContext.retrieval.plan.status === 'expanded'
           ? 'Used your selected AI connection to suggest alternate terms, then combined those matches with the original search inside this chat’s permitted context.'
           : turn.state.preparedContext.retrieval.plan.note}</p>
@@ -278,7 +278,7 @@ export function ContextPanel({
       </details>}
       {!!turn?.state.preparedContext?.records.length && (
         <div className="fine-print" aria-label="Automatic context preparation">
-          <p>Counsel prepared {turn.state.preparedContext.records.length} {turn.state.preparedContext.records.length === 1 ? 'record' : 'records'}{' '}
+          <p>Counsel OS prepared {turn.state.preparedContext.records.length} {turn.state.preparedContext.records.length === 1 ? 'record' : 'records'}{' '}
             automatically before answering. Exact passages appear below.</p>
           {!!turn.state.preparedContext.retrieval?.evidenceReads?.length && (
             <p>Followed saved evidence links for {turn.state.preparedContext.retrieval.evidenceReads.length} additional {turn.state.preparedContext.retrieval.evidenceReads.length === 1 ? 'passage' : 'passages'}.

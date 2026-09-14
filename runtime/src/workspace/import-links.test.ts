@@ -31,7 +31,7 @@ test('explicit Markdown/wiki references are resolved across selected roots, neve
   expect(refs.items.map(item => item.href)).not.toContain('code-secret');
   expect(refs.items.every(item => body.includes(item.quote))).toBe(true);
   const file = (path: string): LinkFile => ({ id: crypto.randomUUID(), path, status: 'ready', choice: ImportChoice.parse({ title: path, destination: 'source' }) });
-  const from = file('Counsel/notes/matter.md'), draft = file('Companies/Acme/Draft One.docx'), background = file('Companies/Acme/background.md');
+  const from = file('Counsel OS/notes/matter.md'), draft = file('Companies/Acme/Draft One.docx'), background = file('Companies/Acme/background.md');
   const resolve = importLinkResolver([from, draft, background, file('Other/attachment.pdf')]);
   expect(resolve(from, refs.items[0]!).targetId).toBe(draft.id);
   expect(resolve(from, refs.items[1]!).targetId).toBe(background.id);

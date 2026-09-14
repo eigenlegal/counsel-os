@@ -27,7 +27,7 @@ with sync_playwright() as p:
     expect(page.get_by_role('button', name='Download Word', exact=True)).to_have_count(0)
     page.get_by_label('Conversation context', exact=True).click()
     page.get_by_role('option', name='Internal investigation', exact=True).click()
-    page.get_by_role('textbox', name='Message Counsel', exact=True).fill('What remains unresolved?')
+    page.get_by_role('textbox', name='Message Counsel OS', exact=True).fill('What remains unresolved?')
     page.get_by_role('button', name='Send message', exact=True).click()
     expect(page.get_by_text('Saved in conversation', exact=True)).to_be_visible(timeout=15000)
     turn = api('/conversations/' + page.url.split('id=')[1])['turns'][0]

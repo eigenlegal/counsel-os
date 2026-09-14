@@ -22,7 +22,7 @@ export function packageOptions(args: string[]) {
 }
 export async function packageDesktop(args: string[]) {
   const opts=packageOptions(args);
-  if(opts.help) { console.log('bun run desktop:package [--app /current/build/Counsel.app] [--outdir /new/folder]\nCreates a local-test DMG, checksums and build receipt. Not notarized, published, installed or auto-updatable.'); return null; }
+  if(opts.help) { console.log('bun run desktop:package [--app "/current/build/Counsel OS.app"] [--outdir /new/folder]\nCreates a local-test DMG, checksums and build receipt. Not notarized, published, installed or auto-updatable.'); return null; }
   if(opts.output && existsSync(opts.output)) throw new Error('Choose a new output directory. Existing outputs are never replaced.');
   if(process.platform!=='darwin') throw new Error('The desktop disk image currently builds on macOS only.');
   const repo=resolve(import.meta.dir,'..'), app=opts.app ?? await buildDesktop([]);
@@ -37,10 +37,11 @@ export async function packageDesktop(args: string[]) {
   await run(['/usr/bin/codesign','--verify','--deep','--strict',app]);
   const output=opts.output ?? mkdtempSync(join(tmpdir(),'counsel-desktop-package-')); if(opts.output)mkdirSync(output,{mode:0o700});
   const stage=mkdtempSync(join(tmpdir(),'counsel-disk-image-'));
-  await run(['/usr/bin/ditto',app,join(stage,'Counsel.app')]); symlinkSync('/Applications',join(stage,'Applications'));
-  writeFileSync(join(stage,'Read me.txt'),'Counsel — local test build\n\nQuit Counsel before updating. Drag Counsel to Applications and replace the earlier app, then reopen it. Installation is manual.\nThis development build has only an ad-hoc signature, not Developer ID notarization.\nIt is not ready for public distribution. macOS may refuse downloaded copies.\n\nYour default workspace lives outside the app in ~/.counsel/workspaces/personal.\nReplacing the app does not remove your workspace. The launcher automatically creates and verifies a recovery backup before a supported database schema upgrade; if that fails, the upgrade does not start.\nChoose your own AI connection in setup. Provider CLIs are installed and signed in separately.\nThis image contains no personal workspace, provider credentials, or private documents.\nNo automatic update service is connected.\n',{flag:'wx',mode:0o600});
-  const image=join(output,`Counsel-local-test-${process.arch}.dmg`);
-  await run(['/usr/bin/hdiutil','create','-volname','Counsel — Local test','-srcfolder',stage,'-format','UDZO','-fs','HFS+',image]);
+  await run(['/usr/bin/ditto',app,join(stage,'Counsel OS.app')]); symlinkSync('/Applications',join(stage,'Applications'));
+  writeFileSync(join(stage,'Earlier previews.txt'),'Earlier previews were named Counsel.app. Quit that app before opening Counsel OS.app. After installing the new app in Applications, move only the old Counsel.app bundle to Trash to avoid launching the older version. Do not delete your ~/.counsel workspace folder. The app identity, workspace location and backup format are unchanged.\n',{flag:'wx',mode:0o600});
+  writeFileSync(join(stage,'Read me.txt'),'Counsel OS — local test build\n\nQuit Counsel OS before updating. Drag Counsel OS to Applications and replace the earlier app, then reopen it. Installation is manual.\nThis development build has only an ad-hoc signature, not Developer ID notarization.\nIt is not ready for public distribution. macOS may refuse downloaded copies.\n\nYour default workspace lives outside the app in ~/.counsel/workspaces/personal.\nReplacing the app does not remove your workspace. The launcher automatically creates and verifies a recovery backup before a supported database schema upgrade; if that fails, the upgrade does not start.\nChoose your own AI connection in setup. Provider CLIs are installed and signed in separately.\nThis image contains no personal workspace, provider credentials, or private documents.\nNo automatic update service is connected.\n',{flag:'wx',mode:0o600});
+  const image=join(output,`Counsel-OS-local-test-${process.arch}.dmg`);
+  await run(['/usr/bin/hdiutil','create','-volname','Counsel OS — Local test','-srcfolder',stage,'-format','UDZO','-fs','HFS+',image]);
   await run(['/usr/bin/hdiutil','verify',image]);
   copyFileSync(join(dirname(app),'desktop-build.json'),join(output,'desktop-build.json'));
   writeFileSync(join(output,'package.json'),JSON.stringify({format:1,application:'Counsel desktop',channel:'local-test',artifact:image.split('/').at(-1),sha256:sha(image),source:build.source,

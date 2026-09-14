@@ -155,7 +155,7 @@ export function SetupPage({ onDone }: SetupPageProps): JSX.Element {
   const create = async (): Promise<void> => {
     const next: FieldErrors = {};
     if (vault === '') next.vault = 'Pick a folder, or type one.';
-    if (name.trim() === '') next.name = 'Counsel needs a name to sign with.';
+    if (name.trim() === '') next.name = 'Counsel OS needs a name to sign with.';
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
@@ -181,7 +181,7 @@ export function SetupPage({ onDone }: SetupPageProps): JSX.Element {
         for (const issue of detail.issues ?? []) {
           const key = String(issue.path[issue.path.length - 1] ?? issue.path[0] ?? '');
           if (key === 'vault') failed.vault = 'That is not a folder path counsel can use. It has to be absolute, like /Users/you/Documents/Counsel OS.';
-          else if (key === 'name') failed.name = 'Counsel needs a name to sign with.';
+          else if (key === 'name') failed.name = 'Counsel OS needs a name to sign with.';
           else if (key === 'role') failed.role = issue.message;
           else if (key === 'jurisdiction') failed.jurisdiction = issue.message;
           else if (key === 'practice') failed.practice = issue.message;
@@ -307,7 +307,7 @@ export function SetupPage({ onDone }: SetupPageProps): JSX.Element {
 
           <section className="v2-setup-group rule-double">
             <h2 className="runin">Who you are</h2>
-            <p className="v2-setup-why">Counsel signs redlines and memos in your name and reads the law for your jurisdiction first.</p>
+            <p className="v2-setup-why">Counsel OS signs redlines and memos in your name and reads the law for your jurisdiction first.</p>
             <Field id="v2-setup-name" label="Name" value={name} onChange={setName} error={errors.name} />
             <Field id="v2-setup-org" label="Organization" value={org} onChange={setOrg} />
             <div className="v2-setup-field">
@@ -340,7 +340,7 @@ export function SetupPage({ onDone }: SetupPageProps): JSX.Element {
 
           <section className="v2-setup-group rule-double">
             <h2 className="runin">Which model answers</h2>
-            <p className="v2-setup-why">Counsel needs one model to talk to. These are the ones this machine can reach right now.</p>
+            <p className="v2-setup-why">Counsel OS needs one model to talk to. These are the ones this machine can reach right now.</p>
             {providers === null ? (
               <p className="muted v2-setup-why">Checking…</p>
             ) : providers.length === 0 ? (

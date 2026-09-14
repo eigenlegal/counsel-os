@@ -1,4 +1,4 @@
-// Build-time vector rendering of Counsel's existing two-page book mark.
+// Build-time vector rendering of Counsel OS's existing two-page book mark.
 // This program is not included in the application or invoked at runtime.
 import AppKit
 @main struct BuildIcon {

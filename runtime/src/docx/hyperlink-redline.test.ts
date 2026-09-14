@@ -27,7 +27,7 @@ describe('tracked hyperlink edits', () => {
   for (const c of cases) test(c.name, () => {
     const original = fixture([c.before, { text: c.link, hyperlink: 'rId9', bold: true }, c.after]);
     const pkg = openDocx(original), originalText = c.before + c.link + c.after;
-    const result = applyRedlines(pkg, [{ current: c.current, proposed: c.proposed, comment: 'Requested change.' }], { track: true, defaultAuthor: 'Synthetic Counsel' });
+    const result = applyRedlines(pkg, [{ current: c.current, proposed: c.proposed, comment: 'Requested change.' }], { track: true, defaultAuthor: 'Synthetic Counsel OS' });
     expect(result.skipped).toEqual([]); expect(result.warnings).toEqual([]);
     const saved = pkg.save(), out = views(saved);
     expect(out.accept).toEqual([originalText.replace(c.current, c.proposed)]);
@@ -36,7 +36,7 @@ describe('tracked hyperlink edits', () => {
     const revisions = [...descendants(out.pkg.document.documentElement!)].filter(e => isW(e, 'ins') || isW(e, 'del'));
     expect(new Set(revisions.map(e => attr(e, 'id'))).size).toBe(revisions.length);
     for (const revision of revisions) {
-      expect(attr(revision, 'author')).toBe('Synthetic Counsel');
+      expect(attr(revision, 'author')).toBe('Synthetic Counsel OS');
       expect(isW(revision.parentNode, 'ins') || isW(revision.parentNode, 'del')).toBe(false);
       // All inserted text is plain: it must not misleadingly inherit an old URL.
       if (isW(revision, 'ins')) expect(isW(revision.parentNode, 'p')).toBe(true);
@@ -46,7 +46,7 @@ describe('tracked hyperlink edits', () => {
     expect(links.every(e => e.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id') === 'rId9')).toBe(true);
     expect(links.flatMap(e => [...descendants(e)]).some(e => isW(e, 'b'))).toBe(true);
     expect(out.pkg.partText('word/_rels/document.xml.rels')).toContain('https://example.com/old-terms');
-    cleanProposal(openDocx(original), out.pkg, 'Synthetic Counsel');
+    cleanProposal(openDocx(original), out.pkg, 'Synthetic Counsel OS');
     expect(views(out.pkg.save()).accept).toEqual(out.accept);
   });
 

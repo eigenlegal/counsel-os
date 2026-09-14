@@ -310,7 +310,7 @@ try {
     existsSync(forbiddenOutput) || canaryRequests !== 0
   )
     throw new Error(
-      "Tool surface, disabled host, or direct Counsel tool execution did not pass.",
+      "Tool surface, disabled host, or direct Counsel OS tool execution did not pass.",
     );
 } finally {
   if (child?.exitCode === null) {

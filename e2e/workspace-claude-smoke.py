@@ -45,7 +45,7 @@ with sync_playwright() as p:
     expect(page.get_by_role('heading', name='What are we working through?')).to_be_visible()
     page.get_by_label('Conversation context', exact=True).click()
     page.get_by_role('option', name='Internal investigation', exact=True).click()
-    page.get_by_role('textbox', name='Message Counsel', exact=True).fill('Assess the witness status')
+    page.get_by_role('textbox', name='Message Counsel OS', exact=True).fill('Assess the witness status')
     page.get_by_role('button', name='Send message', exact=True).click()
     expect(page.get_by_text('Saved in conversation', exact=True)).to_be_visible(timeout=15000)
     expect(page.locator('.chat-answer')).to_contain_text('Completed Assess the witness status')

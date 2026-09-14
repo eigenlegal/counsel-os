@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { LEGACY_DOCUMENT_AUTHOR, PRODUCT_NAME } from '../../../src/core/brand';
 import { request, type Turn } from './api';
 import { ErrorNotice, Modal } from './components';
 import { DocumentReader } from './DocumentReader';
@@ -33,11 +34,11 @@ function Review({ proposal, turnId, close, changed }: { proposal: PracticeDocume
         <button type="button" aria-pressed={showBefore} onClick={() => setShowBefore(true)}>Previous text</button></div>
       <DocumentReader text={(showBefore ? proposal.before.body : proposal.body) || 'No saved text.'} markdown display="reading" />
       <section className="practice-review-details"><h3>{showBefore ? 'Previous applied details' : hasDetails ? 'Proposed applied details' : 'Applied details stay unchanged'}</h3><AppliedPracticeDetails value={details} /></section>
-      {details.word.author === 'Counsel' && <p className="fine-print">New Word comments and changes will say “Counsel”. If you want your own name, ask for that change in chat before confirming.</p>}
+      {[LEGACY_DOCUMENT_AUTHOR, PRODUCT_NAME].includes(details.word.author) && <p className="fine-print">New Word comments and changes will say “{details.word.author}”. If you want your own name, ask for that change in chat before confirming.</p>}
       <PracticeSupport text={showBefore ? proposal.before.body : proposal.body} />
       {pending && <label className="checkbox-label"><input type="checkbox" checked={sharing} disabled={busy} onChange={e => setSharing(e.target.checked)} />Use this document automatically in new responses</label>}
       {!current && !error && <p role="status">Checking the current version…</p>}
-      {stale && (pending || applied) && <p className="version-notice">Your practice has changed since this suggestion. It cannot overwrite the newer version. Ask Counsel to revise it against your current document.</p>}
+      {stale && (pending || applied) && <p className="version-notice">Your practice has changed since this suggestion. It cannot overwrite the newer version. Ask Counsel OS to revise it against your current document.</p>}
       {error && <ErrorNotice message={error} />}
       <div className="dialog-actions"><button className="button button-quiet" disabled={busy} onClick={close}>Close</button>
         {pending && <button className="button" disabled={busy} onClick={() => void review('dismiss')}>Keep current practice</button>}
@@ -54,7 +55,7 @@ export function PracticeDocumentProposalCard({ turn, onChanged }: { turn: Turn; 
   const pending = proposal.review === 'pending';
   return <section className="chat-brief-card" aria-label="Practice document update">
     <h3>{pending ? 'Update your practice?' : proposal.review === 'applied' ? 'Your practice was updated' : proposal.review === 'undone' ? 'Practice update undone' : 'Current practice kept'}</h3>
-    <p>{pending ? 'Counsel has drafted an update. Review it before it becomes a standing instruction.' : 'The text and its earlier version remain here for reference.'}</p>
+    <p>{pending ? 'Counsel OS has drafted an update. Review it before it becomes a standing instruction.' : 'The text and its earlier version remain here for reference.'}</p>
     <button className="button" onClick={() => setOpen(true)}>{pending ? 'Review practice update' : 'View practice update'}</button>
     {open && <Review proposal={proposal} turnId={turn.id} close={() => setOpen(false)} changed={next => { setProposal(next.state.practiceDocumentProposal); setOpen(false); onChanged(); }} />}
   </section>;

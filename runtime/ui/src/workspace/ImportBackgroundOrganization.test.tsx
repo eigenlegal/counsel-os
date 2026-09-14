@@ -77,7 +77,7 @@ test('loading and lost progress keep editing locked; an absent job explicitly en
   states.length = 0;
   fixture({ readFailure: true, states });
   await waitFor(() => expect(states.at(-1)).toBe('unavailable'));
-  expect((screen.getByRole('button', { name: 'Organize with Counsel' }) as HTMLButtonElement).disabled).toBe(true);
+  expect((screen.getByRole('button', { name: 'Organize with Counsel OS' }) as HTMLButtonElement).disabled).toBe(true);
 });
 test('clear choices are prepared server-side; UI shows grouped filing and exceptions without another apply step', async () => {
   const calls = fixture();

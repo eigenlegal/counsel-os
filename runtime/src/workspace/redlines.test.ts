@@ -25,14 +25,14 @@ test('the isolated worker handles embedded fonts, hyperlinks and displayed bulle
   const result = await generateRedline(bytes, { sourceRevisionId: crypto.randomUUID(), edits: [
     { current: 'The online terms apply.', proposed: 'The signed schedule applies.', comment: 'Use the negotiated version.' },
     { current: '- Uptime: 99.9%', proposed: '- Uptime: 99.95% each month.' },
-  ] }, new AbortController().signal, 'Synthetic Counsel');
+  ] }, new AbortController().signal, 'Synthetic Counsel OS');
   expect(result.report.applied).toHaveLength(2);
   expect(result.bytes.length).toBeLessThan(100_000);
   const pkg = openDocx(result.bytes);
   expect(modelOf(pkg).paragraphs.map(p => textOf(p, 'accept'))).toEqual(['The signed schedule applies.', 'Uptime: 99.95% each month.']);
   expect(modelOf(pkg).paragraphs.map(p => textOf(p, 'reject'))).toEqual(['The online terms apply.', 'Uptime: 99.9%']);
   expect(pkg.partBytes('word/fonts/font1.odttf')).toEqual(font);
-  expect(pkg.partText('word/comments.xml')).toContain('Synthetic Counsel');
+  expect(pkg.partText('word/comments.xml')).toContain('Synthetic Counsel OS');
 });
 test('whole-section insertions use read anchors and saved attribution, retain exact receipts and restore unchanged', async () => {
   const source = await original(buildDocx({ blocks: [{ style: 'Heading1', runs: ['Notices'] }, { runs: ['Notices must be in writing.'] },

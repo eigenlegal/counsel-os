@@ -39,7 +39,7 @@ export function workspaceCodexConfig(
       // A fresh CODEX_HOME alone is not an explicit denial of account integrations.
       // 0.153.2 still advertises the code-mode wrapper when it is disabled.
       // Keep its host disabled, exclude built-ins from its executor, and expose
-      // our MCP namespace directly; otherwise all Counsel tools are deferred
+      // our MCP namespace directly; otherwise all Counsel OS tools are deferred
       // behind a disabled executor. Verify with the local transport preflight.
       features: {
         ...(inherited.config?.features as Record<string, boolean>),
@@ -81,7 +81,7 @@ export function workspaceCodexConfig(
 
 export function workspaceCodexPrompt(req: StepRequest): string {
   const integration = req.tools.length
-    ? 'Counsel integration: call the provided mcp__counsel tools directly. Do not use functions.exec or functions.wait to invoke them; the code-mode host is intentionally disabled. A disabled executor is not a failure of the directly available Counsel tools.'
+    ? 'Counsel OS integration: call the provided mcp__counsel tools directly. Do not use functions.exec or functions.wait to invoke them; the code-mode host is intentionally disabled. A disabled executor is not a failure of the directly available Counsel OS tools.'
     : 'This is a self-contained writing request. No tools or file access are available or needed. Answer directly using only the supplied context.';
   return `${integration}\n\n${req.system}\n\nConversation messages (JSON):\n${JSON.stringify(req.messages)}`;
 }

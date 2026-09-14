@@ -33,7 +33,7 @@ with sync_playwright() as p:
         assert abs(bar_box['width'] - composer_box['width']) <= 2
         assert 0 <= bar_box['y'] - composer_box['y'] <= 2
         assert bar.locator('..').evaluate("el => el.matches('form.chat-composer')")
-        text_box = page.get_by_role('textbox', name='Message Counsel', exact=True).bounding_box()
+        text_box = page.get_by_role('textbox', name='Message Counsel OS', exact=True).bounding_box()
         assert abs(text_box['y'] - bar_box['y'] - bar_box['height']) <= 2
         for control in bar.locator('.chat-scope-selection, .context-toggle').all():
             box = control.bounding_box()
@@ -73,7 +73,7 @@ with sync_playwright() as p:
     expect(bar.locator('.document-chip')).to_have_count(1)
     expect(bar.locator('.document-chip')).to_contain_text('Next message')
     expect(page.locator('.chat-composer .document-chip')).to_have_count(1)
-    field = page.get_by_role('textbox', name='Message Counsel', exact=True)
+    field = page.get_by_role('textbox', name='Message Counsel OS', exact=True)
     field.fill('What remains unresolved?')
     integrated_composer()
     shot('chat-context-unified-1440.png')

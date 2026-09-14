@@ -30,9 +30,9 @@ export function WorkingGuideLibrary() {
           <Icon name="knowledge" />
         </span>
         <div>
-          <h2>Counsel guides</h2>
+          <h2>Counsel OS guides</h2>
           <p>
-            Working methods supplied by Counsel, separate from your own practice
+            Working methods supplied by Counsel OS, separate from your own practice
             customizations.
           </p>
         </div>
@@ -40,7 +40,7 @@ export function WorkingGuideLibrary() {
       <p className="settings-copy">
         These first four guides are newly written starting points, informed by
         the plugin’s approach. They are not a complete migration of its law
-        library or a substantive legal review. Counsel can retrieve dated federal regulation sections
+        library or a substantive legal review. Counsel OS can retrieve dated federal regulation sections
         from eCFR and U.S. Code sections from the House publisher by citation; other source-map links are research starting points, not fetched evidence.
       </p>
       <details onToggle={(event) => setOpen(event.currentTarget.open)}>

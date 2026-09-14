@@ -15,10 +15,10 @@ export function AvailableRecords({
 }) {
   return (
     <details className="shared-matter-context available-records">
-      <summary>Records available to Counsel</summary>
+      <summary>Records available to Counsel OS</summary>
       <p className="fine-print">
         Record names supplied at the start of this response. This is not a list
-        of documents read. Counsel can browse or search further within this
+        of documents read. Counsel OS can browse or search further within this
         scope.
       </p>
       {value.pages.map((page) => (

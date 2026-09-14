@@ -29,7 +29,7 @@ assert.equal(manifest.application, 'Counsel workspace');
 const binary = readFileSync(engineFile);
 assert.equal(sha(binary), manifest.executable.sha256, 'Package manifest matches executable');
 const root = realpathSync(mkdtempSync(join(tmpdir(), 'counsel-packaged-qualification-'))); chmodSync(root, 0o700);
-const moved = join(root, 'Relocated Counsel'), home = join(root, 'synthetic-home'), cwd = join(root, 'unrelated-working-folder');
+const moved = join(root, 'Relocated Counsel OS'), home = join(root, 'synthetic-home'), cwd = join(root, 'unrelated-working-folder');
 for (const directory of [moved, home, cwd]) mkdirSync(directory, { mode: 0o700 });
 const executable = join(moved, 'counsel-workspace'); copyFileSync(engineFile, executable); chmodSync(executable, 0o700);
 const repo = realpathSync(resolve(import.meta.dir, '..'));
@@ -230,7 +230,7 @@ try {
   const practiceDraft = await active.api('/practice-document', { body: practiceText, useInChats: true, expectedBasis: emptyPractice.basis });
   const practice = await active.api('/practice-document/identity', { name: 'Synthetic Avery', expectedBasis: practiceDraft.basis });
   assert.equal(practice.body, practiceText + '\n\nMy name is Synthetic Avery.');
-  assert.equal(practice.word.author, 'Counsel', 'Identity-only confirmation must not silently change the Word author');
+  assert.equal(practice.word.author, 'Counsel OS', 'Identity-only confirmation must not silently change the Word author');
   assert.equal((await active.api()).practiceDocument.basis, practice.basis);
   pass('compiled free-form practice document, exact identity confirmation and unified snapshot');
   const matter = await active.api('/matters', { title: 'Packaged matter' });
@@ -282,7 +282,7 @@ try {
     const recoveredPractice = await active.api('/practice-document');
     assert.equal(recoveredPractice.body, practice.body);
     assert.equal(recoveredPractice.identityName, 'Synthetic Avery');
-    assert.equal(recoveredPractice.word.author, 'Counsel');
+    assert.equal(recoveredPractice.word.author, 'Counsel OS');
     assert.equal(recoveredPractice.basis, practice.basis);
     await active.stop(); active = undefined;
   }

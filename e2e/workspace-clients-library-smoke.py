@@ -56,7 +56,7 @@ with sync_playwright() as p:
     page.get_by_role('button',name='Start client chat',exact=True).click()
     page.wait_for_url('**/#/home?id=*')
     chat_id=page.url.split('id=')[1]
-    page.get_by_role('textbox',name='Message Counsel').fill('Synthetic client fixture: where are we across these matters?')
+    page.get_by_role('textbox',name='Message Counsel OS').fill('Synthetic client fixture: where are we across these matters?')
     page.get_by_role('button',name='Send message',exact=True).click()
     expect(page.get_by_text('Saved in conversation',exact=True)).to_be_visible(timeout=20000)
     turn=api('/conversations/'+chat_id)['turns'][0]
@@ -81,7 +81,7 @@ with sync_playwright() as p:
     expect(page.locator('.resource-list')).to_contain_text('External primary reference')
     expect(page.locator('.resource-list')).not_to_contain_text('Our writing method')
     expect(page.locator('.resource-list')).not_to_contain_text('Supplier agreement')
-    page.get_by_role('button',name='Counsel guides',exact=True).click()
+    page.get_by_role('button',name='Counsel OS guides',exact=True).click()
     page.locator('summary').filter(has_text='Browse working guides').click()
     page.locator('summary').filter(has_text='Privacy and data use').click()
     expect(page.locator('.guide-library-card')).to_contain_text('not a complete migration')
@@ -97,14 +97,14 @@ with sync_playwright() as p:
     assert api('/sources/'+unfiled['id'])['latest']==unfiled['latest']
     assert api('')['totals']['pending']==snapshot['totals']['pending']
     open_page('settings')
-    expect(page.get_by_role('heading',name='Counsel guides',exact=True)).to_have_count(0)
+    expect(page.get_by_role('heading',name='Counsel OS guides',exact=True)).to_have_count(0)
     page.set_viewport_size({'width':390,'height':844})
     open_page('matters?client='+client['id'])
     expect(page.get_by_role('heading',name='Atlas Studio',exact=True)).to_be_visible()
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
     page.screenshot(path=str(artifacts/'client-390.png'),full_page=True,animations='disabled')
     open_page('references')
-    page.get_by_role('button',name='Counsel guides',exact=True).click()
+    page.get_by_role('button',name='Counsel OS guides',exact=True).click()
     page.locator('summary').filter(has_text='Browse working guides').click()
     page.locator('summary').filter(has_text='Employment and workplace decisions').click()
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')

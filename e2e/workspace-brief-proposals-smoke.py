@@ -22,7 +22,7 @@ with sync_playwright() as p:
     print('Initial actions:', page.get_by_role('button').all_text_contents())
     page.get_by_label('Conversation context', exact=True).click()
     page.get_by_role('option', name='Internal investigation', exact=True).click()
-    page.get_by_role('textbox', name='Message Counsel', exact=True).fill('Plan the witness interview.')
+    page.get_by_role('textbox', name='Message Counsel OS', exact=True).fill('Plan the witness interview.')
     page.get_by_role('button', name='Send message', exact=True).click()
     expect(page.get_by_role('region', name='Suggested matter update')).to_be_visible(timeout=15000)
     chat_url = page.url
@@ -47,7 +47,7 @@ with sync_playwright() as p:
     expect(page.get_by_text(proposal['summary'], exact=True)).to_be_visible()
     page.goto(chat_url)
     expect(page.get_by_role('region', name='Suggested matter update').get_by_text('Matter brief updated', exact=True)).to_be_visible()
-    page.get_by_role('textbox', name='Message Counsel', exact=True).fill('Compare the timing records next.')
+    page.get_by_role('textbox', name='Message Counsel OS', exact=True).fill('Compare the timing records next.')
     page.get_by_role('button', name='Send message', exact=True).click()
     expect(page.get_by_role('region', name='Suggested matter update')).to_have_count(2, timeout=15000)
     second_card = page.get_by_role('region', name='Suggested matter update').last

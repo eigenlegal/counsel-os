@@ -73,7 +73,7 @@ export function Settings({
             scanned-page OCR and legacy .doc conversion are not connected yet.
             Completed answers can also be exported to editable Word files with saved source excerpts.
           </p>
-          <p className="settings-copy">For live research, Counsel can fetch dated federal regulation sections
+          <p className="settings-copy">For live research, Counsel OS can fetch dated federal regulation sections
             from eCFR and U.S. Code sections from the House publisher by citation. Only citations and supported dates go to publishers; originals and text stay in Sources.
             This is not general web search or comprehensive legal-currency verification.</p>
         </section>

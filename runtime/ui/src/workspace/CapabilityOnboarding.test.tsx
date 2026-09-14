@@ -51,7 +51,7 @@ test('chat hints fill text only; document hints preserve exact viewed revision a
   const { posts } = fixture(); const messages: string[] = [];
   render(<ChatCapabilityHints choose={message => messages.push(message)} />);
   expect(document.querySelector('details')!.open).toBe(false);
-  fireEvent.click(screen.getByText('What else can I ask Counsel to do?'));
+  fireEvent.click(screen.getByText('What else can I ask Counsel OS to do?'));
   fireEvent.click(screen.getByRole('button', { name: 'Remember a preference' }));
   expect(messages[0]).toContain('before saving'); expect(posts).toHaveLength(0); cleanup();
   const revisionId = crypto.randomUUID();
@@ -75,7 +75,7 @@ test('current onboarding offers chat or free-form text and does not require a qu
   expect(screen.queryByRole('textbox')).toBeNull();
   expect(screen.queryByRole('button', { name: 'Add your profile' })).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Write or paste text' })); expect(edited).toBe(1);
-  fireEvent.click(screen.getByRole('button', { name: 'Tell Counsel about your practice' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Tell Counsel OS about your practice' }));
   await waitFor(() => expect(posts).toHaveLength(2));
   expect(posts[1]!.body.value.message).toContain('practice');
   expect(posts.every(post => !post.url.endsWith('/send'))).toBe(true);

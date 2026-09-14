@@ -420,7 +420,7 @@ export function chatTools(options: {
       }),
     instrument(
       'counsel_read_guide', z.object({ id: GuideId }).strict(),
-      'Load a Counsel working guide from the supplied catalog when it fits the task. Choose automatically; combine guides for cross-area questions. Returns a versioned method, limitations and official-source starting points. It is not legal authority, approved Practice, a current-law check or a web fetch. Loading is recorded separately from reading matter evidence. No user module selection is needed.',
+      'Load a Counsel OS working guide from the supplied catalog when it fits the task. Choose automatically; combine guides for cross-area questions. Returns a versioned method, limitations and official-source starting points. It is not legal authority, approved Practice, a current-law check or a web fetch. Loading is recorded separately from reading matter evidence. No user module selection is needed.',
       ({ id }) => {
         const guide = readPracticeGuide(id, availableGuides);
         const read = turn.state.guidesRead ??= [];
@@ -698,10 +698,10 @@ export function chatTools(options: {
           ...RecordRef,
           quote: z.string().min(1).max(4_000),
           start: z.number().int().min(0).optional()
-            .describe('Usually omit: Counsel locates the exact quote within passages already read. Only use a returned exact position to disambiguate repeated wording; do not count or guess character offsets.'),
+            .describe('Usually omit: Counsel OS locates the exact quote within passages already read. Only use a returned exact position to disambiguate repeated wording; do not count or guess character offsets.'),
         })
         .strict(),
-      "Validate and locate a verbatim quote in the exact record version you have read in this turn. Supply kind, its readHandle as id, and quote; omit start instead of calculating an offset. Counsel finds the position itself. If wording repeats, include more surrounding text or use a position returned by the ambiguity error. Altered wording, unread text and out-of-scope records are never accepted. Returns an exact position and a marker such as [S1]. Place the returned marker immediately after the supported claim. This checks text identity, not legal correctness; do not invent markers.",
+      "Validate and locate a verbatim quote in the exact record version you have read in this turn. Supply kind, its readHandle as id, and quote; omit start instead of calculating an offset. Counsel OS finds the position itself. If wording repeats, include more surrounding text or use a position returned by the ambiguity error. Altered wording, unread text and out-of-scope records are never accepted. Returns an exact position and a marker such as [S1]. Place the returned marker immediately after the supported claim. This checks text identity, not legal correctness; do not invent markers.",
       ({ kind, id: inputId, quote, start: hint }) => {
         const id = canonicalId(kind, inputId);
         const record = resolve(kind, id);

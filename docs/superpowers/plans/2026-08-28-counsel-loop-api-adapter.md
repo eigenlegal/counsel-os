@@ -1,4 +1,4 @@
-# Counsel Loop + HTTP/SSE API + Plugin Adapter Implementation Plan
+# Counsel OS Loop + HTTP/SSE API + Plugin Adapter Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -339,7 +339,7 @@ Use this second version only. Run → PASS. Wire: `loadRegistry` wraps every `ki
 
 ---
 
-### Task 6: Counsel loop and run logs
+### Task 6: Counsel OS loop and run logs
 
 **Files:**
 - Create: `runtime/src/loop/counsel-loop.ts`, `counsel-loop.test.ts`, `run-log.ts`

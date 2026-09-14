@@ -52,7 +52,7 @@ export function WorkspaceUpkeep({ data }: { data: Snapshot }) {
     {(data.interfaceVersion ?? 0) >= 25 && <AutoFiling data={data} />}
     {open && <Modal title="Workspace upkeep" onClose={() => setOpen(false)} busy={busy}>
       <div className="record-form upkeep-review">
-        <p>While the app is open, Counsel checks changed records automatically, with a wider check every four hours when idle.</p>
+        <p>While the app is open, Counsel OS checks changed records automatically, with a wider check every four hours when idle.</p>
         <details className="upkeep-explainer"><summary>What gets checked?</summary>
           <p className="fine-print">These local checks cover unfiled documents, incomplete readable text, unfinished imports and document references within staged imports and across retained workspace files. They make no AI calls and do not move files, change access or alter your practice standards. AI filing help is available for unfiled documents. Check now uses the same rules; checks wait while a response is running.</p>
         </details>

@@ -397,7 +397,7 @@ describe('HomePage swap notice (cou-95)', () => {
     render(<HomePage threads={threads} onAsk={() => {}} onOpenThread={() => {}} health={amber} />);
     await waitFor(() => expect(screen.getByLabelText('Ask counsel')).toBeTruthy());
     const notice = document.querySelector('.v2-swap-notice')!;
-    expect(notice.textContent).toContain('Claude is not available. Counsel will answer on Ollama (gemma4:e4b).');
+    expect(notice.textContent).toContain('Claude is not available. Counsel OS will answer on Ollama (gemma4:e4b).');
     // Above the box, in reading order.
     expect(notice.compareDocumentPosition(document.querySelector('.v2-ask')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     cleanup();

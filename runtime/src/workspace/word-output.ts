@@ -365,8 +365,8 @@ export async function renderWord(
   if (!snapshot.evidence.length) warnings.add('No verified excerpts are saved with this answer.');
   const doc = new Document({
     title: safe(snapshot.title),
-    creator: 'Counsel',
-    lastModifiedBy: 'Counsel',
+    creator: 'Counsel OS',
+    lastModifiedBy: 'Counsel OS',
     description: 'Export of saved workspace text; not an approval or redline.',
     styles: {
       default: {

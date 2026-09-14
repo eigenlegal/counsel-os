@@ -28,7 +28,7 @@ with sync_playwright() as p:
     page.reload()
     expect(page.locator('.matter-hub-aside')).to_contain_text('Confirm the recipient.')
     page.get_by_role('link', name='Ask about this matter', exact=True).click()
-    page.get_by_role('textbox', name='Message Counsel', exact=True).fill('Discuss the notice question.')
+    page.get_by_role('textbox', name='Message Counsel OS', exact=True).fill('Discuss the notice question.')
     page.get_by_role('button', name='Send message', exact=True).click()
     expect(page.get_by_text('Saved in conversation', exact=True)).to_be_visible(timeout=15000)
     chat_url = page.url
@@ -62,7 +62,7 @@ with sync_playwright() as p:
     page.screenshot(path=str(screenshots / 'matter-hub-mobile.png'), full_page=True)
     page.set_viewport_size({'width': 1440, 'height': 1000})
     page.get_by_role('button', name='New chat', exact=True).click()
-    page.get_by_role('textbox', name='Message Counsel', exact=True).fill('An unassigned discussion to organize later.')
+    page.get_by_role('textbox', name='Message Counsel OS', exact=True).fill('An unassigned discussion to organize later.')
     page.get_by_role('button', name='Send message', exact=True).click()
     expect(page.get_by_text('Saved in conversation', exact=True)).to_be_visible(timeout=15000)
     page.get_by_role('button', name='Add to a matter', exact=True).click()

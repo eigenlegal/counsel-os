@@ -106,7 +106,7 @@ with sync_playwright() as p:
     expect(pinned.get_by_role('link', name=titles[0], exact=True)).to_be_visible()
     side.get_by_role('button', name='Recent matters', exact=True).click()
     side.get_by_role('button', name='New chat', exact=True).click()
-    expect(page.get_by_role('textbox', name='Message Counsel', exact=True)).to_have_value('')
+    expect(page.get_by_role('textbox', name='Message Counsel OS', exact=True)).to_have_value('')
     expect(side.get_by_role('link', name='Chats', exact=True)).to_be_in_viewport()
     expect(side.get_by_role('link', name='Matters', exact=True)).to_be_in_viewport()
     page.screenshot(path=str(OUT/'sidebar-1440.png'), animations='disabled')
@@ -139,7 +139,7 @@ with sync_playwright() as p:
         if width <= 760:
             storage = side.get_by_role('link', name='Files saved on this device', exact=True)
             storage.focus(); page.keyboard.press('Tab')
-            expect(side.get_by_role('link', name='Counsel chats', exact=True)).to_be_focused()
+            expect(side.get_by_role('link', name='Counsel OS chats', exact=True)).to_be_focused()
             trash.click()
             expect(page.get_by_role('heading', name='Trash', exact=True)).to_be_visible()
             expect(page.locator('.app-sidebar')).to_have_attribute('aria-hidden','true')

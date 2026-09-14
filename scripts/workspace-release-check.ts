@@ -345,7 +345,7 @@ if (import.meta.main) {
   try {
     const opts = options(process.argv.slice(2));
     if (!opts.run) console.log(`Local release qualification — plan only; no checks or model calls made.
-Run: bun run workspace:check --run [--python /path/to/python] [--native-word] [--desktop-app /current/build/Counsel.app]
+Run: bun run workspace:check --run [--python /path/to/python] [--native-word] [--desktop-app "/current/build/Counsel OS.app"]
 Checks: typechecks, backend/UI/runner tests, isolated fresh build, synthetic workflows,
 installed Codex/Claude local transport probes, launcher restart, document/import/recall
 browser checks, and Word package checks. Native Word is a separate opt-in.

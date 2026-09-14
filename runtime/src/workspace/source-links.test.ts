@@ -35,7 +35,7 @@ const linkFinding = (id: string) => store.upkeep.status().items.find(i => i.code
 
 test('later separate import resolves an earlier reference; only reviewed links reach matter retrieval and chat context', async () => {
   const matter = store.createMatter({ title: 'Acme NDA' }), other = store.createMatter({ title: 'Unrelated matter' });
-  const note = await imported('Counsel/matters/nda.md', 'Review record. [[Companies/Acme/background]]', matter.id);
+  const note = await imported('Counsel OS/matters/nda.md', 'Review record. [[Companies/Acme/background]]', matter.id);
   drain(); expect(linkFinding(note.id).detail).toContain('1 unresolved');
   const company = await imported('Companies/Acme/background.md', 'COMPANYFACTS signed address history. This is not signing authority.');
   drain(); expect(linkFinding(note.id).detail).toContain('1 possible matter');

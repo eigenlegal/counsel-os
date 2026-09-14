@@ -20,7 +20,7 @@ with sync_playwright() as playwright:
     page.on('request', lambda req: sends.append(req.url) if req.url.endswith('/send') else None)
     page.goto(BASE + '/#token=' + TOKEN)
     page.wait_for_load_state('networkidle')
-    field = page.get_by_role('textbox', name='Message Counsel', exact=True)
+    field = page.get_by_role('textbox', name='Message Counsel OS', exact=True)
     field.fill('Image attachment fixture: discuss this screenshot.')
     page.locator('.chat-composer').evaluate('''(element, encoded) => {
       const bytes = Uint8Array.from(atob(encoded), c => c.charCodeAt(0));

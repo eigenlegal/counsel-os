@@ -62,7 +62,7 @@ test('desktop recovery does not send users to a development terminal', () => {
 test('updates have an honest disabled state and make no automatic external check', async () => {
   const calls: string[] = []; sessionStorage.setItem('counsel-os.token', 'fixture');
   globalThis.fetch = (async (url: string) => { calls.push(String(url)); return Response.json({ version: '0.1.0', build: 2, enabled: false }); }) as typeof fetch;
-  render(<DesktopUpdates />); await screen.findByText('Counsel 0.1.0 · build 2');
+  render(<DesktopUpdates />); await screen.findByText('Counsel OS 0.1.0 · build 2');
   expect(calls).toEqual(['/api/workspace/updates']); expect(screen.queryByRole('button', { name: 'Check for updates' })).toBeNull();
 });
 test('an enabled update channel checks only on request and clearly reports no newer version', async () => {

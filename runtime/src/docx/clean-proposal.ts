@@ -38,7 +38,7 @@ export function cleanProposal(original: DocxPackage, redline: DocxPackage, autho
     const runMark = (isW(element, 'ins') || isW(element, 'del')) && supportedParent
       && children(element).every(child => isW(child, 'r') || (isW(element, 'ins') && (isW(child, 'commentRangeStart') || isW(child, 'commentRangeEnd'))));
     if (part !== DOCUMENT_PART || (!paragraphMark && !runMark) || attr(element, 'author') !== author)
-      throw new Error('This redline contains revisions outside the supported Counsel changes. Review them explicitly in Word; no clean proposal was created.');
+      throw new Error('This redline contains revisions outside the supported Counsel OS changes. Review them explicitly in Word; no clean proposal was created.');
   }
   const before = modelOf(redline).paragraphs.map(p => textOf(p, 'accept'));
   for (const { element } of edits) {

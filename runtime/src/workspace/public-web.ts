@@ -65,7 +65,7 @@ export const publicWebNetwork: WebNetwork = {
   request: (url, address, signal) => new Promise((resolve, reject) => {
     const host = url.hostname.replace(/^\[|\]$/g, '');
     const headers = { Host: url.host, Accept: 'text/html, text/plain, application/pdf',
-      'Accept-Encoding': 'gzip, deflate, br', 'User-Agent': 'Counsel/0.15 (public document retrieval)' };
+      'Accept-Encoding': 'gzip, deflate, br', 'User-Agent': 'Counsel-OS/0.15 (public document retrieval)' };
     const receive = (response: IncomingMessage) => {
       const status = response.statusCode ?? 0;
       const responseHeaders = Object.fromEntries(Object.entries(response.headers).map(([key, value]) => [key, Array.isArray(value) ? value.join(', ') : value ?? '']));

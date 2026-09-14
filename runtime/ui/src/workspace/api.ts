@@ -62,7 +62,7 @@ export async function request<T>(path = '', data?: unknown, signal?: AbortSignal
   try {
     token = getToken();
   } catch {
-    throw new Error('Reopen Counsel to reconnect. If you started it from a terminal, open the workspace link printed there.');
+    throw new Error('Reopen Counsel OS to reconnect. If you started it from a terminal, open the workspace link printed there.');
   }
   let response: Response;
   try {
@@ -82,12 +82,12 @@ export async function request<T>(path = '', data?: unknown, signal?: AbortSignal
         'The connection was interrupted. This action may have been saved; check your workspace before retrying. Your entered text is still here.',
       );
     throw new Error(
-      'Cannot reach your workspace. Reopen Counsel, or check that its workspace command is still running, then try again.',
+      'Cannot reach your workspace. Reopen Counsel OS, or check that its workspace command is still running, then try again.',
     );
   }
   const result = await response.json();
   if (!response.ok && result.error === 'Unknown workspace route.')
-    throw new Error('This interface needs a newer workspace engine. Quit and reopen the updated Counsel app. If you use the terminal, restart your original workspace command and open its new link. Refreshing alone will not update the engine.');
+    throw new Error('This interface needs a newer workspace engine. Quit and reopen the updated Counsel OS app. If you use the terminal, restart your original workspace command and open its new link. Refreshing alone will not update the engine.');
   if (!response.ok)
     throw new Error(result.error || 'This action could not be completed. Try again.');
   return result as T;

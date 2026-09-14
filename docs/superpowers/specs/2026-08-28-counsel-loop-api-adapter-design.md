@@ -1,4 +1,4 @@
-# Counsel loop, HTTP/SSE API, and plugin adapter — design (build step 2)
+# Counsel OS loop, HTTP/SSE API, and plugin adapter — design (build step 2)
 
 Date: 2026-08-28
 Status: approved in brainstorm
@@ -10,7 +10,7 @@ Prior work: PR #21 (`runtime/` skeleton: seams, router, three providers, `step` 
 Turn the runtime engine into something a lawyer can talk to, from the plugin today and
 from the web UI later, with one shared conversation history. Three deliverables:
 
-1. **Counsel loop** — the freeform step with the real methodology as its system prompt and
+1. **Counsel OS loop** — the freeform step with the real methodology as its system prompt and
    the `remember` propose-then-approve gate enforced by tool shape.
 2. **`counsel-os serve`** — a local HTTP/SSE server owning threads, runs, and the vault.
 3. **Plugin adapter** — the Claude Code skill uses the server when it is running and
@@ -197,7 +197,7 @@ Flow engine, web UI, hosted mode, generic CLI harness, multi-tenant auth.
 1. Provider session hook + registry + retry (`providers/`).
 2. `resolve-root.ts`, `ThreadStore`, `window`.
 3. Prompt assembly, `read_primitive`, proposals, builtin script tools.
-4. Counsel loop (`runStep`) + run logs.
+4. Counsel OS loop (`runStep`) + run logs.
 5. Server: auth, routes, SSE, `serve.ts`, `runtime.json`.
 6. Plugin adapter script + SKILL.md paragraph.
 7. Live smokes; spikes for Claude/Codex resume are the first live checks in task 1.

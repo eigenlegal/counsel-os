@@ -18,10 +18,10 @@ with sync_playwright() as playwright:
     page.wait_for_load_state('networkidle')
     page.goto(BASE + '/#/settings?view=setup')
     page.wait_for_load_state('networkidle')
-    expect(page.get_by_role('button', name='Tell Counsel about your practice', exact=True)).to_be_visible()
+    expect(page.get_by_role('button', name='Tell Counsel OS about your practice', exact=True)).to_be_visible()
     page.screenshot(path=str(artifacts / 'practice-onboarding.png'), full_page=True)
-    page.get_by_role('button', name='Tell Counsel about your practice', exact=True).click()
-    expect(page.get_by_role('textbox', name='Message Counsel', exact=True)).to_contain_text('Help me develop my practice profile')
+    page.get_by_role('button', name='Tell Counsel OS about your practice', exact=True).click()
+    expect(page.get_by_role('textbox', name='Message Counsel OS', exact=True)).to_contain_text('Help me develop my practice profile')
     assert not sends, sends
     page.goto(BASE + '/#/settings?view=setup')
     page.wait_for_load_state('networkidle')
@@ -52,7 +52,7 @@ with sync_playwright() as playwright:
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
         page.screenshot(path=str(artifacts / f'practice-document-editor-{width}.png'), full_page=True)
     page.get_by_role('button', name='Develop this draft in chat', exact=True).click()
-    message = page.get_by_role('textbox', name='Message Counsel', exact=True)
+    message = page.get_by_role('textbox', name='Message Counsel OS', exact=True)
     expect(message).to_contain_text(draft)
     assert not sends, sends
     message.fill('Practice document fixture: please update my practice and Word author.')
@@ -101,7 +101,7 @@ with sync_playwright() as playwright:
     send_count = len(sends)
     page.goto(BASE + '/#/imports')
     page.wait_for_load_state('networkidle')
-    page.get_by_role('checkbox', name='Let Counsel organize my files after upload').uncheck()
+    page.get_by_role('checkbox', name='Let Counsel OS organize my files after upload').uncheck()
     page.get_by_label('Choose import files', exact=True).set_input_files([
         {'name': 'notes-483.txt', 'mimeType': 'text/plain', 'buffer': b'I prefer useful detail. Keep my Obsidian vault filing conventions as external workflow notes.'},
         {'name': 'profile.md', 'mimeType': 'text/markdown', 'buffer': b'# My practice\nname: Synthetic Import Name\n## Working preferences\nKeep useful context.'},
@@ -129,7 +129,7 @@ with sync_playwright() as playwright:
         expect(picker.get_by_role('button', name='Continue in chat')).to_be_in_viewport()
         page.screenshot(path=str(artifacts / f'practice-instruction-picker-{width}.png'), full_page=True)
     picker.get_by_role('button', name='Continue in chat').click()
-    expect(page.get_by_role('textbox', name='Message Counsel', exact=True)).to_contain_text('Please read these attached files')
+    expect(page.get_by_role('textbox', name='Message Counsel OS', exact=True)).to_contain_text('Please read these attached files')
     assert len(sends) == send_count, sends
     assert api('/practice-document') == saved, 'Import or hint changed standing instructions'
     batch = api('/imports/' + batch_id)
@@ -140,7 +140,7 @@ with sync_playwright() as playwright:
     assert draft_response.ok, draft_response.text()
     assert draft_response.json()['value']['attachments'] == [revision]
     page.set_viewport_size({'width': 1440, 'height': 1000})
-    page.get_by_text('What else can I ask Counsel to do?', exact=True).click()
+    page.get_by_text('What else can I ask Counsel OS to do?', exact=True).click()
     page.screenshot(path=str(artifacts / 'practice-chat-capabilities.png'), full_page=True)
     page.goto(BASE + '/#/settings?view=setup')
     page.wait_for_load_state('networkidle')

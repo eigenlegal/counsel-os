@@ -93,7 +93,7 @@ with sync_playwright() as p:
     assert api()['profile'] is None or not api()['profile']['applyToChats']
     entity_id = registry['entities'][0]['id']
     page.get_by_role('button', name='New chat', exact=True).click()
-    page.get_by_role('textbox', name='Message Counsel', exact=True).fill('signatory fixture ' + entity_id)
+    page.get_by_role('textbox', name='Message Counsel OS', exact=True).fill('signatory fixture ' + entity_id)
     page.get_by_role('button', name='Send message', exact=True).click()
     receipt = page.get_by_role('region', name='Recorded signing-rule check', exact=True)
     expect(receipt).to_contain_text('Suggested signatory: Synthetic Alex')

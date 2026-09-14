@@ -4,7 +4,7 @@ import { ErrorNotice, Modal } from './components';
 import { startDraftChat } from './chat-handoff';
 import type { PracticeSourcePage } from '../../../src/workspace/practice-intake';
 
-export const PRACTICE_IMPORT_PROMPT = 'Please read these attached files and incorporate the relevant information into my practice document for future work. Preserve unrelated existing preferences and all meaningful instructions. Resolve clearly stated identity and Word output preferences, and ask about genuine conflicts or missing attribution. Explain what Counsel can apply, what it handles natively, and any external workflows it cannot execute. Show me one proposed update before saving.';
+export const PRACTICE_IMPORT_PROMPT = 'Please read these attached files and incorporate the relevant information into my practice document for future work. Preserve unrelated existing preferences and all meaningful instructions. Resolve clearly stated identity and Word output preferences, and ask about genuine conflicts or missing attribution. Explain what Counsel OS can apply, what it handles natively, and any external workflows it cannot execute. Show me one proposed update before saving.';
 
 /** File selection is explicit, including when local or AI discovery suggests it.
  * No provider calls, profile activation or source rewriting occur on opening. */
@@ -23,7 +23,7 @@ export function PracticeSources({ batch, close, started }: { batch?: string; clo
   const ids = Object.keys(selected);
   return <Modal title="Bring your instructions into chat" onClose={close} busy={busy}>
     <div className="record-form practice-source-picker">
-      <p>Choose the files that describe you or how you work. Counsel will read them when you send the chat, then propose one update for your confirmation.</p>
+      <p>Choose the files that describe you or how you work. Counsel OS will read them when you send the chat, then propose one update for your confirmation.</p>
       <label>Find saved instructions<input value={query} placeholder="Search filenames or saved text…" onChange={event => { setQuery(event.target.value); setOffset(0); }} /></label>
       <label className="checkbox-label"><input type="checkbox" checked={all} onChange={event => { setAll(event.target.checked); setOffset(0); }} />Show all readable files{batch ? ' from this import' : ''}</label>
       <p className="fine-print">Suggestions use file content as well as names; they may miss a file. Search or show all files to choose your own. Select up to 12 at a time. Nothing is applied automatically.</p>

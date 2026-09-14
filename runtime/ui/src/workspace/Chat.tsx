@@ -339,7 +339,7 @@ export function Chat({
       <section className="chat-main" aria-label="Chat">
         <div className="chat-heading">
           <div>
-            <span className="chat-heading-label">{id ? 'Conversation' : 'Counsel workspace'}</span>
+            <span className="chat-heading-label">{id ? 'Conversation' : 'Counsel OS workspace'}</span>
             <h1>
               {conversation?.title ??
                 (id ? 'Opening conversation…' : 'A place to think it through.')}
@@ -368,7 +368,7 @@ export function Chat({
                 <p>
                   Ask a question, bring in a document, or pick up a matter.
                   <br />
-                  You can also update your practice material or tell Counsel how you prefer to work.
+                  You can also update your practice material or tell Counsel OS how you prefer to work.
                 </p>
                 <div className="chat-suggestions">
                   {[
@@ -385,7 +385,7 @@ export function Chat({
                       'Help me assess this document and identify the issues that matter.',
                     ],
                     [
-                      'Set how Counsel works',
+                      'Set how Counsel OS works',
                       'Help me set my preferences for future work. Ask me what I would like you to do differently, then prepare the right change for my review.',
                     ],
                   ].map(([label, message]) => (
@@ -506,9 +506,9 @@ export function Chat({
             </section>
             <textarea
               ref={composer}
-              aria-label="Message Counsel"
+              aria-label="Message Counsel OS"
               placeholder={
-                matter ? `Ask about ${matter.title}…` : 'Ask Counsel anything about your work…'
+                matter ? `Ask about ${matter.title}…` : 'Ask Counsel OS anything about your work…'
               }
               value={draft.message}
               onPaste={event => {

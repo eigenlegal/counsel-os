@@ -73,7 +73,7 @@ export function decodeBackup(bytes: Buffer): {
     bytes.length < BACKUP_MAGIC.length + 4 ||
     !bytes.subarray(0, BACKUP_MAGIC.length).equals(BACKUP_MAGIC)
   )
-    throw new Error('Choose a Counsel .counsel-backup file of 250 MB or less.');
+    throw new Error('Choose a Counsel OS .counsel-backup file of 250 MB or less.');
   const size = bytes.readUInt32BE(BACKUP_MAGIC.length);
   let offset = BACKUP_MAGIC.length + 4;
   if (!size || size > BACKUP_MANIFEST_MAX_BYTES || offset + size > bytes.length)

@@ -53,14 +53,14 @@ const send = () => ({ clientId: crypto.randomUUID(), message: 'Draft a brief upd
 describe('single-user profile', () => {
   test('fresh workspaces have no invented identity; a name-only profile persists and is not indexed as authority', () => {
     expect(store.getProfile()).toBeNull();
-    const profile = store.saveProfile({ name: '  Synthetic Counsel  ', expectedRevisionId: null });
+    const profile = store.saveProfile({ name: '  Synthetic Counsel OS  ', expectedRevisionId: null });
     expect(profile).toMatchObject({
-      name: 'Synthetic Counsel',
+      name: 'Synthetic Counsel OS',
       version: 1,
       applyToChats: true,
       principles: '',
     });
-    expect(store.search({ query: 'Synthetic Counsel' }).hits).toHaveLength(0);
+    expect(store.search({ query: 'Synthetic Counsel OS' }).hits).toHaveLength(0);
     const path = store.databasePath;
     store.close();
     store = new WorkspaceStore({ databasePath: path });

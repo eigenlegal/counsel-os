@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PRODUCT_NAME } from '../core/brand';
 import type { WorkspaceProfile } from './profile';
 import { EntityRegistryFields, registryFields, type EntityRegistry } from './entities';
 import { FilenamePattern, FilenameLabel, RevisionAuthor, preferenceSnapshot, type WorkingPreferences } from './working-preferences';
@@ -70,7 +71,7 @@ export function legacyPracticeContent(profile: WorkspaceProfile | null, preferen
   }
   if (preferences) for (const [key, label] of [['writingInstructions', 'Writing preferences'], ['signingInstructions', 'Signing guidance'], ['generalReview', 'Document review'], ['ndaReview', 'NDA review']] as const) add(label, preferences[key]);
   const snapshot = preferenceSnapshot(preferences, profile);
-  const word = PracticeWord.parse({ author: snapshot?.word.author ?? 'Counsel', filenamePattern: snapshot?.word.filenamePattern ?? '{document} - {variant}',
+  const word = PracticeWord.parse({ author: snapshot?.word.author ?? PRODUCT_NAME, filenamePattern: snapshot?.word.filenamePattern ?? '{document} - {variant}',
     redlineLabel: snapshot?.word.redlineLabel ?? 'redline', draftLabel: snapshot?.word.draftLabel ?? 'draft' });
   if (preferences) add('Word output', `Attribute new changes and comments to ${word.author}.\n\nFilename pattern: ${word.filenamePattern}\n\nRedline label: ${word.redlineLabel}\n\nDraft label: ${word.draftLabel}`);
   if (registry) {

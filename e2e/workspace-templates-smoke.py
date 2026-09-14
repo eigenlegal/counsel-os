@@ -56,7 +56,7 @@ with sync_playwright() as p:
     assert context.request.get(BASE + '/api/workspace/source-revisions/' + template['sourceRevisionId'] + '/original', headers=headers).body() == original
     page.locator('.resource-row').filter(has_text='Mutual NDA starting point').click()
     page.get_by_role('button', name='Start a draft', exact=True).click()
-    composer = page.get_by_role('textbox', name='Message Counsel', exact=True)
+    composer = page.get_by_role('textbox', name='Message Counsel OS', exact=True)
     expect(composer).to_have_value('Help me prepare a draft using the attached template. ')
     expect(page.locator('.chat-context-documents')).to_contain_text('Synthetic mutual NDA')
     expect(page.locator('.chat-turn')).to_have_count(0)

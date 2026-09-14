@@ -23,7 +23,7 @@ with sync_playwright() as p:
     print('Initial actions:', page.get_by_role('button').all_text_contents())
     page.get_by_label('Conversation context', exact=True).click()
     page.get_by_role('option', name='Internal investigation', exact=True).click()
-    page.get_by_role('textbox', name='Message Counsel', exact=True).fill('What remains unresolved?')
+    page.get_by_role('textbox', name='Message Counsel OS', exact=True).fill('What remains unresolved?')
     page.get_by_role('button', name='Send message', exact=True).click()
     expect(page.get_by_text('Saved in conversation', exact=True)).to_be_visible(timeout=15000)
     chat_url = page.url

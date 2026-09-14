@@ -12,16 +12,16 @@ import { PracticeSupport } from './PracticeSupport';
 
 export async function developPracticeInChat(draft?: string, attachments: string[] = []) {
   const message = attachments.length ? 'Please read these attached profile and preference files and incorporate the relevant information into my practice document. Preserve unrelated existing preferences. Resolve the clearly stated identity and Word output preferences, ask about genuine conflicts, and show me one proposed update before saving.' : draft === undefined
-    ? 'Help me develop my practice profile and preferences. Read my current practice document, then help me describe how I work and what Counsel should remember. Ask focused questions where needed, and show me a proposed update before saving.'
+    ? 'Help me develop my practice profile and preferences. Read my current practice document, then help me describe how I work and what Counsel OS should remember. Ask focused questions where needed, and show me a proposed update before saving.'
     : `Please help me organize and incorporate this draft into my practice profile and preferences. Read the current practice document, preserve unrelated information, and show me a proposed update before saving. Resolve any clearly stated name and Word output preferences too.\n\n${draft}`;
-  if (message.length > 30_000) throw new Error('Save this longer document first, then choose Develop in chat. Counsel can read the saved document in full. Your draft is unchanged.');
+  if (message.length > 30_000) throw new Error('Save this longer document first, then choose Develop in chat. Counsel OS can read the saved document in full. Your draft is unchanged.');
   await startDraftChat(message, attachments);
 }
 
 export function AppliedPracticeDetails({ value }: { value: Pick<PracticeDocumentView, 'identityName' | 'word' | 'entities'> }) {
   const registryText = legacyPracticeContent(null, null, { ...value.entities, revisionId: '00000000-0000-4000-8000-000000000000', version: 1, updatedAt: '2026-01-01T00:00:00.000Z' }).body;
   return <div className="practice-applied-details">
-    <p>Exact values used to carry out your instructions. Ask Counsel to update these together with the text.</p>
+    <p>Exact values used to carry out your instructions. Ask Counsel OS to update these together with the text.</p>
     <dl><div><dt>Recorded name</dt><dd>{value.identityName ?? 'Not confirmed yet'}</dd></div>
       <div><dt>New Word changes and comments</dt><dd>{value.word.author}</dd></div>
       <div><dt>Word filenames</dt><dd><code>{value.word.filenamePattern}</code><FilenameExamples pattern={value.word.filenamePattern} author={value.word.author} redlineLabel={value.word.redlineLabel} draftLabel={value.word.draftLabel} /></dd></div></dl>
@@ -44,7 +44,7 @@ export function PracticeDocumentPage({ value, changed, startEditing = false, imp
     <header className="practice-document-heading"><h2>Your practice</h2>
       {!editing && <div className="practice-document-actions"><button className="button button-primary" disabled={busy} onClick={() => void chat()}><Icon name="chat" size={16} />Develop in chat</button>
         <button className="button" onClick={() => setEditing(true)}>{current.body ? 'Edit text' : 'Write or paste text'}</button></div>}
-      <p>Your work, your preferences, and what Counsel should remember.</p>
+      <p>Your work, your preferences, and what Counsel OS should remember.</p>
     </header>
     {error && <ErrorNotice message={error} />}
     <span className="sr-only" role="status">{notice}</span>
@@ -53,12 +53,12 @@ export function PracticeDocumentPage({ value, changed, startEditing = false, imp
         <div className="practice-document-toolbar"><DocumentViewControls display={display} change={setDisplay} compact />
           <p className="practice-document-status" title="Earlier responses keep their original context.">{current.saved ? `Version ${current.saved.version} · ${current.useInChats ? 'Used in new responses' : 'Not shared with chats'}` : 'Existing saved context'}</p></div>
         <DocumentReader text={current.body} markdown display={display} /></div>
-        : <div className="practice-document-empty"><h3>Tell Counsel how you work.</h3><p>Describe your work, paste your existing instructions, or start with a preference. You can work out the wording together.</p>
-          <p>Counsel proposes what to remember. You review it before it becomes a default.</p></div>}
+        : <div className="practice-document-empty"><h3>Tell Counsel OS how you work.</h3><p>Describe your work, paste your existing instructions, or start with a preference. You can work out the wording together.</p>
+          <p>Counsel OS proposes what to remember. You review it before it becomes a default.</p></div>}
       {current.body && !current.saved && <p className="practice-document-legacy">Your existing saved information, brought together without changing it. Edit or develop it in chat to make this your practice document.</p>}
-      {sourcePicker && <div className="practice-imported-instructions"><button className="button button-quiet" onClick={() => setChoosingSources(true)}>Use saved instructions</button><p className="fine-print">Bring in context from any saved files, including later additions. Counsel proposes how to combine it with this document; you confirm the changes.</p></div>}
+      {sourcePicker && <div className="practice-imported-instructions"><button className="button button-quiet" onClick={() => setChoosingSources(true)}>Use saved instructions</button><p className="fine-print">Bring in context from any saved files, including later additions. Counsel OS proposes how to combine it with this document; you confirm the changes.</p></div>}
       {!sourcePicker && !current.saved && !!imported.length && <div className="practice-imported-instructions"><p>Already brought your instructions? These saved files can be the starting point: {imported.map(file => file.title).join(', ')}.</p>
-        <button className="button" disabled={busy} onClick={() => void chat(true)}>Develop from these files</button><p className="fine-print">Adds these files to a new chat for Counsel to read. You review the resulting practice update before applying it.</p></div>}
+        <button className="button" disabled={busy} onClick={() => void chat(true)}>Develop from these files</button><p className="fine-print">Adds these files to a new chat for Counsel OS to read. You review the resulting practice update before applying it.</p></div>}
       <details className="practice-document-details"><summary>Applied details</summary><AppliedPracticeDetails value={current} /></details>
       <PracticeSupport text={current.body} />
     </>}
@@ -91,7 +91,7 @@ function PracticeDocumentEditor({ value, cancel, saved, onChatStarted }: { value
     <p>Use your own words. No required categories or headings. You can include background, preferences, examples, and instructions for any kind of work.</p>
     <label htmlFor="practice-document-text">Practice document</label>
     <textarea id="practice-document-text" value={text} disabled={busy || !recovery.ready} rows={16}
-      placeholder="Tell Counsel about your work and how you like to approach it. Paste existing instructions here, or start in chat…"
+      placeholder="Tell Counsel OS about your work and how you like to approach it. Paste existing instructions here, or start in chat…"
       onChange={e => change(e.target.value)} />
     {text.length > 64_000 && <p role="alert">This text exceeds the current 64,000-character practice-context limit. Nothing was shortened. Keep a copy and reorganize it before saving or closing.</p>}
     <label className="checkbox-label"><input type="checkbox" checked={sharing} disabled={busy || !recovery.ready} onChange={e => change(text, e.target.checked)} />Use this document automatically in new responses</label>

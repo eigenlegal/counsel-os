@@ -33,7 +33,7 @@ with sync_playwright() as p:
         page.screenshot(path=str(root / f'post-setup-settings-{width}.png'), full_page=True, animations='disabled')
     page.set_viewport_size({'width':1440,'height':1000})
     page.get_by_role('button', name='New chat', exact=True).click()
-    field = page.get_by_role('textbox', name='Message Counsel')
+    field = page.get_by_role('textbox', name='Message Counsel OS')
     expect(field).to_be_enabled()
     assert '/#/home?new=' in page.url, 'New chat must not leave a Settings URL behind'
     expect(page.get_by_text('Finish draft recovery before leaving this page. Your text is still here.')).to_have_count(0)
@@ -41,7 +41,7 @@ with sync_playwright() as p:
     assert page.evaluate('window.counselSaveDrafts()')
     address = page.url
     other = window(); other.goto(address)
-    second = other.get_by_role('textbox', name='Message Counsel')
+    second = other.get_by_role('textbox', name='Message Counsel OS')
     expect(second).to_have_value('Synthetic browser recovery — あ 🧭')
     second.fill('Synthetic latest recovery'); assert other.evaluate('window.counselSaveDrafts()')
     field.fill('Synthetic conflicting recovery'); assert page.evaluate('window.counselSaveDrafts()') is False
@@ -75,7 +75,7 @@ with sync_playwright() as p:
     preference.fill(unsaved)
     assert page.evaluate('window.counselSaveDrafts()')
     saved = page.evaluate("""async () => (await (await fetch('/api/workspace/practice-document', {headers:{Authorization:'Bearer '+sessionStorage.getItem('counsel-os.token')}})).json())""")
-    assert saved['body'] == original and saved['word']['author'] == 'Counsel'
+    assert saved['body'] == original and saved['word']['author'] == 'Counsel OS'
     restored = window(); restored.goto(base + '/#/knowledge?section=preferences&view=edit')
     expect(restored.get_by_role('textbox',name='Practice document',exact=True)).to_have_value(unsaved)
     expect(restored.get_by_role('textbox')).to_have_count(1)

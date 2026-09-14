@@ -30,7 +30,7 @@ try {
       : code === 'ENOENT'
         ? 'A required file is missing. Check the backup and original documents.'
         : code === 'EACCES' || code === 'EPERM'
-          ? 'Counsel cannot access that file or folder. Choose an accessible location.'
+          ? 'Counsel OS cannot access that file or folder. Choose an accessible location.'
           : error instanceof Error && !(error instanceof z.ZodError)
             ? error.message.slice(0, 500)
             : 'The backup contains invalid workspace records.';

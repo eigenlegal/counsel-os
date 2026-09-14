@@ -46,6 +46,24 @@ test('explicit clean proposals persist separately, retry once, preserve original
   try { expect(copy.exports.cleanProposal(f.redline.id)).toEqual(first); expect(await copy.exports.createCleanProposal(f.redline.id, f.request, signal)).toEqual(first); expect(copy.exports.download(first.id).bytes).toEqual(clean); }
   finally { copy.close(); }
 });
+test('historical redlines without an author snapshot keep their original attribution after the product rename', async () => {
+  const bytes = simpleDocx('Notice', 'Notices may be given orally.');
+  const source = await store.importDocument({ name: 'Notice.docx', base64: Buffer.from(bytes).toString('base64') });
+  const input = { sourceRevisionId: source.latest.id, edits: [{ current: 'orally', proposed: 'in writing', comment: 'Use written notice.' }] };
+  const generated = await generateRedline(bytes, input, new AbortController().signal, 'Counsel');
+  const work = store.recordWork({ title: 'Historical review', request: 'Review', answer: 'Proposed notice change.' });
+  const redline = store.exports.retainRedline(work.id, { input, sourceTitle: source.latest.title, sourceVersion: 1,
+    sourceHash: hashBytes(bytes), name: 'Notice.docx', bytes: generated.bytes, report: generated.report });
+  const clean = await store.exports.createCleanProposal(redline.id,
+    { expectedContentHash: redline.contentHash, confirmProposal: true }, new AbortController().signal);
+  const xml = openDocx(store.exports.download(clean.id).bytes);
+  expect(xml.partText('word/document.xml')).not.toMatch(/<w:(ins|del)\b/);
+  expect(xml.partText('word/document.xml')).toContain('in writing');
+  expect(xml.partText('word/comments.xml')).toContain('w:author="Counsel"');
+  expect(xml.partText('word/comments.xml')).not.toContain('Counsel OS');
+  expect(store.exports.download(redline.id).bytes).toEqual(generated.bytes);
+  expect(store.originalFile(source.latest.id).bytes).toEqual(Buffer.from(bytes));
+});
 test('earlier revisions and unconfirmed, stale or non-redline requests leave no clean artifact', async () => {
   const f = await fixture(buildDocx({ blocks: [{ runs: ['Notices may be given orally.'] }, { runs: [{ text: 'Earlier', ins: { author: 'Avery', date: '2026-01-01T00:00:00Z' } }] }] }));
   const signal = new AbortController().signal;
@@ -53,7 +71,7 @@ test('earlier revisions and unconfirmed, stale or non-redline requests leave no 
   await expect(store.exports.createCleanProposal(f.redline.id, { expectedContentHash: f.redline.contentHash }, signal)).rejects.toThrow();
   await expect(store.exports.createCleanProposal(f.redline.id, { ...f.request, expectedContentHash: '0'.repeat(64) }, signal)).rejects.toThrow('changed');
   const answer = await store.exports.create(f.work.id);
-  await expect(store.exports.createCleanProposal(answer.id, { ...f.request, expectedContentHash: answer.contentHash }, signal)).rejects.toThrow('saved Counsel redline');
+  await expect(store.exports.createCleanProposal(answer.id, { ...f.request, expectedContentHash: answer.contentHash }, signal)).rejects.toThrow('saved Counsel OS redline');
   expect(store.exports.list(f.work.id)).toHaveLength(2);
 });
 test('abort and corrupt snapshots fail closed; filename remains distinct without a variant token', async () => {

@@ -30,7 +30,7 @@ with sync_playwright() as p:
     page.locator('input[type=file]').set_input_files({'name': 'Synthetic notice agreement.docx', 'mimeType': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'buffer': original.body()})
     expect(page.get_by_role('dialog')).to_have_count(0, timeout=15000)
     expect(page.locator('.document-chip')).to_have_count(1)
-    page.get_by_role('textbox', name='Message Counsel', exact=True).fill('native redline fixture: require written notice, with a comment. Leave the rest unchanged.')
+    page.get_by_role('textbox', name='Message Counsel OS', exact=True).fill('native redline fixture: require written notice, with a comment. Leave the rest unchanged.')
     page.get_by_role('button', name='Send message', exact=True).click()
     card = page.get_by_role('region', name='Document redline', exact=True)
     expect(card).to_contain_text('Draft redline ready', timeout=20000)
@@ -45,7 +45,7 @@ with sync_playwright() as p:
     first.save_as(str(OUT / 'chat-native-redline.docx'))
     with zipfile.ZipFile(io.BytesIO(redline)) as document:
         xml = document.read('word/document.xml').decode()
-        assert '<w:del ' in xml and '<w:ins ' in xml and 'w:author="Counsel"' in xml
+        assert '<w:del ' in xml and '<w:ins ' in xml and 'w:author="Counsel OS"' in xml
         assert 'in writing' in xml and 'Payment is due within thirty days.' in xml
         assert 'Use the written-notice requirement.' in document.read('word/comments.xml').decode()
     page.screenshot(path=str(OUT / 'redline-1440.png'), full_page=True, animations='disabled')
@@ -112,7 +112,7 @@ with sync_playwright() as p:
     page.get_by_role('button', name='Add documents', exact=True).click()
     page.locator('input[type=file]').set_input_files({'name': 'Synthetic insertion agreement.docx', 'mimeType': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'buffer': original.body()})
     expect(page.get_by_role('dialog')).to_have_count(0, timeout=15000)
-    page.get_by_role('textbox', name='Message Counsel', exact=True).fill('section insertion fixture: add electronic copies before Payment.')
+    page.get_by_role('textbox', name='Message Counsel OS', exact=True).fill('section insertion fixture: add electronic copies before Payment.')
     page.get_by_role('button', name='Send message', exact=True).click()
     expect(card).to_contain_text('Draft redline ready', timeout=20000)
     card.locator('summary').click()

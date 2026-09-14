@@ -136,12 +136,12 @@ export function ConnectionCard({
           <summary>Model and connection details</summary>
           <p>
             {kind === 'claude-code'
-              ? 'A fresh restricted CLI run receives only the explicit chat context and Counsel tools. Ambient API keys, custom hooks, skills, and other MCP servers are not inherited. This connection uses the CLI’s saved local sign-in, not custom gateway or apiKeyHelper configurations.'
+              ? 'A fresh restricted CLI run receives only the explicit chat context and Counsel OS tools. Ambient API keys, custom hooks, skills, and other MCP servers are not inherited. This connection uses the CLI’s saved local sign-in, not custom gateway or apiKeyHelper configurations.'
               : kind === 'codex'
                 ? 'Official local Codex CLI. A new isolated agent session receives each explicit conversation context.'
                 : `Official endpoint only: ${kind === 'anthropic-api' ? 'api.anthropic.com' : 'api.openai.com'}. Keys are kept in ${status.storage === 'keychain' ? 'macOS Keychain' : status.storage === 'libsecret' ? 'the system secret store' : 'a private local credentials file'}, separate from chat records.`}
           </p>
-          {kind === 'claude-code' && <p>Claude Code may add account information, including your login email, to model context independently of Counsel. Turning off profile sharing does not remove that CLI context. Account information is not your document-author identity. Counsel does not collect or copy Claude login tokens.</p>}
+          {kind === 'claude-code' && <p>Claude Code may add account information, including your login email, to model context independently of Counsel OS. Turning off profile sharing does not remove that CLI context. Account information is not your document-author identity. Counsel OS does not collect or copy Claude login tokens.</p>}
           {kind === 'codex' && <p>This adapter requires file-backed CLI authentication and does not silently fall back to API billing. Fresh sessions share only a private sign-in cache so renewals can carry forward. Logging out or changing your CLI login takes precedence. Responses using this sign-in run one at a time.</p>}
         </details>
         <p className="connection-disclosure">

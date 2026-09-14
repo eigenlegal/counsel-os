@@ -51,20 +51,20 @@ jobs:
       - name: Build the current workspace and desktop shell
         run: bun run desktop:build --outdir "$RUNNER_TEMP/counsel-desktop-build"
       - name: Qualify relocated engine, documents and browser recovery
-        run: bun e2e/workspace-package-check.ts "$RUNNER_TEMP/counsel-desktop-build/Counsel.app" --browser-python "$(command -v python)"
+        run: bun e2e/workspace-package-check.ts "$RUNNER_TEMP/counsel-desktop-build/Counsel OS.app" --browser-python "$(command -v python)"
       - name: Qualify actual native WebKit and app lifecycle
-        run: bun e2e/workspace-desktop-check.ts "$RUNNER_TEMP/counsel-desktop-build/Counsel.app"
+        run: bun e2e/workspace-desktop-check.ts "$RUNNER_TEMP/counsel-desktop-build/Counsel OS.app"
       - name: Build and verify local-test disk image (never a release)
-        run: bun run desktop:package --app "$RUNNER_TEMP/counsel-desktop-build/Counsel.app" --outdir "$RUNNER_TEMP/counsel-desktop-package"
+        run: bun run desktop:package --app "$RUNNER_TEMP/counsel-desktop-build/Counsel OS.app" --outdir "$RUNNER_TEMP/counsel-desktop-package"
       # Do not upload synthetic databases, bootstrap URLs, raw logs, or signing material.
       # Pull requests and ordinary pushes never retain an app image.
       - name: Retain local-test image and hash receipts
         if: ${{ inputs.retain_local_test_image == true }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: Counsel-local-test-arm64-${{ github.sha }}
+          name: Counsel-OS-local-test-arm64-${{ github.sha }}
           path: |
-            ${{ runner.temp }}/counsel-desktop-package/Counsel-local-test-arm64.dmg
+            ${{ runner.temp }}/counsel-desktop-package/Counsel-OS-local-test-arm64.dmg
             ${{ runner.temp }}/counsel-desktop-package/package.json
             ${{ runner.temp }}/counsel-desktop-package/desktop-build.json
           if-no-files-found: error

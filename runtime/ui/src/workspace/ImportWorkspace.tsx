@@ -281,7 +281,7 @@ export function ImportWorkspace({
       </div>
       {!batch && (data.interfaceVersion ?? 0) >= 21 && <div className="import-ai-option">
         <label className="import-ai-toggle"><input type="checkbox" aria-describedby="import-ai-description" checked={useAI && data.connection.ready} disabled={!data.connection.ready || busy}
-          onChange={e => setUseAI(e.target.checked)} /><span>Let Counsel organize my files after upload</span></label>
+          onChange={e => setUseAI(e.target.checked)} /><span>Let Counsel OS organize my files after upload</span></label>
         <p id="import-ai-description" className="fine-print">{data.connection.ready ? `Uses ${data.connection.label}${data.connection.config ? ` · ${data.connection.config.model}` : ''} and your plan usage. Reads bounded text excerpts, filenames and matching matter names in background batches. Large imports can use substantial AI capacity. Review the suggestions before importing.` : 'Connect AI in Settings to get organization help. You can import and file documents manually now.'}</p>
       </div>}
       <small>
@@ -368,7 +368,7 @@ export function ImportWorkspace({
                 <p>{batch.progress.paused
                   ? 'Uploaded copies are kept. The current file may finish; the remaining files wait until you resume.'
                   : uploading
-                  ? `${upload.uploaded} of ${upload.total} files uploaded. You can use other pages in Counsel; keep this browser tab open until uploading finishes.`
+                  ? `${upload.uploaded} of ${upload.total} files uploaded. You can use other pages in Counsel OS; keep this browser tab open until uploading finishes.`
                   : batch.progress.queued + batch.progress.processing > 0
                     ? 'Uploaded files keep processing while you work elsewhere, even if you close this tab. Processing resumes when the local app restarts.'
                     : waitingForUpload
@@ -396,7 +396,7 @@ export function ImportWorkspace({
           {active && (data.interfaceVersion ?? 0) >= 22 && <ImportLinks key={`links-${batch.id}`} batch={batch} organizing={organizing} changed={() => void refresh()} />}
           {active && <div className="import-file-guidance">
             <h3>{organizing ? 'File preview · read-only for now' : 'Your files'}</h3>
-            <p>{organizing ? 'The preview updates as Counsel prepares clear filing choices. You can inspect it while Counsel works; pause organization before editing.'
+            <p>{organizing ? 'The preview updates as Counsel OS prepares clear filing choices. You can inspect it while Counsel OS works; pause organization before editing.'
               : 'You don’t need to review every row. Open the list if you want to inspect a file, correct a location, or organize a group yourself.'}</p>
             {!organizing && <details><summary>What happens when I import?</summary><p>This adds new records. Use “Check for existing copies” to skip exact originals from earlier imports without merging or changing them. Practice guidance stays pending until you approve it.</p></details>}
           </div>}
@@ -411,7 +411,7 @@ export function ImportWorkspace({
           )}
           {batch.status === 'committed' && modernPractice && <section className="import-practice-next">
             <h3>Did you bring instructions about how you work?</h3>
-            <p>Importing a file does not turn its contents into your preferences. Bring the relevant files into chat and Counsel will propose one update, including Word attribution, for your confirmation.</p>
+            <p>Importing a file does not turn its contents into your preferences. Bring the relevant files into chat and Counsel OS will propose one update, including Word attribution, for your confirmation.</p>
             <button className="button" onClick={() => setPracticeSources(true)}>Set up my practice from this import</button>
             <p className="fine-print">You can do this later from Practice → Your practice → Use saved instructions. Other imported documents are already available in their selected locations.</p>
           </section>}

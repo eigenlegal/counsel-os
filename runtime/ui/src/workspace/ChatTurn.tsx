@@ -239,7 +239,7 @@ export function ChatTurn({
             c.
           </span>
           <span className="counsel-byline-text">
-            <strong>Counsel</strong>
+            <strong>Counsel OS</strong>
             <span>
               {turn.status === 'running'
                 ? 'Working'

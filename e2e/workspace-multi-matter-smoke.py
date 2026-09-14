@@ -18,7 +18,7 @@ with sync_playwright() as p:
         return response.json()
     page.goto(BASE+'/#token=workspace-browser-test-only')
     page.wait_for_load_state('networkidle')
-    field = page.get_by_role('textbox', name='Message Counsel', exact=True)
+    field = page.get_by_role('textbox', name='Message Counsel OS', exact=True)
     field.fill('Synthetic multi-matter fixture: What remains unresolved?')
     page.get_by_label('Conversation context', exact=True).click()
     page.get_by_role('option', name='Select several matters…', exact=True).click()

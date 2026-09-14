@@ -47,7 +47,7 @@ export interface RedlineReceipt {
 
 let running = 0;
 /** Isolated, bounded, cancellable original-document processing. No remote resources. */
-export async function generateRedline(bytes: Uint8Array, input: RedlineInput, signal: AbortSignal, author = 'Counsel'): Promise<{ bytes: Uint8Array; report: RedlineResult }> {
+export async function generateRedline(bytes: Uint8Array, input: RedlineInput, signal: AbortSignal, author = 'Counsel OS'): Promise<{ bytes: Uint8Array; report: RedlineResult }> {
   RevisionAuthor.parse(author);
   signal.throwIfAborted();
   if (bytes.length > 5_000_000) throw new WorkspaceConflictError('The initial redline editor supports originals up to 5 MB.');

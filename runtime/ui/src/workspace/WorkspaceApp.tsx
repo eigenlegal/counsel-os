@@ -205,7 +205,7 @@ export function WorkspaceApp(): JSX.Element {
     const label =
       nav.find((n) => n.page === route.page)?.label ??
       (route.page === 'search' ? 'Search' : route.page === 'work' ? 'Saved outputs' : route.page === 'trash' ? 'Trash' : route.page === 'imports' ? 'Import' : 'Settings');
-    document.title = `${label} — Counsel`;
+    document.title = `${label} — Counsel OS`;
     if (initialized.current) {
       if (route.page === 'search')
         contentRef.current?.querySelector<HTMLInputElement>('input')?.focus();
@@ -344,16 +344,14 @@ export function WorkspaceApp(): JSX.Element {
           <a
             className="brand"
             href={href('home', { view: 'history' })}
-            aria-label="Counsel chats"
+            aria-label="Counsel OS chats"
             onClick={() => setMobileNav(false)}
           >
             <span className="brand-mark" aria-hidden="true">
               <i />
               <i />
             </span>
-            <span>
-              counsel<span className="brand-period">.</span>
-            </span>
+            <span className="brand-name">Counsel OS</span>
           </a>
           <div className="workspace-identity">
             <div>
@@ -478,7 +476,7 @@ export function WorkspaceApp(): JSX.Element {
               />
             )}
           {data && data.interfaceVersion !== 33 && (
-              <ErrorNotice message="The interface and workspace engine need the same update. Quit and reopen the updated Counsel app, or restart your original workspace command. Saved records are preserved." />
+              <ErrorNotice message="The interface and workspace engine need the same update. Quit and reopen the updated Counsel OS app, or restart your original workspace command. Saved records are preserved." />
             )}
             {!data && !error && (
               <div className="loading-state" role="status">
@@ -490,7 +488,7 @@ export function WorkspaceApp(): JSX.Element {
                 <Icon name="shield" size={32} />
                 <h1>Let’s open your workspace.</h1>
                 <p>
-                  Open Counsel on this device. If you use the developer version, run <code>bun run workspace</code> and open the link it prints.
+                  Open Counsel OS on this device. If you use the developer version, run <code>bun run workspace</code> and open the link it prints.
                 </p>
               </div>
             )}

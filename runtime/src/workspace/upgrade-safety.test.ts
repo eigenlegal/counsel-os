@@ -26,12 +26,12 @@ test('no archive needed for a new/current workspace; downgrade refused', async (
   const { root, path } = fixture(WORKSPACE_SCHEMA_VERSION);
   expect(await prepareWorkspaceUpgrade(join(root, 'new.sqlite3'))).toBeNull();
   expect(await prepareWorkspaceUpgrade(path)).toBeNull();
-  await expect(prepareWorkspaceUpgrade(path, 18)).rejects.toThrow('newer Counsel');
+  await expect(prepareWorkspaceUpgrade(path, 18)).rejects.toThrow('newer Counsel OS');
   expect(readdirSync(root).filter(name => name.startsWith('before-upgrade-'))).toHaveLength(0);
 });
 test('non-workspace database is refused without schema changes', async () => {
   const { path } = fixture(19); const db = new Database(path); db.exec('PRAGMA application_id=123'); db.close();
-  await expect(prepareWorkspaceUpgrade(path)).rejects.toThrow('Not a Counsel workspace');
+  await expect(prepareWorkspaceUpgrade(path)).rejects.toThrow('Not a Counsel OS workspace');
 });
 test('a failed migration rolls back and leaves its earlier verified recovery archive intact', async () => {
   const { path } = fixture(18);

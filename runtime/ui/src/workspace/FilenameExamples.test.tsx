@@ -12,12 +12,12 @@ test('examples update with the actual pattern, UTC date and author', () => {
   const {rerender} = render(<FilenameExamples pattern="{document}_{variant}_{author}_{date}" author="Synthetic Avery" date="2026-01-02" />);
   expect(screen.getByText('Mutual NDA_redline_Synthetic Avery_2026-01-02.docx')).toBeTruthy();
   expect(screen.getByText('NDA review_draft_Synthetic Avery_2026-01-02.docx')).toBeTruthy();
-  rerender(<FilenameExamples pattern="{document} - {variant}.docx" author="Counsel" date="2026-01-02" />);
+  rerender(<FilenameExamples pattern="{document} - {variant}.docx" author="Counsel OS" date="2026-01-02" />);
   expect(screen.getByText('NDA review - draft.docx')).toBeTruthy();
   expect(screen.queryByText(/\.docx\.docx/)).toBeNull();
 });
 test('invalid patterns do not display misleading filenames', () => {
-  render(<FilenameExamples pattern="../{unknown}" author="Counsel" />);
+  render(<FilenameExamples pattern="../{unknown}" author="Counsel OS" />);
   expect(screen.getByText('Enter a valid filename pattern to see examples.')).toBeTruthy();
   expect(screen.queryByRole('group', {name:'Example Word filenames'})).toBeNull();
 });

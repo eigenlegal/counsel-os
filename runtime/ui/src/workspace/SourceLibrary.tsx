@@ -175,7 +175,7 @@ export function SourcesLibrary({
     <>
       <PageHeader
         title="Sources"
-        description="External reference material: law, research, commentary, and Counsel’s working guides. Your own methods and materials live in Practice; case-specific documents live with their matter."
+        description="External reference material: law, research, commentary, and Counsel OS’s working guides. Your own methods and materials live in Practice; case-specific documents live with their matter."
         action={
           section === "external" ? (
             <button
@@ -197,7 +197,7 @@ export function SourcesLibrary({
       >
         {[
           ["external", "External references"],
-          ["guides", "Counsel guides"],
+          ["guides", "Counsel OS guides"],
           ["unfiled", "Needs organizing"],
         ].map(([id, title]) => (
           <button

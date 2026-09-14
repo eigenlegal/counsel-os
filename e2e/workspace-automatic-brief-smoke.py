@@ -18,7 +18,7 @@ with sync_playwright() as p:
     print('Initial actions:', page.get_by_role('button').all_text_contents())
     page.get_by_label('Conversation context', exact=True).click()
     page.get_by_role('option', name='Internal investigation', exact=True).click()
-    page.get_by_role('textbox', name='Message Counsel', exact=True).fill('automatic brief fixture: prepare the next interview steps.')
+    page.get_by_role('textbox', name='Message Counsel OS', exact=True).fill('automatic brief fixture: prepare the next interview steps.')
     page.get_by_role('button', name='Send message', exact=True).click()
     card = page.get_by_role('region', name='Automatic matter update', exact=True)
     expect(card).to_contain_text('Working notes saved automatically', timeout=15000)

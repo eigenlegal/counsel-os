@@ -240,7 +240,7 @@ export class WorkspaceStore {
     return value === null ? null : EntityRegistry.parse(value);
   }
   saveEntityRegistry(raw: unknown): EntityRegistry {
-    if (this.savedPracticeDocument()) throw new WorkspaceConflictError('Your practice is now one document. Ask Counsel to update the recorded entity details from that document.');
+    if (this.savedPracticeDocument()) throw new WorkspaceConflictError('Your practice is now one document. Ask Counsel OS to update the recorded entity details from that document.');
     const { expectedRevisionId, ...fields } = EntityRegistryInput.parse(raw);
     return this.write(() => {
       const previous = this.getEntityRegistry();
@@ -253,7 +253,7 @@ export class WorkspaceStore {
     });
   }
   saveWorkingPreferences(raw: unknown): WorkingPreferences {
-    if (this.savedPracticeDocument()) throw new WorkspaceConflictError('Your practice is now one document. Edit Your practice or ask Counsel to update it in chat.');
+    if (this.savedPracticeDocument()) throw new WorkspaceConflictError('Your practice is now one document. Edit Your practice or ask Counsel OS to update it in chat.');
     const { expectedRevisionId, ...fields } = WorkingPreferenceInput.parse(raw);
     return this.write(() => {
       const previous = this.getWorkingPreferences();
@@ -382,7 +382,7 @@ export class WorkspaceStore {
     });
   }
   saveProfile(raw: z.input<typeof ProfileInput>): WorkspaceProfile {
-    if (this.savedPracticeDocument()) throw new WorkspaceConflictError('Your practice is now one document. Edit Your practice or ask Counsel to update your identity in chat.');
+    if (this.savedPracticeDocument()) throw new WorkspaceConflictError('Your practice is now one document. Edit Your practice or ask Counsel OS to update your identity in chat.');
     const { expectedRevisionId, ...fields } = ProfileInput.parse(raw);
     return this.write(() => {
       const previous = this.getProfile();

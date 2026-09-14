@@ -16,7 +16,7 @@ with sync_playwright() as p:
     print('Initial controls:', page.get_by_role('button').all_text_contents())
     page.get_by_label('Conversation context', exact=True).click()
     page.get_by_role('option', name='Aster employee monitoring', exact=True).click()
-    page.get_by_role('textbox', name='Message Counsel', exact=True).fill('Can we approve the employee monitoring policy?')
+    page.get_by_role('textbox', name='Message Counsel OS', exact=True).fill('Can we approve the employee monitoring policy?')
     page.get_by_role('button', name='Send message', exact=True).click()
     expect(page.get_by_text('Saved in conversation', exact=True)).to_be_visible(timeout=20000)
     for width in [1440, 390]:

@@ -31,6 +31,19 @@ function save(text: string, useInChats = true): PracticeDocumentView {
   return store.savePracticeDocument({ body: text, useInChats, expectedBasis: store.practiceDocument().basis });
 }
 
+test('Counsel OS defaults do not rename explicitly saved historical authors or practice text', () => {
+  expect(store.practiceDocument().word.author).toBe('Counsel OS');
+  store.saveWorkingPreferences({ expectedRevisionId: null, authorMode: 'custom', customAuthor: 'Counsel' });
+  const original = 'Counsel helped with this earlier matter. Keep this wording as written.';
+  const saved = save(original);
+  expect(saved.word.author).toBe('Counsel');
+  expect(saved.body).toBe(original);
+  store.close();
+  store = new WorkspaceStore({ databasePath: join(root, 'workspace.sqlite3') });
+  expect(store.practiceDocument().word.author).toBe('Counsel');
+  expect(store.practiceDocument().body).toBe(original);
+});
+
 test('one free-form document has no required identity, taxonomy or headings; legacy content is preserved without writes', () => {
   expect(store.practiceDocument().body).toBe('');
   expect(store.savedPracticeDocument()).toBeNull();
@@ -67,7 +80,7 @@ test('chat prepares one review; confirmation changes identity, prose and Word ou
   const undone = review(turn, 'undo');
   expect(undone.state.practiceDocumentProposal?.review).toBe('undone');
   expect(store.practiceDocument().body).toBe(''); expect(store.getProfile()).toBeNull();
-  expect(store.workingPreferenceSnapshot()?.word.author).toBe('Counsel');
+  expect(store.workingPreferenceSnapshot()?.word.author).toBe('Counsel OS');
   expect(store.conversations.turn(next.id).state.practiceDocument?.body).toBe(body);
 });
 
@@ -186,7 +199,7 @@ test('offline approvals can confirm a name without a profile form, AI call or un
   const result = store.confirmPracticeIdentity({ name: 'Synthetic Avery', expectedBasis: current.basis });
   expect(result.body).toBe('Preserve all my instructions.\n\nMy name is Synthetic Avery.');
   expect(store.getProfile()?.name).toBe('Synthetic Avery');
-  expect(result.word.author).toBe('Counsel');
+  expect(result.word.author).toBe('Counsel OS');
   expect(store.profileActor(store.getProfile()!.revisionId)).toBe('Synthetic Avery');
   expect(() => store.confirmPracticeIdentity({ name: 'Other', expectedBasis: current.basis })).toThrow('changed');
   expect(() => store.confirmPracticeIdentity({ name: 'Other', expectedBasis: result.basis })).toThrow('existing identity');

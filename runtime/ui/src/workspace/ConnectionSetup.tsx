@@ -30,7 +30,7 @@ export function ConnectionSetup({ kind, billing = 'subscription', desktop = fals
   }
   return <div className="connection-setup">
     <h3 className="connection-stage">2. Connect your {account} account</h3>
-    <p>Counsel uses {name}, the provider’s command-line app, to access your {billing === 'api' ? 'Console account' : 'subscription'}. A browser or desktop-app login alone may not be enough.{billing === 'subscription' && ' You do not need to create or paste an API key.'}</p>
+    <p>Counsel OS uses {name}, the provider’s command-line app, to access your {billing === 'api' ? 'Console account' : 'subscription'}. A browser or desktop-app login alone may not be enough.{billing === 'subscription' && ' You do not need to create or paste an API key.'}</p>
     <div className="connection-setup-heading"><strong>{found ? `${name} is installed` : found === false ? `Install ${name} to continue` : `Check whether ${name} is ready`}</strong><button type="button" className="button" disabled={busy} onClick={() => void check()}>{busy ? 'Checking…' : 'Check local sign-in'}</button></div>
     <p>Already use {name}? Check your saved sign-in first. This makes no model call.</p>
     {result && <p role="status">{result.message}{result.loggedIn && result.billing !== billing ? ' The sign-in does not match your selected billing method.' : ''}</p>}
@@ -43,12 +43,12 @@ export function ConnectionSetup({ kind, billing = 'subscription', desktop = fals
       <p className="fine-print">Sign-in can change the account used by other projects. Nothing installs or signs in just by opening this page.</p>
     </div>}
     <details><summary>Commands and troubleshooting</summary>
-      <p>Installation downloads and runs {name}’s official installer. If sign-in succeeds but Counsel cannot find it, use this exact sign-in command and check again.{kind === 'codex' && ' It selects the file-backed login required by Counsel.'}</p>
+      <p>Installation downloads and runs {name}’s official installer. If sign-in succeeds but Counsel OS cannot find it, use this exact sign-in command and check again.{kind === 'codex' && ' It selects the file-backed login required by Counsel OS.'}</p>
       <div className="connection-command"><strong>Install if needed</strong><code>{install}</code><button type="button" className="button" onClick={() => void copy(install, 'Installation command copied')}>Copy installation command</button>
         </div>
       <div className="connection-command"><strong>Sign in</strong><code>{login}</code><button type="button" className="button" onClick={() => void copy(login, 'Sign-in command copied')}>Copy sign-in command</button>
         </div>
-      <p>Cancel with Control-C in Terminal. Existing tools are not automatically reinstalled and Counsel never logs sign-in output. <a href={docs} target="_blank" rel="noreferrer">Official {name} instructions</a></p>
+      <p>Cancel with Control-C in Terminal. Existing tools are not automatically reinstalled and Counsel OS never logs sign-in output. <a href={docs} target="_blank" rel="noreferrer">Official {name} instructions</a></p>
       {copied && <p role="status">{copied}. Paste it in Terminal.</p>}
     </details>
     {error && <ErrorNotice message={error} />}

@@ -25,7 +25,7 @@ final class WorkspaceWindow: NSWindowController, NSWindowDelegate, WKNavigationD
         self.engine = engine
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1320, height: 900),
             styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
-        window.title = "Counsel"; window.minSize = NSSize(width: 900, height: 640); window.appearance = NSAppearance(named: .aqua)
+        window.title = "Counsel OS"; window.minSize = NSSize(width: 900, height: 640); window.appearance = NSAppearance(named: .aqua)
         window.isReleasedWhenClosed = false; window.center()
         super.init(window: window)
         window.delegate = self
@@ -72,7 +72,7 @@ final class WorkspaceWindow: NSWindowController, NSWindowDelegate, WKNavigationD
             switch result { case .success(let value): finish((value as? Bool) == true); case .failure: finish(false) }
         }
     }
-    func starting() { status.isHidden = false; webView.isHidden = true; heading.stringValue = "Opening your workspace…"; detail.stringValue = "Your saved work stays on this device. An upgrade may take longer while Counsel verifies a recovery backup."; retry.isHidden = true; spinner.startAnimation(nil) }
+    func starting() { status.isHidden = false; webView.isHidden = true; heading.stringValue = "Opening your workspace…"; detail.stringValue = "Your saved work stays on this device. An upgrade may take longer while Counsel OS verifies a recovery backup."; retry.isHidden = true; spinner.startAnimation(nil) }
     @objc func restart() {
         if let ready = engine.ready { starting(); load(ready); return }
         guard engine.process == nil else { return }; session = nil; starting(); engine.start()
@@ -81,7 +81,7 @@ final class WorkspaceWindow: NSWindowController, NSWindowDelegate, WKNavigationD
     private func failed(_ message: String) {
         // Keep the web view (and its unsent text) alive behind the failure view.
         status.isHidden = false; webView.isHidden = true; spinner.stopAnimation(nil)
-        heading.stringValue = "Counsel couldn’t open the workspace"; detail.stringValue = message
+        heading.stringValue = "Counsel OS couldn’t open the workspace"; detail.stringValue = message
         retry.title = engine.ready == nil ? "Try again" : "Reload window"; retry.isHidden = false
     }
     func showClosing() {
@@ -124,21 +124,21 @@ final class WorkspaceWindow: NSWindowController, NSWindowDelegate, WKNavigationD
         guard owns(webView.url) else { return }; status.isHidden = true; webView.isHidden = false; spinner.stopAnimation(nil); onPageReady?()
     }
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-        if (error as NSError).code != NSURLErrorCancelled { failed("The app could not load its workspace. Quit and reopen Counsel; saved work is retained.") }
+        if (error as NSError).code != NSURLErrorCancelled { failed("The app could not load its workspace. Quit and reopen Counsel OS; saved work is retained.") }
     }
-    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) { failed("The app window stopped responding. Reopen Counsel to recover saved drafts from Chats. Edits not yet saved may need to be re-entered.") }
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) { failed("The app window stopped responding. Reopen Counsel OS to recover saved drafts from Chats. Edits not yet saved may need to be re-entered.") }
 
     func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
         guard owns(frame) else { completionHandler(false); return }
         if let confirmMessage { completionHandler(confirmMessage(message)); return }
-        let alert = NSAlert(); alert.messageText = "Counsel"; alert.informativeText = String(message.prefix(8000))
+        let alert = NSAlert(); alert.messageText = "Counsel OS"; alert.informativeText = String(message.prefix(8000))
         alert.addButton(withTitle: "Cancel"); alert.addButton(withTitle: "Continue")
         guard let window else { completionHandler(false); return }
         alert.beginSheetModal(for: window) { result in completionHandler(result == .alertSecondButtonReturn) }
     }
     func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
         guard owns(frame), let window else { completionHandler(); return }
-        let alert = NSAlert(); alert.messageText = "Counsel"; alert.informativeText = String(message.prefix(8000)); alert.addButton(withTitle: "OK")
+        let alert = NSAlert(); alert.messageText = "Counsel OS"; alert.informativeText = String(message.prefix(8000)); alert.addButton(withTitle: "OK")
         alert.beginSheetModal(for: window) { _ in completionHandler() }
     }
 
@@ -147,7 +147,7 @@ final class WorkspaceWindow: NSWindowController, NSWindowDelegate, WKNavigationD
         if let chooseFiles { chooseFiles(parameters.allowsDirectories, parameters.allowsMultipleSelection, completionHandler); return }
         let panel = NSOpenPanel(); panel.canChooseDirectories = parameters.allowsDirectories; panel.canChooseFiles = !parameters.allowsDirectories
         panel.allowsMultipleSelection = parameters.allowsMultipleSelection; panel.resolvesAliases = true
-        panel.message = parameters.allowsDirectories ? "Choose a folder to review for import into Counsel." : "Choose documents to add to Counsel."
+        panel.message = parameters.allowsDirectories ? "Choose a folder to review for import into Counsel OS." : "Choose documents to add to Counsel OS."
         panel.beginSheetModal(for: window!) { response in completionHandler(response == .OK ? panel.urls : nil) }
     }
     func webView(_ webView: WKWebView, navigationAction: WKNavigationAction, didBecome download: WKDownload) { download.delegate = self }
@@ -165,7 +165,7 @@ final class WorkspaceWindow: NSWindowController, NSWindowDelegate, WKNavigationD
             } catch { completionHandler(nil); self.notice("This location cannot be used. Choose a regular file in a writable folder.") }
         }
         if let chooseSave { chooseSave(name, selected); return }
-        let panel = NSSavePanel(); panel.nameFieldStringValue = name.isEmpty ? "Counsel document" : name; panel.canCreateDirectories = true
+        let panel = NSSavePanel(); panel.nameFieldStringValue = name.isEmpty ? "Counsel OS document" : name; panel.canCreateDirectories = true
         panel.beginSheetModal(for: window!) { response in selected(response == .OK ? panel.url : nil) }
     }
     func downloadDidFinish(_ download: WKDownload) {
@@ -177,7 +177,7 @@ final class WorkspaceWindow: NSWindowController, NSWindowDelegate, WKNavigationD
         downloads.removeValue(forKey: ObjectIdentifier(download))?.discard()
         if (error as NSError).code != NSURLErrorCancelled { notice("The download did not finish. Try downloading the saved file again.") }
     }
-    private func notice(_ message: String) { let alert = NSAlert(); alert.messageText = "Counsel"; alert.informativeText = message; alert.beginSheetModal(for: window!) }
+    private func notice(_ message: String) { let alert = NSAlert(); alert.messageText = "Counsel OS"; alert.informativeText = message; alert.beginSheetModal(for: window!) }
 }
 
 /// WebKit requires a nonexistent download target. Stage beside the approved

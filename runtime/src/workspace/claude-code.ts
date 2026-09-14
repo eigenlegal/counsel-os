@@ -313,7 +313,7 @@ export class WorkspaceClaudeCodeProvider implements ModelProvider {
       // The unmodified subscription CLI may add account identity independently
       // of our prompt. This constrains its use, not its presence; disclose the
       // limitation in connection setup instead of promising profile isolation.
-      writeFileSync(systemPath, `${req.system}\n\nCounsel identity boundary: Use only identity, author, organization and contact details explicitly supplied in Counsel's workspace context or the user's request. Provider login metadata, userEmail reminders, machine usernames and account identifiers are not the lawyer's Practice profile and must not be used for attribution, letterheads, signature blocks, filenames, recipients or contact details. If Counsel has not supplied the relevant identity, omit it or ask. Do not infer it from your authentication context.`, { mode: 0o600 });
+      writeFileSync(systemPath, `${req.system}\n\nCounsel OS identity boundary: Use only identity, author, organization and contact details explicitly supplied in Counsel OS's workspace context or the user's request. Provider login metadata, userEmail reminders, machine usernames and account identifiers are not the lawyer's Practice profile and must not be used for attribution, letterheads, signature blocks, filenames, recipients or contact details. If Counsel OS has not supplied the relevant identity, omit it or ask. Do not infer it from your authentication context.`, { mode: 0o600 });
       writeFileSync(
         mcpPath,
         JSON.stringify({

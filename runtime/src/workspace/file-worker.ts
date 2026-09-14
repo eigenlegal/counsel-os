@@ -173,7 +173,7 @@ async function extract(bytes: Uint8Array, extension: string): Promise<ExtractedF
     if (e instanceof ImportFailure) throw e;
     if (e instanceof Error && e.name === 'PasswordException')
       throw new ImportFailure(
-        'This PDF requires a password. Save an unlocked copy and import it; Counsel does not retain PDF passwords.',
+        'This PDF requires a password. Save an unlocked copy and import it; Counsel OS does not retain PDF passwords.',
       );
     throw new ImportFailure(
       'This PDF could not be read completely. It may be damaged or use unsupported features. Try exporting a new PDF.',

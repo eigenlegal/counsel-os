@@ -58,7 +58,7 @@ with sync_playwright() as p:
     expect(page.locator('.import-row')).to_have_count(1)
     page.get_by_role('checkbox', name='Select uncertain.txt', exact=True).check()
     page.get_by_role('button', name='Suggest organization', exact=True).click()
-    dialog = page.get_by_role('dialog', name='Review organization with Counsel', exact=True)
+    dialog = page.get_by_role('dialog', name='Review organization with Counsel OS', exact=True)
     assert not runs
     dialog.get_by_role('button', name='Generate suggestions', exact=True).click()
     expect(dialog.get_by_role('button', name='Save 1 suggested choices', exact=True)).to_be_enabled()

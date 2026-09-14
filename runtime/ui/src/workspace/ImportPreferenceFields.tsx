@@ -9,7 +9,7 @@ export function ImportPreferenceFields({ mapping, current, profile, review, chan
   review: ImportPreferenceReview | null; change: (review: ImportPreferenceReview | null) => void;
 }): JSX.Element {
   const before = WorkingPreferenceFields.strip().parse(current ?? {});
-  const author = preferenceSnapshot(current, profile)?.word.author ?? 'Counsel';
+  const author = preferenceSnapshot(current, profile)?.word.author ?? 'Counsel OS';
   const [draft, setDraft] = useState<Partial<Record<ImportWorkingField, string>>>({ ...mapping.suggestion, ...review?.changes });
   const [all, setAll] = useState(false);
   const stale = !!review && review.expectedRevisionId !== (current?.revisionId ?? null);

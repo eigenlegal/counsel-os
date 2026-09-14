@@ -11,7 +11,7 @@ const examples = [
 ] as const;
 
 export function ChatCapabilityHints({ choose }: { choose: (message: string) => void }) {
-  return <details className="capability-hints"><summary>What else can I ask Counsel to do?</summary>
+  return <details className="capability-hints"><summary>What else can I ask Counsel OS to do?</summary>
     <div className="capability-examples">{examples.map(([label, prompt, detail]) => <div key={label}><button type="button" className="text-button" onClick={() => choose(prompt)}>{label}</button><p>{detail}</p></div>)}</div>
     <p className="fine-print">An example fills your message; it does not send it. You can also ask “What can you do with this?”</p>
   </details>;

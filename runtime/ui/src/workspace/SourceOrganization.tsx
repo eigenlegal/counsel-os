@@ -40,7 +40,7 @@ export function SourceOrganization({ sourceIds, mode, data, close, saved }: {
     catch (error) { setError((error as Error).message); }
     finally { setBusy(false); }
   }
-  return <Modal title={mode === 'manual' ? 'Organize selected files' : 'Review filing with Counsel'} onClose={close} busy={busy}>
+  return <Modal title={mode === 'manual' ? 'Organize selected files' : 'Review filing with Counsel OS'} onClose={close} busy={busy}>
     <div className="record-form import-organize-form">
       <p>{sourceIds.length} selected files, including selections on other pages. Originals, versions, citations and approvals stay unchanged.</p>
       <p className="fine-print">Linking a file to a matter makes it available to that matter’s chats. Library placement alone does not change chat access. It never adopts a practice standard.</p>
@@ -54,7 +54,7 @@ export function SourceOrganization({ sourceIds, mode, data, close, saved }: {
         <details><summary>Review selected files</summary><ul>{preview.files.map(file => <li key={file.sourceId}>{file.title}</li>)}</ul></details>
       </>}
       {preview && mode === 'suggest' && !suggestions && <>
-        <label>Anything Counsel should know? <span className="fine-print">Optional</span><textarea aria-label="Filing instructions" rows={3} maxLength={2000} value={instruction} disabled={busy} onChange={event => setInstruction(event.target.value)} /></label>
+        <label>Anything Counsel OS should know? <span className="fine-print">Optional</span><textarea aria-label="Filing instructions" rows={3} maxLength={2000} value={instruction} disabled={busy} onChange={event => setInstruction(event.target.value)} /></label>
         <p className="fine-print">Generate suggestions sends only these files’ titles, first 3,000 text characters each, and matching matter names to {data.connection.label}{data.connection.config ? ` · ${data.connection.config.model}` : ''}. Other matter contents, chats and your profile are not sent. Review before saving.</p>
         {!data.connection.ready && <p>No AI connection is ready. Manual filing is available.</p>}
       </>}
@@ -67,7 +67,7 @@ export function SourceOrganization({ sourceIds, mode, data, close, saved }: {
           <p>{item.reason}</p><p className="fine-print">Confidence: {item.confidence}{item.partial ? ' · Partial excerpt' : ''}</p>
           <details><summary>Supporting text</summary><blockquote>{item.evidenceQuote}</blockquote></details>
         </section>)}</div>
-        <details className="fine-print"><summary>Matter names shared with Counsel</summary>{suggestions.sharedMatters.length
+        <details className="fine-print"><summary>Matter names shared with Counsel OS</summary>{suggestions.sharedMatters.length
           ? <ul>{suggestions.sharedMatters.map(matter => <li key={matter.id}>{matter.title}</li>)}</ul> : <p>No matching candidates.</p>}</details>
       </>}
       {error && <ErrorNotice message={error} retry={busy ? undefined : () => setRetry(n => n + 1)} />}
