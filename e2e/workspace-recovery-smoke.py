@@ -1,4 +1,4 @@
-"""No-model setup and recovery checks against an isolated packaged workspace."""
+"""Post-onboarding settings and recovery checks against an isolated packaged workspace."""
 import json
 import sys
 from pathlib import Path
@@ -21,16 +21,22 @@ with sync_playwright() as p:
         page.goto(config['url']); page.wait_for_load_state('networkidle')
         return page
     page = window()
+    # The preceding packaged onboarding check completed setup. Old bookmarks
+    # must now open ordinary Settings, not resurrect the onboarding flow.
     page.goto(base + '/#/settings?view=setup')
-    expect(page.get_by_role('heading', name='A workspace for your practice.')).to_be_visible()
+    expect(page.get_by_role('heading', name='Workspace settings', exact=True)).to_be_visible()
+    expect(page.get_by_role('region', name='Set up your workspace')).to_have_count(0)
+    expect(page.get_by_role('link', name='Finish setup', exact=True)).to_have_count(0)
     for width, height in [(1440,1000),(390,844)]:
         page.set_viewport_size({'width':width,'height':height})
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
-        page.screenshot(path=str(root / f'setup-{width}.png'), full_page=True, animations='disabled')
+        page.screenshot(path=str(root / f'post-setup-settings-{width}.png'), full_page=True, animations='disabled')
     page.set_viewport_size({'width':1440,'height':1000})
-    page.get_by_role('button', name='Explore without AI', exact=True).click()
+    page.get_by_role('button', name='New chat', exact=True).click()
     field = page.get_by_role('textbox', name='Message Counsel')
     expect(field).to_be_enabled()
+    assert '/#/home?new=' in page.url, 'New chat must not leave a Settings URL behind'
+    expect(page.get_by_text('Finish draft recovery before leaving this page. Your text is still here.')).to_have_count(0)
     field.fill('Synthetic browser recovery — あ 🧭')
     assert page.evaluate('window.counselSaveDrafts()')
     address = page.url
@@ -40,6 +46,11 @@ with sync_playwright() as p:
     second.fill('Synthetic latest recovery'); assert other.evaluate('window.counselSaveDrafts()')
     field.fill('Synthetic conflicting recovery'); assert page.evaluate('window.counselSaveDrafts()') is False
     expect(page.get_by_role('alert')).to_contain_text('another window')
+    # New chat uses the same guard as links; it cannot bypass a failed save.
+    page.get_by_role('button', name='New chat', exact=True).click()
+    expect(page.get_by_text('Finish draft recovery before leaving this page. Your text is still here.')).to_be_visible()
+    expect(field).to_have_value('Synthetic conflicting recovery')
+    assert page.url == address
     # A failed save cannot strand the still-copyable text behind another route.
     page.evaluate("location.hash='#/matters'")
     expect(page.get_by_text('Finish draft recovery before leaving this page. Your text is still here.')).to_be_visible()
@@ -51,32 +62,31 @@ with sync_playwright() as p:
     page.get_by_role('button', name='Discard draft: Synthetic latest recovery', exact=True).click()
     expect(page.get_by_role('region', name='Recovered drafts')).to_have_count(0)
     other.close()
-    # An incomplete preference filename must survive, without becoming a setting.
+    # Arbitrary free-form instructions survive without becoming standing context.
     page.goto(base + '/#/knowledge?section=preferences&view=documents')
-    page.get_by_role('button', name='Set review preferences', exact=True).click()
-    preference = page.get_by_role('textbox', name='NDA review instructions')
-    expect(preference).to_be_enabled(); preference.fill('Synthetic unsaved instructions')
-    page.get_by_role('textbox', name='Word filename pattern', exact=True).fill('')
+    expect(page.get_by_role('heading', name='Your practice', exact=True)).to_be_visible()
+    expect(page.get_by_role('navigation', name='Preference views')).to_have_count(0)
+    expect(page.get_by_role('textbox', name='NDA review instructions')).to_have_count(0)
+    page.get_by_role('button', name='Edit text', exact=True).click()
+    preference = page.get_by_role('textbox', name='Practice document', exact=True)
+    expect(preference).to_be_enabled()
+    original = preference.input_value()
+    unsaved = '# Whatever matters to me\n\nSynthetic unsaved instructions — あ 🧭\n\nKeep the complete reasoning.'
+    preference.fill(unsaved)
     assert page.evaluate('window.counselSaveDrafts()')
-    saved = page.evaluate("""async () => (await (await fetch('/api/workspace/working-preferences', {headers:{Authorization:'Bearer '+sessionStorage.getItem('counsel-os.token')}})).json())""")
-    assert saved is None
-    restored = window(); restored.goto(base + '/#/knowledge?section=preferences&view=documents')
-    expect(restored.get_by_role('textbox',name='NDA review instructions')).to_have_value('Synthetic unsaved instructions')
-    expect(restored.get_by_role('textbox',name='Word filename pattern',exact=True)).to_have_value('')
-    # The recovery fieldset must preserve the form's spacing, not just its inputs.
-    spacing = restored.evaluate("""() => {
-      const general = document.querySelector('[aria-label="General document review"]');
-      const nda = document.querySelector('[aria-label="NDA review instructions"]');
-      const author = document.querySelector('[aria-label="Changes and comments attributed to"]');
-      const filename = document.querySelector('input[maxlength="180"]');
-      return {
-        reviewGap: nda.closest('label').getBoundingClientRect().top - general.getBoundingClientRect().bottom,
-        outputGap: filename.closest('label').getBoundingClientRect().top - author.closest('.form-pair').getBoundingClientRect().bottom,
-      };
-    }""")
-    assert spacing['reviewGap'] >= 18 and spacing['outputGap'] >= 18, spacing
-    restored.screenshot(path=str(root/'recovered-preferences.png'), full_page=True, animations='disabled')
+    saved = page.evaluate("""async () => (await (await fetch('/api/workspace/practice-document', {headers:{Authorization:'Bearer '+sessionStorage.getItem('counsel-os.token')}})).json())""")
+    assert saved['body'] == original and saved['word']['author'] == 'Counsel'
+    restored = window(); restored.goto(base + '/#/knowledge?section=preferences&view=edit')
+    expect(restored.get_by_role('textbox',name='Practice document',exact=True)).to_have_value(unsaved)
+    expect(restored.get_by_role('textbox')).to_have_count(1)
+    for width, height in [(1440,1000),(390,844),(320,740)]:
+        restored.set_viewport_size({'width':width,'height':height})
+        assert restored.evaluate('document.documentElement.scrollWidth <= innerWidth')
+        save = restored.get_by_role('button', name='Save text', exact=True)
+        save.scroll_into_view_if_needed()
+        expect(save).to_be_in_viewport()
+        restored.screenshot(path=str(root/f'recovered-practice-{width}.png'), full_page=True, animations='disabled')
     assert not errors, errors
     assert not sends, sends
     browser.close()
-print('PASS: optional setup, fresh-window draft recovery, conflicts, guarded navigation, discard and unapplied preferences; no model sends')
+print('PASS: post-onboarding settings, fresh-window draft recovery, conflicts, guarded navigation, discard and unapplied free-form practice document; no model sends')

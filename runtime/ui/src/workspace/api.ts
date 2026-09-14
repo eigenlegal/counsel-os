@@ -41,6 +41,7 @@ export type {
   SearchHit,
 } from '../../../src/workspace/types';
 export interface Snapshot extends WorkspaceCatalog {
+  practiceDocument?: import('../../../src/workspace/practice-document').PracticeDocumentView;
   entityRegistry?: import('../../../src/workspace/entities').EntityRegistry | null;
   workingPreferences?: import('../../../src/workspace/working-preferences').WorkingPreferences | null;
   clients?: import('../../../src/workspace/clients').Client[];
@@ -94,6 +95,15 @@ export async function request<T>(path = '', data?: unknown, signal?: AbortSignal
 
 export async function downloadOriginal(revisionId: string, name: string): Promise<void> {
   return downloadFile(`/source-revisions/${encodeURIComponent(revisionId)}/original`, name);
+}
+
+export async function loadImagePreview(revisionId: string, signal: AbortSignal): Promise<Blob> {
+  const response = await fetch(`/api/workspace/source-revisions/${encodeURIComponent(revisionId)}/image`, {
+    headers: { Authorization: `Bearer ${getToken()}` }, signal,
+  });
+  if (!response.ok) throw new Error('This image is unavailable. It may have been moved to Trash.');
+  if (!['image/png', 'image/jpeg', 'image/webp'].includes(response.headers.get('content-type') ?? '')) throw new Error('The saved file is not a supported image.');
+  return response.blob();
 }
 
 export async function downloadWord(id: string, name: string): Promise<void> {

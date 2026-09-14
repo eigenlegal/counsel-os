@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
+import { ImagePreview } from './ImagePreview';
+import { isImageMedia } from '../../../src/workspace/image-types';
 import {
   go,
   href,
@@ -14,6 +16,7 @@ import {
 } from './api';
 import { Badge, ErrorNotice, Modal, Status } from './components';
 import { ChatTurn } from './ChatTurn';
+import { ChatCapabilityHints } from './CapabilityHints';
 import { ContextPanel, type Inspection } from './ContextPanel';
 import { Icon } from './icons';
 import { DocumentUpload } from './DocumentUpload';
@@ -89,6 +92,9 @@ export function Chat({
     return value;
   }, durableDrafts, storageKey, () => emptyDraft(initialMatter ?? 'conversation'));
   const draft = recovery.value;
+  const draftStatus = durableDrafts && !recovery.error
+    ? !recovery.ready ? 'Restoring draft…' : recovery.saving || recovery.dirty ? 'Saving draft…' : ''
+    : '';
   const setDraft = (value: Draft | ((previous: Draft) => Draft)) => recovery.set(value);
   const [chat, setChat] = useState<ChatData | null>(null);
   const [error, setError] = useState('');
@@ -218,6 +224,7 @@ export function Chat({
   const documents = allAttachments.filter(id => !chat?.unavailableAttachments?.includes(id)).map(id => ({
     id, title: sourceTitle(id), pending: !inheritedAttachments.includes(id),
     textStatus: data.sources.find(source => source.revisionId === id)?.textStatus,
+    image: isImageMedia(data.sources.find(source => source.revisionId === id)?.mediaType) || contextRecords.some(record => record.id === id && record.status === 'image'),
   }));
   const update = (value: Partial<Draft>) => setDraft((previous) => ({ ...previous, ...value }));
   useEffect(() => {
@@ -394,13 +401,15 @@ export function Chat({
                     </button>
                   ))}
                 </div>
+                <ChatCapabilityHints choose={message => { update({ message }); composer.current?.focus(); }} />
               </div>
             )}
             {id && !chat && !error && <p className="loading-state">Opening saved conversation…</p>}
             {chat && !turns.length && (
               <div className="chat-welcome">
                 <h2>Start with the question.</h2>
-                <p>This conversation is ready. Its context is shown above.</p>
+                <p>This conversation is ready. Choose its context beside the message box.</p>
+                <ChatCapabilityHints choose={message => { update({ message }); composer.current?.focus(); }} />
               </div>
             )}
             {turns.map((turn) => (
@@ -436,7 +445,7 @@ export function Chat({
             </div>
           )}
           <form className={`chat-composer ${composerDrop.dragging ? 'dragging-files' : ''}`} onSubmit={submit} {...composerDrop.handlers}><fieldset className="draft-fields" disabled={!recovery.ready}>
-            {composerDrop.dragging && <div className="composer-drop-hint" role="status"><Icon name="attach" size={21} />Drop documents to add to this chat<span>No message is sent until you choose Send.</span></div>}
+            {composerDrop.dragging && <div className="composer-drop-hint" role="status"><Icon name="attach" size={21} />Drop documents or screenshots into this chat<span>No message is sent until you choose Send.</span></div>}
             <section className="chat-context-strip" aria-label="Chat context">
               <div className="chat-scope-row">
                 <div className="chat-scope-selection" role="group" aria-label="Conversation context selection">
@@ -485,8 +494,8 @@ export function Chat({
               {documents.length > 0 && <div className="chat-context-documents" aria-label="Documents added to this chat">
                 {documents.map(document => <div className="document-chip" key={document.id}>
                   <button type="button" onClick={() => inspect({kind: 'source', id: document.id})} title={document.title}>
-                    <Icon name="reference" size={15} /><span>{document.title}</span>
-                    <small>{document.textStatus === 'partial' ? 'Partial text · ' : document.textStatus === 'unavailable' ? 'No readable text · ' : ''}{document.pending ? 'Next message' : 'In this chat'}</small>
+                    {document.image ? <ImagePreview id={document.id} title={document.title} thumbnail /> : <Icon name="reference" size={15} />}<span>{document.title}</span>
+                    <small>{document.image ? 'Image · ' : document.textStatus === 'partial' ? 'Partial text · ' : document.textStatus === 'unavailable' ? 'No readable text · ' : ''}{document.pending ? 'Next message' : 'In this chat'}</small>
                   </button>
                   {document.pending && <button type="button" aria-label={`Remove ${document.title}`} disabled={sending}
                     onClick={() => update({attachments: draft.attachments.filter(id => id !== document.id), clientId: crypto.randomUUID()})}>
@@ -502,6 +511,13 @@ export function Chat({
                 matter ? `Ask about ${matter.title}…` : 'Ask Counsel anything about your work…'
               }
               value={draft.message}
+              onPaste={event => {
+                const files = Array.from(event.clipboardData.files).filter(file => file.type.startsWith('image/'));
+                if (!files.length) return;
+                event.preventDefault();
+                if (sending || running || adding) { setError('Wait for the current response or upload before adding a screenshot.'); return; }
+                setDroppedFiles(files); setAdding(true);
+              }}
               maxLength={30_000}
               disabled={sending || !recovery.ready}
               onChange={(e) =>
@@ -559,13 +575,16 @@ export function Chat({
               )}
             </div>
           </fieldset></form>
-          {durableDrafts && (recovery.error || recovery.saving || !recovery.ready) && <DraftRecoveryNotice recovery={recovery} />}
+          {durableDrafts && recovery.error && <DraftRecoveryNotice recovery={recovery} />}
           <div className="composer-footnote">
             <a className="composer-practice-note" href={href('knowledge', {section: 'preferences'})}>
               <Icon name="knowledge" size={12} />Practice preferences
             </a>
             {running ? <span role="status">Working. You can start another chat.</span>
-              : <span className="composer-keyboard-hint">Shift ↵ for a new line</span>}
+              : <span className={`composer-feedback${draftStatus ? ' has-status' : ''}`}>
+                <span className="composer-draft-status" role="status">{draftStatus}</span>
+                <span className="composer-keyboard-hint" aria-hidden={!!draftStatus}>Shift ↵ for a new line</span>
+              </span>}
           </div>
           </>}
         </div>
@@ -710,7 +729,7 @@ function AttachmentPicker({
                     .filter(Boolean)
                     .join(' · ') || 'Workspace source'}
                 </small>
-                <Status value={source.textStatus} />
+                <Status value={isImageMedia(source.mediaType) ? 'image' : source.textStatus} />
               </span>
               <Icon name="plus" size={16} />
             </button>

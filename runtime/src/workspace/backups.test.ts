@@ -330,7 +330,7 @@ test('native downloads use an expiring single-use file capability without exposi
   expect(file.headers.get('cache-control')).toBe('no-store');
   const bytes = Buffer.from(await file.arrayBuffer());
   expect(bytes.length).toBe(info.byteCount);
-  expect((await inspectWorkspaceBackup(bytes)).schemaVersion).toBe(19);
+  expect((await inspectWorkspaceBackup(bytes)).schemaVersion).toBe(20);
   expect((await get()).status).toBe(404);
 });
 

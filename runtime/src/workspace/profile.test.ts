@@ -239,7 +239,10 @@ describe('single-user profile', () => {
     });
     expect(store.conversations.turn(a.id).state.profileContext).toEqual(first);
     const names = provider.lastRequest!.tools.map((tool) => tool.name);
-    expect(names).toHaveLength(15);
+    expect(names).toHaveLength(18);
+    expect(names).toContain('counsel_read_practice');
+    expect(names).toContain('counsel_propose_practice');
+    expect(names).toContain('counsel_fetch_webpage');
     expect(names).toContain('counsel_lookup_statute');
     expect(names).toContain('counsel_read_entity');
     expect(names).toContain('counsel_check_signatory');

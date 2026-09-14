@@ -5,7 +5,7 @@ import { homedir, tmpdir } from 'node:os';
 import { join, basename } from 'node:path';
 import assert from 'node:assert/strict';
 import { buildDocx } from '../runtime/src/docx/test/builder';
-import { openDocx, DOCUMENT_PART } from '../runtime/src/docx/package';
+import { openDocx, DOCUMENT_PART, serialize } from '../runtime/src/docx/package';
 import { modelOf, textOf, descendants, isW, attr } from '../runtime/src/docx/model';
 import { applyRedlines } from '../runtime/src/docx/redline';
 import { prepareBlockInsertions } from '../runtime/src/docx/insert';
@@ -30,13 +30,16 @@ const original = openDocx(buildDocx({
       [{ paragraphs: [{ runs: ['Currency'] }] }, { paragraphs: [{ runs: ['USD'] }] }]] } },
     { runs: ['Earlier comment remains.'], comment: '9' },
     { runs: ['Reference note', { footnoteRef: '1' }] },
+    { runs: ['The ', { text: 'online terms', hyperlink: 'rIdTerms' }, ' apply.'] },
+    { numId: '2', runs: ['Uptime: 99.9%'] },
     { runs: ['Signatures'] },
   ],
-  numbering: { '1': [{ lvlText: '%1.', numFmt: 'decimal' }] },
+  numbering: { '1': [{ lvlText: '%1.', numFmt: 'decimal' }], '2': [{ lvlText: '•', numFmt: 'bullet' }] },
   comments: [{ id: '9', author: 'Synthetic Other Reviewer', date: '2026-01-01T00:00:00Z', text: 'Keep this earlier comment.' }],
   header: [{ runs: ['Synthetic confidential header'] }],
   footnotes: [{ runs: ['Retain this original footnote.'] }],
 }));
+original.setPart('word/_rels/document.xml.rels', original.partText('word/_rels/document.xml.rels').replace('</Relationships>', '<Relationship Id="rIdTerms" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="https://example.com/terms" TargetMode="External"/></Relationships>'));
 // The small unit-test builder deliberately omits layout-only table/section
 // metadata. Native qualification needs a fully schema-valid original, not a
 // relative validator that merely ignores the same defect in both packages.
@@ -49,10 +52,15 @@ const insert = prepareBlockInsertions(redline, [{ anchor: 'Signatures', position
   { text: 'Electronic copies', styleFrom: 'Notices' },
   { text: 'The parties may exchange electronic copies.', styleFrom: 'Notices may be given orally within thirty days.' },
 ], comment: 'Explain this added section.' }], author);
-applyRedlines(redline, [
+const replacements = applyRedlines(redline, [
   { current: 'given orally', proposed: 'given in writing', comment: 'Explain the notice change.' },
   { current: 'Pay in thirty days.', proposed: 'Pay in forty-five days.', comment: 'Explain the table edit.' },
+  { current: 'The online terms apply.', proposed: 'The signed schedule applies.', comment: 'Use the negotiated version.' },
+  { current: '- Uptime: 99.9%', proposed: '- Uptime: 99.95% each month.', comment: 'Measure uptime monthly.' },
 ], { track: true, defaultAuthor: author });
+assert.equal(replacements.applied.length, 4);
+assert.deepEqual(replacements.skipped, []);
+assert.deepEqual(replacements.warnings, []);
 insert();
 const tracked = openDocx(redline.save()), clean = openDocx(tracked.save());
 cleanProposal(original, clean, author);
@@ -110,13 +118,22 @@ end timeout`;
     assert.ok(pkg.partText('word/comments.xml').includes('Keep this earlier comment.'), `${mode}: earlier comment`);
     if (mode !== 'reject') {
       const comments = [...descendants(pkg.part('word/comments.xml').documentElement!)].filter(el => isW(el, 'comment'));
-      assert.equal(comments.filter(el => attr(el, 'author') === author).length, 3, `${mode}: comment attribution`);
+      assert.equal(comments.filter(el => attr(el, 'author') === author).length, 5, `${mode}: comment attribution`);
     }
     if (mode === 'preserve') {
       const marks = [...descendants(pkg.part(DOCUMENT_PART).documentElement!)].filter(el => isW(el, 'ins') || isW(el, 'del'));
       assert.ok(marks.length >= 8 && marks.every(el => attr(el, 'author') === author), 'Native revisions and attribution');
     } else {
       assert.ok(![...descendants(pkg.part(DOCUMENT_PART).documentElement!)].some(el => isW(el, 'ins') || isW(el, 'del')), `${mode}: no unresolved revisions`);
+    }
+    if (mode === 'preserve' || mode === 'reject') {
+      // Word for Mac may serialize a hyperlink as a HYPERLINK field instead
+      // of w:hyperlink/r:id. Either representation must retain the target.
+      const paragraph = model.paragraphs.find(p => textOf(p, 'reject').includes('online terms'))!;
+      const retainedLink = paragraph.runs.some(run => run.inHyperlink && run.text.includes('online'))
+        && pkg.partText('word/_rels/document.xml.rels').includes('https://example.com/terms');
+      const retainedField = serialize(paragraph.element).includes('HYPERLINK "https://example.com/terms"');
+      assert.ok(retainedLink || retainedField, `${mode}: original hyperlink text and target remain recoverable`);
     }
     assert.ok(readFileSync(pdf).subarray(0, 5).equals(Buffer.from('%PDF-')), `${mode}: native PDF export`);
     console.log(`PASS native Word ${mode}: save/reopen, body/table/numbering/formatting, header/footnote, comments, attribution, PDF export`);

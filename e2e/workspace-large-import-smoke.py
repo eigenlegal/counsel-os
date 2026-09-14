@@ -31,6 +31,8 @@ with sync_playwright() as p:
     expect(page.get_by_text('1–50 of 601 files', exact=True)).to_be_visible()
     page.get_by_role('button', name='Next page', exact=True).click()
     expect(page.get_by_text('51–100 of 601 files', exact=True)).to_be_visible()
+    expect(page.locator('.import-file-tools')).to_be_focused()
+    expect(page.get_by_label('Find import files', exact=True)).to_be_in_viewport()
     page.get_by_label('Find import files', exact=True).fill('record-0600')
     expect(page.locator('.import-row')).to_have_count(1)
     page.get_by_role('button', name='Review record-0600.txt', exact=True).click()
@@ -52,9 +54,19 @@ with sync_playwright() as p:
     expect(page.get_by_text('No matching files', exact=True)).to_be_visible()
     page.get_by_label('Filter import files', exact=True).select_option('ready')
     expect(page.locator('.import-row')).to_have_count(50)
-    for width in [1440, 390]:
+    for width in [1440, 1100, 1024, 390, 320]:
         page.set_viewport_size({'width': width, 'height': 1000 if width == 1440 else 844})
         page.locator('.import-filter-bar').scroll_into_view_if_needed()
+        filters = page.locator('.import-filter-bar').bounding_box()
+        selection = page.locator('.import-selection-main').bounding_box()
+        actions = page.locator('.import-selection-actions').bounding_box()
+        summary = page.locator('.import-results-summary').bounding_box()
+        assert selection['y'] - filters['y'] - filters['height'] >= 19
+        assert summary['y'] - max(selection['y'] + selection['height'], actions['y'] + actions['height']) >= 39
+        buttons = page.locator('.import-selection-actions .button')
+        first, second = buttons.nth(0).bounding_box(), buttons.nth(1).bounding_box()
+        assert (second['x'] - first['x'] - first['width'] >= 9 or second['y'] - first['y'] - first['height'] >= 9)
+        assert page.locator('.import-pagination').bounding_box()['y'] > page.locator('.import-rows').bounding_box()['y']
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
         page.screenshot(path=str(OUT / f'import-large-{width}.png'))
     page.set_viewport_size({'width': 1440, 'height': 1000})

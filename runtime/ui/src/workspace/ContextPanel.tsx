@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { ImagePreview } from './ImagePreview';
+import { isImageMedia } from '../../../src/workspace/image-types';
 import {
   href,
   request,
@@ -30,7 +32,7 @@ export interface Inspection {
 }
 export interface CurrentChatContext {
   matterTitle?: string;
-  documents: {id: string; title: string; pending: boolean; textStatus?: string}[];
+  documents: {id: string; title: string; pending: boolean; textStatus?: string; image?: boolean}[];
   workingPreferences: Snapshot['workingPreferences'];
   entityRegistry: Snapshot['entityRegistry'];
 }
@@ -192,12 +194,20 @@ export function ContextPanel({
         <h4 className="context-section-label">Practice</h4>
         <p>Your saved working instructions are supplied automatically when set. Relevant approved and imported practice material, templates, and saved law can be retrieved as needed. This does not mean every file is read.</p>
         <p>Chats save automatically. Changes to reusable practice material require your approval.</p>
+        <p>Counsel can retrieve relevant public links from your request or documents it reads. Only the URL is sent to the site, without document text or browser login. Retrieved pages are saved in Sources and shown with the response; login-protected or interactive pages may still need an upload.</p>
         <a href={href('knowledge', {section: 'preferences'})}>Manage profile &amp; preferences</a>
         <p className="fine-print">{current.entityRegistry?.availableToChats
           ? 'Your signing directory is available for lookup when relevant.'
           : 'Signing directory sharing is off or has not been set up.'}</p>
       </>}
-      <ProfileContext profile={profile} turn={turn} />
+      {!turn?.state.practiceDocument?.saved && <ProfileContext profile={profile} turn={turn} />}
+      {turn?.state.practiceDocument && (turn.state.practiceDocument.saved || turn.state.practiceDocumentRead) && <details className="shared-matter-context" aria-label="Practice document context">
+        <summary>Your practice{turn.state.practiceDocument.saved ? ` · version ${turn.state.practiceDocument.saved.version}` : ''}</summary>
+        <p>{turn.state.practiceDocumentRead ? 'This exact text was supplied for this response. This is a context receipt, not a guarantee that the model followed every instruction.' : 'Your practice document was not shared with this response.'}</p>
+        {turn.state.practiceDocumentRead && <DocumentReader text={turn.state.practiceDocument.body} markdown />}
+        <p>New Word changes and comments: {turn.state.practiceDocument.word.author}. Earlier reviewers retain their names.</p>
+        <a href={href('knowledge', { section: 'preferences' })}>Open your practice</a>
+      </details>}
       {turn?.state.entityRegistry && <details className="shared-matter-context" aria-label="Entity directory context">
         <summary>Signing entities · version {turn.state.entityRegistry.version}</summary>
         <p>Names were available for discovery. Only entities listed as read below had their full saved details supplied through the entity tool. These are practice-wide user records, not verified authority.</p>
@@ -210,7 +220,7 @@ export function ContextPanel({
         </div>)}
         <a href={href('knowledge', { section: 'preferences', view: 'entities' })}>Edit entities and rules for future responses</a>
       </details>}
-      {preferences && <details className="shared-matter-context" aria-label={turn ? 'Working instructions included' : 'Working instructions for next message'}>
+      {preferences && !turn?.state.practiceDocument?.saved && <details className="shared-matter-context" aria-label={turn ? 'Working instructions included' : 'Working instructions for next message'}>
         <summary>Working preferences · version {preferences.version}</summary>
         <p>{turn ? 'Included automatically, not found through search.' : 'These saved instructions will be supplied with your next message.'} Writing instructions apply by audience; signing guidance applies when selecting a signatory; review instructions apply to the relevant document work. {turn ? 'This receipt shows what was supplied, not a guarantee of model compliance.' : 'Changes in Practice apply to future responses.'}</p>
         {preferences.writingInstructions && <><h4>Writing instructions</h4><DocumentReader text={preferences.writingInstructions} markdown /></>}
@@ -352,7 +362,7 @@ export function ContextPanel({
           </div>
           <p className="fine-print">
             Attached means available to read. Prepared means collected for this
-            response; read means returned by a tool. Exact ranges show coverage,
+            response; read means returned by a tool. Images labeled “supplied to model” were included visually, without OCR or exact-text verification. Exact ranges show text coverage,
             not a claim that the whole document was reviewed.
           </p>
           {turn.state.context.map((record) => (
@@ -378,7 +388,7 @@ export function ContextPanel({
                   {record.version ? ` · v${record.version}` : ""}
                 </small>
                 <span className="context-record-state">
-                  {record.ranges.length
+                  {turn.state.visualContext?.some(image => image.id === record.id) ? `Image ${turn.state.visualContext.find(image => image.id === record.id)!.number} · ${turn.status === 'complete' ? 'supplied to model' : 'prepared image input'}` : record.ranges.length
                     ? `${turn.state.preparedContext?.records.some((item) => item.id === record.id && item.kind === record.kind) ? "Prepared" : "Read"} · ${record.ranges.map((r) => `${r.start}–${r.end}`).join(", ")}`
                     : "Attached · not read yet"}
                 </span>
@@ -405,7 +415,7 @@ export function ContextPanel({
           <Icon name="reference" size={18} /><span><strong>{document.title}</strong>
             <small>{document.pending ? 'Added for next message · not sent yet' : 'Already attached in this chat'}</small>
             {document.textStatus === 'partial' && <Badge tone="amber">Partial text</Badge>}
-            {document.textStatus === 'unavailable' && <Badge tone="amber">No readable text</Badge>}
+            {document.image ? <Badge>Image · shared when you send</Badge> : document.textStatus === 'unavailable' && <Badge tone="amber">No readable text</Badge>}
           </span>
         </button>)}
         {!current.documents.length && <p>No documents added. Use Add documents or drop files into the message box.</p>}
@@ -511,7 +521,7 @@ function Passage({ inspection }: { inspection: Inspection }): JSX.Element {
               Immutable saved version
               {"number" in record ? ` · v${record.number}` : ""}
             </Badge>
-            {"textStatus" in record && <Status value={record.textStatus} />}
+            {"textStatus" in record && <Status value={isImageMedia(record.provenance.mediaType) ? 'image' : record.textStatus} />}
           </div>
           {currentVersion !== null &&
             "number" in record &&
@@ -544,10 +554,11 @@ function Passage({ inspection }: { inspection: Inspection }): JSX.Element {
               <blockquote>{inspection.quote}</blockquote>
             </div>
           )}
-          <h4>{valid ? "Surrounding text" : "Saved text"}</h4>
+          {"sourceId" in record && isImageMedia(record.provenance.mediaType) && <ImagePreview id={record.id} title={record.title} />}
+          <h4>{"sourceId" in record && isImageMedia(record.provenance.mediaType) ? 'Text availability' : valid ? "Surrounding text" : "Saved text"}</h4>
           <div className="passage-text">
             {text === null ? (
-              "No readable text is available."
+              "sourceId" in record && isImageMedia(record.provenance.mediaType) ? 'This original is shared visually when attached to a chat. No OCR or exact text citations are available.' : "No readable text is available."
             ) : valid ? (
               <>
                 {text.slice(Math.max(0, start - 1000), start)}

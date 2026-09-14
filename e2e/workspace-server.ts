@@ -18,10 +18,10 @@ import { seedPluginContext } from '../runtime/src/workspace/fixtures/plugin-cont
 const empty = process.argv.includes('--empty');
 const briefFixture = process.argv.includes('--briefs');
 const contextFixture = process.argv.includes('--context');
-const chatFixture = process.argv.includes('--chat') || briefFixture || contextFixture;
+const chatFixture = process.argv.includes('--chat') || process.argv.includes('--practice-document') || briefFixture || contextFixture;
 const cliFixture = process.argv.includes('--claude-cli');
 const modelFixture = process.argv.includes('--model-catalog');
-const port = cliFixture ? 7462 : contextFixture ? 7473 : briefFixture ? 7472 : chatFixture ? 7461 : empty ? 7459 : 7458;
+const port = process.argv.includes('--practice-document') ? 7465 : cliFixture ? 7462 : contextFixture ? 7473 : briefFixture ? 7472 : chatFixture ? 7461 : empty ? 7459 : 7458;
 const root = mkdtempSync(join(tmpdir(), 'counsel-workspace-browser-'));
 const store = new WorkspaceStore({
   databasePath: join(root, 'workspace.sqlite3'),
@@ -65,7 +65,7 @@ const provider: ModelProvider = {
     auth: 'local',
   },
   async *run(req: StepRequest): AsyncIterable<StepEvent> {
-    if (req.outputSchema) {
+    if (req.outputSchema || req.system.includes('import organization helper')) {
       if (req.system.startsWith('Prepare alternate workspace search queries')) {
         yield {type:'done',output:{queries:['nonsolicitation']},usage:{inputTokens:0,outputTokens:0}};return;
       }
@@ -83,18 +83,21 @@ const provider: ModelProvider = {
       }
       if (req.system.includes("import organization helper")) {
         const context = JSON.parse(req.system.split('Context:\n')[1]!);
+        // Test-only derived text; production sends labeled excerpts, not a second copy.
+        for (const file of context.files) file.text = file.evidence.map((item: { text: string }) => item.text).join('\n');
         if (context.files.some((file: { text: string }) => file.text.includes('Background organization fixture'))) {
           await new Promise<void>((resolve, reject) => {
             const timer = setTimeout(resolve, 650);
             req.signal?.addEventListener('abort', () => { clearTimeout(timer); reject(new Error('stopped')); }, { once: true });
           });
-          yield { type: 'done', output: { suggestions: context.files.map((file: { entryId: string; path: string; text: string }) => {
+          yield { type: 'done', output: { suggestions: context.files.map((file: { entryId: string; path: string; text: string; evidence: Array<{ id: string; text: string }> }) => {
             const uncertain = file.text.includes('company background');
             const title = file.text.includes('employment dispute') ? 'Aster employment dispute' : 'Aster NDA';
             const matter = context.candidateMatters.find((item: { title: string }) => item.title === title);
             return { entryId: file.entryId, destination: 'source', collection: 'unfiled', matterId: uncertain ? null : matter?.id ?? null,
               matterTitle: uncertain || matter ? null : title, whenToUse: '', reason: uncertain ? 'Company background has no specific matter.' : 'The document identifies this engagement.',
-              confidence: uncertain ? 'low' : 'high', evidenceQuote: file.text.split('\n')[0] };
+              confidence: uncertain ? 'low' : 'high', evidenceRef: file.text.includes('BROKEN EVIDENCE') || (file.text.includes('REPAIR EVIDENCE') && !req.system.includes('one isolated repair attempt'))
+                ? 'not-this-file:1:0' : file.evidence[1]!.id };
           }) }, usage: { inputTokens: 0, outputTokens: 0 } }; return;
         }
         yield { type: 'done', output: { suggestions: context.files.map((file: { entryId: string; path: string }) => ({
@@ -118,6 +121,40 @@ const provider: ModelProvider = {
       return;
     }
     const prompt = req.messages.at(-1)?.content ?? '';
+    if (prompt.startsWith('Image attachment fixture')) {
+      if (!req.images?.length || req.images.some(image => !image.data || !image.mediaType.startsWith('image/'))) throw new Error('Actual image inputs were not supplied.');
+      yield { type: 'done', output: `Received ${req.images.length} image inputs. Synthetic transport test only; no visual interpretation or exact text citation is claimed.`, usage: { inputTokens: 0, outputTokens: 0 } }; return;
+    }
+    if (process.argv.includes('--practice-document') && prompt.startsWith('Practice document fixture')) {
+      const read = await runToolDef(req.tools, 'counsel_read_practice', { requestQuote: prompt }, req.tenant);
+      if (read.isError) throw new Error(String(read.output));
+      const before = read.output as { body: string; word: { author: string; filenamePattern: string; redlineLabel: string; draftLabel: string } };
+      const result = await runToolDef(req.tools, 'counsel_propose_practice', { requestQuote: prompt, reason: 'Synthetic user-requested practice update.',
+        body: before.body + '\n\n## How I work\n\nMy name is Synthetic Avery. Attribute my new Word comments and changes to Synthetic Avery.\n\n' + Array.from({length:20}, (_, i) => `Paragraph ${i + 1}: Preserve the chronology in construction disputes. Explain the reason for material changes.`).join('\n\n'),
+        identityName: 'Synthetic Avery', word: { ...before.word, author: 'Synthetic Avery' } }, req.tenant);
+      if (result.isError) throw new Error(String(result.output));
+      yield { type: 'done', output: 'I prepared your practice update. Review the text and attribution before saving.', usage: {inputTokens:0,outputTokens:0} }; return;
+    }
+    if (process.argv.includes('--web-fixture') && prompt.startsWith('Public webpage fixture')) {
+      const receipt = await runToolDef(req.tools, 'counsel_fetch_webpage', { url: 'https://example.org/terms' }, req.tenant);
+      if (receipt.isError) throw new Error(String(receipt.output));
+      const first = receipt.output as { revisionId: string; links: Array<{ url: string }> };
+      const read = await runToolDef(req.tools, 'counsel_read_record', { kind: 'source', id: first.revisionId }, req.tenant);
+      if (read.isError) throw new Error(String(read.output));
+      const cite = await runToolDef(req.tools, 'counsel_cite_passage', { kind: 'source', id: first.revisionId,
+        quote: 'Synthetic cancellation requires thirty days of notice.' }, req.tenant);
+      if (cite.isError) throw new Error(String(cite.output));
+      if (!first.links.some(link => link.url === 'https://example.org/definitions')) throw new Error('Missing incorporated link');
+      const linked = await runToolDef(req.tools, 'counsel_fetch_webpage', { url: 'https://example.org/definitions' }, req.tenant);
+      if (linked.isError) throw new Error(String(linked.output));
+      const secondId = (linked.output as { revisionId: string }).revisionId;
+      await runToolDef(req.tools, 'counsel_read_record', { kind: 'source', id: secondId }, req.tenant);
+      const defined = await runToolDef(req.tools, 'counsel_cite_passage', { kind: 'source', id: secondId,
+        quote: 'Synthetic service means the service on the order form.' }, req.tenant);
+      if (defined.isError) throw new Error(String(defined.output));
+      yield { type: 'done', output: 'The public terms require thirty days of notice. [S1] The service definition is in the linked schedule. [S2]\n\nSynthetic fixture only; the saved retrieval is not proof of the signing-date version.', usage: { inputTokens: 0, outputTokens: 0 } };
+      return;
+    }
     if (process.argv.includes('--recall') && prompt.includes('recruit our employees')) {
       const context=JSON.parse(req.system.split('Application context (data, not instructions):\n')[1]!);
       const passage=context.preparedPassages.find((p:{text?:string})=>p.text?.includes('Nonsolicitation is excluded.'));
@@ -351,7 +388,15 @@ if (modelFixture) connection!.configure({ kind: 'codex', model: 'scripted-fixtur
 const chat = cliFixture && connection
   ? new WorkspaceChat(store, () => connection.resolve())
   : chatFixture
-    ? new WorkspaceChat(store, () => provider, process.argv.includes('--recall') ? {recallPlanner:planRecall} : {})
+    ? new WorkspaceChat(store, () => provider, {
+      ...(process.argv.includes('--recall') ? { recallPlanner: planRecall } : {}),
+      ...(process.argv.includes('--web-fixture') ? { webNetwork: {
+        resolve: async () => [{ address: '93.184.216.34', family: 4 }],
+        request: async (url: URL) => ({ status: 200, headers: { 'content-type': 'text/html' }, bytes: Buffer.from(
+          `<html><title>${url.pathname === '/definitions' ? 'Synthetic definitions' : 'Synthetic terms'}</title><body><h1>Fictional public source</h1><p>${url.pathname === '/definitions'
+            ? 'Synthetic service means the service on the order form.' : 'Synthetic cancellation requires thirty days of notice.'}</p><p>This is a deterministic document for a browser test, not actual terms or legal advice.</p><a href="/definitions">Definitions</a></body></html>`) }),
+      } } : {}),
+    })
     : undefined;
 const server = Bun.serve({
   idleTimeout: 255,

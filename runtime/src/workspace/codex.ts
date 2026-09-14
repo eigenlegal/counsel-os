@@ -1,7 +1,8 @@
-import { chmodSync, mkdtempSync, rmSync } from "node:fs";
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
-import { Codex, type CodexOptions } from "@openai/codex-sdk";
+import { Codex, type CodexOptions, type Input } from "@openai/codex-sdk";
+import { imageInputLabel } from '../core/image-input';
 import type { ModelProvider, StepEvent, StepRequest } from "../core/types";
 import {
   buildCodexConfig,
@@ -85,6 +86,18 @@ export function workspaceCodexPrompt(req: StepRequest): string {
   return `${integration}\n\n${req.system}\n\nConversation messages (JSON):\n${JSON.stringify(req.messages)}`;
 }
 
+/** Only retained, explicitly attached bytes enter the private run directory.
+ * This does not enable Codex's filesystem or view_image tools. */
+export function workspaceCodexInput(req: StepRequest, cwd: string): Input {
+  const prompt = workspaceCodexPrompt(req);
+  if (!req.images?.length) return prompt;
+  return [{ type: 'text', text: prompt }, ...req.images.flatMap((image, index) => {
+    const path = join(cwd, `image-${index + 1}.${image.mediaType === 'image/jpeg' ? 'jpg' : image.mediaType === 'image/webp' ? 'webp' : 'png'}`);
+    writeFileSync(path, Buffer.from(image.data, 'base64'), { mode: 0o600, flag: 'wx' });
+    return [{ type: 'text' as const, text: imageInputLabel(image, index) }, { type: 'local_image' as const, path }];
+  })];
+}
+
 /** Uses the official CLI/SDK login. Never sends subscription tokens to an API adapter. */
 export class WorkspaceCodexProvider implements ModelProvider {
   readonly kind = "harness" as const;
@@ -137,7 +150,7 @@ export class WorkspaceCodexProvider implements ModelProvider {
       // A fresh harness session per turn prevents hidden context and cross-chat resume.
       // Only the explicit SQLite conversation history is passed to the model.
       const thread = codex.startThread(buildThreadOptions(this.model, cwd));
-      const prompt = workspaceCodexPrompt(req);
+      const prompt = workspaceCodexInput(req, cwd);
       const { events } = await thread.runStreamed(
         prompt,
         buildTurnOptions({ ...req, signal: cancellation.signal }),

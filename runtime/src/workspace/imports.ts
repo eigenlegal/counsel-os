@@ -229,7 +229,7 @@ export class WorkspaceImports {
       progress: this.progress(id),
       total,
       offset: query?.offset ?? 0,
-      selection: this.selection(id),
+      selection: { ...this.selection(id), filingSummary: this.organization.summary(id) },
     };
   }
   private selection(id: string): ImportBatch['selection'] {
@@ -568,8 +568,18 @@ export class WorkspaceImports {
       return this.get(id, {});
     }).immediate();
   }
-  private writeChoice(id: string, entryId: string, choice: ImportChoice): void {
-    this.organization.assertEditable(id);
+  /** Internal worker write: staged choices only, with the same revision and identity guards.
+   * There is no HTTP route for this method. User edits always remain protected. */
+  stageOrganizationChoices(id: string, revisionId: string, changes: Array<{ entryId: string; choice: ImportChoice }>) {
+    this.review(id, revisionId);
+    if (!changes.length) return;
+    for (const change of changes) this.writeChoice(id, change.entryId, ImportChoice.parse(change.choice), true);
+    this.bump(id);
+  }
+  private writeChoice(id: string, entryId: string, choice: ImportChoice, automatic = false): void {
+    if (!automatic) this.organization.assertEditable(id);
+    else if (this.db.query('SELECT 1 FROM import_organization_files WHERE entry_id=? AND protected=1').get(entryId))
+      throw new WorkspaceConflictError('This file has a reviewed filing choice.');
     const row = this.db.query('SELECT status FROM import_entries WHERE batch_id=? AND id=?')
       .get(id, entryId) as Pick<EntryRow, 'status'> | null;
     if (!row) throw new WorkspaceNotFoundError('Import file not found.');
@@ -578,6 +588,8 @@ export class WorkspaceImports {
     if (choice.matterId) this.store.getMatter(choice.matterId);
     for (const matter of choice.linkedMatters ?? []) if (matter.matterId) this.store.getMatter(matter.matterId);
     this.db.run('UPDATE import_entries SET choice_json=? WHERE id=?', [JSON.stringify(choice), entryId]);
+    if (!automatic) this.db.run(`INSERT INTO import_organization_files(entry_id,batch_id,protected) VALUES (?,?,1)
+      ON CONFLICT(entry_id) DO UPDATE SET protected=1,issue=NULL`, [entryId, id]);
   }
   edit(
     id: string,
@@ -622,6 +634,7 @@ export class WorkspaceImports {
         );
         this.db.run('DELETE FROM import_entry_metadata WHERE entry_id IN (SELECT id FROM import_entries WHERE batch_id=?)', [id]);
         this.db.run('DELETE FROM import_organization_results WHERE batch_id=?', [id]);
+        this.db.run('DELETE FROM import_organization_files WHERE batch_id=?', [id]);
         return this.get(id);
       })
       .immediate();

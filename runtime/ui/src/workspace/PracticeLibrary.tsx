@@ -47,7 +47,7 @@ export function PracticeLibrary({ data, openEditor, changed }: { data: Snapshot;
         <button className="button button-primary" onClick={() => category === 'template' ? setAddingTemplate(true) : openEditor({ kind: 'knowledge' })}><Icon name="plus" size={16} />{category === 'template' ? 'Add a template' : 'Add to practice'}</button></div>} />
     <div className="practice-sections" role="group" aria-label="Practice section">
       <button aria-pressed={!preferences} onClick={() => navigate({})}>Library</button>
-      <button aria-pressed={preferences} onClick={() => navigate({ section: 'preferences' })}>Profile &amp; preferences</button>
+      <button aria-pressed={preferences} onClick={() => navigate({ section: 'preferences' })}>{data.practiceDocument ? 'Your practice' : 'Profile & preferences'}</button>
     </div>
     {preferences ? <PracticePreferences data={data} changed={changed} editProfile={() => editProfile?.()} view={params.get('view')} /> : template ?
       <TemplateDetail item={template} data={data} changed={changed} /> : <section aria-label="Practice library">

@@ -16,9 +16,12 @@ import { Icon } from "./icons";
 import { DocumentReader } from "./DocumentReader";
 import { MatterPicker } from './MatterPicker';
 import { ImportOrganization } from './ImportOrganization';
+import { ImportFilingPreview } from './ImportFilingPreview';
 import { ImportMaintenance } from './ImportMaintenance';
-import { ImportBackgroundOrganization, organizationRequest } from './ImportBackgroundOrganization';
+import { ImportBackgroundOrganization, organizationRequest, type ImportOrganizationState } from './ImportBackgroundOrganization';
 import { ImportLinks } from './ImportLinks';
+import { PracticeSources } from './PracticeSources';
+import { practiceIntakeHint } from '../../../src/workspace/practice-intake-hints';
 import { useImportUploads, startImportUpload, pauseImportUpload, forgetImportUpload } from './import-uploads';
 import {
   droppedFiles,
@@ -33,7 +36,7 @@ const destinations: Record<ImportChoice["destination"], string> = {
   language: "Practice · Language",
   pattern: "Practice · Lesson",
   template: "Practice · Template",
-  profile: "Profile & preferences source",
+  profile: "Practice instructions source",
   skip: "Skip this file",
 };
 export function ImportWorkspace({
@@ -45,11 +48,15 @@ export function ImportWorkspace({
   data: Snapshot;
   onChanged: () => void;
 }): JSX.Element {
+  const modernPractice = (data.interfaceVersion ?? 0) >= 33;
+  const [practiceSources, setPracticeSources] = useState(false);
   const [imports, setImports] = useState<ImportListItem[]>([]);
   const [batch, setBatch] = useState<ImportBatch | null>(null);
   const [syncError, setSyncError] = useState('');
   const [useAI, setUseAI] = useState(true);
-  const [organizing, setOrganizing] = useState(false);
+  const [showFiles, setShowFiles] = useState(false);
+  const [organizationState, setOrganizationState] = useState<ImportOrganizationState>((data.interfaceVersion ?? 0) >= 21 ? 'checking' : 'none');
+  const organizing = ['running', 'checking', 'unavailable'].includes(organizationState);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
   const [offset, setOffset] = useState(0);
@@ -58,6 +65,8 @@ export function ImportWorkspace({
   const [maintenance, setMaintenance] = useState<'duplicates' | 'undo' | null>(null);
   const queryString = new URLSearchParams({ query, status: filter, offset: String(offset), limit: '50' }).toString();
   const sequence = useRef(0);
+  const fileTools = useRef<HTMLDivElement>(null);
+  const pageNavigation = useRef<number | null>(null);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const [dragging, setDragging] = useState(false),
@@ -98,6 +107,7 @@ export function ImportWorkspace({
   }
   useEffect(() => {
     setBatch(null);
+    setShowFiles(false);
     setApplyProfile(true);
     setApplyPreferences(false);
     setQuery('');
@@ -117,6 +127,16 @@ export function ImportWorkspace({
     timer = setTimeout(poll, 1000);
     return () => { disposed = true; clearTimeout(timer); sequence.current++; };
   }, [id, queryString]);
+  useEffect(() => {
+    if (pageNavigation.current === null || batch?.offset !== pageNavigation.current) return;
+    pageNavigation.current = null;
+    fileTools.current?.focus({ preventScroll: true });
+    fileTools.current?.scrollIntoView({ block: 'start' });
+  }, [batch?.offset]);
+  function changePage(next: number) {
+    pageNavigation.current = next;
+    setOffset(next);
+  }
   async function select(selected: SelectedImportFile[]) {
     if (busy || uploading) return;
     setBusy(true);
@@ -164,6 +184,7 @@ export function ImportWorkspace({
   const needsFiles = included !== ready;
   const waitingForUpload = (batch?.progress.awaitingUpload ?? 0) > 0;
   const canPause = !!batch && (uploading || batch.progress.queued + batch.progress.processing > 0 || batch.progress.paused || upload?.state === 'paused' || upload?.state === 'error');
+  const importStage = !active || confirm ? 3 : needsFiles || uploading ? 0 : organizing ? 1 : 2;
   const progressText = batch ? [
     `${batch.progress.ready} ready`,
     batch.progress.awaitingUpload && `${batch.progress.awaitingUpload} awaiting upload`,
@@ -322,7 +343,7 @@ export function ImportWorkspace({
             <div>
               <span className="panel-eyebrow">
                 {batch.status === "review"
-                  ? "Review your import"
+                  ? "Preparing your import"
                   : batch.status === "committed"
                     ? "Import receipt"
                     : "Discarded import"}
@@ -331,14 +352,19 @@ export function ImportWorkspace({
             </div>
             <Badge tone={batch.status === "committed" ? "green" : "blue"}>
               {batch.status === "review"
-                ? `${ready} / ${included} ready`
+                ? `${ready} / ${included} files prepared`
                 : batch.status}
             </Badge>
           </div>
-          {active && (
+          {active && <ol className="import-stages" aria-label="Import progress">
+            {['Upload', 'Organize', 'Review', 'Import'].map((label, index) => <li key={label} aria-current={index === importStage ? 'step' : undefined} className={index < importStage ? 'complete' : ''}>
+              <span aria-hidden="true">{index < importStage ? <Icon name="check" size={14} /> : index + 1}</span>{label}
+            </li>)}
+          </ol>}
+          {active && (needsFiles || uploading || batch.progress.paused || !!batch.progress.errors || organizationState === 'none') && (
             <div className="import-queue-status">
               <div role="status" aria-live="polite">
-                <strong>{batch.progress.paused ? 'Import paused' : uploading ? 'Uploading from this browser' : batch.progress.queued + batch.progress.processing > 0 ? 'Processing locally' : waitingForUpload ? 'Waiting for files' : batch.progress.errors ? 'Some files need attention' : 'Ready for your review'}</strong>
+                <strong>{batch.progress.paused ? 'Import paused' : uploading ? 'Uploading from this browser' : batch.progress.queued + batch.progress.processing > 0 ? 'Processing locally' : waitingForUpload ? 'Waiting for files' : batch.progress.errors ? 'Some files need attention' : organizing ? 'Files uploaded — not imported yet' : 'Ready for your review'}</strong>
                 <p>{batch.progress.paused
                   ? 'Uploaded copies are kept. The current file may finish; the remaining files wait until you resume.'
                   : uploading
@@ -347,7 +373,7 @@ export function ImportWorkspace({
                     ? 'Uploaded files keep processing while you work elsewhere, even if you close this tab. Processing resumes when the local app restarts.'
                     : waitingForUpload
                       ? 'Choose the original files to finish uploading. Copies already received are kept; no need to upload them again.'
-                      : 'Nothing enters your workspace until you review and import it.'}</p>
+                      : organizing ? 'Your file copies are saved locally. Organization is the next step; follow the progress below.' : 'Nothing enters your workspace until you review and import it.'}</p>
                 <span className="fine-print">{progressText}</span>
               </div>
               {(canPause || !!batch.progress.errors) && <div className="import-queue-actions">
@@ -361,16 +387,19 @@ export function ImportWorkspace({
             </div>
           )}
           {active && waitingForUpload && !busy && (!upload || upload.state === 'complete') && dropzone}
-          {active && (data.interfaceVersion ?? 0) >= 21 && <ImportBackgroundOrganization key={batch.id} batch={batch} data={data} changed={() => void refresh()} onRunningChange={setOrganizing} />}
+          {active && (data.interfaceVersion ?? 0) >= 21 && <ImportBackgroundOrganization key={batch.id} batch={batch} data={data} changed={() => void refresh()} onStateChange={setOrganizationState} />}
+          {active && <div className="import-review-actions">
+            <button className="button" disabled={busy || organizing || uploading || batch.progress.processing > 0} onClick={() => setDiscard(true)}>Discard staged import</button>
+            <button className="button button-primary" disabled={busy || organizing || uploading || needsFiles || !included}
+              onClick={() => { setApplyPreferences(false); setConfirm(true); }}>Review and import {included} files</button>
+          </div>}
           {active && (data.interfaceVersion ?? 0) >= 22 && <ImportLinks key={`links-${batch.id}`} batch={batch} organizing={organizing} changed={() => void refresh()} />}
-          {active && (
-            <p className="fine-print">
-              {(data.interfaceVersion ?? 0) >= 21 ? 'Review Counsel’s organization above, or adjust the files below. Pause AI organization before editing. This adds' : 'Initial suggestions come from names and folders. This adds'}{' '}
-              new records. Use “Check for existing copies” to skip exact originals from earlier imports without merging or changing them.
-              You can also organize a selection together. Practice guidance
-              stays pending until you approve it.
-            </p>
-          )}
+          {active && <div className="import-file-guidance">
+            <h3>{organizing ? 'File preview · read-only for now' : 'Your files'}</h3>
+            <p>{organizing ? 'The preview updates as Counsel prepares clear filing choices. You can inspect it while Counsel works; pause organization before editing.'
+              : 'You don’t need to review every row. Open the list if you want to inspect a file, correct a location, or organize a group yourself.'}</p>
+            {!organizing && <details><summary>What happens when I import?</summary><p>This adds new records. Use “Check for existing copies” to skip exact originals from earlier imports without merging or changing them. Practice guidance stays pending until you approve it.</p></details>}
+          </div>}
           {batch.status === "committed" && (
             <p>
               {batch.receipt?.items.length} originals imported ·{" "}
@@ -380,6 +409,12 @@ export function ImportWorkspace({
               <a href={href("references")}>Browse Sources</a>
             </p>
           )}
+          {batch.status === 'committed' && modernPractice && <section className="import-practice-next">
+            <h3>Did you bring instructions about how you work?</h3>
+            <p>Importing a file does not turn its contents into your preferences. Bring the relevant files into chat and Counsel will propose one update, including Word attribution, for your confirmation.</p>
+            <button className="button" onClick={() => setPracticeSources(true)}>Set up my practice from this import</button>
+            <p className="fine-print">You can do this later from Practice → Your practice → Use saved instructions. Other imported documents are already available in their selected locations.</p>
+          </section>}
           {batch.status === "discarded" && (
             <p>
               Staged file copies were discarded. Your original files and
@@ -390,27 +425,29 @@ export function ImportWorkspace({
           {batch.receipt?.undo && <p role="status">Cleanup applied: {batch.receipt.undo.sourceIds.length} originals moved to <a href={href('trash')}>Trash</a>.
             {batch.receipt.undo.practiceIds.length > 0 && ` ${batch.receipt.undo.practiceIds.length} unreviewed practice items withdrawn.`}
             {batch.receipt.undo.templateIds.length > 0 && ` ${batch.receipt.undo.templateIds.length} templates disabled.`} Other records were kept.</p>}
+          <details className="import-file-inspector" open={showFiles || organizationState === 'none' || !active}
+            onToggle={event => setShowFiles(event.currentTarget.open)}>
+          <summary>Inspect or edit individual files</summary>
+          <div className="import-file-tools" ref={fileTools} tabIndex={-1} role="group" aria-label="Find and organize import files">
           <div className="import-filter-bar">
             <label className="filter-input"><Icon name="search" size={17} /><input aria-label="Find import files" placeholder="Find by name or folder…" value={query} onChange={event => { setQuery(event.target.value); setOffset(0); }} /></label>
             <label className="import-status-filter"><select aria-label="Filter import files" value={filter} onChange={event => { setFilter(event.target.value); setOffset(0); }}>
               <option value="all">All files</option><option value="attention">Needs attention</option><option value="ready">Ready</option><option value="waiting">Awaiting files or processing</option><option value="excluded">Skipped or excluded</option>
             </select></label>
           </div>
-          <div className="import-page-controls">
-            <span className="fine-print">{batch.total ? `${batch.offset + 1}–${batch.offset + batch.entries.length} of ${batch.total} files` : 'No matching files'}</span>
-            {(batch.total > 50 || offset > 0) && <nav aria-label="Import file pages"><button className="button" disabled={!offset} onClick={() => setOffset(Math.max(0, offset - 50))}>Previous page</button><button className="button" disabled={offset + 50 >= batch.total} onClick={() => setOffset(offset + 50)}>Next page</button></nav>}
-          </div>
           {active && (data.interfaceVersion ?? 0) >= 13 && <div className="import-selection-bar" aria-label="Import selection">
+            <div className="import-selection-main">
             <label><input type="checkbox" aria-label="Select files on this page" checked={batch.entries.some(item => item.status !== 'skipped') && batch.entries.filter(item => item.status !== 'skipped').every(item => selected.includes(item.id))}
-              disabled={busy} onChange={event => { const ids = batch.entries.filter(item => item.status !== 'skipped').map(item => item.id);
+                disabled={busy || organizing} onChange={event => { const ids = batch.entries.filter(item => item.status !== 'skipped').map(item => item.id);
                 setSelected(values => event.target.checked ? [...new Set([...values, ...ids])] : values.filter(value => !ids.includes(value))); }} />Select page</label>
             <span>{selected.length} selected</span>
-            <button type="button" className="text-button" disabled={busy} onClick={async () => {
+            <button type="button" className="text-button" disabled={busy || organizing} onClick={async () => {
               setBusy(true); setError('');
               try { const selection = await request<{ entryIds: string[] }>(`/imports/${batch.id}/selection?${new URLSearchParams({ query, status: filter })}`); setSelected(selection.entryIds); }
               catch (e) { setError((e as Error).message); } finally { setBusy(false); }
             }}>Select all matching files</button>
             {!!selected.length && <button type="button" className="text-button" disabled={busy} onClick={() => setSelected([])}>Clear selection</button>}
+            </div>
             <div className="import-selection-actions">
               <button type="button" className="button" disabled={busy || organizing || !selected.length} onClick={() => setOrganize({ mode: 'bulk', revisionId: batch.revisionId, entryIds: [...selected] })}>Organize selected</button>
               <button type="button" className="button" disabled={busy || organizing || !selected.length || selected.length > 20}
@@ -418,6 +455,8 @@ export function ImportWorkspace({
                 onClick={() => setOrganize({ mode: 'suggest', revisionId: batch.revisionId, entryIds: [...selected] })}><Icon name="work" size={15} />Suggest organization</button>
             </div>
           </div>}
+          </div>
+          <p className="import-results-summary fine-print" role="status">{batch.total ? `${batch.offset + 1}–${batch.offset + batch.entries.length} of ${batch.total} files` : 'No matching files'}</p>
           <div className="import-rows">
             {batch.entries.map((item) => {
               const receipt = batch.receipt?.items.find(
@@ -426,7 +465,7 @@ export function ImportWorkspace({
               return (
                 <div className="import-row" key={item.id}>
                   {active && (data.interfaceVersion ?? 0) >= 13 ? <input className="import-select-file" type="checkbox" aria-label={`Select ${item.path}`}
-                    disabled={busy || item.status === 'skipped'} checked={selected.includes(item.id)}
+                    disabled={busy || organizing || item.status === 'skipped'} checked={selected.includes(item.id)}
                     onChange={event => setSelected(values => event.target.checked ? [...values, item.id] : values.filter(value => value !== item.id))} /> :
                   <Icon
                     name={
@@ -462,7 +501,8 @@ export function ImportWorkspace({
                         : item.choice.destination === "skip"
                           ? "Skipped"
                           : item.choice.destination === 'source' && item.choice.collection === 'external' ? 'External reference'
-                            : item.choice.destination === 'source' && item.choice.collection === 'practice' ? 'Practice · File' : destinations[item.choice.destination]}
+                            : item.choice.destination === 'source' && item.choice.collection === 'practice' ? 'Practice · File'
+                              : item.choice.destination === 'source' ? item.choice.matterId || item.choice.matterTitle ? 'Matter document' : 'Unfiled' : destinations[item.choice.destination]}
                     </Badge>
                     {active && (
                       <small>
@@ -496,24 +536,11 @@ export function ImportWorkspace({
               );
             })}
           </div>
-          {active && (
-            <div className="import-review-actions">
-              <button
-                className="button"
-                disabled={busy || organizing || uploading || batch.progress.processing > 0}
-                onClick={() => setDiscard(true)}
-              >
-                Discard staged import
-              </button>
-              <button
-                className="button button-primary"
-                disabled={busy || organizing || uploading || needsFiles || !included}
-                onClick={() => { setApplyPreferences(false); setConfirm(true); }}
-              >
-                Review and import {included} files
-              </button>
-            </div>
-          )}
+          {(batch.total > 50 || offset > 0) && <div className="import-page-controls import-pagination">
+            <span className="fine-print">Page {Math.floor(batch.offset / 50) + 1} of {Math.max(1, Math.ceil(batch.total / 50))}</span>
+            <nav aria-label="Import file pages"><button className="button" disabled={!offset} onClick={() => changePage(Math.max(0, offset - 50))}>Previous page</button><button className="button" disabled={offset + 50 >= batch.total} onClick={() => changePage(offset + 50)}>Next page</button></nav>
+          </div>}
+          </details>
           {!active && (
             <a className="button" href={href("imports")}>
               Start another import
@@ -563,11 +590,12 @@ export function ImportWorkspace({
         >
           <div className="record-form">
             <p>
-              {included} Sources will be added, with original files
+              {included} files will be added, with originals
               retained. Named new matters will be created. Practice guidance
               needs a separate approval.
             </p>
             <p className="fine-print">This includes all selected files in the import, not just the current page or search results.</p>
+            {batch.selection.filingSummary && <ImportFilingPreview summary={batch.selection.filingSummary} />}
             {!!batch.selection.linkedMatters && <p>{batch.selection.linkedMatters} reviewed additional matter links will make supporting documents available to those matter chats. One original can support several matters.</p>}
             {templates > 0 && (
               <label className="model-default">
@@ -582,7 +610,7 @@ export function ImportWorkspace({
                 </span>
               </label>
             )}
-            {profile && !data.profile && (
+            {!modernPractice && profile && !data.profile && (
               <label className="model-default">
                 <input
                   type="checkbox"
@@ -595,11 +623,11 @@ export function ImportWorkspace({
                 </span>
               </label>
             )}
-            {!!profiles && data.profile && <p className="fine-print">Your existing profile will be kept. Profile originals will be retained without applying their settings.</p>}
-            {profiles > 1 && !data.profile && applyProfile && (
+            {!modernPractice && !!profiles && data.profile && <p className="fine-print">Your existing profile will be kept. Profile originals will be retained without applying their settings.</p>}
+            {!modernPractice && profiles > 1 && !data.profile && applyProfile && (
               <ErrorNotice message="More than one profile was selected. Go back and choose one profile source, or turn off profile import." />
             )}
-            {!!batch.selection.preferences && <section className="import-preference-confirm">
+            {!modernPractice && !!batch.selection.preferences && <section className="import-preference-confirm">
               <h3>Reviewed working preferences</h3>
               <p className="fine-print">From {batch.selection.preferences.files} reviewed files. Selected instructions will apply to new responses; selected Word settings apply to new exports. This is independent of profile sharing.</p>
               {!!batch.selection.preferences.conflicts.length && <p className="status-banner">Resolve these conflicts before applying preferences: {batch.selection.preferences.conflicts.join(', ')}. You can still import the files without changing preferences.</p>}
@@ -609,6 +637,7 @@ export function ImportWorkspace({
                   <span>Apply these reviewed preference changes</span></label>
               </>}
             </section>}
+            {modernPractice && <p className="fine-print">Your practice preferences and Word settings will not change during import. Afterwards, choose “Set up my practice from this import” to combine instructions in chat and review one proposed update.</p>}
             <p className="fine-print">
               After import, files and their matter links can be edited in the workspace. Import cleanup can undo unused, unchanged additions; it keeps profiles and working preferences. Edit those separately in Practice preferences. For an existing
               workspace,{" "}
@@ -632,7 +661,7 @@ export function ImportWorkspace({
               </button>
               <button
                 className="button button-primary"
-                disabled={busy || (templates > 0 && !shareTemplates) || (profiles > 1 && applyProfile && !data.profile)}
+                disabled={busy || (templates > 0 && !shareTemplates) || (!modernPractice && profiles > 1 && applyProfile && !data.profile)}
                 onClick={async () => {
                   setBusy(true);
                   setError("");
@@ -642,8 +671,8 @@ export function ImportWorkspace({
                       {
                         expectedRevisionId: batch.revisionId,
                         allowPracticeWideTemplates: shareTemplates,
-                        profile: applyProfile && !data.profile ? profile : null,
-                        ...(applyPreferences && batch.selection.preferences?.review ? { preferences: batch.selection.preferences.review } : {}),
+                        profile: !modernPractice && applyProfile && !data.profile ? profile : null,
+                        ...(!modernPractice && applyPreferences && batch.selection.preferences?.review ? { preferences: batch.selection.preferences.review } : {}),
                       },
                     );
                     setBatch(next);
@@ -715,6 +744,7 @@ export function ImportWorkspace({
           </div>
         </Modal>
       )}
+      {practiceSources && batch && <PracticeSources batch={batch.id} close={() => setPracticeSources(false)} />}
     </>
   );
 }
@@ -732,6 +762,7 @@ function ImportEntryEditor({
   close: () => void;
   saved: (batch: ImportBatch) => void;
 }): JSX.Element {
+  const modernPractice = (data.interfaceVersion ?? 0) >= 33;
   const [choice, setChoice] = useState(entry.choice),
     [body, setBody] = useState<string | null>(null);
   const [profileMapping, setProfileMapping] = useState<ImportProfileMapping | null>(null);
@@ -783,9 +814,9 @@ function ImportEntryEditor({
                   expectedRevisionId: reviewRevision,
                   choice: {
                     ...choice,
-                    preferences: choice.destination === 'profile' ? preferenceReview : null,
+                    preferences: !modernPractice && choice.destination === 'profile' ? preferenceReview : null,
                     profile:
-                      useProfile && profile && choice.destination === "profile"
+                      !modernPractice && useProfile && profile && choice.destination === "profile"
                         ? profile
                         : null,
                   },
@@ -906,7 +937,7 @@ function ImportEntryEditor({
             </label>
           </>
         )}
-        {choice.destination === "profile" && !data.profile && (profile || showProfile) && (
+        {!modernPractice && choice.destination === "profile" && !data.profile && (profile || showProfile) && (
           <>
             <ImportProfileFields profile={profile} mapping={profileMapping} change={editProfile} />
             <label className="model-default">
@@ -920,17 +951,20 @@ function ImportEntryEditor({
             </label>
           </>
         )}
-        {choice.destination === "profile" && data.profile && (
+        {!modernPractice && choice.destination === "profile" && data.profile && (
           <p className="fine-print">
             You already have a profile. This file will be retained as a Source;
             it will not replace your details.
           </p>
         )}
-        {choice.destination === 'profile' && preferenceMapping && <ImportPreferenceFields mapping={preferenceMapping}
+        {!modernPractice && choice.destination === 'profile' && preferenceMapping && <ImportPreferenceFields mapping={preferenceMapping}
           current={currentPreferences} profile={data.profile} review={preferenceReview} change={setPreferenceReview} />}
-        {choice.destination === 'profile' && !data.profile && !profile && !showProfile && <button type="button" className="button" onClick={() => setShowProfile(true)}>Set up profile details from this file</button>}
-        {choice.destination !== 'profile' && choice.destination !== 'skip' && !!preferenceMapping && Object.keys(preferenceMapping.suggestion).length > 0 &&
+        {!modernPractice && choice.destination === 'profile' && !data.profile && !profile && !showProfile && <button type="button" className="button" onClick={() => setShowProfile(true)}>Set up profile details from this file</button>}
+        {!modernPractice && choice.destination !== 'profile' && choice.destination !== 'skip' && !!preferenceMapping && Object.keys(preferenceMapping.suggestion).length > 0 &&
           <p className="status-banner">This file has labeled working preferences. To review them as settings, choose “Profile &amp; preferences source” above. Keeping it as a document does not apply them.</p>}
+        {modernPractice && choice.destination !== 'skip' && (choice.destination === 'profile' || practiceIntakeHint(body ?? '', choice.title)) && <aside className="import-practice-next">
+          <h3>Possible practice instructions</h3><p>This file will be retained, not applied as settings. After import, choose “Set up my practice from this import” to develop it in chat and confirm one update. No special filename or fields are required.</p>
+        </aside>}
         {entry.reason && <ErrorNotice message={entry.reason} />}
         {body !== null && (
           <details className="import-preview">

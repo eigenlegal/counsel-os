@@ -4,7 +4,7 @@ import type { ImportOrganizeInput, ImportOrganizationResult } from './import-org
 import type { z } from 'zod';
 
 type Run = (id: string, input: z.input<typeof ImportOrganizeInput>, signal: AbortSignal,
-  groups: Array<{ title: string; evidence: string }>) => Promise<ImportOrganizationResult>;
+  groups: Array<{ title: string; evidence: string }>, retryReason?: string) => Promise<ImportOrganizationResult>;
 
 /** One serial, app-owned dispatcher. Browser requests only start/control it. */
 export class ImportOrganizationWorker {
@@ -46,7 +46,7 @@ export class ImportOrganizationWorker {
           this.timer = setTimeout(() => { this.timer = undefined; this.wake(); }, 1000);
           return;
         }
-        if (!next.entries.length) { jobs.change(id, 'complete', 'Organization is ready to review. Nothing has been imported or shared with a matter yet.'); continue; }
+        if (!next.entries.length) { jobs.change(id, 'complete', 'Clear filing choices are prepared. Any uncertain or unsuccessful files are set aside for review. Nothing has been imported or shared with a matter yet.'); continue; }
         // Includes the whole-batch locality/processing check before any provider resolution.
         const files = this.store.imports.organizationInput(id, next.revisionId, next.entries, true);
         const groups = jobs.groups(id, files.map(file => `${file.path} ${file.text}`).join('\n'));
@@ -55,9 +55,12 @@ export class ImportOrganizationWorker {
         const abort = new AbortController(); this.abort = abort;
         const result = await this.run(id, { expectedRevisionId: next.revisionId, entryIds: next.entries,
           instruction: state.request.instruction, modelChoice: state.request.modelChoice as ModelChoice,
-          shareForSuggestions: true }, abort.signal, groups);
+          shareForSuggestions: true }, abort.signal, groups, next.retryReason);
         abort.signal.throwIfAborted();
-        jobs.saveResults(id, state.revisionId, result.suggestions.map(item => ({ ...item, sharedMatters: result.sharedMatters, sharedGroups: groups })));
+        const returned = [...result.suggestions, ...(result.failures ?? [])].map(item => item.entryId);
+        if (result.revisionId !== next.revisionId || returned.length !== next.entries.length || new Set(returned).size !== returned.length
+          || returned.some(entryId => !next.entries.includes(entryId))) throw new Error('The organization response did not match the selected files.');
+        jobs.saveResults(id, state.revisionId, result.suggestions.map(item => ({ ...item, sharedMatters: result.sharedMatters, sharedGroups: groups })), result.failures);
       } catch (error) {
         if (!this.stopped && jobs.running() === id && (!callRevision || jobs.get(id)?.revisionId === callRevision))
           jobs.change(id, 'failed', `${(error as Error).message} Completed suggestions are kept. Resume when ready; the interrupted request may have used your plan.`);

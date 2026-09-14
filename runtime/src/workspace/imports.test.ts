@@ -439,7 +439,7 @@ test('pause and queued originals survive backup, restore and reopen; resume neve
   expect(store.imports.get(batch.id)).toEqual(paused);
   expect(paused.progress).toMatchObject({ paused: true, queued: 1, ready: 0 });
   const backup = await createWorkspaceBackup(store.databasePath);
-  expect((await inspectWorkspaceBackup(backup.bytes)).schemaVersion).toBe(19);
+  expect((await inspectWorkspaceBackup(backup.bytes)).schemaVersion).toBe(20);
   const backupPath = join(root, backup.name);
   writeFileSync(backupPath, backup.bytes);
   const restored = await restoreWorkspaceBackup(backupPath, root);

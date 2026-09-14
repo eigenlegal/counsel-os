@@ -127,6 +127,7 @@ export class ClaudeHarnessProvider implements ModelProvider {
   }
 
   async *run(req: StepRequest): AsyncIterable<StepEvent> {
+    if (req.images?.length) { yield { type: 'error', message: 'This legacy harness does not support image attachments. Use the standalone workspace connection.' }; return; }
     const specs = toMcpTools(req.tools, req.tenant);
     const sdkTools = specs.map(s => {
       const shape = (s.zodSchema as z.ZodObject<z.ZodRawShape>).shape;

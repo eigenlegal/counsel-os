@@ -147,8 +147,10 @@ try {
     { runs: [{ text: 'SYNTHETIC PACKAGED AGREEMENT', bold: true }] },
     { runs: ['Notices'] }, { runs: ['Notices may be ', { text: 'given orally', italic: true }, '.'] },
     { numId: '1', runs: ['Keep this numbered provision.'] },
+    { runs: ['The ', { text: 'online terms', hyperlink: 'rId9' }, ' apply.'] },
+    { numId: '2', runs: ['Uptime: 99.9%'] },
     { runs: ['Signatures'] },
-  ], numbering: { '1': [{ lvlText: '%1.', numFmt: 'decimal' }] } }));
+  ], numbering: { '1': [{ lvlText: '%1.', numFmt: 'decimal' }], '2': [{ lvlText: '•', numFmt: 'bullet' }] } }));
   original.setPart(DOCUMENT_PART, original.partText(DOCUMENT_PART).replace('<w:sectPr/>', '<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr>'));
   const bytes = original.save(); writeFileSync(join(root, 'original.docx'), bytes, { mode: 0o600 });
   const extracted = await worker('extract', bytes, ['docx']); assert.ok(extracted.body.includes('given orally'));
@@ -163,7 +165,9 @@ try {
 
   const sourceRevisionId = crypto.randomUUID(), author = 'Synthetic Avery';
   const redline = await worker('redline', { bytes: Buffer.from(bytes).toString('base64'), author, input: { sourceRevisionId,
-    edits: [{ current: 'given orally', proposed: 'given in writing', comment: 'Use written notice.' }],
+    edits: [{ current: 'given orally', proposed: 'given in writing', comment: 'Use written notice.' },
+      { current: 'The online terms apply.', proposed: 'The signed schedule applies.', comment: 'Use the negotiated version.' },
+      { current: '- Uptime: 99.9%', proposed: '- Uptime: 99.95% each month.' }],
     insertions: [{ anchor: 'Signatures', position: 'before', paragraphs: [{ text: 'Electronic copies are permitted.', styleFrom: 'Notices may be given orally.' }], comment: 'Explain the addition.' }],
   } });
   const redlineBytes = Buffer.from(redline.bytes, 'base64'); writeFileSync(join(root, 'redline.docx'), redlineBytes, { mode: 0o600 });
@@ -171,11 +175,25 @@ try {
   assert.deepEqual(paragraphs(redlineBytes, 'reject'), paragraphs(bytes, 'accept'));
   assert.ok(redlined.partText(DOCUMENT_PART).includes('w:author="Synthetic Avery"'));
   assert.ok(redlined.partText('word/comments.xml').includes('Use written notice.'));
+  assert.equal(redline.report.applied.length, 4);
+  assert.ok(paragraphs(redlineBytes, 'accept').includes('The signed schedule applies.'));
+  assert.ok(paragraphs(redlineBytes, 'accept').includes('Uptime: 99.95% each month.'));
   const clean = await worker('clean', { original: Buffer.from(bytes).toString('base64'), redline: redline.bytes, author });
   const cleanBytes = Buffer.from(clean.bytes, 'base64'); writeFileSync(join(root, 'clean.docx'), cleanBytes, { mode: 0o600 });
   assert.deepEqual(paragraphs(cleanBytes, 'accept'), paragraphs(redlineBytes, 'accept'));
   assert.ok(!/<w:(ins|del)\b/.test(openDocx(cleanBytes).partText(DOCUMENT_PART)));
   pass('compiled native tracked replacements, section insertion, comments/attribution and clean proposals');
+  // A compressed original with a large embedded asset must not inflate past
+  // the output cap just because the package is re-saved. Keep this synthetic
+  // asset separate from the native rendering corpus (it is not a real font).
+  const assetOriginal = openDocx(bytes), asset = new Uint8Array(5_500_000).map((_, i) => i % 251);
+  assetOriginal.setPart('word/fonts/synthetic.odttf', asset);
+  const assetRedline = await worker('redline', { bytes: Buffer.from(assetOriginal.save()).toString('base64'), author,
+    input: { sourceRevisionId, edits: [{ current: 'given orally', proposed: 'given in writing' }] } });
+  const assetBytes = Buffer.from(assetRedline.bytes, 'base64');
+  assert.ok(assetBytes.length < 100_000);
+  assert.deepEqual(openDocx(assetBytes).partBytes('word/fonts/synthetic.odttf'), asset);
+  pass('compiled embedded-font compression regression preserves exact asset bytes');
   const rounds = await worker('rounds', [
     { role: 'baseline', title: 'Original', bytes: Buffer.from(bytes).toString('base64') },
     { role: 'sent', title: 'Sent', bytes: redline.bytes }, { role: 'returned', title: 'Returned', bytes: clean.bytes },
@@ -195,12 +213,46 @@ try {
   assert.equal((await fetch(active.origin + '/api/workspace')).status, 401);
   assert.equal((await fetch(active.origin + '/api/workspace', { headers: { Authorization: `Bearer ${active.token}`, Origin: 'https://untrusted.invalid' } })).status, 403);
   assert.equal((await active.api()).totals.matters, 0);
+  assert.equal((await active.api()).interfaceVersion, 33, 'Packaged engine includes the current chat-first and image interfaces');
+  if (browserPython) {
+    const config = join(root, 'onboarding-browser.json');
+    writeFileSync(config, JSON.stringify({ url: `${active.origin}/#token=${active.token}`, root }), { mode: 0o600 });
+    const browser = Bun.spawn([browserPython, join(repo, 'e2e/workspace-onboarding-scroll-smoke.py'), config], { cwd: repo, stdout: 'pipe', stderr: 'pipe' });
+    const timer = setTimeout(() => browser.kill('SIGKILL'), 90_000);
+    try {
+      const [out, err, exit] = await Promise.all([new Response(browser.stdout).text(), new Response(browser.stderr).text(), browser.exited]);
+      assert.equal(exit, 0, err); assert.ok(out.includes('PASS')); pass('first-run AI setup scrolling in the packaged UI');
+    } finally { clearTimeout(timer); }
+  }
+  const emptyPractice = await active.api('/practice-document');
+  assert.equal(emptyPractice.body, ''); assert.equal(emptyPractice.saved, null);
+  const practiceText = '# Packaged practice\n\nFor construction disputes, preserve chronology.\n\nFor tax audits, identify missing records.\n\nKeep useful detail — あ 🧭';
+  const practiceDraft = await active.api('/practice-document', { body: practiceText, useInChats: true, expectedBasis: emptyPractice.basis });
+  const practice = await active.api('/practice-document/identity', { name: 'Synthetic Avery', expectedBasis: practiceDraft.basis });
+  assert.equal(practice.body, practiceText + '\n\nMy name is Synthetic Avery.');
+  assert.equal(practice.word.author, 'Counsel', 'Identity-only confirmation must not silently change the Word author');
+  assert.equal((await active.api()).practiceDocument.basis, practice.basis);
+  pass('compiled free-form practice document, exact identity confirmation and unified snapshot');
   const matter = await active.api('/matters', { title: 'Packaged matter' });
   const word = await active.api('/files', { name: 'Packaged original.docx', matterId: matter.id, base64: Buffer.from(bytes).toString('base64') });
   const pdf = await active.api('/files', { name: 'Packaged evidence.pdf', matterId: matter.id, base64: Buffer.from(pdfBytes).toString('base64') });
   assert.ok(word.latest.body.includes('given orally')); assert.equal(pdf.latest.extraction.pages, 3);
   assert.deepEqual(await active.original(word.latest.id), new Uint8Array(bytes));
   assert.deepEqual(await active.original(pdf.latest.id), new Uint8Array(pdfBytes));
+  const screenshotBytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j5ioAAAAASUVORK5CYII=', 'base64');
+  const screenshot = await active.api('/files', { name: 'Packaged screenshot.png', base64: screenshotBytes.toString('base64') });
+  assert.equal(screenshot.latest.body, null, 'Image intake must not invent OCR text');
+  assert.deepEqual(screenshot.latest.extraction.image, { mediaType: 'image/png', width: 1, height: 1 });
+  const previewPath = active.origin + `/api/workspace/source-revisions/${screenshot.latest.id}/image`;
+  assert.equal((await fetch(previewPath)).status, 401);
+  const preview = await fetch(previewPath, { headers: { Authorization: `Bearer ${active.token}` } });
+  assert.equal(preview.status, 200); assert.equal(preview.headers.get('content-type'), 'image/png');
+  assert.deepEqual(Buffer.from(await preview.arrayBuffer()), screenshotBytes);
+  const instructions = await active.api('/files', { name: 'notes-839.txt', base64: Buffer.from('I prefer complete, direct answers. My writing style is plain and specific.').toString('base64') });
+  const candidates = await active.api('/practice-document/sources');
+  assert.ok(candidates.items.some((item: any) => item.revisionId === instructions.latest.id));
+  assert.equal((await active.api('/practice-document')).basis, practice.basis, 'Discovering instructions cannot apply them');
+  pass('compiled screenshot intake/authenticated previews and content-based instruction discovery without activation');
   const backup = await active.api('/backups/prepare', {});
   const download = await fetch(active.origin + backup.downloadUrl); assert.equal(download.status, 200);
   const archive = join(root, 'synthetic.counsel-backup'); writeFileSync(archive, new Uint8Array(await download.arrayBuffer()), { mode: 0o600 });
@@ -226,6 +278,12 @@ try {
     assert.equal((await active.api('/matters/' + matter.id)).title, 'Packaged matter');
     assert.deepEqual(await active.original(word.latest.id), new Uint8Array(bytes));
     assert.deepEqual(await active.original(pdf.latest.id), new Uint8Array(pdfBytes));
+    assert.deepEqual(await active.original(screenshot.latest.id), new Uint8Array(screenshotBytes));
+    const recoveredPractice = await active.api('/practice-document');
+    assert.equal(recoveredPractice.body, practice.body);
+    assert.equal(recoveredPractice.identityName, 'Synthetic Avery');
+    assert.equal(recoveredPractice.word.author, 'Counsel');
+    assert.equal(recoveredPractice.basis, practice.basis);
     await active.stop(); active = undefined;
   }
   assert.ok(!existsSync(canary)); assert.ok(!existsSync(join(home, '.counsel/workspaces')));

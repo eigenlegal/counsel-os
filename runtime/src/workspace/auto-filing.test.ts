@@ -129,7 +129,7 @@ test('restart recovers completed results but pauses uncertain in-flight calls; b
   const recovered = setup(); await run(recovered.chat); expect(recovered.model.requests).toEqual([]);
   expect(store.autoFiling.status()).toMatchObject({ready:1,settings:{mode:'paused'}});
   store.autoFiling.control({ action:'resume',expectedRevisionId:store.autoFiling.settings()!.revisionId });
-  const backup = await createWorkspaceBackup(store.databasePath); expect((await inspectWorkspaceBackup(backup.bytes)).schemaVersion).toBe(19);
+  const backup = await createWorkspaceBackup(store.databasePath); expect((await inspectWorkspaceBackup(backup.bytes)).schemaVersion).toBe(20);
   expect(store.autoFiling.settings()!.mode).toBe('running');
   const path=join(root,'saved.counsel-backup'); writeFileSync(path,backup.bytes); const restored=await restoreWorkspaceBackup(path,root);
   const copy = new WorkspaceStore({databasePath:restored.databasePath}); try { expect(copy.autoFiling.status()).toMatchObject({ready:1,settings:{mode:'paused'}}); } finally {copy.close();}

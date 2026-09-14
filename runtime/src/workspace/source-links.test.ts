@@ -121,7 +121,7 @@ test('dismissal survives unrelated activity and backup/restart; a later relevant
   expect(store.upkeep.status({ view: 'dismissed' }).items.some(i => i.targetId === note.id)).toBe(true);
   // Backup with the coalesced dependency refresh still pending.
   await imported('future.md', 'Arrived later');
-  const backup = await createWorkspaceBackup(store.databasePath); expect((await inspectWorkspaceBackup(backup.bytes)).schemaVersion).toBe(19);
+  const backup = await createWorkspaceBackup(store.databasePath); expect((await inspectWorkspaceBackup(backup.bytes)).schemaVersion).toBe(20);
   const file = join(root, 'fixture.counsel-backup'); writeFileSync(file, backup.bytes);
   const restored = await restoreWorkspaceBackup(file, join(root, 'restored'));
   store.close(); store = new WorkspaceStore({ databasePath: restored.databasePath }); drain();
@@ -156,7 +156,7 @@ test('schema 16 migrates intact, including exact dismissed findings, and queues 
   writeFileSync(legacyPath, legacy.serialize()); legacy.close();
   const copy = new WorkspaceStore({ databasePath: legacyPath });
   try { expect(copy.upkeep.status({ view: 'dismissed' }).items[0]).toMatchObject({ targetId: id, version, title: 'Old finding' });
-    expect((await inspectWorkspaceBackup((await createWorkspaceBackup(legacyPath)).bytes)).schemaVersion).toBe(19);
+    expect((await inspectWorkspaceBackup((await createWorkspaceBackup(legacyPath)).bytes)).schemaVersion).toBe(20);
   } finally { copy.close(); }
 });
 

@@ -4,6 +4,7 @@ import { ErrorNotice, fullDate } from './components';
 import type { DraftSummary } from '../../../src/workspace/draft-types';
 
 export function draftHref(key: string) {
+  if (key === 'practice-document') return href('knowledge', { section: 'preferences', view: 'edit' });
   if (key === 'working-preferences') return href('knowledge', { section: 'preferences', view: 'documents' });
   const [, kind, matter, fresh] = key.split(':');
   return kind === 'new' ? href('home', { ...(matter ? {matter} : {}), ...(fresh ? {new: fresh} : {}) }) : href('home', {id: kind});

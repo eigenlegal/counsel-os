@@ -17,6 +17,14 @@ import {
 } from './claude-code';
 
 let root: string;
+
+test('Claude CLI streaming input carries raster bytes without enabling local tools', async () => {
+  const provider = new WorkspaceClaudeCodeProvider('synthetic', 'subscription', runtime);
+  const events: StepEvent[] = [];
+  for await (const event of provider.run({ tenant: 'workspace', system: 'Synthetic', tools: [], messages: [{ role: 'user', content: 'image transport fixture' }],
+    images: [{ id: 'image-fixture', title: 'Screenshot', mediaType: 'image/png', data: 'c3ludGhldGlj' }] })) events.push(event);
+  expect(events.find(event => event.type === 'done')).toMatchObject({ output: '1 image parts received' });
+});
 let store: WorkspaceStore;
 let runtime: ClaudeRuntime;
 beforeEach(() => {
@@ -146,6 +154,7 @@ describe('Claude Code CLI connection', () => {
     expect(JSON.stringify(state.args)).not.toContain('Bearer');
     expect(JSON.stringify(state.env)).not.toContain('SYNTHETIC-AMBIENT');
     expect(state.tools).toEqual([
+      'counsel_fetch_webpage',
       'counsel_lookup_statute',
       'counsel_lookup_authority',
       'counsel_read_entity',
@@ -154,6 +163,8 @@ describe('Claude Code CLI connection', () => {
       'counsel_prepare_redline',
       'counsel_read_guide',
       'counsel_list_records',
+      'counsel_read_practice',
+      'counsel_propose_practice',
       'counsel_propose_preferences',
       'counsel_propose_matter_brief',
       'counsel_prepare_output',

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { isImageMedia } from '../../../src/workspace/image-types';
 import type {
   SourceCollection,
   SourceLibraryPage,
@@ -109,7 +110,7 @@ export function SourceShelf({
               <span className="resource-copy">
                 <span className="resource-title">
                   <strong>{file.title}</strong>
-                  <Status value={file.textStatus} />
+                  <Status value={isImageMedia(file.mediaType) ? 'image' : file.textStatus} />
                 </span>
                 <p>
                   {file.preview ||

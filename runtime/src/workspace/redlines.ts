@@ -76,7 +76,8 @@ export async function generateRedline(bytes: Uint8Array, input: RedlineInput, si
     const result = JSON.parse(Buffer.concat(chunks).toString('utf8'));
     if (result.error) throw new WorkspaceConflictError(String(result.error).slice(0, 2000));
     const output = Buffer.from(result.bytes, 'base64');
-    if (!output.length || output.length > 5_000_000) throw new WorkspaceConflictError('Invalid or oversized redline output.');
+    if (!output.length) throw new WorkspaceConflictError('The Word worker returned an empty output. No file was saved; the original is unchanged.');
+    if (output.length > 5_000_000) throw new WorkspaceConflictError(`The generated Word copy is ${(output.length / 1_000_000).toFixed(2)} MB, above the 5 MB output limit (original: ${(bytes.length / 1_000_000).toFixed(2)} MB). This is an output-package size limit, not a revision-count or source-validation failure. No file was saved.`);
     return { bytes: output, report: result.report as RedlineResult };
   } finally {
     clearTimeout(timer); signal.removeEventListener('abort', stop); stop();

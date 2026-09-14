@@ -4,6 +4,7 @@ import { ErrorNotice } from './components';
 import { Icon } from './icons';
 import { useDocumentDrop } from './document-drop';
 import { fileBase64 } from './import-files';
+import { IMAGE_MAX_BYTES, isImageName } from '../../../src/workspace/image-types';
 
 export function DocumentUpload({
   matterId,
@@ -41,12 +42,12 @@ export function DocumentUpload({
       return;
     }
     for (const file of files) {
-      if (!/\.(txt|md|docx|pdf)$/i.test(file.name)) {
-        setError(`${file.name}: Choose a .docx, .pdf, .txt or .md file. Convert legacy .doc files to .docx first. No files from this selection were uploaded.`); return;
+      if (!/\.(txt|md|docx|pdf|png|jpe?g|webp)$/i.test(file.name)) {
+        setError(`${file.name}: Choose a document or a PNG, JPEG or WebP image. Convert legacy .doc files to .docx first. No files from this selection were uploaded.`); return;
       }
-      const limit = /\.(txt|md)$/i.test(file.name) ? 500_000 : 25_000_000;
+      const limit = /\.(txt|md)$/i.test(file.name) ? 500_000 : isImageName(file.name) ? IMAGE_MAX_BYTES : 25_000_000;
       if (!file.size || file.size > limit) {
-        setError(`${file.name}: Choose a nonempty file of ${limit === 500_000 ? '500 KB' : '25 MB'} or less. No files from this selection were uploaded.`); return;
+        setError(`${file.name}: Choose a nonempty file of ${limit === 500_000 ? '500 KB' : limit === IMAGE_MAX_BYTES ? '7 MB' : '25 MB'} or less. No files from this selection were uploaded.`); return;
       }
     }
     inFlight.current = true;
@@ -77,12 +78,12 @@ export function DocumentUpload({
       <label className={`file-drop-label ${drop.dragging ? 'dragging' : ''}`} {...drop.handlers}>
         <Icon name="attach" size={23} />
         <strong>{busy ? 'Reading your document…' : drop.dragging ? 'Drop to add documents' : maxFiles === 1 ? 'Drop a document here or choose a file' : 'Drop documents here or choose files'}</strong>
-        <span>Word .docx or PDF up to 25 MB · text or Markdown up to 500 KB</span>
+        <span>Word .docx or PDF up to 25 MB · text or Markdown up to 500 KB<br />PNG, JPEG or WebP images up to 7 MB each · 20 MB of images per chat</span>
         <input
           aria-label="Upload document"
           type="file"
           multiple={maxFiles > 1}
-          accept=".txt,.md,.docx,.pdf"
+          accept=".txt,.md,.docx,.pdf,.png,.jpg,.jpeg,.webp"
           disabled={busy || disabled}
           onChange={(event) => {
             const files = Array.from(event.target.files ?? []);
@@ -95,7 +96,7 @@ export function DocumentUpload({
       <p className="fine-print">
         Original retained locally. PDF text extraction supports up to 300 pages; scanned pages need
         OCR, which is not connected yet. Word changes and comments remain marked in extracted text.
-        Uploading makes no model call.
+        Screenshots are shared as images when you send a chat; a vision-capable model is needed. Uploading makes no model call.
       </p>
       {error && <ErrorNotice message={error} />}
     </div>

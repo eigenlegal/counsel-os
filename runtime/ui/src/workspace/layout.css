@@ -1,0 +1,54 @@
+/* One outer frame for workspace pages, with narrower left-anchored content.
+   Only conversation canvases and focused onboarding center their own content. */
+.workspace-app {
+  --workspace-page-width: 1550px;
+  --workspace-form-width: 980px;
+  --workspace-reading-width: 840px;
+  --workspace-inspector-width: 280px;
+  --workspace-column-gap: 24px;
+  --workspace-gutter: 44px;
+  --workspace-panel-padding: 28px;
+  --workspace-page-top: 38px;
+  --workspace-page-bottom: 60px;
+}
+.workspace-frame {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: var(--workspace-page-width);
+  margin-inline: auto;
+  padding-inline: var(--workspace-gutter);
+}
+.topbar-frame {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.demo-banner-frame {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-block: 10px;
+}
+@media (max-width: 1250px) {
+  .workspace-app {
+    --workspace-gutter: 30px;
+    --workspace-panel-padding: 24px;
+    --workspace-page-top: 32px;
+    --workspace-page-bottom: 50px;
+    --workspace-inspector-width: 235px;
+  }
+}
+@media (max-width: 760px) {
+  .workspace-app {
+    --workspace-gutter: 22px;
+    --workspace-panel-padding: 20px;
+    --workspace-page-top: 27px;
+    --workspace-page-bottom: 44px;
+  }
+  .demo-banner-frame {
+    align-items: flex-start;
+    gap: 9px;
+  }
+}

@@ -35,6 +35,24 @@ function usage(inputTotal: number, outputTotal: number) {
 }
 
 describe('DirectProvider', () => {
+  test('the direct SDK receives actual image content alongside the user question', async () => {
+    let received: any;
+    const model = new MockLanguageModelV3({ doStream: async options => {
+      received = options.prompt;
+      return { stream: simulateReadableStream({ chunks: [
+        { type: 'text-start', id: '1' }, { type: 'text-delta', id: '1', delta: 'Image received.' }, { type: 'text-end', id: '1' },
+        { type: 'finish', finishReason: finishReason('stop'), usage: usage(2, 2) },
+      ] }) };
+    } });
+    const provider = new DirectProvider({ id: 'mock/vision', model, capabilities: { tools: true, caching: false, thinking: false, contextTokens: 1000, auth: 'apikey' } });
+    const bytes = Buffer.from('synthetic raster payload');
+    const events = await collect(provider.run({ tenant: 'default', system: 's', messages: [{ role: 'user', content: 'What is shown?' }], tools: [],
+      images: [{ id: 'image-fixture', title: 'Screen', mediaType: 'image/png', data: bytes.toString('base64') }] }));
+    const user = received.find((message: any) => message.role === 'user');
+    expect(user.content.find((part: any) => part.type === 'file')).toMatchObject({ mediaType: 'image/png', data: { type: 'data', data: bytes } });
+    expect(user.content.at(-1)).toEqual({ type: 'text', text: 'What is shown?' });
+    expect(events.some(event => event.type === 'done')).toBe(true);
+  });
   test('the step signal reaches the model and aborting settles the stream loop', async () => {
     // A real provider aborts its own HTTP request when the signal fires; the
     // mock stands in for that by erroring its stream. What is under test is

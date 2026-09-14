@@ -74,7 +74,8 @@ export async function draftBrief(store: WorkspaceStore, provider: ModelProvider,
   const profile = store.getProfile();
   const context = { matter: { id: matter.id, title: matter.title }, currentForm: input.draft,
     records, omittedRecords, profile: profile?.applyToChats ? profile : null,
-    workingInstructions: reviewInstructions(store.workingPreferenceSnapshot()) };
+    practiceDocument: store.practiceInstructionContext(),
+    workingInstructions: store.savedPracticeDocument() ? null : reviewInstructions(store.workingPreferenceSnapshot()) };
   try {
     signal.throwIfAborted();
     for await (const event of provider.run({ tenant: 'workspace', tools: [], maxToolCalls: 1, maxTokens: 9000,

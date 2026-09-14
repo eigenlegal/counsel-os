@@ -38,7 +38,9 @@ export async function qualifyMixedImport(store: WorkspaceStore, provider: ModelP
       externalSeparate:reference?.choice.destination==='source'&&reference.choice.collection==='external',
       noEarlyImport:store.catalog().sources.length===1&&store.catalog().knowledge.length===0&&store.getProfile()===null};
     if(Object.values(classified).some(value=>!value)) return {checks:classified,jobMessage:job.message,suggestions:job.suggestions.map(({path,choice,confidence})=>({path,choice,confidence}))};
-    store.imports.editChoices(created.id,{expectedRevisionId:ready.revisionId,changes:job.suggestions.map(item=>({entryId:item.entryId,choice:item.choice}))});
+    // Clear choices are already staged; this explicit qualification review also
+    // accepts the uncertain synthetic row before the separate final import.
+    store.imports.editChoices(created.id,{expectedRevisionId:store.imports.get(created.id).revisionId,changes:job.suggestions.map(item=>({entryId:item.entryId,choice:item.choice}))});
     const links=store.imports.links(created.id), shares=links.items.filter(item=>item.canShare&&item.targetId===company!.entryId);
     store.imports.applyLinks(created.id,{expectedRevisionId:links.revisionId,expectedVersion:links.expectedVersion,linkIds:shares.map(item=>item.id),confirmAccessChanges:true});
     const reviewed=store.imports.get(created.id), saved=store.imports.commit(created.id,{expectedRevisionId:reviewed.revisionId,profile});
@@ -70,11 +72,11 @@ export async function qualifyMixedImport(store: WorkspaceStore, provider: ModelP
 /** Test oracle only, never production classification. */
 export function scriptedMixedSuggestions(request: StepRequest) {
   const context=JSON.parse(request.system.split('Context:\n').at(-1)!);
-  return {suggestions:context.files.map((file: {entryId:string;path:string;passages:string[]})=>{
+  return {suggestions:context.files.map((file: {entryId:string;path:string;evidence:Array<{id:string;text:string}>})=>{
     const nda=/starling\.md$|a17\.txt$|final\.txt$/.test(file.path), dispute=file.path.endsWith('employment.md');
     return {entryId:file.entryId,destination:file.path.includes('/standards/')?'position':'source',
       collection:file.path.includes('/standards/')?'practice':file.path==='Reading/article.md'?'external':'unfiled',
       matterId:nda?context.candidateMatters.find((matter:{title:string})=>matter.title==='Project Starling NDA').id:dispute?context.candidateMatters.find((matter:{title:string})=>matter.title==='Northstar employment dispute').id:null,
-      matterTitle:null,whenToUse:'',reason:'Synthetic oracle for application behavior, not classification quality.',confidence:file.path==='Other/meeting.txt'?'low':'high',evidenceQuote:file.passages[0]!.slice(0,100)};
+      matterTitle:null,whenToUse:'',reason:'Synthetic oracle for application behavior, not classification quality.',confidence:file.path==='Other/meeting.txt'?'low':'high',evidenceRef:file.evidence[1]!.id};
   })};
 }

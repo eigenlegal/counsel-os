@@ -16,6 +16,8 @@ import { MatterClient } from './Clients';
 import { BriefDraftAssist } from './BriefDraftAssist';
 import type { BriefDraftFields } from '../../../src/workspace/brief-drafting';
 
+import { ContextualChatHints } from './CapabilityHints';
+
 export function MatterPage({
   matter,
   brief,
@@ -119,6 +121,7 @@ export function MatterPage({
                       'Add the background and the question you are working through.'
                 }
               />
+              <ContextualChatHints matterId={matter.id} />
               {brief && (
                 <p className="fine-print">
                   Your brief · updated {dateLabel(brief.recordedAt)}. Not an automatically generated

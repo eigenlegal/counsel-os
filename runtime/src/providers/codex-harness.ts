@@ -520,6 +520,7 @@ export class CodexHarnessProvider implements ModelProvider {
   }
 
   async *run(req: StepRequest): AsyncIterable<StepEvent> {
+    if (req.images?.length) { yield { type: 'error', message: 'This legacy harness does not support image attachments. Use the standalone workspace connection.' }; return; }
     // Checked first, before anything is created: `resumeThread` needs the
     // same `CODEX_HOME` the original thread ran under (session/thread state
     // lives under it), so resuming into a fresh ephemeral home — which

@@ -26,7 +26,8 @@ export async function draftPractice(store: WorkspaceStore, provider: ModelProvid
   const context = { draft: input.draft, scope: matter ? { matterId: matter.id, title: matter.title,
     summary: (store.matterBrief(matter.id)?.summary ?? matter.summary).slice(0, 8000) } : 'entire practice',
     profile: profile?.applyToChats ? profile : null,
-    workingInstructions: reviewInstructions(store.workingPreferenceSnapshot()) };
+    practiceDocument: store.practiceInstructionContext(),
+    workingInstructions: store.savedPracticeDocument() ? null : reviewInstructions(store.workingPreferenceSnapshot()) };
   try {
     signal.throwIfAborted();
     for await (const event of provider.run({ tenant: 'workspace', tools: [], maxToolCalls: 1, maxTokens: 6500,

@@ -10,11 +10,30 @@ import { openDocx } from '../docx/package';
 import { modelOf, textOf } from '../docx/model';
 import { generateRedline, RedlineInput } from './redlines';
 import { createWorkspaceBackup, restoreWorkspaceBackup } from './backups';
+import { unzipSync, zipSync } from 'fflate';
 
 let store: WorkspaceStore, root: string;
 beforeEach(() => { root = mkdtempSync(join(tmpdir(), 'counsel-redline-test-')); store = new WorkspaceStore({ databasePath: join(root, 'workspace.sqlite3') }); });
 afterEach(() => { store.close(); rmSync(root, { recursive: true, force: true }); });
 const edits = [{ current: 'orally', proposed: 'in writing', comment: 'Use the agreed written-notice requirement.' }];
+test('the isolated worker handles embedded fonts, hyperlinks and displayed bullets without a partial copy', async () => {
+  const font = new Uint8Array(5_500_000).map((_, i) => i % 251);
+  const bytes = zipSync(unzipSync(buildDocx({ blocks: [
+    { runs: ['The ', { text: 'online terms', hyperlink: 'rId9' }, ' apply.'] },
+    { numId: '1', runs: ['Uptime: 99.9%'] },
+  ], numbering: { '1': [{ numFmt: 'bullet', lvlText: '•' }] }, rawParts: { 'word/fonts/font1.odttf': font } })), { level: 6 });
+  const result = await generateRedline(bytes, { sourceRevisionId: crypto.randomUUID(), edits: [
+    { current: 'The online terms apply.', proposed: 'The signed schedule applies.', comment: 'Use the negotiated version.' },
+    { current: '- Uptime: 99.9%', proposed: '- Uptime: 99.95% each month.' },
+  ] }, new AbortController().signal, 'Synthetic Counsel');
+  expect(result.report.applied).toHaveLength(2);
+  expect(result.bytes.length).toBeLessThan(100_000);
+  const pkg = openDocx(result.bytes);
+  expect(modelOf(pkg).paragraphs.map(p => textOf(p, 'accept'))).toEqual(['The signed schedule applies.', 'Uptime: 99.95% each month.']);
+  expect(modelOf(pkg).paragraphs.map(p => textOf(p, 'reject'))).toEqual(['The online terms apply.', 'Uptime: 99.9%']);
+  expect(pkg.partBytes('word/fonts/font1.odttf')).toEqual(font);
+  expect(pkg.partText('word/comments.xml')).toContain('Synthetic Counsel');
+});
 test('whole-section insertions use read anchors and saved attribution, retain exact receipts and restore unchanged', async () => {
   const source = await original(buildDocx({ blocks: [{ style: 'Heading1', runs: ['Notices'] }, { runs: ['Notices must be in writing.'] },
     { style: 'Heading1', runs: ['Signatures'] }], header: [{ runs: ['Preserved header'] }] }));

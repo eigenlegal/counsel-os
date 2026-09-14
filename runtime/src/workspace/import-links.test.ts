@@ -106,7 +106,7 @@ test('reviewed new-matter links survive backup, reuse a single matter and can be
   const batch = await stage({ 'note.md': '[[support]]', 'support.md': 'Shared supporting facts' });
   store.imports.edit(batch.id, batch.entries[0]!.id, { expectedRevisionId: batch.revisionId, choice: { ...batch.entries[0]!.choice, matterTitle: 'New engagement' } });
   const reviewed = apply(batch.id, store.imports.links(batch.id));
-  const backup = await createWorkspaceBackup(store.databasePath); expect((await inspectWorkspaceBackup(backup.bytes)).schemaVersion).toBe(19);
+  const backup = await createWorkspaceBackup(store.databasePath); expect((await inspectWorkspaceBackup(backup.bytes)).schemaVersion).toBe(20);
   const backupPath = join(root, 'fixture.counsel-backup'); writeFileSync(backupPath, backup.bytes);
   const restored = await restoreWorkspaceBackup(backupPath, join(root, 'restored'));
   const copy = new WorkspaceStore({ databasePath: restored.databasePath });

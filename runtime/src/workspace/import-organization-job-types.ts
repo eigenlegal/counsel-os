@@ -12,7 +12,7 @@ export const OrganizationJobControl = z.object({
 }).strict();
 export const OrganizationJobApply = z.object({
   expectedRevisionId: z.string().uuid(), expectedBatchRevisionId: z.string().uuid(),
-  selection: z.enum(['high', 'selected']), entryIds: ImportEntryIds.optional(),
+  selection: z.enum(['high', 'selected', 'unfiled']), entryIds: ImportEntryIds.optional(),
 }).strict().refine(value => value.selection === 'selected' ? !!value.entryIds : !value.entryIds);
 export const OrganizationJobState = z.object({
   request: OrganizationJobStart,
@@ -28,8 +28,16 @@ export const OrganizationSuggestion = z.object({
   sharedGroups: z.array(z.object({ title: z.string(), evidence: z.string() }).strict()).max(40),
 }).strict();
 export type OrganizationSuggestion = z.infer<typeof OrganizationSuggestion>;
+export type OrganizationFailure = { entryId: string; path: string; before: ImportChoice; reason: string };
+export type ImportFilingSummary = {
+  matters: number; practice: number; external: number; unfiled: number; profiles: number;
+  groups: Array<{ title: string; files: number; isNew: boolean }>; groupCount: number;
+};
 export type OrganizationJob = z.infer<typeof OrganizationJobState> & {
   revisionId: string; eligible: number; analyzed: number; high: number; attention: number; applied: number;
   skipped: number; waiting: number; total: number; offset: number;
-  suggestions: Array<OrganizationSuggestion & { applied: boolean; stale: boolean }>;
+  failed: number; retrying: number; reviewed: number; remaining: number;
+  failures: Array<OrganizationFailure & { attempts: number; protected: boolean }>;
+  summary: ImportFilingSummary;
+  suggestions: Array<OrganizationSuggestion & { applied: boolean; stale: boolean; reviewed?: boolean }>;
 };

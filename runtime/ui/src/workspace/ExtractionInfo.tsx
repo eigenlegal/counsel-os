@@ -25,9 +25,9 @@ export function ExtractionInfo({ revision }: { revision: SourceRevision }): JSX.
         </button>
       )}
       {revision.extraction && (
-        <details open={revision.textStatus !== 'ready'}>
+        <details open={revision.textStatus !== 'ready' && !revision.extraction.image}>
           <summary>
-            About this extraction
+            {revision.extraction.image ? 'About this image' : 'About this extraction'}
             {revision.extraction.pages ? ` · ${revision.extraction.pages} pages` : ''}
           </summary>
           <ul>
@@ -36,7 +36,7 @@ export function ExtractionInfo({ revision }: { revision: SourceRevision }): JSX.
             ))}
           </ul>
           <p className="fine-print">
-            Parser: {revision.extraction.parser}. Citations point to this saved text version.
+            {revision.extraction.image ? 'Image bytes are retained unchanged. Visual interpretation is not exact-text verification.' : `Parser: ${revision.extraction.parser}. Citations point to this saved text version.`}
           </p>
         </details>
       )}

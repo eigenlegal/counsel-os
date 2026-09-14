@@ -6,6 +6,8 @@ The [packaging follow-through roadmap](desktop-roadmap.md) reconciles the older 
 
 ## Version ownership
 
+Iteration is browser-first: implement and test in the local HTML workspace, then batch accepted changes into a newly qualified desktop package. Never silently replace the installed app during browser development. Source/browser changes do not update an existing installer or installed app. Backend changes require a dev-server restart; UI-only changes can be deployed as new hashed assets without restarting active chats.
+
 - `desktop/release.json` owns desktop `version`, numeric `build` and `channel`.
 - `desktop/macos/Info.plist` is a build template. Do not install the source folder directly.
 - `desktop:build` validates the manifest, generates Info.plist, packages the engine and records the independent desktop version in its receipt.

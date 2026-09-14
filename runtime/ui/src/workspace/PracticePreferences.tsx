@@ -6,11 +6,14 @@ import { ProfileCard } from './Profile';
 import { WorkingPreferences } from './WorkingPreferences';
 import { EntityDirectory } from './EntityDirectory';
 import { FilenameExamples } from './FilenameExamples';
+import { PracticeDocumentPage } from './PracticeDocument';
 
 /** One home for personal context and review preferences; viewing never changes sharing or settings. */
 export function PracticePreferences({ data, changed, editProfile, view }: {
   data: Snapshot; changed: () => void; editProfile: () => void; view: string | null;
 }): JSX.Element {
+  if (data.practiceDocument) return <PracticeDocumentPage value={data.practiceDocument} changed={changed} startEditing={view === 'edit'} sourcePicker={(data.interfaceVersion ?? 0) >= 33}
+    imported={(data.sources ?? []).filter(file => /^(?:practice[ -])?profile(?:\.md)?$|^(?:working|practice)[ -]preferences(?:\.md)?$/i.test(file.title)).slice(0, 6)} />;
   const documents = view === 'documents';
   const writing = view === 'writing';
   const entities = view === 'entities';

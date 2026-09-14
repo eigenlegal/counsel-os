@@ -20,11 +20,12 @@ The native app wraps the same workspace engine and interface. The plugin has its
 - **Use your practice.** Keep positions, methods, templates, writing and document-review preferences, and your own entity/signatory details in Practice. External law, research, and Counsel guides live in Sources; deal documents belong with their matters.
 - **Bring your files.** Drop supported files or folders into a durable import queue. Optional AI assistance suggests organization from filenames and extracted content; review the filing and supporting links before importing. Original files are retained.
 - **Inspect the evidence.** Relevant permitted material is retrieved automatically. Response context distinguishes available records from passages actually read, and citations resolve to recorded versions.
+- **Read linked public terms.** Counsel can retrieve relevant public pages and PDFs from URLs in your request or documents it reads, follow incorporated links, and retain source copies with retrieval receipts and exact citations. It does not use your browser login or send document text to those sites. Script-only, blocked or private pages may still need an upload.
 - **Work on documents.** Extract text from PDF and Word files; produce supported Word edits, native tracked changes, comments, clean proposals, and comparison reports. Set the author shown on new changes and comments, plus your preferred output filenames.
 - **Keep working records current.** Successful matter chats can update routine briefs with visible changes and undo. Practice-wide instructions and standards change through explicit requests and review—not by treating a concession on one deal as a new default.
 - **Return without starting over.** Search and pin recent work, archive chats, recover items from Trash, and back up or restore the workspace. Local upkeep checks affected records and periodically reconciles while the app is running; AI filing assistance is separately controlled.
 
-These are implemented workflows, not a promise that every request retrieves every relevant fact. Retrieval is bounded, document extraction can be partial, and unsupported document structures need review. Scanned-PDF OCR, comprehensive primary-source research, and automatic learning from every redline correction are not complete. Current primary-source connectors cover specific U.S. Code and eCFR citations, not all jurisdictions or case law.
+These are implemented workflows, not a promise that every request retrieves every relevant fact. Retrieval is bounded, document extraction can be partial, and unsupported document structures need review. Scanned-PDF OCR, comprehensive primary-source research, general web search, and automatic learning from every redline correction are not complete. Dedicated legal connectors cover specific U.S. Code and eCFR citations; public URL retrieval does not certify legal authority, currency or the version governing an agreement.
 
 <a id="installation"></a>
 
@@ -41,6 +42,8 @@ bun run workspace --demo
 ```
 
 The launcher builds the interface, opens a browser, and prints a private launch link. Keep the terminal running and do not share that link. The example workspace is separate and persistent: files you add are not reset on restart.
+
+Development changes are tested in the local browser version first. Desktop installers are rebuilt in batches after those changes are reviewed and qualified; an existing installed package does not receive source or browser updates automatically.
 
 For a personal workspace instead:
 

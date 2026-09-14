@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, userEvent, waitFor } from '../../test/dom';
 
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, setSystemTime, test } from 'bun:test';
 import { TOKEN_KEY } from '../../api/token';
 import type { DocketView, Health, PendingProposal, ThreadHeader, VaultOverview } from '../../api/types';
 import { docketDate, docketHeadParts, HomePage } from './HomePage';
@@ -85,6 +85,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  setSystemTime();
   globalThis.fetch = realFetch;
   sessionStorage.clear();
   history.replaceState(null, '', '/');
@@ -96,6 +97,9 @@ function mount(over: Partial<Parameters<typeof HomePage>[0]> = {}) {
 
 describe('HomePage', () => {
   test('greeting, honest subline, matters with leaders and next-actions, conversations', async () => {
+    // Keep this future-deadline assertion independent of the build date.
+    setSystemTime(new Date('2026-09-01T12:00:00'));
+    overviewBody = { ...overview, matters: overview.matters.map(matter => ({ ...matter, mtimeMs: Date.now() - 2 * 3_600_000 })) };
     mount();
     expect(document.querySelector('.v2-hi')?.textContent).toMatch(/^Good (morning|afternoon|evening)\.$/);
     await waitFor(() => expect(screen.getByText('Vendora × Worldpay — documentation')).toBeTruthy());

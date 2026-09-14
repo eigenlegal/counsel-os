@@ -2,6 +2,11 @@ import { createHash, randomUUID } from 'node:crypto';
 import { sourceOrganizationPreview, applySourceOrganization, type SourceOrganizationSelection, type SourceOrganizationApply } from './source-organization';
 import { Publication } from './authority-types';
 import { publisherKey, publisherHash, type PublisherSnapshot } from './authorities';
+import type { WebSnapshot } from './web-sources';
+import { publicUrl, WEB_MAX_BYTES } from './public-web';
+import { practiceSources, PracticeSourceQuery } from './practice-intake';
+import { extractImage } from './images';
+import { isImageName } from './image-types';
 import { existsSync, lstatSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import type { Database } from 'bun:sqlite';
@@ -26,6 +31,7 @@ import {
   type ReferenceChange,
 } from './source-updates';
 import { ProfileInput, WorkspaceProfile } from './profile';
+import { PracticeDocument, PracticeDocumentView, PracticeDocumentInput, PracticeDocumentProposal, PracticeDocumentReview, legacyPracticeContent } from './practice-document';
 import {
   OutputInput,
   MatterBriefInput,
@@ -212,18 +218,29 @@ export class WorkspaceStore {
   }
 
   getProfile(): WorkspaceProfile | null {
+    const document = this.savedPracticeDocument();
+    if (document) return document.identityName ? WorkspaceProfile.parse({ name: document.identityName, applyToChats: document.useInChats,
+      id: document.revisionId, revisionId: document.revisionId, version: document.version, updatedAt: document.updatedAt }) : null;
     const value = this.setting('practice-profile');
     return value === null ? null : WorkspaceProfile.parse(value);
   }
   getWorkingPreferences(): WorkingPreferences | null {
+    const document = this.savedPracticeDocument();
+    if (document) return WorkingPreferences.parse({ authorMode: 'custom', customAuthor: document.word.author,
+      filenamePattern: document.word.filenamePattern, redlineLabel: document.word.redlineLabel, draftLabel: document.word.draftLabel,
+      revisionId: document.revisionId, version: document.version, updatedAt: document.updatedAt });
     const value = this.setting('working-preferences');
     return value === null ? null : WorkingPreferences.parse(value);
   }
   getEntityRegistry(): EntityRegistry | null {
+    const document = this.savedPracticeDocument();
+    if (document) return EntityRegistry.parse({ ...document.entities, availableToChats: document.useInChats && document.entities.availableToChats,
+      revisionId: document.revisionId, version: document.version, updatedAt: document.updatedAt });
     const value = this.setting('entity-registry');
     return value === null ? null : EntityRegistry.parse(value);
   }
   saveEntityRegistry(raw: unknown): EntityRegistry {
+    if (this.savedPracticeDocument()) throw new WorkspaceConflictError('Your practice is now one document. Ask Counsel to update the recorded entity details from that document.');
     const { expectedRevisionId, ...fields } = EntityRegistryInput.parse(raw);
     return this.write(() => {
       const previous = this.getEntityRegistry();
@@ -236,6 +253,7 @@ export class WorkspaceStore {
     });
   }
   saveWorkingPreferences(raw: unknown): WorkingPreferences {
+    if (this.savedPracticeDocument()) throw new WorkspaceConflictError('Your practice is now one document. Edit Your practice or ask Counsel to update it in chat.');
     const { expectedRevisionId, ...fields } = WorkingPreferenceInput.parse(raw);
     return this.write(() => {
       const previous = this.getWorkingPreferences();
@@ -256,6 +274,77 @@ export class WorkspaceStore {
   }
   workingPreferenceSnapshot() {
     return preferenceSnapshot(this.getWorkingPreferences(), this.getProfile());
+  }
+  practiceInstructionContext() {
+    const document = this.savedPracticeDocument();
+    return document?.useInChats ? { revisionId: document.revisionId, body: document.body } : null;
+  }
+  savedPracticeDocument(): PracticeDocument | null {
+    const value = this.setting('practice-document');
+    return value === null ? null : PracticeDocument.parse(value);
+  }
+  practiceDocument(): PracticeDocumentView {
+    const saved = this.savedPracticeDocument();
+    const legacy = saved ? null : { profile: this.getProfile(), preferences: this.getWorkingPreferences(), entities: this.getEntityRegistry() };
+    const content = saved ?? legacyPracticeContent(legacy!.profile, legacy!.preferences, legacy!.entities);
+    return PracticeDocumentView.parse({ body: content.body, useInChats: content.useInChats, identityName: content.identityName, word: content.word, entities: content.entities,
+      // Includes all legacy revisions: a newer form/import edit must not be overwritten.
+      basis: textHash(JSON.stringify(saved ?? legacy)), saved });
+  }
+  practiceSources(raw: z.input<typeof PracticeSourceQuery>) { return practiceSources(this.db, raw); }
+  savePracticeDocument(raw: unknown): PracticeDocumentView {
+    const input = PracticeDocumentInput.parse(raw);
+    return this.write(() => {
+      const current = this.practiceDocument();
+      if (input.expectedBasis !== current.basis) throw new WorkspaceConflictError('Your practice changed in another window. Your draft is still here; review the latest text before saving.');
+      this.setSetting('practice-document', PracticeDocument.parse({ body: input.body, useInChats: input.useInChats,
+        identityName: current.identityName, word: current.word, entities: current.entities,
+        revisionId: randomUUID(), version: (current.saved?.version ?? 0) + 1, updatedAt: this.now() }));
+      return this.practiceDocument();
+    });
+  }
+  confirmPracticeIdentity(raw: unknown): PracticeDocumentView {
+    const input = z.object({ name: z.string().trim().min(1).max(200).refine(value => !/[\r\n\x00-\x1f]/.test(value)), expectedBasis: z.string() }).strict().parse(raw);
+    return this.write(() => {
+      const current = this.practiceDocument();
+      if (input.expectedBasis !== current.basis) throw new WorkspaceConflictError('Your practice changed. Review your current name before confirming.');
+      if (current.identityName && current.identityName !== input.name) throw new WorkspaceConflictError('To change an existing identity, update the practice document in chat so the text and attribution stay consistent.');
+      if (current.identityName === input.name) return current;
+      this.setSetting('practice-document', PracticeDocument.parse({ body: `${current.body}${current.body ? '\n\n' : ''}My name is ${input.name}.`,
+        useInChats: current.useInChats, identityName: input.name, word: current.word, entities: current.entities,
+        revisionId: randomUUID(), version: (current.saved?.version ?? 0) + 1, updatedAt: this.now() }));
+      return this.practiceDocument();
+    });
+  }
+  reviewPracticeDocument(turnId: string, raw: unknown): Turn {
+    const input = PracticeDocumentReview.parse(raw);
+    return this.write(() => {
+      const turn = this.conversations.turn(Id.parse(turnId));
+      if (turn.status !== 'complete' || !turn.state.practiceDocumentProposal) throw new WorkspaceConflictError('Only a completed response can offer a practice update.');
+      const proposal = PracticeDocumentProposal.parse(turn.state.practiceDocumentProposal);
+      if (proposal.id !== input.proposalId || !turn.request.includes(proposal.requestQuote)
+        || JSON.stringify(proposal.before) !== JSON.stringify(turn.state.practiceDocument)) throw new WorkspaceConflictError('This suggestion does not match its original practice context.');
+      const outcome = input.action === 'apply' ? 'applied' : input.action === 'undo' ? 'undone' : 'dismissed';
+      if (proposal.review === outcome) return turn;
+      if (input.action === 'undo' ? proposal.review !== 'applied' : proposal.review !== 'pending') throw new WorkspaceConflictError('This practice suggestion has already been reviewed.');
+      if (input.action !== 'dismiss') {
+        const current = this.practiceDocument();
+        if (current.basis !== (input.action === 'apply' ? proposal.before.basis : proposal.appliedBasis)) throw new WorkspaceConflictError('Your practice changed after this suggestion. This action cannot overwrite the newer version.');
+        const content = input.action === 'undo' ? proposal.before : {
+          body: proposal.body, useInChats: input.useInChats ?? current.useInChats,
+          identityName: proposal.identityName === undefined ? current.identityName : proposal.identityName,
+          word: proposal.word ?? current.word, entities: proposal.entities ?? current.entities,
+        };
+        this.setSetting('practice-document', PracticeDocument.parse({ body: content.body, useInChats: content.useInChats,
+          identityName: content.identityName, word: content.word, entities: content.entities,
+          revisionId: randomUUID(), version: (current.saved?.version ?? 0) + 1, updatedAt: this.now() }));
+        if (input.action === 'apply') proposal.appliedBasis = this.practiceDocument().basis;
+        else proposal.undoBasis = this.practiceDocument().basis;
+      }
+      proposal.review = outcome;
+      this.db.run("UPDATE conversation_turns SET state_json=json_set(state_json,'$.practiceDocumentProposal',json(?)) WHERE id=?", [JSON.stringify(proposal), turn.id]);
+      return this.conversations.turn(turn.id);
+    });
   }
   /** Explicit human review only. Tool calls can stage, never apply, these changes. */
   reviewPreferenceProposal(turnId: string, raw: unknown): Turn {
@@ -293,6 +382,7 @@ export class WorkspaceStore {
     });
   }
   saveProfile(raw: z.input<typeof ProfileInput>): WorkspaceProfile {
+    if (this.savedPracticeDocument()) throw new WorkspaceConflictError('Your practice is now one document. Edit Your practice or ask Counsel to update your identity in chat.');
     const { expectedRevisionId, ...fields } = ProfileInput.parse(raw);
     return this.write(() => {
       const previous = this.getProfile();
@@ -340,7 +430,7 @@ export class WorkspaceStore {
     const extracted =
       extension === 'pdf' || extension === 'docx'
         ? await extractDocument(bytes, extension)
-        : extractText(bytes, input.name);
+        : isImageName(input.name) ? extractImage(bytes, input.name) : extractText(bytes, input.name);
     return this.retainDocument(input, bytes, extracted);
   }
 
@@ -390,6 +480,38 @@ export class WorkspaceStore {
     });
   }
 
+  /** A fetched public page is an external reference, not verified law or a
+   * Practice instruction. Re-fetching retains old originals and citation IDs. */
+  retainWebSnapshot(snapshot: WebSnapshot): { source: Source; reused: boolean } {
+    const url = publicUrl(snapshot.url).href, extracted = ExtractedFile.parse(snapshot.extracted);
+    if (!['counsel-web-html-v1', 'counsel-web-pdf-v1', 'counsel-web-text-v1'].includes(extracted.extraction.parser)
+      || !snapshot.bytes.length || snapshot.bytes.length > WEB_MAX_BYTES)
+      throw new WorkspaceConflictError('Invalid public webpage snapshot.');
+    return this.write(() => {
+      const candidates = all<{ id: string }>(this.db, `SELECT s.id FROM sources s
+        JOIN source_revisions r ON r.source_id=s.id AND r.revision_no=(SELECT max(revision_no) FROM source_revisions WHERE source_id=s.id)
+        JOIN source_extractions e ON e.revision_id=r.id
+        WHERE s.kind='reference' AND r.provenance_json IS NOT NULL
+        AND json_extract(r.provenance_json,'$.origin')=?
+        AND json_extract(e.details_json,'$.parser') IN ('counsel-web-html-v1','counsel-web-pdf-v1','counsel-web-text-v1') LIMIT 2`, url);
+      if (candidates.length > 1) throw new WorkspaceConflictError('This URL has duplicate saved source series. Organize those records before fetching again.');
+      const current = candidates[0] ? this.getSource(candidates[0].id) : null;
+      if (current) {
+        requireActiveRecord(this.db, 'source', current.id);
+        if (current.latest.provenance.originalHash === publisherHash(snapshot.bytes)
+          && current.latest.body === extracted.body && current.latest.textStatus === extracted.textStatus) {
+          this.originalFile(current.latest.id);
+          return { source: current, reused: true };
+        }
+      }
+      const source = this.retainDocument({ name: snapshot.name, base64: '' }, snapshot.bytes, extracted,
+        current ? { sourceId: current.id, expectedRevisionId: current.latest.id } : undefined,
+        { title: snapshot.title, origin: url, newFiles: new Set() }, undefined,
+        { retrievedAt: snapshot.retrievedAt, mediaType: snapshot.mediaType });
+      return { source, reused: false };
+    });
+  }
+
   private retainDocument(
     input: z.infer<typeof FileInput>,
     bytes: Buffer,
@@ -397,6 +519,7 @@ export class WorkspaceStore {
     update?: { sourceId: string; expectedRevisionId: string },
     imported?: { title: string; origin: string; newFiles: Set<string> },
     published?: { publication: Publication; retrievedAt: string },
+    web?: { retrievedAt: string; mediaType: string },
   ): Source {
     if (this.databasePath === ':memory:')
       throw new Error('File import needs an on-disk workspace.');
@@ -429,6 +552,7 @@ export class WorkspaceStore {
             mediaType: published ? published.publication.publisher === 'ecfr' ? 'application/xml' : 'text/html' : extracted.mediaType,
             originalHash: hash,
             ...(published ? { ...published, author: published.publication.publisher === 'ecfr' ? 'Office of the Federal Register / Government Publishing Office' : 'U.S. House Office of the Law Revision Counsel' } : {}),
+            ...(web ?? {}),
           },
         };
         let source: Source;
@@ -442,8 +566,8 @@ export class WorkspaceStore {
           source = this.getSource(current.id);
         } else {
           source = this.createSource({
-            kind: published ? 'authority' : 'document',
-            ...(published ? { collection: 'external' as const } : {}),
+            kind: published ? 'authority' : web ? 'reference' : 'document',
+            ...(published || web ? { collection: 'external' as const } : {}),
             matterIds: input.matterId ? [input.matterId] : [],
             revision: revisionInput,
           });
@@ -918,7 +1042,7 @@ export class WorkspaceStore {
         const current = this.getSource(sourceId),
           expected = this.getSourceRevision(expectedRevisionId);
         requireActiveRecord(this.db, 'source', sourceId);
-        if (current.latest.provenance.publication)
+        if (current.latest.provenance.publication || current.latest.extraction?.parser.startsWith('counsel-web-'))
           throw new WorkspaceConflictError('Refresh this source from its publisher. Save your own document as a separate source.');
         if (expected.sourceId !== current.id)
           throw new WorkspaceConflictError('That version belongs to a different source.');
@@ -946,7 +1070,7 @@ export class WorkspaceStore {
     const extracted =
       extension === 'pdf' || extension === 'docx'
         ? await extractDocument(bytes, extension)
-        : extractText(bytes, input.name);
+        : isImageName(input.name) ? extractImage(bytes, input.name) : extractText(bytes, input.name);
     const concurrent = check();
     return (
       concurrent ?? this.retainDocument(input, bytes, extracted, { sourceId, expectedRevisionId })

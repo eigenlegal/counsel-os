@@ -34,7 +34,8 @@ export function cleanProposal(original: DocxPackage, redline: DocxPackage, autho
     if (isW(element, 'delText') && isW(element.parentNode, 'r') && isW(element.parentNode.parentNode, 'del')) continue;
     const paragraphMark = isW(element, 'ins') && isW(element.parentNode, 'rPr')
       && isW(element.parentNode.parentNode, 'pPr') && isW(element.parentNode.parentNode.parentNode, 'p') && !element.hasChildNodes();
-    const runMark = (isW(element, 'ins') || isW(element, 'del')) && isW(element.parentNode, 'p')
+    const supportedParent = isW(element.parentNode, 'p') || (isW(element, 'del') && isW(element.parentNode, 'hyperlink') && isW(element.parentNode.parentNode, 'p'));
+    const runMark = (isW(element, 'ins') || isW(element, 'del')) && supportedParent
       && children(element).every(child => isW(child, 'r') || (isW(element, 'ins') && (isW(child, 'commentRangeStart') || isW(child, 'commentRangeEnd'))));
     if (part !== DOCUMENT_PART || (!paragraphMark && !runMark) || attr(element, 'author') !== author)
       throw new Error('This redline contains revisions outside the supported Counsel changes. Review them explicitly in Word; no clean proposal was created.');

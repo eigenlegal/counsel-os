@@ -92,6 +92,10 @@ export interface Activity {
   output?: unknown;
 }
 export interface TurnState {
+  visualContext?: Array<{ id: string; title: string; number: number; width: number; height: number; hash: string }>;
+  practiceDocument?: import('./practice-document').PracticeDocumentView;
+  practiceDocumentRead?: boolean;
+  practiceDocumentProposal?: import('./practice-document').PracticeDocumentProposal;
   entityRegistry?: import('./entities').EntityRegistry | null;
   entitiesRead?: string[];
   signatoryChecks?: import('./entities').SignatoryCheck[];
@@ -100,6 +104,7 @@ export interface TurnState {
   redline?: import('./redlines').RedlineReceipt;
   documentRound?: import('./document-rounds').DocumentRoundReport;
   authorityLookups?: import('./authority-types').AuthorityReceipt[];
+  webLookups?: import('./web-sources').WebReceipt[];
   /** Pins the proposed version, so an old chat cannot approve a newer unseen edit. */
   proposalRevisions?: Record<string, string>;
   practiceUpdateConflicts?: Array<{ id: string; title: string }>;

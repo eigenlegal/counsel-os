@@ -18,10 +18,12 @@ import { SourceChangeNotice } from './SourceChangeNotice';
 import { KnowledgeEditor } from './KnowledgeEditor';
 import { BriefProposalCard } from './BriefProposal';
 import { PreferenceProposalCard } from './PreferenceProposal';
+import { PracticeDocumentProposalCard } from './PracticeDocumentProposal';
 import { UserPrompt } from './UserPrompt';
 import { RedlineCard } from './Redline';
 import { DocumentRoundCard } from './DocumentRound';
 import { AuthorityLookups } from './AuthorityLookups';
+import { WebLookups } from './WebLookups';
 import { SigningCheckCard } from './SigningCheck';
 import { ChatActivity } from './ChatActivity';
 
@@ -286,9 +288,11 @@ export function ChatTurn({
         </div>)}
         {turn.state.briefProposal && <BriefProposalCard turn={turn} onChanged={onChanged} />}
         {turn.state.preferenceProposal && <PreferenceProposalCard turn={turn} onChanged={onChanged} />}
+        {turn.state.practiceDocumentProposal && <PracticeDocumentProposalCard turn={turn} onChanged={onChanged} />}
         {turn.state.redline && <RedlineCard value={turn.state.redline} />}
         {turn.state.documentRound && <DocumentRoundCard value={turn.state.documentRound} />}
         {!!turn.state.authorityLookups?.length && <AuthorityLookups receipts={turn.state.authorityLookups} />}
+        {!!turn.state.webLookups?.length && <WebLookups receipts={turn.state.webLookups} />}
         {turn.state.signatoryChecks?.map((value, index) => <SigningCheckCard key={index} value={value} />)}
         {turn.status === 'complete' && (
           <div className="chat-receipt">
@@ -304,7 +308,7 @@ export function ChatTurn({
               </>
             )}
             <button onClick={showContext}>
-              {turn.state.context.filter((c) => c.ranges.length).length} records in context
+              {turn.state.context.filter((c) => c.ranges.length || turn.state.visualContext?.some(image => image.id === c.id)).length} records in context
             </button>
             <button
               onClick={() => {

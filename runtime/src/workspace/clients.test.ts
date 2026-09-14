@@ -243,7 +243,7 @@ test("client context, exact read receipts and originals survive backup; no impli
     store.conversations.turn(turn.id).state.scopeContext?.clientContext?.name,
   ).toBe("Synthetic Atlas");
   const backup = await createWorkspaceBackup(store.databasePath);
-  expect((await inspectWorkspaceBackup(backup.bytes)).schemaVersion).toBe(19);
+  expect((await inspectWorkspaceBackup(backup.bytes)).schemaVersion).toBe(20);
   const path = join(root, backup.name);
   writeFileSync(path, backup.bytes);
   const recovered = await restoreWorkspaceBackup(path, root);

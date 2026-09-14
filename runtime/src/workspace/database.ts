@@ -14,14 +14,14 @@ import { AUTO_FILING_SCHEMA } from './auto-filing-schema';
 import { DRAFT_SCHEMA } from './draft-types';
 
 export const WORKSPACE_APPLICATION_ID = 0x434f5357; // COSW; distinct from the legacy thread prototype.
-export const WORKSPACE_SCHEMA_VERSION = 19;
+export const WORKSPACE_SCHEMA_VERSION = 20;
 
 /** One schema owner for the workspace. No host sessions or legacy vault IO. */
 export function openWorkspaceDatabase(
   path: string,
-  targetVersion: 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 = WORKSPACE_SCHEMA_VERSION,
+  targetVersion: 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 = WORKSPACE_SCHEMA_VERSION,
 ): Database {
-  if (![5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19].includes(targetVersion))
+  if (![5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].includes(targetVersion))
     throw new Error("Unsupported schema target.");
   // Older schemas are instantiated only in memory to verify known backup schemas.
   if (targetVersion !== WORKSPACE_SCHEMA_VERSION && path !== ":memory:")
@@ -89,7 +89,7 @@ export function openWorkspaceDatabase(
         version !== 14 &&
         version !== 15 &&
         version !== 16 &&
-        version !== 17 && version !== 18
+        version !== 17 && version !== 18 && version !== 19
       )
         throw new Error("unrecognized workspace schema");
       if (version < 2) db.exec(SCHEMA_V2);
@@ -110,6 +110,7 @@ export function openWorkspaceDatabase(
       if (version < 17 && targetVersion >= 17) db.exec(SOURCE_LINKS_SCHEMA);
       if (version < 18 && targetVersion >= 18) db.exec(AUTO_FILING_SCHEMA);
       if (version < 19 && targetVersion >= 19) db.exec(DRAFT_SCHEMA);
+      if (version < 20 && targetVersion >= 20) db.exec(SCHEMA_V20);
       db.exec(
         `PRAGMA application_id = ${WORKSPACE_APPLICATION_ID}; PRAGMA user_version = ${targetVersion};`,
       );
@@ -124,6 +125,22 @@ export function openWorkspaceDatabase(
     throw err;
   }
 }
+
+const SCHEMA_V20 = `
+CREATE TABLE import_organization_files (
+  entry_id TEXT PRIMARY KEY REFERENCES import_entries(id),
+  batch_id TEXT NOT NULL REFERENCES import_batches(id),
+  attempts INTEGER NOT NULL DEFAULT 0 CHECK(attempts BETWEEN 0 AND 2),
+  issue TEXT CHECK(issue IS NULL OR length(issue) BETWEEN 1 AND 1000),
+  protected INTEGER NOT NULL DEFAULT 0 CHECK(protected IN (0,1))
+) STRICT;
+CREATE INDEX import_organization_files_batch ON import_organization_files(batch_id);
+-- Preserve edits made after analysis by earlier builds. The original files,
+-- suggestions and job state are otherwise unchanged by migration.
+INSERT INTO import_organization_files(entry_id,batch_id,protected)
+  SELECT e.id,e.batch_id,1 FROM import_entries e JOIN import_organization_results r ON r.entry_id=e.id
+  WHERE json(e.choice_json)!=CASE WHEN r.applied=1 THEN json_extract(r.result_json,'$.choice') ELSE json_extract(r.result_json,'$.before') END;
+`;
 
 const SCHEMA_V15 = `
 CREATE TABLE import_organization_jobs (

@@ -25,6 +25,9 @@ export interface StepRequest {
   tenant: Tenant;
   system: string;
   messages: Message[];
+  /** Explicit, app-authorized raster inputs. Never serialize bytes into prose,
+   * persisted transcripts, tool arguments or diagnostics. */
+  images?: Array<{ id: string; title: string; mediaType: 'image/png' | 'image/jpeg' | 'image/webp'; data: string }>;
   tools: ToolDef[];
   outputSchema?: ZodType<unknown>;   // when set, `done.output` is the parsed object
   maxTokens?: number;
@@ -193,4 +196,3 @@ export class RouterError extends Error {
 export class MatterStaysLocalError extends Error {
   readonly code = 'matter-stays-local';
 }
-

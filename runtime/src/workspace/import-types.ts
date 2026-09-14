@@ -164,7 +164,8 @@ export interface ImportBatch {
   progress: ImportProgress;
   total: number;
   offset: number;
-  selection: { included: number; templates: number; profiles: number; profile: z.infer<typeof ProfileFields> | null; linkedMatters?: number; preferences?: ImportPreferenceSelection };
+  selection: { included: number; templates: number; profiles: number; profile: z.infer<typeof ProfileFields> | null; linkedMatters?: number; preferences?: ImportPreferenceSelection;
+    filingSummary?: import('./import-organization-job-types').ImportFilingSummary };
 }
 export type ImportListItem = Omit<ImportBatch, 'entries' | 'total' | 'offset' | 'selection' | 'receipt'>;
 export type ImportUploadPlan = Pick<ImportEntry, 'id' | 'path' | 'byteCount' | 'phase'> & { skip: boolean };

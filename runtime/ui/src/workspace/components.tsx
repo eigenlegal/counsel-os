@@ -18,6 +18,7 @@ export function Status({ value }: { value: string }): JSX.Element {
     ready: 'Text available',
     partial: 'Partial text',
     unavailable: 'Text unavailable',
+    image: 'Image',
     decision: 'Decision',
     draft: 'Note / draft',
   };

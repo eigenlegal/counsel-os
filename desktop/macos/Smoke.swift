@@ -97,8 +97,21 @@ struct CheckError: Error { let message: String }
         controller.start()
         try await waitJS("document.body.textContent.includes('A workspace for your practice.')", label: "initial setup did not become ready")
         try await snapshot("native-setup.png")
+        phase = "onboarding scrolling"
+        _ = try await js("[...document.querySelectorAll('button')].find(b=>b.textContent==='Choose a connection').click(); return true;")
+        try await waitJS("document.querySelector('.connection-setup details')", label: "onboarding AI setup did not expand")
+        let setupScrolls = try await js("""
+        document.querySelector('.connection-setup details').open=true;
+        const main=document.querySelector('#workspace-content');
+        main.scrollTop=main.scrollHeight;
+        const footer=document.querySelector('.workspace-welcome footer').getBoundingClientRect();
+        return getComputedStyle(main).overflowY==='auto' && main.scrollTop>0 && footer.top>=0 && footer.bottom<=innerHeight;
+        """) as? Bool
+        try check(setupScrolls == true, "expanded first-run AI setup clips controls below the window")
+        try await snapshot("native-onboarding-scrolled.png")
         _ = try await js("[...document.querySelectorAll('button')].find(b=>b.textContent==='Explore without AI').click(); return true;")
         try await waitJS("!!document.querySelector('textarea[aria-label=\"Message Counsel\"]:not(:disabled)') && !document.querySelector('fieldset:disabled')", label: "setup did not open local workspace")
+        try await waitJS("!document.querySelector('.sidebar-setup') && !document.querySelector('.workspace-welcome')", label: "completed onboarding remained in the navigation")
         controller.confirmMessage = { _ in false }
         let cancelled = try await js("return window.confirm('Synthetic cancel check');") as? Bool
         try check(cancelled == false, "native confirm did not cancel")

@@ -105,7 +105,10 @@ export class DocxPackage {
         bytes = encoder.encode(new XMLSerializer().serializeToString(doc));
         this.raw[name] = bytes;
       }
-      out[name] = [bytes, { level: name.endsWith('.xml') || name.endsWith('.rels') ? 6 : 0, mtime: FIXED_MTIME }];
+      // Embedded fonts and other binary parts can be highly compressible too.
+      // Storing them uncompressed inflated otherwise valid originals beyond
+      // the worker's output limit. Compression never changes the part bytes.
+      out[name] = [bytes, { level: 6, mtime: FIXED_MTIME }];
     }
     this.dirty.clear();
     return zipSync(out);

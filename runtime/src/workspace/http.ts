@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { inspectImage } from './images';
 import { randomBytes } from 'node:crypto';
 import { bearerToken, tokensMatch } from '../server/auth';
 import { serveStatic } from '../server/static';
@@ -226,6 +227,8 @@ export function workspaceHandler(
       if (collection === 'practice-drafting' && parts.length === 3)
         return Response.json(options.connectionStatus?.() ?? options.connection?.status() ?? { ready: false, config: null, label: 'Not connected' });
       if (collection === 'working-preferences' && parts.length === 3) return Response.json(store.getWorkingPreferences());
+      if (collection === 'practice-document' && parts.length === 3) return Response.json(store.practiceDocument());
+      if (collection === 'practice-document' && id === 'sources' && parts.length === 4) return Response.json(store.practiceSources(Object.fromEntries(url.searchParams)));
       if (collection === 'imports' && parts.length === 3) return Response.json(store.imports.list());
       if (collection === 'imports' && id && parts.length === 4) return Response.json(store.imports.get(Id.parse(id), ImportQuery.parse(Object.fromEntries(url.searchParams))));
       if (collection === 'imports' && id && operation === 'links' && parts.length === 5)
@@ -288,14 +291,15 @@ export function workspaceHandler(
       if (
         collection === 'source-revisions' &&
         id &&
-        operation === 'original' &&
+        (operation === 'original' || operation === 'image') &&
         parts.length === 5
       ) {
         if (!store.sourceRevisionAvailable(id)) throw new HttpError(409, 'This document is in Trash or unavailable. Restore it before downloading.');
         const original = store.originalFile(Id.parse(id));
         return new Response(new Uint8Array(original.bytes), {
           headers: {
-            'content-type': 'application/octet-stream',
+            'content-type': operation === 'image' ? inspectImage(original.bytes, original.name).mediaType : 'application/octet-stream',
+            'cache-control': 'no-store',
             'x-content-type-options': 'nosniff',
             'content-disposition': `attachment; filename*=UTF-8''${encodeURIComponent(original.name).replace(/'/g, '%27')}`,
           },
@@ -306,7 +310,7 @@ export function workspaceHandler(
       if (!collection && parts.length === 2)
         return Response.json({
           ...store.catalog(),
-          interfaceVersion: 29,
+          interfaceVersion: 33,
           practiceReviewCount: store.practiceLibrary({ status: 'review' }).total,
           templates: store.templates.list(),
           clients: store.clients.list(),
@@ -316,6 +320,7 @@ export function workspaceHandler(
           databasePath: store.databasePath,
           profile: store.getProfile(),
           workingPreferences: store.getWorkingPreferences(),
+          practiceDocument: store.practiceDocument(),
           hasPreferenceDraft: !!store.drafts.get('working-preferences').value,
           entityRegistry: store.getEntityRegistry(),
           connection: options.connectionStatus?.() ??
@@ -442,6 +447,10 @@ export function workspaceHandler(
       }
       if (collection === 'working-preferences' && parts.length === 3)
         return Response.json(store.saveWorkingPreferences(await body(req)));
+      if (collection === 'practice-document' && parts.length === 3) return Response.json(store.savePracticeDocument(await body(req)));
+      if (collection === 'practice-document' && id === 'identity' && parts.length === 4) return Response.json(store.confirmPracticeIdentity(await body(req)));
+      if (collection === 'turns' && id && operation === 'practice-review' && parts.length === 5)
+        return Response.json(store.reviewPracticeDocument(Id.parse(id), await body(req)));
       if (collection === 'turns' && id && operation === 'preference-review' && parts.length === 5)
         return Response.json(store.reviewPreferenceProposal(Id.parse(id), await body(req)));
       if (collection === 'sources' && id && operation === 'placement' && parts.length === 5)
@@ -749,7 +758,7 @@ export function workspaceHandler(
     headers.set('referrer-policy', 'no-referrer');
     headers.set(
       'content-security-policy',
-      "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+      "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
     );
     if (new URL(req.url).pathname.startsWith('/api/')) headers.set('cache-control', 'no-store');
     return new Response(response.body, { status: response.status, headers });
