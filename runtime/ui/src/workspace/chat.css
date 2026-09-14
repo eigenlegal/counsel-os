@@ -70,22 +70,27 @@
 .context-profile {
   margin: 18px 0;
 }
-.app-body:has(.page-home) {
+.app-body:has(.workspace-frame-canvas) {
   height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
-.app-body:has(.page-home) > .app-topbar,
-.app-body:has(.page-home) > .demo-banner {
+.app-body:has(.workspace-frame-canvas) > .app-topbar,
+.app-body:has(.workspace-frame-canvas) > .demo-banner {
   flex-shrink: 0;
 }
-.app-content.page-home {
+.app-content.workspace-frame-canvas {
   padding: 0;
   max-width: none;
   margin: 0;
   min-height: 0;
   flex: 1;
+}
+/* First-run setup shares the home route, but unlike chat it has no inner
+   scroll area. Keep expanded connection controls inside a reachable pane. */
+.app-content.workspace-frame-canvas:has(> .workspace-welcome) {
+  overflow-y: auto;
 }
 .chat-workspace {
   display: flex;
@@ -424,11 +429,18 @@
 .composer-footnote {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   gap: 12px;
   padding: 10px 3px 0;
   color: #5b6e89;
   font-size: 10px;
+  line-height: 16px;
 }
+/* Autosave uses the existing footer line. Both labels occupy the same grid
+   cell, so typing, saving and restoring never add a row or shift the field. */
+.composer-feedback { display: grid; min-height: 16px; }
+.composer-feedback > span { grid-area: 1 / 1; justify-self: end; white-space: nowrap; }
+.composer-feedback.has-status .composer-keyboard-hint { visibility: hidden; }
 .composer-practice-note {
   display: inline-flex;
   align-items: center;

@@ -193,7 +193,7 @@ export function ModelPicker({
           autoLoad
         />
         <p className="fine-print">
-          Counsel does not automatically choose a model or fallback. {config.kind === "claude-code" && "Claude Code may apply its own model fallback. "}Selecting a model does not run it or
+          Counsel OS does not automatically choose a model or fallback. {config.kind === "claude-code" && "Claude Code may apply its own model fallback. "}Selecting a model does not run it or
           verify account access. Included conversation history will be sent with
           your next message. Change providers or billing in Settings.
         </p>

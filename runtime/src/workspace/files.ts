@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { WorkspaceConflictError } from './types';
 import { workspaceWorkerCommand } from './distribution';
+import { IMAGE_MAX_BYTES, isImageName } from './image-types';
 
 export const FILE_MAX_BYTES = 25_000_000;
 // Base64 transport plus bounded JSON metadata. Other routes keep a smaller limit.
@@ -16,8 +17,8 @@ export const FileInput = z
       .min(1)
       .max(200)
       .regex(
-        /^[^/\\\x00-\x1f\x7f]+\.(txt|md|docx|pdf)$/i,
-        'Choose a .docx, .pdf, .txt or .md file. Convert legacy .doc files to .docx first.',
+        /^[^/\\\x00-\x1f\x7f]+\.(txt|md|docx|pdf|png|jpe?g|webp)$/i,
+        'Choose a document or a PNG, JPEG or WebP image. Convert legacy .doc files to .docx first.',
       ),
     base64: z.string().max(Math.ceil(FILE_MAX_BYTES / 3) * 4),
     matterId: z.string().uuid().nullable().optional(),
@@ -28,6 +29,7 @@ export const Extraction = z
     parser: z.string().max(100),
     notes: z.array(z.string().max(1000)).max(100),
     pages: z.number().int().positive().optional(),
+    image: z.object({ mediaType: z.enum(['image/png', 'image/jpeg', 'image/webp']), width: z.number().int().positive().max(8000), height: z.number().int().positive().max(8000) }).strict().optional(),
     sections: z
       .array(
         z
@@ -51,6 +53,7 @@ export const ExtractedFile = z
       'text/markdown',
       'application/pdf',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'image/png', 'image/jpeg', 'image/webp',
     ]),
     extraction: Extraction,
   })
@@ -62,10 +65,10 @@ export function fileBytes(raw: z.input<typeof FileInput>): {
 } {
   const input = FileInput.parse(raw);
   const bytes = Buffer.from(input.base64, 'base64');
-  const limit = /\.(txt|md)$/i.test(input.name) ? 500_000 : FILE_MAX_BYTES;
+  const limit = /\.(txt|md)$/i.test(input.name) ? 500_000 : isImageName(input.name) ? IMAGE_MAX_BYTES : FILE_MAX_BYTES;
   if (!bytes.length || bytes.toString('base64') !== input.base64 || bytes.length > limit)
     throw new WorkspaceConflictError(
-      `Choose a nonempty file of ${limit === 500_000 ? '500 KB' : '25 MB'} or less.`,
+      `Choose a nonempty file of ${limit === 500_000 ? '500 KB' : limit === IMAGE_MAX_BYTES ? '7 MB' : '25 MB'} or less.`,
     );
   return { input, bytes };
 }

@@ -86,7 +86,7 @@ describe('the review screen behind "make this a fixture"', () => {
     // The rationale ships inside the fixture, so it is on the screen.
     expect(within(panel()).getByText('Too low.')).toBeTruthy();
 
-    // Counsel raised both findings and the lawyer has read them: kept.
+    // Counsel OS raised both findings and the lawyer has read them: kept.
     for (const c of DRAFT.catches) {
       const group = within(panel()).getByRole('group', { name: `Verdict on ${c.title}` });
       expect(within(group).getByRole('button', { name: 'right' }).getAttribute('aria-pressed')).toBe('true');

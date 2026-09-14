@@ -127,7 +127,7 @@ test('schema-nine backups migrate safely; schema-ten Trash survives reopen and v
   const oldBackup = await createWorkspaceBackup(path); expect((await inspectWorkspaceBackup(oldBackup.bytes)).schemaVersion).toBe(9);
   store = new WorkspaceStore({ databasePath: path }); expect(store.getSource(file.id).latest).toEqual(file.latest);
   change('source', file.id, 'trash');
-  const backup = await createWorkspaceBackup(path); expect((await inspectWorkspaceBackup(backup.bytes)).schemaVersion).toBe(19);
+  const backup = await createWorkspaceBackup(path); expect((await inspectWorkspaceBackup(backup.bytes)).schemaVersion).toBe(20);
   const saved = join(root, backup.name); writeFileSync(saved, backup.bytes);
   const recovered = await restoreWorkspaceBackup(saved, root), restored = new WorkspaceStore({ databasePath: recovered.databasePath });
   try { expect(restored.recordTrash({ kind: 'source' }).records[0]?.id).toBe(file.id); expect(restored.search({ query: 'Filecanary' }).hits).toHaveLength(0); } finally { restored.close(); }

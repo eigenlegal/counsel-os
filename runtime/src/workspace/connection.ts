@@ -152,14 +152,14 @@ export class WorkspaceConnection {
             id,
             label: id[0]!.toUpperCase() + id.slice(1),
           })),
-          note: "Aliases resolve through your installed Claude Code and can change over time. Fable may require usage credits; in this non-interactive integration, Claude Code can bill those credits without another prompt. This list does not verify account access or Counsel performance. Use an exact model ID to pin a version.",
+          note: "Aliases resolve through your installed Claude Code and can change over time. Fable may require usage credits; in this non-interactive integration, Claude Code can bill those credits without another prompt. This list does not verify account access or Counsel OS performance. Use an exact model ID to pin a version.",
         };
       if (kind === "codex")
         return {
           kind,
           source: "cli-bundled",
           models: await (this.options.codexCatalog ?? bundledCodexModels)(),
-          note: "From your installed Codex catalog, including the publicly documented Astra entry even if the bundle marks it hidden. This is not an account-access or Counsel performance check. No login credentials or chat content are used to read this list.",
+          note: "From your installed Codex catalog, including the publicly documented Astra entry even if the bundle marks it hidden. This is not an account-access or Counsel OS performance check. No login credentials or chat content are used to read this list.",
         };
       if (this.config()?.kind !== kind)
         return {
@@ -208,7 +208,7 @@ export class WorkspaceConnection {
         kind,
         source: "api",
         models,
-        note: `From the saved API connection. ${anthropic && json.has_more ? "Showing the first page only. " : ""}${!anthropic ? "Filtered to likely text models; this is not a compatibility check. " : ""}Listing does not run a chat, verify tool support, or qualify a model for Counsel. No workspace content is sent.`,
+        note: `From the saved API connection. ${anthropic && json.has_more ? "Showing the first page only. " : ""}${!anthropic ? "Filtered to likely text models; this is not a compatibility check. " : ""}Listing does not run a chat, verify tool support, or qualify a model for Counsel OS. No workspace content is sent.`,
       };
     } catch {
       return {

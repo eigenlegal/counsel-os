@@ -17,14 +17,15 @@ The native app wraps the same workspace engine and interface. The plugin has its
 ## What the workspace does
 
 - **Work through chat.** Ask questions, review agreements, prepare drafts, or pick up a matter. Select one or more matters, or an optional client scope. Context stays within that selection and documents explicitly shared with the chat.
-- **Use your practice.** Keep positions, methods, templates, writing and document-review preferences, and your own entity/signatory details in Practice. External law, research, and Counsel guides live in Sources; deal documents belong with their matters.
+- **Use your practice.** Keep positions, methods, templates, writing and document-review preferences, and your own entity/signatory details in Practice. External law, research, and Counsel OS guides live in Sources; deal documents belong with their matters.
 - **Bring your files.** Drop supported files or folders into a durable import queue. Optional AI assistance suggests organization from filenames and extracted content; review the filing and supporting links before importing. Original files are retained.
 - **Inspect the evidence.** Relevant permitted material is retrieved automatically. Response context distinguishes available records from passages actually read, and citations resolve to recorded versions.
+- **Read linked public terms.** Counsel OS can retrieve relevant public pages and PDFs from URLs in your request or documents it reads, follow incorporated links, and retain source copies with retrieval receipts and exact citations. It does not use your browser login or send document text to those sites. Script-only, blocked or private pages may still need an upload.
 - **Work on documents.** Extract text from PDF and Word files; produce supported Word edits, native tracked changes, comments, clean proposals, and comparison reports. Set the author shown on new changes and comments, plus your preferred output filenames.
 - **Keep working records current.** Successful matter chats can update routine briefs with visible changes and undo. Practice-wide instructions and standards change through explicit requests and review—not by treating a concession on one deal as a new default.
 - **Return without starting over.** Search and pin recent work, archive chats, recover items from Trash, and back up or restore the workspace. Local upkeep checks affected records and periodically reconciles while the app is running; AI filing assistance is separately controlled.
 
-These are implemented workflows, not a promise that every request retrieves every relevant fact. Retrieval is bounded, document extraction can be partial, and unsupported document structures need review. Scanned-PDF OCR, comprehensive primary-source research, and automatic learning from every redline correction are not complete. Current primary-source connectors cover specific U.S. Code and eCFR citations, not all jurisdictions or case law.
+These are implemented workflows, not a promise that every request retrieves every relevant fact. Retrieval is bounded, document extraction can be partial, and unsupported document structures need review. Scanned-PDF OCR, comprehensive primary-source research, general web search, and automatic learning from every redline correction are not complete. Dedicated legal connectors cover specific U.S. Code and eCFR citations; public URL retrieval does not certify legal authority, currency or the version governing an agreement.
 
 <a id="installation"></a>
 
@@ -41,6 +42,10 @@ bun run workspace --demo
 ```
 
 The launcher builds the interface, opens a browser, and prints a private launch link. Keep the terminal running and do not share that link. The example workspace is separate and persistent: files you add are not reset on restart.
+
+Development changes are tested in the local browser version first. Desktop installers are rebuilt in batches after those changes are reviewed and qualified; an existing installed package does not receive source or browser updates automatically.
+
+The product name is **Counsel OS** in both distributions. New desktop builds are named **Counsel OS.app**. Earlier previews were named `Counsel.app`: quit the older app before opening the new one, and move only that old app bundle to Trash after installing the new copy to avoid launching the wrong version. The bundle identity, `~/.counsel` workspace paths, backup format and existing saved author names are unchanged; do not delete or rename your workspace folder.
 
 For a personal workspace instead:
 
@@ -63,7 +68,7 @@ The Mac build bundles the native shell, workspace engine, browser interface, doc
 On an Apple silicon Mac with Bun, the Xcode command-line tools, and the locked dependencies installed above:
 
 ```sh
-# Build a local Counsel.app; prints its new output directory.
+# Build a local Counsel OS.app; prints its new output directory.
 bun run desktop:build
 
 # Or build and package a fresh app into a verified local-test DMG.
@@ -78,13 +83,13 @@ The workflow is on `main`. A repository maintainer can open **Actions → [Deskt
 
 This is an **ad-hoc-signed development build**, not a Developer ID-signed or notarized installer. macOS may refuse downloaded copies. No automatic updater or public desktop release is connected. The app now includes dependency inventories/notices, guided AI connection setup, native backup restore, and verified pre-upgrade recovery backups. Signing/notarization tooling is prepared but has not been run; Bun's linked-library redistribution review and clean-machine/manual qualification remain open.
 
-For authorized developer testing, extract the Actions artifact, compare the DMG's SHA-256 with the downloaded `package.json` receipt, open the DMG, and drag **Counsel.app** into **Applications**. Quit any older Counsel app before replacing it; then eject the DMG and open the installed copy. If macOS refuses the image, stop and use an approved signed test image when available; do not disable Gatekeeper. Current builds target Apple silicon and macOS 13 or later, but that deployment target is **not** a tested support matrix. These images are development candidates, not cleared for general redistribution.
+For authorized developer testing, extract the Actions artifact, compare the DMG's SHA-256 with the downloaded `package.json` receipt, open the DMG, and drag **Counsel OS.app** into **Applications**. Quit any older Counsel OS app before replacing it; then eject the DMG and open the installed copy. If macOS refuses the image, stop and use an approved signed test image when available; do not disable Gatekeeper. Current builds target Apple silicon and macOS 13 or later, but that deployment target is **not** a tested support matrix. These images are development candidates, not cleared for general redistribution.
 
 ### Bring your practice into the desktop
 
-Open Counsel and either connect AI or choose **Explore without AI**. Setup and Settings offer explicit provider installation/sign-in actions and an optional model-access test; nothing installs or spends a model call merely because setup is opened. Provider executables are installed separately. The native actions open Terminal after confirmation; provider authentication stays in the provider's own flow.
+Open Counsel OS and either connect AI or choose **Explore without AI**. Setup and Settings offer explicit provider installation/sign-in actions and an optional model-access test; nothing installs or spends a model call merely because setup is opened. Provider executables are installed separately. The native actions open Terminal after confirmation; provider authentication stays in the provider's own flow.
 
-- **Move an existing app workspace:** save a `.counsel-backup` in the old workspace's Settings, then use **File → Restore workspace from backup…** in the desktop. Inspect the summary, restore, and choose **Open workspace**. Recovery creates a separate copy with its records, links, retained originals and saved drafts; it does not overwrite or merge your old workspace. Reconnect AI afterward. Counsel remembers the last successfully opened workspace. **File → Open personal workspace** returns to the default one.
+- **Move an existing app workspace:** save a `.counsel-backup` in the old workspace's Settings, then use **File → Restore workspace from backup…** in the desktop. Inspect the summary, restore, and choose **Open workspace**. Recovery creates a separate copy with its records, links, retained originals and saved drafts; it does not overwrite or merge your old workspace. Reconnect AI afterward. Counsel OS remembers the last successfully opened workspace. **File → Open personal workspace** returns to the default one.
 - **Start from plugin folders or ordinary files:** use **Import files**. Drop your practice folders and company/matter documents, review the proposed organization, then import. AI assistance uses your chosen account and requires consent; imported instructions and practice positions still need review. This is file intake, not a silent migration of a plugin's executable skills or provider credentials.
 
 On the same computer, the non-demo developer launcher and desktop share the default personal-workspace location; the developer demo uses a separate folder. The backup/restore route is recommended when you want an independent test copy. Opening the original database instead uses the same data, not a copy, and only one process can hold it open. File import adds to the currently selected workspace rather than creating a clone; inspect the destination and duplicate/organization choices before committing. Reconnecting a recovered workspace can reuse an already installed, compatible signed-in CLI—you need not sign in again unless the local check says otherwise.

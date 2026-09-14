@@ -160,7 +160,7 @@ function SourceUpdate({
               </select>
             </label>
             <p className="fine-print">
-              This updates your saved copy only. Counsel does not fetch or verify the source
+              This updates your saved copy only. Counsel OS does not fetch or verify the source
               location.
             </p>
           </>

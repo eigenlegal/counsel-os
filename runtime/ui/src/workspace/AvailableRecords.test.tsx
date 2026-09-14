@@ -8,7 +8,7 @@ test('available record names are distinct from content reads and inspection keep
     { kind: 'source', records: [{ kind: 'source', id: 'exact-revision', recordId: 'record', title: 'Matter note <literal>', status: 'partial', version: 2, recordedAt: '2026-09-05' }], total: 45, nextBefore: 19 },
     { kind: 'work', records: [], total: 0, nextBefore: null },
   ] }} inspect={record => { selected = record; }} />);
-  fireEvent.click(screen.getByText('Records available to Counsel'));
+  fireEvent.click(screen.getByText('Records available to Counsel OS'));
   expect(screen.getByText(/not a list of documents read/)).toBeTruthy();
   expect(screen.getByText('Showing 1 of 45 record names.')).toBeTruthy();
   expect(screen.getByText('None available in this scope.')).toBeTruthy();

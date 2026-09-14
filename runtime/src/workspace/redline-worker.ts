@@ -11,7 +11,7 @@ try {
   const input = RedlineInput.parse(raw.input), edits = input.edits;
   const bytes = Buffer.from(raw.bytes, 'base64');
   const pkg = boundedWordPackage(bytes);
-  const author = RevisionAuthor.parse(raw.author ?? 'Counsel');
+  const author = RevisionAuthor.parse(raw.author ?? 'Counsel OS');
   const insert = prepareBlockInsertions(pkg, input.insertions ?? [], author);
   const report = applyRedlines(pkg, edits, { track: true, defaultAuthor: author });
   if (report.skipped.length || report.warnings.length || report.notes.length)

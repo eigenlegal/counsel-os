@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PRODUCT_NAME } from '../core/brand';
 import type { WorkspaceProfile } from './profile';
 
 export const FilenamePattern = z.string().trim().min(1).max(180)
@@ -38,10 +39,10 @@ export interface PreferenceSnapshot {
 }
 export function preferenceSnapshot(value: WorkingPreferences | null, profile: WorkspaceProfile | null): PreferenceSnapshot | null {
   if (!value) return null;
-  const author = value.authorMode === 'profile' ? profile?.name : value.authorMode === 'custom' ? value.customAuthor : 'Counsel';
+  const author = value.authorMode === 'profile' ? profile?.name : value.authorMode === 'custom' ? value.customAuthor : PRODUCT_NAME;
   return { revisionId: value.revisionId, version: value.version, generalReview: value.generalReview, ndaReview: value.ndaReview,
     writingInstructions: value.writingInstructions, signingInstructions: value.signingInstructions,
-    word: { author: RevisionAuthor.safeParse(author).success ? author! : 'Counsel', filenamePattern: value.filenamePattern,
+    word: { author: RevisionAuthor.safeParse(author).success ? author! : PRODUCT_NAME, filenamePattern: value.filenamePattern,
       redlineLabel: value.redlineLabel, draftLabel: value.draftLabel } };
 }
 /** Preferences have a fixed context slot; they do not depend on retrieval rankings or titles.
@@ -68,6 +69,6 @@ export function wordFilename(pattern: string, values: { document: string; varian
     stem += char;
   }
   stem = stem.replace(/^[. ]+|[. ]+$/g, '') || 'Document';
-  if (/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/i.test(stem)) stem = `Counsel ${stem}`;
+  if (/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/i.test(stem)) stem = `Counsel OS ${stem}`;
   return `${stem}.docx`;
 }

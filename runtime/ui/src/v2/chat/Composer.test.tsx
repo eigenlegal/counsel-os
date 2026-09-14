@@ -79,7 +79,7 @@ describe('v2 Composer swap notice (cou-95)', () => {
   test('says which model will answer when the saved default is not loaded, and links to Settings', () => {
     render(<Composer streaming={false} onSend={noop} onStop={noop} health={amber} />);
     const notice = screen.getByRole('status');
-    expect(notice.textContent).toBe('Claude is not available. Counsel will answer on Ollama (gemma4:e4b).change');
+    expect(notice.textContent).toBe('Claude is not available. Counsel OS will answer on Ollama (gemma4:e4b).change');
     expect(notice.querySelector('a')?.getAttribute('href')).toBe('#/settings');
     expect(notice.className).toContain('v2-swap-notice');
   });

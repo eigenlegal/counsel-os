@@ -24,7 +24,7 @@ with sync_playwright() as p:
     def new_chat(message):
         page.get_by_role('button', name='New chat', exact=True).click()
         expect(page.get_by_role('heading', name='What are we working through?')).to_be_visible()
-        page.get_by_role('textbox', name='Message Counsel', exact=True).fill(message)
+        page.get_by_role('textbox', name='Message Counsel OS', exact=True).fill(message)
         page.get_by_role('button', name='Send message', exact=True).click()
         page.wait_for_url('**/#/home?id=*')
         return page.url.split('id=')[1]
@@ -44,7 +44,7 @@ with sync_playwright() as p:
     select = page.get_by_label('Conversation context', exact=True)
     select.click()
     page.get_by_role('option', name='Internal investigation', exact=True).click()
-    page.get_by_role('textbox', name='Message Counsel', exact=True).fill('What remains unresolved in this investigation?')
+    page.get_by_role('textbox', name='Message Counsel OS', exact=True).fill('What remains unresolved in this investigation?')
     page.get_by_role('button', name='Send message', exact=True).click()
     page.wait_for_url('**/#/home?id=*')
     first_id = page.url.split('id=')[1]
@@ -101,12 +101,12 @@ with sync_playwright() as p:
     snapshot('chat-knowledge-approved.png')
     print('PASS: inline human knowledge approval')
     # Drafts stay with their respective conversation when switching between chats.
-    page.get_by_role('textbox', name='Message Counsel', exact=True).fill('Unsent draft A')
+    page.get_by_role('textbox', name='Message Counsel OS', exact=True).fill('Unsent draft A')
     page.goto(BASE + '/#/home?id=' + second_id)
-    expect(page.get_by_role('textbox', name='Message Counsel', exact=True)).to_have_value('')
-    page.get_by_role('textbox', name='Message Counsel', exact=True).fill('Unsent draft B')
+    expect(page.get_by_role('textbox', name='Message Counsel OS', exact=True)).to_have_value('')
+    page.get_by_role('textbox', name='Message Counsel OS', exact=True).fill('Unsent draft B')
     page.goto(BASE + '/#/home?id=' + first_id)
-    expect(page.get_by_role('textbox', name='Message Counsel', exact=True)).to_have_value('Unsent draft A')
+    expect(page.get_by_role('textbox', name='Message Counsel OS', exact=True)).to_have_value('Unsent draft A')
     print('PASS: per-conversation drafts do not bleed across chats')
     # Uploaded originals and extracted text are real, with clear support limits.
     page.get_by_role('button', name='New chat', exact=True).click()
@@ -117,7 +117,7 @@ with sync_playwright() as p:
     page.get_by_label('Upload document', exact=True).set_input_files({'name': 'Evidence upload.txt', 'mimeType': 'text/plain', 'buffer': 'Interview pending. 📄 Exact original.\r\n'.encode('utf8')})
     expect(page.get_by_role('dialog')).to_have_count(0)
     expect(page.locator('.document-chip')).to_contain_text('Evidence upload.txt')
-    page.get_by_role('textbox', name='Message Counsel', exact=True).fill('What does the attached text establish?')
+    page.get_by_role('textbox', name='Message Counsel OS', exact=True).fill('What does the attached text establish?')
     page.get_by_role('button', name='Send message', exact=True).click()
     page.wait_for_url('**/#/home?id=*')
     uploaded_id = page.url.split('id=')[1]

@@ -79,7 +79,7 @@ export function mapImportProfile(body: string): ImportProfileMapping {
     else if (candidates[0]?.length && candidates[0].length > field.limit) warnings.push(`${field.label} exceeds ${field.limit.toLocaleString('en-US')} characters. It was not shortened or applied. Enter a shorter version below; the full text stays in the original file.`);
     else if (candidates[0]) { draft[field.key] = candidates[0]; mapped.push(field.key); }
   }
-  if (mapped.length && !draft.name) warnings.push('Enter your name to use these details. Counsel does not choose your identity from a team list.');
+  if (mapped.length && !draft.name) warnings.push('Enter your name to use these details. Counsel OS does not choose your identity from a team list.');
   const unmappedSections = headings.filter((heading, index) => !covered.has(index) && heading.level >= 2).map(heading => heading.label);
   if (new Set(unmappedSections).size > 30) warnings.push('Only the first 30 unmapped section names are listed. Review the full original for the remaining sections.');
   return { suggestion: mapped.length ? ProfileFields.extend({ name: ProfileFields.shape.name.or(z.literal('')) })

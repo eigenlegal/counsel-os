@@ -1,4 +1,5 @@
-import { Output, stepCountIs, streamText, tool, type LanguageModel } from 'ai';
+import { Output, stepCountIs, streamText, tool, type LanguageModel, type ModelMessage } from 'ai';
+import { imageInputLabel } from '../core/image-input';
 import type { Capabilities, ModelProvider, StepEvent, StepRequest } from '../core/types';
 import { runToolDef } from '../core/fake-provider';
 import { baseURLFor, localityFor, prefixOf, vendorFor } from './vendors';
@@ -32,7 +33,7 @@ export class DirectProvider implements ModelProvider {
     const result = streamText({
       model: this.model,
       system: req.system,
-      messages: req.messages,
+      messages: directMessages(req),
       tools,
       stopWhen: stepCountIs(req.maxToolCalls ?? 20),
       // The step's cancellation. Without it an aborted step leaves the HTTP
@@ -92,6 +93,19 @@ export class DirectProvider implements ModelProvider {
       }
     }
   }
+}
+
+export function directMessages(req: StepRequest): ModelMessage[] {
+  if (!req.images?.length) return req.messages;
+  let lastUser = -1;
+  req.messages.forEach((message, index) => { if (message.role === 'user') lastUser = index; });
+  if (lastUser < 0) throw new Error('Image input requires a user message.');
+  return req.messages.map((message, index) => index !== lastUser ? message : { role: 'user', content: [
+    ...req.images!.flatMap((image, imageIndex) => [
+      { type: 'text' as const, text: imageInputLabel(image, imageIndex) },
+      { type: 'file' as const, data: Buffer.from(image.data, 'base64'), mediaType: image.mediaType },
+    ]), { type: 'text', text: message.content },
+  ] });
 }
 
 /**

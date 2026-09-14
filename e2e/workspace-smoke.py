@@ -188,7 +188,7 @@ with sync_playwright() as p:
         assert page.locator('.app-sidebar').evaluate('(el) => el.getBoundingClientRect().right <= 0'), name
     page.get_by_role('button', name='Open navigation').click()
     expect(page.locator('.app-sidebar')).to_have_class(re.compile('sidebar-open'))
-    expect(page.get_by_role('link', name='Counsel chats', exact=True)).to_be_focused()
+    expect(page.get_by_role('link', name='Counsel OS chats', exact=True)).to_be_focused()
     page.keyboard.press('Shift+Tab')
     expect(page.locator('.sidebar-bottom').get_by_role('link', name='Settings', exact=True)).to_be_focused()
     page.get_by_role('link', name='Chats', exact=True).click()

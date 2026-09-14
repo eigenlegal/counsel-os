@@ -71,7 +71,7 @@ export function ImportOrganization({ batchId, revisionId, entryIds, mode, data, 
     finally { setBusy(false); }
   }
   const matters = [...(result?.sharedMatters ?? []), ...data.matters];
-  return <Modal title={mode === 'bulk' ? 'Organize selected files' : 'Review organization with Counsel'} onClose={close} busy={busy}>
+  return <Modal title={mode === 'bulk' ? 'Organize selected files' : 'Review organization with Counsel OS'} onClose={close} busy={busy}>
     <div className="record-form import-organize-form">
       <p>{entryIds.length} selected files. This changes only your import choices. Files stay staged until you confirm the final import.</p>
       {mode === 'bulk' ? <>
@@ -84,7 +84,7 @@ export function ImportOrganization({ batchId, revisionId, entryIds, mode, data, 
         {matter === 'new' && <label>New matter name<input aria-label="Bulk new matter name" value={title} maxLength={200} disabled={busy} onChange={e => setTitle(e.target.value)} /></label>}
         <p className="fine-print">All {entryIds.length} selected files are included, even on other pages. Titles, contents and unrelated choices stay unchanged. Final import links files to the chosen matter, giving its chats access. Practice guidance still needs separate approval.</p>
       </> : !result ? <>
-        <label>Anything Counsel should know? <span className="fine-print">Optional</span>
+        <label>Anything Counsel OS should know? <span className="fine-print">Optional</span>
           <textarea aria-label="Organization instructions" rows={3} maxLength={2000} disabled={busy} value={instruction} onChange={e => setInstruction(e.target.value)}
             placeholder="For example: these are files for the Northstar renewal, except the reusable checklist…" /></label>
         <p className="fine-print">Generate suggestions sends the selected files’ names, current choices, first 3,000 text characters per file, and matching matter names to {data.connection.label}{data.connection.config ? ` · ${data.connection.config.model}` : ''}. It does not share other matter contents or your profile. Review suggestions before saving them.</p>
@@ -102,7 +102,7 @@ export function ImportOrganization({ batchId, revisionId, entryIds, mode, data, 
             <details><summary>Supporting text</summary><blockquote>{item.evidenceQuote}</blockquote></details>
           </section>)}
         </div>
-        <details className="fine-print"><summary>What Counsel received</summary>
+        <details className="fine-print"><summary>What Counsel OS received</summary>
           <p>Only these selected files’ names, current choices and first 3,000 text characters per file. The following candidate names were also supplied, not their matter contents:</p>
           {result.sharedMatters.length ? <ul>{result.sharedMatters.map(item => <li key={item.id}>{item.title}</li>)}</ul> : <p>No matching matter names.</p>}
         </details>

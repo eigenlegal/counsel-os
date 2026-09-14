@@ -1,4 +1,4 @@
-/** Opt-in live test: two bounded calls on synthetic text, never personal files. */
+/** Opt-in live test: bounded batches and at most one repair per file, never personal files. */
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -34,12 +34,13 @@ if (options.mode !== 'live') {
     const nda = job.suggestions.filter(item => item.path.startsWith('Loose/'));
     const dispute = job.suggestions.find(item => item.path === 'Other folder/b.txt');
     const background = job.suggestions.find(item => item.path === 'z.txt');
-    const checks = { complete: job.status === 'complete', allAnalyzed: job.analyzed === 11, twoCalls: job.calls === 2,
+    const checks = { complete: job.status === 'complete', allAnalyzed: job.analyzed === 11, boundedCalls: job.calls >= 2 && job.calls <= 13,
       ndaGrouped: nda.length === 9 && !!nda[0]!.choice.matterTitle && new Set(nda.map(item => item.choice.matterTitle)).size === 1,
       noDealPromotion: nda.every(item => item.choice.destination === 'source' && item.choice.collection !== 'practice' && !item.choice.matterId),
       existingDispute: dispute?.choice.matterId === employment.id && !dispute.choice.matterTitle,
       companyNotForced: !!background && !background.choice.matterId && !background.choice.matterTitle && background.choice.destination === 'source',
-      noPrematureChanges: store.imports.get(batch.id).revisionId === ready.revisionId && !store.catalog().sources.length && !store.catalog().knowledge.length };
+      noPrematureImport: !store.catalog().sources.length && !store.catalog().knowledge.length,
+      clearChoicesPrepared: job.suggestions.every(item => item.confidence !== 'high' || item.applied) };
     console.log(JSON.stringify({ root, checks, message: job.message,
       suggestions: job.suggestions.map(({ path, choice, confidence, reason }) => ({ path, choice, confidence, reason })) }, null, 2));
     if (Object.values(checks).some(value => !value)) process.exitCode = 1;

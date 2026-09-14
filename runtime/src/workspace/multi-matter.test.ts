@@ -85,7 +85,7 @@ test('combined responses remain unfiled with frozen selection receipts across ed
   expect(store.conversations.get(f.chat.id).selectedMatters?.[0]?.title).toBe('Renamed synthetic matter');
   expect(store.conversations.turn(turn.id).state.scopeContext?.selectedMatters).toEqual(f.chat.selectedMatters);
   const backup=await createWorkspaceBackup(store.databasePath);
-  expect((await inspectWorkspaceBackup(backup.bytes)).schemaVersion).toBe(19);
+  expect((await inspectWorkspaceBackup(backup.bytes)).schemaVersion).toBe(20);
   const path=join(root,backup.name); writeFileSync(path,backup.bytes);
   const restored=await restoreWorkspaceBackup(path,root);
   const copy=new WorkspaceStore({databasePath:restored.databasePath});

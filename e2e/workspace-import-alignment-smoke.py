@@ -17,7 +17,7 @@ with sync_playwright() as p:
     page.goto(BASE + '/#token=workspace-browser-test-only')
     page.wait_for_load_state('networkidle')
     page.goto(BASE + '/#/imports')
-    checkbox = page.get_by_role('checkbox', name='Let Counsel organize my files after upload', exact=True)
+    checkbox = page.get_by_role('checkbox', name='Let Counsel OS organize my files after upload', exact=True)
     expect(checkbox).to_be_checked()
     expect(checkbox).to_have_attribute('aria-describedby', 'import-ai-description')
     option = page.locator('.import-ai-option')

@@ -54,22 +54,22 @@ export function WorkingPreferences({ data, changed, editProfile, section = 'docu
     catch (e) { setError((e as Error).message); }
     finally { setBusy(false); }
   }
-  const author = fields.authorMode === 'profile' ? data.profile?.name ?? 'Counsel' : fields.authorMode === 'custom' ? fields.customAuthor : 'Counsel';
+  const author = fields.authorMode === 'profile' ? data.profile?.name ?? 'Counsel OS' : fields.authorMode === 'custom' ? fields.customAuthor : 'Counsel OS';
   return <section className="working-preferences-editor" aria-label="Working preferences editor">
     {(data.interfaceVersion ?? 0) >= 29 && <DraftRecoveryNotice recovery={recovery} />}
     {dirty && <p className="field-help">These edits are not in use until you save working preferences.</p>}
-    <p className="field-help">{section === 'writing' ? 'Your writing defaults and recorded signing guidance. These fields are supplied to new chats independently of profile sharing.' : 'Standing instructions for how Counsel reviews documents. These are separate from your legal positions.'}</p>
-    <p className="field-help">You can also ask in chat: “For future NDA reviews, explain material edits in short comments.” Counsel will show the proposed wording for your confirmation before saving it here.</p>
+    <p className="field-help">{section === 'writing' ? 'Your writing defaults and recorded signing guidance. These fields are supplied to new chats independently of profile sharing.' : 'Standing instructions for how Counsel OS reviews documents. These are separate from your legal positions.'}</p>
+    <p className="field-help">You can also ask in chat: “For future NDA reviews, explain material edits in short comments.” Counsel OS will show the proposed wording for your confirmation before saving it here.</p>
     <form className="record-form" onSubmit={save}><fieldset className="draft-fields" disabled={!recovery.ready}>
       {section === 'writing' ? <>
         <label>Writing instructions<textarea aria-label="Writing instructions" rows={16} value={fields.writingInstructions} maxLength={16000} disabled={busy || assisting}
-          placeholder="How you want Counsel to write, including differences for chat, memos, emails, and other audiences. Markdown is supported."
+          placeholder="How you want Counsel OS to write, including differences for chat, memos, emails, and other audiences. Markdown is supported."
           onChange={e => change('writingInstructions', e.target.value)} /></label>
         <p className="field-help">Included in full with new responses, not shortened or selected through search. Audience-specific rules apply only to that kind of work. These instructions take precedence over an older profile writing excerpt.</p>
         <label>Signing guidance<textarea aria-label="Signing guidance" rows={7} value={fields.signingInstructions} maxLength={4000} disabled={busy || assisting}
           placeholder="Who may sign which agreements, for which entities, and within what limits."
           onChange={e => change('signingInstructions', e.target.value)} /></label>
-        <p className="field-help">Recorded guidance only. Counsel cannot verify authority, automatically fill signing details, or sign a document. It should ask when the entity, agreement type, currency, or value basis is unclear.</p>
+        <p className="field-help">Recorded guidance only. Counsel OS cannot verify authority, automatically fill signing details, or sign a document. It should ask when the entity, agreement type, currency, or value basis is unclear.</p>
       </> : <>
       <label>General document review
         <textarea aria-label="General document review" rows={4} value={fields.generalReview} maxLength={4000} disabled={busy || assisting}
@@ -89,12 +89,12 @@ export function WorkingPreferences({ data, changed, editProfile, section = 'docu
       <h2>Word output</h2>
       <div className="form-pair"><label>Changes and comments attributed to
         <select aria-label="Changes and comments attributed to" value={fields.authorMode} disabled={busy || assisting} onChange={e => change('authorMode', e.target.value as typeof fields.authorMode)}>
-          <option value="counsel">Counsel</option><option value="profile">Your profile name{data.profile ? ` · ${data.profile.name}` : ''}</option><option value="custom">A custom name</option>
+          <option value="counsel">Counsel OS</option><option value="profile">Your profile name{data.profile ? ` · ${data.profile.name}` : ''}</option><option value="custom">A custom name</option>
         </select></label>
         {fields.authorMode === 'custom' && <label>Word author name<input required maxLength={200} value={fields.customAuthor} disabled={busy || assisting} onChange={e => change('customAuthor', e.target.value)} /></label>}
       </div>
       <label>Word filename pattern<input required maxLength={180} value={fields.filenamePattern} disabled={busy || assisting} onChange={e => change('filenamePattern', e.target.value)} /></label>
-      <p className="field-help">Use {'{document}'}, {'{variant}'}, {'{date}'} (UTC), and {'{author}'}. Counsel adds .docx. Applies to new redlines and answer exports.</p>
+      <p className="field-help">Use {'{document}'}, {'{variant}'}, {'{date}'} (UTC), and {'{author}'}. Counsel OS adds .docx. Applies to new redlines and answer exports.</p>
       <details className="profile-options">
         <summary>Customize filename labels</summary>
         <p className="field-help">Choose what {'{variant}'} becomes for each output. For example, “ExampleCo redline” and “Draft”.</p>
@@ -104,7 +104,7 @@ export function WorkingPreferences({ data, changed, editProfile, section = 'docu
         </div>
       </details>
       <FilenameExamples pattern={fields.filenamePattern} author={author} redlineLabel={fields.redlineLabel} draftLabel={fields.draftLabel} />
-      <p className="field-help">Attribution changes only new changes and comments made by Counsel; earlier reviewers keep their names. It does not indicate human approval. Word settings are applied locally, even when profile sharing is off. Clean-copy generation is not automated yet.</p>
+      <p className="field-help">Attribution changes only new changes and comments made by Counsel OS; earlier reviewers keep their names. It does not indicate human approval. Word settings are applied locally, even when profile sharing is off. Clean-copy generation is not automated yet.</p>
       </>}
       {notice && <p role="status">{notice}</p>}{error && <ErrorNotice message={error} />}
       <div className="dialog-actions"><button type="button" className="button button-quiet" disabled={busy || assisting} onClick={() => void reload()}>Reload saved preferences</button>

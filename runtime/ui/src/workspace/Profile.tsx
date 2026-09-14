@@ -16,7 +16,7 @@ const EMPTY: ProfileFields = {
   applyToChats: true,
 };
 export const ProfileSetupContext = createContext<(() => void) | null>(null);
-const IDENTITY_GUIDANCE = 'When profile sharing is on, Counsel is instructed to use this saved identity—not your AI login—and ask when identity details are missing.';
+const IDENTITY_GUIDANCE = 'When profile sharing is on, Counsel OS is instructed to use this saved identity—not your AI login—and ask when identity details are missing.';
 const LOGIN_CONTEXT_NOTE = 'Claude Code may independently include login details in its context. These instructions and the profile-sharing switch do not remove that information.';
 type LongField = readonly [Exclude<keyof ProfileFields, 'applyToChats'>, string, string, number];
 const sections: ReadonlyArray<readonly [string, ReadonlyArray<LongField>]> = [
@@ -61,7 +61,7 @@ const sections: ReadonlyArray<readonly [string, ReadonlyArray<LongField>]> = [
       [
         'escalationThresholds',
         'When to flag or escalate',
-        'Issues or thresholds Counsel should bring to your attention. This does not send notifications.',
+        'Issues or thresholds Counsel OS should bring to your attention. This does not send notifications.',
         2000,
       ],
     ],
@@ -122,7 +122,7 @@ export function ProfileCard({
       <div className="section-heading">
         <div>
           <h2>Your profile</h2>
-          <p>Your practice context and how Counsel works with you.</p>
+          <p>Your practice context and how Counsel OS works with you.</p>
         </div>
         <div className="profile-card-actions">{profile && (
           <Badge tone={profile.applyToChats ? 'blue' : 'neutral'}>
@@ -261,7 +261,7 @@ export function ProfileEditor({
     >
       <form className="record-form profile-form" onSubmit={submit}>
         <p className="form-intro">
-          Only your name is required. The rest helps Counsel understand your practice and write in
+          Only your name is required. The rest helps Counsel OS understand your practice and write in
           your voice.
         </p>
         <label>
@@ -298,7 +298,7 @@ export function ProfileEditor({
           </label>
         </div>
         <p className="field-help profile-identity-guidance">
-          Before saving, confirm the name and organization you want Counsel to use for your work.{' '}
+          Before saving, confirm the name and organization you want Counsel OS to use for your work.{' '}
           {IDENTITY_GUIDANCE}
         </p>
         {sections.map(([title, items]) => (

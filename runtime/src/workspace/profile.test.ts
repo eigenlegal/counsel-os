@@ -53,14 +53,14 @@ const send = () => ({ clientId: crypto.randomUUID(), message: 'Draft a brief upd
 describe('single-user profile', () => {
   test('fresh workspaces have no invented identity; a name-only profile persists and is not indexed as authority', () => {
     expect(store.getProfile()).toBeNull();
-    const profile = store.saveProfile({ name: '  Synthetic Counsel  ', expectedRevisionId: null });
+    const profile = store.saveProfile({ name: '  Synthetic Counsel OS  ', expectedRevisionId: null });
     expect(profile).toMatchObject({
-      name: 'Synthetic Counsel',
+      name: 'Synthetic Counsel OS',
       version: 1,
       applyToChats: true,
       principles: '',
     });
-    expect(store.search({ query: 'Synthetic Counsel' }).hits).toHaveLength(0);
+    expect(store.search({ query: 'Synthetic Counsel OS' }).hits).toHaveLength(0);
     const path = store.databasePath;
     store.close();
     store = new WorkspaceStore({ databasePath: path });
@@ -239,7 +239,10 @@ describe('single-user profile', () => {
     });
     expect(store.conversations.turn(a.id).state.profileContext).toEqual(first);
     const names = provider.lastRequest!.tools.map((tool) => tool.name);
-    expect(names).toHaveLength(15);
+    expect(names).toHaveLength(18);
+    expect(names).toContain('counsel_read_practice');
+    expect(names).toContain('counsel_propose_practice');
+    expect(names).toContain('counsel_fetch_webpage');
     expect(names).toContain('counsel_lookup_statute');
     expect(names).toContain('counsel_read_entity');
     expect(names).toContain('counsel_check_signatory');

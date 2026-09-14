@@ -14,8 +14,8 @@ export async function prepareWorkspaceUpgrade(databasePath: string, target = WOR
   try {
     version = (db.query('PRAGMA user_version').get() as { user_version: number }).user_version;
     const application = (db.query('PRAGMA application_id').get() as { application_id: number }).application_id;
-    if (application !== WORKSPACE_APPLICATION_ID) throw new Error('Not a Counsel workspace. No upgrade was attempted.');
-    if (version > target) throw new Error('This workspace was opened by a newer Counsel version. Reinstall that version; do not downgrade this database.');
+    if (application !== WORKSPACE_APPLICATION_ID) throw new Error('Not a Counsel OS workspace. No upgrade was attempted.');
+    if (version > target) throw new Error('This workspace was opened by a newer Counsel OS version. Reinstall that version; do not downgrade this database.');
   } finally { db.close(); }
   if (version === target) return null;
   if (version < 5) throw new Error('This older development workspace needs an explicit migration before the desktop can open it. No files were changed.');

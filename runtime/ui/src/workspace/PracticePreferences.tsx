@@ -6,11 +6,14 @@ import { ProfileCard } from './Profile';
 import { WorkingPreferences } from './WorkingPreferences';
 import { EntityDirectory } from './EntityDirectory';
 import { FilenameExamples } from './FilenameExamples';
+import { PracticeDocumentPage } from './PracticeDocument';
 
 /** One home for personal context and review preferences; viewing never changes sharing or settings. */
 export function PracticePreferences({ data, changed, editProfile, view }: {
   data: Snapshot; changed: () => void; editProfile: () => void; view: string | null;
 }): JSX.Element {
+  if (data.practiceDocument) return <PracticeDocumentPage value={data.practiceDocument} changed={changed} startEditing={view === 'edit'} sourcePicker={(data.interfaceVersion ?? 0) >= 33}
+    imported={(data.sources ?? []).filter(file => /^(?:practice[ -])?profile(?:\.md)?$|^(?:working|practice)[ -]preferences(?:\.md)?$/i.test(file.title)).slice(0, 6)} />;
   const documents = view === 'documents';
   const writing = view === 'writing';
   const entities = view === 'entities';
@@ -48,7 +51,7 @@ function ReviewPreferences({ data, changed, editProfile, writing }: { data: Snap
     <p className="fine-print">Supplied to new chats in full, independently of profile sharing. Signing guidance does not verify authority or automatically fill or sign documents. Earlier responses keep their saved instruction versions.</p>
   </section>;
   const author = saved?.authorMode === 'custom' ? saved.customAuthor
-    : saved?.authorMode === 'profile' ? data.profile?.name || 'Counsel' : 'Counsel';
+    : saved?.authorMode === 'profile' ? data.profile?.name || 'Counsel OS' : 'Counsel OS';
   return <section className="settings-section preference-reading" aria-label="Saved document preferences">
     <div className="section-heading"><div><h2>Document review &amp; Word output</h2><p>Your standing review instructions and how new Word files are prepared.</p></div>
       <button className="button" onClick={() => setEditing(true)}>{saved ? 'Edit working preferences' : 'Set review preferences'}</button></div>

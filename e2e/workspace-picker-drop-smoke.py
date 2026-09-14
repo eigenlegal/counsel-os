@@ -23,7 +23,7 @@ with sync_playwright() as p:
     assert target['id'] not in [m['id'] for m in api()['matters']]
     page.goto(BASE+'/#token=workspace-browser-test-only')
     page.wait_for_load_state('networkidle')
-    field = page.get_by_role('textbox', name='Message Counsel', exact=True)
+    field = page.get_by_role('textbox', name='Message Counsel OS', exact=True)
     field.fill('An unsent synthetic question.\nKeep this line.')
     picker = page.get_by_role('button', name='Conversation context', exact=True)
     picker.click()

@@ -22,8 +22,15 @@ if (args.includes('auth') && args.includes('status')) {
   process.exit(mode === 'missing' ? 1 : 0);
 }
 const input = await Bun.stdin.text();
-const messages = JSON.parse(input.split('Conversation messages (JSON data):\n')[1]!);
+const envelope = args.includes('--input-format') ? JSON.parse(input) : null;
+const transcript = envelope ? envelope.message.content.find((part: { type: string; text?: string }) => part.type === 'text' && part.text?.startsWith('Conversation messages (JSON data):\n')).text : input;
+const messages = JSON.parse(transcript.split('Conversation messages (JSON data):\n')[1]!);
 const prompt = messages.at(-1).content as string;
+if (prompt === 'image transport fixture') {
+  const images = envelope?.message.content.filter((part: { type: string }) => part.type === 'image') ?? [];
+  emit({ type: 'result', subtype: 'success', result: `${images.length} image parts received`, usage: { input_tokens: 0, output_tokens: 0 } });
+  process.exit(0);
+}
 if (prompt === 'invalid json') {
   process.stdout.write('{invalid}\n');
   process.exit(0);

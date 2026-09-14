@@ -50,8 +50,8 @@ describe('humanizeStepError', () => {
 
   test('anything unmatched keeps the original words, with the vendor in front', () => {
     expect(humanizeStepError('something odd happened', CLAUDE)).toEqual({ line: 'Claude did not answer: something odd happened' });
-    // No provider recorded: "Counsel", never an invented vendor.
-    expect(humanizeStepError('something odd happened', '')).toEqual({ line: 'Counsel did not answer: something odd happened' });
+    // No provider recorded: "Counsel OS", never an invented vendor.
+    expect(humanizeStepError('something odd happened', '')).toEqual({ line: 'Counsel OS did not answer: something odd happened' });
     // An unknown vendor is named by its raw id.
     expect(humanizeStepError('boom', 'acme/model-1').line).toBe('acme/model-1 did not answer: boom');
   });

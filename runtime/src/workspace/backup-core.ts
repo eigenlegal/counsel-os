@@ -27,6 +27,7 @@ import { ExtractedFile } from "./files";
 import { TemplateFields, WorkspaceTemplates } from "./templates";
 import { ClientFields, SelectedClientMatters } from './clients';
 import { WorkingPreferences } from './working-preferences';
+import { PracticeDocument } from './practice-document';
 import { EntityRegistry } from './entities';
 import { validateNavigation } from './navigation';
 import { OrganizationJobState, OrganizationSuggestion } from './import-organization-job-types';
@@ -50,7 +51,7 @@ function schema(db: Database): string {
       .all(),
   );
 }
-function expectedSchema(version: 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19): string {
+function expectedSchema(version: 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20): string {
   const db = openWorkspaceDatabase(":memory:", version);
   try {
     return schema(db);
@@ -113,8 +114,8 @@ function checkedDatabase(path: string): Database {
     // Never run database-supplied triggers, views, modules or migrations during restore.
     if (
       application !== WORKSPACE_APPLICATION_ID ||
-      ![5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, WORKSPACE_SCHEMA_VERSION].includes(version) ||
-      schema(db) !== expectedSchema(version as 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19)
+      ![5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, WORKSPACE_SCHEMA_VERSION].includes(version) ||
+      schema(db) !== expectedSchema(version as 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20)
     )
       throw new Error(
         "The backup database schema is not supported by this app version.",
@@ -230,6 +231,15 @@ function checkedDatabase(path: string): Database {
           throw new Error('An organization suggestion does not match its import file.');
       }
     }
+    if (version >= 20) {
+      for (const row of db.query(`SELECT f.*,e.batch_id AS actual_batch FROM import_organization_files f
+        JOIN import_entries e ON e.id=f.entry_id`).iterate() as Iterable<{ entry_id: string; batch_id: string; actual_batch: string; attempts: number; issue: string | null; protected: number }>) {
+        if (row.batch_id !== row.actual_batch) throw new Error('An organization retry does not match its import file.');
+        z.number().int().min(0).max(2).parse(row.attempts);
+        z.string().min(1).max(1000).nullable().parse(row.issue);
+        if (row.issue && row.attempts === 0) throw new Error('Invalid organization retry state.');
+      }
+    }
     if (version >= 16) {
       const target = z.object({ kind: UpkeepDecision.shape.kind, targetId: z.string().uuid(), requestedAt: z.string().datetime(), error: z.string().max(2000).nullable() }).strict();
       for (const row of db.query('SELECT kind,target_id AS targetId,requested_at AS requestedAt,error FROM upkeep_queue').iterate()) target.parse(row);
@@ -304,7 +314,7 @@ export function buildBackup(
       source.query("PRAGMA user_version").get() as { user_version: number }
     ).user_version;
     if (
-      (version !== 5 && version !== 6 && version !== 7 && version !== 8 && version !== 9 && version !== 10 && version !== 11 && version !== 12 && version !== 13 && version !== 14 && version !== 15 && version !== 16 && version !== 17 && version !== 18 && version !== 19) ||
+      (version !== 5 && version !== 6 && version !== 7 && version !== 8 && version !== 9 && version !== 10 && version !== 11 && version !== 12 && version !== 13 && version !== 14 && version !== 15 && version !== 16 && version !== 17 && version !== 18 && version !== 19 && version !== 20) ||
       schema(source) !== expectedSchema(version)
     )
       throw new Error("The workspace schema is not supported for backup.");
@@ -504,6 +514,7 @@ export function restoreBackup(
 function retainedSetting(db: Database, key: string, value: string): boolean {
   if (key === 'workspace-navigation') { validateNavigation(db, JSON.parse(value)); return true; }
   if (key === 'working-preferences') { WorkingPreferences.parse(JSON.parse(value)); return true; }
+  if (key === 'practice-document') { PracticeDocument.parse(JSON.parse(value)); return true; }
   if (key === 'entity-registry') { EntityRegistry.parse(JSON.parse(value)); return true; }
   if (key === "practice-profile") {
     WorkspaceProfile.parse(JSON.parse(value));

@@ -124,7 +124,7 @@ test('SIGKILL preserves committed checkpoints and remaining queue; backup retain
   store = new WorkspaceStore({ databasePath: path });
   expect(store.upkeep.status().pending).toBe(3); expect(store.upkeep.status().attention).toBe(1);
   const finding = store.upkeep.status().items[0]!; store.upkeep.decide(decision(finding));
-  const backup = await createWorkspaceBackup(path); expect((await inspectWorkspaceBackup(backup.bytes)).schemaVersion).toBe(19);
+  const backup = await createWorkspaceBackup(path); expect((await inspectWorkspaceBackup(backup.bytes)).schemaVersion).toBe(20);
   const file = join(root, 'fixture.counsel-backup'); writeFileSync(file, backup.bytes);
   const restored = await restoreWorkspaceBackup(file, join(root, 'recovered'));
   const copy = new WorkspaceStore({ databasePath: restored.databasePath });
@@ -145,7 +145,7 @@ test('schema-15 backups remain valid and additive migration queues existing file
   try { const before = migrated.getSource(id); migrated.upkeep.pulse(); expect(migrated.upkeep.status().attention).toBe(1);
     expect(migrated.getSource(id)).toEqual(before); }
   finally { migrated.close(); }
-  const db = new Database(path); expect(db.query('PRAGMA user_version').get()).toEqual({ user_version: 19 }); expect(db.query('PRAGMA foreign_key_check').all()).toEqual([]); db.close();
+  const db = new Database(path); expect(db.query('PRAGMA user_version').get()).toEqual({ user_version: 20 }); expect(db.query('PRAGMA foreign_key_check').all()).toEqual([]); db.close();
 });
 
 test('backup validation refuses malformed derived finding identities rather than retaining unsafe review targets', async () => {

@@ -64,7 +64,7 @@ export function ConversationActions({ conversation, running = false, onChanged }
       <form className="record-form conversation-management" onSubmit={event => { event.preventDefault(); void apply(); }}>
         {action === 'rename' ? <label>Conversation title<input value={title} maxLength={300} required onChange={event => setTitle(event.target.value)} /></label>
           : <p className="conversation-management-title">{conversation.title}</p>}
-        {action === 'archive' && <p>Keep this conversation in Archived, out of your active list. Its history remains searchable and available to Counsel within the permitted scope.</p>}
+        {action === 'archive' && <p>Keep this conversation in Archived, out of your active list. Its history remains searchable and available to Counsel OS within the permitted scope.</p>}
         {action === 'restore' && <p>Return this conversation to Active. Its history will be available for search and future chat context again.</p>}
         {action === 'trash' && <>
           <p>Its messages and unsaved answer copies will leave normal search and future AI retrieval. You can restore the conversation from Trash.</p>

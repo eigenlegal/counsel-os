@@ -29,7 +29,7 @@ test('Practice has a distinct profile view with an explicit sharing status and d
 });
 test('saved identity explains login limits and points to Word attribution without changing sharing', () => {
   render(<PracticePreferences data={data} view={null} changed={() => { throw new Error('Viewing must not save'); }} editProfile={() => {}} />);
-  expect(screen.getByText(/Counsel is instructed to use this saved identity—not your AI login/)).toBeTruthy();
+  expect(screen.getByText(/Counsel OS is instructed to use this saved identity—not your AI login/)).toBeTruthy();
   expect(screen.getByText(/Claude Code may independently include login details/)).toBeTruthy();
   expect(screen.getByRole('link', { name: 'Word author setting' }).getAttribute('href')).toBe('#/knowledge?section=preferences&view=documents');
   expect(screen.getByText('Profile sharing off')).toBeTruthy();

@@ -8,7 +8,7 @@ test('source paths and explicit synthetic fixtures stay eligible for review', ()
 });
 test('private/generated paths stay excluded even if force-added', () => {
   for (const path of ['.env', 'runtime/.env.local', 'data/workspace.sqlite3', 'data/workspace.sqlite3-wal', 'data/work.db',
-    'data/work.sqlite-journal', 'client.counsel-backup', 'Counsel.dmg', 'Counsel.app/Contents/Info.plist', 'signing/key.p12',
+    'data/work.sqlite-journal', 'client.counsel-backup', 'Counsel OS.dmg', 'Counsel OS.app/Contents/Info.plist', 'signing/key.p12',
     'key.pem', 'node_modules/x.ts', 'runtime/ui/dist/index.html', 'backups/a.md', 'knowledge/matters/a.md',
     'knowledge/practice/profile.md', 'knowledge/memory/a.md', 'evals/outputs/a.json', 'evals/benchmarks/a.json',
     '.counsel/settings.json', '../outside', 'bad\nname']) expect(repositoryPathIssue(path)).not.toBeNull();

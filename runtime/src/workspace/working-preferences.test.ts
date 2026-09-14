@@ -71,7 +71,7 @@ test('legacy stored preferences and snapshots remain readable; overlong fields f
   const { writingInstructions, signingInstructions, ...legacy } = value;
   store.setSetting('working-preferences', legacy);
   expect(store.getWorkingPreferences()).toEqual(value);
-  expect(reviewInstructions({ revisionId: value.revisionId, version: 1, generalReview: '', ndaReview: '', word: { author: 'Counsel', filenamePattern: '{document}' } })?.writingInstructions).toBe('');
+  expect(reviewInstructions({ revisionId: value.revisionId, version: 1, generalReview: '', ndaReview: '', word: { author: 'Counsel OS', filenamePattern: '{document}' } })?.writingInstructions).toBe('');
   for (const [key, max] of [['writingInstructions', 16000], ['signingInstructions', 4000]] as const) {
     expect(WorkingPreferenceInput.safeParse({ expectedRevisionId: null, [key]: 'x'.repeat(max) }).success).toBe(true);
     expect(WorkingPreferenceInput.safeParse({ expectedRevisionId: null, [key]: 'x'.repeat(max + 1) }).success).toBe(false);
@@ -81,7 +81,7 @@ test('filename tokens are bounded and cannot introduce paths, devices or unknown
   for (const pattern of ['../{document}', '{client}', '{date', 'name\n.docx']) expect(FilenamePattern.safeParse(pattern).success).toBe(false);
   expect(WorkingPreferenceInput.safeParse({ expectedRevisionId: null, authorMode: 'custom' }).success).toBe(false);
   expect(wordFilename('{document}_{author}_{variant}', { document: '../NDA', author: 'A/B', variant: 'redline', date: '2026-01-01' })).toBe('-NDA_A-B_redline.docx');
-  expect(wordFilename('CON', { document: '', author: '', variant: '', date: '' })).toBe('Counsel CON.docx');
+  expect(wordFilename('CON', { document: '', author: '', variant: '', date: '' })).toBe('Counsel OS CON.docx');
   expect(Buffer.byteLength(wordFilename('{document}', { document: '通'.repeat(1000), author: '', variant: '', date: '' }))).toBeLessThanOrEqual(185);
 });
 test('filename labels are explicit, validated, preserved by older clients and optional on historical snapshots', () => {
@@ -92,7 +92,7 @@ test('filename labels are explicit, validated, preserved by older clients and op
   for (const redlineLabel of ['', '../name', '{author}', 'a\nb', 'x'.repeat(81)]) {
     expect(WorkingPreferenceInput.safeParse({expectedRevisionId:null, redlineLabel}).success).toBe(false);
   }
-  const oldWord = {author:'Counsel', filenamePattern:'{document} - {variant}'};
+  const oldWord = {author:'Counsel OS', filenamePattern:'{document} - {variant}'};
   expect(wordOutputFilename(oldWord, {document:'NDA', variant:'redline', date:'2026-01-01'})).toBe('NDA - redline.docx');
   expect(wordOutputFilename(oldWord, {document:'Review', variant:'draft', date:'2026-01-01'})).toBe('Review - draft.docx');
   const {redlineLabel, draftLabel, ...legacyStored} = legacyWrite;

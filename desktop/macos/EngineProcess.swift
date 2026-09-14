@@ -54,13 +54,13 @@ final class EngineProcess {
             DispatchQueue.main.async { [weak self] in
                 guard let self, self.process === child, !self.stopping, !bytes.isEmpty else { return }
                 self.buffer.append(bytes)
-                guard self.buffer.count <= 65_536 else { self.fail("Counsel could not verify its workspace engine."); return }
+                guard self.buffer.count <= 65_536 else { self.fail("Counsel OS could not verify its workspace engine."); return }
                 while let newline = self.buffer.firstIndex(of: 10) {
                     let line = self.buffer.prefix(upTo: newline); self.buffer.removeSubrange(...newline)
                     guard self.ready == nil,
                           let message = try? JSONDecoder().decode(EngineReady.self, from: line),
                           message.validated(pid: child.processIdentifier, database: self.database, build: self.buildID)
-                    else { self.fail("Counsel could not verify its workspace engine."); return }
+                    else { self.fail("Counsel OS could not verify its workspace engine."); return }
                     self.ready = message; self.onReady?(message)
                 }
             }
@@ -78,7 +78,7 @@ final class EngineProcess {
         do { try child.run() }
         catch {
             cleanup(); process = nil
-            onFailure?("Counsel’s workspace engine could not start. Check that the app bundle is complete.")
+            onFailure?("Counsel OS’s workspace engine could not start. Check that the app bundle is complete.")
             return
         }
         // An upgrade first makes and verifies a complete recovery archive. Do not
@@ -114,7 +114,7 @@ final class EngineProcess {
         if let failed { onFailure?(failed) }
         else if !planned {
             onFailure?(diagnostic.contains("already running")
-                ? "This workspace is already open in another Counsel process. Close that process before trying again."
+                ? "This workspace is already open in another Counsel OS process. Close that process before trying again."
                 : "The workspace engine stopped. Saved work is retained; review interrupted work after restarting.")
         }
         let callback = completion; completion = nil; callback?()

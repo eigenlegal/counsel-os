@@ -26,8 +26,8 @@ export function WorkingGuides({
       {!library && <h3>Working guides used</h3>}
       <p className="fine-print">
         {library
-          ? "Counsel selects relevant guides as you chat. Browsing here does not apply one to a conversation."
-          : "Selected by Counsel for this response."}{" "}
+          ? "Counsel OS selects relevant guides as you chat. Browsing here does not apply one to a conversation."
+          : "Selected by Counsel OS for this response."}{" "}
         These are methods, not verified law or your approved positions.
       </p>
       {guides.map((guide) => (

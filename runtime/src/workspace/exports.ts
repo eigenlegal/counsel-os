@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { LEGACY_DOCUMENT_AUTHOR } from '../core/brand';
 import type { Database } from 'bun:sqlite';
 import { z } from 'zod';
 import { all, one, required } from './queries';
@@ -124,7 +125,7 @@ export class WorkspaceExports {
       ? wordOutputFilename(prepared.wordPreferences, { document: prepared.name.replace(/\.docx$/i, ''), variant: 'redline', date: this.now().slice(0, 10) })
       : `${stem.replace(/^[. ]+|[. ]+$/g, '') || 'Document'} - redline.docx`,
       createdAt: this.now(), template, inputHash, contentHash: hashBytes(prepared.bytes),
-      byteCount: prepared.bytes.length, warnings: [`AI-drafted changes attributed in Word to ${prepared.wordPreferences?.author ?? 'Counsel'}. Review them before use. Original preserved; unrelated existing revisions and comments keep their authors and are not accepted or rejected.`] };
+      byteCount: prepared.bytes.length, warnings: [`AI-drafted changes attributed in Word to ${prepared.wordPreferences?.author ?? 'Counsel OS'}. Review them before use. Original preserved; unrelated existing revisions and comments keep their authors and are not accepted or rejected.`] };
     this.db.run('INSERT INTO work_exports VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [record.id, workId, record.name,
       record.createdAt, record.template, inputHash, record.contentHash, record.byteCount, JSON.stringify(record.warnings), JSON.stringify(snapshot), prepared.bytes]);
     return record;
@@ -133,7 +134,7 @@ export class WorkspaceExports {
   private cleanInput(id: string) {
     const redline = this.download(id);
     if (!['counsel-redline-v1', 'counsel-redline-v2'].includes(redline.record.template))
-      throw new WorkspaceConflictError('Create a clean proposal from a saved Counsel redline, not an answer export or another clean copy.');
+      throw new WorkspaceConflictError('Create a clean proposal from a saved Counsel OS redline, not an answer export or another clean copy.');
     const raw = required(one<{ snapshotJson: string }>(this.db, 'SELECT snapshot_json AS snapshotJson FROM work_exports WHERE id = ?', id), 'redline snapshot');
     const saved = JSON.parse(raw.snapshotJson);
     if (hashBytes(JSON.stringify({ template: redline.record.template, snapshot: saved })) !== redline.record.inputHash)
@@ -165,7 +166,7 @@ export class WorkspaceExports {
     const original = this.original(input.snapshot.sourceRevisionId);
     if (hashBytes(original.bytes) !== input.snapshot.originalHash) throw new WorkspaceConflictError('The original document failed its saved redline identity check.');
     const job = (async () => {
-      const output = await generateCleanProposal(original.bytes, input.redline.bytes, input.snapshot.wordPreferences?.author ?? 'Counsel', signal);
+      const output = await generateCleanProposal(original.bytes, input.redline.bytes, input.snapshot.wordPreferences?.author ?? LEGACY_DOCUMENT_AUTHOR, signal);
       return this.db.transaction(() => {
         signal.throwIfAborted();
         const current = this.cleanInput(id); // Recheck active parent, artifact and snapshot after the worker.
@@ -175,7 +176,7 @@ export class WorkspaceExports {
         if (existing) return existing;
         const createdAt = this.now(), word = input.snapshot.wordPreferences;
         let name = wordFilename(word?.filenamePattern ?? '{document} - {variant}', { document: original.name.replace(/\.docx$/i, ''),
-          variant: 'clean proposal', date: createdAt.slice(0, 10), author: word?.author ?? 'Counsel' });
+          variant: 'clean proposal', date: createdAt.slice(0, 10), author: word?.author ?? LEGACY_DOCUMENT_AUTHOR });
         // A pattern without {variant} must not give both artifacts the same download name.
         if ([input.redline.record.name, original.name].some(previous => previous.toLowerCase() === name.toLowerCase())) {
           let stem = '';
@@ -184,7 +185,7 @@ export class WorkspaceExports {
         }
         const record: WordExport = { id: randomUUID(), workId: input.redline.record.workId, name, createdAt, template: input.template,
           inputHash: input.inputHash, contentHash: hashBytes(output.bytes), byteCount: output.bytes.length,
-          warnings: ['Clean proposal only: this applies the saved Counsel changes in a separate copy; it does not record acceptance, approval or execution.',
+          warnings: ['Clean proposal only: this applies the saved Counsel OS changes in a separate copy; it does not record acceptance, approval or execution.',
             'Original and tracked redline preserved. Review numbering, cross-references and layout before use.',
             ...(output.report.commentsRetained ? ['Comments and their authors are retained, including drafting rationale. Review comments before sharing.'] : [])] };
         this.db.run('INSERT INTO work_exports VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [record.id, record.workId, record.name, createdAt,
@@ -242,9 +243,9 @@ export class WorkspaceExports {
           if (Buffer.byteLength(safeTitle + character) > 160) break;
           safeTitle += character;
         }
-        safeTitle = safeTitle.replace(/^[. ]+|[. ]+$/g, '') || 'Counsel output';
+        safeTitle = safeTitle.replace(/^[. ]+|[. ]+$/g, '') || 'Counsel OS output';
         if (/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/i.test(safeTitle))
-          safeTitle = `Counsel ${safeTitle}`;
+          safeTitle = `Counsel OS ${safeTitle}`;
         const result: WordExport = {
           id: randomUUID(),
           workId: snapshot.workId,

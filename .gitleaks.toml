@@ -1,4 +1,4 @@
-title = "Counsel source secret checks"
+title = "Counsel OS source secret checks"
 
 [extend]
 useDefault = true

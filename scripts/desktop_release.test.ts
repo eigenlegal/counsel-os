@@ -9,6 +9,10 @@ test('desktop version/build have an independent manifest and one safe plist subs
   expect(plist).toContain(`<key>CFBundleShortVersionString</key><string>${release.version}</string>`);
   expect(plist).toContain(`<key>CFBundleVersion</key><string>${release.build}</string>`);
   expect(plist).not.toContain('__DESKTOP_');
+  expect(plist).toContain('<key>CFBundleName</key><string>Counsel OS</string>');
+  expect(plist).toContain('<key>CFBundleDisplayName</key><string>Counsel OS</string>');
+  expect(plist).toContain('<key>CFBundleIdentifier</key><string>org.counsel.workspace.local</string>');
+  expect(plist).toContain('<key>CFBundleExecutable</key><string>Counsel</string>');
   expect(() => desktopPlist('missing placeholders', release)).toThrow();
 });
 test('a version cannot enable public distribution, inject XML or carry extra settings', () => {

@@ -21,7 +21,7 @@ with sync_playwright() as p:
     before = api()
     page.goto(BASE+'/#token=workspace-browser-test-only'); page.wait_for_load_state('networkidle')
     def send(text):
-        page.get_by_role('textbox', name='Message Counsel', exact=True).fill(text)
+        page.get_by_role('textbox', name='Message Counsel OS', exact=True).fill(text)
         page.get_by_role('button', name='Send message', exact=True).click()
         expect(page.get_by_text('Saved in conversation', exact=True).last).to_be_visible(timeout=15000)
         return page.url

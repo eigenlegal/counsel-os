@@ -35,7 +35,7 @@ test('Word body, numbering, tables and tracked changes are retained as inspectab
       {
         table: {
           rows: [
-            [{ paragraphs: [{ runs: ['Recipient'] }] }, { paragraphs: [{ runs: ['Counsel'] }] }],
+            [{ paragraphs: [{ runs: ['Recipient'] }] }, { paragraphs: [{ runs: ['Counsel OS'] }] }],
           ],
         },
       },

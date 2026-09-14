@@ -41,7 +41,7 @@ export async function buildDesktop(args: string[]) {
   if (engine.source?.sha256 !== sourceBefore.sha256) throw new Error('Engine source differs from this checkout. Rebuild it before wrapping it.');
   const output = opts.output ?? mkdtempSync(join(tmpdir(), 'counsel-desktop-build-'));
   if (opts.output) mkdirSync(output, { mode: 0o700 }); chmodSync(output, 0o700);
-  const app = join(output, 'Counsel.app'), macOS = join(app, 'Contents/MacOS'), resources = join(app, 'Contents/Resources');
+  const app = join(output, 'Counsel OS.app'), macOS = join(app, 'Contents/MacOS'), resources = join(app, 'Contents/Resources');
   mkdirSync(macOS, { recursive: true }); mkdirSync(resources);
   copyFileSync(join(engineFolder, 'counsel-workspace'), join(macOS, 'counsel-workspace'));
   copyFileSync(join(engineFolder, 'manifest.json'), join(resources, 'engine-manifest.json'));

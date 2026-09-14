@@ -42,12 +42,12 @@ export function PracticeLibrary({ data, openEditor, changed }: { data: Snapshot;
   }, []);
   const navigate = (values: Record<string, string>) => { location.hash = href('knowledge', values); };
   return <>
-    <PageHeader title="Practice" description="Your instructions, positions, methods, and starting documents. Ask Counsel to use or update them in chat."
+    <PageHeader title="Practice" description="Your instructions, positions, methods, and starting documents. Ask Counsel OS to use or update them in chat."
       action={!preferences && <div className="practice-add-actions"><button className="button" onClick={() => setAddingFile(true)}><Icon name="attach" size={16} />Add a file</button>
         <button className="button button-primary" onClick={() => category === 'template' ? setAddingTemplate(true) : openEditor({ kind: 'knowledge' })}><Icon name="plus" size={16} />{category === 'template' ? 'Add a template' : 'Add to practice'}</button></div>} />
     <div className="practice-sections" role="group" aria-label="Practice section">
       <button aria-pressed={!preferences} onClick={() => navigate({})}>Library</button>
-      <button aria-pressed={preferences} onClick={() => navigate({ section: 'preferences' })}>Profile &amp; preferences</button>
+      <button aria-pressed={preferences} onClick={() => navigate({ section: 'preferences' })}>{data.practiceDocument ? 'Your practice' : 'Profile & preferences'}</button>
     </div>
     {preferences ? <PracticePreferences data={data} changed={changed} editProfile={() => editProfile?.()} view={params.get('view')} /> : template ?
       <TemplateDetail item={template} data={data} changed={changed} /> : <section aria-label="Practice library">

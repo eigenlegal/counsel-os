@@ -23,11 +23,13 @@ import { SearchPage } from './SearchPage';
 import { Settings } from './Settings';
 import { ImportWorkspace } from './ImportWorkspace';
 import { ProfileEditor, ProfileSetupContext } from './Profile';
+import { PracticeDocumentModal, ConfirmPracticeIdentity } from './PracticeDocument';
 import { ConversationHistory } from './ConversationHistory';
 import { RecordTrash } from './RecordTrash';
 import { ImportActivity } from './ImportActivity';
 import { SidebarRecents } from './SidebarRecents';
 import { WorkspaceWelcome } from './WorkspaceWelcome';
+import { WorkspaceFrame } from './WorkspaceFrame';
 
 const nav: { page: Surface; label: string; icon: IconName }[] = [
   { page: 'home', label: 'Chats', icon: 'chat' },
@@ -106,6 +108,7 @@ export function WorkspaceApp(): JSX.Element {
   const [error, setError] = useState('');
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [editingProfile, setEditingProfile] = useState(false);
+  const [confirmingIdentity, setConfirmingIdentity] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
   const [compact, setCompact] = useState(() => window.matchMedia('(max-width: 760px)').matches);
   const [toast, setToast] = useState('');
@@ -202,7 +205,7 @@ export function WorkspaceApp(): JSX.Element {
     const label =
       nav.find((n) => n.page === route.page)?.label ??
       (route.page === 'search' ? 'Search' : route.page === 'work' ? 'Saved outputs' : route.page === 'trash' ? 'Trash' : route.page === 'imports' ? 'Import' : 'Settings');
-    document.title = `${label} — Counsel`;
+    document.title = `${label} — Counsel OS`;
     if (initialized.current) {
       if (route.page === 'search')
         contentRef.current?.querySelector<HTMLInputElement>('input')?.focus();
@@ -244,18 +247,21 @@ export function WorkspaceApp(): JSX.Element {
     );
     go(surfaces[kind], { id });
   };
-  const pageTitle =
+  if (data?.setup?.suggested) setupStarted.current = true;
+  const setupRequested = route.page === 'settings' && new URLSearchParams(routeHash.split('?')[1]).get('view') === 'setup';
+  const firstRun = setupStarted.current && !data?.setup?.dismissed && route.page === 'home' && !route.id && !routeHash.includes('?');
+  const setupAvailable = !!data?.setup && !data.setup.dismissed && !data.demo;
+  const showingSetup = setupAvailable && (setupRequested || firstRun);
+  const showingHistory = route.page === 'home' && !route.id && new URLSearchParams(routeHash.split('?')[1]).get('view') === 'history';
+  const pageTitle = showingSetup ? 'Workspace setup' :
     nav.find((n) => n.page === route.page)?.label ??
     (route.page === 'search' ? 'Search' : route.page === 'work' ? 'Saved outputs' : route.page === 'trash' ? 'Trash' : route.page === 'imports' ? 'Import' : 'Settings');
   let surface: JSX.Element | null = null;
   if (data) {
-    if (data.setup?.suggested) setupStarted.current = true;
-    const setupRequested = route.page === 'settings' && new URLSearchParams(routeHash.split('?')[1]).get('view') === 'setup';
-    const firstRun = setupStarted.current && !data.setup?.dismissed && route.page === 'home' && !route.id && !routeHash.includes('?');
-    if (setupRequested || firstRun) surface = <WorkspaceWelcome data={data} changed={refresh} editProfile={() => setEditingProfile(true)} />;
+    if (showingSetup) surface = <WorkspaceWelcome data={data} changed={refresh} editProfile={() => setEditingProfile(true)} />;
     else if (route.page === 'home') {
       const params = new URLSearchParams(routeHash.split('?')[1]);
-      surface = params.get('view') === 'history' && !route.id
+      surface = showingHistory
         ? <ConversationHistory data={data} conversations={conversations} onChanged={() => void refresh()} /> : (
         <Chat
           key={`${route.id ?? 'new'}:${params.get('new')}:${params.get('matter')}`}
@@ -293,7 +299,7 @@ export function WorkspaceApp(): JSX.Element {
       surface = <Library key={route.page} page={route.page} data={data} openEditor={setEditor} changed={refresh} />;
   }
   return (
-    <ProfileSetupContext.Provider value={() => setEditingProfile(true)}>
+    <ProfileSetupContext.Provider value={() => data?.practiceDocument ? setConfirmingIdentity(true) : setEditingProfile(true)}>
       <div className="workspace-app">
         <a
           className="skip-link"
@@ -337,21 +343,21 @@ export function WorkspaceApp(): JSX.Element {
         >
           <a
             className="brand"
-            href={href('home')}
-            aria-label="Counsel chats"
+            href={href('home', { view: 'history' })}
+            aria-label="Counsel OS chats"
             onClick={() => setMobileNav(false)}
           >
             <span className="brand-mark" aria-hidden="true">
               <i />
               <i />
             </span>
-            <span>
-              counsel<span className="brand-period">.</span>
-            </span>
+            <span className="brand-name">Counsel OS</span>
           </a>
           <div className="workspace-identity">
             <div>
               <strong>{data?.demo ? 'Example workspace' : 'Personal workspace'}</strong>
+              {setupAvailable && <a className="sidebar-setup" href={href('settings', { view: 'setup' })}
+                aria-current={showingSetup ? 'page' : undefined} onClick={() => setMobileNav(false)}>Finish setup</a>}
             </div>
             {data?.demo && <span className="workspace-example-badge">Test</span>}
           </div>
@@ -364,7 +370,9 @@ export function WorkspaceApp(): JSX.Element {
             onClick={() => {
               const next = href('home', { new: crypto.randomUUID() });
               location.hash = next;
-              setRoute(parseRoute(next));
+              // The hash-change guard saves the current draft before mounting
+              // a new chat. Eager mounting here makes that guard see the new,
+              // still-loading draft and roll the URL back to the old page.
               setMobileNav(false);
               if (shortcutsRef.current) shortcutsRef.current.scrollTop = 0;
             }}
@@ -378,8 +386,8 @@ export function WorkspaceApp(): JSX.Element {
                 key={item.page}
                 href={href(item.page, item.page === 'home' ? { view: 'history' } : {})}
                 onClick={() => setMobileNav(false)}
-                className={`nav-link ${route.page === item.page ? 'active' : ''} ${item.page === 'knowledge' ? 'nav-library-start' : ''}`}
-                aria-current={route.page === item.page ? 'page' : undefined}
+                className={`nav-link ${!showingSetup && route.page === item.page ? 'active' : ''} ${item.page === 'knowledge' ? 'nav-library-start' : ''}`}
+                aria-current={!showingSetup && route.page === item.page ? 'page' : undefined}
               >
                 <Icon name={item.icon} size={19} />
                 <span>{item.label}</span>
@@ -396,10 +404,10 @@ export function WorkspaceApp(): JSX.Element {
             <nav className="sidebar-utilities" aria-label="Workspace utilities">
             {data && <ImportActivity active={route.page === 'imports'} close={() => setMobileNav(false)} />}
             <a
-              className={route.page === 'settings' ? 'nav-link active' : 'nav-link'}
+              className={!showingSetup && route.page === 'settings' ? 'nav-link active' : 'nav-link'}
               href={href('settings')}
               onClick={() => setMobileNav(false)}
-              aria-current={route.page === 'settings' ? 'page' : undefined}
+              aria-current={!showingSetup && route.page === 'settings' ? 'page' : undefined}
             >
               <Icon name="settings" size={19} />
               Settings
@@ -417,37 +425,43 @@ export function WorkspaceApp(): JSX.Element {
         </aside>
         <div className="app-body">
           <header className="app-topbar">
-            <div className="topbar-location">
-              <button
-                className="icon-button mobile-menu"
-                aria-label="Open navigation"
-                aria-expanded={mobileNav}
-                onClick={() => setMobileNav(!mobileNav)}
-              >
-                <Icon name="menu" />
-              </button>
-              <span>Workspace</span>
-              <Icon name="chevron" size={13} />
-              <strong>{pageTitle}</strong>
-            </div>
-            <div className="topbar-actions">
-              <a href={href('search')} className="topbar-search mobile-search" aria-label="Search workspace">
-                <Icon name="search" size={17} />
-                <span>Search workspace</span>
-                <kbd>⌘ K</kbd>
-              </a>
-            </div>
+            <WorkspaceFrame className="topbar-frame">
+              <div className="topbar-location">
+                <button
+                  className="icon-button mobile-menu"
+                  aria-label="Open navigation"
+                  aria-expanded={mobileNav}
+                  onClick={() => setMobileNav(!mobileNav)}
+                >
+                  <Icon name="menu" />
+                </button>
+                <span>Workspace</span>
+                <Icon name="chevron" size={13} />
+                <strong>{pageTitle}</strong>
+              </div>
+              <div className="topbar-actions">
+                <a href={href('search')} className="topbar-search mobile-search" aria-label="Search workspace">
+                  <Icon name="search" size={17} />
+                  <span>Search workspace</span>
+                  <kbd>⌘ K</kbd>
+                </a>
+              </div>
+            </WorkspaceFrame>
           </header>
           {data?.demo && (
             <div className="demo-banner">
-              <Badge tone="blue">Example workspace</Badge>
-              <span>
-                Seeded with examples; added files may contain real information. Chats use your selected AI connection.
-              </span>
-              <a href={href('settings')}>About this workspace</a>
+              <WorkspaceFrame className="demo-banner-frame">
+                <Badge tone="blue">Example workspace</Badge>
+                <span>
+                  Seeded with examples; added files may contain real information. Chats use your selected AI connection.
+                </span>
+                <a href={href('settings')}>About this workspace</a>
+              </WorkspaceFrame>
             </div>
           )}
-          <main
+          <WorkspaceFrame
+            as="main"
+            mode={route.page === 'home' && !showingHistory ? 'canvas' : 'page'}
             ref={contentRef}
             id="workspace-content"
             className={`app-content page-${route.page}`}
@@ -461,8 +475,8 @@ export function WorkspaceApp(): JSX.Element {
                 }}
               />
             )}
-          {data && data.interfaceVersion !== 29 && (
-              <ErrorNotice message="The interface and workspace engine need the same update. Quit and reopen the updated Counsel app, or restart your original workspace command. Saved records are preserved." />
+          {data && data.interfaceVersion !== 33 && (
+              <ErrorNotice message="The interface and workspace engine need the same update. Quit and reopen the updated Counsel OS app, or restart your original workspace command. Saved records are preserved." />
             )}
             {!data && !error && (
               <div className="loading-state" role="status">
@@ -474,12 +488,12 @@ export function WorkspaceApp(): JSX.Element {
                 <Icon name="shield" size={32} />
                 <h1>Let’s open your workspace.</h1>
                 <p>
-                  Open Counsel on this device. If you use the developer version, run <code>bun run workspace</code> and open the link it prints.
+                  Open Counsel OS on this device. If you use the developer version, run <code>bun run workspace</code> and open the link it prints.
                 </p>
               </div>
             )}
             {surface}
-          </main>
+          </WorkspaceFrame>
         </div>
         {toast && (
           <div className="toast" role="status">
@@ -497,7 +511,9 @@ export function WorkspaceApp(): JSX.Element {
         {editor && data && (
           <Editor state={editor} data={data} onClose={() => setEditor(null)} onSaved={saved} />
         )}
-        {editingProfile && data && (
+        {editingProfile && data?.practiceDocument && <PracticeDocumentModal value={data.practiceDocument} startEditing={(data.interfaceVersion ?? 0) >= 33} close={() => setEditingProfile(false)} changed={() => void refresh()} />}
+        {confirmingIdentity && data?.practiceDocument && <ConfirmPracticeIdentity value={data.practiceDocument} close={() => setConfirmingIdentity(false)} saved={() => { setConfirmingIdentity(false); void refresh(); }} />}
+        {editingProfile && data && !data.practiceDocument && (
           <ProfileEditor
             profile={data.profile}
             close={() => setEditingProfile(false)}

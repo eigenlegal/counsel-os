@@ -24,7 +24,7 @@ export function useImportUploads(): ImportUpload[] {
   return useSyncExternalStore(listener => { listeners.add(listener); return () => { listeners.delete(listener); }; }, () => snapshot);
 }
 // Browser File handles live here, not in the page component. Navigation inside
-// Counsel does not stop transfer; closing/reloading the tab still loses handles.
+// Counsel OS does not stop transfer; closing/reloading the tab still loses handles.
 window.addEventListener('beforeunload', event => {
   if (snapshot.some(item => item.state !== 'complete' && item.uploaded < item.total)) {
     event.preventDefault();

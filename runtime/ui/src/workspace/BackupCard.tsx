@@ -92,7 +92,7 @@ export function BackupCard({ desktop = false }: { desktop?: boolean }): JSX.Elem
             type="file"
             tabIndex={-1}
             accept=".counsel-backup"
-            aria-label="Choose a Counsel backup"
+            aria-label="Choose a Counsel OS backup"
             disabled={!!busy}
             onChange={(event) => {
               const file = event.target.files?.[0];
@@ -138,7 +138,7 @@ export function BackupCard({ desktop = false }: { desktop?: boolean }): JSX.Elem
         )}
         <details className="backup-restore">
           <summary>Restore a separate workspace</summary>
-          {desktop ? <><p>Choose a backup, review its contents, then restore a new workspace. Your current workspace is kept. Counsel remembers the workspace you open.</p><a className="button" href="counsel-desktop://restore">Restore workspace from backup</a><p>Use File → Open personal workspace to return, or File → Open workspace to choose another saved copy.</p></> : <>
+          {desktop ? <><p>Choose a backup, review its contents, then restore a new workspace. Your current workspace is kept. Counsel OS remembers the workspace you open.</p><a className="button" href="counsel-desktop://restore">Restore workspace from backup</a><p>Use File → Open personal workspace to return, or File → Open workspace to choose another saved copy.</p></> : <>
           <p>
             For this development version, stop the workspace in its terminal, then run the command
             below with your backup’s full path. You can type the command through{' '}
@@ -148,7 +148,7 @@ export function BackupCard({ desktop = false }: { desktop?: boolean }): JSX.Elem
             bun run workspace --restore /path/to/file.counsel-backup
           </code>
           <p>
-            Counsel verifies the backup and opens a new recovered copy. Existing workspaces are
+            Counsel OS verifies the backup and opens a new recovered copy. Existing workspaces are
             never overwritten. Reconnect your AI in Settings; unfinished responses stay interrupted
             until you send a new request.
           </p>

@@ -564,7 +564,7 @@ export function fixtureFromDraft(draft: FixtureDraft, decisions: SaveDecisions):
     source: { kind: 'practice', name: `thread ${draft.from.threadId}` },
     input: { contract_text: text },
     expected_catches: expected.map(c => ({ id: c.id, severity: c.severity, clause: c.clause, why: c.why, match_any: c.match_any })),
-    negative_checks: penalized.map(c => ({ id: c.id, description: `Counsel raised this and the lawyer rejected it: ${c.title}`, match_any: c.match_any })),
+    negative_checks: penalized.map(c => ({ id: c.id, description: `Counsel OS raised this and the lawyer rejected it: ${c.title}`, match_any: c.match_any })),
     expected_citations: draft.citations,
     // What the review cited IS the allowed set: the scorer counts a citation
     // outside it as a hallucinated source, and every one of these came from

@@ -81,7 +81,7 @@ export interface ApplyOptions {
 
 const CONTEXT_CHARS = 160;
 const NESTED_REASON =
-  'Changed text lies inside a hyperlink or an existing tracked insertion; nested revision markup is not supported — resolve the earlier revision first or apply without --track';
+  'Changed text lies inside an existing tracked insertion or unsupported nested structure. No earlier revisions were accepted or rejected. Editing that earlier revision requires a separate explicit decision; ordinary hyperlinks are supported.';
 const OVERLAP_REASON = "Text at the resolved location changed before this edit was applied (an earlier item's replacement overlaps it)";
 
 export function truncate(text: string, length = 80): string {
@@ -90,13 +90,14 @@ export function truncate(text: string, length = 80): string {
 
 // ── Runs the way python-docx saw them ──────────────────────────────────────
 
-/** `get_runs`: `./w:r | ./w:hyperlink/w:r | ./w:ins/w:r` — direct children
- * only; never under `w:del`. */
+/** Editable text includes runs inside hyperlinks and insertions, never
+ * deletions or fields. The tracking preflight separately protects earlier
+ * revisions, including revisions inside hyperlinks. */
 export function editableRuns(p: Element): Element[] {
   const out: Element[] = [];
   for (const c of children(p)) {
     if (isW(c, 'r')) out.push(c);
-    else if (isW(c, 'hyperlink') || isW(c, 'ins')) for (const r of children(c)) if (isW(r, 'r')) out.push(r);
+    else if (isW(c, 'hyperlink') || isW(c, 'ins')) out.push(...editableRuns(c));
   }
   return out;
 }
@@ -274,6 +275,31 @@ export function collectMatches(pkg: DocxPackage, current: string, warn: (message
   for (const p of model.paragraphs) if (p.cell !== null) matches.push(...matchesInParagraph(p, current, matches.length));
   matches.push(...unsupportedMatches(pkg, current, matches.length, warn));
   return matches;
+}
+
+/** The Markdown reader renders native Word list labels, which are not run
+ * text. Resolve only an exact WHOLE numbered paragraph with its actual
+ * rendered label. Never strip arbitrary punctuation or fuzzy-match text. */
+function numberedDisplayMatch(pkg: DocxPackage, item: RedlineItem): { item: RedlineItem; matches: TextMatch[] } | null {
+  let prefix: string | undefined;
+  const paragraphs: DocxParagraph[] = [];
+  for (const p of modelOf(pkg).paragraphs) {
+    if (!p.numberLabel) continue;
+    const label = p.numberLabel === '•' ? '- ' : `${p.numberLabel} `;
+    if (item.current === label + paragraphEditText(p.element)) {
+      if (prefix !== undefined && prefix !== label) return null;
+      prefix = label; paragraphs.push(p);
+    }
+  }
+  if (prefix === undefined) return null;
+  const current = item.current.slice(prefix.length);
+  if (!current) return null;
+  const proposal = typeof item.proposed === 'string' ? item.proposed : '';
+  const proposed = proposal.startsWith(prefix) ? proposal.slice(prefix.length) : proposal;
+  const matches: TextMatch[] = [];
+  for (const p of [...paragraphs.filter(p => p.cell === null), ...paragraphs.filter(p => p.cell !== null)])
+    matches.push(...matchesInParagraph(p, current, matches.length));
+  return { item: { ...item, current, proposed }, matches };
 }
 
 export function formatMatch(m: TextMatch): FormattedMatch {
@@ -455,6 +481,27 @@ function toDelText(run: Element): void {
 
 type RegionStatus = 'ok' | 'not_found' | 'nested';
 
+function canTrackRun(run: Element, p: Element): boolean {
+  return run.parentNode === p || (isW(run.parentNode, 'hyperlink') && run.parentNode.parentNode === p);
+}
+
+/** Keep deleted link text within its original hyperlink. New replacement
+ * text is inserted outside it, so it cannot silently inherit an old URL.
+ * Split only the affected link wrapper, retaining all attributes, markers,
+ * remaining runs and relationship targets on both sides. */
+function insertTrackedAfter(p: Element, anchor: Element, insertion: Element): void {
+  const parent = anchor.parentNode!;
+  if (parent === p) {
+    p.insertBefore(insertion, anchor.nextSibling);
+    return;
+  }
+  if (!isW(parent, 'hyperlink') || parent.parentNode !== p) throw new Error('Unsupported tracked insertion container.');
+  const tail = parent.cloneNode(false) as Element;
+  while (anchor.nextSibling) tail.appendChild(anchor.nextSibling);
+  p.insertBefore(insertion, parent.nextSibling);
+  if (tail.hasChildNodes()) p.insertBefore(tail, insertion.nextSibling);
+}
+
 /** `_apply_tracked_region`: strike `[coreStart, coreEnd)`, insert `insCore`. */
 function applyTrackedRegion(p: Element, coreStart: number, coreEnd: number, insCore: string, author: string, when: string, alloc: IdAllocator): RegionStatus {
   const doc = p.ownerDocument as Document;
@@ -476,7 +523,7 @@ function applyTrackedRegion(p: Element, coreStart: number, coreEnd: number, insC
     return 'ok';
   }
   if (affected.length === 0) return 'not_found';
-  for (const a of affected) if (a.run.parentNode !== p) return 'nested';
+  for (const a of affected) if (!canTrackRun(a.run, p)) return 'nested';
 
   const templateRpr = rPrOf(affected[0]!.run);
 
@@ -485,7 +532,7 @@ function applyTrackedRegion(p: Element, coreStart: number, coreEnd: number, insC
     const { left } = splitRun(anchor.run, coreStart - anchor.start);
     const ins = revisionElement(doc, 'ins', author, when, alloc);
     ins.appendChild(newInsRun(doc, insCore, templateRpr));
-    left.parentNode!.insertBefore(ins, left.nextSibling);
+    insertTrackedAfter(p, left, ins);
     return 'ok';
   }
 
@@ -510,16 +557,23 @@ function applyTrackedRegion(p: Element, coreStart: number, coreEnd: number, insC
   }
   if (core.length === 0) return 'not_found';
 
-  const del = revisionElement(doc, 'del', author, when, alloc);
-  core[0]!.parentNode!.insertBefore(del, core[0]!);
+  // Never move runs out of their hyperlinks or across intervening markers.
+  // Word permits deletion runs inside hyperlinks; each contiguous group
+  // retains its own parent and original formatting.
+  let firstDel: Element | null = null, del: Element | null = null;
   for (const r of core) {
+    if (!del || r.parentNode !== del.parentNode || del.nextSibling !== r) {
+      del = revisionElement(doc, 'del', author, when, alloc);
+      r.parentNode!.insertBefore(del, r);
+      firstDel ??= del;
+    }
     del.appendChild(r); // moves the element
     toDelText(r);
   }
   if (insCore !== '') {
     const ins = revisionElement(doc, 'ins', author, when, alloc);
     ins.appendChild(newInsRun(doc, insCore, templateRpr));
-    del.parentNode!.insertBefore(ins, del.nextSibling);
+    insertTrackedAfter(p, firstDel!, ins);
   }
   return 'ok';
 }
@@ -538,7 +592,7 @@ export function trackedReplaceInParagraph(p: Element, current: string, proposed:
     const hi = start + region.end;
     for (const r of ranges) {
       const touches = hi > lo ? r.end > lo && r.start < hi : r.start <= lo && lo <= r.end;
-      if (touches && r.run.parentNode !== p) return 'nested';
+      if (touches && !canTrackRun(r.run, p)) return 'nested';
     }
   }
   for (const region of [...regions].reverse()) {
@@ -565,15 +619,20 @@ export function applyRedlines(pkg: DocxPackage, items: RedlineItem[], opts: Appl
 
   type Resolved = { index: number; item: RedlineItem; match: TextMatch };
   const resolved: Resolved[] = [];
-  items.forEach((item, index) => {
-    const current = typeof item.current === 'string' ? item.current : '';
+  items.forEach((originalItem, index) => {
+    let item = originalItem;
+    let current = typeof item.current === 'string' ? item.current : '';
     if (current === '') {
       result.skipped.push({ index, current: '', reason: 'current text must not be empty' });
       return;
     }
-    const matches = collectMatches(pkg, current, note => {
+    let matches = collectMatches(pkg, current, note => {
       if (!result.notes.includes(note)) result.notes.push(note);
     });
+    if (matches.length === 0 && opts.track) {
+      const numbered = numberedDisplayMatch(pkg, item);
+      if (numbered) { item = numbered.item; current = item.current; matches = numbered.matches; }
+    }
     if (matches.length === 0) {
       if (textInTrackedDeletions(pkg, current)) {
         result.warnings.push({ index, current: truncate(current), warning: 'Text appears only inside tracked deletions (w:del); deleted text is not editable' });

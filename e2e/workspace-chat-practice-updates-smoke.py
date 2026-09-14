@@ -21,7 +21,7 @@ with sync_playwright() as p:
     before = api()['totals']['knowledge']
     page.goto(BASE + '/#token=workspace-browser-test-only')
     page.wait_for_load_state('networkidle')
-    page.get_by_role('textbox', name='Message Counsel', exact=True).fill('practice update fixture: going forward, change our employee monitoring standard to 12 days, keeping the purpose and restricted-access requirements.')
+    page.get_by_role('textbox', name='Message Counsel OS', exact=True).fill('practice update fixture: going forward, change our employee monitoring standard to 12 days, keeping the purpose and restricted-access requirements.')
     page.get_by_role('button', name='Send message', exact=True).click()
     card = page.get_by_role('region', name='Practice review', exact=True)
     expect(card).to_contain_text('Update your practice material?', timeout=20000)

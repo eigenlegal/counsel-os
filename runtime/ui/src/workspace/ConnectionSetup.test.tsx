@@ -10,11 +10,40 @@ test('opening setup never installs, signs in, or contacts the provider; native c
   globalThis.fetch = (async (url: string, options: RequestInit) => { calls++; expect(String(url)).toEndWith('/connection/check-sign-in'); expect(JSON.parse(String(options.body))).toEqual({ kind: 'codex' }); return Response.json({ installed: true, loggedIn: false, billing: 'unknown', message: 'Please sign in.' }); }) as typeof fetch;
   render(<ConnectionSetup kind="codex" desktop changed={() => {}} />);
   expect(calls).toBe(0);
-  fireEvent.click(screen.getByText('Install or sign in'));
+  fireEvent.click(screen.getByText('Commands and troubleshooting'));
   expect(screen.getByRole('link', { name: 'Open installation in Terminal' }).getAttribute('href')).toBe('counsel-desktop://install-codex');
   expect(calls).toBe(0);
   fireEvent.click(screen.getByRole('button', { name: 'Check local sign-in' }));
   await screen.findByText('Please sign in.'); expect(calls).toBe(1);
+});
+test('installed tools show sign-in as the next action; a matching local account advances to save without a model call', async () => {
+  let calls = 0; sessionStorage.setItem('counsel-os.token', 'fixture');
+  globalThis.fetch = (async (_url: unknown) => { calls++; return Response.json({ installed: true, loggedIn: true, billing: 'subscription', message: 'Local account found; model not tested.' }); }) as typeof fetch;
+  render(<ConnectionSetup kind="codex" installed desktop changed={() => {}} />);
+  expect(screen.queryByRole('link', { name: 'Open installation in Terminal' })).toBeNull();
+  expect(screen.getByRole('link', { name: 'Open sign-in in Terminal' }).getAttribute('href')).toBe('counsel-desktop://login-codex');
+  expect(screen.getByText(/You do not need to create or paste an API key/)).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: 'Check local sign-in' }));
+  await screen.findByText(/Your local sign-in matches/);
+  expect(calls).toBe(1);
+  expect(screen.queryByRole('link', { name: 'Open sign-in in Terminal' })).toBeNull();
+});
+test('a different billing method does not advance to save, and Console sign-in stays explicit', async () => {
+  sessionStorage.setItem('counsel-os.token', 'fixture');
+  globalThis.fetch = (async (_url: unknown) => Response.json({ installed: true, loggedIn: true, billing: 'subscription', message: 'Local Claude account found.' })) as typeof fetch;
+  render(<ConnectionSetup kind="claude-code" billing="api" installed desktop changed={() => {}} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Check local sign-in' }));
+  await screen.findByText(/does not match your selected billing method/);
+  expect(screen.queryByText(/Your local sign-in matches/)).toBeNull();
+  expect(screen.getByRole('link', { name: 'Open sign-in in Terminal' }).getAttribute('href')).toBe('counsel-desktop://login-claude-code-api');
+});
+test('unsaved choices cannot accidentally test the previously saved account', () => {
+  let calls = 0; globalThis.fetch = (async (_url: unknown) => { calls++; return Response.json({}); }) as typeof fetch;
+  render(<ConnectionTest config={{ kind:'codex', model:'old-model' }} pendingChanges />);
+  const button = screen.getByRole('button', { name:'Test saved connection' });
+  expect(button.hasAttribute('disabled')).toBe(true);
+  fireEvent.click(button); expect(calls).toBe(0);
+  expect(screen.getByText(/Save your choices above before testing them/)).toBeTruthy();
 });
 test('paid connection test requires explicit confirmation and sends only the selected configuration', async () => {
   let calls = 0; sessionStorage.setItem('counsel-os.token', 'fixture');
@@ -33,7 +62,7 @@ test('desktop recovery does not send users to a development terminal', () => {
 test('updates have an honest disabled state and make no automatic external check', async () => {
   const calls: string[] = []; sessionStorage.setItem('counsel-os.token', 'fixture');
   globalThis.fetch = (async (url: string) => { calls.push(String(url)); return Response.json({ version: '0.1.0', build: 2, enabled: false }); }) as typeof fetch;
-  render(<DesktopUpdates />); await screen.findByText('Counsel 0.1.0 · build 2');
+  render(<DesktopUpdates />); await screen.findByText('Counsel OS 0.1.0 · build 2');
   expect(calls).toEqual(['/api/workspace/updates']); expect(screen.queryByRole('button', { name: 'Check for updates' })).toBeNull();
 });
 test('an enabled update channel checks only on request and clearly reports no newer version', async () => {

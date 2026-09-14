@@ -15,11 +15,11 @@ export class WorkspaceDrafts {
   list(): DraftSummary[] {
     return (this.db.query('SELECT key FROM workspace_drafts WHERE value_json IS NOT NULL ORDER BY updated_at DESC, key LIMIT 1000').all() as {key: string}[])
       .map(({key}) => this.get(key)).map(row => ({ key: row.key, revisionId: row.revisionId!, updatedAt: row.updatedAt!,
-        title: row.key === 'working-preferences' ? 'Unsaved working preferences' : (row.value as ChatDraft).message.trim().slice(0, 120) || 'Documents ready for a new chat' }));
+        title: row.key === 'practice-document' ? 'Your practice — unsaved edits' : row.key === 'working-preferences' ? 'Unsaved working preferences' : (row.value as ChatDraft).message.trim().slice(0, 120) || 'Documents ready for a new chat' }));
   }
   save(raw: unknown): SavedDraft {
     const input = DraftWrite.parse(raw);
-    if (Buffer.byteLength(JSON.stringify(input)) > 160_000) throw new WorkspaceConflictError('This draft is too large to recover automatically. Shorten it before closing.');
+    if (Buffer.byteLength(JSON.stringify(input)) > (input.key === 'practice-document' ? 320_000 : 160_000)) throw new WorkspaceConflictError('This draft is too large to recover automatically. Shorten it before closing.');
     return this.db.transaction(() => {
       const previous = this.get(input.key);
       // Retrying an acknowledged-or-lost response is harmless, not a second edit.

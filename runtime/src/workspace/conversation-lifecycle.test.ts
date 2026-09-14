@@ -106,7 +106,7 @@ test('Trash survives reopen and verified backup restore without resurrecting sea
   const path = store.databasePath;
   store.close(); store = new WorkspaceStore({ databasePath: path });
   const backup = await createWorkspaceBackup(store.databasePath);
-  expect((await inspectWorkspaceBackup(backup.bytes)).schemaVersion).toBe(19);
+  expect((await inspectWorkspaceBackup(backup.bytes)).schemaVersion).toBe(20);
   const backupPath = join(root, backup.name); writeFileSync(backupPath, backup.bytes);
   const recovered = await restoreWorkspaceBackup(backupPath, root);
   const restored = new WorkspaceStore({ databasePath: recovered.databasePath });

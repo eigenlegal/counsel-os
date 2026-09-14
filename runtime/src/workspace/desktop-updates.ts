@@ -65,7 +65,7 @@ export async function checkDesktopUpdate(highestBuild: number, signal: AbortSign
 /** Fixed name; bytes stay on disk. Caller owns the one-shot download/disposal. */
 export async function downloadDesktopUpdate(manifest: UpdateManifest, signal: AbortSignal, fetcher: typeof fetch = fetch) {
   signal.throwIfAborted();
-  const root = mkdtempSync(join(tmpdir(), 'counsel-verified-update-')), path = join(root, 'Counsel-update.dmg');
+  const root = mkdtempSync(join(tmpdir(), 'counsel-verified-update-')), path = join(root, 'Counsel-OS-update.dmg');
   const dispose = () => rmSync(root, { recursive: true, force: true });
   let fd: number | undefined;
   try {
@@ -80,6 +80,6 @@ export async function downloadDesktopUpdate(manifest: UpdateManifest, signal: Ab
     } } finally { await reader.cancel(); reader.releaseLock(); }
     if (size !== manifest.artifact.bytes || digest.digest('hex') !== manifest.artifact.sha256) throw new Error('The update checksum does not match its signed metadata.');
     fsyncSync(fd); closeSync(fd); fd = undefined;
-    return { path, name: 'Counsel-update.dmg', byteCount: size, dispose };
+    return { path, name: 'Counsel-OS-update.dmg', byteCount: size, dispose };
   } catch (error) { if (fd !== undefined) closeSync(fd); dispose(); throw error; }
 }

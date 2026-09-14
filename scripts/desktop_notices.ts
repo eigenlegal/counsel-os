@@ -64,7 +64,7 @@ export function createDesktopNotices(repo: string, output: string, engineInputs:
     ...components.filter(c => !['MIT', 'Apache-2.0', 'BSD-2-Clause', 'BSD-3-Clause', 'ISC', '0BSD'].includes(c.license))
       .map(c => `${c.name}@${c.version}: ${c.license}`),
   ];
-  const text = ['Counsel — third-party notices', 'Generated from the engine and interface compiler inputs. Provider executables are separately installed, not redistributed.',
+  const text = ['Counsel OS — third-party notices', 'Generated from the engine and interface compiler inputs. Provider executables are separately installed, not redistributed.',
     ...components.map(c => `\n${c.name}@${c.version} (${c.license})\n${c.notices.map(n => `\n--- ${n.name} ---\n${n.text}`).join('\n')}`),
     `\nBun ${Bun.version} — upstream license and linked-library inventory\n${runtimeText}`].join('\n\n');
   writeFileSync(join(output, 'THIRD-PARTY-NOTICES.txt'), text, { flag: 'wx', mode: 0o600 });

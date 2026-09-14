@@ -43,12 +43,12 @@ export function AutoFiling({ data }: { data: Snapshot }) {
   return <>
     <div className="upkeep-summary auto-filing-summary">
       <div><strong>AI filing</strong><p className="fine-print">{!value ? loadError ? 'Filing status unavailable.' : 'Checking filing status…' : !settings
-        ? 'Let Counsel suggest where unfiled documents belong.' : `${settings.mode === 'running' ? 'Automatic' : settings.mode === 'paused' ? 'Paused' : 'Needs retry'} · ${value.ready} suggestions to review${value.queued + value.running ? ` · ${value.queued + value.running} files queued or reading` : ''}`}</p></div>
+        ? 'Let Counsel OS suggest where unfiled documents belong.' : `${settings.mode === 'running' ? 'Automatic' : settings.mode === 'paused' ? 'Paused' : 'Needs retry'} · ${value.ready} suggestions to review${value.queued + value.running ? ` · ${value.queued + value.running} files queued or reading` : ''}`}</p></div>
       <button className="button" onClick={() => setOpen(true)}>{settings ? 'Review AI filing' : 'Set up AI filing'}</button>
     </div>
     {open && <Modal title="AI filing" onClose={() => setOpen(false)} busy={busy}>
       <div className="record-form auto-filing-review">
-        {!settings && <p>Counsel suggests locations for unfiled documents as files and matching matters change. Your existing filing choices stay in place.</p>}
+        {!settings && <p>Counsel OS suggests locations for unfiled documents as files and matching matters change. Your existing filing choices stay in place.</p>}
         {settings && <div className="auto-filing-status">
           <div><strong>{settings.mode === 'running' ? 'Automatic filing suggestions are on' : settings.mode === 'paused' ? 'AI filing is paused' : 'AI filing needs retry'}</strong>
             <p className="fine-print">{settings.message}</p>

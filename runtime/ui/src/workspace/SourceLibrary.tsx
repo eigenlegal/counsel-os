@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { isImageMedia } from '../../../src/workspace/image-types';
 import type {
   SourceCollection,
   SourceLibraryPage,
@@ -109,7 +110,7 @@ export function SourceShelf({
               <span className="resource-copy">
                 <span className="resource-title">
                   <strong>{file.title}</strong>
-                  <Status value={file.textStatus} />
+                  <Status value={isImageMedia(file.mediaType) ? 'image' : file.textStatus} />
                 </span>
                 <p>
                   {file.preview ||
@@ -174,7 +175,7 @@ export function SourcesLibrary({
     <>
       <PageHeader
         title="Sources"
-        description="External reference material: law, research, commentary, and Counsel’s working guides. Your own methods and materials live in Practice; case-specific documents live with their matter."
+        description="External reference material: law, research, commentary, and Counsel OS’s working guides. Your own methods and materials live in Practice; case-specific documents live with their matter."
         action={
           section === "external" ? (
             <button
@@ -196,7 +197,7 @@ export function SourcesLibrary({
       >
         {[
           ["external", "External references"],
-          ["guides", "Counsel guides"],
+          ["guides", "Counsel OS guides"],
           ["unfiled", "Needs organizing"],
         ].map(([id, title]) => (
           <button

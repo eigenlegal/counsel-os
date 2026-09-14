@@ -80,7 +80,7 @@ function BriefComparison({
             {stale && pending && (
               <div className="version-notice">
                 This matter brief changed after the suggestion was prepared. It cannot overwrite the
-                newer version. Keep the current brief and ask Counsel for an updated suggestion.
+                newer version. Keep the current brief and ask Counsel OS for an updated suggestion.
               </div>
             )}
             <div className="brief-comparison-head">

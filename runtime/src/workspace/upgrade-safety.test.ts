@@ -8,7 +8,7 @@ import { prepareWorkspaceUpgrade } from './upgrade-safety';
 import { inspectWorkspaceBackup, restoreWorkspaceBackup } from './backups';
 const roots: string[] = [];
 afterEach(() => { for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true }); });
-function fixture(version: 18 | 19) {
+function fixture(version: 18 | 19 | 20) {
   const root = mkdtempSync(join(tmpdir(), 'counsel-upgrade-test-')); roots.push(root);
   const memory = openWorkspaceDatabase(':memory:', version), path = join(root, 'workspace.sqlite3');
   writeFileSync(path, memory.serialize()); memory.close(); return { root, path };
@@ -23,15 +23,15 @@ test('verified pre-migration archive is recoverable; source stays at old schema 
   const migrated = openWorkspaceDatabase(path); expect(migrated.query('PRAGMA user_version').get()).toEqual({ user_version: WORKSPACE_SCHEMA_VERSION }); migrated.close();
 });
 test('no archive needed for a new/current workspace; downgrade refused', async () => {
-  const { root, path } = fixture(19);
+  const { root, path } = fixture(WORKSPACE_SCHEMA_VERSION);
   expect(await prepareWorkspaceUpgrade(join(root, 'new.sqlite3'))).toBeNull();
   expect(await prepareWorkspaceUpgrade(path)).toBeNull();
-  await expect(prepareWorkspaceUpgrade(path, 18)).rejects.toThrow('newer Counsel');
+  await expect(prepareWorkspaceUpgrade(path, 18)).rejects.toThrow('newer Counsel OS');
   expect(readdirSync(root).filter(name => name.startsWith('before-upgrade-'))).toHaveLength(0);
 });
 test('non-workspace database is refused without schema changes', async () => {
   const { path } = fixture(19); const db = new Database(path); db.exec('PRAGMA application_id=123'); db.close();
-  await expect(prepareWorkspaceUpgrade(path)).rejects.toThrow('Not a Counsel workspace');
+  await expect(prepareWorkspaceUpgrade(path)).rejects.toThrow('Not a Counsel OS workspace');
 });
 test('a failed migration rolls back and leaves its earlier verified recovery archive intact', async () => {
   const { path } = fixture(18);

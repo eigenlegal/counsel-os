@@ -46,7 +46,7 @@ plugin adapter     ├─►  Runtime API (HTTP + SSE)
 CLI                ─┘         │
                     ┌─────────┴──────────┐
                     │   Flow engine       │  hero tasks, code-shaped
-                    │   Counsel loop      │  freeform chat, tool loop
+                    │   Counsel OS loop      │  freeform chat, tool loop
                     └─────────┬──────────┘
               ┌───────────────┼───────────────┐
         ModelProvider      VaultStore        Tools
@@ -145,7 +145,7 @@ Resolution: task row → `prefer` if its capabilities satisfy `require` → else
 
 ## 5. Flow engine and counsel loop
 
-### 5.1 Counsel loop (freeform)
+### 5.1 Counsel OS loop (freeform)
 
 A plain tool-calling loop on `ModelProvider`. System prompt = `primitives/*.md` +
 practice profile + applicable law areas. Tools = `VaultStore` ops + the `Tools`
@@ -191,7 +191,7 @@ Served at localhost by `counsel-os serve`. Four surfaces, in build order:
    card: color, rationale, citation, gate (accept / override with note / ask
    counsel). Header: progress, model in use, cost so far. Finish → redline
    preview → export `.docx` (macOS + Word) or markdown.
-3. **Counsel chat**. The loop as a chat panel, available from any screen, with
+3. **Counsel OS chat**. The loop as a chat panel, available from any screen, with
    the current matter as context. Tool calls and vault reads render as
    collapsible steps. `remember` proposals appear as approve/reject cards.
 4. **Settings**. Vault location; providers (paste key, pick Ollama, test);
@@ -245,7 +245,7 @@ Constraints:
    `ModelProvider` (Claude Agent SDK first, Codex SDK second), direct
    `ModelProvider` (AI SDK), subprocess `Tools`, in-process MCP server, router.
    Spike items 9.1–9.3 here.
-2. Counsel loop + HTTP/SSE API. Plugin adapter calls it.
+2. Counsel OS loop + HTTP/SSE API. Plugin adapter calls it.
 3. Flow engine + Review flow. Evals through it.
 4. Web UI: matter workspace → review run → chat → settings.
 5. Flows 2–4.

@@ -23,7 +23,7 @@ with sync_playwright() as p:
         page.goto(BASE + '/#token=workspace-browser-test-only')
         page.wait_for_load_state('networkidle')
         page.goto(BASE + '/#/home?id=' + chat['id'])
-        page.get_by_role('textbox', name='Message Counsel', exact=True).fill('A synthetic lifecycle question')
+        page.get_by_role('textbox', name='Message Counsel OS', exact=True).fill('A synthetic lifecycle question')
         page.get_by_role('button', name='Send message', exact=True).click()
         expect(page.get_by_text('Saved in conversation', exact=True)).to_be_visible(timeout=20000)
         turn = api('/conversations/' + chat['id'])['turns'][0]

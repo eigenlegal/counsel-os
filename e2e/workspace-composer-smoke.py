@@ -16,7 +16,7 @@ with sync_playwright() as p:
     page.goto(BASE + '/#token=workspace-browser-test-only')
     page.wait_for_load_state('networkidle')
     print('Composer controls:', page.locator('.chat-composer').inner_text())
-    field = page.get_by_role('textbox', name='Message Counsel', exact=True)
+    field = page.get_by_role('textbox', name='Message Counsel OS', exact=True)
     shell = page.locator('.chat-composer')
     attach = page.get_by_role('button', name='Add documents', exact=True)
     send = page.get_by_role('button', name='Send message', exact=True)

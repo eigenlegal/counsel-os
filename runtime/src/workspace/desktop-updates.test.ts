@@ -6,12 +6,12 @@ const keys = generateKeyPairSync('ed25519'), publicKey = keys.publicKey.export({
 const now = Date.parse('2026-09-10T18:00:00Z');
 const bytes = Buffer.from('synthetic installer bytes, never executable');
 const manifest: UpdateManifest = { format: 1, channel: 'stable', version: '0.2.0', build: 10, bundleId: 'org.fixture.counsel', teamId: 'ABCDEFGHIJ', platform: 'darwin-arm64', minMacOS: '13.0',
-  publishedAt: '2026-09-10T17:00:00Z', expiresAt: '2026-09-11T18:00:00Z', artifact: { url: 'https://downloads.example.test/Counsel.dmg', sha256: createHash('sha256').update(bytes).digest('hex'), bytes: bytes.length }, notes: 'Synthetic release.' };
+  publishedAt: '2026-09-10T17:00:00Z', expiresAt: '2026-09-11T18:00:00Z', artifact: { url: 'https://downloads.example.test/Counsel OS.dmg', sha256: createHash('sha256').update(bytes).digest('hex'), bytes: bytes.length }, notes: 'Synthetic release.' };
 const trust = { publicKey, channel: 'stable', bundleId: manifest.bundleId, teamId: manifest.teamId, artifactOrigin: 'https://downloads.example.test' };
 function envelope(value: unknown) { const payload = Buffer.from(JSON.stringify(value)); return JSON.stringify({ payload: payload.toString('base64'), signature: sign(null, payload, keys.privateKey).toString('base64') }); }
 test('only signed, matching, unexpired forward updates are accepted', () => {
   expect(verifyUpdateEnvelope(envelope(manifest), trust, 2, 9, now)).toEqual(manifest);
-  for (const value of [ { ...manifest, channel: 'preview' }, { ...manifest, teamId: 'ZZZZZZZZZZ' }, { ...manifest, bundleId: 'org.other.app' }, { ...manifest, expiresAt: '2026-09-10T17:30:00Z' }, { ...manifest, publishedAt: '2027-01-01T00:00:00Z' }, { ...manifest, artifact: { ...manifest.artifact, url: 'https://attacker.example/Counsel.dmg' } } ]) expect(() => verifyUpdateEnvelope(envelope(value), trust, 2, 9, now)).toThrow();
+  for (const value of [ { ...manifest, channel: 'preview' }, { ...manifest, teamId: 'ZZZZZZZZZZ' }, { ...manifest, bundleId: 'org.other.app' }, { ...manifest, expiresAt: '2026-09-10T17:30:00Z' }, { ...manifest, publishedAt: '2027-01-01T00:00:00Z' }, { ...manifest, artifact: { ...manifest.artifact, url: 'https://attacker.example/Counsel OS.dmg' } } ]) expect(() => verifyUpdateEnvelope(envelope(value), trust, 2, 9, now)).toThrow();
   expect(() => verifyUpdateEnvelope(envelope(manifest), trust, 10, 10, now)).toThrow('newer');
   expect(() => verifyUpdateEnvelope(envelope(manifest), trust, 10, 10, now)).toThrow(NoDesktopUpdate);
   expect(() => verifyUpdateEnvelope(envelope({ ...manifest, expiresAt: '2026-09-09T18:00:00Z' }), trust, 10, 10, now)).not.toThrow(NoDesktopUpdate);

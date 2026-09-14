@@ -1,10 +1,13 @@
-/* Counsel navigation: stable destinations, user-chosen shortcuts, then utilities. */
+/* Counsel OS navigation: stable destinations, user-chosen shortcuts, then utilities. */
 .workspace-app .app-sidebar {
   padding: 24px 14px 14px;
   overflow: hidden;
 }
 .app-sidebar .brand { margin: 0 12px 20px; }
+@media (max-width: 1250px) { .app-sidebar .brand { font-size: 24px; } }
 .app-sidebar .workspace-identity { margin: 0 12px 16px; gap: 8px; }
+.sidebar-setup { display: block; width: fit-content; margin-top: 6px; font-size: 11px; color: #bdcde0; text-decoration: underline; text-underline-offset: 3px; }
+.sidebar-setup:hover, .sidebar-setup[aria-current="page"] { color: white; }
 .workspace-example-badge {
   font-size: 10px; line-height: 1.5; border: 1px solid #58718e;
   padding: 0 5px; border-radius: 4px; color: #c0d3ec;
@@ -69,7 +72,7 @@
 }
 @media (max-height: 680px) {
   .workspace-app .app-sidebar { padding-top: 14px; }
-  .app-sidebar .brand { margin-bottom: 10px; font-size: 26px; }
+  .app-sidebar .brand { margin-bottom: 10px; font-size: 24px; }
   .app-sidebar .workspace-identity { margin-bottom: 8px; }
   .app-sidebar .nav-new { margin-bottom: 8px; }
 }

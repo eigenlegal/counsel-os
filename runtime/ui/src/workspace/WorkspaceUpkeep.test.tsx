@@ -64,7 +64,7 @@ test('pagination requests the next bounded page rather than silently limiting th
 test('AI help opens the existing reviewed filing flow without starting a model call', async () => {
   const calls = setup(); await open();
   fireEvent.click(screen.getByRole('button', { name: 'Suggest filing' }));
-  expect(await screen.findByRole('dialog', { name: 'Review filing with Counsel' })).toBeTruthy();
+  expect(await screen.findByRole('dialog', { name: 'Review filing with Counsel OS' })).toBeTruthy();
   await waitFor(() => expect((screen.getByRole('button', { name: 'Generate suggestions' }) as HTMLButtonElement).disabled).toBe(false));
   expect(calls.filter(c => c.body).map(c => c.path)).toEqual(['/api/workspace/source-organization/preview']);
   fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));

@@ -27,7 +27,7 @@ export function validateSigningIdentity(raw: unknown, certificate: string) {
 }
 export async function signDesktop(args: string[]) {
   const opts = signingOptions(args);
-  if (!opts) { console.log('bun scripts/sign_desktop.ts --app /verified/Counsel.app --outdir /new/folder --identity "Developer ID Application: Publisher (TEAMID)" --notary-profile profile\nRequires owner-confirmed desktop/release-identity.json and a provisioned keychain. Produces an unpublished signed test DMG.'); return; }
+  if (!opts) { console.log('bun scripts/sign_desktop.ts --app "/verified/Counsel OS.app" --outdir /new/folder --identity "Developer ID Application: Publisher (TEAMID)" --notary-profile profile\nRequires owner-confirmed desktop/release-identity.json and a provisioned keychain. Produces an unpublished signed test DMG.'); return; }
   const repo = resolve(import.meta.dir, '..');
   const identity = validateSigningIdentity(JSON.parse(readFileSync(join(repo, 'desktop/release-identity.json'), 'utf8')), opts.identity);
   if (process.platform !== 'darwin' || process.arch !== 'arm64') throw new Error('Signing qualification currently requires Apple silicon macOS.');
@@ -44,7 +44,7 @@ export async function signDesktop(args: string[]) {
   };
   await run(['/usr/bin/codesign', '--verify', '--deep', '--strict', opts.app]);
   mkdirSync(opts.output, { mode: 0o700 });
-  const app = join(opts.output, 'Counsel.app'), resources = join(app, 'Contents/Resources'), engine = join(app, 'Contents/MacOS/counsel-workspace');
+  const app = join(opts.output, 'Counsel OS.app'), resources = join(app, 'Contents/Resources'), engine = join(app, 'Contents/MacOS/counsel-workspace');
   await run(['/usr/bin/ditto', opts.app, app]);
   await run(['/usr/bin/plutil', '-replace', 'CFBundleIdentifier', '-string', identity.bundleId, join(app, 'Contents/Info.plist')]);
   await run(['/usr/bin/plutil', '-replace', 'NSHumanReadableCopyright', '-string', identity.publisher, join(app, 'Contents/Info.plist')]);
@@ -70,15 +70,15 @@ export async function signDesktop(args: string[]) {
   await run(['/usr/sbin/spctl', '--assess', '--type', 'execute', app]);
   writeFileSync(join(opts.output, 'desktop-build.json'), JSON.stringify({ ...receipt, engineSha256: sha(engine), shellSha256: sha(join(app, 'Contents/MacOS/Counsel')), signing: 'Developer ID signed test; public release not approved.', identity }, null, 2), { flag: 'wx', mode: 0o600 });
   const stage = mkdtempSync(join(tmpdir(), 'counsel-signed-image-'));
-  await run(['/usr/bin/ditto', app, join(stage, 'Counsel.app')]); symlinkSync('/Applications', join(stage, 'Applications'));
-  writeFileSync(join(stage, 'Read me.txt'), 'Counsel — signed test build. Not approved for public distribution.\nSave a workspace backup, quit Counsel, then drag the app into Applications.\nWorkspace data is outside the app. A newer database must not be opened by an older app.\n');
-  const image = join(opts.output, 'Counsel-signed-test-arm64.dmg');
-  await run(['/usr/bin/hdiutil', 'create', '-srcfolder', stage, '-volname', 'Counsel', '-format', 'UDZO', image]);
+  await run(['/usr/bin/ditto', app, join(stage, 'Counsel OS.app')]); symlinkSync('/Applications', join(stage, 'Applications'));
+  writeFileSync(join(stage, 'Read me.txt'), 'Counsel OS — signed test build. Not approved for public distribution.\nSave a workspace backup, quit Counsel OS, then drag the app into Applications.\nWorkspace data is outside the app. A newer database must not be opened by an older app.\n');
+  const image = join(opts.output, 'Counsel-OS-signed-test-arm64.dmg');
+  await run(['/usr/bin/hdiutil', 'create', '-srcfolder', stage, '-volname', 'Counsel OS', '-format', 'UDZO', image]);
   await run(['/usr/bin/codesign', '--sign', opts.identity, '--timestamp', image]);
   const notaryId = await notarize(image);
   await run(['/usr/bin/hdiutil', 'verify', image]);
   if ((await sourceFingerprint(repo)).sha256 !== source.sha256) throw new Error('Source changed during signing. Rebuild before qualification.');
-  writeFileSync(join(opts.output, 'signed-test.json'), JSON.stringify({ format: 1, identity, source, desktopRelease: receipt.desktopRelease, artifact: 'Counsel-signed-test-arm64.dmg', sha256: sha(image), notaryId,
+  writeFileSync(join(opts.output, 'signed-test.json'), JSON.stringify({ format: 1, identity, source, desktopRelease: receipt.desktopRelease, artifact: 'Counsel-OS-signed-test-arm64.dmg', sha256: sha(image), notaryId,
     engineSha256: sha(engine), shellSha256: sha(join(app, 'Contents/MacOS/Counsel')), published: false, publicDistributionApproved: false, remaining: [...notices.reviewRequired, 'Clean-machine acceptance of this exact signed image', 'Owner-approved update channel and public promotion'] }, null, 2));
   console.log('Signed test image verified. Not installed or published; public release gates remain closed.');
 }

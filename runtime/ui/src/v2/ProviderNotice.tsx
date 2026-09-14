@@ -15,7 +15,7 @@ export function ProviderNotice({ health }: { health: Health | null | undefined }
     <p className="v2-swap-notice" role="status">
       {swap.effective === null
         ? `${saved} is not available, and no other model is loaded.`
-        : `${saved} is not available. Counsel will answer on ${swap.effective.vendor} (${swap.effective.model}).`}
+        : `${saved} is not available. Counsel OS will answer on ${swap.effective.vendor} (${swap.effective.model}).`}
       <a href="#/settings">change</a>
     </p>
   );

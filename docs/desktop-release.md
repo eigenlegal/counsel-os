@@ -6,6 +6,8 @@ The [packaging follow-through roadmap](desktop-roadmap.md) reconciles the older 
 
 ## Version ownership
 
+Iteration is browser-first: implement and test in the local HTML workspace, then batch accepted changes into a newly qualified desktop package. Never silently replace the installed app during browser development. Source/browser changes do not update an existing installer or installed app. Backend changes require a dev-server restart; UI-only changes can be deployed as new hashed assets without restarting active chats.
+
 - `desktop/release.json` owns desktop `version`, numeric `build` and `channel`.
 - `desktop/macos/Info.plist` is a build template. Do not install the source folder directly.
 - `desktop:build` validates the manifest, generates Info.plist, packages the engine and records the independent desktop version in its receipt.
@@ -32,12 +34,12 @@ bun run typecheck
 bun run typecheck:runtime
 bun run typecheck:ui
 bun run desktop:build --outdir /new/desktop/output
-bun e2e/workspace-package-check.ts /new/desktop/output/Counsel.app --browser-python "$(command -v python)"
-bun e2e/workspace-desktop-check.ts /new/desktop/output/Counsel.app
-bun run desktop:package --app /new/desktop/output/Counsel.app --outdir /new/package/output
+bun e2e/workspace-package-check.ts "/new/desktop/output/Counsel OS.app" --browser-python "$(command -v python)"
+bun e2e/workspace-desktop-check.ts "/new/desktop/output/Counsel OS.app"
+bun run desktop:package --app "/new/desktop/output/Counsel OS.app" --outdir /new/package/output
 ```
 
-The build does not overwrite `runtime/ui/dist`, install the app or open private data. The qualification fixtures use new synthetic workspaces. Optional `workspace:check --run --desktop-app /new/desktop/output/Counsel.app --python /path/to/python` additionally requires separately installed Codex and Claude CLIs for no-model transport probes. Those installed-CLI probes are not part of the credential-free CI jobs. Native Word rendering and actual model-account checks remain separate, explicitly authorized qualification steps.
+The build does not overwrite `runtime/ui/dist`, install the app or open private data. The qualification fixtures use new synthetic workspaces. Optional `workspace:check --run --desktop-app "/new/desktop/output/Counsel OS.app" --python /path/to/python` additionally requires separately installed Codex and Claude CLIs for no-model transport probes. Those installed-CLI probes are not part of the credential-free CI jobs. Native Word rendering and actual model-account checks remain separate, explicitly authorized qualification steps.
 
 ## GitHub workflows
 
@@ -58,9 +60,9 @@ Workflow tokens are read-only for repository contents; checkout does not retain 
 
 ## Guided AI setup
 
-Setup remains optional. Local reading, import and manual organization work without AI. Choose a connection, use **Check local sign-in**, and expand **Install or sign in** if needed. In the desktop, the Terminal action first shows its fixed command and asks for confirmation. Copyable commands and official instructions are also available. If you need to cancel the provider command, press Control-C in Terminal. After installing/signing in, return to Counsel, recheck, select the intended model/billing method and choose **Save connection** before **Test saved connection**.
+Setup remains optional. Local reading, import and manual organization work without AI. Choose a connection, use **Check local sign-in**, and expand **Install or sign in** if needed. In the desktop, the Terminal action first shows its fixed command and asks for confirmation. Copyable commands and official instructions are also available. If you need to cancel the provider command, press Control-C in Terminal. After installing/signing in, return to Counsel OS, recheck, select the intended model/billing method and choose **Save connection** before **Test saved connection**.
 
-The commands follow the [Codex CLI installation guide](https://learn.chatgpt.com/docs/codex/cli), [Codex authentication guide](https://learn.chatgpt.com/docs/auth), and [Claude Code setup guide](https://code.claude.com/docs/en/setup). Counsel does not bundle those executables or silently reinstall them. Signing into their CLI can change the account used by other projects. Codex currently requires file-backed ChatGPT credentials; its setup command explicitly selects that store. A Keychain-only login does not work with this adapter. Claude billing must match the selected subscription or Console account; there is no silent paid fallback.
+The commands follow the [Codex CLI installation guide](https://learn.chatgpt.com/docs/codex/cli), [Codex authentication guide](https://learn.chatgpt.com/docs/auth), and [Claude Code setup guide](https://code.claude.com/docs/en/setup). Counsel OS does not bundle those executables or silently reinstall them. Signing into their CLI can change the account used by other projects. Codex currently requires file-backed ChatGPT credentials; its setup command explicitly selects that store. A Keychain-only login does not work with this adapter. Claude billing must match the selected subscription or Console account; there is no silent paid fallback.
 
 **Configured**, **local sign-in found**, and **model tested** mean different things. Saving a connection and checking local sign-in make no model inference call; the latter does not prove entitlement or token freshness. **Test saved connection** asks separately before sending a fixed, tiny prompt using the displayed saved provider/model/billing choice. It sends no workspace content or tools. Success means the model answered, not that its legal analysis or document performance is qualified. Cancellation cannot reverse usage already incurred. Credentials and raw sign-in output are not shown in diagnostics or saved into workspace records.
 
@@ -95,7 +97,7 @@ For GitHub, create and protect environment **`counsel-desktop-signing`** with re
 For an explicitly provisioned local keychain, the equivalent is:
 
 ```sh
-bun run desktop:sign-test --app /verified/build/Counsel.app --outdir /new/signed-test \
+bun run desktop:sign-test --app "/verified/build/Counsel OS.app" --outdir /new/signed-test \
   --identity "Developer ID Application: Confirmed Publisher (TEAMID1234)" \
   --notary-profile your-provisioned-profile
 ```

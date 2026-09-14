@@ -37,7 +37,7 @@ export function Library({ page, data, openEditor, changed }: {
     </div>
     {!total ? <Empty title={filter || tab !== 'all' ? 'No matches in this view' : `Your ${title.toLowerCase()} start here`} icon={kind}
       action={<button className="button" onClick={() => filter || tab !== 'all' ? (setFilter(''), setTab('all')) : openEditor({ kind })}>{filter || tab !== 'all' ? 'Clear filters' : add}</button>}>
-      {filter || tab !== 'all' ? 'Try another filter, or search the full workspace for text inside records.' : 'Add your first record. It will be saved locally and available the next time you open Counsel.'}
+      {filter || tab !== 'all' ? 'Try another filter, or search the full workspace for text inside records.' : 'Add your first record. It will be saved locally and available the next time you open Counsel OS.'}
     </Empty> : isMatter ? <div className="matter-directory">{matters.map((m, i) =>
       <a href={href('matters', { id: m.id })} className={`matter-directory-row matter-tone-${i % 3}`} key={m.id}>
         <span className="matter-symbol"><Icon name="matter" size={23} /></span>

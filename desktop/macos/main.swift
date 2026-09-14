@@ -20,17 +20,17 @@ final class CounselApplication: NSObject, NSApplicationDelegate {
             installMenu(); openWorkspace(selected.flatMap { FileManager.default.fileExists(atPath: $0.path) ? $0 : nil } ?? personalWorkspace)
             NSApp.activate(ignoringOtherApps: true)
         } catch {
-            let alert = NSAlert(); alert.messageText = "This Counsel app is incomplete"; alert.informativeText = "Use a complete app bundle. Your workspace files have not been opened."; alert.runModal(); NSApp.terminate(nil)
+            let alert = NSAlert(); alert.messageText = "This Counsel OS app is incomplete"; alert.informativeText = "Use a complete app bundle. Your workspace files have not been opened."; alert.runModal(); NSApp.terminate(nil)
         }
     }
     private func installMenu() {
         let menu = NSMenu(), appItem = NSMenuItem(); menu.addItem(appItem)
         let app = NSMenu(); appItem.submenu = app
-        app.addItem(withTitle: "About Counsel", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
-        app.addItem(.separator()); app.addItem(withTitle: "Hide Counsel", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        app.addItem(withTitle: "About Counsel OS", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        app.addItem(.separator()); app.addItem(withTitle: "Hide Counsel OS", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
         let hideOthers = app.addItem(withTitle: "Hide others", action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h"); hideOthers.keyEquivalentModifierMask = [.command, .option]
         app.addItem(withTitle: "Show all", action: #selector(NSApplication.unhideAllApplications(_:)), keyEquivalent: "")
-        app.addItem(.separator()); app.addItem(withTitle: "Quit Counsel", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        app.addItem(.separator()); app.addItem(withTitle: "Quit Counsel OS", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         let fileItem = NSMenuItem(title: "File", action: nil, keyEquivalent: ""); menu.addItem(fileItem); let file = NSMenu(title: "File"); fileItem.submenu = file
         for (title, action, key) in [("New chat", #selector(newChat), "n"), ("Import files", #selector(importFiles), "i"), ("Settings", #selector(settings), ",")] {
             let item = file.addItem(withTitle: title, action: action, keyEquivalent: key); item.target = self
@@ -85,13 +85,13 @@ final class CounselApplication: NSObject, NSApplicationDelegate {
         guard !closing, backupOperation == nil else { return }
         let panel = NSOpenPanel(); panel.canChooseFiles = true; panel.canChooseDirectories = false; panel.allowsMultipleSelection = false
         panel.directoryURL = workspaceHome.appendingPathComponent(".counsel/workspaces")
-        panel.message = "Choose an existing Counsel workspace.sqlite3. Keep it together with its originals folder. To recover a backup instead, use Restore workspace from backup."
+        panel.message = "Choose an existing Counsel OS workspace.sqlite3. Keep it together with its originals folder. To recover a backup instead, use Restore workspace from backup."
         if panel.runModal() == .OK, let file = panel.url { switchWorkspace(file) }
     }
     @objc func restoreWorkspace() {
         guard !closing, backupOperation == nil else { return }
         let panel = NSOpenPanel(); panel.canChooseFiles = true; panel.canChooseDirectories = false; panel.allowsMultipleSelection = false
-        panel.allowedContentTypes = [UTType(filenameExtension: "counsel-backup") ?? .data]; panel.message = "Choose a Counsel backup. Recovery creates a separate workspace and never replaces your current one."
+        panel.allowedContentTypes = [UTType(filenameExtension: "counsel-backup") ?? .data]; panel.message = "Choose a Counsel OS backup. Recovery creates a separate workspace and never replaces your current one."
         guard panel.runModal() == .OK, let file = panel.url else { return }
         runBackup("inspect", file: file) { [weak self] result in
             guard let self, let manifest = result?["manifest"] as? [String: Any], let counts = manifest["counts"] as? [String: Any] else { self?.backupFailed(); return }
@@ -122,7 +122,7 @@ final class CounselApplication: NSObject, NSApplicationDelegate {
     }
     private func backupFailed() {
         let alert = NSAlert(); alert.messageText = "Recovery did not finish"
-        alert.informativeText = "No existing workspace was replaced. Check that the backup is accessible, verify it in Settings, check disk space, then try again. Cancelled recoveries can leave an incomplete folder; Counsel will not open it."
+        alert.informativeText = "No existing workspace was replaced. Check that the backup is accessible, verify it in Settings, check disk space, then try again. Cancelled recoveries can leave an incomplete folder; Counsel OS will not open it."
         alert.runModal()
     }
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool { controller?.showWindow(nil); return true }
@@ -133,11 +133,11 @@ final class CounselApplication: NSObject, NSApplicationDelegate {
         backupOperation?.cancel()
         controller.saveDrafts { [weak self] saved in
             if controller.hasSession {
-                let alert = NSAlert(); alert.messageText = saved ? "Quit Counsel?" : "Some drafts could not be saved"
+                let alert = NSAlert(); alert.messageText = saved ? "Quit Counsel OS?" : "Some drafts could not be saved"
                 alert.informativeText = saved
                     ? "Chat drafts and working-preference drafts are kept on this device. Other unsaved forms will be lost, and running requests and downloads will stop."
                     : "Keep working to retry draft recovery or copy your text. Quitting now may lose recent edits. Saved work is kept."
-                alert.addButton(withTitle: "Keep working"); alert.addButton(withTitle: saved ? "Quit Counsel" : "Quit without recent edits")
+                alert.addButton(withTitle: "Keep working"); alert.addButton(withTitle: saved ? "Quit Counsel OS" : "Quit without recent edits")
                 if alert.runModal() != .alertSecondButtonReturn { self?.closing = false; controller.showWindow(nil); NSApp.reply(toApplicationShouldTerminate: false); return }
             }
             controller.showClosing(); controller.engine.stop { NSApp.reply(toApplicationShouldTerminate: true) }

@@ -15,7 +15,7 @@ const Count = z.number().int().nonnegative().max(10_000_000);
 export const BackupManifest = z
   .object({
     format: z.literal(1),
-    schemaVersion: z.union([z.literal(5), z.literal(6), z.literal(7), z.literal(8), z.literal(9), z.literal(10), z.literal(11), z.literal(12), z.literal(13), z.literal(14), z.literal(15), z.literal(16), z.literal(17), z.literal(18), z.literal(WORKSPACE_SCHEMA_VERSION)]),
+    schemaVersion: z.union([z.literal(5), z.literal(6), z.literal(7), z.literal(8), z.literal(9), z.literal(10), z.literal(11), z.literal(12), z.literal(13), z.literal(14), z.literal(15), z.literal(16), z.literal(17), z.literal(18), z.literal(19), z.literal(WORKSPACE_SCHEMA_VERSION)]),
     createdAt: z.string().datetime(),
     database: z
       .object({ hash: Hash, byteCount: z.number().int().min(512).max(BACKUP_DATABASE_MAX_BYTES) })
@@ -73,7 +73,7 @@ export function decodeBackup(bytes: Buffer): {
     bytes.length < BACKUP_MAGIC.length + 4 ||
     !bytes.subarray(0, BACKUP_MAGIC.length).equals(BACKUP_MAGIC)
   )
-    throw new Error('Choose a Counsel .counsel-backup file of 250 MB or less.');
+    throw new Error('Choose a Counsel OS .counsel-backup file of 250 MB or less.');
   const size = bytes.readUInt32BE(BACKUP_MAGIC.length);
   let offset = BACKUP_MAGIC.length + 4;
   if (!size || size > BACKUP_MANIFEST_MAX_BYTES || offset + size > bytes.length)

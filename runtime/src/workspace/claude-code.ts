@@ -6,6 +6,7 @@ import { locateCli } from '../providers/cli-locate';
 import { transportEnv } from '../providers/env';
 import { mapClaudeMessage } from '../providers/claude-messages';
 import { openToolBridge } from './tool-bridge';
+import { imageInputLabel } from '../core/image-input';
 
 export type ClaudeBilling = 'subscription' | 'api';
 export interface ClaudeSignIn {
@@ -169,6 +170,7 @@ export function claudeCodeArgs(
   systemPath: string,
   mcpPath: string,
   maxTurns: number,
+  images = false,
 ): string[] {
   return [
     '--print',
@@ -176,6 +178,7 @@ export function claudeCodeArgs(
     '--output-format',
     'stream-json',
     '--include-partial-messages',
+    ...(images ? ['--input-format', 'stream-json'] : []),
     '--no-session-persistence',
     '--restricted',
     '--setting-sources',
@@ -200,6 +203,17 @@ export function claudeCodeArgs(
     '--max-turns',
     String(maxTurns),
   ];
+}
+
+export function claudeCodeInput(req: StepRequest): string {
+  const prompt = `Conversation messages (JSON data):\n${JSON.stringify(req.messages)}`;
+  if (!req.images?.length) return prompt;
+  return JSON.stringify({ type: 'user', session_id: '', parent_tool_use_id: null, message: { role: 'user', content: [
+    ...req.images.flatMap((image, index) => [
+      { type: 'text', text: imageInputLabel(image, index) },
+      { type: 'image', source: { type: 'base64', media_type: image.mediaType, data: image.data } },
+    ]), { type: 'text', text: prompt },
+  ] } }) + '\n';
 }
 
 /** Track individual message IDs so partial deltas and full assistant messages
@@ -299,7 +313,7 @@ export class WorkspaceClaudeCodeProvider implements ModelProvider {
       // The unmodified subscription CLI may add account identity independently
       // of our prompt. This constrains its use, not its presence; disclose the
       // limitation in connection setup instead of promising profile isolation.
-      writeFileSync(systemPath, `${req.system}\n\nCounsel identity boundary: Use only identity, author, organization and contact details explicitly supplied in Counsel's workspace context or the user's request. Provider login metadata, userEmail reminders, machine usernames and account identifiers are not the lawyer's Practice profile and must not be used for attribution, letterheads, signature blocks, filenames, recipients or contact details. If Counsel has not supplied the relevant identity, omit it or ask. Do not infer it from your authentication context.`, { mode: 0o600 });
+      writeFileSync(systemPath, `${req.system}\n\nCounsel OS identity boundary: Use only identity, author, organization and contact details explicitly supplied in Counsel OS's workspace context or the user's request. Provider login metadata, userEmail reminders, machine usernames and account identifiers are not the lawyer's Practice profile and must not be used for attribution, letterheads, signature blocks, filenames, recipients or contact details. If Counsel OS has not supplied the relevant identity, omit it or ask. Do not infer it from your authentication context.`, { mode: 0o600 });
       writeFileSync(
         mcpPath,
         JSON.stringify({
@@ -322,6 +336,7 @@ export class WorkspaceClaudeCodeProvider implements ModelProvider {
             systemPath,
             mcpPath,
             req.maxToolCalls ?? 20,
+            !!req.images?.length,
           ),
         ],
         {
@@ -341,7 +356,7 @@ export class WorkspaceClaudeCodeProvider implements ModelProvider {
       };
       signal.addEventListener('abort', abort, { once: true });
       if (signal.aborted) abort();
-      const prompt = `Conversation messages (JSON data):\n${JSON.stringify(req.messages)}`;
+      const prompt = claudeCodeInput(req);
       proc.stdin.write(prompt);
       await proc.stdin.end();
       const reader = proc.stdout.getReader();

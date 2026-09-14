@@ -1,4 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { ImagePreview } from './ImagePreview';
+import { isImageMedia } from '../../../src/workspace/image-types';
 import { MatterPicker } from "./MatterPicker";
 import {
   href,
@@ -39,6 +41,7 @@ import { SourceMatters } from './SourceMatters';
 import { SourceLinks } from './SourceLinks';
 import { RecordActions } from './RecordActions';
 import { PracticeOriginals } from './PracticeOriginals';
+import { ContextualChatHints } from './CapabilityHints';
 
 type Detail =
   | { kind: "references"; record: Source; revision: SourceRevision }
@@ -266,7 +269,7 @@ export function RecordReader({
     detail.kind === "work"
       ? detail.record.disposition
       : detail.kind === "references"
-        ? detail.revision.textStatus
+        ? isImageMedia(detail.revision.provenance.mediaType) ? 'image' : detail.revision.textStatus
         : detail.revision.status;
   const matterIds =
     detail.kind === "references"
@@ -354,6 +357,7 @@ export function RecordReader({
           </a>
         </div>
       )}
+      {detail.kind === 'references' && <ContextualChatHints source={{ revisionId: detail.revision.id, word: !!detail.revision.original?.name.toLowerCase().endsWith('.docx') }} />}
       <div className="reader-layout">
         <article className="reading-sheet">
           {detail.kind === "work" && !!detail.record.answer.trim() && (
@@ -381,10 +385,13 @@ export function RecordReader({
                   ? "Recorded decision"
                   : "Note / draft"
                 : detail.kind === "references"
-                  ? "Source text"
+                  ? isImageMedia(detail.revision.provenance.mediaType) ? 'Source image' : "Source text"
                   : "Practice material"}
             </h2>
-            {body === null ? (
+            {detail.kind === 'references' && isImageMedia(detail.revision.provenance.mediaType) ? <>
+              <ImagePreview id={detail.revision.id} title={detail.revision.title} />
+              <p className="fine-print">Original image. Attach this version to a chat to discuss it. Searchable text and exact text citations are not available for images.</p>
+            </> : body === null ? (
               <div className="coverage-notice">
                 <p>
                   No text has been saved for this source. Its contents are not

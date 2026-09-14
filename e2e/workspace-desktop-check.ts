@@ -6,7 +6,7 @@ import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { sourceFingerprint } from '../scripts/workspace-release-check';
 
-assert.equal(process.platform, 'darwin'); assert.equal(process.argv.length, 3, 'Pass one newly built Counsel.app path.');
+assert.equal(process.platform, 'darwin'); assert.equal(process.argv.length, 3, 'Pass one newly built Counsel OS.app path.');
 const app = resolve(process.argv[2]!), repo = resolve(import.meta.dir, '..');
 const build = JSON.parse(readFileSync(join(dirname(app), 'desktop-build.json'), 'utf8'));
 const sha = (path: string) => createHash('sha256').update(readFileSync(path)).digest('hex');

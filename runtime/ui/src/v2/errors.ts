@@ -18,10 +18,10 @@ export interface HumanError {
   detail?: string;
 }
 
-/** The vendor a lawyer knows, or "Counsel" when the turn never named one
+/** The vendor a lawyer knows, or "Counsel OS" when the turn never named one
  * (a step that failed before its provider was recorded). */
 function vendorOf(providerId: string): string {
-  if (providerId === '') return 'Counsel';
+  if (providerId === '') return 'Counsel OS';
   const plate = plateFor(providerId);
   return plate.known ? plate.vendor : providerId;
 }

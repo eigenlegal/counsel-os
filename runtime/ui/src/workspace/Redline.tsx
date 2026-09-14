@@ -18,7 +18,7 @@ export function RedlineCard({ value }: { value: RedlineReceipt }): JSX.Element {
   return <section className="chat-redline" aria-label="Document redline">
     <div className="chat-card-caption"><Icon name="reference" size={17} /><strong>{value.status === 'saved' ? 'Draft redline ready' : 'Document changed during this response'}</strong></div>
     <p><a href={href('references', { revision: value.sourceRevisionId })}>{value.sourceTitle}</a> · version {value.sourceVersion}</p>
-    {value.status === 'source-changed' ? <p className="version-notice">No redline was saved. Read the newer document and ask Counsel to reapply the changes.</p> : <>
+    {value.status === 'source-changed' ? <p className="version-notice">No redline was saved. Read the newer document and ask Counsel OS to reapply the changes.</p> : <>
       <p className="fine-print">Native Word changes and comments. Your original is unchanged. Review the draft before use.</p>
       <div className="redline-file-actions"><button className="button" disabled={busy} onClick={() => void download()}>{busy ? 'Downloading…' : 'Download redline'}</button>
         {value.file && <CleanProposalButton redline={value.file} />}</div>

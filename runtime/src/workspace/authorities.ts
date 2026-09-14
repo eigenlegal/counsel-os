@@ -27,7 +27,7 @@ export const AUTHORITY_LIMITS = [
 export async function getPublisherBytes(host: 'https://www.ecfr.gov' | 'https://uscode.house.gov', path: string, signal: AbortSignal, transport: typeof fetch): Promise<Buffer> {
   signal.throwIfAborted();
   const response = await transport(host + path, { method: 'GET', signal, redirect: 'error', credentials: 'omit',
-    headers: { Accept: 'application/json, application/xml, text/html', 'Accept-Encoding': 'gzip, deflate', 'User-Agent': 'Counsel/0.15 (citation lookup)' } });
+    headers: { Accept: 'application/json, application/xml, text/html', 'Accept-Encoding': 'gzip, deflate', 'User-Agent': 'Counsel-OS/0.15 (citation lookup)' } });
   if (!response.ok || response.redirected) {
     await response.body?.cancel();
     throw new Error(`Publisher lookup failed (${response.status}). No current-law verification was completed.`);

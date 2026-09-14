@@ -23,7 +23,7 @@ enum DesktopAction: String {
     func openTerminal() {
         guard let command else { return }
         let alert = NSAlert(); alert.messageText = rawValue.hasPrefix("install") ? "Run the official installer in Terminal?" : "Sign in through the provider?"
-        alert.informativeText = "Counsel will open Terminal and run:\n\n\(command)\n\nInstallation downloads provider software. Sign-in may change the account used by other projects. No practice documents are sent. Cancel with Control-C in Terminal, then return to Counsel and check local sign-in."
+        alert.informativeText = "Counsel OS will open Terminal and run:\n\n\(command)\n\nInstallation downloads provider software. Sign-in may change the account used by other projects. No practice documents are sent. Cancel with Control-C in Terminal, then return to Counsel OS and check local sign-in."
         alert.addButton(withTitle: "Cancel"); alert.addButton(withTitle: "Open Terminal")
         guard alert.runModal() == .alertSecondButtonReturn else { return }
         // JSON string escaping is also valid for this fixed AppleScript literal.
@@ -31,7 +31,7 @@ enum DesktopAction: String {
         let script = NSAppleScript(source: "tell application \"Terminal\"\nactivate\ndo script \"\(escaped)\"\nend tell")
         var error: NSDictionary?
         _ = script?.executeAndReturnError(&error)
-        if error != nil { let message = NSAlert(); message.messageText = "Terminal could not be opened"; message.informativeText = "Use Copy command in Counsel and paste it in Terminal. Your existing connection has not been changed by Counsel."; message.runModal() }
+        if error != nil { let message = NSAlert(); message.messageText = "Terminal could not be opened"; message.informativeText = "Use Copy command in Counsel OS and paste it in Terminal. Your existing connection has not been changed by Counsel OS."; message.runModal() }
     }
 }
 

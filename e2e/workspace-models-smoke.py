@@ -69,11 +69,11 @@ with sync_playwright() as p:
         return dialog
 
     dialog = choose('synthetic-model-a')
-    expect(dialog.get_by_text('Counsel does not automatically choose a model or fallback.', exact=False)).to_be_visible()
+    expect(dialog.get_by_text('Counsel OS does not automatically choose a model or fallback.', exact=False)).to_be_visible()
     page.screenshot(path=str(OUT / 'model-picker-1440.png'), full_page=True)
     dialog.get_by_role('button', name='Use for this chat', exact=True).click()
     expect(page.locator('.composer-model')).to_contain_text('synthetic-model-a')
-    page.get_by_role('textbox', name='Message Counsel', exact=True).fill('Synthetic first chat.')
+    page.get_by_role('textbox', name='Message Counsel OS', exact=True).fill('Synthetic first chat.')
     page.get_by_role('button', name='Send message', exact=True).click()
     page.wait_for_url('**/#/home?id=*')
     first_url = page.url
@@ -83,7 +83,7 @@ with sync_playwright() as p:
     page.goto(BASE + '/#/home?new=synthetic-second-model')
     expect(page.locator('.composer-model')).to_contain_text('scripted-fixture')
     choose('synthetic-model-b').get_by_role('button', name='Use for this chat', exact=True).click()
-    page.get_by_role('textbox', name='Message Counsel', exact=True).fill('Synthetic second chat.')
+    page.get_by_role('textbox', name='Message Counsel OS', exact=True).fill('Synthetic second chat.')
     page.get_by_role('button', name='Send message', exact=True).click()
     page.wait_for_url('**/#/home?id=*')
     second_id = page.url.split('id=')[1]

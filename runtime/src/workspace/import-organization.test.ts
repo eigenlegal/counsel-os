@@ -73,7 +73,7 @@ test('bulk changes cover filtered off-page rows, preserve unrelated fields and r
 test('malformed suggestions, invented matter IDs, unsupported quotes and missing consent fail without saving', async () => {
   const batch = await stage(), base = suggestion(batch.entries[0]!.id);
   for (const suggestions of [[{ ...base, entryId: crypto.randomUUID() }], [base, base], [{ ...base, matterId: crypto.randomUUID() }],
-    [{ ...base, evidenceQuote: 'Fabricated evidence' }], [{ ...base, destination: 'profile' }]]) {
+    [{ ...base, evidenceQuote: 'Fabricated evidence' }], [{ ...base, destination: 'profile', collection: 'external' }]]) {
     const model = new FakeModelProvider([{ output: { suggestions } }]);
     await expect(new WorkspaceChat(store, () => model).organizeImport(batch.id, input(batch), new AbortController().signal)).rejects.toThrow();
     expect(store.imports.get(batch.id).revisionId).toBe(batch.revisionId);

@@ -61,7 +61,7 @@ with sync_playwright() as p:
     expect(dialog.get_by_role('button', name='Save profile', exact=True)).to_be_disabled()
     shot('profile-setup')
     dialog.get_by_label('Your name', exact=True).fill('Synthetic Avery')
-    dialog.get_by_label('Role (optional)', exact=True).fill('Counsel')
+    dialog.get_by_label('Role (optional)', exact=True).fill('Counsel OS')
     dialog.get_by_label('Organization (optional)', exact=True).fill('Example Legal')
     dialog.get_by_text('Practice context (optional)', exact=True).click()
     dialog.get_by_label('Organization context', exact=True).fill('Synthetic organization supporting legal research and investigations.')
@@ -110,7 +110,7 @@ with sync_playwright() as p:
     page.get_by_role('button', name='New chat', exact=True).click()
     page.get_by_label('Conversation context', exact=True).click()
     page.get_by_role('option', name='Internal investigation', exact=True).click()
-    page.get_by_role('textbox', name='Message Counsel', exact=True).fill('What remains unresolved?')
+    page.get_by_role('textbox', name='Message Counsel OS', exact=True).fill('What remains unresolved?')
     page.get_by_role('button', name='Send message', exact=True).click()
     page.wait_for_url('**/#/home?id=*')
     first_chat = page.url
@@ -147,7 +147,7 @@ with sync_playwright() as p:
     expect(panel.locator('.profile-details')).not_to_contain_text('Synthetic Avery Updated')
     assert api('/conversations/' + first_chat_id)['turns'][0]['state']['profileContext'] == first
     page.get_by_role('button', name='New chat', exact=True).click()
-    page.get_by_role('textbox', name='Message Counsel', exact=True).fill('A new question with profile sharing off.')
+    page.get_by_role('textbox', name='Message Counsel OS', exact=True).fill('A new question with profile sharing off.')
     page.get_by_role('button', name='Send message', exact=True).click()
     page.wait_for_url('**/#/home?id=*')
     expect(page.get_by_text('Saved in conversation', exact=True)).to_be_visible(timeout=15000)

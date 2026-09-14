@@ -39,6 +39,13 @@ describe('openDocx', () => {
 });
 
 describe('save', () => {
+  test('compresses embedded fonts without changing any retained part bytes', () => {
+    const font = new Uint8Array(5_500_000).map((_, i) => i % 251);
+    const pkg = openDocx(buildDocx({ blocks: [{ runs: ['Notice'] }], rawParts: { 'word/fonts/font1.odttf': font } }));
+    const saved = pkg.save();
+    expect(saved.length).toBeLessThan(100_000);
+    expect(openDocx(saved).partBytes('word/fonts/font1.odttf')).toEqual(font);
+  });
   test('an untouched package round-trips every part byte for byte', () => {
     const original = buildDocx({
       blocks: [{ style: 'Heading1', runs: ['Title'] }, { runs: ['Body ', { text: 'bold', bold: true }] }],

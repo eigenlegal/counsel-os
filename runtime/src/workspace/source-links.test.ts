@@ -35,7 +35,7 @@ const linkFinding = (id: string) => store.upkeep.status().items.find(i => i.code
 
 test('later separate import resolves an earlier reference; only reviewed links reach matter retrieval and chat context', async () => {
   const matter = store.createMatter({ title: 'Acme NDA' }), other = store.createMatter({ title: 'Unrelated matter' });
-  const note = await imported('Counsel/matters/nda.md', 'Review record. [[Companies/Acme/background]]', matter.id);
+  const note = await imported('Counsel OS/matters/nda.md', 'Review record. [[Companies/Acme/background]]', matter.id);
   drain(); expect(linkFinding(note.id).detail).toContain('1 unresolved');
   const company = await imported('Companies/Acme/background.md', 'COMPANYFACTS signed address history. This is not signing authority.');
   drain(); expect(linkFinding(note.id).detail).toContain('1 possible matter');
@@ -121,7 +121,7 @@ test('dismissal survives unrelated activity and backup/restart; a later relevant
   expect(store.upkeep.status({ view: 'dismissed' }).items.some(i => i.targetId === note.id)).toBe(true);
   // Backup with the coalesced dependency refresh still pending.
   await imported('future.md', 'Arrived later');
-  const backup = await createWorkspaceBackup(store.databasePath); expect((await inspectWorkspaceBackup(backup.bytes)).schemaVersion).toBe(19);
+  const backup = await createWorkspaceBackup(store.databasePath); expect((await inspectWorkspaceBackup(backup.bytes)).schemaVersion).toBe(20);
   const file = join(root, 'fixture.counsel-backup'); writeFileSync(file, backup.bytes);
   const restored = await restoreWorkspaceBackup(file, join(root, 'restored'));
   store.close(); store = new WorkspaceStore({ databasePath: restored.databasePath }); drain();
@@ -156,7 +156,7 @@ test('schema 16 migrates intact, including exact dismissed findings, and queues 
   writeFileSync(legacyPath, legacy.serialize()); legacy.close();
   const copy = new WorkspaceStore({ databasePath: legacyPath });
   try { expect(copy.upkeep.status({ view: 'dismissed' }).items[0]).toMatchObject({ targetId: id, version, title: 'Old finding' });
-    expect((await inspectWorkspaceBackup((await createWorkspaceBackup(legacyPath)).bytes)).schemaVersion).toBe(19);
+    expect((await inspectWorkspaceBackup((await createWorkspaceBackup(legacyPath)).bytes)).schemaVersion).toBe(20);
   } finally { copy.close(); }
 });
 

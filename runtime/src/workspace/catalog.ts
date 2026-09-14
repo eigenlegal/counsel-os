@@ -9,6 +9,7 @@ export interface CatalogSource {
   title: string;
   preview: string;
   textStatus: Source['latest']['textStatus'];
+  mediaType?: string | null;
   revisionId: string;
   updatedAt: string;
   matterIds: string[];
@@ -72,7 +73,7 @@ export function workspaceCatalog(db: Database, limit: number, matterId?: string)
   const sources = all<Omit<CatalogSource, 'matterIds'>>(
     db,
     `SELECT s.id, s.kind, r.title,
-    substr(COALESCE(r.body, ''), 1, 220) AS preview, r.text_status AS textStatus,
+    substr(COALESCE(r.body, ''), 1, 220) AS preview, r.text_status AS textStatus, json_extract(r.provenance_json,'$.mediaType') AS mediaType,
     r.id AS revisionId, r.received_at AS updatedAt FROM sources s JOIN source_revisions r ON r.source_id = s.id
     WHERE r.revision_no = (SELECT max(revision_no) FROM source_revisions WHERE source_id = s.id)
     AND ${sourceScope} ORDER BY r.received_at DESC, s.id LIMIT ?`,
