@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os';
 import { buildWorkspace } from './build_workspace';
 import { sourceFingerprint } from './workspace-release-check';
 import { desktopPlist, readDesktopRelease } from './desktop_release';
+import { desktopReleaseTag } from '../desktop/version';
 
 export function desktopOptions(args: string[]) {
   let output: string | undefined, engine: string | undefined, help = false;
@@ -71,7 +72,7 @@ export async function buildDesktop(args: string[]) {
   const sourceAfter = await sourceFingerprint(repo);
   if (sourceAfter.sha256 !== sourceBefore.sha256) throw new Error('Source changed during the desktop build. Rebuild before qualification.');
   writeFileSync(join(output, 'desktop-build.json'), JSON.stringify({ format: 1, application: 'Counsel desktop', channel: 'local-unreleased',
-    desktopRelease: release,
+    desktopRelease: release, releaseTag: desktopReleaseTag(release),
     builtAt: new Date().toISOString(), source: sourceAfter, engineBuild: engine.build,
     engineSha256: signedEngineHash, originalEngineSha256: engine.executable.sha256,
     shellSha256: createHash('sha256').update(readFileSync(join(macOS, 'Counsel'))).digest('hex'),

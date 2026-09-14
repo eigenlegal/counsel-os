@@ -2,6 +2,14 @@ import { expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { desktopRelease, desktopPlist, readDesktopRelease } from './desktop_release';
+import { desktopReleaseTag, desktopReleaseNotesUrl } from '../desktop/version';
+
+test('preview tags and release notes share the desktop version/build, not the plugin version', () => {
+  const release = readDesktopRelease(resolve(import.meta.dir, '..'));
+  expect(desktopReleaseTag()).toBe(`desktop-v${release.version}-preview.${release.build}`);
+  expect(desktopReleaseTag({ version: '0.2.1', build: 42 })).toBe('desktop-v0.2.1-preview.42');
+  expect(desktopReleaseNotesUrl).toBe(`https://github.com/eigenlegal/counsel-os/releases/tag/${desktopReleaseTag()}`);
+});
 
 test('desktop version/build have an independent manifest and one safe plist substitution', () => {
   const repo = resolve(import.meta.dir, '..'), release = readDesktopRelease(repo);

@@ -11,6 +11,8 @@ import { buildDocx } from '../runtime/src/docx/test/builder';
 import { openDocx, DOCUMENT_PART } from '../runtime/src/docx/package';
 import { modelOf, textOf } from '../runtime/src/docx/model';
 import { syntheticPdf, syntheticCjkPdf } from '../runtime/src/workspace/fixtures/documents';
+import release from '../desktop/release.json';
+import { desktopReleaseTag } from '../desktop/version';
 
 const args = process.argv.slice(2);
 assert.ok(args[0] && !args[0].startsWith('--'), 'Usage: bun e2e/workspace-package-check.ts /package/folder [--browser-python /path/python] [--native-word]');
@@ -258,7 +260,7 @@ try {
   const archive = join(root, 'synthetic.counsel-backup'); writeFileSync(archive, new Uint8Array(await download.arrayBuffer()), { mode: 0o600 });
   pass('embedded UI GET/HEAD, authenticated API, uploads and backup through packaged parent processes');
   if (browserPython) {
-    const config = join(root, 'browser.json'); writeFileSync(config, JSON.stringify({ url: `${active.origin}/#token=${active.token}`, root }), { mode: 0o600 });
+    const config = join(root, 'browser.json'); writeFileSync(config, JSON.stringify({ url: `${active.origin}/#token=${active.token}`, root, release, releaseTag: desktopReleaseTag() }), { mode: 0o600 });
     for (const script of ['workspace-package-smoke.py', 'workspace-recovery-smoke.py']) {
     const browser = Bun.spawn([browserPython, join(repo, 'e2e', script), config], { cwd: repo, stdout: 'pipe', stderr: 'pipe' });
     const timer = setTimeout(() => browser.kill('SIGKILL'), 90_000);

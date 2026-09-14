@@ -4,6 +4,7 @@ import { href, type Snapshot } from './api';
 import { ConnectionCard } from './ConnectionCard';
 import { BackupCard } from './BackupCard';
 import { DesktopUpdates } from './DesktopUpdates';
+import { AppVersion } from './AppVersion';
 
 export function Settings({
   data,
@@ -24,6 +25,7 @@ export function Settings({
       <PageHeader
         title="Workspace settings"
         description="Your data, your tools, and what is connected."
+        action={<AppVersion desktop={data.desktop} />}
       />
       <div className="settings-stack">
         {!!data.setup && !data.setup.dismissed && !data.demo && <section className="settings-section import-settings-card"><div><h2>Getting started</h2><p>Connect AI, add your optional profile, and bring in your files at your own pace.</p></div><a className="button" href={href('settings', {view:'setup'})}>Finish setup</a></section>}
