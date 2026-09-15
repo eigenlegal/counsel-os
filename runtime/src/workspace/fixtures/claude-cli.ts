@@ -13,8 +13,8 @@ if (args.includes('auth') && args.includes('status')) {
     await Bun.sleep(60_000);
   }
   emit({
-    loggedIn: mode !== 'missing',
-    authMethod: mode === 'subscription' ? 'claude.ai' : mode === 'api' ? 'api_key' : 'unexpected',
+    loggedIn: mode !== 'missing' && (mode !== 'needs-user' || !!process.env.USER?.trim()),
+    authMethod: mode === 'subscription' || mode === 'needs-user' ? 'claude.ai' : mode === 'api' ? 'api_key' : 'unexpected',
     email: 'private@example.invalid',
     orgId: 'private-org',
     secret: 'SYNTHETIC-NEVER-EXPOSE',

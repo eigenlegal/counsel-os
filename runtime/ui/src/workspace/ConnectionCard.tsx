@@ -26,6 +26,7 @@ export function ConnectionCard({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
+  const [catalogRevision, setCatalogRevision] = useState(0);
   const [billing, setBilling] = useState<ClaudeBilling>(
     status.config?.claudeBilling ?? 'subscription',
   );
@@ -45,6 +46,7 @@ export function ConnectionCard({
       });
       setKey('');
       setSaved(true);
+      setCatalogRevision(value => value + 1);
       onChanged();
     } catch (e) {
       setError((e as Error).message);
@@ -110,7 +112,7 @@ export function ConnectionCard({
           </details>
         )}
         {(kind === 'codex' || kind === 'claude-code') ? <ConnectionSetup key={`${kind}:${billing}`} kind={kind} billing={kind === 'codex' ? 'subscription' : billing}
-          installed={kind === 'codex' ? status.codexInstalled : status.claudeInstalled} desktop={desktop} changed={onChanged} /> : <>
+          installed={kind === 'codex' ? status.codexInstalled : status.claudeInstalled} desktop={desktop} changed={onChanged} checked={() => setCatalogRevision(value => value + 1)} /> : <>
           <h3 className="connection-stage">2. Add your API key</h3>
           <p className="fine-print">API use is billed separately from a ChatGPT or Claude subscription. Choose a subscription above if that is how you want to connect.</p>
           <label>
@@ -130,8 +132,9 @@ export function ConnectionCard({
           </label>
         </>}
         <h3 className="connection-stage">3. Choose a model and save</h3>
-        <p className="fine-print">Choose a model available to your account. Saving does not send a prompt or verify model access.</p>
-        <ModelField kind={kind} value={model} onChange={value => { setModel(value); setSaved(false); }} disabled={busy} />
+        <p className="fine-print">{kind === 'codex' || kind === 'claude-code' ? 'Model choices load automatically; checking sign-in refreshes them.' : 'Save your API key below to load its model choices automatically.'} Your selected model stays unchanged. Listing models and saving do not send a prompt or verify model access.</p>
+        <ModelField key={kind} kind={kind} value={model} onChange={value => { setModel(value); setSaved(false); }} disabled={busy}
+          autoLoad={kind === 'codex' || kind === 'claude-code' || (status.config?.kind === kind && !key)} refreshKey={catalogRevision} />
         <details className="model-detail">
           <summary>Model and connection details</summary>
           <p>

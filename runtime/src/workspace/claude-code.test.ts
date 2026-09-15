@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { existsSync, mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { tmpdir, userInfo } from 'node:os';
 import { join, resolve } from 'node:path';
 import { WorkspaceStore } from './store';
 import { WorkspaceChat } from './chat';
@@ -76,6 +76,15 @@ function authRuntime(mode: string): ClaudeRuntime {
 }
 
 describe('Claude Code CLI connection', () => {
+  test('GUI launches resolve a missing or blank USER from the OS without forwarding credentials', async () => {
+    for (const user of [undefined, '', '   ']) {
+      const env = { ...runtime.env, USER: user };
+      expect(claudeCodeEnv(env).USER).toBe(userInfo().username);
+      expect(JSON.stringify(claudeCodeEnv(env))).not.toMatch(/SYNTHETIC-AMBIENT|SYNTHETIC-OTHER/);
+      expect(await checkClaudeSignIn({ ...authRuntime('needs-user'), env })).toMatchObject({ loggedIn: true, billing: 'subscription' });
+    }
+    expect(claudeCodeEnv(runtime.env!).USER).toBe('synthetic-user');
+  });
   test('checks only safe auth metadata and preserves the billing distinction', async () => {
     const status = await checkClaudeSignIn(runtime);
     expect(status).toMatchObject({ installed: true, loggedIn: true, billing: 'subscription' });
