@@ -160,10 +160,18 @@ test('schema 16 migrates intact, including exact dismissed findings, and queues 
   } finally { copy.close(); }
 });
 
-test('coverage is explicit for long notes and reference limits; queue refresh coalesces and rolls back', () => {
+test('coverage is explicit for long notes and reference limits', () => {
   const matter = store.createMatter({ title: 'Matter' }); drain();
   const note = source('large.md', Array.from({ length: 120 }, (_, i) => `[[missing${i}]]`).join('\n') + '\n' + 'x'.repeat(500001), matter.id);
   const review = store.sourceLinks(note.id); expect(review.truncated).toBe(true); expect(review.total).toBe(100); expect(review.items).toHaveLength(50);
+  drain(); expect(store.upkeep.status().pending).toBe(0);
+  // This is a functional boundary test over a 500 KB fixture, not a benchmark.
+  // Shared CI runners can exceed Bun's default five seconds while scanning it.
+}, 15_000);
+
+test('source-link queue refresh coalesces and rolls back', () => {
+  const matter = store.createMatter({ title: 'Matter' }); drain();
+  source('note.md', '[[missing]]', matter.id);
   drain(); const db = new Database(store.databasePath);
   try {
     expect(() => db.transaction(() => { db.run('UPDATE matters SET title=? WHERE id=?', ['Rolled back', matter.id]); throw new Error('rollback'); })()).toThrow('rollback');
