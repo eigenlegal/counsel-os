@@ -15,22 +15,24 @@ export function ModelField({
   onChange,
   disabled = false,
   autoLoad = false,
+  refreshKey = 0,
 }: {
   kind: ConnectionConfig["kind"];
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
   autoLoad?: boolean;
+  refreshKey?: number;
 }): JSX.Element {
   const [catalog, setCatalog] = useState<ModelCatalog | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [custom, setCustom] = useState(false);
-  const [load, setLoad] = useState(autoLoad ? 1 : 0);
+  const [load, setLoad] = useState(0);
   useEffect(() => {
     setCatalog(null);
     setError("");
-    if (!load) return;
+    if (!autoLoad && !load) { setBusy(false); return; }
     const abort = new AbortController();
     setBusy(true);
     request<ModelCatalog>("/connection/models", { kind }, abort.signal)
@@ -44,7 +46,7 @@ export function ModelField({
         if (!abort.signal.aborted) setBusy(false);
       });
     return () => abort.abort();
-  }, [kind, load]);
+  }, [kind, load, autoLoad, refreshKey]);
   const listed = catalog?.models ?? [];
   return (
     <div className="model-field">

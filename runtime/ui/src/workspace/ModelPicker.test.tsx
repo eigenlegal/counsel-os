@@ -52,3 +52,35 @@ test('Fable stays opt-in and an explicit chat choice retains the existing Claude
   expect(config.model).toBe('sonnet');
   expect(calls).toHaveLength(1);
 });
+
+test('automatic loading can start after credentials are saved and refresh without changing selection', async () => {
+  const calls = catalog('codex', 'gpt-6-astra', 'GPT-6-Astra');
+  const changes: string[] = [];
+  const field = (autoLoad: boolean, refreshKey = 0) => <ModelField kind="codex" value="kept-model" onChange={value => changes.push(value)} autoLoad={autoLoad} refreshKey={refreshKey} />;
+  const view = render(field(false));
+  expect(calls).toHaveLength(0);
+  view.rerender(field(true));
+  await screen.findByRole('option', { name: 'GPT-6-Astra' });
+  expect(calls).toHaveLength(1);
+  view.rerender(field(true, 1));
+  await waitFor(() => expect(calls).toHaveLength(2));
+  await screen.findByRole('option', { name: 'GPT-6-Astra' });
+  expect((screen.getByRole('combobox', { name: 'Model' }) as HTMLSelectElement).value).toBe('kept-model');
+  expect(changes).toEqual([]);
+});
+
+test('a late catalog from the previous provider cannot replace the active choices', async () => {
+  sessionStorage.setItem('counsel-os.token', 'fixture');
+  let finish: (value: Response) => void = () => {};
+  globalThis.fetch = (async (_url: string, options: RequestInit) => {
+    if (JSON.parse(String(options.body)).kind === 'codex') return new Promise<Response>(resolve => { finish = resolve; });
+    return Response.json({ kind: 'claude-code', models: [{ id: 'sonnet', label: 'Sonnet' }], source: 'cli-aliases', note: 'Aliases only.' });
+  }) as typeof fetch;
+  const view = render(<ModelField kind="codex" value="kept-model" onChange={() => {}} autoLoad />);
+  view.rerender(<ModelField kind="claude-code" value="sonnet" onChange={() => {}} autoLoad />);
+  await screen.findByRole('option', { name: 'Sonnet' });
+  finish(Response.json({ kind: 'codex', models: [{ id: 'late', label: 'Late model' }], source: 'cli-bundled', note: 'Obsolete.' }));
+  await new Promise(resolve => setTimeout(resolve, 0));
+  expect(screen.queryByRole('option', { name: 'Late model' })).toBeNull();
+  expect(screen.getByRole('option', { name: 'Sonnet' })).toBeTruthy();
+});

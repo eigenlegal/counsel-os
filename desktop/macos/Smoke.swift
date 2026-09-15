@@ -95,6 +95,9 @@ struct CheckError: Error { let message: String }
         controller.onDownloaded = { url in self.downloaded.append(url) }
         controller.openExternal = { url in self.external.append(url) }
         controller.start()
+        try check(engine.process?.environment?["USER"] == NSUserName(), "desktop engine omitted the OS username needed for Claude sign-in")
+        try check(engine.process?.environment?["LOGNAME"] == NSUserName(), "desktop engine omitted the login name")
+        try check(engine.process?.environment?["ANTHROPIC_API_KEY"] == nil && engine.process?.environment?["CLAUDE_CODE_OAUTH_TOKEN"] == nil, "desktop engine inherited provider credentials")
         try await waitJS("document.body.textContent.includes('A workspace for your practice.')", label: "initial setup did not become ready")
         try await snapshot("native-setup.png")
         phase = "onboarding scrolling"

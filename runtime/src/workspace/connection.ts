@@ -139,6 +139,9 @@ export class WorkspaceConnection {
     if (cached && Date.now() - cached.at < 300_000) return cached.result;
     const result = this.loadModels(kind);
     this.catalogs.set(kind, { at: Date.now(), result });
+    void result.then(catalog => {
+      if (catalog.source === 'unavailable' && this.catalogs.get(kind)?.result === result) this.catalogs.delete(kind);
+    });
     return result;
   }
   private async loadModels(kind: ModelCatalog["kind"]): Promise<ModelCatalog> {
@@ -223,6 +226,8 @@ export class WorkspaceConnection {
     return checkClaudeSignIn(this.options.claudeRuntime);
   }
   async checkSignIn(kind: 'codex' | 'claude-code') {
+    // A newly installed CLI or renewed login must not reuse a stale catalog.
+    this.catalogs.delete(kind);
     return kind === 'codex' ? checkCodexSignIn() : this.checkClaudeSignIn();
   }
   async test(choice: ModelChoice, signal: AbortSignal) {

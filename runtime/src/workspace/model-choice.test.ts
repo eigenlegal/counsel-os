@@ -218,6 +218,17 @@ test("catalogs are bounded, coalesced metadata requests to fixed endpoints; erro
   expect((await connection.models("openai-api")).source).toBe("unavailable");
 });
 
+test("unavailable model catalogs retry immediately instead of keeping a failed discovery cached", async () => {
+  let calls = 0;
+  const connection = new WorkspaceConnection(store, memoryStore(), {
+    codexCatalog: async () => { calls++; if (calls === 1) throw new Error('Not installed yet'); return [{ id: 'newly-installed', label: 'Newly installed' }]; },
+  });
+  expect((await connection.models('codex')).source).toBe('unavailable');
+  expect((await connection.models('codex')).models).toEqual([{ id: 'newly-installed', label: 'Newly installed' }]);
+  expect((await connection.models('codex')).source).toBe('cli-bundled');
+  expect(calls).toBe(2);
+});
+
 test("model routes require authentication, validate fields, and reject stale connection/billing choices", async () => {
   const connection = new WorkspaceConnection(store, memoryStore(), {
     codexCatalog: async () => [],

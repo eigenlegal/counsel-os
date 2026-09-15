@@ -63,7 +63,7 @@ Developer launches rebuild the checkout's UI assets. Do not run one under anothe
 
 **The source and build tools are in this repository. Compiled apps and installers are not stored in Git.**
 
-The owner-approved [Counsel OS 0.1.0 preview, build 9](https://github.com/eigenlegal/counsel-os/releases/tag/desktop-v0.1.0-preview.9) provides an Apple silicon Mac installer as a GitHub Release asset. This is an experimental, ad-hoc-signed preview, **not Apple-notarized**; macOS may refuse a downloaded copy. It is not the production release or an automatic update channel. See its release notes for installation, verification, and known limitations.
+The owner-approved [Counsel OS 0.1.0 preview, build 10](https://github.com/eigenlegal/counsel-os/releases/tag/desktop-v0.1.0-preview.10) provides an Apple silicon Mac installer as a GitHub Release asset. This build fixes Claude Code sign-in detection from the Mac app and automatically loads model choices during connection setup. This is an experimental, ad-hoc-signed preview, **not Apple-notarized**; macOS may refuse a downloaded copy. It is not the production release or an automatic update channel. See its release notes for installation, verification, and known limitations.
 
 Find the app version at the top of **Settings** or in **Counsel OS → About Counsel OS**. Preview tags use `desktop-v<version>-preview.<build>` and point to the exact source commit used for the installer. Plugin releases keep their separate `v<version>` tags.
 

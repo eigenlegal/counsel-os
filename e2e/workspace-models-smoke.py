@@ -21,7 +21,6 @@ with sync_playwright() as p:
         return response.json()['connection']['config']
     original_connection = connection()
     page.get_by_role('complementary').get_by_role('link', name='Settings', exact=True).click()
-    page.get_by_role('button', name='Load model choices', exact=True).click()
     expect(page.get_by_role('option', name='GPT-6-Astra', exact=True)).to_have_count(1)
     expect(page.get_by_label('Model', exact=True)).to_have_value('scripted-fixture')
     expect(page.get_by_role('option', name='internal-synthetic', exact=True)).to_have_count(0)

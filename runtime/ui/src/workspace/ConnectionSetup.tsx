@@ -3,8 +3,8 @@ import { request, type ConnectionConfig } from './api';
 import type { LocalSignIn } from '../../../src/workspace/connection-setup';
 import { ErrorNotice } from './components';
 
-export function ConnectionSetup({ kind, billing = 'subscription', desktop = false, installed, changed }: {
-  kind: 'codex' | 'claude-code'; billing?: 'subscription' | 'api'; desktop?: boolean; installed?: boolean; changed: () => void;
+export function ConnectionSetup({ kind, billing = 'subscription', desktop = false, installed, changed, checked }: {
+  kind: 'codex' | 'claude-code'; billing?: 'subscription' | 'api'; desktop?: boolean; installed?: boolean; changed: () => void; checked?: () => void;
 }) {
   const [result, setResult] = useState<LocalSignIn | null>(null), [busy, setBusy] = useState(false);
   const [error, setError] = useState(''), [copied, setCopied] = useState('');
@@ -24,7 +24,7 @@ export function ConnectionSetup({ kind, billing = 'subscription', desktop = fals
   async function check() {
     abort.current?.abort(); const controller = new AbortController(); abort.current = controller;
     setBusy(true); setError(''); setResult(null);
-    try { const value = await request<LocalSignIn>('/connection/check-sign-in', { kind }, controller.signal); if (!controller.signal.aborted) { setResult(value); changed(); } }
+    try { const value = await request<LocalSignIn>('/connection/check-sign-in', { kind }, controller.signal); if (!controller.signal.aborted) { setResult(value); checked?.(); changed(); } }
     catch (e) { if (!controller.signal.aborted) setError((e as Error).message); }
     finally { if (!controller.signal.aborted) setBusy(false); }
   }

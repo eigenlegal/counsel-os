@@ -45,7 +45,9 @@ final class EngineProcess {
         child.executableURL = executable
         child.arguments = ["--desktop", "--database", database.path]
         child.currentDirectoryURL = executable.deletingLastPathComponent()
-        child.environment = ["HOME": home.path, "TMPDIR": NSTemporaryDirectory(), "LANG": "en_US.UTF-8",
+        // Claude Code uses USER to locate its macOS Keychain account. Finder's
+        // environment is sparse; derive identity from the OS, not shell settings.
+        child.environment = ["HOME": home.path, "USER": NSUserName(), "LOGNAME": NSUserName(), "TMPDIR": NSTemporaryDirectory(), "LANG": "en_US.UTF-8",
             "PATH": "\(home.path)/.local/bin:\(home.path)/.bun/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"]
         child.standardInput = stdin; child.standardOutput = stdout; child.standardError = stderr
         process = child; input = stdin; output = stdout; errors = stderr

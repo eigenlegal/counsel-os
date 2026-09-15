@@ -1,5 +1,5 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { tmpdir, userInfo } from 'node:os';
 import { join } from 'node:path';
 import type { ModelProvider, StepEvent, StepRequest } from '../core/types';
 import { locateCli } from '../providers/cli-locate';
@@ -27,7 +27,9 @@ export function claudeCodeEnv(base: NodeJS.ProcessEnv): Record<string, string> {
   return {
     PATH: base.PATH ?? '',
     HOME: base.HOME ?? '',
-    USER: base.USER ?? '',
+    // GUI launches can omit USER. An empty value makes the CLI miss an existing
+    // macOS Keychain login. Keep only the OS username, never credential material.
+    USER: base.USER?.trim() || userInfo().username,
     ...(base.CLAUDE_CONFIG_DIR ? { CLAUDE_CONFIG_DIR: base.CLAUDE_CONFIG_DIR } : {}),
     ...transportEnv(base),
     ENABLE_CLAUDEAI_MCP_SERVERS: 'false',
