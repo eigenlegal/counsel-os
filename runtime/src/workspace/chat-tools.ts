@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { approvedPracticeCategory } from './practice-presentation';
 import { isImageMedia } from './image-types';
 import { z } from "zod";
 import { matchingTemplates } from "./templates";
@@ -223,7 +224,7 @@ export function chatTools(options: {
         kind,
         id,
         title: revision.title,
-        category: library.find(item => item.id === id)?.category ?? "Approved knowledge",
+        category: library.find(item => item.id === id)?.category ?? approvedPracticeCategory[item.kind],
         version: revision.number,
         status: revision.status,
         newerVersionAvailable: item.active?.id !== id,

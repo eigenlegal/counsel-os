@@ -14,6 +14,7 @@ import { parseBundledCodexModels } from '../runtime/src/workspace/model-catalog'
 import { memoryStore } from '../runtime/src/providers/secrets';
 import { FILE_MAX_REQUEST_BYTES } from '../runtime/src/workspace/files';
 import { seedPluginContext } from '../runtime/src/workspace/fixtures/plugin-context';
+import { seedImportedStandards } from '../runtime/src/workspace/fixtures/imported-standards';
 
 const empty = process.argv.includes('--empty');
 const briefFixture = process.argv.includes('--briefs');
@@ -27,6 +28,10 @@ const store = new WorkspaceStore({
   databasePath: join(root, 'workspace.sqlite3'),
 });
 const ids = !empty ? store.importSeed(practice).records : null;
+if (process.argv.includes('--imported-standards')) {
+  await seedImportedStandards(store, 8);
+  if (!store.getProfile()) store.saveProfile({ name: 'Synthetic Reviewer', expectedRevisionId: null });
+}
 if (process.argv.includes('--recall')) store.createKnowledge({kind:'position',revision:{title:'Saved NDA instruction',body:'Nonsolicitation is excluded.',status:'approved',approvedBy:'Synthetic Lawyer'}});
 if (process.argv.includes('--upkeep')) store.upkeep.start();
 const contextIds = contextFixture ? seedPluginContext(store) : null;

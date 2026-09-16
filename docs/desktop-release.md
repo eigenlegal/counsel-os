@@ -72,6 +72,12 @@ Model choices load automatically for subscription connections, refresh after a l
 
 Preview build 10 corrects a Mac-app launch issue where a missing `USER` environment value caused Claude Code to miss an existing Keychain sign-in. The shell supplies the OS username and the restricted adapter has a fallback for other GUI launches. This does not copy credentials, inherit ambient API keys, change sign-in, or infer the lawyer's document-author identity from their operating-system account. An existing valid Claude Code login does not need repeating for this fix.
 
+## Imported practice review in preview build 12
+
+**Practice → Review imported material** includes unchanged, practice-wide positions, methods, reusable language and lessons from ordinary file imports. Select and explicitly confirm up to 50 items per page. After a successful approval the dialog refreshes with the remaining material and clears the selection and confirmation. An empty queue shows a close action rather than disabled approval controls.
+
+Approvals use the existing review path, pin the selected revisions and saved profile identity, and fail the entire batch if a selected item is stale or no longer eligible. Each category retains its role in future context. Revised proposals, matter-specific items and direct plugin baselines are outside this shortcut. Original files and prior responses remain unchanged. Display-only cleanup removes verified export ID suffixes from titles and moves old export metadata out of substantive previews; the saved text is retained intact.
+
 ## Bundled dependency notices
 
 Every new package includes `Contents/Resources/THIRD-PARTY-NOTICES.txt` and `dependency-inventory.json`. Inventory inputs are the actual Bun engine and Vite interface graphs, their locked package versions, and copied PDF fonts/maps. Development-only packages and separately installed provider CLIs are distinguished. License text omissions fail the build unless an exact, documented upstream notice is supplied. Packaging verifies the notice digest. The pure Claude message mapper no longer brings the unused Agent SDK into the desktop merely to translate events.

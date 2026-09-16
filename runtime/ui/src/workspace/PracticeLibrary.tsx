@@ -9,6 +9,7 @@ import { ProfileSetupContext } from './Profile';
 import { TemplateEditor, TemplateDetail } from './Templates';
 import { readingParts } from './DocumentReader';
 import { DocumentUpload } from './DocumentUpload';
+import { ImportedStandards } from './ImportedStandards';
 
 const usage = { guidance: 'Standing guidance', baseline: 'Imported baseline · in use', 'starting-point': 'Starting document', reference: 'Reference material', inactive: 'Not in use', proposed: 'Proposed guidance' };
 export function PracticeLibrary({ data, openEditor, changed }: { data: Snapshot; openEditor: (state: EditorState) => void; changed: () => void }) {
@@ -17,6 +18,7 @@ export function PracticeLibrary({ data, openEditor, changed }: { data: Snapshot;
   const [value, setValue] = useState<PracticeLibraryPage | null>(null), [error, setError] = useState(''), [retry, setRetry] = useState(0);
   const [addingTemplate, setAddingTemplate] = useState(false);
   const [addingFile, setAddingFile] = useState(false);
+  const [reviewingImports, setReviewingImports] = useState(false), [notice, setNotice] = useState('');
   const editProfile = useContext(ProfileSetupContext);
   const preferences = params.get('section') === 'preferences';
   // Old bookmarks land in the combined library; templates remain a filter, not another collection.
@@ -62,7 +64,9 @@ export function PracticeLibrary({ data, openEditor, changed }: { data: Snapshot;
           </select>
         </div>
       </div>
-      <p className="practice-library-note">Your imported standards remain your baseline. Proposed changes need your review; adding a file does not make it a standard.</p>
+      <div className="practice-library-help"><p className="practice-library-note">“Needs review” means a proposal is awaiting approval. If an earlier version is already in use, it stays in use until you approve a replacement.</p>
+        <button className="button" onClick={() => setReviewingImports(true)}>Review imported material</button></div>
+      {notice && <p role="status" className="practice-adoption-notice">{notice}</p>}
       {error ? <ErrorNotice message={error} retry={() => setRetry(n => n + 1)} /> : !value ? <p role="status">Loading practice…</p> : !value.records.length ?
         <Empty title="No practice materials here" action={<button className="button" onClick={() => { setQuery(''); setStatus('all'); setPage(0); navigate({}); }}>Clear filters</button>}>Add material or try a different search.</Empty> :
         <div className="resource-list">{value.records.map(item => <a className="resource-row" key={`${item.recordKind}:${item.id}`}
@@ -70,7 +74,7 @@ export function PracticeLibrary({ data, openEditor, changed }: { data: Snapshot;
           <span className="resource-icon resource-icon-knowledge"><Icon name={item.recordKind === 'knowledge' ? 'knowledge' : 'reference'} size={22} /></span>
           <span className="resource-copy"><span className="resource-title"><strong>{item.title}</strong>{item.needsReview && <Badge tone="amber">Needs review</Badge>}</span>
             <p>{readingParts(item.preview).body.replace(/^#{1,6}\s+/gm, '').trim() || 'Open to view the original document.'}</p>
-            <span className="resource-meta"><span>{item.category === 'material' ? 'Practice material' : kindLabel(item.category)}</span><span>{item.use === 'baseline' && item.category !== 'position'
+            <span className="resource-meta"><span>{item.category === 'material' ? 'Practice material' : kindLabel(item.category)}</span><span>{(item.use === 'baseline' || item.use === 'guidance') && item.category !== 'position'
               ? item.category === 'pattern' ? 'Historical context · not a standard' : item.category === 'language' ? 'Starting language · in use' : 'Working method · in use'
               : usage[item.use]}</span>
               {item.matterId && <span>{data.matters.find(m => m.id === item.matterId)?.title ?? 'Matter-specific'}</span>}
@@ -81,6 +85,8 @@ export function PracticeLibrary({ data, openEditor, changed }: { data: Snapshot;
         <button className="button" disabled={!page} onClick={() => setPage(n => n - 1)}>Previous</button><span>Page {page + 1}</span><button className="button" disabled={!value.hasMore} onClick={() => setPage(n => n + 1)}>Next</button></>}</div>}
     </section>}
     {addingTemplate && <TemplateEditor data={data} close={() => setAddingTemplate(false)} saved={() => { setAddingTemplate(false); changed(); setRetry(n => n + 1); }} />}
+    {reviewingImports && <ImportedStandards data={data} close={() => setReviewingImports(false)} setupProfile={() => { setReviewingImports(false); editProfile?.(); }}
+      saved={count => { setNotice(`${count} imported ${count === 1 ? 'item is' : 'items are'} now in use. Your approval is recorded; original files are unchanged.`); changed(); setRetry(n => n + 1); }} />}
     {addingFile && <PracticeFileUpload close={() => setAddingFile(false)} changed={changed} saved={file => { setAddingFile(false); changed(); location.hash = href('references', { id: file.id }); }} />}
   </>;
 }

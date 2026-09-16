@@ -3,6 +3,20 @@ import { z } from 'zod';
 import { all, one } from './queries';
 import { COLLECTION_SQL } from './source-library';
 import { contextLibrary } from './context-library';
+import { importedPracticeTitle, practicePreview } from './practice-presentation';
+
+export function practiceDisplayTitle(db: Database, id: string, title: string): string {
+  if (!/[\s-][a-f0-9]{8}$/i.test(title)) return title;
+  const originals = all<{ title: string; body: string; origin: string }>(db, `WITH originals AS (${PRACTICE_ORIGINALS})
+    SELECT r.title,substr(COALESCE(r.body,''),1,8192) AS body,COALESCE(json_extract(r.provenance_json,'$.origin'),'') AS origin
+    FROM originals o JOIN source_revisions r ON r.source_id=o.sourceId
+    WHERE o.practiceId=? AND r.revision_no=1`, id);
+  for (const original of originals) {
+    const display = importedPracticeTitle(title, original);
+    if (display !== title) return display;
+  }
+  return title;
+}
 
 // Receipt-backed identity, never title matching. Original evidence remains immutable.
 export const PRACTICE_ORIGINALS = `SELECT DISTINCT k.value AS practiceId,s.value AS sourceId
@@ -47,7 +61,7 @@ export function practiceLibrary(db: Database, raw: z.input<typeof PracticeLibrar
       SELECT k.id,'knowledge' AS recordKind,k.kind AS category,r.title,
         substr(COALESCE((SELECT sr.body FROM originals o JOIN source_revisions sr ON sr.source_id=o.sourceId
           WHERE o.practiceId=k.id AND k.id IN (SELECT id FROM baseline) AND r.revision_no=1
-          ORDER BY sr.revision_no DESC LIMIT 1),r.body),1,400) AS preview,r.received_at AS updatedAt,r.id AS revisionId,k.matter_id AS matterId,
+          ORDER BY sr.revision_no DESC LIMIT 1),r.body),1,8192) AS preview,r.received_at AS updatedAt,r.id AS revisionId,k.matter_id AS matterId,
         CASE WHEN EXISTS(SELECT 1 FROM knowledge_revisions a WHERE a.knowledge_id=k.id AND a.status='approved') THEN 'guidance'
           WHEN k.id IN (SELECT id FROM baseline) THEN 'baseline' WHEN r.status='pending' THEN 'proposed' ELSE 'inactive' END AS use,
         (r.status='pending' AND (r.revision_no>1 OR k.id NOT IN (SELECT id FROM baseline))) AS needsReview,
@@ -70,6 +84,8 @@ export function practiceLibrary(db: Database, raw: z.input<typeof PracticeLibrar
   const total = one<{ n: number }>(db, `${cte} SELECT count(*) AS n FROM items WHERE ${where}`, ...args)!.n;
   const records = all<Omit<PracticeLibraryItem, 'needsReview'> & { needsReview: number }>(db,
     `${cte} SELECT * FROM items WHERE ${where} ORDER BY updatedAt DESC,recordKind,id LIMIT 50 OFFSET ?`, ...args, input.page * 50)
-    .map(row => ({ ...row, needsReview: !!row.needsReview }));
+    .map(row => ({ ...row, needsReview: !!row.needsReview,
+      ...(row.recordKind === 'knowledge' ? { title: practiceDisplayTitle(db, row.id, row.title), preview: practicePreview(row.preview) } : {}),
+    }));
   return { records, total, page: input.page, hasMore: (input.page + 1) * 50 < total };
 }
