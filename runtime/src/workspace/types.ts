@@ -126,6 +126,8 @@ export interface KnowledgeRevision {
   supportingEvidence?: Array<EvidenceInput & { title?: string }>;
 }
 export interface Knowledge {
+  /** Display only; immutable revision titles remain available in history. */
+  displayTitle?: string;
   /** The imported source is usable context independently of an app proposal/approval. */
   importedOriginal?: { sourceId: string; revisionId: string };
   id: string;

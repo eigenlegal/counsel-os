@@ -255,6 +255,31 @@ try {
   assert.ok(candidates.items.some((item: any) => item.revisionId === instructions.latest.id));
   assert.equal((await active.api('/practice-document')).basis, practice.basis, 'Discovering instructions cannot apply them');
   pass('compiled screenshot intake/authenticated previews and content-based instruction discovery without activation');
+  const importedBodies = [1, 2].map(n => `# Packaged imported standard ${n}\n\nSaved review status: pending. Re-import does not carry over approval.\nSaved version: 1\n\n# Packaged imported standard ${n}\n\n## Our position\nKeep a written record of synthetic decision ${n}.`);
+  let standardsBatch = await active.api('/imports', { clientId: crypto.randomUUID(), label: 'Packaged synthetic standards',
+    files: importedBodies.map((body, i) => ({ path: `Practice/${i ? 'methods' : 'standards'}/Packaged imported standard ${i + 1} - abcdef1${i}.md`, byteCount: Buffer.byteLength(body) })) });
+  for (let i = 0; i < importedBodies.length; i++)
+    await active.api(`/imports/${standardsBatch.id}/files/${standardsBatch.entries[i].id}`, { base64: Buffer.from(importedBodies[i]!).toString('base64') });
+  const standardsDeadline = Date.now() + 10_000;
+  do {
+    standardsBatch = await active.api(`/imports/${standardsBatch.id}`);
+    if (standardsBatch.entries.every((entry: any) => entry.status === 'ready')) break;
+    await Bun.sleep(50);
+  } while (Date.now() < standardsDeadline);
+  assert.ok(standardsBatch.entries.every((entry: any) => entry.status === 'ready'));
+  const standardsReceipt = await active.api(`/imports/${standardsBatch.id}/commit`, { expectedRevisionId: standardsBatch.revisionId });
+  const importedStandards = await active.api('/practice-library/imported-standards');
+  assert.equal(importedStandards.total, 2);
+  assert.equal(importedStandards.records[0].title, 'Packaged imported standard 1');
+  assert.equal(importedStandards.records[0].preview, 'Keep a written record of synthetic decision 1.');
+  const standard = importedStandards.records[0], approvingProfile = (await active.api()).profile;
+  assert.deepEqual(await active.api('/practice-library/adopt', { selections: [{ id: standard.id, expectedRevisionId: standard.revisionId }],
+    expectedProfileRevisionId: approvingProfile.revisionId, confirm: true }), { adopted: 1 });
+  assert.equal((await active.api(`/knowledge/${standard.id}`)).active.approvedBy, 'Synthetic Avery');
+  assert.equal((await active.api('/practice-library/imported-standards')).total, 1);
+  assert.equal((await active.api('/practice-library/imported-standards')).records[0].category, 'method');
+  assert.deepEqual(Buffer.from(await active.original(standardsReceipt.receipt.items[0].sourceRevisionId)), Buffer.from(importedBodies[0]!));
+  pass('compiled imported-standard previews and explicit adoption preserve original files');
   const backup = await active.api('/backups/prepare', {});
   const download = await fetch(active.origin + backup.downloadUrl); assert.equal(download.status, 200);
   const archive = join(root, 'synthetic.counsel-backup'); writeFileSync(archive, new Uint8Array(await download.arrayBuffer()), { mode: 0o600 });

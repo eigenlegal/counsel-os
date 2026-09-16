@@ -325,7 +325,7 @@ export function RecordReader({
           {detail.kind === 'knowledge' && detail.baseline ? <Badge tone="green">{detail.record.kind === 'position' ? 'Imported baseline · in use' : detail.record.kind === 'pattern' ? 'Historical context · not a standard' : detail.record.kind === 'language' ? 'Starting language · in use' : 'Working method · in use'}</Badge> : <Status value={status} />}
           {previous && <Badge tone="amber">Previous version</Badge>}
         </div>
-        <h1>{title}</h1>
+        <h1>{detail.kind === 'knowledge' && !previous ? detail.record.displayTitle ?? title : title}</h1>
         <p>
           Saved {fullDate(recordedAt)}
           {detail.kind !== "work" && ` • Version ${shownRevision!.number}`}

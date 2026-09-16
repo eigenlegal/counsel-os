@@ -42,6 +42,7 @@ import { guideCatalog, readPracticeGuide } from './practice-guides';
 import { ClientCreate, ClientUpdate, ClientAssignment } from './clients';
 import { LibraryQuery, PlacementInput } from './source-library';
 import { PracticeLibraryQuery } from './practice-library';
+import { AdoptStandards } from './practice-adoption';
 import { PracticeDraftInput } from './practice-drafting';
 import { BriefDraftInput } from './brief-drafting';
 import { checkSignatory, SignatoryCheckInput } from './entities';
@@ -358,6 +359,8 @@ export function workspaceHandler(
         category: url.searchParams.get('category') ?? 'all', status: url.searchParams.get('status') ?? 'all',
       })));
       if (collection === 'knowledge' && id && operation === 'originals' && parts.length === 5) return Response.json(store.practiceOriginals(id));
+      if (collection === 'practice-library' && id === 'imported-standards' && parts.length === 4)
+        return Response.json(store.importedStandards(Number(url.searchParams.get('page') ?? 0)));
       if (collection === 'clients' && parts.length === 3) return Response.json(store.clients.list());
       if (collection === 'clients' && id && parts.length === 4) return Response.json({ client: store.clients.get(id), matters: store.clients.matters(id),
         conversations: store.conversations.list(undefined, id) });
@@ -720,6 +723,8 @@ export function workspaceHandler(
           ),
         );
       }
+      if (collection === 'practice-library' && id === 'adopt' && parts.length === 4)
+        return Response.json(store.adoptImportedStandards(AdoptStandards.parse(await body(req))));
       if (collection === 'work' && id && operation === 'assign' && parts.length === 5) {
         const input = z
           .object({ matterId: Id })

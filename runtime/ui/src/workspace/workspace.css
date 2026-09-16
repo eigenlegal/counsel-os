@@ -4135,6 +4135,25 @@ label > select {
 .practice-library-toolbar { gap: 16px; margin-bottom: 0; }
 .practice-library-toolbar .filter-input { flex: 1 1 240px; max-width: 420px; }
 .practice-library-note { color: var(--muted); font-size: 13px; line-height: 1.6; max-width: 76ch; margin: 16px 0 24px; }
+.practice-library-help { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; margin: 18px 0 24px; }
+.practice-library-help .practice-library-note { flex: 1 1 360px; margin: 0; }
+.practice-library-help > .button { flex-shrink: 0; }
+.practice-adoption-notice { color: var(--green); padding: 12px 0; }
+.imported-standards { padding: 20px var(--workspace-panel-padding); }
+.imported-standards > p { margin: 0 0 14px; line-height: 1.65; }
+.standards-selection { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+.workspace-app .standards-selection label, .workspace-app .standard-choice, .workspace-app .standard-confirm { display: flex; flex-direction: row; align-items: flex-start; gap: 12px; line-height: 1.6; }
+.standards-selection input, .standard-choice input, .standard-confirm input { flex: 0 0 auto; width: 17px; height: 17px; margin: 3px 0 0; accent-color: var(--blue); }
+.standards-list { list-style: none; margin: 0; padding: 0; }
+.standards-list > li { padding: 20px 0; border-bottom: 1px solid var(--line); }
+.standard-choice strong { font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+.standard-copy { padding-left: 29px; min-width: 0; }
+.standard-copy > p { margin: 6px 0 10px; color: var(--muted); font-size: 13px; line-height: 1.65; white-space: pre-line; overflow-wrap: anywhere; }
+.standard-text > .document-reader { margin-top: 16px; }
+.standards-review-footer { position: sticky; bottom: 0; padding: 18px var(--workspace-panel-padding); border-top: 1px solid var(--line); background: var(--paper); }
+.standards-review-footer > .fine-print { margin: 6px 0 14px 29px; }
+.standards-review-footer .form-actions { display: flex; justify-content: flex-end; margin: 12px 0 0; flex-wrap: wrap; gap: 10px; }
+.standard-confirm { font-size: 13px; }
 .practice-originals a { display: block; margin-top: 12px; overflow-wrap: anywhere; }
 .practice-template-detail .reader-heading { max-width: 76ch; }
 @media (max-width: 600px) {

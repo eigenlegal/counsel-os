@@ -69,7 +69,8 @@ import { EntityRegistry, EntityRegistryInput, registryFields } from './entities'
 import { importWorkspaceSeed } from './seed';
 import type { PluginSnapshot } from './plugin-import';
 import { WorkspaceTemplates } from './templates';
-import { practiceLibrary, practiceOriginals, type PracticeLibraryQuery } from './practice-library';
+import { practiceLibrary, practiceOriginals, practiceDisplayTitle, type PracticeLibraryQuery } from './practice-library';
+import { AdoptStandards, canAdoptStandard, importedStandards } from './practice-adoption';
 import { WorkspaceImports } from './imports';
 import { WorkspaceClients } from './clients';
 import { WorkspaceNavigation } from './navigation';
@@ -936,6 +937,19 @@ export class WorkspaceStore {
   previewSourceOrganization(raw: z.input<typeof SourceOrganizationSelection>) { return this.read(() => sourceOrganizationPreview(this.db, raw)); }
   organizeSources(raw: z.input<typeof SourceOrganizationApply>) { return this.write(() => applySourceOrganization(this.db, raw)); }
   practiceLibrary(raw: z.input<typeof PracticeLibraryQuery>) { return this.read(() => practiceLibrary(this.db, raw)); }
+  importedStandards(page = 0) { return this.read(() => importedStandards(this.db, page)); }
+  adoptImportedStandards(raw: z.input<typeof AdoptStandards>) {
+    const input = AdoptStandards.parse(raw);
+    return this.write(() => {
+      const actor = this.profileActor(input.expectedProfileRevisionId);
+      for (const item of input.selections) {
+        if (!canAdoptStandard(this.db, item.id, item.expectedRevisionId))
+          throw new WorkspaceConflictError('One or more selected items changed or are no longer eligible. Nothing was adopted. Reload and review your selection again.');
+      }
+      for (const item of input.selections) this.reviewKnowledge(item.id, item.expectedRevisionId, 'approve', actor);
+      return { adopted: input.selections.length };
+    });
+  }
   practiceOriginals(id: string) { return this.read(() => { this.getKnowledge(id); return practiceOriginals(this.db, id); }); }
   placeSource(id: string, raw: z.input<typeof PlacementInput>) {
     return this.write(() => { requireActiveRecord(this.db, 'source', id); return placeSource(this.db, Id.parse(id), raw); });
@@ -1234,8 +1248,10 @@ export class WorkspaceStore {
       );
       const imported = contextLibrary(this.db).records.find(r => r.practiceItemId === id);
       const latest = required(latestKnowledge(this.db, id), `knowledge revision: ${id}`), active = latestKnowledge(this.db, id, true);
+      const displayTitle = practiceDisplayTitle(this.db, id, latest.title);
       return {
         ...item,
+        ...(displayTitle !== latest.title ? { displayTitle } : {}),
         ...(imported ? { importedOriginal: { sourceId: imported.recordId, revisionId: imported.id } } : {}),
         latest: this.getKnowledgeRevision(latest.id),
         active: active ? this.getKnowledgeRevision(active.id) : null,

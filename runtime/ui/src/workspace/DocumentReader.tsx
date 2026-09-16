@@ -1,31 +1,14 @@
 import { useState } from "react";
 import { isMarkdown, renderMarkdown } from "../vault/markdown";
 import { Prose } from "./components";
+import { practiceReadingParts } from '../../../src/workspace/practice-presentation';
 
 /** Presentation only: never normalize the text used for hashes or citations. */
 export function readingParts(text: string): {
   body: string;
   metadata: string[];
 } {
-  let body = text;
-  const metadata: string[] = [];
-  // The one-time importer put its receipt before the original frontmatter.
-  const receipt = body.match(
-    /^Imported from plugin:[^\r\n]+\. Pending review; no approval inferred\.\r?\n\r?\n/,
-  );
-  if (receipt) {
-    metadata.push(receipt[0].trim());
-    body = body.slice(receipt[0].length);
-  }
-  const frontmatter = body.match(
-    /^\uFEFF?---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/,
-  );
-  // Don't mistake a leading thematic break and a paragraph for YAML metadata.
-  if (frontmatter && /^[A-Za-z_][\w-]*\s*:/m.test(frontmatter[1]!)) {
-    metadata.push(frontmatter[0].trim());
-    body = body.slice(frontmatter[0].length);
-  }
-  return { body, metadata };
+  return practiceReadingParts(text);
 }
 
 export function sourceUsesMarkdown(provenance: {
