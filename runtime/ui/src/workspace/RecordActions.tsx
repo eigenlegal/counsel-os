@@ -10,7 +10,7 @@ export function RecordActions({ kind, id, trashed = false, changed }: { kind: Ma
   useEffect(() => {
     if (!open) return;
     const abort = new AbortController(); setImpact(null); setError('');
-    request<RecordImpact>(`/${kind === 'source' ? 'sources' : 'work'}/${id}/impact`, undefined, abort.signal)
+    request<RecordImpact>(`/${kind === 'source' ? 'sources' : kind}/${id}/impact`, undefined, abort.signal)
       .then(value => { if (!abort.signal.aborted) setImpact(value); })
       .catch(e => { if (!abort.signal.aborted) setError(e.message); });
     return () => abort.abort();
@@ -19,32 +19,33 @@ export function RecordActions({ kind, id, trashed = false, changed }: { kind: Ma
     if (!impact || busy) return;
     setBusy(true); setError('');
     try {
-      await request(`/${kind === 'source' ? 'sources' : 'work'}/${id}/manage`, {
+      await request(`/${kind === 'source' ? 'sources' : kind}/${id}/manage`, {
         action: trashed ? 'restore' : 'trash', expectedVersion: impact.version, confirm: true,
       });
       setOpen(false); changed();
     } catch (e) { setError((e as Error).message); }
     finally { setBusy(false); }
   }
-  const title = trashed ? 'Restore from Trash' : kind === 'source' ? 'Move document to Trash' : 'Move saved output to Trash';
+  const title = trashed ? 'Restore from Trash' : kind === 'source' ? 'Move document to Trash' : kind === 'knowledge' ? 'Move practice item to Trash' : 'Move saved output to Trash';
   return <>
     <button className={`button ${trashed ? 'button-primary' : ''}`} onClick={() => setOpen(true)}><Icon name={trashed ? 'back' : 'trash'} size={15} />{trashed ? 'Restore' : 'Move to Trash'}</button>
     {open && <Modal title={title} onClose={() => setOpen(false)} busy={busy}>
       <form className="record-form" onSubmit={event => { event.preventDefault(); void apply(); }}>
         {impact ? <>
           <p className="conversation-management-title">{impact.title}</p>
-          {trashed ? <p>Restore this {kind === 'source' ? 'document' : 'output'} to its previous locations and make it available for future retrieval again. Existing matter links and versions are preserved.</p> : <>
-            <p>{kind === 'source' ? 'All versions of this document will leave active libraries and new document retrieval. Any template using it will be unavailable until you restore the document.' : 'This saved record and its generated Word files will leave saved outputs and new work-record retrieval.'}</p>
+          {trashed ? <p>Restore this {kind === 'source' ? 'document' : kind === 'knowledge' ? 'practice item' : 'output'} to its previous locations and make it available for future retrieval again. Existing matter links, approval status and versions are preserved. Any document filed separately remains in place.</p> : <>
+            <p>{kind === 'source' ? 'All versions of this document will leave active libraries and new document retrieval. Any template using it will be unavailable until you restore the document.' : kind === 'knowledge' ? 'All versions of this item will leave Practice and new practice-context retrieval. Any imported baseline associated with it will also stop being supplied automatically as practice guidance. You can restore the item from Trash.' : 'This saved record and its generated Word files will leave saved outputs and new work-record retrieval.'}</p>
             {impact.fileCount > 0 && <p className="fine-print">{impact.fileCount} retained {kind === 'source' ? 'original file versions' : 'Word files'} will move to Trash with it.</p>}
             {impact.retained.length > 0 && <section className="conversation-retained" aria-label="Related records that remain">
               <h3>These records will remain</h3>
               <ul>{impact.retained.map(item => <li key={`${item.kind}:${item.id}`}>
-                <a href={item.kind === 'template' ? href('knowledge', { section: 'templates' }) : href(item.kind === 'conversation' ? 'home' : item.kind === 'matter' ? 'matters' : item.kind === 'knowledge' ? 'knowledge' : 'work', { id: item.id })} onClick={() => setOpen(false)}>
-                  <span>{item.title}<small>{item.kind === 'conversation' ? 'Conversation and existing messages' : item.kind === 'matter' ? 'Matter and applied notes' : item.kind === 'template' ? 'Template record — unavailable while document is in Trash' : item.kind === 'knowledge' ? 'Separate Practice material' : 'Existing work and its cited excerpts'}</small></span>
+                <a href={item.kind === 'template' ? href('knowledge', { section: 'templates' }) : href(item.kind === 'conversation' ? 'home' : item.kind === 'matter' ? 'matters' : item.kind === 'knowledge' ? 'knowledge' : item.kind === 'source' ? 'references' : 'work', { id: item.id })} onClick={() => setOpen(false)}>
+                  <span>{item.title}<small>{item.kind === 'conversation' ? 'Conversation and existing messages' : item.kind === 'matter' ? 'Matter and applied notes' : item.kind === 'template' ? 'Template record — unavailable while document is in Trash' : item.kind === 'knowledge' ? 'Separate Practice material' : item.kind === 'source' ? 'Retained original — manage this document separately' : 'Existing work and its cited excerpts'}</small></span>
                 </a>
               </li>)}</ul>
             </section>}
             <p className="fine-print">Existing messages, quoted excerpts and separate Practice material are not erased or undone and may still be used as context. Backups and original files outside this workspace stay unchanged. Trash is recoverable storage, not permanent erasure.</p>
+            {kind === 'knowledge' && <p className="fine-print">Retained originals are separate documents: existing attachments, matter links and workspace-wide document access remain. Use the original’s own Move to Trash action if you also want to remove that document.</p>}
           </>}
           {impact.inUse && <p role="alert">A response is using this record. Stop that response or wait for it to finish, then reopen this action.</p>}
         </> : !error && <p role="status">Checking this record and its connections…</p>}

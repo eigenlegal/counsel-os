@@ -71,6 +71,8 @@ import type { PluginSnapshot } from './plugin-import';
 import { WorkspaceTemplates } from './templates';
 import { practiceLibrary, practiceOriginals, practiceDisplayTitle, type PracticeLibraryQuery } from './practice-library';
 import { AdoptStandards, canAdoptStandard, importedStandards } from './practice-adoption';
+import { PracticeFiling } from './practice-filing';
+import { sourceDisplayTitle } from './source-presentation';
 import { WorkspaceImports } from './imports';
 import { WorkspaceClients } from './clients';
 import { WorkspaceNavigation } from './navigation';
@@ -974,9 +976,43 @@ export class WorkspaceStore {
   sourceLinks(sourceId: string, input: z.input<typeof SourceLinkQuery> = {}) { return this.read(() => sourceLinks(this.db, sourceId, input)); }
   applySourceLinks(sourceId: string, input: z.input<typeof SourceLinkApply>) { return this.write(() => applySourceLinks(this.db, sourceId, input)); }
   changeSourceMatter(sourceId: string, input: z.input<typeof SourceMatterChange>) { return this.write(() => { requireActiveRecord(this.db, 'source', sourceId); return changeSourceMatter(this.db, sourceId, input); }); }
-  recordImpact(kind: ManagedRecord, id: string) { return this.read(() => recordImpact(this.db, kind, id)); }
+  recordImpact(kind: ManagedRecord, id: string) { return this.read(() => {
+    const impact = recordImpact(this.db, kind, id);
+    return { ...impact, title: kind === 'knowledge' ? practiceDisplayTitle(this.db, id, impact.title) : impact.title };
+  }); }
   changeRecord(kind: ManagedRecord, id: string, input: z.input<typeof RecordChange>) { return this.write(() => changeRecord(this.db, kind, id, input, () => this.now())); }
-  recordTrash(input: z.input<typeof RecordTrashQuery>) { return this.read(() => recordTrash(this.db, input)); }
+  recordTrash(input: z.input<typeof RecordTrashQuery>) { return this.read(() => {
+    const page = recordTrash(this.db, input);
+    return { ...page, records: page.records.map(record => ({ ...record, title: input.kind === 'knowledge'
+      ? practiceDisplayTitle(this.db, record.id, record.title) : input.kind === 'source' ? sourceDisplayTitle(this.db, record.id, record.title) : record.title })) };
+  }); }
+  filePracticeDocument(id: string, raw: z.input<typeof PracticeFiling>) {
+    const input = PracticeFiling.parse(raw);
+    return this.write(() => {
+      requireActiveRecord(this.db, 'knowledge', id);
+      const item = this.getKnowledge(id);
+      if (item.ownership !== 'user') throw new WorkspaceConflictError('Maintained material cannot be refiled. Save your own document instead.');
+      if (input.matterId) this.getMatter(input.matterId);
+      const originals = this.practiceOriginals(id);
+      const original = originals.length === 1 && !originals[0]!.trashed ? this.getSource(originals[0]!.sourceId) : null;
+      const originalImpact = original ? this.recordImpact('source', original.id) : null;
+      const reusable = original && original.latest.body === item.latest.body &&
+        !originalImpact!.retained.some(ref => ref.kind === 'knowledge' && ref.id !== id);
+      if (reusable && originalImpact!.inUse) throw new WorkspaceConflictError('A response is using the original document. Wait for it to finish before filing.');
+      // The normal, version-checked withdrawal and filing are one transaction.
+      // No mutation of the knowledge body, its approvals or earlier citations.
+      this.changeRecord('knowledge', id, { action: 'trash', expectedVersion: input.expectedVersion, confirm: true });
+      const source = reusable ? original : this.createSource({ kind: 'document', revision: {
+        title: item.displayTitle ?? item.latest.title, body: item.latest.body,
+        provenance: { origin: `practice:${item.latest.id}`, mediaType: 'text/markdown' },
+      } });
+      if (input.matterId) this.linkSource(input.matterId, source.id);
+      this.placeSource(source.id, { collection: input.destination === 'matter' ? 'auto' : input.destination,
+        expectedRevisionId: this.getSource(source.id).placement!.revisionId });
+      this.db.run('UPDATE knowledge_lifecycle SET filed_source_id=? WHERE knowledge_id=?', [source.id, id]);
+      return { sourceId: source.id, reusedOriginal: !!reusable };
+    });
+  }
   sourceRevisionAvailable(id: string): boolean {
     const source = one<{ sourceId: string }>(this.db, 'SELECT source_id AS sourceId FROM source_revisions WHERE id=?', id);
     return !!source && recordState(this.db, 'source', source.sourceId) !== 'trashed';
@@ -1005,6 +1041,7 @@ export class WorkspaceStore {
       return {
         ...source,
         lifecycle: recordState(this.db, 'source', id),
+        displayTitle: sourceDisplayTitle(this.db, id, latest.title),
         placement: sourcePlacement(this.db, id),
         matterIds: sourceMatterIds(this.db, id),
         latest: this.getSourceRevision(latest.id),
@@ -1251,10 +1288,11 @@ export class WorkspaceStore {
       const displayTitle = practiceDisplayTitle(this.db, id, latest.title);
       return {
         ...item,
+        lifecycle: recordState(this.db, 'knowledge', id),
         ...(displayTitle !== latest.title ? { displayTitle } : {}),
         ...(imported ? { importedOriginal: { sourceId: imported.recordId, revisionId: imported.id } } : {}),
         latest: this.getKnowledgeRevision(latest.id),
-        active: active ? this.getKnowledgeRevision(active.id) : null,
+        active: active && recordState(this.db, 'knowledge', id) !== 'trashed' ? this.getKnowledgeRevision(active.id) : null,
       };
     });
   }
@@ -1292,6 +1330,7 @@ export class WorkspaceStore {
   ): KnowledgeRevision {
     const input = KnowledgeRevisionInput.parse(raw);
     return this.write(() => {
+      requireActiveRecord(this.db, 'knowledge', id);
       const item = this.getKnowledge(id);
       if (item.latest.id !== expectedRevisionId)
         throw new WorkspaceConflictError('knowledge changed since the expected revision');
@@ -1303,6 +1342,7 @@ export class WorkspaceStore {
   proposeKnowledgeUpdate(id: string, raw: z.input<typeof KnowledgeUpdate>): Knowledge {
     const input = KnowledgeUpdate.parse(raw);
     return this.write(() => {
+      requireActiveRecord(this.db, 'knowledge', id);
       const item = this.getKnowledge(id),
         expected = this.getKnowledgeRevision(input.expectedRevisionId);
       if (expected.knowledgeId !== item.id)

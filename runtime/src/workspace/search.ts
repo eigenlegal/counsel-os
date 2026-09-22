@@ -2,7 +2,7 @@ import type { Database, SQLQueryBindings } from 'bun:sqlite';
 import { all, one, required, sourceMatterIds } from './queries';
 import { SearchInput, type SearchHit, type SearchResult } from './types';
 import { VISIBLE_WORK } from './conversation-lifecycle';
-import { ACTIVE_SOURCE } from './record-lifecycle';
+import { ACTIVE_SOURCE, ACTIVE_PRACTICE } from './record-lifecycle';
 
 /** Plain words, not caller-supplied FTS syntax. Quotes, boolean operators and
  * punctuation cannot change scope or turn into SQL/FTS expressions. */
@@ -66,7 +66,7 @@ export function workspaceRecordFilter(
         ? 'AND (ki.matter_id IS NULL OR ki.matter_id = ?)'
         : '';
     branches.push(
-      `(e.kind = 'knowledge' ${input.includeHistory && !boundary ? '' : `AND ${ACTIVE_KNOWLEDGE}`} ${knowledgeScope})`,
+      `(e.kind = 'knowledge' AND ${ACTIVE_PRACTICE('ki.id')} ${input.includeHistory && !boundary ? '' : `AND ${ACTIVE_KNOWLEDGE}`} ${knowledgeScope})`,
     );
     if (boundary ? !boundary.all : scoped)
       bindings.push(boundary ? JSON.stringify(allowedMatters) : input.matterId!);

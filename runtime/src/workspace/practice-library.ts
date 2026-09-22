@@ -4,6 +4,8 @@ import { all, one } from './queries';
 import { COLLECTION_SQL } from './source-library';
 import { contextLibrary } from './context-library';
 import { importedPracticeTitle, practicePreview } from './practice-presentation';
+import { ACTIVE_PRACTICE } from './record-lifecycle';
+import { sourceDisplayTitle } from './source-presentation';
 
 export function practiceDisplayTitle(db: Database, id: string, title: string): string {
   if (!/[\s-][a-f0-9]{8}$/i.test(title)) return title;
@@ -35,7 +37,7 @@ export function practiceOriginals(db: Database, id: string) {
       EXISTS(SELECT 1 FROM source_lifecycle l WHERE l.source_id=s.id AND l.state='trashed') AS trashed
     FROM originals o JOIN sources s ON s.id=o.sourceId JOIN source_revisions r ON r.source_id=s.id
     WHERE o.practiceId=? AND r.revision_no=(SELECT max(revision_no) FROM source_revisions WHERE source_id=s.id)
-    ORDER BY r.title,s.id`, id).map(row => ({ ...row, trashed: !!row.trashed }));
+    ORDER BY r.title,s.id`, id).map(row => ({ ...row, title: sourceDisplayTitle(db, row.sourceId, row.title), trashed: !!row.trashed }));
 }
 
 export const PracticeLibraryQuery = z.object({
@@ -67,12 +69,13 @@ export function practiceLibrary(db: Database, raw: z.input<typeof PracticeLibrar
         (r.status='pending' AND (r.revision_no>1 OR k.id NOT IN (SELECT id FROM baseline))) AS needsReview,
         (SELECT count(*) FROM originals o WHERE o.practiceId=k.id) AS originalCount
       FROM knowledge_items k JOIN knowledge_revisions r ON r.knowledge_id=k.id
-      WHERE r.revision_no=(SELECT max(revision_no) FROM knowledge_revisions WHERE knowledge_id=k.id)
+      WHERE r.revision_no=(SELECT max(revision_no) FROM knowledge_revisions WHERE knowledge_id=k.id) AND ${ACTIVE_PRACTICE('k.id')}
       UNION ALL SELECT s.id,'source','material',r.title,substr(COALESCE(r.body,''),1,220),r.received_at,r.id,NULL,'reference',0,1
       FROM sources s JOIN source_revisions r ON r.source_id=s.id
       WHERE r.revision_no=(SELECT max(revision_no) FROM source_revisions WHERE source_id=s.id) AND ${COLLECTION_SQL}='practice'
         AND NOT EXISTS(SELECT 1 FROM source_lifecycle l WHERE l.source_id=s.id AND l.state='trashed')
-        AND NOT EXISTS(SELECT 1 FROM originals o JOIN knowledge_items k ON k.id=o.practiceId WHERE o.sourceId=s.id)
+        AND NOT EXISTS(SELECT 1 FROM originals o JOIN knowledge_items k ON k.id=o.practiceId WHERE o.sourceId=s.id
+          AND NOT EXISTS(SELECT 1 FROM knowledge_lifecycle l WHERE l.knowledge_id=k.id AND l.state='trashed' AND l.filed_source_id=s.id))
         AND NOT EXISTS(SELECT 1 FROM current_templates t WHERE t.source_id=s.id)
       UNION ALL SELECT t.template_id,'template','template',t.title,substr(t.when_to_use,1,220),t.recorded_at,t.source_revision_id,NULL,
         CASE WHEN t.available=1 AND NOT EXISTS(SELECT 1 FROM source_lifecycle l WHERE l.source_id=t.source_id AND l.state='trashed') THEN 'starting-point' ELSE 'inactive' END,0,1
@@ -86,6 +89,7 @@ export function practiceLibrary(db: Database, raw: z.input<typeof PracticeLibrar
     `${cte} SELECT * FROM items WHERE ${where} ORDER BY updatedAt DESC,recordKind,id LIMIT 50 OFFSET ?`, ...args, input.page * 50)
     .map(row => ({ ...row, needsReview: !!row.needsReview,
       ...(row.recordKind === 'knowledge' ? { title: practiceDisplayTitle(db, row.id, row.title), preview: practicePreview(row.preview) } : {}),
+      ...(row.recordKind === 'source' ? { title: sourceDisplayTitle(db, row.id, row.title), preview: practicePreview(row.preview) } : {}),
     }));
   return { records, total, page: input.page, hasMore: (input.page + 1) * 50 < total };
 }

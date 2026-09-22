@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { all, one } from './queries';
 import { practiceDisplayTitle } from './practice-library';
 import { practicePreview } from './practice-presentation';
+import { ACTIVE_PRACTICE } from './record-lifecycle';
 
 export const AdoptStandards = z.object({
   selections: z.array(z.object({ id: z.string().uuid(), expectedRevisionId: z.string().uuid() }).strict()).min(1).max(50)
@@ -26,6 +27,7 @@ const CANDIDATES = `WITH receipts AS (
   JOIN knowledge_revisions r ON r.knowledge_id=k.id
   JOIN source_revisions s ON s.id=i.sourceRevisionId
   WHERE k.kind IN ('position','method','language','pattern') AND k.ownership='user' AND k.matter_id IS NULL
+    AND ${ACTIVE_PRACTICE('k.id')}
     AND r.revision_no=1 AND r.status='pending' AND r.body=s.body
     AND NOT EXISTS(SELECT 1 FROM knowledge_revisions n WHERE n.knowledge_id=k.id AND n.revision_no>1)
     AND NOT EXISTS(SELECT 1 FROM source_revisions n WHERE n.source_id=s.source_id AND n.revision_no>s.revision_no)

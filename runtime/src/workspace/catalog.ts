@@ -2,6 +2,8 @@ import type { Database } from 'bun:sqlite';
 import { all, one, sourceMatterIds } from './queries';
 import type { Knowledge, Matter, Source, Work } from './types';
 import { VISIBLE_WORK, TRASHED_WORK } from './conversation-lifecycle';
+import { ACTIVE_PRACTICE } from './record-lifecycle';
+import { sourceDisplayTitle } from './source-presentation';
 
 export interface CatalogSource {
   id: string;
@@ -59,7 +61,7 @@ export function workspaceCatalog(db: Database, limit: number, matterId?: string)
       ? '1'
       : 'EXISTS (SELECT 1 FROM matter_sources ms WHERE ms.source_id = s.id AND ms.matter_id = ?)';
   const sourceScope = `NOT EXISTS (SELECT 1 FROM source_lifecycle sl WHERE sl.source_id=s.id AND sl.state='trashed') AND ${sourceBoundary}`;
-  const knowledgeScope = matterId === undefined ? '1' : 'k.matter_id = ?';
+  const knowledgeScope = `${ACTIVE_PRACTICE('k.id')} AND ${matterId === undefined ? '1' : 'k.matter_id = ?'}`;
   const workScope = `${VISIBLE_WORK} AND ${matterId === undefined ? '1' : 'w.matter_id = ?'}`;
   const savedScope = `${workScope} AND (EXISTS (SELECT 1 FROM work_outputs o WHERE o.work_id = w.id)
     OR EXISTS (SELECT 1 FROM work_exports x WHERE x.work_id = w.id)
@@ -101,7 +103,7 @@ export function workspaceCatalog(db: Database, limit: number, matterId?: string)
       FROM matters m ORDER BY m.created_at DESC, m.id LIMIT ?`,
       limit,
     ),
-    sources: sources.map((s) => ({ ...s, matterIds: sourceMatterIds(db, s.id) })),
+    sources: sources.map((s) => ({ ...s, title: sourceDisplayTitle(db, s.id, s.title), matterIds: sourceMatterIds(db, s.id) })),
     knowledge: knowledge.map((k) => ({ ...k, hasApprovedVersion: Boolean(k.hasApprovedVersion) })),
     work: all<CatalogWork>(
       db,
@@ -136,6 +138,7 @@ export function workspaceCatalog(db: Database, limit: number, matterId?: string)
       pending: one<{ n: number }>(
         db,
         `SELECT count(*) AS n FROM knowledge_revisions r WHERE status = 'pending'
+        AND ${ACTIVE_PRACTICE('r.knowledge_id')}
         AND revision_no = (SELECT max(revision_no) FROM knowledge_revisions WHERE knowledge_id = r.knowledge_id)
         ${matterId === undefined ? '' : 'AND EXISTS (SELECT 1 FROM knowledge_items k WHERE k.id = r.knowledge_id AND k.matter_id = ?)'}`,
         ...scope,

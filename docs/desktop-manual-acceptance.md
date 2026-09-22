@@ -1,6 +1,6 @@
 # Clean-machine Mac acceptance
 
-Status: **not yet performed** for desktop build 2. Scripted synthetic checks do not complete this checklist. Use a clean supported Apple silicon Mac or a new test account with no Counsel OS data, development tools, or existing provider login. Use only synthetic practice/documents. Do not delete a real user's workspace to simulate first run.
+Status: **not yet completed** for the current desktop preview. Record the exact build below; scripted synthetic checks do not complete this checklist. Use a clean supported Apple silicon Mac or a new test account with no Counsel OS data, development tools, or existing provider login. Use only synthetic practice/documents. Do not delete a real user's workspace to simulate first run.
 
 Record: source commit, workflow/run URL, desktop version/build, DMG SHA-256, signing team/bundle ID, macOS version, CPU, tester and date. For every step record **pass / fail / not tested**, the actual result, and any issue. Do not fill this in from expectations.
 

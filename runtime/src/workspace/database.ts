@@ -14,14 +14,14 @@ import { AUTO_FILING_SCHEMA } from './auto-filing-schema';
 import { DRAFT_SCHEMA } from './draft-types';
 
 export const WORKSPACE_APPLICATION_ID = 0x434f5357; // COSW; distinct from the legacy thread prototype.
-export const WORKSPACE_SCHEMA_VERSION = 20;
+export const WORKSPACE_SCHEMA_VERSION = 21;
 
 /** One schema owner for the workspace. No host sessions or legacy vault IO. */
 export function openWorkspaceDatabase(
   path: string,
-  targetVersion: 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 = WORKSPACE_SCHEMA_VERSION,
+  targetVersion: 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 = WORKSPACE_SCHEMA_VERSION,
 ): Database {
-  if (![5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].includes(targetVersion))
+  if (![5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21].includes(targetVersion))
     throw new Error("Unsupported schema target.");
   // Older schemas are instantiated only in memory to verify known backup schemas.
   if (targetVersion !== WORKSPACE_SCHEMA_VERSION && path !== ":memory:")
@@ -89,7 +89,7 @@ export function openWorkspaceDatabase(
         version !== 14 &&
         version !== 15 &&
         version !== 16 &&
-        version !== 17 && version !== 18 && version !== 19
+        version !== 17 && version !== 18 && version !== 19 && version !== 20
       )
         throw new Error("unrecognized workspace schema");
       if (version < 2) db.exec(SCHEMA_V2);
@@ -111,6 +111,7 @@ export function openWorkspaceDatabase(
       if (version < 18 && targetVersion >= 18) db.exec(AUTO_FILING_SCHEMA);
       if (version < 19 && targetVersion >= 19) db.exec(DRAFT_SCHEMA);
       if (version < 20 && targetVersion >= 20) db.exec(SCHEMA_V20);
+      if (version < 21 && targetVersion >= 21) db.exec(SCHEMA_V21);
       db.exec(
         `PRAGMA application_id = ${WORKSPACE_APPLICATION_ID}; PRAGMA user_version = ${targetVersion};`,
       );
@@ -125,6 +126,14 @@ export function openWorkspaceDatabase(
     throw err;
   }
 }
+
+const SCHEMA_V21 = `
+CREATE TABLE knowledge_lifecycle (
+  knowledge_id TEXT PRIMARY KEY REFERENCES knowledge_items(id),
+  state TEXT NOT NULL CHECK(state IN ('active','trashed')), revision_id TEXT NOT NULL, changed_at TEXT NOT NULL,
+  filed_source_id TEXT REFERENCES sources(id)
+) STRICT;
+`;
 
 const SCHEMA_V20 = `
 CREATE TABLE import_organization_files (

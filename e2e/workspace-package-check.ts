@@ -280,6 +280,43 @@ try {
   assert.equal((await active.api('/practice-library/imported-standards')).records[0].category, 'method');
   assert.deepEqual(Buffer.from(await active.original(standardsReceipt.receipt.items[0].sourceRevisionId)), Buffer.from(importedBodies[0]!));
   pass('compiled imported-standard previews and explicit adoption preserve original files');
+  const retroBody = '---\ncounsel-os-type: memory-patterns\n---\n# Packaged retrospective report\n\nA dated report about the synthetic packaged matter, not a standing instruction.';
+  let retroBatch = await active.api('/imports', { clientId: crypto.randomUUID(), label: 'Packaged synthetic retrospective',
+    files: [{ path: 'Practice/retro-2026-01-02 - abcdef12.md', byteCount: Buffer.byteLength(retroBody) }] });
+  await active.api(`/imports/${retroBatch.id}/files/${retroBatch.entries[0].id}`, { base64: Buffer.from(retroBody).toString('base64') });
+  const retroDeadline = Date.now() + 10_000;
+  do {
+    retroBatch = await active.api(`/imports/${retroBatch.id}`);
+    if (retroBatch.entries[0].status === 'ready') break;
+    await Bun.sleep(50);
+  } while (Date.now() < retroDeadline);
+  assert.equal(retroBatch.entries[0].status, 'ready');
+  assert.equal(retroBatch.entries[0].choice.destination, 'source', 'Dated reports should not default to reusable guidance');
+  // Reproduce an older mistaken classification, then exercise its explicit repair.
+  retroBatch = await active.api(`/imports/${retroBatch.id}/choices`, { expectedRevisionId: retroBatch.revisionId,
+    changes: [{ entryId: retroBatch.entries[0].id, choice: { ...retroBatch.entries[0].choice, destination: 'pattern' } }] });
+  const retroReceipt = (await active.api(`/imports/${retroBatch.id}/commit`, { expectedRevisionId: retroBatch.revisionId })).receipt.items[0];
+  const retro = await active.api(`/knowledge/${retroReceipt.practiceId}`);
+  assert.equal(retro.displayTitle, 'Packaged retrospective report');
+  const manage = async (id: string, action: 'trash' | 'restore') => {
+    const impact = await active!.api(`/knowledge/${id}/impact`);
+    return active!.api(`/knowledge/${id}/manage`, { action, expectedVersion: impact.version, confirm: true });
+  };
+  await manage(standard.id, 'trash');
+  assert.equal((await active.api(`/knowledge/${standard.id}`)).active, null);
+  assert.ok(!(await active.api('/practice-library')).records.some((record: any) => record.id === standard.id));
+  await manage(standard.id, 'restore');
+  assert.equal((await active.api(`/knowledge/${standard.id}`)).active.approvedBy, 'Synthetic Avery');
+  const retroImpact = await active.api(`/knowledge/${retro.id}/impact`);
+  const filedRetro = await active.api(`/knowledge/${retro.id}/file-document`, { destination: 'matter', matterId: matter.id,
+    expectedVersion: retroImpact.version, confirm: true });
+  assert.deepEqual(filedRetro, { sourceId: retroReceipt.sourceId, reusedOriginal: true });
+  assert.ok((await active.api(`/sources/${filedRetro.sourceId}`)).matterIds.includes(matter.id));
+  assert.equal((await active.api(`/sources/${filedRetro.sourceId}`)).displayTitle, 'Packaged retrospective report');
+  assert.equal((await active.api(`/knowledge/${retro.id}`)).lifecycle, 'trashed');
+  assert.ok((await active.api('/trash?kind=knowledge')).records.some((record: any) => record.id === retro.id));
+  assert.deepEqual(Buffer.from(await active.original(retroReceipt.sourceRevisionId)), Buffer.from(retroBody));
+  pass('compiled frontmatter titles, Practice Trash/restore and atomic matter filing preserve approvals and originals');
   const backup = await active.api('/backups/prepare', {});
   const download = await fetch(active.origin + backup.downloadUrl); assert.equal(download.status, 200);
   const archive = join(root, 'synthetic.counsel-backup'); writeFileSync(archive, new Uint8Array(await download.arrayBuffer()), { mode: 0o600 });
@@ -306,6 +343,9 @@ try {
     assert.deepEqual(await active.original(word.latest.id), new Uint8Array(bytes));
     assert.deepEqual(await active.original(pdf.latest.id), new Uint8Array(pdfBytes));
     assert.deepEqual(await active.original(screenshot.latest.id), new Uint8Array(screenshotBytes));
+    assert.equal((await active.api(`/knowledge/${retro.id}`)).lifecycle, 'trashed');
+    assert.ok((await active.api(`/sources/${filedRetro.sourceId}`)).matterIds.includes(matter.id));
+    assert.deepEqual(Buffer.from(await active.original(retroReceipt.sourceRevisionId)), Buffer.from(retroBody));
     const recoveredPractice = await active.api('/practice-document');
     assert.equal(recoveredPractice.body, practice.body);
     assert.equal(recoveredPractice.identityName, 'Synthetic Avery');

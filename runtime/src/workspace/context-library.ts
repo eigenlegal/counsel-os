@@ -70,6 +70,7 @@ export function contextLibrary(db: Database): ContextLibrary {
       const role = category(path);
       if (!role) continue;
       const knowledgeId = imported.knowledge[key];
+      if (knowledgeId && recordState(db, 'knowledge', knowledgeId) === 'trashed') continue;
       const approved = knowledgeId
         ? latestKnowledge(db, knowledgeId, true)
         : null;

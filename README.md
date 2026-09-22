@@ -27,6 +27,8 @@ The native app wraps the same workspace engine and interface. The plugin has its
 
 These are implemented workflows, not a promise that every request retrieves every relevant fact. Retrieval is bounded, document extraction can be partial, and unsupported document structures need review. Scanned-PDF OCR, comprehensive primary-source research, general web search, and automatic learning from every redline correction are not complete. Dedicated legal connectors cover specific U.S. Code and eCFR citations; public URL retrieval does not certify legal authority, currency or the version governing an agreement.
 
+In a Practice item's reader, **Move to Trash** withdraws the item from new practice-context retrieval without erasing its history. Retained original documents are separate and can be managed through their own readers. **File as document** lets you move a report out of reusable guidance and into a selected matter or a reference collection; it reuses an unchanged original where possible, otherwise saves the current text as a new document. Restoring the Practice item does not remove the filed document. A matter retrospective belongs with its matter; a report across the whole practice can remain a reference document rather than becoming standing guidance.
+
 <a id="installation"></a>
 
 ## Try the workspace from source

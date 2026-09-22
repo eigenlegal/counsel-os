@@ -29,8 +29,17 @@ export function importedPracticeTitle(title: string, original: { title: string; 
   if (title !== original.title) return title;
   const suffix = title.match(/^(.*?)[\s-]+([a-f0-9]{8})$/i);
   if (!suffix || !original.origin.toLowerCase().endsWith(` - ${suffix[2]!.toLowerCase()}.md`)) return title;
+  const normalize = (value: string) => value.replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim();
+  // File intake replaces hyphens/underscores with spaces. Recognize that exact
+  // generated filename too, but never clean an independently renamed item.
+  const filename = original.origin.split('/').at(-1)!.replace(/\.md$/i, '');
+  if (normalize(filename) !== normalize(title)) return title;
+  const frontmatter = original.body.match(/^\uFEFF?---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
+  if (frontmatter && /^counsel-os-type:\s*[\w-]+\s*$/m.test(frontmatter[1]!)) {
+    const heading = original.body.slice(frontmatter[0].length).match(/^# ([^\r\n]{1,300})\s*$/m)?.[1]?.trim();
+    if (heading) return heading;
+  }
   const heading = original.body.match(/^# ([^\r\n]+)\r?\n\r?\nSaved review status: (?:pending|approved|rejected)\. Re-import does not carry over approval\.\r?\nSaved version: \d+(?:\r?\n|$)/)?.[1];
-  const normalize = (value: string) => value.replace(/\s+/g, ' ').trim();
   return heading && normalize(heading) === normalize(suffix[1]!) ? heading.trim() : title;
 }
 

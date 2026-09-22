@@ -3,6 +3,7 @@ import { z } from "zod";
 import { all, one, required, sourceMatterIds } from "./queries";
 import { WorkspaceConflictError } from "./types";
 import type { CatalogSource } from "./catalog";
+import { sourceDisplayTitle } from './source-presentation';
 
 export const SourceCollection = z.enum([
   "external",
@@ -102,7 +103,7 @@ export function sourceLibrary(
     input.collection,
     input.query.trim(),
     input.page * 50,
-  ).map((record) => ({ ...record, matterIds: sourceMatterIds(db, record.id) }));
+  ).map((record) => ({ ...record, title: sourceDisplayTitle(db, record.id, record.title), matterIds: sourceMatterIds(db, record.id) }));
   return {
     records,
     total,
