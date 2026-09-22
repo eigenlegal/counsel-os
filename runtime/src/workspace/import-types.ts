@@ -205,6 +205,9 @@ export function suggestImport(path: string): ImportChoice {
   else if (/^patterns\.(md|txt)$/i.test(name) && lower.includes("memory"))
     destination = "pattern";
   else if (/^profile\.(md|txt)$/i.test(name) && (parts.length === 1 || lower.at(-2) === 'practice')) destination = "profile";
+  // A dated retrospective is a report, not reusable guidance merely because
+  // someone stored it beside methods or patterns. The AI can suggest its matter.
+  if (/^(retro|retrospective)[-_ ]\d{4}[-_ ]\d{2}[-_ ]\d{2}/i.test(name)) destination = 'source';
   const matterIndex = lower.indexOf("matters");
   // Calendar buckets are not matters. Known layouts are optional hints only.
   const matterParts = parts.slice(matterIndex + 1, -1).filter(part => !/^\d{4}$/.test(part));

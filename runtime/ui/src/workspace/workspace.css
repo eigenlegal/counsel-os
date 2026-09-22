@@ -4155,6 +4155,7 @@ label > select {
 .standards-review-footer .form-actions { display: flex; justify-content: flex-end; margin: 12px 0 0; flex-wrap: wrap; gap: 10px; }
 .standard-confirm { font-size: 13px; }
 .practice-originals a { display: block; margin-top: 12px; overflow-wrap: anywhere; }
+.practice-management-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
 .practice-template-detail .reader-heading { max-width: 76ch; }
 @media (max-width: 600px) {
   .practice-library-toolbar .collection-toolbar-tools { width: 100%; flex-wrap: wrap; }

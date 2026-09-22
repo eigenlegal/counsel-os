@@ -204,6 +204,7 @@ export function chatTools(options: {
     if (kind === "knowledge") {
       const revision = store.getKnowledgeRevision(id);
       const item = store.getKnowledge(revision.knowledgeId);
+      if (item.lifecycle === 'trashed') throw new Error('This practice item is in Trash. Restore it before reading it as new context.');
       const alreadyRead = turn.state.context.some(
         (record) =>
           record.kind === "knowledge" &&

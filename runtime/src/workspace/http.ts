@@ -43,6 +43,7 @@ import { ClientCreate, ClientUpdate, ClientAssignment } from './clients';
 import { LibraryQuery, PlacementInput } from './source-library';
 import { PracticeLibraryQuery } from './practice-library';
 import { AdoptStandards } from './practice-adoption';
+import { PracticeFiling } from './practice-filing';
 import { PracticeDraftInput } from './practice-drafting';
 import { BriefDraftInput } from './brief-drafting';
 import { checkSignatory, SignatoryCheckInput } from './entities';
@@ -344,8 +345,8 @@ export function workspaceHandler(
         return Response.json(store.sourceMatters(id));
       if (collection === 'sources' && id && operation === 'links' && parts.length === 5)
         return Response.json(store.sourceLinks(id, SourceLinkQuery.parse(Object.fromEntries(url.searchParams))));
-      if ((collection === 'sources' || collection === 'work') && id && operation === 'impact' && parts.length === 5)
-        return Response.json(store.recordImpact(collection === 'sources' ? 'source' : 'work', id));
+      if ((collection === 'sources' || collection === 'work' || collection === 'knowledge') && id && operation === 'impact' && parts.length === 5)
+        return Response.json(store.recordImpact(collection === 'sources' ? 'source' : collection, id));
       if (collection === 'trash' && parts.length === 3) return Response.json(store.recordTrash(RecordTrashQuery.parse({ kind: url.searchParams.get('kind'), query: url.searchParams.get('q') ?? '', page: Number(url.searchParams.get('page') ?? 0) })));
       if (collection === 'guides' && parts.length === 3) {
         const catalog = guideCatalog();
@@ -576,8 +577,10 @@ export function workspaceHandler(
         return Response.json(store.applySourceLinks(id, SourceLinkApply.parse(await body(req))));
       if (collection === 'sources' && id && operation === 'matters' && parts.length === 5)
         return Response.json(store.changeSourceMatter(id, SourceMatterChange.parse(await body(req))));
-      if ((collection === 'sources' || collection === 'work') && id && operation === 'manage' && parts.length === 5)
-        return Response.json(store.changeRecord(collection === 'sources' ? 'source' : 'work', id, RecordChange.parse(await body(req))));
+      if ((collection === 'sources' || collection === 'work' || collection === 'knowledge') && id && operation === 'manage' && parts.length === 5)
+        return Response.json(store.changeRecord(collection === 'sources' ? 'source' : collection, id, RecordChange.parse(await body(req))));
+      if (collection === 'knowledge' && id && operation === 'file-document' && parts.length === 5)
+        return Response.json(store.filePracticeDocument(id, PracticeFiling.parse(await body(req))));
       if (collection === 'conversations' && id && operation === 'model' && parts.length === 5) {
         const input = ModelPreferenceInput.parse(await body(req));
         const config = (options.connectionStatus?.() ?? options.connection?.status())?.config;

@@ -261,7 +261,7 @@ test('schema 19 import with 48 retained suggestions upgrades with a verified bac
   legacy.exec(`UPDATE import_entries SET choice_json=(SELECT json_extract(result_json,'$.before') FROM import_organization_results WHERE entry_id=import_entries.id)
     WHERE id IN (SELECT entry_id FROM import_organization_results);
     UPDATE import_organization_results SET applied=0;
-    DROP TABLE import_organization_files; PRAGMA user_version=19;`);
+    DROP TABLE knowledge_lifecycle; DROP TABLE import_organization_files; PRAGMA user_version=19;`);
   legacy.close();
   const upgrade = await prepareWorkspaceUpgrade(databasePath);
   expect(upgrade?.fromSchema).toBe(19);

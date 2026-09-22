@@ -72,6 +72,18 @@ Model choices load automatically for subscription connections, refresh after a l
 
 Preview build 10 corrects a Mac-app launch issue where a missing `USER` environment value caused Claude Code to miss an existing Keychain sign-in. The shell supplies the OS username and the restricted adapter has a fallback for other GUI launches. This does not copy credentials, inherit ambient API keys, change sign-in, or infer the lawyer's document-author identity from their operating-system account. An existing valid Claude Code login does not need repeating for this fix.
 
+## Practice cleanup in preview build 13
+
+Receipt-linked imports with Counsel OS frontmatter now use the document's heading as their display title rather than an exported filename/ID. This is display-only: saved text, original files, historical versions and citations are unchanged.
+
+Practice readers now offer **Move to Trash**, with recovery under **Trash → Practice items**. Trashed items leave new practice retrieval, including imported-baseline fallback. Original documents remain separate; their existing attachments and matter links are not deleted. The confirmation links to related records that remain.
+
+For material incorrectly imported as reusable guidance, **File as document** lets the user select a matter, an external reference, or a Practice reference document. Filing reuses an unchanged, singly owned original where possible; otherwise it snapshots the current text into a new document. The Practice item moves to Trash in the same version-checked transaction. Restoring it later does not undo the document filing. No existing item is automatically deleted or assigned to a matter.
+
+Import guidance now distinguishes dated retrospective reports and legal source maps from reusable lessons/methods. Matter reports belong with the supported matter; practice-wide reports can remain reference documents. This does not establish semantic classification accuracy for arbitrary imports.
+
+Schema 21 adds recoverable Practice lifecycle state. The launcher verifies a pre-upgrade backup before migrating an existing supported workspace. The app remains an ad-hoc-signed Apple silicon preview, with manual installation and no live update channel.
+
 ## Imported practice review in preview build 12
 
 **Practice → Review imported material** includes unchanged, practice-wide positions, methods, reusable language and lessons from ordinary file imports. Select and explicitly confirm up to 50 items per page. After a successful approval the dialog refreshes with the remaining material and clears the selection and confirmation. An empty queue shows a close action rather than disabled approval controls.

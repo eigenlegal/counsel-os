@@ -4,14 +4,15 @@ import { z } from 'zod';
 import { all, one, required } from './queries';
 import { WorkspaceConflictError } from './types';
 
-export const ManagedRecord = z.enum(['source', 'work']);
+export const ManagedRecord = z.enum(['source', 'work', 'knowledge']);
 export type ManagedRecord = z.infer<typeof ManagedRecord>;
 export const RecordChange = z.object({ action: z.enum(['trash', 'restore']), expectedVersion: z.string().length(64), confirm: z.literal(true) }).strict();
 export const RecordTrashQuery = z.object({ kind: ManagedRecord, query: z.string().max(300).default(''), page: z.number().int().min(0).max(100_000).default(0) }).strict();
 export const ACTIVE_SOURCE = `NOT EXISTS (SELECT 1 FROM source_lifecycle sl WHERE sl.source_id=sr.source_id AND sl.state='trashed')`;
 export const ACTIVE_WORK = `NOT EXISTS (SELECT 1 FROM work_lifecycle wl WHERE wl.work_id=w.id AND wl.state='trashed')`;
+export const ACTIVE_PRACTICE = (id: string) => `NOT EXISTS (SELECT 1 FROM knowledge_lifecycle kl WHERE kl.knowledge_id=${id} AND kl.state='trashed')`;
 export function recordState(db: Database, kind: ManagedRecord, id: string): 'active' | 'trashed' {
-  if ((db.query('PRAGMA user_version').get() as { user_version: number }).user_version < 10) return 'active';
+  if ((db.query('PRAGMA user_version').get() as { user_version: number }).user_version < (kind === 'knowledge' ? 21 : 10)) return 'active';
   return one<{ state: 'active' | 'trashed' }>(db, `SELECT state FROM ${kind}_lifecycle WHERE ${kind}_id=?`, id)?.state ?? 'active';
 }
 export function requireActiveRecord(db: Database, kind: ManagedRecord, id: string) {
@@ -19,13 +20,15 @@ export function requireActiveRecord(db: Database, kind: ManagedRecord, id: strin
 }
 export interface RecordImpact {
   kind: ManagedRecord; id: string; title: string; state: 'active' | 'trashed'; version: string;
-  retained: Array<{ kind: 'matter' | 'work' | 'conversation' | 'knowledge' | 'template'; id: string; title: string }>;
+  retained: Array<{ kind: 'matter' | 'work' | 'conversation' | 'knowledge' | 'template' | 'source'; id: string; title: string }>;
   inUse: boolean; fileCount: number;
 }
 export function recordImpact(db: Database, kind: ManagedRecord, id: string): RecordImpact {
   ManagedRecord.parse(kind); z.string().uuid().parse(id);
   const record = kind === 'source'
     ? required(one<{ title: string }>(db, 'SELECT title,id,content_hash FROM source_revisions WHERE source_id=? ORDER BY revision_no DESC LIMIT 1', id), 'source')
+    : kind === 'knowledge'
+    ? required(one<{ title: string }>(db, 'SELECT title,id,content_hash FROM knowledge_revisions WHERE knowledge_id=? ORDER BY revision_no DESC LIMIT 1', id), 'practice item')
     : required(one<{ title: string }>(db, 'SELECT w.id,coalesce(o.title,w.title) AS title,w.content_hash FROM work_records w LEFT JOIN work_outputs o ON o.work_id=w.id WHERE w.id=?', id), 'work');
   const retained = new Map<string, RecordImpact['retained'][number]>();
   const add = (value: RecordImpact['retained'][number]) => retained.set(`${value.kind}:${value.id}`, value);
@@ -33,12 +36,13 @@ export function recordImpact(db: Database, kind: ManagedRecord, id: string): Rec
   const turns = all<{ conversationId: string; title: string; status: string; attachments: string; state: string; workId: string | null }>(db,
     `SELECT c.id AS conversationId,c.title,t.status,t.attachments_json AS attachments,t.state_json AS state,t.work_id AS workId
     FROM conversation_turns t JOIN conversations c ON c.id=t.conversation_id`);
-  const revisions = kind === 'source' ? new Set(all<{ id: string }>(db, 'SELECT id FROM source_revisions WHERE source_id=?', id).map(r => r.id)) : new Set<string>();
+  const revisions = kind !== 'work' ? new Set(all<{ id: string }>(db, `SELECT id FROM ${kind}_revisions WHERE ${kind}_id=?`, id).map(r => r.id)) : new Set<string>();
   for (const turn of turns) {
     const state = JSON.parse(turn.state);
     const attached = kind === 'source' && (JSON.parse(turn.attachments) as string[]).some(ref => revisions.has(ref));
-    const read = (state.context ?? []).some((ref: { kind: string; id: string; ranges: unknown[] }) => ref.kind === kind && (kind === 'source' ? revisions.has(ref.id) : ref.id === id) && ref.ranges?.length);
-    if (attached || read || (kind === 'work' && turn.workId === id)) {
+    const read = (state.context ?? []).some((ref: { kind: string; id: string; ranges: unknown[] }) => ref.kind === kind && (kind !== 'work' ? revisions.has(ref.id) : ref.id === id) && ref.ranges?.length);
+    const prepared = kind === 'knowledge' && turn.status === 'running' && (state.contextLibrary?.records ?? []).some((ref: { recordId: string; practiceItemId?: string }) => ref.recordId === id || ref.practiceItemId === id);
+    if (attached || read || prepared || (kind === 'work' && turn.workId === id)) {
       add({ kind: 'conversation', id: turn.conversationId, title: turn.title });
       if (turn.status === 'running') inUse = true;
     }
@@ -57,14 +61,25 @@ export function recordImpact(db: Database, kind: ManagedRecord, id: string): Rec
     for (const item of all<{ id: string; title: string }>(db, `SELECT DISTINCT k.knowledge_id AS id,k.title
       FROM import_batches b,json_each(b.receipt_json,'$.items') j JOIN knowledge_revisions k ON k.knowledge_id=json_extract(j.value,'$.practiceId')
       WHERE json_extract(j.value,'$.sourceId')=? AND k.revision_no=(SELECT max(revision_no) FROM knowledge_revisions WHERE knowledge_id=k.knowledge_id)`, id)) add({ kind: 'knowledge', ...item });
-  } else {
+  } else if (kind === 'work') {
     const matter = one<{ id: string; title: string }>(db, 'SELECT m.id,m.title FROM matters m JOIN work_records w ON w.matter_id=m.id WHERE w.id=?', id);
     if (matter) add({ kind: 'matter', ...matter });
+  } else {
+    const matter = one<{ id: string; title: string }>(db, 'SELECT m.id,m.title FROM matters m JOIN knowledge_items k ON k.matter_id=m.id WHERE k.id=?', id);
+    if (matter) add({ kind: 'matter', ...matter });
+    for (const source of all<{ id: string; title: string }>(db, `WITH originals AS (
+      SELECT s.value AS sourceId FROM seed_imports i,json_each(i.records_json,'$.knowledge') k
+      JOIN json_each(i.records_json,'$.sources') s ON s.key=k.key WHERE k.value=? AND i.seed_id GLOB 'plugin-v1-*'
+      UNION SELECT json_extract(j.value,'$.sourceId') FROM import_batches b,json_each(b.receipt_json,'$.items') j WHERE json_extract(j.value,'$.practiceId')=?
+    ) SELECT DISTINCT r.source_id AS id,r.title FROM originals o JOIN source_revisions r ON r.source_id=o.sourceId
+      WHERE r.revision_no=(SELECT max(revision_no) FROM source_revisions WHERE source_id=r.source_id)`, id, id)) add({ kind: 'source', ...source });
+    for (const item of all<{ id: string; title: string }>(db, `SELECT DISTINCT r.knowledge_id AS id,r.title FROM knowledge_evidence e
+      JOIN knowledge_revisions r ON r.id=e.revision_id WHERE e.knowledge_revision_id IN (SELECT id FROM knowledge_revisions WHERE knowledge_id=?)`, id)) add({ kind: 'knowledge', ...item });
   }
   for (const work of all<{ id: string; title: string }>(db, `SELECT DISTINCT w.id,coalesce(o.title,w.title) AS title FROM work_records w LEFT JOIN work_outputs o ON o.work_id=w.id
-    JOIN evidence e ON e.work_id=w.id WHERE ${kind === 'source' ? 'e.source_revision_id IN (SELECT id FROM source_revisions WHERE source_id=?)' : 'e.prior_work_id=?'}`, id)) add({ kind: 'work', ...work });
+    JOIN evidence e ON e.work_id=w.id WHERE ${kind !== 'work' ? `e.${kind}_revision_id IN (SELECT id FROM ${kind}_revisions WHERE ${kind}_id=?)` : 'e.prior_work_id=?'}`, id)) add({ kind: 'work', ...work });
   const lifecycle = one(db, `SELECT * FROM ${kind}_lifecycle WHERE ${kind}_id=?`, id);
-  const fileCount = one<{ n: number }>(db, kind === 'source' ? 'SELECT count(*) AS n FROM source_originals WHERE revision_id IN (SELECT id FROM source_revisions WHERE source_id=?)' : 'SELECT count(*) AS n FROM work_exports WHERE work_id=?', id)!.n;
+  const fileCount = kind === 'knowledge' ? 0 : one<{ n: number }>(db, kind === 'source' ? 'SELECT count(*) AS n FROM source_originals WHERE revision_id IN (SELECT id FROM source_revisions WHERE source_id=?)' : 'SELECT count(*) AS n FROM work_exports WHERE work_id=?', id)!.n;
   return { kind, id, title: record.title, state: recordState(db, kind, id), inUse, fileCount, retained: [...retained.values()],
     version: createHash('sha256').update(JSON.stringify([record, lifecycle, [...retained.values()], inUse, fileCount])).digest('hex') };
 }
@@ -74,7 +89,7 @@ export function changeRecord(db: Database, kind: ManagedRecord, id: string, raw:
     const before = recordImpact(db, kind, id);
     if (before.version !== input.expectedVersion) throw new WorkspaceConflictError('This record or its connections changed. Reopen the action to review it again.');
     if (before.inUse) throw new WorkspaceConflictError('A response is using this record. Wait for it to finish or stop that response before managing the record.');
-    db.run(`INSERT INTO ${kind}_lifecycle VALUES (?,?,?,?) ON CONFLICT(${kind}_id) DO UPDATE SET state=excluded.state,revision_id=excluded.revision_id,changed_at=excluded.changed_at`,
+    db.run(`INSERT INTO ${kind}_lifecycle (${kind}_id,state,revision_id,changed_at) VALUES (?,?,?,?) ON CONFLICT(${kind}_id) DO UPDATE SET state=excluded.state,revision_id=excluded.revision_id,changed_at=excluded.changed_at`,
       [id, input.action === 'trash' ? 'trashed' : 'active', randomUUID(), now()]);
     return recordImpact(db, kind, id);
   }).immediate();
@@ -84,8 +99,10 @@ export function recordTrash(db: Database, raw: z.input<typeof RecordTrashQuery>)
   const input = RecordTrashQuery.parse(raw);
   const from = input.kind === 'source'
     ? `FROM source_lifecycle l JOIN source_revisions r ON r.source_id=l.source_id AND r.revision_no=(SELECT max(revision_no) FROM source_revisions WHERE source_id=l.source_id)`
+    : input.kind === 'knowledge'
+    ? `FROM knowledge_lifecycle l JOIN knowledge_revisions r ON r.knowledge_id=l.knowledge_id AND r.revision_no=(SELECT max(revision_no) FROM knowledge_revisions WHERE knowledge_id=l.knowledge_id)`
     : `FROM work_lifecycle l JOIN work_records r ON r.id=l.work_id LEFT JOIN work_outputs o ON o.work_id=r.id`;
-  const title = input.kind === 'source' ? 'r.title' : 'coalesce(o.title,r.title)';
+  const title = input.kind !== 'work' ? 'r.title' : 'coalesce(o.title,r.title)';
   const where = `l.state='trashed' AND instr(lower(${title}),lower(?))>0`;
   const total = one<{ n: number }>(db, `SELECT count(*) AS n ${from} WHERE ${where}`, input.query)!.n;
   return { total, hasMore: (input.page + 1) * 50 < total, records: all(db,

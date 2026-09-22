@@ -51,7 +51,7 @@ function schema(db: Database): string {
       .all(),
   );
 }
-function expectedSchema(version: 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20): string {
+function expectedSchema(version: 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21): string {
   const db = openWorkspaceDatabase(":memory:", version);
   try {
     return schema(db);
@@ -114,8 +114,8 @@ function checkedDatabase(path: string): Database {
     // Never run database-supplied triggers, views, modules or migrations during restore.
     if (
       application !== WORKSPACE_APPLICATION_ID ||
-      ![5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, WORKSPACE_SCHEMA_VERSION].includes(version) ||
-      schema(db) !== expectedSchema(version as 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20)
+      ![5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, WORKSPACE_SCHEMA_VERSION].includes(version) ||
+      schema(db) !== expectedSchema(version as 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21)
     )
       throw new Error(
         "The backup database schema is not supported by this app version.",
@@ -314,7 +314,7 @@ export function buildBackup(
       source.query("PRAGMA user_version").get() as { user_version: number }
     ).user_version;
     if (
-      (version !== 5 && version !== 6 && version !== 7 && version !== 8 && version !== 9 && version !== 10 && version !== 11 && version !== 12 && version !== 13 && version !== 14 && version !== 15 && version !== 16 && version !== 17 && version !== 18 && version !== 19 && version !== 20) ||
+      (version !== 5 && version !== 6 && version !== 7 && version !== 8 && version !== 9 && version !== 10 && version !== 11 && version !== 12 && version !== 13 && version !== 14 && version !== 15 && version !== 16 && version !== 17 && version !== 18 && version !== 19 && version !== 20 && version !== 21) ||
       schema(source) !== expectedSchema(version)
     )
       throw new Error("The workspace schema is not supported for backup.");

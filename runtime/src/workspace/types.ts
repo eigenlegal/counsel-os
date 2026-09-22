@@ -79,6 +79,7 @@ export interface SourceRevision {
   original?: { name: string; byteCount: number };
 }
 export interface Source {
+  displayTitle?: string;
   lifecycle?: 'active' | 'trashed';
   id: string;
   kind: z.infer<typeof SourceInput>['kind'];
@@ -126,6 +127,7 @@ export interface KnowledgeRevision {
   supportingEvidence?: Array<EvidenceInput & { title?: string }>;
 }
 export interface Knowledge {
+  lifecycle?: 'active' | 'trashed';
   /** Display only; immutable revision titles remain available in history. */
   displayTitle?: string;
   /** The imported source is usable context independently of an app proposal/approval. */

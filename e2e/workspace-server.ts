@@ -32,6 +32,19 @@ if (process.argv.includes('--imported-standards')) {
   await seedImportedStandards(store, 8);
   if (!store.getProfile()) store.saveProfile({ name: 'Synthetic Reviewer', expectedRevisionId: null });
 }
+if (process.argv.includes('--practice-management')) {
+  store.createMatter({ title: 'Synthetic reporting matter' });
+  for (let index = 1; index <= 4; index++) {
+    const body = `---\ncounsel-os-type: memory-patterns\n---\n# Synthetic retrospective ${index}\n\nA dated synthetic report, not reusable standing guidance.\n`;
+    let batch = store.imports.create({ clientId: crypto.randomUUID(), label: 'Synthetic reports', files: [{ path: `Practice/retro-2026-01-0${index} - abcdef0${index}.md`, byteCount: Buffer.byteLength(body) }] });
+    await store.imports.upload(batch.id, batch.entries[0]!.id, Buffer.from(body).toString('base64')); await store.imports.idle();
+    batch = store.imports.get(batch.id);
+    batch = store.imports.edit(batch.id, batch.entries[0]!.id, { expectedRevisionId: batch.revisionId, choice: { ...batch.entries[0]!.choice, destination: 'pattern' } });
+    const receipt = store.imports.commit(batch.id, { expectedRevisionId: batch.revisionId });
+    const k = store.getKnowledge(receipt.receipt!.items[0]!.practiceId!);
+    store.reviewKnowledge(k.id, k.latest.id, 'approve', 'Synthetic Reviewer');
+  }
+}
 if (process.argv.includes('--recall')) store.createKnowledge({kind:'position',revision:{title:'Saved NDA instruction',body:'Nonsolicitation is excluded.',status:'approved',approvedBy:'Synthetic Lawyer'}});
 if (process.argv.includes('--upkeep')) store.upkeep.start();
 const contextIds = contextFixture ? seedPluginContext(store) : null;

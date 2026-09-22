@@ -40,6 +40,7 @@ import { SourceLocation } from "./SourceLibrary";
 import { SourceMatters } from './SourceMatters';
 import { SourceLinks } from './SourceLinks';
 import { RecordActions } from './RecordActions';
+import { PracticeFiling } from './PracticeFiling';
 import { PracticeOriginals } from './PracticeOriginals';
 import { ContextualChatHints } from './CapabilityHints';
 
@@ -247,12 +248,13 @@ export function RecordReader({
         Opening the saved record…
       </div>
     );
-  if ((detail.kind === 'references' || detail.kind === 'work') && detail.record.lifecycle === 'trashed') return <section className="trashed-record">
+  if (detail.record.lifecycle === 'trashed') return <section className="trashed-record">
     <a className="back-link" href={href('trash')}><Icon name="back" size={16} />Back to Trash</a>
-    <h1>{detail.kind === 'work' ? detail.record.output?.title ?? detail.record.title : detail.revision.title}</h1>
-    <p>This {detail.kind === 'work' ? 'output' : 'document'} is in Trash. Restore it to read, download or use it again.</p>
+    <h1>{detail.kind === 'work' ? detail.record.output?.title ?? detail.record.title : detail.record.displayTitle ?? detail.revision.title}</h1>
+    <p>This {detail.kind === 'work' ? 'output' : detail.kind === 'knowledge' ? 'practice item' : 'document'} is in Trash. Restore it to read, download or use it again.</p>
     <p className="fine-print">Existing conversations, quoted excerpts and applied changes remain. No original file outside this workspace was deleted.</p>
-    <RecordActions kind={detail.kind === 'work' ? 'work' : 'source'} id={detail.record.id} trashed changed={() => { onChanged('Record restored.'); setRetry(n => n + 1); }} />
+    <RecordActions kind={detail.kind === 'references' ? 'source' : detail.kind} id={detail.record.id} trashed changed={() => { onChanged('Record restored.'); setRetry(n => n + 1); }} />
+    {detail.kind === 'knowledge' && <PracticeOriginals id={detail.record.id} />}
   </section>;
   const shownRevision = detail.kind === 'work' ? null : detail.kind === 'knowledge' ? detail.baseline ?? detail.revision : detail.revision;
   const title =
@@ -325,7 +327,7 @@ export function RecordReader({
           {detail.kind === 'knowledge' && detail.baseline ? <Badge tone="green">{detail.record.kind === 'position' ? 'Imported baseline · in use' : detail.record.kind === 'pattern' ? 'Historical context · not a standard' : detail.record.kind === 'language' ? 'Starting language · in use' : 'Working method · in use'}</Badge> : <Status value={status} />}
           {previous && <Badge tone="amber">Previous version</Badge>}
         </div>
-        <h1>{detail.kind === 'knowledge' && !previous ? detail.record.displayTitle ?? title : title}</h1>
+        <h1>{detail.kind !== 'work' && !previous ? detail.record.displayTitle ?? title : title}</h1>
         <p>
           Saved {fullDate(recordedAt)}
           {detail.kind !== "work" && ` • Version ${shownRevision!.number}`}
@@ -523,6 +525,13 @@ export function RecordReader({
         </article>
         <aside className="reader-aside">
           {detail.kind === 'knowledge' && <PracticeOriginals id={detail.record.id} />}
+          {detail.kind === 'knowledge' && <section className="record-management">
+            <h2>Manage practice item</h2>
+            <div className="practice-management-actions">
+              {detail.record.ownership === 'user' && <PracticeFiling id={detail.record.id} data={data} filed={sourceId => { onChanged('Filed as a document. The practice item is recoverable in Trash.'); go('references', { id: sourceId }); }} />}
+              <RecordActions kind="knowledge" id={detail.record.id} changed={() => { onChanged('Practice item moved to Trash.'); setRetry(n => n + 1); }} />
+            </div>
+          </section>}
           {(detail.kind === 'references' || detail.kind === 'work') && <section className="record-management">
             <h2>Manage {detail.kind === 'work' ? 'output' : 'document'}</h2>
             <RecordActions kind={detail.kind === 'work' ? 'work' : 'source'} id={detail.record.id} changed={() => { onChanged('Record moved to Trash. You can restore it there.'); setRetry(n => n + 1); }} />
